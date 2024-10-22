@@ -20,28 +20,35 @@ poetry install
 poetry run streamlit run app_home.py
 ```
 
-or with docker:
+or with Docker/Portainer:
 
 ```yaml
+version: '3'
+
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
     ports:
       - "8000:8000"
     volumes:
-      - ./surreal-data:/mydata
-    user: "${UID}:${GID}"
-    command: start --log trace --user root --pass root rocksdb:mydatabase.db
+      - surreal_data:/mydata
+    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
+    user: root
+
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8080:8502"
-    volumes:
-      - ./docker.env:/app/.env
+      - "8502:8502"
+    env_file:
+      - ./docker.env
     depends_on:
       - surrealdb
     pull_policy: always
+
+volumes:
+  surreal_data:
+
 ```
 
 

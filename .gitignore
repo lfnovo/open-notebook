@@ -9,6 +9,7 @@ docker.env
 __pycache__/
 *.so
 todo.md
+temp/
 
 # Distribution / packaging
 .Python

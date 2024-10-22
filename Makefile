@@ -1,8 +1,12 @@
-.PHONY: run check ruff database lint docker-build docker-push
+.PHONY: run check ruff database lint docker-build docker-push docker-buildx-prepare docker-release
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
 IMAGE_NAME := lfnovo/open_notebook
+
+PLATFORMS=linux/amd64,linux/arm64
+#,linux/arm/v7,linux/386
+
 database:
 	docker compose up -d
 
@@ -15,13 +19,26 @@ lint:
 ruff:
 	ruff check . --fix
 
-docker-build:
-	docker build . -t $(IMAGE_NAME):$(VERSION)
-	docker tag $(IMAGE_NAME):$(VERSION) $(IMAGE_NAME):latest
+# Configuração do buildx para multi-plataforma
+docker-buildx-prepare:
+	docker buildx create --use --name multi-platform-builder || true
 
+# Build multi-plataforma com buildx
+docker-build: docker-buildx-prepare
+	docker buildx build \
+		--platform $(PLATFORMS) \
+		-t $(IMAGE_NAME):$(VERSION) \
+		-t $(IMAGE_NAME):latest \
+		--push \
+		.
+
+# O push já é feito durante o build com buildx
 docker-push:
-	docker push $(IMAGE_NAME):$(VERSION)
-	docker push $(IMAGE_NAME):latest
+	@echo "Push já foi realizado durante o build com buildx"
 
-# Combined build and push
-docker-release: docker-build docker-push
+# Build e push combinados
+docker-release: docker-build
+
+# Comando útil para verificar as plataformas suportadas após o build
+docker-check-platforms:
+	docker manifest inspect $(IMAGE_NAME):$(VERSION)

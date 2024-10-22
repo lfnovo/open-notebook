@@ -1,35 +1,30 @@
 import os
 from typing import List, Literal
 
+from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.runnables import (
     RunnableConfig,
 )
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, StateGraph
-from langgraph.prebuilt import ToolNode
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from open_notebook.graphs.tools import get_current_timestamp
-from open_notebook.prompter import Prompter
+from open_notebook.graphs.utils import run_pattern
 from open_notebook.utils import split_text
-
-tools = [get_current_timestamp]
-tool_node = ToolNode(tools)
 
 
 class SummaryResponse(BaseModel):
-    """Respond to the user with this"""
+    """This is schema of your response. Please provide a JSON object with the enclosed keys"""
 
-    summary: str = Field(description="The summary of the content")
-    topics: List[str] = Field(description="List of 4-7 topics related to this content")
-    title: str = Field(description="The title of the content")
+    summary: str
+    topics: List[str]
+    title: str
 
 
 class SummaryState(TypedDict):
     chunks: List[str]
     content: str
-    summary: SummaryResponse
+    output: SummaryResponse
 
 
 def build_chunks(state: SummaryState) -> dict:
@@ -63,19 +58,19 @@ def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: 
 
 
 # todo: build a helper method for LLM communication on all graphs
-def call_model_with_messages(state: SummaryState, config: RunnableConfig) -> dict:
-    model = (
-        ChatOpenAI(
-            model=os.environ.get("SUMMARIZATION_MODEL", os.environ["DEFAULT_MODEL"]),
-            temperature=0,
-        )
-        .bind_tools(tools)
-        .with_structured_output(SummaryResponse)
+def call_model(state: SummaryState, config: RunnableConfig) -> dict:
+    model_name = config.get("configurable", {}).get(
+        "model_name", os.environ.get("SUMMARIZATION_MODEL")
     )
-
-    system_prompt = Prompter(prompt_template="summarize").render(data=state)
-    ai_message = model.invoke(system_prompt)
-    return {"summary": ai_message}
+    parser = PydanticOutputParser(pydantic_object=SummaryResponse)
+    return {
+        "output": run_pattern(
+            pattern_name="summarize",
+            model_name=model_name,
+            state=state,
+            parser=parser,
+        )
+    }
 
 
 agent_state = StateGraph(SummaryState)
@@ -86,7 +81,7 @@ agent_state.add_conditional_edges(
     chunk_condition,
 )
 agent_state.add_node("get_chunk", setup_next_chunk)
-agent_state.add_node("agent", call_model_with_messages)
+agent_state.add_node("agent", call_model)
 agent_state.add_edge("get_chunk", "agent")
 agent_state.add_conditional_edges(
     "agent",

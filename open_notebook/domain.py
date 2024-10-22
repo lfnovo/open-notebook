@@ -345,7 +345,7 @@ class Source(ObjectModel):
         try:
             config = RunnableConfig(configurable=dict(thread_id=self.id))
             result = summarizer.invoke({"content": self.full_text}, config=config)[
-                "summary"
+                "output"
             ]
             self._add_insight("summary", surreal_clean(result.summary))
             self.title = surreal_clean(result.title)
@@ -355,7 +355,7 @@ class Source(ObjectModel):
         except Exception as e:
             logger.error(f"Error summarizing source {self.id}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError("Failed to summarize source")
+            raise DatabaseOperationError(e)
 
 
 class Note(ObjectModel):

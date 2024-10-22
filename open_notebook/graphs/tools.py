@@ -6,19 +6,21 @@ from langchain.tools import tool
 @tool
 def get_current_timestamp() -> str:
     """
+    name: get_current_timestamp
     Returns the current timestamp in the format YYYYMMDDHHmmss.
     """
     return datetime.now().strftime("%Y%m%d%H%M%S")
 
 
 @tool
-def ask_the_document(doc_id: str, question: str):
+def doc_query(doc_id: str, question: str):
     """
-    Use this tool to ask a question to the document.
-    Another LLM will ready the document and answer the question.
-    Be specific and complete in your query given the LLM that will process it is very capable.
+    name: doc_query
+    Use this tool if you need to investigate into a particular document.
+    Another LLM will read the document and answer the question that you might have.
+    Use this when the user question cannot be answered with the content you have in context.
     """
-    from open_notebook.graphs.ask_content import graph
+    from open_notebook.graphs.doc_query import graph
 
     result = graph.invoke({"doc_id": doc_id, "question": question})
     return result["answer"]

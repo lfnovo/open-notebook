@@ -6,3 +6,4 @@ data/
 .ruff_cache/
 .env
 sqlite-db/
+temp/

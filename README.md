@@ -50,7 +50,7 @@ services:
 
 Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
-## 🚀 Features
+## Features
 
 ![New Notebook](docs/assets/asset_list.png)
 
@@ -62,6 +62,17 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Integrated Search Engines**: Built-in full-text and vector search for faster information retrieval.
 - **Fine-Grained Context Management**: Choose exactly what to share with the AI to maintain control.
 - **Cost Estimation**: Estimate costs for large context processing to keep budget control in check.
+
+## 🚀 New Features
+
+  ### v0.0.2 - Several new providers are supported now:
+
+- OpenAI
+- Anthropic
+- Open Router
+- LiteLLM
+- Vertex AI
+- Ollama
 
 ### 📝 Notebook Page
 

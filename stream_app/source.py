@@ -133,13 +133,16 @@ def source_card(session_id, source):
             st.write(insight.insight_type)
             st.write(insight.content)
 
-        with st.popover("Actions"):
-            if st.button("Edit Source", icon="📝", key=source.id):
-                result = source_panel(source.id)
-                st.write(result)
-            if st.button("Delete", icon="🗑️", key=f"delete_options_{source.id}"):
-                source.delete()
-                st.rerun()
+        if st.button("Edit Source", icon="📝", key=source.id):
+            source_panel(source.id)
+
+        # with st.popover("Actions"):
+        #     if st.button("Edit Source", icon="📝", key=source.id):
+        #         result = source_panel(source.id)
+        #         st.write(result)
+        #     if st.button("Delete", icon="🗑️", key=f"delete_options_{source.id}"):
+        #         source.delete()
+        #         st.rerun()
 
     st.session_state[session_id]["context_config"][source.id] = context_state
 

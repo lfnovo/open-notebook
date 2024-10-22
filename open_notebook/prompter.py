@@ -30,7 +30,7 @@ class Prompter:
     template: Optional[Union[str, Template]] = None
     parser: Optional[Any] = None
 
-    def __init__(self, prompt_template=None, prompt_text=None):
+    def __init__(self, prompt_template=None, prompt_text=None, parser=None):
         """
         Initialize the Prompter with either a template file or raw text.
 
@@ -40,6 +40,7 @@ class Prompter:
         """
         self.prompt_template = prompt_template
         self.prompt_text = prompt_text
+        self.parser = parser
         self.setup()
 
     def setup(self):

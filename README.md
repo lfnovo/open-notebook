@@ -125,7 +125,7 @@ Jinja based prompts that are easy to customize to your own preferences.
 - **Improved Error Handling**: Making everything more robust.
 - **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
 - **Bookmark Integration**: Integrate with your favorite bookmarking app.
-- **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama. ✅ 0.0.2
+- **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc. ✅ 0.0.2
 - **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md) ✅ 0.0.3
 
 

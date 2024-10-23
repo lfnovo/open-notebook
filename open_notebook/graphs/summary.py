@@ -57,7 +57,6 @@ def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: 
     return END
 
 
-# todo: build a helper method for LLM communication on all graphs
 def call_model(state: SummaryState, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
         "model_name", os.environ.get("SUMMARIZATION_MODEL")

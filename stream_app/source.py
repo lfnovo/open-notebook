@@ -2,18 +2,26 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit_scrollable_textbox as stx  # type: ignore
+import yaml
 from humanize import naturaltime
 from loguru import logger
-from streamlit_tags import st_tags  # type: ignore
 
 from open_notebook.domain import Asset, Source
 from open_notebook.graphs.content_process import graph
-from open_notebook.utils import token_cost, token_count
+from open_notebook.graphs.multipattern import graph as transform_graph
+from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
 
 uploads_dir = Path("./.uploads")
 uploads_dir.mkdir(parents=True, exist_ok=True)
+
+
+def run_transformations(input_text, transformations):
+    output = transform_graph.invoke(
+        dict(content_stack=[input_text], transformations=transformations)
+    )
+    return output["output"]
 
 
 @st.dialog("Source", width="large")
@@ -22,44 +30,58 @@ def source_panel(source_id):
     if not source:
         st.error("Source not found")
         return
-    title = st.empty()
-    if source.title:
-        title.subheader(source.title)
-    st.caption(f"Created {naturaltime(source.created)}")
-    # st.markdown(f"**URL:** {source.url}, **File:** {source.file_path}")
-    summary = st.empty()
-    for insight in source.insights:
-        summary.write(insight.insight_type)
-        summary.write(insight.content)
 
-    topics = source.topics or []
-    if len(topics) > 0:
-        st_tags(
-            label="",
-            text="Press enter to add more",
-            value=source.topics,
-            suggestions=source.topics,
-            maxtags=10,
-            key="1",
-        )
+    process_tab, source_tab = st.tabs(["Process", "Source"])
+    with process_tab:
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            title = st.empty()
+            if source.title:
+                title.subheader(source.title)
+            if source.asset.url:
+                from_src = f"from URL: {source.asset.url}"
+            elif source.asset.file_path:
+                from_src = f"from file: {source.asset.file_path}"
+            else:
+                from_src = "from text"
+            st.caption(f"Created {naturaltime(source.created)}, {from_src}")
+            for insight in source.insights:
+                with st.expander(f"**{insight.insight_type}**"):
+                    st.markdown(insight.content)
+                    if st.button("Delete", key=f"delete_insight_{insight.id}"):
+                        insight.delete()
+                        st.rerun(scope="fragment")
 
-    if st.button("Delete", icon="🗑️"):
-        source.delete()
-        st.rerun()
+        with c2:
+            with open("transformations.yaml", "r") as file:
+                transformations = yaml.safe_load(file)
+                for transformation in transformations["source_insights"]:
+                    if st.button(
+                        transformation["name"], help=transformation["description"]
+                    ):
+                        result = run_transformations(
+                            source.full_text, transformation["transformations"]
+                        )
+                        source.add_insight(
+                            transformation["insight_type"], surreal_clean(result)
+                        )
+                        st.rerun(scope="fragment")
 
-    cost = token_cost(token_count(source.full_text)) * 1.2
-    if st.button(f"Summarize (about ${cost:.4f})", icon="📝"):
-        source.summarize()
-        st.rerun(scope="fragment")
+            if st.button(
+                "Embed vectors",
+                icon="🦾",
+                help="This will generate your embedding vectors on the database for powerful search capabilities",
+            ):
+                source.vectorize()
+                st.success("Embedding complete")
 
-    cost_embedding = token_cost(token_count(source.full_text), 0.02)
+            if st.button("Delete", icon="🗑️"):
+                source.delete()
+                st.rerun()
 
-    if st.button(f"Embed (${cost_embedding:.4f})", icon="📝"):
-        source.vectorize()
-        st.success("Embedding complete")
-
-    st.subheader("Content")
-    stx.scrollableTextbox(source.full_text, height=300)
+    with source_tab:
+        st.subheader("Content")
+        stx.scrollableTextbox(source.full_text, height=300)
 
 
 @st.dialog("Add a Source", width="large")
@@ -105,16 +127,14 @@ def add_source(session_id):
             st.write("Saving..")
             source = Source(
                 asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
+                full_text=surreal_clean(result["content"]),
             )
             source.save()
-            source.save_chunks(result["content"])
             source.add_to_notebook(st.session_state[session_id]["notebook"].id)
             st.write("Summarizing...")
             source.summarize()
 
         st.rerun()
-    # else:
-    #     st.stop()
 
 
 def source_card(session_id, source):

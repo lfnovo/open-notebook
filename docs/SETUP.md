@@ -52,7 +52,8 @@ docker run -d \
   -p 8080:8502 \
   -e OPENAI_API_KEY=API_KEY \
   -e DEFAULT_MODEL="gpt-4o-mini" \
-  -e SURREAL_ADDRESS="ws://localhost:8000/rpc" \
+  -e SURREAL_ADDRESS="localhost" \
+  -e SURREAL_PORT=8000 \
   -e SURREAL_USER="root" \
   -e SURREAL_PASS="root" \
   -e SURREAL_NAMESPACE="open_notebook" \
@@ -104,7 +105,8 @@ services:
     environment:
         - OPENAI_API_KEY=API_KEY
         - DEFAULT_MODEL=gpt-4o-mini
-        - SURREAL_ADDRESS=ws://surrealdb:8000/rpc
+        - SURREAL_ADDRESSsurrealdb
+        - SURREAL_PORT=8000
         - SURREAL_USER=root
         - SURREAL_PASS=root
         - SURREAL_NAMESPACE=open_notebook

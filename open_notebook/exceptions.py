@@ -10,6 +10,12 @@ class DatabaseOperationError(OpenNotebookError):
     pass
 
 
+class NoSchemaFound(OpenNotebookError):
+    """Raised when a database schema is not found."""
+
+    pass
+
+
 class InvalidInputError(OpenNotebookError):
     """Raised when invalid input is provided."""
 

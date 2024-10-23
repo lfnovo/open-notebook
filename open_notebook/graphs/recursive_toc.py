@@ -1,33 +1,23 @@
 import os
 from typing import List, Literal
 
-from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.runnables import (
     RunnableConfig,
 )
 from langgraph.graph import END, START, StateGraph
-from pydantic import BaseModel
 from typing_extensions import TypedDict
 
 from open_notebook.graphs.utils import run_pattern
 from open_notebook.utils import split_text
 
 
-class SummaryResponse(BaseModel):
-    """This is schema of your response. Please provide a JSON object with the enclosed keys"""
-
-    summary: str
-    topics: List[str]
-    title: str
-
-
-class SummaryState(TypedDict):
+class TocState(TypedDict):
     chunks: List[str]
     content: str
-    output: SummaryResponse
+    toc: str
 
 
-def build_chunks(state: SummaryState) -> dict:
+def build_chunks(state: TocState) -> dict:
     """
     Split the input text into chunks.
     """
@@ -40,7 +30,7 @@ def build_chunks(state: SummaryState) -> dict:
     }
 
 
-def setup_next_chunk(state: SummaryState) -> dict:
+def setup_next_chunk(state: TocState) -> dict:
     """
     Move the next item in the chunk to the processing area
     """
@@ -48,7 +38,7 @@ def setup_next_chunk(state: SummaryState) -> dict:
     return {"chunks": state["chunks"], "content": state["content"]}
 
 
-def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: ignore
+def chunk_condition(state: TocState) -> Literal["get_chunk", END]:  # type: ignore
     """
     Checks whether there are more chunks to process.
     """
@@ -57,22 +47,20 @@ def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: 
     return END
 
 
-def call_model(state: SummaryState, config: RunnableConfig) -> dict:
+def call_model(state: TocState, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
         "model_name", os.environ.get("SUMMARIZATION_MODEL")
     )
-    parser = PydanticOutputParser(pydantic_object=SummaryResponse)
     return {
-        "output": run_pattern(
-            pattern_name="summarize",
+        "toc": run_pattern(
+            pattern_name="recursive_toc",
             model_name=model_name,
             state=state,
-            parser=parser,
-        )
+        ).content
     }
 
 
-agent_state = StateGraph(SummaryState)
+agent_state = StateGraph(TocState)
 agent_state.add_node("setup_chunk", build_chunks)
 agent_state.add_edge(START, "setup_chunk")
 agent_state.add_conditional_edges(

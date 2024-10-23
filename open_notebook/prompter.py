@@ -9,7 +9,15 @@ from typing import Any, Optional, Union
 
 from jinja2 import Environment, FileSystemLoader, Template
 
-env = Environment(loader=FileSystemLoader(os.environ.get("PROMPT_PATH", "prompts")))
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+project_root = os.path.dirname(current_dir)
+
+env = Environment(
+    loader=FileSystemLoader(
+        os.path.join(project_root, os.environ.get("PROMPT_PATH", "prompts"))
+    )
+)
 
 
 @dataclass

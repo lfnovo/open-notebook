@@ -28,7 +28,6 @@ docker-build: docker-buildx-prepare
 	docker buildx build \
 		--platform $(PLATFORMS) \
 		-t $(IMAGE_NAME):$(VERSION) \
-		-t $(IMAGE_NAME):latest \
 		--push \
 		.
 
@@ -42,3 +41,13 @@ docker-release: docker-build
 # Comando útil para verificar as plataformas suportadas após o build
 docker-check-platforms:
 	docker manifest inspect $(IMAGE_NAME):$(VERSION)
+
+docker-update-latest: docker-buildx-prepare
+	docker buildx build \
+		--platform $(PLATFORMS) \
+		-t $(IMAGE_NAME):latest \
+		--push \
+		.
+
+# Release with latest
+docker-release-all: docker-release docker-update-latest

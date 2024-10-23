@@ -72,7 +72,15 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 ## 🚀 New Features
 
-  ### v0.0.2 - Several new providers are supported now:
+### v0.0.3 - Transformations ✨
+
+We just release a much more powerful way to create more value from your sources.
+Transformations enable you do extract an unlimited amount of insights from your content.
+It's 100% customizable and you can extend it to your own needs, like Paper Analysis, Article Writing, etc.
+
+Head to the [Transformations](docs/TRANSFORMATIONS.md) page for more info
+
+### v0.0.2 - Several new providers are supported now:
 
 - OpenAI
 - Anthropic
@@ -106,14 +114,10 @@ Locate anything across your research with ease using full-text and vector-based 
 Jinja based prompts that are easy to customize to your own preferences.
 
 
-
-
 ## 🌟 Coming Soon
 
 - **Podcast Generator**: Automatically convert your notes into a podcast format.
-- **Multi-model support**: Anthropic, Gemini, Mistral, Ollama coming soon.
 - **Enhanced Citations**: Improved layout and finer control for citations.
-- **Insight Generation**: New tools for creating insights, leveraging the Fabric framework.
 - **Better Embeddings & Summarization**: Smarter ways to distill information.
 - **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
 - **Live Front-End Updates**: Real-time UI updates for a smoother experience.
@@ -121,6 +125,8 @@ Jinja based prompts that are easy to customize to your own preferences.
 - **Improved Error Handling**: Making everything more robust.
 - **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
 - **Bookmark Integration**: Integrate with your favorite bookmarking app.
+- **Multi-model support**: Anthropic, Gemini, Mistral, Ollama coming soon. ✅ 0.0.2
+- **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md) ✅ 0.0.3
 
 
 ## 💻 Tech Stack

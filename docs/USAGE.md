@@ -18,6 +18,13 @@ You'll find your new source in the first column of the Notebook Page.
 
 ![New Notebook](assets/asset_list.png)
 
+## Using transformations
+
+Once you have your sources created, you can start gathering insights from them using [transformations](TRANSFORMATIONS.md).
+Create your own prompts and generate the wisdom that makes sense to you. 
+
+![New Notebook](assets/transformations.png)
+
 ## Talk to the Assistant
 
 Once you have enough content in the notebook, you can decide which of them will be visible to LLM before sending your question. 

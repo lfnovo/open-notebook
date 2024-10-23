@@ -14,7 +14,7 @@ EXPECTED_VERSION = "0.0.2"
 def db_connection():
     connection = SurrealSyncConnection(
         host=os.environ["SURREAL_ADDRESS"],
-        port=8000,  # Adjust this if your port is different
+        port=int(os.environ["SURREAL_PORT"]),
         user=os.environ["SURREAL_USER"],
         password=os.environ["SURREAL_PASS"],
         namespace=os.environ["SURREAL_NAMESPACE"],

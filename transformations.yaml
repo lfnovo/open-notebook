@@ -26,10 +26,10 @@ source_insights:
     description: "Generates a list of insightful questions to provoke reflection"
     transformations:
       - patterns/reflection_questions
-  - name: "Reflection [PT]"
-    insight_type: "Reflection Questions [PT]"
-    description: "Generates a list of insightful questions to provoke reflection"
-    transformations:
-      - patterns/reflection_questions
-      - patterns/translate
+  # - name: "Reflection [PT]"
+  #   insight_type: "Reflection Questions [PT]"
+  #   description: "Generates a list of insightful questions to provoke reflection"
+  #   transformations:
+  #     - patterns/reflection_questions
+  #     - patterns/translate
 

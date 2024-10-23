@@ -22,17 +22,11 @@ DEFINE FIELD asset
     FLEXIBLE TYPE option<object>;
 
 DEFINE FIELD title ON TABLE source TYPE option<string>;
--- DEFINE FIELD summary ON TABLE source TYPE option<string>;
+DEFINE FIELD full_text ON TABLE source TYPE option<string>;
 DEFINE FIELD topics ON TABLE source TYPE option<array<string>>;
 
 DEFINE FIELD created ON source DEFAULT time::now() VALUE $before OR time::now();
 DEFINE FIELD updated ON source DEFAULT time::now() VALUE time::now();
-
--- temporary while surreal doesn't fix the sdk 
-DEFINE TABLE IF NOT EXISTS source_chunk SCHEMAFULL;
-DEFINE FIELD source ON TABLE source_chunk TYPE record<source>;
-DEFINE FIELD order ON TABLE source_chunk TYPE int;
-DEFINE FIELD content ON TABLE source_chunk TYPE string;
 
 DEFINE TABLE IF NOT EXISTS source_embedding SCHEMAFULL;
 DEFINE FIELD source ON TABLE source_embedding TYPE record<source>;
@@ -77,7 +71,7 @@ FROM note TO notebook;
 DEFINE ANALYZER my_analyzer TOKENIZERS blank,class,camel,punct FILTERS snowball(english), lowercase;
 
 DEFINE INDEX idx_source_title ON TABLE source COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_source_full ON TABLE source_chunk COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX idx_source_full_text ON TABLE source COLUMNS full_text SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_source_embed_chunk ON TABLE source_embedding COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_source_insight ON TABLE source_insight COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX idx_note ON TABLE note COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
@@ -102,11 +96,11 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             GROUP BY item_id)}
         ELSE { [] };
 
-    let $source_chunk_search = 
+    let $source_full_search = 
          IF $sources {(
             SELECT source as item_id, math::max(search::score(1)) AS relevance
-            FROM source_chunk
-            WHERE content @1@ $query_text
+            FROM source
+            WHERE full_text @1@ $query_text
             GROUP BY item_id)}
         ELSE { [] };
     
@@ -134,7 +128,7 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             GROUP BY item_id)}
         ELSE { [] };
 
-    let $source_chunk_results = array::union($source_embedding_search, $source_chunk_search);
+    let $source_chunk_results = array::union($source_embedding_search, $source_full_search);
     
     let $source_asset_results = array::union($source_title_search, $source_insight_search);
 
@@ -188,9 +182,9 @@ DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_cou
 };
 
 CREATE open_notebook:database_info SET
-    version= "0.0.1";
+    version= "0.0.2";
 
 UPDATE open_notebook:database_info SET
-    version= "0.0.1";
+    version= "0.0.2";
 
 

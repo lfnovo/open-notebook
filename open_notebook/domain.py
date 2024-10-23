@@ -78,14 +78,14 @@ class ObjectModel(BaseModel):
                 repo_result = repo_update(self.id, data)
 
             # Update the current instance with the result
-            for key, value in repo_result.items():
+            for key, value in repo_result[0].items():
                 if hasattr(self, key):
                     setattr(self, key, value)
 
         except Exception as e:
             logger.error(f"Error saving {self.__class__.table_name}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError(f"Failed to save {self.__class__.table_name}")
+            raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
@@ -109,14 +109,14 @@ class ObjectModel(BaseModel):
             )
 
     def relate(self, relationship: str, target_id: str) -> Any:
-        if not relationship or not target_id:
+        if not relationship or not target_id or not self.id:
             raise InvalidInputError("Relationship and target ID must be provided")
         try:
             return repo_relate(self.id, relationship, target_id)
         except Exception as e:
             logger.error(f"Error creating relationship: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError("Failed to create relationship")
+            raise DatabaseOperationError(e)
 
 
 class Notebook(ObjectModel):
@@ -179,22 +179,13 @@ class SourceInsight(ObjectModel):
     insight_type: str
     content: str
 
-    @field_validator("insight_type")
-    @classmethod
-    def validate_insight_type(cls, v):
-        allowed_types = ["summary", "key_points", "analysis"]  # Add more as needed
-        if v not in allowed_types:
-            raise InvalidInputError(
-                f"Invalid insight type. Allowed types are: {', '.join(allowed_types)}"
-            )
-        return v
-
 
 class Source(ObjectModel):
     table_name: ClassVar[str] = "source"
     asset: Optional[Asset] = None
     title: Optional[str] = None
     topics: Optional[List[str]] = Field(default_factory=list)
+    full_text: Optional[str] = None
 
     def get_context(
         self, context_size: Literal["short", "long"] = "short"
@@ -213,44 +204,15 @@ class Source(ObjectModel):
     def insights(self) -> List[SourceInsight]:
         try:
             result = repo_query(
+                f"""
+                SELECT * FROM source_insight WHERE source={self.id}
                 """
-                SELECT * FROM source_insight WHERE source=$id
-                """,
-                {"id": self.id},
             )
             return [SourceInsight(**insight) for insight in result]
         except Exception as e:
             logger.error(f"Error fetching insights for source {self.id}: {str(e)}")
             logger.exception(e)
             raise DatabaseOperationError("Failed to fetch insights for source")
-
-    @property
-    def full_text(self) -> str:
-        try:
-            results = []
-            chunk_indexes = repo_query(
-                """
-                select order
-                from source_chunk
-                where source=$id
-                order by order
-            """,
-                {"id": self.id},
-            )
-            for chunk_index in chunk_indexes:
-                chunk = repo_query(
-                    f"""
-                    select content
-                    from source_chunk
-                    where source={self.id} and order={chunk_index['order']}
-                """
-                )
-                results.append(chunk[0]["content"])
-            return "".join(results)
-        except Exception as e:
-            logger.error(f"Error fetching full text for source {self.id}: {str(e)}")
-            logger.exception(e)
-            raise DatabaseOperationError("Failed to fetch full text for source")
 
     def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
@@ -265,14 +227,15 @@ class Source(ObjectModel):
             logger.debug(f"Split into {len(chunks)} chunks")
             for i, chunk in enumerate(chunks):
                 logger.debug(f"Saving chunk {i}")
+                data = {"source": self.id, "order": i, "content": surreal_clean(chunk)}
                 repo_create(
                     "source_chunk",
-                    {"source": self.id, "order": i, "content": surreal_clean(chunk)},
+                    data,
                 )
         except Exception as e:
-            logger.error(f"Error saving chunks for source {self.id}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError("Failed to save chunks for source")
+            logger.error(f"Error saving chunks for source {self.id}: {str(e)}")
+            raise DatabaseOperationError(e)
 
     def vectorize(self) -> None:
         try:
@@ -288,14 +251,15 @@ class Source(ObjectModel):
 
             # future: we can increase the batch size after surreal launches their new SDK
             for i, chunk in enumerate(chunks):
-                repo_create(
-                    "source_embedding",
-                    {
-                        "source": self.id,
-                        "order": i,
-                        "content": surreal_clean(chunk),
-                        "embedding": get_embedding(chunk),
-                    },
+                repo_query(
+                    f"""
+                    CREATE source_embedding CONTENT {{
+                            "source": {self.id},
+                            "order": {i},
+                            "content": $content,
+                            "embedding": {get_embedding(chunk)},
+                    }};""",
+                    {"content": surreal_clean(chunk)},
                 )
         except Exception as e:
             logger.error(f"Error vectorizing source {self.id}: {str(e)}")
@@ -323,23 +287,24 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError("Failed to search sources")
 
-    def _add_insight(self, insight_type: str, content: str) -> Any:
+    def add_insight(self, insight_type: str, content: str) -> Any:
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
             embedding = get_embedding(content)
-            return repo_create(
-                "source_insight",
-                {
-                    "source": self.id,
-                    "insight_type": insight_type,
-                    "content": surreal_clean(content),
-                    "embedding": embedding,
-                },
+            return repo_query(
+                f"""
+                CREATE source_insight CONTENT {{
+                        "source": {self.id},
+                        "insight_type": '{insight_type}',
+                        "content": $content,
+                        "embedding": {embedding},
+                }};""",
+                {"content": surreal_clean(content)},
             )
         except Exception as e:
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
-            raise DatabaseOperationError("Failed to add insight to source")
+            raise DatabaseOperationError(e)
 
     def summarize(self) -> "Source":
         try:
@@ -347,7 +312,7 @@ class Source(ObjectModel):
             result = summarizer.invoke({"content": self.full_text}, config=config)[
                 "output"
             ]
-            self._add_insight("summary", surreal_clean(result.summary))
+            self.add_insight("summary", surreal_clean(result.summary))
             self.title = surreal_clean(result.title)
             self.topics = result.topics
             self.save()

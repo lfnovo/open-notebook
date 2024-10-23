@@ -1,3 +1,6 @@
+import re
+import string
+
 from langchain_text_splitters import CharacterTextSplitter
 from openai import OpenAI
 
@@ -70,14 +73,32 @@ def get_embedding(text, model="text-embedding-3-small"):
     return client.embeddings.create(input=[text], model=model).data[0].embedding
 
 
+def remove_non_ascii(text):
+    return re.sub(r"[^\x00-\x7F]+", "", text)
+
+
+def remove_non_printable(text):
+    return "".join(filter(lambda x: x in string.printable, text))
+
+
 def surreal_clean(text):
     """
-    Clean the input text by escaping colons for SurrealDB compatibility.
+    Clean the input text by removing non-ASCII and non-printable characters,
+    and adjusting colon placement for SurrealDB compatibility.
 
     Args:
         text (str): The input text to clean.
     Returns:
-        str: The cleaned text with escaped colons.
+        str: The cleaned text with adjusted formatting.
     """
-    text = text.replace(":", "\:")
+    text = remove_non_printable(remove_non_ascii(text))
+
+    # Add space after colon if it's before the first space
+    first_space_index = text.find(" ")
+    colon_index = text.find(":")
+    if colon_index != -1 and (
+        first_space_index == -1 or colon_index < first_space_index
+    ):
+        text = text.replace(":", "\:", 1)
+
     return text

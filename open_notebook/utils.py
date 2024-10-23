@@ -1,5 +1,5 @@
 import re
-import string
+import unicodedata
 
 from langchain_text_splitters import CharacterTextSplitter
 from openai import OpenAI
@@ -78,7 +78,13 @@ def remove_non_ascii(text):
 
 
 def remove_non_printable(text):
-    return "".join(filter(lambda x: x in string.printable, text))
+    # Remove caracteres de controle, exceto quebras de linha e tabulações
+    text = "".join(
+        char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
+    )
+    # Manter letras (incluindo acentuadas), números, espaços, quebras de linha, tabulações e pontuação básica
+    allowed = r"a-zA-Z0-9\s.,!?\-\n\t"
+    return re.sub(f"[^{allowed}]", "", text, flags=re.UNICODE)
 
 
 def surreal_clean(text):
@@ -91,7 +97,7 @@ def surreal_clean(text):
     Returns:
         str: The cleaned text with adjusted formatting.
     """
-    text = remove_non_printable(remove_non_ascii(text))
+    text = remove_non_printable(text)
 
     # Add space after colon if it's before the first space
     first_space_index = text.find(" ")

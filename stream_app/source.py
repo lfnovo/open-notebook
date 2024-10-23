@@ -132,7 +132,7 @@ def add_source(session_id):
             source.save()
             source.add_to_notebook(st.session_state[session_id]["notebook"].id)
             st.write("Summarizing...")
-            source.summarize()
+            source.generate_toc_and_title()
 
         st.rerun()
 

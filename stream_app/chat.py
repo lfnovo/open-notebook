@@ -3,7 +3,7 @@ from langchain_core.runnables import RunnableConfig
 
 from open_notebook.domain import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
-from open_notebook.utils import token_cost, token_count
+from open_notebook.utils import token_count
 
 
 # todo: build a smarter, more robust context manager function
@@ -56,11 +56,11 @@ def execute_chat(txt_input, session_id):
 # seria bom ter um total de tokens no admin em algum lugar
 def chat_sidebar(session_id):
     context = build_context(session_id=session_id)
-    tokens = token_count(str(context))
-    cost = token_cost(tokens)
+    tokens = token_count(str(context) + str(st.session_state[session_id]["messages"]))
     with st.container(border=True):
         request = st.chat_input("Enter your question")
-        st.caption(f"Total tokens: {tokens}, cost: ${cost:.4f}")
+        # removing for now since it's not multi-model capable right now
+        st.caption(f"Total tokens: {tokens}")
         if request:
             response = execute_chat(txt_input=request, session_id=session_id)
             st.session_state[session_id]["messages"] = response["messages"]

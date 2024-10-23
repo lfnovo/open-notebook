@@ -11,7 +11,8 @@ from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
 )
-from open_notebook.graphs.summary import graph as summarizer
+from open_notebook.graphs.multipattern import graph as pattern_graph
+from open_notebook.graphs.recursive_toc import graph as toc_graph
 from open_notebook.repository import (
     repo_create,
     repo_delete,
@@ -239,8 +240,7 @@ class Source(ObjectModel):
 
     def vectorize(self) -> None:
         try:
-            full_text = self.full_text
-            if not full_text:
+            if not self.full_text:
                 return
             chunks = split_text(
                 self.full_text,
@@ -306,15 +306,20 @@ class Source(ObjectModel):
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
             raise DatabaseOperationError(e)
 
-    def summarize(self) -> "Source":
+    def generate_toc_and_title(self) -> "Source":
         try:
             config = RunnableConfig(configurable=dict(thread_id=self.id))
-            result = summarizer.invoke({"content": self.full_text}, config=config)[
-                "output"
+            result = toc_graph.invoke({"content": self.full_text}, config=config)
+            logger.warning(result["toc"])
+            self.add_insight("Table of Contents", surreal_clean(result["toc"]))
+            transformations = [
+                "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
             ]
-            self.add_insight("summary", surreal_clean(result.summary))
-            self.title = surreal_clean(result.title)
-            self.topics = result.topics
+            output = pattern_graph.invoke(
+                dict(content_stack=[result["toc"]], transformations=transformations)
+            )
+            logger.warning(output["output"])
+            self.title = surreal_clean(output["output"])
             self.save()
             return self
         except Exception as e:

@@ -7,3 +7,4 @@ data/
 .env
 sqlite-db/
 temp/
+google-credentials.json

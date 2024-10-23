@@ -10,7 +10,7 @@ __pycache__/
 *.so
 todo.md
 temp/
-
+google-credentials.json
 # Distribution / packaging
 .Python
 build/

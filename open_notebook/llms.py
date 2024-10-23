@@ -136,7 +136,6 @@ class VertexAILanguageModel(LanguageModel):
             location=self.location,
             project=self.project,
             safety_settings=None,
-            api_key="AIzaSyCt4zB5eZVZPh7WRxIh9oY_rwblP6BOyWE",
         )
 
 

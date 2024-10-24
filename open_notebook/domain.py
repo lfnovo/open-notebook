@@ -126,6 +126,7 @@ class Notebook(ObjectModel):
     table_name: ClassVar[str] = "notebook"
     name: str
     description: str
+    archived: Optional[bool] = False
 
     @field_validator("name")
     @classmethod

@@ -82,9 +82,18 @@ def source_panel(source_id):
                 source.vectorize()
                 st.success("Embedding complete")
 
-            if st.button("Delete", type="primary", icon="🗑️"):
-                source.delete()
-                st.rerun()
+            chk_delete = st.checkbox(
+                "🗑️ Delete source", key=f"delete_source_{source.id}", value=False
+            )
+            if chk_delete:
+                st.warning(
+                    "Source will be deleted with all its insights and embeddings"
+                )
+                if st.button(
+                    "Delete", type="primary", key=f"bt_delete_source_{source.id}"
+                ):
+                    source.delete()
+                    st.rerun()
 
     with source_tab:
         st.subheader("Content")

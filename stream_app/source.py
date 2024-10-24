@@ -30,6 +30,11 @@ def source_panel(source_id):
     if not source:
         st.error("Source not found")
         return
+    current_title = source.title if source.title else "No Title"
+    source.title = st.text_input("Title", value=current_title)
+    if source.title != current_title:
+        st.toast("Saved new Title")
+        source.save()
 
     process_tab, source_tab = st.tabs(["Process", "Source"])
     with process_tab:
@@ -48,7 +53,9 @@ def source_panel(source_id):
             for insight in source.insights:
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
-                    if st.button("Delete", key=f"delete_insight_{insight.id}"):
+                    if st.button(
+                        "Delete", type="primary", key=f"delete_insight_{insight.id}"
+                    ):
                         insight.delete()
                         st.rerun(scope="fragment")
 
@@ -75,7 +82,7 @@ def source_panel(source_id):
                 source.vectorize()
                 st.success("Embedding complete")
 
-            if st.button("Delete", icon="🗑️"):
+            if st.button("Delete", type="primary", icon="🗑️"):
                 source.delete()
                 st.rerun()
 

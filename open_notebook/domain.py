@@ -81,7 +81,10 @@ class ObjectModel(BaseModel):
             # Update the current instance with the result
             for key, value in repo_result[0].items():
                 if hasattr(self, key):
-                    setattr(self, key, value)
+                    if isinstance(getattr(self, key), BaseModel):
+                        setattr(self, key, type(getattr(self, key))(**value))
+                    else:
+                        setattr(self, key, value)
 
         except Exception as e:
             logger.error(f"Error saving {self.__class__.table_name}: {str(e)}")

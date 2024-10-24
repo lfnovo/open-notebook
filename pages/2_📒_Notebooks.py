@@ -33,12 +33,12 @@ def notebook_header(current_notebook):
             value=current_description,
             placeholder="Add as much context as you can as this will be used by the AI to generate insights.",
         )
-        if st.button("Save", key="edit_notebook"):
+        if st.button("Save", icon="💾", key="edit_notebook"):
             current_notebook.name = notebook_name
             current_notebook.description = notebook_description
             current_notebook.save()
             st.rerun()
-        if st.button("Delete forever", icon="☠️"):
+        if st.button("Delete forever", type="primary", icon="☠️"):
             current_notebook.delete()
             st.session_state["current_notebook"] = None
             st.rerun()

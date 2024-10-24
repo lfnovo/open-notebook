@@ -44,7 +44,7 @@ def note_panel(session_id=None, note_id=None):
             if not note.id:
                 note.add_to_notebook(st.session_state[session_id]["notebook"].id)
             st.rerun()
-    if st.button("Delete", key=f"delete_note_{note_id}"):
+    if st.button("Delete", type="primary", key=f"delete_note_{note_id}"):
         logger.debug("Deleting note")
         note.delete()
         st.rerun()

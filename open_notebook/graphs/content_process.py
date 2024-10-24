@@ -9,6 +9,8 @@ from typing_extensions import TypedDict
 from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
 from youtube_transcript_api.formatters import TextFormatter  # type: ignore
 
+from open_notebook.config import CONFIG
+
 
 class SourceState(TypedDict):
     content: str
@@ -183,9 +185,12 @@ def extract_youtube_transcript(state: SourceState):
     Parse the text file and print its content.
     """
 
-    transcript = YouTubeTranscriptApi.get_transcript(
-        _extract_youtube_id(state.get("url")), languages=["pt", "en"]
+    languages = CONFIG.get("youtube_transcripts", {}).get(
+        "preferred_languages", ["pt", "en"]
     )
+
+    video_id = _extract_youtube_id(state.get("url"))
+    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=languages)
     formatter = TextFormatter()
     title = _get_title(state.get("url"))
     return {"content": formatter.format_transcript(transcript), "title": title}

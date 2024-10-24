@@ -128,6 +128,7 @@ def add_source(session_id):
             source = Source(
                 asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
                 full_text=surreal_clean(result["content"]),
+                title=result.get("title"),
             )
             source.save()
             source.add_to_notebook(st.session_state[session_id]["notebook"].id)

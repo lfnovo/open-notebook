@@ -4,6 +4,7 @@ import fitz  # type: ignore
 import magic
 import requests  # type: ignore
 from langgraph.graph import END, START, StateGraph
+from loguru import logger
 from typing_extensions import TypedDict
 from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
 from youtube_transcript_api.formatters import TextFormatter  # type: ignore
@@ -13,6 +14,7 @@ class SourceState(TypedDict):
     content: str
     file_path: str
     url: str
+    title: str
     source_type: str
     identified_type: str
     identified_provider: str
@@ -97,7 +99,26 @@ def extract_url(state: SourceState):
     Get the content of a URL
     """
     response = requests.get(f"https://r.jina.ai/{state.get('url')}")
-    return {"content": response.text}
+    text = response.text
+    if text.startswith("Title:") and "\n" in text:
+        title_end = text.index("\n")
+        title = text[6:title_end].strip()
+        logger.debug(f"Content has title - {title}")
+        logger.debug(text[:100])
+        content = text[title_end + 1 :].strip()
+        return {"title": title, "content": content}
+    else:
+        logger.debug("Content does not have URL")
+        return {"content": text}
+
+
+def _get_title(url):
+    """
+    Get the content of a URL
+    """
+    response = extract_url(dict(url=url))
+    if "title" in response:
+        return response["title"]
 
 
 def extract_txt(state: SourceState):
@@ -166,7 +187,8 @@ def extract_youtube_transcript(state: SourceState):
         _extract_youtube_id(state.get("url")), languages=["pt", "en"]
     )
     formatter = TextFormatter()
-    return {"content": formatter.format_transcript(transcript)}
+    title = _get_title(state.get("url"))
+    return {"content": formatter.format_transcript(transcript), "title": title}
 
 
 def should_continue(data: SourceState):

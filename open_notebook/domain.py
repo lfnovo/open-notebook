@@ -90,7 +90,6 @@ class ObjectModel(BaseModel):
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
-        logger.debug(f"Preparing data for save: {data}")
         del data["created"]
         del data["updated"]
         return {key: value for key, value in data.items() if value is not None}
@@ -306,21 +305,22 @@ class Source(ObjectModel):
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
             raise DatabaseOperationError(e)
 
+    # todo: move this to content processing pipeline as a major graph
     def generate_toc_and_title(self) -> "Source":
         try:
             config = RunnableConfig(configurable=dict(thread_id=self.id))
             result = toc_graph.invoke({"content": self.full_text}, config=config)
-            logger.warning(result["toc"])
             self.add_insight("Table of Contents", surreal_clean(result["toc"]))
-            transformations = [
-                "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
-            ]
-            output = pattern_graph.invoke(
-                dict(content_stack=[result["toc"]], transformations=transformations)
-            )
-            logger.warning(output["output"])
-            self.title = surreal_clean(output["output"])
-            self.save()
+            if not self.title:
+                transformations = [
+                    "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
+                ]
+                output = pattern_graph.invoke(
+                    dict(content_stack=[result["toc"]], transformations=transformations)
+                )
+                logger.warning(output["output"])
+                self.title = surreal_clean(output["output"])
+                self.save()
             return self
         except Exception as e:
             logger.error(f"Error summarizing source {self.id}: {str(e)}")

@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 import fitz  # type: ignore
 import magic
@@ -68,7 +69,8 @@ def _extract_text_from_pdf(pdf_path):
     for page in doc:
         text += page.get_text()
     doc.close()
-    return text
+    normalized_content = unicodedata.normalize("NFKD", text)
+    return normalized_content
 
 
 def extract_pdf(state: SourceState):

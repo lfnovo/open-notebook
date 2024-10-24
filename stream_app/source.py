@@ -139,31 +139,23 @@ def add_source(session_id):
 
 
 def source_card(session_id, source):
+    # todo: more descriptive icons
     icon = "🔗"
-    context_state = st.selectbox(
-        "Context",
-        label_visibility="collapsed",
-        options=context_icons,
-        index=0,
-        key=f"source_{source.id}",
-    )
-    with st.expander(f"**{source.title}**"):
-        st.markdown(f"{icon} Updated: {naturaltime(source.updated)}")
-        st.markdown("**" + ", ".join(source.topics) + "**")
-        for insight in source.insights:
-            st.write(insight.insight_type)
-            st.write(insight.content)
 
-        if st.button("Edit Source", icon="📝", key=source.id):
+    with st.container(border=True):
+        st.markdown((f"{icon} **{source.title if source.title else 'No Title'}**"))
+        context_state = st.selectbox(
+            "Context",
+            label_visibility="collapsed",
+            options=context_icons,
+            index=0,
+            key=f"source_{source.id}",
+        )
+        st.caption(
+            f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
+        )
+        if st.button("Expand", icon="📝", key=source.id):
             source_panel(source.id)
-
-        # with st.popover("Actions"):
-        #     if st.button("Edit Source", icon="📝", key=source.id):
-        #         result = source_panel(source.id)
-        #         st.write(result)
-        #     if st.button("Delete", icon="🗑️", key=f"delete_options_{source.id}"):
-        #         source.delete()
-        #         st.rerun()
 
     st.session_state[session_id]["context_config"][source.id] = context_state
 

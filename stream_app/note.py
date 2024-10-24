@@ -4,6 +4,8 @@ from loguru import logger
 from streamlit_monaco import st_monaco  # type: ignore
 
 from open_notebook.domain import Note
+from open_notebook.graphs.multipattern import graph as pattern_graph
+from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
 
@@ -36,7 +38,7 @@ def note_panel(session_id=None, note_id=None):
         note.content = st_monaco(
             value=note.content, height="600px", language="markdown"
         )
-        if st.button("Save", key=f"edit_note_{note_id}"):
+        if st.button("Save", key=f"pn_edit_note_{note_id}"):
             logger.debug("Editing note")
             note.save()
             if not note.id:
@@ -48,27 +50,47 @@ def note_panel(session_id=None, note_id=None):
         st.rerun()
 
 
+def make_note_from_chat(content, notebook_id=None):
+    # todo: make this more efficient
+    transformations = [
+        "Based on the Note below, please provide a Title for this content, with max 15 words"
+    ]
+    output = pattern_graph.invoke(
+        dict(content_stack=[content], transformations=transformations)
+    )
+    title = surreal_clean(output["output"])
+
+    note = Note(
+        title=title,
+        content=content,
+        note_type="ai",
+    )
+    note.save()
+    if notebook_id:
+        note.add_to_notebook(notebook_id)
+
+    st.rerun()
+
+
 def note_card(session_id, note):
     if note.note_type == "human":
         icon = "🤵"
     else:
         icon = "🤖"
 
-    context_state = st.selectbox(
-        "Context",
-        label_visibility="collapsed",
-        options=context_icons,
-        index=0,
-        key=f"note_{note.id}",
-    )
-    with st.expander(f"{icon} **{note.title}** {naturaltime(note.updated)}"):
-        st.write(note.content)
-        with st.popover("Actions"):
-            if st.button("Edit Note", icon="📝", key=f"edit_note_{note.id}"):
-                note_panel(session_id, note.id)
-            if st.button("Delete", icon="🗑️", key=f"delete_options_{note.id}"):
-                note.delete()
-                st.rerun()
+    with st.container(border=True):
+        st.markdown((f"{icon} **{note.title if note.title else 'No Title'}**"))
+        context_state = st.selectbox(
+            "Context",
+            label_visibility="collapsed",
+            options=context_icons,
+            index=0,
+            key=f"note_{note.id}",
+        )
+        st.caption(f"Updated: {naturaltime(note.updated)}")
+
+        if st.button("Expand", icon="📝", key=f"edit_note_{note.id}"):
+            note_panel(session_id, note.id)
 
     st.session_state[session_id]["context_config"][note.id] = context_state
 

@@ -41,6 +41,11 @@ DEFINE FIELD content ON TABLE source_insight TYPE string;
 DEFINE FIELD embedding ON TABLE source_insight TYPE array<float>;
 
 
+DEFINE EVENT source_delete ON TABLE source WHEN ($after == NONE) THEN {
+    delete source_embedding where source == $before.id;
+    delete source_insight where source == $before.id;
+};
+
 DEFINE TABLE IF NOT EXISTS note SCHEMAFULL;
 
 DEFINE FIELD title ON TABLE note TYPE option<string>;
@@ -55,6 +60,8 @@ DEFINE TABLE IF NOT EXISTS notebook SCHEMAFULL;
 
 DEFINE FIELD name ON TABLE notebook TYPE option<string>;
 DEFINE FIELD description ON TABLE notebook TYPE option<string>;
+DEFINE FIELD archived ON TABLE notebook TYPE option<bool> DEFAULT False;
+
 
 DEFINE FIELD created ON notebook DEFAULT time::now() VALUE $before OR time::now();
 DEFINE FIELD updated ON notebook DEFAULT time::now() VALUE time::now();

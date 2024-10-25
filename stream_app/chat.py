@@ -4,6 +4,7 @@ from langchain_core.runnables import RunnableConfig
 from open_notebook.domain import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils import token_count
+from stream_app.note import make_note_from_chat
 
 
 # todo: build a smarter, more robust context manager function
@@ -75,15 +76,8 @@ def chat_sidebar(session_id):
                 st.write(msg.content)
                 if msg.type == "ai":
                     if st.button("💾 New Note", key=f"render_save_{msg.id}"):
-                        title = "New Note"
-                        content = msg.content
-                        note = Note(
-                            title=title,
-                            content=content,
-                            note_type="ai",
-                        )
-                        note.save()
-                        note.add_to_notebook(
-                            st.session_state[session_id]["notebook"].id
+                        make_note_from_chat(
+                            content=msg.content,
+                            notebook_id=st.session_state[session_id]["notebook"].id,
                         )
                         st.rerun()

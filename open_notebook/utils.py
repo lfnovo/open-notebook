@@ -78,13 +78,12 @@ def remove_non_ascii(text):
 
 
 def remove_non_printable(text):
-    # Remove caracteres de controle, exceto quebras de linha e tabulações
+    # Remove control characters, except newlines and tabs
     text = "".join(
         char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
     )
-    # Manter letras (incluindo acentuadas), números, espaços, quebras de linha, tabulações e pontuação básica
-    allowed = r"a-zA-Z0-9\s.,!?\-\n\t"
-    return re.sub(f"[^{allowed}]", "", text, flags=re.UNICODE)
+    # Keep letters (including accented ones), numbers, spaces, newlines, tabs, and basic punctuation
+    return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 
 
 def surreal_clean(text):

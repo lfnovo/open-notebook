@@ -30,6 +30,11 @@ def source_panel(source_id):
     if not source:
         st.error("Source not found")
         return
+    current_title = source.title if source.title else "No Title"
+    source.title = st.text_input("Title", value=current_title)
+    if source.title != current_title:
+        st.toast("Saved new Title")
+        source.save()
 
     process_tab, source_tab = st.tabs(["Process", "Source"])
     with process_tab:
@@ -48,7 +53,9 @@ def source_panel(source_id):
             for insight in source.insights:
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
-                    if st.button("Delete", key=f"delete_insight_{insight.id}"):
+                    if st.button(
+                        "Delete", type="primary", key=f"delete_insight_{insight.id}"
+                    ):
                         insight.delete()
                         st.rerun(scope="fragment")
 
@@ -75,9 +82,18 @@ def source_panel(source_id):
                 source.vectorize()
                 st.success("Embedding complete")
 
-            if st.button("Delete", icon="🗑️"):
-                source.delete()
-                st.rerun()
+            chk_delete = st.checkbox(
+                "🗑️ Delete source", key=f"delete_source_{source.id}", value=False
+            )
+            if chk_delete:
+                st.warning(
+                    "Source will be deleted with all its insights and embeddings"
+                )
+                if st.button(
+                    "Delete", type="primary", key=f"bt_delete_source_{source.id}"
+                ):
+                    source.delete()
+                    st.rerun()
 
     with source_tab:
         st.subheader("Content")
@@ -128,6 +144,7 @@ def add_source(session_id):
             source = Source(
                 asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
                 full_text=surreal_clean(result["content"]),
+                title=result.get("title"),
             )
             source.save()
             source.add_to_notebook(st.session_state[session_id]["notebook"].id)
@@ -138,31 +155,23 @@ def add_source(session_id):
 
 
 def source_card(session_id, source):
+    # todo: more descriptive icons
     icon = "🔗"
-    context_state = st.selectbox(
-        "Context",
-        label_visibility="collapsed",
-        options=context_icons,
-        index=0,
-        key=f"source_{source.id}",
-    )
-    with st.expander(f"**{source.title}**"):
-        st.markdown(f"{icon} Updated: {naturaltime(source.updated)}")
-        st.markdown("**" + ", ".join(source.topics) + "**")
-        for insight in source.insights:
-            st.write(insight.insight_type)
-            st.write(insight.content)
 
-        if st.button("Edit Source", icon="📝", key=source.id):
+    with st.container(border=True):
+        st.markdown((f"{icon} **{source.title if source.title else 'No Title'}**"))
+        context_state = st.selectbox(
+            "Context",
+            label_visibility="collapsed",
+            options=context_icons,
+            index=0,
+            key=f"source_{source.id}",
+        )
+        st.caption(
+            f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
+        )
+        if st.button("Expand", icon="📝", key=source.id):
             source_panel(source.id)
-
-        # with st.popover("Actions"):
-        #     if st.button("Edit Source", icon="📝", key=source.id):
-        #         result = source_panel(source.id)
-        #         st.write(result)
-        #     if st.button("Delete", icon="🗑️", key=f"delete_options_{source.id}"):
-        #         source.delete()
-        #         st.rerun()
 
     st.session_state[session_id]["context_config"][source.id] = context_state
 

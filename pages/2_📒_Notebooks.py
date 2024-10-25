@@ -33,12 +33,23 @@ def notebook_header(current_notebook):
             value=current_description,
             placeholder="Add as much context as you can as this will be used by the AI to generate insights.",
         )
-        if st.button("Save", key="edit_notebook"):
+        c1, c2, c3 = st.columns([1, 1, 1])
+        if c1.button("Save", icon="💾", key="edit_notebook"):
             current_notebook.name = notebook_name
             current_notebook.description = notebook_description
             current_notebook.save()
             st.rerun()
-        if st.button("Delete forever", icon="☠️"):
+        if not current_notebook.archived:
+            if c2.button("Archive", icon="🗃️"):
+                current_notebook.archived = True
+                current_notebook.save()
+                st.toast("Notebook archived", icon="🗃️")
+        else:
+            if c2.button("Unarchive", icon="🗃️"):
+                current_notebook.archived = False
+                current_notebook.save()
+                st.toast("Notebook unarchived", icon="🗃️")
+        if c3.button("Delete forever", type="primary", icon="☠️"):
             current_notebook.delete()
             st.session_state["current_notebook"] = None
             st.rerun()
@@ -79,6 +90,19 @@ def notebook_page(current_notebook_id):
         chat_sidebar(session_id=session_id)
 
 
+def notebook_list_item(notebook):
+    with st.container(border=True):
+        st.subheader(notebook.name)
+        st.caption(
+            f"Created: {naturaltime(notebook.created)}, updated: {naturaltime(notebook.updated)}"
+        )
+        st.write(notebook.description)
+        if st.button("Open", key=f"open_notebook_{notebook.id}"):
+            setup_stream_state(notebook.id)
+            st.session_state["current_notebook"] = notebook.id
+            st.rerun()
+
+
 if "current_notebook" not in st.session_state:
     st.session_state["current_notebook"] = None
 
@@ -93,18 +117,11 @@ st.caption("Here are all your notebooks")
 notebooks = Notebook.get_all()
 
 for notebook in notebooks:
-    with st.container(border=True):
-        st.subheader(notebook.name)
-        st.caption(
-            f"Created: {naturaltime(notebook.created)}, updated: {naturaltime(notebook.updated)}"
-        )
-        st.write(notebook.description)
-        if st.button("Open", key=f"open_notebook_{notebook.id}"):
-            setup_stream_state(notebook.id)
-            st.session_state["current_notebook"] = notebook.id
-            st.rerun()
+    if notebook.archived:
+        continue
+    notebook_list_item(notebook)
 
-with st.container(border=True):
+with st.expander("➕ **New Notebook**"):
     new_notebook_title = st.text_input("New Notebook Name")
     new_notebook_description = st.text_area("Description")
     if st.button("Create a new Notebook", icon="➕"):
@@ -113,3 +130,9 @@ with st.container(border=True):
         )
         notebook.save()
         st.rerun()
+
+archived_notebooks = [nb for nb in notebooks if nb.archived]
+if len(archived_notebooks) > 0:
+    with st.expander(f"**🗃️ {len(archived_notebooks)} archived Notebooks**"):
+        for notebook in archived_notebooks:
+            notebook_list_item(notebook)

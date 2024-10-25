@@ -5,15 +5,19 @@ import fitz  # type: ignore
 import magic
 import requests  # type: ignore
 from langgraph.graph import END, START, StateGraph
+from loguru import logger
 from typing_extensions import TypedDict
 from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
 from youtube_transcript_api.formatters import TextFormatter  # type: ignore
+
+from open_notebook.config import CONFIG
 
 
 class SourceState(TypedDict):
     content: str
     file_path: str
     url: str
+    title: str
     source_type: str
     identified_type: str
     identified_provider: str
@@ -63,14 +67,100 @@ def file_type(state: SourceState):
     return return_dict
 
 
+def clean_pdf_text(text):
+    """
+    Clean text extracted from PDFs with enhanced space handling.
+
+    Args:
+        text (str): The raw text extracted from a PDF
+    Returns:
+        str: Cleaned text with minimal necessary spacing
+    """
+    if not text:
+        return text
+
+    # Step 1: Normalize Unicode characters
+    text = unicodedata.normalize("NFKC", text)
+
+    # Step 2: Replace common PDF artifacts
+    replacements = {
+        # Common ligatures
+        "ﬁ": "fi",
+        "ﬂ": "fl",
+        "ﬀ": "ff",
+        "ﬃ": "ffi",
+        "ﬄ": "ffl",
+        # Quotation marks and apostrophes
+        """: "'", """: "'",
+        '"': '"',
+        "′": "'",
+        "‚": ",",
+        "„": '"',
+        # Dashes and hyphens
+        "‒": "-",
+        "–": "-",
+        "—": "-",
+        "―": "-",
+        # Other common replacements
+        "…": "...",
+        "•": "*",
+        "°": " degrees ",
+        "¹": "1",
+        "²": "2",
+        "³": "3",
+        "©": "(c)",
+        "®": "(R)",
+        "™": "(TM)",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+
+    # Step 3: Advanced space cleaning
+    # Remove control characters while preserving essential whitespace
+    text = "".join(
+        char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t "
+    )
+
+    # Step 4: Enhanced space cleaning
+    text = re.sub(r"[ \t]+", " ", text)  # Consolidate horizontal whitespace
+    text = re.sub(r" +\n", "\n", text)  # Remove spaces before newlines
+    text = re.sub(r"\n +", "\n", text)  # Remove spaces after newlines
+    text = re.sub(r"\n\t+", "\n", text)  # Remove tabs at start of lines
+    text = re.sub(r"\t+\n", "\n", text)  # Remove tabs at end of lines
+    text = re.sub(r"\t+", " ", text)  # Replace tabs with single space
+
+    # Step 5: Remove empty lines while preserving paragraph structure
+    text = re.sub(r"\n{3,}", "\n\n", text)  # Max two consecutive newlines
+    text = re.sub(r"^\s+", "", text)  # Remove leading whitespace
+    text = re.sub(r"\s+$", "", text)  # Remove trailing whitespace
+
+    # Step 6: Clean up around punctuation
+    text = re.sub(r"\s+([.,;:!?)])", r"\1", text)  # Remove spaces before punctuation
+    text = re.sub(r"(\()\s+", r"\1", text)  # Remove spaces after opening parenthesis
+    text = re.sub(
+        r"\s+([.,])\s+", r"\1 ", text
+    )  # Ensure single space after periods and commas
+
+    # Step 7: Remove zero-width and invisible characters
+    text = re.sub(r"[\u200b\u200c\u200d\ufeff\u200e\u200f]", "", text)
+
+    # Step 8: Fix hyphenation and line breaks
+    text = re.sub(
+        r"(?<=\w)-\s*\n\s*(?=\w)", "", text
+    )  # Remove hyphenation at line breaks
+
+    return text.strip()
+
+
 def _extract_text_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)
     text = ""
     for page in doc:
         text += page.get_text()
     doc.close()
-    normalized_content = unicodedata.normalize("NFKD", text)
-    return normalized_content
+
+    normalized_text = clean_pdf_text(text)
+    return normalized_text
 
 
 def extract_pdf(state: SourceState):
@@ -99,7 +189,26 @@ def extract_url(state: SourceState):
     Get the content of a URL
     """
     response = requests.get(f"https://r.jina.ai/{state.get('url')}")
-    return {"content": response.text}
+    text = response.text
+    if text.startswith("Title:") and "\n" in text:
+        title_end = text.index("\n")
+        title = text[6:title_end].strip()
+        logger.debug(f"Content has title - {title}")
+        logger.debug(text[:100])
+        content = text[title_end + 1 :].strip()
+        return {"title": title, "content": content}
+    else:
+        logger.debug("Content does not have URL")
+        return {"content": text}
+
+
+def _get_title(url):
+    """
+    Get the content of a URL
+    """
+    response = extract_url(dict(url=url))
+    if "title" in response:
+        return response["title"]
 
 
 def extract_txt(state: SourceState):
@@ -164,11 +273,15 @@ def extract_youtube_transcript(state: SourceState):
     Parse the text file and print its content.
     """
 
-    transcript = YouTubeTranscriptApi.get_transcript(
-        _extract_youtube_id(state.get("url")), languages=["pt", "en"]
+    languages = CONFIG.get("youtube_transcripts", {}).get(
+        "preferred_languages", ["pt", "en"]
     )
+
+    video_id = _extract_youtube_id(state.get("url"))
+    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=languages)
     formatter = TextFormatter()
-    return {"content": formatter.format_transcript(transcript)}
+    title = _get_title(state.get("url"))
+    return {"content": formatter.format_transcript(transcript), "title": title}
 
 
 def should_continue(data: SourceState):

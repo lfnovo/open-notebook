@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -6,15 +7,13 @@ import yaml
 from humanize import naturaltime
 from loguru import logger
 
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain import Asset, Source
 from open_notebook.graphs.content_process import graph
 from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
-
-uploads_dir = Path("./.uploads")
-uploads_dir.mkdir(parents=True, exist_ok=True)
 
 
 def run_transformations(input_text, transformations):
@@ -121,10 +120,10 @@ def add_source(session_id):
             # Generate a unique file name
             base_name = Path(file_name).stem
             counter = 1
-            new_path = uploads_dir / file_name
-            while new_path.exists():
+            new_path = os.path.join(UPLOADS_FOLDER, file_name)
+            while os.path.exists(new_path):
                 new_file_name = f"{base_name}_{counter}{file_extension}"
-                new_path = uploads_dir / new_file_name
+                new_path = os.path.join(UPLOADS_FOLDER, new_file_name)
                 counter += 1
 
             req["file_path"] = str(new_path)

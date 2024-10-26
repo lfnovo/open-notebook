@@ -1,4 +1,3 @@
-import os
 import sqlite3
 from typing import Annotated, Optional
 
@@ -10,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
+from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain import Notebook
 from open_notebook.graphs.utils import run_pattern
 
@@ -33,7 +33,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
 
 
 conn = sqlite3.connect(
-    os.environ.get("CHECKPOINT_DATA_PATH", "sqlite-db/checkpoints.sqlite"),
+    LANGGRAPH_CHECKPOINT_FILE,
     check_same_thread=False,
 )
 memory = SqliteSaver(conn)

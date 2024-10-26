@@ -22,7 +22,6 @@ WORKDIR /app
 
 EXPOSE 8502
 
-RUN mkdir -p /app/sqlite-db
 RUN mkdir -p /app/data
 
 CMD ["poetry", "run", "streamlit", "run", "app_home.py"]

@@ -1,4 +1,5 @@
-from typing import ClassVar, List, Literal
+from datetime import datetime
+from typing import ClassVar, List, Literal, Optional
 
 from loguru import logger
 from podcastfy.client import generate_podcast
@@ -27,13 +28,15 @@ class PodcastConfig(ObjectModel):
     conversation_style: List[str]
     engagement_technique: List[str]
     dialogue_structure: List[str]
-    user_instructions: str
-    wordcount: int = Field(gt=500, lt=10000)
+    user_instructions: Optional[str] = None
+    ending_message: Optional[str] = None
+    wordcount: int = Field(ge=400, le=10000)
     creativity: float = Field(ge=0, le=1)
     provider: Literal["openai", "elevenlabs", "edge"] = Field(default="openai")
-    voice1: str
-    voice2: str
+    voice1: Optional[str] = None
+    voice2: Optional[str] = None
     model: str
+    created: Optional[datetime] = Field(default_factory=datetime.now)
 
     def generate_episode(self, episode_name, text, instructions=None):
         self.user_instructions = (
@@ -52,7 +55,7 @@ class PodcastConfig(ObjectModel):
             "engagement_techniques": self.engagement_technique,
             "creativity": self.creativity,
             "text_to_speech": {
-                # "temp_audio_dir": "./data/audio/tmp",
+                # "temp_audio_dir": f"{PODCASTS_FOLDER}/tmp",
                 "ending_message": "Thank you for listening to this episode. Don't forget to subscribe to our podcast for more interesting conversations.",
                 "default_tts_model": self.provider,
                 self.provider: {
@@ -66,8 +69,6 @@ class PodcastConfig(ObjectModel):
             },
         }
 
-        logger.error(conversation_config)
-        # conversation_config = {}
         logger.debug(
             f"Generating episode {episode_name} with config {conversation_config}"
         )
@@ -75,7 +76,6 @@ class PodcastConfig(ObjectModel):
         audio_file = generate_podcast(
             conversation_config=conversation_config, text=text, tts_model=self.provider
         )
-        logger.warning(audio_file)
         episode = PodcastEpisode(
             name=episode_name,
             template=self.name,
@@ -85,10 +85,19 @@ class PodcastConfig(ObjectModel):
         )
         episode.save()
 
+    @field_validator(
+        "name", "podcast_name", "podcast_tagline", "output_language", "model"
+    )
+    @classmethod
+    def validate_required_strings(cls, value: str, field) -> str:
+        if value is None or value.strip() == "":
+            raise ValueError(f"{field.field_name} cannot be None or empty string")
+        return value.strip()
+
     @field_validator("wordcount")
     def validate_wordcount(cls, value):
-        if not 500 <= value <= 6000:
-            raise ValueError("Wordcount must be between 500 and 10000")
+        if not 400 <= value <= 6000:
+            raise ValueError("Wordcount must be between 400 and 10000")
         return value
 
     @field_validator("creativity")

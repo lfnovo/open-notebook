@@ -4,7 +4,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Type, TypeVar
 
 from langchain_core.runnables.config import RunnableConfig
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from open_notebook.exceptions import (
     DatabaseOperationError,
@@ -35,7 +35,13 @@ class ObjectModel(BaseModel):
     def get_all(cls: Type[T]) -> List[T]:
         try:
             result = repo_query(f"SELECT * FROM {cls.table_name}")
-            objects = [cls(**obj) for obj in result]
+            objects = []
+            for obj in result:
+                try:
+                    objects.append(cls(**obj))
+                except Exception as e:
+                    logger.critical(f"Error creating object: {str(e)}")
+
             return objects
         except Exception as e:
             logger.error(f"Error fetching all {cls.table_name}: {str(e)}")
@@ -64,6 +70,8 @@ class ObjectModel(BaseModel):
 
     def save(self) -> None:
         try:
+            logger.debug(f"Validating {self.__class__.__name__}")
+            self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
 
             if self.needs_embedding():
@@ -85,6 +93,13 @@ class ObjectModel(BaseModel):
                         setattr(self, key, type(getattr(self, key))(**value))
                     else:
                         setattr(self, key, value)
+
+        except ValidationError as e:
+            logger.error(f"Validation failed: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error saving record: {e}")
+            raise
 
         except Exception as e:
             logger.error(f"Error saving {self.__class__.table_name}: {str(e)}")
@@ -139,7 +154,7 @@ class Notebook(ObjectModel):
     def sources(self) -> List["Source"]:
         try:
             srcs = repo_query(f"""
-                select * from (
+                select * OMIT full_text from (
                     select
                     <- source as source
                     from reference
@@ -158,7 +173,7 @@ class Notebook(ObjectModel):
     def notes(self) -> List["Note"]:
         try:
             srcs = repo_query(f"""
-                select * from (
+                select * OMIT content from (
                     select
                     <- note as note
                     from artifact
@@ -322,7 +337,6 @@ class Source(ObjectModel):
                 output = pattern_graph.invoke(
                     dict(content_stack=[result["toc"]], transformations=transformations)
                 )
-                logger.warning(output["output"])
                 self.title = surreal_clean(output["output"])
                 self.save()
             return self

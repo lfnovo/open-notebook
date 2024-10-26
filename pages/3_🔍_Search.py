@@ -6,7 +6,7 @@ from stream_app.note import note_list_item
 from stream_app.source import source_list_item
 
 st.set_page_config(
-    layout="wide", page_title="🔍 Open Notebook", initial_sidebar_state="expanded"
+    layout="wide", page_title="🔍 Search", initial_sidebar_state="expanded"
 )
 
 # search_tab, ask_tab = st.tabs(["Search", "Ask"])

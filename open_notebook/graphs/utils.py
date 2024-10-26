@@ -32,10 +32,9 @@ def run_pattern(
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    # logger.debug(f"System prompt: {system_prompt}")
+    logger.debug(f"System prompt: {system_prompt}")
 
     if len(messages) > 0:
-        logger.warning(messages)
         response = chain.invoke([system_prompt] + messages)
     else:
         response = chain.invoke(system_prompt)

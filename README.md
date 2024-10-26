@@ -68,10 +68,7 @@ You can now build amazing custom podcasts based on your own data. Customize your
 
 Check out a sample using my own voice created on Eleven Labs and a interview format. 
 
-<audio controls>
-  <source src="docs/assets/interview.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
+![Audio](docs/assets/interview.mp3)
 
 You can generate your podcast in dozens of languages.
 

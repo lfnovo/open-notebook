@@ -49,7 +49,7 @@ with templates_tab:
         st.caption(f"Suggestions:{', '.join(participant_roles)}")
         pd_cfg["person2_role"] = st.text_input("Person 2 role")
         pd_cfg["conversation_style"] = st_tags(
-            ["a"], conversation_styles, "Conversation Style"
+            [], conversation_styles, "Conversation Style"
         )
         st.caption(f"Suggestions:{', '.join(conversation_styles)}")
         pd_cfg["engagement_technique"] = st_tags(
@@ -70,10 +70,16 @@ with templates_tab:
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
         )
+        st.markdown(
+            "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
+        )
         pd_cfg["voice2"] = st.text_input(
             "Voice 2", help="You can use Elevenlabs voice ID"
         )
         pd_cfg["model"] = st.text_input("Model")
+        st.caption(
+            "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
+        )
         if st.button("Save"):
             pd = PodcastConfig(**pd_cfg)
             pd_cfg = {}
@@ -167,6 +173,9 @@ with templates_tab:
                 key=f"voice1_{pd_config.id}",
                 help="You can use Elevenlabs voice ID",
             )
+            st.markdown(
+                "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
+            )
             pd_config.voice2 = st.text_input(
                 "Voice 2",
                 value=pd_config.voice2,
@@ -175,6 +184,9 @@ with templates_tab:
             )
             pd_config.model = st.text_input(
                 "Model", value=pd_config.model, key=f"model_{pd_config.id}"
+            )
+            st.caption(
+                "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
             )
 
             if st.button("Save Config", key=f"btn_save{pd_config.id}"):

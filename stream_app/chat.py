@@ -78,15 +78,14 @@ def chat_sidebar(session_id):
                     "Instructions", value=selected_template.user_instructions
                 )
                 if st.button("Generate"):
-                    with st.spinner("Go grab a coffee, almost here..."):
+                    with st.spinner("Go grab a coffee, almost there..."):
                         selected_template.generate_episode(
                             episode_name=episode_name,
                             text=context,
                             instructions=instructions,
                         )
                     st.success("Episode generated successfully")
-            st.page_link("pages/5_🎙️_Podcasts.py", label="Go to Podcasts")
-            st.divider()
+            st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.container(border=True):
             request = st.chat_input("Enter your question")

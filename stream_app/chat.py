@@ -3,7 +3,7 @@ from langchain_core.runnables import RunnableConfig
 
 from open_notebook.domain import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
-from open_notebook.plugins.podcasts import PodcastConfig, PodcastEpisode
+from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import token_count
 from stream_app.note import make_note_from_chat
 
@@ -54,30 +54,38 @@ def execute_chat(txt_input, session_id):
     return result
 
 
-podcast_configs = PodcastConfig.get_all()
-podcast_config_names = [pd.name for pd in podcast_configs]
-
-
 # todo: se eu for usar o token count, preciso deixar configuravel
 # seria bom ter um total de tokens no admin em algum lugar
 def chat_sidebar(session_id):
     context = build_context(session_id=session_id)
     tokens = token_count(str(context) + str(st.session_state[session_id]["messages"]))
     chat_tab, podcast_tab = st.tabs(["Chat", "Podcast"])
+    with st.expander(f"Context ({tokens} tokens), {len(str(context))} chars"):
+        st.json(context)
     with podcast_tab:
         with st.container(border=True):
-            template = st.selectbox("Pick a template", podcast_config_names)
-            episode_name = st.text_input("Episode Name")
-            instructions = st.text_area("Instructions")
-            if st.button("Generate"):
-                epi = PodcastEpisode(
-                    name=episode_name,
-                    instructions=instructions,
-                    template=template,
-                    file_path="lallaa",
+            podcast_configs = PodcastConfig.get_all()
+            podcast_config_names = [pd.name for pd in podcast_configs]
+            if len(podcast_configs) == 0:
+                st.warning("No podcast configurations found")
+            else:
+                template = st.selectbox("Pick a template", podcast_config_names)
+                selected_template = next(
+                    filter(lambda x: x.name == template, podcast_configs)
                 )
-                epi.save()
-            st.page_link("pages/5_🎙️_Podcasts.py", label="Go to Config")
+                episode_name = st.text_input("Episode Name")
+                instructions = st.text_area(
+                    "Instructions", value=selected_template.user_instructions
+                )
+                if st.button("Generate"):
+                    with st.spinner("Go grab a coffee, almost here..."):
+                        selected_template.generate_episode(
+                            episode_name=episode_name,
+                            text=context,
+                            instructions=instructions,
+                        )
+                    st.success("Episode generated successfully")
+            st.page_link("pages/5_🎙️_Podcasts.py", label="Go to Podcasts")
             st.divider()
     with chat_tab:
         with st.container(border=True):
@@ -94,12 +102,12 @@ def chat_sidebar(session_id):
                 if not msg.content:
                     continue
 
-            with st.chat_message(name=msg.type):
-                st.write(msg.content)
-                if msg.type == "ai":
-                    if st.button("💾 New Note", key=f"render_save_{msg.id}"):
-                        make_note_from_chat(
-                            content=msg.content,
-                            notebook_id=st.session_state[session_id]["notebook"].id,
-                        )
-                        st.rerun()
+                with st.chat_message(name=msg.type):
+                    st.write(msg.content)
+                    if msg.type == "ai":
+                        if st.button("💾 New Note", key=f"render_save_{msg.id}"):
+                            make_note_from_chat(
+                                content=msg.content,
+                                notebook_id=st.session_state[session_id]["notebook"].id,
+                            )
+                            st.rerun()

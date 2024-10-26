@@ -40,7 +40,7 @@ class ObjectModel(BaseModel):
         except Exception as e:
             logger.error(f"Error fetching all {cls.table_name}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError(f"Failed to fetch all {cls.table_name}")
+            raise DatabaseOperationError(e)
 
     @classmethod
     def get(cls: Type[T], id: str) -> Optional[T]:
@@ -152,7 +152,7 @@ class Notebook(ObjectModel):
         except Exception as e:
             logger.error(f"Error fetching sources for notebook {self.id}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError("Failed to fetch sources for notebook")
+            raise DatabaseOperationError(e)
 
     @property
     def notes(self) -> List["Note"]:
@@ -171,7 +171,7 @@ class Notebook(ObjectModel):
         except Exception as e:
             logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
             logger.exception(e)
-            raise DatabaseOperationError("Failed to fetch notes for notebook")
+            raise DatabaseOperationError(e)
 
 
 class Asset(BaseModel):

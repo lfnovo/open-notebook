@@ -24,4 +24,4 @@ except InvalidDatabaseSchema as e:
             st.rerun()
         except Exception as e:
             st.error(e)
-    st.stop()
+st.stop()

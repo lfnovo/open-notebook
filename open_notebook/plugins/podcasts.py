@@ -1,5 +1,7 @@
 from typing import ClassVar, List, Literal
 
+from loguru import logger
+from podcastfy.client import generate_podcast
 from pydantic import Field, field_validator
 
 from open_notebook.domain import ObjectModel
@@ -10,7 +12,8 @@ class PodcastEpisode(ObjectModel):
     name: str
     template: str
     instructions: str
-    file_path: str
+    text: str
+    audio_file: str
 
 
 class PodcastConfig(ObjectModel):
@@ -24,12 +27,63 @@ class PodcastConfig(ObjectModel):
     conversation_style: List[str]
     engagement_technique: List[str]
     dialogue_structure: List[str]
+    user_instructions: str
     wordcount: int = Field(gt=500, lt=10000)
     creativity: float = Field(ge=0, le=1)
     provider: Literal["openai", "elevenlabs", "edge"] = Field(default="openai")
     voice1: str
     voice2: str
     model: str
+
+    def generate_episode(self, episode_name, text, instructions=None):
+        self.user_instructions = (
+            instructions if instructions else self.user_instructions
+        )
+        conversation_config = {
+            "word_count": self.wordcount,
+            "conversation_style": self.conversation_style,
+            "roles_person1": self.person1_role,
+            "roles_person2": self.person2_role,
+            "dialogue_structure": self.dialogue_structure,
+            "podcast_name": self.podcast_name,
+            "podcast_tagline": self.podcast_tagline,
+            "output_language": self.output_language,
+            "user_instructions": self.user_instructions,
+            "engagement_techniques": self.engagement_technique,
+            "creativity": self.creativity,
+            "text_to_speech": {
+                # "temp_audio_dir": "./data/audio/tmp",
+                "ending_message": "Thank you for listening to this episode. Don't forget to subscribe to our podcast for more interesting conversations.",
+                "default_tts_model": self.provider,
+                self.provider: {
+                    "default_voices": {
+                        "question": self.voice1,
+                        "answer": self.voice2,
+                    },
+                    "model": self.model,
+                },
+                "audio_format": "mp3",
+            },
+        }
+
+        logger.error(conversation_config)
+        # conversation_config = {}
+        logger.debug(
+            f"Generating episode {episode_name} with config {conversation_config}"
+        )
+
+        audio_file = generate_podcast(
+            conversation_config=conversation_config, text=text, tts_model=self.provider
+        )
+        logger.warning(audio_file)
+        episode = PodcastEpisode(
+            name=episode_name,
+            template=self.name,
+            instructions=instructions,
+            text=str(text),
+            audio_file=audio_file,
+        )
+        episode.save()
 
     @field_validator("wordcount")
     def validate_wordcount(cls, value):

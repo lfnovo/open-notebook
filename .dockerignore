@@ -8,3 +8,5 @@ data/
 sqlite-db/
 temp/
 google-credentials.json
+docker-compose*
+.docker_data

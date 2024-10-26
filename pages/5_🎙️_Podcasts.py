@@ -15,8 +15,22 @@ episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 with episodes_tab:
     episodes = PodcastEpisode.get_all()
     for episode in episodes:
-        st.json(episode.model_dump())
-    else:
+        with st.container(border=True):
+            episode_name = episode.name if episode.name else "No Name"
+            st.markdown(f"**{episode.template} - {episode_name}**")
+            # st.caption(naturaltime(episode.created))
+            st.write(f"Instructions: {episode.instructions}")
+            try:
+                st.audio(episode.audio_file, format="audio/mpeg", loop=True)
+            except Exception as e:
+                st.write("No audio file found")
+                st.error(e)
+            with st.expander("Source Content"):
+                st.code(episode.text)
+            if st.button("Delete Episode", key=f"btn_delete{episode.id}"):
+                episode.delete()
+                st.rerun()
+    if len(episodes) == 0:
         st.write("No episodes yet")
 with templates_tab:
     st.subheader("Podcast Templates")
@@ -27,6 +41,10 @@ with templates_tab:
         pd_cfg["podcast_name"] = st.text_input("Podcast Name")
         pd_cfg["podcast_tagline"] = st.text_input("Podcast Tagline")
         pd_cfg["output_language"] = st.text_input("Language", value="English")
+        pd_cfg["user_instructions"] = st.text_input(
+            "User Instructions",
+            help="Any additional intructions to pass to the LLM that will generate the transcript",
+        )
         pd_cfg["person1_role"] = st.text_input("Person 1 role")
         st.caption(f"Suggestions:{', '.join(participant_roles)}")
         pd_cfg["person2_role"] = st.text_input("Person 2 role")
@@ -49,13 +67,18 @@ with templates_tab:
             "Creativity", min_value=0.0, max_value=1.0, step=0.05
         )
         pd_cfg["provider"] = st.selectbox("Provider", ["openai", "elevenlabs", "edge"])
-        pd_cfg["voice1"] = st.text_input("Voice 1")
-        pd_cfg["voice2"] = st.text_input("Voice 2")
+        pd_cfg["voice1"] = st.text_input(
+            "Voice 1", help="You can use Elevenlabs voice ID"
+        )
+        pd_cfg["voice2"] = st.text_input(
+            "Voice 2", help="You can use Elevenlabs voice ID"
+        )
         pd_cfg["model"] = st.text_input("Model")
         if st.button("Save"):
             pd = PodcastConfig(**pd_cfg)
+            pd_cfg = {}
             pd.save()
-            st.success("Saved")
+            st.rerun()
 
     for pd_config in PodcastConfig.get_all():
         with st.expander(pd_config.name):
@@ -72,6 +95,13 @@ with templates_tab:
                 value=pd_config.podcast_tagline,
                 key=f"podcast_tagline_{pd_config.id}",
             )
+            pd_config.user_instructions = st.text_input(
+                "User Instructions",
+                value=pd_config.user_instructions,
+                help="Any additional intructions to pass to the LLM that will generate the transcript",
+                key=f"user_instructions_{pd_config.id}",
+            )
+
             pd_config.output_language = st.text_input(
                 "Language",
                 value=pd_config.output_language,
@@ -132,16 +162,28 @@ with templates_tab:
                 key=f"provider_{pd_config.id}",
             )
             pd_config.voice1 = st.text_input(
-                "Voice 1", value=pd_config.voice1, key=f"voice1_{pd_config.id}"
+                "Voice 1",
+                value=pd_config.voice1,
+                key=f"voice1_{pd_config.id}",
+                help="You can use Elevenlabs voice ID",
             )
             pd_config.voice2 = st.text_input(
-                "Voice 2", value=pd_config.voice2, key=f"voice2_{pd_config.id}"
+                "Voice 2",
+                value=pd_config.voice2,
+                key=f"voice2_{pd_config.id}",
+                help="You can use Elevenlabs voice ID",
             )
             pd_config.model = st.text_input(
                 "Model", value=pd_config.model, key=f"model_{pd_config.id}"
             )
 
             if st.button("Save Config", key=f"btn_save{pd_config.id}"):
+                pd_config.save()
+                st.rerun()
+
+            if st.button("Duplicate Config", key=f"btn_duplicate{pd_config.id}"):
+                pd_config.name = f"{pd_config.name} - Copy"
+                pd_config.id = None
                 pd_config.save()
                 st.rerun()
 

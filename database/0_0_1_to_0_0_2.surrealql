@@ -76,5 +76,7 @@ DEFINE EVENT IF NOT EXISTS source_delete ON TABLE source WHEN ($after == NONE) T
     delete source_insight where source == $before.id;
 };
 
+DEFINE TABLE IF NOT EXISTS podcast_config SCHEMALESS;
+
 UPDATE open_notebook:database_info SET
     version= "0.0.2";

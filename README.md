@@ -10,17 +10,7 @@ Open Notebook empowers you to manage your research, generate AI-assisted notes, 
 
 Go to the [Setup Guide](docs/SETUP.md) to learn how to set up the tool in details.
 
-But, the gist of it is: 
-
-```sh
-git clone https://github.com/lfnovo/open_notebook.git
-cd open_notebook
-cp .env.sample .env
-poetry install
-poetry run streamlit run app_home.py
-```
-
-or with Docker/Portainer:
+To setup with Docker/Portainer:
 
 ```yaml
 version: '3'
@@ -52,7 +42,6 @@ volumes:
 ```
 
 
-
 ## Usage Instructions
 
 Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
@@ -68,9 +57,15 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Recursive Summarization**: Tackle large content by recursively summarizing it.
 - **Integrated Search Engines**: Built-in full-text and vector search for faster information retrieval.
 - **Fine-Grained Context Management**: Choose exactly what to share with the AI to maintain control.
-- **Cost Estimation**: Estimate costs for large context processing to keep budget control in check.
+- **Podcast Generator**: Automatically convert your notes into a podcast format.
 
 ## 🚀 New Features
+
+### v0.0.4 - Podcasts  🎙️
+
+You can now build amazing custom podcasts based on your own data. Customize your speakers, episode structure, cadence, voices, etc. 
+
+Head to the [Podcasts](docs/PODCASTS.md) page for more info
 
 ### v0.0.3 - Transformations ✨
 
@@ -114,19 +109,18 @@ Locate anything across your research with ease using full-text and vector-based 
 Jinja based prompts that are easy to customize to your own preferences.
 
 
-## 🌟 Coming Soon
+## 🌟 Roadmap
 
-- **Podcast Generator**: Automatically convert your notes into a podcast format.
 - **Enhanced Citations**: Improved layout and finer control for citations.
 - **Better Embeddings & Summarization**: Smarter ways to distill information.
 - **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
 - **Live Front-End Updates**: Real-time UI updates for a smoother experience.
 - **Async Processing**: Faster UI through asynchronous content processing.
-- **Improved Error Handling**: Making everything more robust.
 - **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
 - **Bookmark Integration**: Integrate with your favorite bookmarking app.
 - **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc. ✅ 0.0.2
 - **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md) ✅ 0.0.3
+- **Podcast Generator**: Automatically convert your notes into a podcast format.  ✅ 0.0.4
 
 
 ## 💻 Tech Stack
@@ -134,6 +128,7 @@ Jinja based prompts that are easy to customize to your own preferences.
 - **Streamlit**: For the front-end (Looking to move out of Streamlit. Contributors welcome!).
 - **SurrealDB**: Fast, scalable database solution.
 - **Langchain/Langgraph**: The backbone for LLM interactions.
+- **Podcastfy**: For generating podcasts from your notes.
 
 
 ## 🙌 Help Wanted
@@ -151,3 +146,9 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 ---
 
 Your contributions, feature requests, and bug reports are always welcome. Let's build a research tool that respects our privacy and makes learning truly open for everyone. ✨
+
+---
+
+This project uses the following third-party libraries:
+
+- [Podcastfy](https://github.com/souzatharsis/podcastfy) - Licensed under the Apache License 2.0

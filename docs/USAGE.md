@@ -49,6 +49,14 @@ Or by turning any LLM message into a Note.
 
 ![New Notebook](assets/ai_note.png)
 
+## Generate your podcasts
+
+Once you have your content ready, start creating beautiful podcast episodes from it.
+
+![Context](assets/podcast_listen.png)
+
+See more at the [Podcasts](PODCASTS.md) section.
+
 ## Searching
 
 The search page gives you a glance of all the notes you have made and the sources you have added. You can query the database both by keyword as well as using the vector search. 

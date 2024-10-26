@@ -37,10 +37,8 @@ You can use your own notes and assets and steer the content production.
 
 Check out a sample using my own voice created on Eleven Labs and a interview format. 
 
-<audio controls>
-  <source src="docs/assets/interview.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
+
+[![Check out our podcast sample](https://img.youtube.com/vi/MSGtUFohft0/0.jpg)](https://www.youtube.com/watch?v=MSGtUFohft0)
 
 You can generate your podcast in dozens of languages.
 

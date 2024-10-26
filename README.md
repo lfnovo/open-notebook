@@ -66,6 +66,15 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 You can now build amazing custom podcasts based on your own data. Customize your speakers, episode structure, cadence, voices, etc. 
 
+Check out a sample using my own voice created on Eleven Labs and a interview format. 
+
+<audio controls>
+  <source src="docs/assets/interview.mp3" type="audio/mpeg">
+  Your browser does not support the audio element.
+</audio>
+
+You can generate your podcast in dozens of languages.
+
 Head to the [Podcasts](docs/PODCASTS.md) page for more info
 
 ### v0.0.3 - Transformations ✨

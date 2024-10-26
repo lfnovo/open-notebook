@@ -1,5 +1,6 @@
 from open_notebook.llms import (
     AnthropicLanguageModel,
+    GeminiLanguageModel,
     LiteLLMLanguageModel,
     OllamaLanguageModel,
     OpenAILanguageModel,
@@ -17,6 +18,7 @@ PROVIDER_CLASS_MAP = {
     "vertexai": VertexAILanguageModel,
     "anthropic": AnthropicLanguageModel,
     "openai": OpenAILanguageModel,
+    "gemini": GeminiLanguageModel,
 }
 
 

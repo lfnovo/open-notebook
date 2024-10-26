@@ -274,7 +274,7 @@ def extract_youtube_transcript(state: SourceState):
     """
 
     languages = CONFIG.get("youtube_transcripts", {}).get(
-        "preferred_languages", ["pt", "en"]
+        "preferred_languages", ["en", "es", "pt"]
     )
 
     video_id = _extract_youtube_id(state.get("url"))

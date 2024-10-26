@@ -1,4 +1,4 @@
-# Poscasts
+# Podcasts
 
 **For the audio learners**
 
@@ -6,13 +6,22 @@ The podcast feature made Google Notebook LM famous and for a good reason. It can
 
 ### Define Templates
 
-Setup a template for your podcast, define the role of the speakers, the format of the podcast, and the length of each episode.
+Setup a template for your podcast, you can get very creative here. 
+
+- Create a name and tagline for your podcast
+- Define specific content instructions
+- Define the role and tone of voice for both speakers
+- Pick a language for the podcast
+- Customize conversation style, engagement techniques, dialogue structure
+- Define the length of each episode
+- Pick your voice models (Open AI and Eleven Labs supported)
 
 ![Podcast Temmplates](assets/podcast_template.png)
 
 ### Pick your context
 
-Pick the context for your podcast. You can use your own notes and assets.
+Pick the specific context you'd like to use to base your podcast. 
+You can use your own notes and assets and steer the content production.
 
 ![Context](assets/context.png)
 

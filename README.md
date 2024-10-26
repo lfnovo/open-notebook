@@ -58,6 +58,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Integrated Search Engines**: Built-in full-text and vector search for faster information retrieval.
 - **Fine-Grained Context Management**: Choose exactly what to share with the AI to maintain control.
 - **Podcast Generator**: Automatically convert your notes into a podcast format.
+- **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, Ollama.
 
 ## 🚀 New Features
 

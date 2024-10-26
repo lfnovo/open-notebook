@@ -2,10 +2,88 @@
 
 ## Installing Open Notebook
 
+> ⚠️ **Important:** Be sure to edit the `.env` file before running the app.
+
+### 🐳 Docker Setup (recommended)
+
+We recommend using Docker as this will get you all the services installed and configured with no hassle.
+
+Copy the `.env.example` file and name it `docker.env`
+
+```yaml
+version: '3'
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal_data:/mydata
+    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
+    pull_policy: always
+    user: root
+
+  open_notebook:
+    image: lfnovo/open_notebook:latest
+    ports:
+      - "8080:8502"
+    env_file:
+      - ./docker.env
+    depends_on:
+      - surrealdb
+    pull_policy: always
+    volumes:
+      - notebook_data:/app/data
+
+volumes:
+  surreal_data:
+  notebook_data:
+```
+
+or with the environment variables:
+
+```yaml
+version: '3'
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal_data:/mydata
+    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
+    pull_policy: always
+    user: root
+
+  open_notebook:
+    image: lfnovo/open_notebook:latest
+    ports:
+      - "8080:8502"
+    environment:
+        - OPENAI_API_KEY=API_KEY
+        - DEFAULT_MODEL=gpt-4o-mini
+        - SURREAL_ADDRESSsurrealdb
+        - SURREAL_PORT=8000
+        - SURREAL_USER=root
+        - SURREAL_PASS=root
+        - SURREAL_NAMESPACE=open_notebook
+        - SURREAL_DATABASE=staging
+    depends_on:
+      - surrealdb
+    pull_policy: always
+    volumes:
+      - notebook_data:/app/data
+
+volumes:
+  surreal_data:
+  notebook_data:
+```
 
 ### 📦 Installing from Source
 
-Quickly get started by cloning and installing the dependencies.
+If you really want to play with the source code.
 
 ```sh
 git clone https://github.com/lfnovo/open_notebook.git
@@ -27,96 +105,6 @@ or the shourcut
 make run
 ```
 
-> ⚠️ **Important:** Be sure to edit the `.env` file before running the app.
-
-
-### 🐳 Docker Setup
-
-Alternatively, you can use Docker for easy setup.
-
-Copy the `.env.example` file and name it `docker.env`
-
-```sh
-docker run -d \
-  --name open_notebook \
-  -p 8080:8502 \
-  -v $(pwd)/docker.env:/app/.env \
-  lfnovo/open_notebook:latest
-```
-
-You can pass the environment variables manually if you want:
-
-```sh
-docker run -d \
-  --name open_notebook \
-  -p 8080:8502 \
-  -e OPENAI_API_KEY=API_KEY \
-  -e DEFAULT_MODEL="gpt-4o-mini" \
-  -e SURREAL_ADDRESS="localhost" \
-  -e SURREAL_PORT=8000 \
-  -e SURREAL_USER="root" \
-  -e SURREAL_PASS="root" \
-  -e SURREAL_NAMESPACE="open_notebook" \
-  -e SURREAL_DATABASE="staging" \
-  lfnovo/open_notebook:latest
-```
-
-If you need to run Surreal DB on docker as well, it's easier to just use docker-compose, like this:
-
-```yaml
-services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./surreal-data:/mydata
-    user: "${UID}:${GID}"
-    command: start --log trace --user root --pass root rocksdb:mydatabase.db
-    pull_policy: always
-  open_notebook:
-    image: lfnovo/open_notebook:latest
-    ports:
-      - "8080:8502"
-    volumes:
-      - ./docker.env:/app/.env
-    depends_on:
-      - surrealdb
-    pull_policy: always
-```
-
-or with the environment variables:
-
-```yaml
-services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./surreal-data:/mydata
-    user: "${UID}:${GID}"
-    command: start --log trace --user root --pass root rocksdb:mydatabase.db
-    pull_policy: always
-    open_notebook:
-    image: lfnovo/open_notebook:latest
-    ports:
-        - "8080:8502"
-    environment:
-        - OPENAI_API_KEY=API_KEY
-        - DEFAULT_MODEL=gpt-4o-mini
-        - SURREAL_ADDRESSsurrealdb
-        - SURREAL_PORT=8000
-        - SURREAL_USER=root
-        - SURREAL_PASS=root
-        - SURREAL_NAMESPACE=open_notebook
-        - SURREAL_DATABASE=staging
-    depends_on:
-        - surrealdb
-    pull_policy: always
-```
-
-
 ## Setting up the providers
 
 Several new providers are supported now:
@@ -126,6 +114,7 @@ Several new providers are supported now:
 - Open Router
 - LiteLLM
 - Vertex AI
+- Gemini
 - Ollama
 
 All providers are installed out of the box. All you need to do is to setup the environment variable configurations (API Keys, etc) for your selected provider and decide which models to use. 
@@ -141,6 +130,7 @@ You should prepend the provider name to the model_name when setting up your env 
 - ollama/gemma2
 - openrouter/nvidia/llama-3.1-nemotron-70b-instruct
 - vertexai/gemini-1.5-flash-001
+- gemini/gemini-1.5-flash-001
 
 __There will be a UI configuration for models in the coming days.__
 

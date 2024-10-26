@@ -14,12 +14,15 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8502:8502"
+      - "8080:8502"
     env_file:
       - ./docker.env
     depends_on:
       - surrealdb
     pull_policy: always
+    volumes:
+      - notebook_data:/app/data
 
 volumes:
   surreal_data:
+  notebook_data:

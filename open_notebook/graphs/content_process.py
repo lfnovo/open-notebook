@@ -16,6 +16,7 @@ from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
 from youtube_transcript_api.formatters import TextFormatter  # type: ignore
 
 from open_notebook.config import CONFIG
+from open_notebook.exceptions import UnsupportedTypeException
 
 
 class SourceState(TypedDict):
@@ -513,7 +514,9 @@ def file_type_edge(data: SourceState):
     elif data.get("identified_type").startswith("audio"):
         return "extract_audio"
     else:
-        return "end"
+        raise UnsupportedTypeException(
+            f"Unsupported file type: {data.get('identified_type')}"
+        )
 
 
 workflow = StateGraph(SourceState)

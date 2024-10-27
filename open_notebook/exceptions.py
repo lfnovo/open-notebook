@@ -10,6 +10,12 @@ class DatabaseOperationError(OpenNotebookError):
     pass
 
 
+class UnsupportedTypeException(OpenNotebookError):
+    """Raised when an unsupported type is provided."""
+
+    pass
+
+
 class NoSchemaFound(OpenNotebookError):
     """Raised when a database schema is not found."""
 

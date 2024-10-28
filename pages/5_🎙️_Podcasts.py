@@ -9,6 +9,13 @@ from open_notebook.plugins.podcasts import (
     engagement_techniques,
     participant_roles,
 )
+from stream_app.utils import version_sidebar
+
+st.set_page_config(
+    layout="wide", page_title="🎙️ Podcasts", initial_sidebar_state="expanded"
+)
+
+version_sidebar()
 
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 
@@ -66,6 +73,9 @@ with templates_tab:
         pd_cfg["creativity"] = st.slider(
             "Creativity", min_value=0.0, max_value=1.0, step=0.05
         )
+        pd_cfg["ending_message"] = st.text_input(
+            "Ending Message", placeholder="Thank you for listening!"
+        )
         pd_cfg["provider"] = st.selectbox("Provider", ["openai", "elevenlabs", "edge"])
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
@@ -81,10 +91,13 @@ with templates_tab:
             "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
         )
         if st.button("Save"):
-            pd = PodcastConfig(**pd_cfg)
-            pd_cfg = {}
-            pd.save()
-            st.rerun()
+            try:
+                pd = PodcastConfig(**pd_cfg)
+                pd_cfg = {}
+                pd.save()
+                st.rerun()
+            except Exception as e:
+                st.error(e)
 
     for pd_config in PodcastConfig.get_all():
         with st.expander(pd_config.name):
@@ -161,6 +174,12 @@ with templates_tab:
                 value=pd_config.creativity,
                 key=f"creativity_{pd_config.id}",
             )
+            pd_config.ending_message = st.text_input(
+                "Ending Message",
+                value=pd_config.ending_message,
+                placeholder="Thank you for listening!",
+                key=f"ending_message_{pd_config.id}",
+            )
             pd_config.provider = st.selectbox(
                 "Provider",
                 ["openai", "elevenlabs", "edge"],
@@ -190,8 +209,11 @@ with templates_tab:
             )
 
             if st.button("Save Config", key=f"btn_save{pd_config.id}"):
-                pd_config.save()
-                st.rerun()
+                try:
+                    pd_config.save()
+                    st.toast("Podcast template saved")
+                except Exception as e:
+                    st.error(e)
 
             if st.button("Duplicate Config", key=f"btn_duplicate{pd_config.id}"):
                 pd_config.name = f"{pd_config.name} - Copy"

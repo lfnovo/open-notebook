@@ -77,14 +77,19 @@ def chat_sidebar(session_id):
                 instructions = st.text_area(
                     "Instructions", value=selected_template.user_instructions
                 )
-                if st.button("Generate"):
-                    with st.spinner("Go grab a coffee, almost there..."):
-                        selected_template.generate_episode(
-                            episode_name=episode_name,
-                            text=context,
-                            instructions=instructions,
-                        )
-                    st.success("Episode generated successfully")
+                if len(context.get("note", [])) + len(context.get("source", [])) == 0:
+                    st.warning(
+                        "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
+                    )
+                else:
+                    if st.button("Generate"):
+                        with st.spinner("Go grab a coffee, almost there..."):
+                            selected_template.generate_episode(
+                                episode_name=episode_name,
+                                text=context,
+                                instructions=instructions,
+                            )
+                        st.success("Episode generated successfully")
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.container(border=True):

@@ -5,11 +5,14 @@ from open_notebook.domain import Notebook
 from stream_app.chat import chat_sidebar
 from stream_app.note import add_note, note_card
 from stream_app.source import add_source, source_card
-from stream_app.utils import setup_stream_state
+from stream_app.utils import setup_stream_state, version_sidebar
 
 st.set_page_config(
     layout="wide", page_title="📒 Open Notebook", initial_sidebar_state="expanded"
 )
+
+
+version_sidebar()
 
 
 def notebook_header(current_notebook):

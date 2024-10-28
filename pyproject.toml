@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-notebook"
-version = "0.0.4"
+version = "0.0.5"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = ["Luis Novo <lfnovo@gmail.com>"]
 license = "MIT"
@@ -41,6 +41,7 @@ langchain-google-vertexai = "^2.0.5"
 sdblpy = "^0.3.0"
 langchain-google-genai = "^2.0.1"
 podcastfy = "^0.2.8"
+tomli = "^2.0.2"
 
 [tool.poetry.group.dev.dependencies]
 ipykernel = "^6.29.5"

@@ -19,6 +19,7 @@ def db_connection():
         password=os.environ["SURREAL_PASS"],
         namespace=os.environ["SURREAL_NAMESPACE"],
         database=os.environ["SURREAL_DATABASE"],
+        max_size=2.2**20,
         encrypted=False,  # Set to True if using SSL
     )
     try:
@@ -38,7 +39,7 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
             raise
 
 
-def check_version():
+def check_database_version():
     try:
         result = repo_query("SELECT * FROM open_notebook:database_info;")
 

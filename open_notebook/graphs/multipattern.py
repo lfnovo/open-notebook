@@ -33,7 +33,6 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
         }
         current_transformation = "patterns/custom"
 
-    logger.warning(f"Processing transformation: {current_transformation}")
     logger.debug(f"Using input: {input_args}")
     transformation_result = run_pattern(
         pattern_name=current_transformation,

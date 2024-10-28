@@ -1,6 +1,24 @@
 import streamlit as st
 
 from open_notebook.graphs.chat import ThreadState, graph
+from open_notebook.utils import (
+    compare_versions,
+    get_installed_version,
+    get_version_from_github,
+)
+
+
+def version_sidebar():
+    with st.sidebar:
+        current_version = get_installed_version("open-notebook")
+        latest_version = get_version_from_github(
+            "https://www.github.com/lfnovo/open-notebook", "main"
+        )
+        st.write(f"Open Notebook: {current_version}")
+        if compare_versions(current_version, latest_version) < 0:
+            st.warning(
+                f"New version {latest_version} available. [Click here for upgrade instructions](https://github.com/lfnovo/open-notebook/blob/main/docs/SETUP.md#upgrading-open-notebook)"
+            )
 
 
 def setup_stream_state(session_id) -> None:

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import streamlit as st
@@ -6,15 +7,14 @@ import yaml
 from humanize import naturaltime
 from loguru import logger
 
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain import Asset, Source
+from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.content_process import graph
 from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
-
-uploads_dir = Path("./.uploads")
-uploads_dir.mkdir(parents=True, exist_ok=True)
 
 
 def run_transformations(input_text, transformations):
@@ -121,10 +121,10 @@ def add_source(session_id):
             # Generate a unique file name
             base_name = Path(file_name).stem
             counter = 1
-            new_path = uploads_dir / file_name
-            while new_path.exists():
+            new_path = os.path.join(UPLOADS_FOLDER, file_name)
+            while os.path.exists(new_path):
                 new_file_name = f"{base_name}_{counter}{file_extension}"
-                new_path = uploads_dir / new_file_name
+                new_path = os.path.join(UPLOADS_FOLDER, new_file_name)
                 counter += 1
 
             req["file_path"] = str(new_path)
@@ -139,17 +139,31 @@ def add_source(session_id):
         logger.debug("Adding source")
         with st.status("Processing...", expanded=True):
             st.write("Processing document...")
-            result = graph.invoke(req)
-            st.write("Saving..")
-            source = Source(
-                asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
-                full_text=surreal_clean(result["content"]),
-                title=result.get("title"),
-            )
-            source.save()
-            source.add_to_notebook(st.session_state[session_id]["notebook"].id)
-            st.write("Summarizing...")
-            source.generate_toc_and_title()
+            try:
+                result = graph.invoke(req)
+                st.write("Saving..")
+                source = Source(
+                    asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
+                    full_text=surreal_clean(result["content"]),
+                    title=result.get("title"),
+                )
+                source.save()
+                source.add_to_notebook(st.session_state[session_id]["notebook"].id)
+                st.write("Summarizing...")
+                source.generate_toc_and_title()
+            except UnsupportedTypeException:
+                st.warning(
+                    "This type of content is not supported yet. If you think it should be, let us know on the project Issues's page"
+                )
+                st.link_button(
+                    "Go to Github Issues",
+                    url="https://www.github.com/lfnovo/open-notebook/issues",
+                )
+                st.stop()
+
+            except Exception as e:
+                st.error(e)
+                return
 
         st.rerun()
 
@@ -159,7 +173,8 @@ def source_card(session_id, source):
     icon = "🔗"
 
     with st.container(border=True):
-        st.markdown((f"{icon} **{source.title if source.title else 'No Title'}**"))
+        title = (source.title if source.title else "No Title").strip()
+        st.markdown((f"{icon}**{title}**"))
         context_state = st.selectbox(
             "Context",
             label_visibility="collapsed",

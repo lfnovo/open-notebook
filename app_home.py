@@ -1,10 +1,12 @@
 import streamlit as st
 
 from open_notebook.exceptions import InvalidDatabaseSchema, NoSchemaFound
-from open_notebook.repository import check_version, execute_migration
+from open_notebook.repository import check_database_version, execute_migration
+from stream_app.utils import version_sidebar
 
 try:
-    check_version()
+    version_sidebar()
+    check_database_version()
     st.switch_page("pages/2_📒_Notebooks.py")
 except NoSchemaFound as e:
     st.warning(e)

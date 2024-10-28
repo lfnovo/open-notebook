@@ -25,7 +25,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open-notebook:latest
+    image: lfnovo/open_notebook:latest
     ports:
       - "8080:8502"
     env_file:
@@ -58,7 +58,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open-notebook:latest
+    image: lfnovo/open_notebook:latest
     ports:
       - "8080:8502"
     environment:
@@ -167,4 +167,4 @@ Just run `git pull` on the root project folder and then `poetry install` to upda
 
 ### Running from docker
 
-Just pull the latest image with `docker pull lfnovo/open-notebook:latest` and restart your containers with `docker-compose up -d`
+Just pull the latest image with `docker pull lfnovo/open_notebook:latest` and restart your containers with `docker-compose up -d`

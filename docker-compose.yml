@@ -12,7 +12,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open-notebook:latest
+    image: lfnovo/open_notebook:latest
     ports:
       - "8080:8502"
     env_file:

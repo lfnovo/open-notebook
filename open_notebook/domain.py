@@ -136,6 +136,13 @@ class ObjectModel(BaseModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
+    @field_validator("created", "updated", mode="before")
+    @classmethod
+    def parse_datetime(cls, value):
+        if isinstance(value, str):
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return value
+
 
 class Notebook(ObjectModel):
     table_name: ClassVar[str] = "notebook"

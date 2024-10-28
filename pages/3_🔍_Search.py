@@ -4,10 +4,12 @@ from open_notebook.domain import text_search, vector_search
 from open_notebook.utils import get_embedding
 from stream_app.note import note_list_item
 from stream_app.source import source_list_item
+from stream_app.utils import version_sidebar
 
 st.set_page_config(
     layout="wide", page_title="🔍 Search", initial_sidebar_state="expanded"
 )
+version_sidebar()
 
 # search_tab, ask_tab = st.tabs(["Search", "Ask"])
 # notebooks = Notebook.get_all()

@@ -39,7 +39,7 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
             raise
 
 
-def check_version():
+def check_database_version():
     try:
         result = repo_query("SELECT * FROM open_notebook:database_info;")
 

@@ -157,7 +157,7 @@ def add_source(session_id):
                 )
                 st.link_button(
                     "Go to Github Issues",
-                    url="https://www.github.com/lfnovo/open_notebook/issues",
+                    url="https://www.github.com/lfnovo/open-notebook/issues",
                 )
                 st.stop()
 
@@ -173,7 +173,8 @@ def source_card(session_id, source):
     icon = "🔗"
 
     with st.container(border=True):
-        st.markdown((f"{icon} **{source.title if source.title else 'No Title'}**"))
+        title = (source.title if source.title else "No Title").strip()
+        st.markdown((f"{icon}**{title}**"))
         context_state = st.selectbox(
             "Context",
             label_visibility="collapsed",

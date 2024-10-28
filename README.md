@@ -27,7 +27,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open-notebook:latest
     ports:
       - "8502:8502"
     env_file:

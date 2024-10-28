@@ -9,11 +9,13 @@ from open_notebook.plugins.podcasts import (
     engagement_techniques,
     participant_roles,
 )
+from stream_app.utils import version_sidebar
 
 st.set_page_config(
     layout="wide", page_title="🎙️ Podcasts", initial_sidebar_state="expanded"
 )
 
+version_sidebar()
 
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 

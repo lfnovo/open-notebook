@@ -25,7 +25,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open-notebook:latest
     ports:
       - "8080:8502"
     env_file:
@@ -58,7 +58,7 @@ services:
     user: root
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open-notebook:latest
     ports:
       - "8080:8502"
     environment:
@@ -158,3 +158,13 @@ After the app is running, you can access it at http://localhost:8080.
 The first time you connect, it will check for the database and see if the schema is ready. If not, it will create the database for you. 
 
 Go to the [Usage](USAGE.md) page to learn how to use all features.
+
+## Upgrading Open Notebook
+
+### Running from source
+
+Just run `git pull` on the root project folder and then `poetry install` to update dependencies.
+
+### Running from docker
+
+Just pull the latest image with `docker pull lfnovo/open-notebook:latest` and restart your containers with `docker-compose up -d`

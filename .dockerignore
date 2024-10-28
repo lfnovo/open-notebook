@@ -9,4 +9,7 @@ sqlite-db/
 temp/
 google-credentials.json
 docker-compose*
-.docker_data
+.docker_data/
+docs/
+surreal-data/
+temp/

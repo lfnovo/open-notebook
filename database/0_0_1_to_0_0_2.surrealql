@@ -1,5 +1,5 @@
 
-
+DEFINE FIELD full_text ON TABLE source TYPE option<string>;
 REMOVE TABLE IF EXISTS source_chunk;
 REMOVE INDEX IF EXISTS idx_source_full  ON TABLE source_chunk;
 DEFINE FIELD IF NOT EXISTS archived ON TABLE notebook TYPE option<bool> DEFAULT False;

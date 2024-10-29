@@ -10,7 +10,7 @@ from open_notebook.utils import (
 
 def version_sidebar():
     with st.sidebar:
-        current_version = get_installed_version("open-notebook")
+        current_version = get_installed_version("open_notebook")
         latest_version = get_version_from_github(
             "https://www.github.com/lfnovo/open-notebook", "main"
         )

@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import ClassVar, List, Literal, Optional
 
 from loguru import logger
@@ -36,7 +35,6 @@ class PodcastConfig(ObjectModel):
     voice1: Optional[str] = None
     voice2: Optional[str] = None
     model: str
-    created: Optional[datetime] = Field(default_factory=datetime.now)
 
     def generate_episode(self, episode_name, text, instructions=None):
         self.user_instructions = (

@@ -10,7 +10,18 @@ from open_notebook.utils import (
 
 def version_sidebar():
     with st.sidebar:
-        current_version = get_installed_version("open_notebook")
+        try:
+            current_version = get_installed_version(
+                "open-notebook"
+            )  # Note the hyphen instead of underscore
+        except Exception:
+            # Fallback to reading directly from pyproject.toml
+            import tomli
+
+            with open("pyproject.toml", "rb") as f:
+                pyproject = tomli.load(f)
+                current_version = pyproject["tool"]["poetry"]["version"]
+
         latest_version = get_version_from_github(
             "https://www.github.com/lfnovo/open-notebook", "main"
         )
@@ -33,4 +44,5 @@ def setup_stream_state(session_id) -> None:
         )
     else:
         st.session_state[session_id] = existing_state
+    st.session_state["active_session"] = session_id
     st.session_state["active_session"] = session_id

@@ -87,6 +87,7 @@ def remove_non_printable(text):
     text = "".join(
         char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
     )
+    text = text.replace("\xa0", " ").strip()
     # Keep letters (including accented ones), numbers, spaces, newlines, tabs, and basic punctuation
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 

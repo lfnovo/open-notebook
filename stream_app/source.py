@@ -10,7 +10,7 @@ from loguru import logger
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain import Asset, Source
 from open_notebook.exceptions import UnsupportedTypeException
-from open_notebook.graphs.content_process import graph
+from open_notebook.graphs.content_processing import graph
 from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
@@ -112,25 +112,7 @@ def add_source(session_id):
         req["url"] = source_link
     elif source_type == "Upload":
         source_file = st.file_uploader("Upload")
-        if source_file is not None:
-            # Get the file name and extension
-            file_name = source_file.name
-
-            file_extension = Path(file_name).suffix
-
-            # Generate a unique file name
-            base_name = Path(file_name).stem
-            counter = 1
-            new_path = os.path.join(UPLOADS_FOLDER, file_name)
-            while os.path.exists(new_path):
-                new_file_name = f"{base_name}_{counter}{file_extension}"
-                new_path = os.path.join(UPLOADS_FOLDER, new_file_name)
-                counter += 1
-
-            req["file_path"] = str(new_path)
-            # Save the file
-            with open(new_path, "wb") as f:
-                f.write(source_file.getbuffer())
+        req["delete_source"] = st.checkbox("Delete source after processing", value=True)
 
     else:
         source_text = st.text_area("Text")
@@ -140,6 +122,25 @@ def add_source(session_id):
         with st.status("Processing...", expanded=True):
             st.write("Processing document...")
             try:
+                if source_type == "Upload" and source_file is not None:
+                    st.write("Uploading..")
+                    file_name = source_file.name
+                    file_extension = Path(file_name).suffix
+                    base_name = Path(file_name).stem
+
+                    # Generate unique filename
+                    new_path = os.path.join(UPLOADS_FOLDER, file_name)
+                    counter = 0
+                    while os.path.exists(new_path):
+                        counter += 1
+                        new_file_name = f"{base_name}_{counter}{file_extension}"
+                        new_path = os.path.join(UPLOADS_FOLDER, new_file_name)
+
+                    req["file_path"] = str(new_path)
+                    # Save the file
+                    with open(new_path, "wb") as f:
+                        f.write(source_file.getbuffer())
+
                 result = graph.invoke(req)
                 st.write("Saving..")
                 source = Source(
@@ -151,10 +152,11 @@ def add_source(session_id):
                 source.add_to_notebook(st.session_state[session_id]["notebook"].id)
                 st.write("Summarizing...")
                 source.generate_toc_and_title()
-            except UnsupportedTypeException:
+            except UnsupportedTypeException as e:
                 st.warning(
                     "This type of content is not supported yet. If you think it should be, let us know on the project Issues's page"
                 )
+                st.error(e)
                 st.link_button(
                     "Go to Github Issues",
                     url="https://www.github.com/lfnovo/open-notebook/issues",

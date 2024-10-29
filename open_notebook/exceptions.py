@@ -74,3 +74,9 @@ class InvalidDatabaseSchema(OpenNotebookError):
     """Raised when the database is not under the expected schema."""
 
     pass
+
+
+class NoTranscriptFound(OpenNotebookError):
+    """Raised when no transcript is found for a video."""
+
+    pass

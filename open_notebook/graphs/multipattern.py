@@ -6,7 +6,6 @@ from langchain_core.runnables import (
     RunnableConfig,
 )
 from langgraph.graph import END, START, StateGraph
-from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.graphs.utils import run_pattern
@@ -33,7 +32,6 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
         }
         current_transformation = "patterns/custom"
 
-    logger.debug(f"Using input: {input_args}")
     transformation_result = run_pattern(
         pattern_name=current_transformation,
         model_name=model_name,

@@ -1,7 +1,6 @@
 import os
 
 from langchain.output_parsers import OutputFixingParser
-from loguru import logger
 
 from open_notebook.llm_router import get_langchain_model
 from open_notebook.prompter import Prompter
@@ -32,7 +31,6 @@ def run_pattern(
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    logger.debug(f"System prompt: {system_prompt}")
 
     if len(messages) > 0:
         response = chain.invoke([system_prompt] + messages)

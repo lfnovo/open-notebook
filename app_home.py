@@ -1,29 +1,15 @@
 import streamlit as st
 
-from open_notebook.exceptions import InvalidDatabaseSchema, NoSchemaFound
-from open_notebook.repository import check_database_version, execute_migration
+from open_notebook.database.migrate import MigrationManager
 from stream_app.utils import version_sidebar
 
-try:
-    version_sidebar()
-    check_database_version()
+version_sidebar()
+mm = MigrationManager()
+if mm.needs_migration:
+    st.warning("The Open Notebook database needs a migration to run properly.")
+    if st.button("Run Migration"):
+        mm.run_migration_up()
+        st.success("Migration successful")
+        st.rerun()
+else:
     st.switch_page("pages/2_📒_Notebooks.py")
-except NoSchemaFound as e:
-    st.warning(e)
-    if st.button("Create Schema.."):
-        try:
-            execute_migration("db_setup.surrealql")
-            st.success("Schema created successfully")
-            st.rerun()
-        except Exception as e:
-            st.error(e)
-except InvalidDatabaseSchema as e:
-    st.warning(e)
-    if st.button("Execute Migration.."):
-        try:
-            execute_migration("0_0_1_to_0_0_2.surrealql")
-            st.success("Migration executed successfully")
-            st.rerun()
-        except Exception as e:
-            st.error(e)
-st.stop()

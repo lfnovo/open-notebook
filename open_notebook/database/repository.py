@@ -5,10 +5,6 @@ from typing import Any, Dict, Optional
 from loguru import logger
 from sblpy.connection import SurrealSyncConnection
 
-from open_notebook.exceptions import InvalidDatabaseSchema, NoSchemaFound
-
-EXPECTED_VERSION = "0.0.2"
-
 
 @contextmanager
 def db_connection():
@@ -37,25 +33,6 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
             logger.critical(f"Query: {query_str}, Variables: {vars}")
             logger.exception(e)
             raise
-
-
-def check_database_version():
-    try:
-        result = repo_query("SELECT * FROM open_notebook:database_info;")
-
-        if not result:
-            raise NoSchemaFound("Database schema not found")
-
-        version = result[0]["version"]
-        logger.info(f"Connected to SurrealDB, using schema version {version}")
-
-        if version != EXPECTED_VERSION:
-            raise InvalidDatabaseSchema(
-                f"Version mismatch. Expected {EXPECTED_VERSION}, got {version}"
-            )
-    except Exception as e:
-        logger.error(e)
-        raise e
 
 
 def repo_create(table: str, data: Dict[str, Any]):
@@ -89,10 +66,3 @@ def repo_relate(source: str, relationship: str, target: str):
     result = repo_query(query)
     logger.debug(f"RELATE query result: {result}")
     return result
-
-
-def execute_migration(script: str):
-    with open(f"database/{script}", "r") as file:
-        content = file.read()
-
-    return repo_query(content)

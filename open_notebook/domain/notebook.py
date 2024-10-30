@@ -6,6 +6,10 @@ from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
 from open_notebook.config import EMBEDDING_MODEL
+from open_notebook.database.repository import (
+    repo_create,
+    repo_query,
+)
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import (
     DatabaseOperationError,
@@ -13,10 +17,6 @@ from open_notebook.exceptions import (
 )
 from open_notebook.graphs.multipattern import graph as pattern_graph
 from open_notebook.graphs.recursive_toc import graph as toc_graph
-from open_notebook.repository import (
-    repo_create,
-    repo_query,
-)
 from open_notebook.utils import split_text, surreal_clean
 
 

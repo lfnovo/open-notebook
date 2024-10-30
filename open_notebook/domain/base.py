@@ -4,17 +4,17 @@ from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
 from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator
 
-from open_notebook.exceptions import (
-    DatabaseOperationError,
-    InvalidInputError,
-    NotFoundError,
-)
-from open_notebook.repository import (
+from open_notebook.database.repository import (
     repo_create,
     repo_delete,
     repo_query,
     repo_relate,
     repo_update,
+)
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
 )
 
 T = TypeVar("T", bound="ObjectModel")

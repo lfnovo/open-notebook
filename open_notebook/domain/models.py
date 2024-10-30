@@ -3,11 +3,11 @@ from typing import ClassVar, Optional
 from loguru import logger
 from pydantic import BaseModel
 
-from open_notebook.domain.base import ObjectModel
-from open_notebook.repository import (
+from open_notebook.database.repository import (
     repo_query,
     repo_update,
 )
+from open_notebook.domain.base import ObjectModel
 
 
 class Model(ObjectModel):

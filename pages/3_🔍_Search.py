@@ -1,7 +1,7 @@
 import streamlit as st
 
+from open_notebook.config import EMBEDDING_MODEL
 from open_notebook.domain.notebook import text_search, vector_search
-from open_notebook.utils import get_embedding
 from stream_app.note import note_list_item
 from stream_app.source import source_list_item
 from stream_app.utils import version_sidebar
@@ -33,7 +33,7 @@ with st.container(border=True):
             )
         elif search_type == "Vector Search":
             st.write(f"Searching for {search_term}")
-            embed_query = get_embedding(search_term)
+            embed_query = EMBEDDING_MODEL.embed(search_term)
             st.session_state["search_results"] = vector_search(
                 embed_query, 100, search_sources, search_notes
             )

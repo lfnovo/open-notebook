@@ -1,6 +1,6 @@
 import streamlit as st
 
-from open_notebook.domain import text_search, vector_search
+from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.utils import get_embedding
 from stream_app.note import note_list_item
 from stream_app.source import source_list_item

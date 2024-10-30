@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
 
-from open_notebook.domain import Note, Source
+from open_notebook.domain.notebook import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import token_count

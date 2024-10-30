@@ -34,7 +34,7 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
             result = connection.query(query_str, vars)
             return result
         except Exception as e:
-            # logger.debug(f"Query: {query_str}, Variables: {vars}")
+            logger.critical(f"Query: {query_str}, Variables: {vars}")
             logger.exception(e)
             raise
 

@@ -6,8 +6,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-from openai import OpenAI
-
 
 @dataclass
 class SpeechToTextModel(ABC):
@@ -33,6 +31,8 @@ class OpenAISpeechToTextModel(SpeechToTextModel):
         """
         Transcribes an audio file into text
         """
+        from openai import OpenAI
+
         # todo: make this Singleton
         client = OpenAI()
         with open(audio_file_path, "rb") as audio:

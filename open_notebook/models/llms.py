@@ -17,6 +17,8 @@ from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
 from pydantic import SecretStr
 
+# future: is there a value on returning langchain specific models?
+
 
 @dataclass
 class LanguageModel(ABC):

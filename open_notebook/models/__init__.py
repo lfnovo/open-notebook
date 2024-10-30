@@ -1,5 +1,10 @@
 from open_notebook.domain.models import Model
-from open_notebook.models.embedding_models import OpenAIEmbeddingModel
+from open_notebook.models.embedding_models import (
+    GeminiEmbeddingModel,
+    OllamaEmbeddingModel,
+    OpenAIEmbeddingModel,
+    VertexEmbeddingModel,
+)
 from open_notebook.models.llms import (
     AnthropicLanguageModel,
     GeminiLanguageModel,
@@ -26,6 +31,9 @@ MODEL_CLASS_MAP = {
     },
     "embedding": {
         "openai": OpenAIEmbeddingModel,
+        "gemini": GeminiEmbeddingModel,
+        "vertexai": VertexEmbeddingModel,
+        "ollama": OllamaEmbeddingModel,
     },
     "speech_to_text": {
         "openai": OpenAISpeechToTextModel,

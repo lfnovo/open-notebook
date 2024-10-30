@@ -3,7 +3,7 @@ from humanize import naturaltime
 from loguru import logger
 from streamlit_monaco import st_monaco  # type: ignore
 
-from open_notebook.domain import Note
+from open_notebook.domain.notebook import Note
 from open_notebook.graphs.multipattern import graph as pattern_graph
 from open_notebook.utils import surreal_clean
 

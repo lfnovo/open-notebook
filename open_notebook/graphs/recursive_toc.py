@@ -7,6 +7,7 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
+from open_notebook.config import DEFAULT_MODELS
 from open_notebook.graphs.utils import run_pattern
 from open_notebook.utils import split_text
 
@@ -49,7 +50,7 @@ def chunk_condition(state: TocState) -> Literal["get_chunk", END]:  # type: igno
 
 def call_model(state: TocState, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
-        "model_name", os.environ.get("SUMMARIZATION_MODEL")
+        "model_name", DEFAULT_MODELS.default_transformation_model
     )
     return {
         "toc": run_pattern(

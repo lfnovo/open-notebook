@@ -4,9 +4,9 @@ from math import ceil
 from loguru import logger
 from pydub import AudioSegment
 
+from open_notebook.config import SPEECH_TO_TEXT_MODEL
 from open_notebook.graphs.content_processing.state import SourceState
 
-# todo: add a speechtotext model to the config
 # future: parallelize the transcription process
 
 
@@ -73,9 +73,6 @@ def split_audio(input_file, segment_length_minutes=15, output_prefix=None):
 
 def extract_audio(data: SourceState):
     input_audio_path = data.get("file_path")
-    from openai import OpenAI
-
-    client = OpenAI()
     audio_files = []
 
     try:
@@ -83,11 +80,7 @@ def extract_audio(data: SourceState):
         transcriptions = []
 
         for audio_file in audio_files:
-            with open(audio_file, "rb") as audio:
-                transcription = client.audio.transcriptions.create(
-                    model="whisper-1", file=audio
-                )
-                transcriptions.append(transcription.text)
+            transcriptions.append(SPEECH_TO_TEXT_MODEL.transcribe(audio_file))
 
         return {"content": " ".join(transcriptions)}
 

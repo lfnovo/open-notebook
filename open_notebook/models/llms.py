@@ -1,5 +1,5 @@
 """
-Classes for supporting different language and vector models
+Classes for supporting different language models
 """
 
 import os
@@ -15,9 +15,9 @@ from langchain_google_vertexai import ChatVertexAI
 from langchain_google_vertexai.model_garden import ChatAnthropicVertex
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
+from pydantic import SecretStr
 
-# from redisvl.utils.vectorize import BaseVectorizer
-# from redisvl.utils.vectorize.text.openai import OpenAITextVectorizer
+# future: is there a value on returning langchain specific models?
 
 
 @dataclass
@@ -186,7 +186,7 @@ class OpenRouterLanguageModel(LanguageModel):
             max_tokens=self.max_tokens,
             model_kwargs=kwargs,
             streaming=self.streaming,
-            api_key=os.environ.get("OPENROUTER_API_KEY", "openrouter"),
+            api_key=SecretStr(os.environ.get("OPENROUTER_API_KEY", "openrouter")),
             top_p=self.top_p,
         )
 
@@ -238,28 +238,3 @@ class OpenAILanguageModel(LanguageModel):
             streaming=self.streaming,
             top_p=self.top_p,
         )
-
-
-# @dataclass
-# class EmbeddingModel(ABC):
-#     model_name: str
-#     dimensions: int
-
-#     def to_redis_vectorizer(self) -> BaseVectorizer:
-#         raise NotImplementedError
-
-
-# @dataclass
-# class OpenAIEmbeddingModel(EmbeddingModel):
-#     """
-#     Embedding model that uses the OpenAI text embedding model.
-#     """
-
-#     model_name: str
-#     dimensions: int
-
-#     def to_redis_vectorizer(self) -> OpenAITextVectorizer:
-#         """
-#         Convert the embedding model to a Redis vectorizer.
-#         """
-#         return OpenAITextVectorizer(model=self.model_name)

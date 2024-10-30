@@ -1,11 +1,10 @@
-import os
-
 from langchain_core.runnables import (
     RunnableConfig,
 )
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
+from open_notebook.config import DEFAULT_MODELS
 from open_notebook.graphs.utils import run_pattern
 
 
@@ -17,7 +16,7 @@ class PatternState(TypedDict):
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
-        "model_name", os.environ.get("DEFAULT_MODEL")
+        "model_name", DEFAULT_MODELS.default_transformation_model
     )
     return {
         "output": run_pattern(

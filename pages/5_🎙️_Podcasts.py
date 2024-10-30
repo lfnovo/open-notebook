@@ -1,6 +1,9 @@
+from typing import Dict, List
+
 import streamlit as st
 from streamlit_tags import st_tags
 
+from open_notebook.domain.models import Model
 from open_notebook.plugins.podcasts import (
     PodcastConfig,
     PodcastEpisode,
@@ -16,6 +19,21 @@ st.set_page_config(
 )
 
 version_sidebar()
+
+text_to_speech_models = Model.get_models_by_type("text_to_speech")
+
+
+provider_models: Dict[str, List[str]] = {}
+
+for model in text_to_speech_models:
+    if model.provider not in provider_models:
+        provider_models[model.provider] = []
+    provider_models[model.provider].append(model.name)
+
+
+if len(text_to_speech_models) == 0:
+    st.error("No text to speech models found. Please set one up in the Settings page.")
+    st.stop()
 
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 
@@ -76,7 +94,7 @@ with templates_tab:
         pd_cfg["ending_message"] = st.text_input(
             "Ending Message", placeholder="Thank you for listening!"
         )
-        pd_cfg["provider"] = st.selectbox("Provider", ["openai", "elevenlabs", "edge"])
+        pd_cfg["provider"] = st.selectbox("Provider", provider_models.keys())
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
         )
@@ -86,7 +104,8 @@ with templates_tab:
         pd_cfg["voice2"] = st.text_input(
             "Voice 2", help="You can use Elevenlabs voice ID"
         )
-        pd_cfg["model"] = st.text_input("Model")
+
+        pd_cfg["model"] = st.selectbox("Model", provider_models[pd_cfg["provider"]])
         st.caption(
             "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
         )
@@ -183,8 +202,8 @@ with templates_tab:
             )
             pd_config.provider = st.selectbox(
                 "Provider",
-                ["openai", "elevenlabs", "edge"],
-                index=["openai", "elevenlabs", "edge"].index(pd_config.provider),
+                list(provider_models.keys()),
+                index=list(provider_models.keys()).index(pd_config.provider),
                 key=f"provider_{pd_config.id}",
             )
             pd_config.voice1 = st.text_input(
@@ -202,8 +221,11 @@ with templates_tab:
                 key=f"voice2_{pd_config.id}",
                 help="You can use Elevenlabs voice ID",
             )
-            pd_config.model = st.text_input(
-                "Model", value=pd_config.model, key=f"model_{pd_config.id}"
+            pd_config.model = st.selectbox(
+                "Model",
+                provider_models[pd_config.provider],
+                index=provider_models[pd_config.provider].index(pd_config.model),
+                key=f"model_{pd_config.id}",
             )
             st.caption(
                 "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"

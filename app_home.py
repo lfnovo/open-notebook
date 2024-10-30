@@ -1,29 +1,43 @@
 import streamlit as st
 
-from open_notebook.exceptions import InvalidDatabaseSchema, NoSchemaFound
-from open_notebook.repository import check_database_version, execute_migration
+from open_notebook.database.migrate import MigrationManager
+
+# from open_notebook.config import DEFAULT_MODELS
+from open_notebook.domain.models import DefaultModels
 from stream_app.utils import version_sidebar
 
-try:
-    version_sidebar()
-    check_database_version()
+default_models = DefaultModels.load()
+
+version_sidebar()
+mm = MigrationManager()
+if mm.needs_migration:
+    st.warning("The Open Notebook database needs a migration to run properly.")
+    if st.button("Run Migration"):
+        mm.run_migration_up()
+        st.success("Migration successful")
+        st.rerun()
+elif (
+    not default_models.default_chat_model
+    or not default_models.default_transformation_model
+):
+    st.warning(
+        "You don't have default chat and transformation models selected. Please, select them on the settings page."
+    )
+elif not default_models.default_embedding_model:
+    st.warning(
+        "You don't have a default embedding model selected. Vector search will not be possible and your assistant will be less able to answer your queries. Please, select one on the settings page."
+    )
+elif not default_models.default_speech_to_text_model:
+    st.warning(
+        "You don't have a default speech to text model selected. Your assistant will not be able to transcribe audio. Please, select one on the settings page."
+    )
+elif not default_models.default_text_to_speech_model:
+    st.warning(
+        "You don't have a default text to speech model selected. Your assistant will not be able to generate audio and podcasts. Please, select one on the settings page."
+    )
+elif not default_models.large_context_model:
+    st.warning(
+        "You don't have a large context model selected. Your assistant will not be able to process large documents. Please, select one on the settings page."
+    )
+else:
     st.switch_page("pages/2_📒_Notebooks.py")
-except NoSchemaFound as e:
-    st.warning(e)
-    if st.button("Create Schema.."):
-        try:
-            execute_migration("db_setup.surrealql")
-            st.success("Schema created successfully")
-            st.rerun()
-        except Exception as e:
-            st.error(e)
-except InvalidDatabaseSchema as e:
-    st.warning(e)
-    if st.button("Execute Migration.."):
-        try:
-            execute_migration("0_0_1_to_0_0_2.surrealql")
-            st.success("Migration executed successfully")
-            st.rerun()
-        except Exception as e:
-            st.error(e)
-st.stop()

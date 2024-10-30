@@ -1,7 +1,7 @@
 import streamlit as st
 from humanize import naturaltime
 
-from open_notebook.domain import Notebook
+from open_notebook.domain.notebook import Notebook
 from stream_app.chat import chat_sidebar
 from stream_app.note import add_note, note_card
 from stream_app.source import add_source, source_card

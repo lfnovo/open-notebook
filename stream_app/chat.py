@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
 
-from open_notebook.domain import Note, Source
+from open_notebook.domain.notebook import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import token_count
@@ -54,8 +54,6 @@ def execute_chat(txt_input, session_id):
     return result
 
 
-# todo: se eu for usar o token count, preciso deixar configuravel
-# seria bom ter um total de tokens no admin em algum lugar
 def chat_sidebar(session_id):
     context = build_context(session_id=session_id)
     tokens = token_count(str(context) + str(st.session_state[session_id]["messages"]))

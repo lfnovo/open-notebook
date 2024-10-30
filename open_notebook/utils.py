@@ -6,10 +6,7 @@ from urllib.parse import urlparse
 import requests
 import tomli
 from langchain_text_splitters import CharacterTextSplitter
-from openai import OpenAI
 from packaging.version import parse as parse_version
-
-client = OpenAI()
 
 
 def split_text(txt: str, chunk=1000, overlap=0, separator=" "):
@@ -61,21 +58,6 @@ def token_cost(token_count, cost_per_million=0.150):
         float: The calculated cost for the given token count.
     """
     return cost_per_million * (token_count / 1_000_000)
-
-
-def get_embedding(text, model="text-embedding-3-small"):
-    """
-    Get the embedding for the input text using the specified model.
-
-    Args:
-        text (str): The input text to get the embedding for.
-        model (str): The name of the embedding model to use. Default is "text-embedding-3-small".
-
-    Returns:
-        list: The embedding vector for the input text.
-    """
-    text = text.replace("\n", " ")
-    return client.embeddings.create(input=[text], model=model).data[0].embedding
 
 
 def remove_non_ascii(text):

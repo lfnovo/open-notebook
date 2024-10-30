@@ -6,7 +6,7 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from open_notebook.domain import Note, Notebook, Source
+from open_notebook.domain.notebook import Note, Notebook, Source
 from open_notebook.graphs.utils import run_pattern
 
 

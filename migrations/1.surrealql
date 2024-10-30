@@ -1,92 +1,78 @@
-REMOVE table IF EXISTS source;
-REMOVE table IF EXISTS reference;
-REMOVE table IF EXISTS notebook;
-REMOVE table IF EXISTS note;
-REMOVE table IF EXISTS artifact;
-REMOVE table IF EXISTS source_chunk;
-REMOVE table IF EXISTS source_insight;
-REMOVE ANALYZER IF EXISTS my_analyzer;
-REMOVE FUNCTION IF EXISTS fn::text_search;
-
-REMOVE INDEX IF EXISTS idx_source_full  ON TABLE source_chunk;
-REMOVE INDEX IF EXISTS idx_source_embed_chunk ON TABLE source_embedding;
-REMOVE INDEX IF EXISTS idx_source_insight ON TABLE source_insight;
-REMOVE INDEX IF EXISTS idx_note ON TABLE note;
-REMOVE INDEX IF EXISTS idx_source_title ON TABLE source;
-REMOVE INDEX IF EXISTS idx_note_title ON TABLE note;
 
 DEFINE TABLE IF NOT EXISTS source SCHEMAFULL;
 
-DEFINE FIELD asset
+DEFINE FIELD IF NOT EXISTS
+    asset
     ON TABLE source
     FLEXIBLE TYPE option<object>;
 
-DEFINE FIELD title ON TABLE source TYPE option<string>;
-DEFINE FIELD full_text ON TABLE source TYPE option<string>;
-DEFINE FIELD topics ON TABLE source TYPE option<array<string>>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE source TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS topics ON TABLE source TYPE option<array<string>>;
+DEFINE FIELD IF NOT EXISTS full_text ON TABLE source TYPE option<string>;
 
-DEFINE FIELD created ON source DEFAULT time::now() VALUE $before OR time::now();
-DEFINE FIELD updated ON source DEFAULT time::now() VALUE time::now();
+DEFINE FIELD IF NOT EXISTS created ON source DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON source DEFAULT time::now() VALUE time::now();
 
 DEFINE TABLE IF NOT EXISTS source_embedding SCHEMAFULL;
-DEFINE FIELD source ON TABLE source_embedding TYPE record<source>;
-DEFINE FIELD order ON TABLE source_embedding TYPE int;
-DEFINE FIELD content ON TABLE source_embedding TYPE string;
-DEFINE FIELD embedding ON TABLE source_embedding TYPE array<float>;
+DEFINE FIELD IF NOT EXISTS source ON TABLE source_embedding TYPE record<source>;
+DEFINE FIELD IF NOT EXISTS order ON TABLE source_embedding TYPE int;
+DEFINE FIELD IF NOT EXISTS content ON TABLE source_embedding TYPE string;
+DEFINE FIELD IF NOT EXISTS embedding ON TABLE source_embedding TYPE array<float>;
 
 DEFINE TABLE IF NOT EXISTS source_insight SCHEMAFULL;
-DEFINE FIELD source ON TABLE source_insight TYPE record<source>;
-DEFINE FIELD insight_type ON TABLE source_insight TYPE string;
-DEFINE FIELD content ON TABLE source_insight TYPE string;
-DEFINE FIELD embedding ON TABLE source_insight TYPE array<float>;
+DEFINE FIELD IF NOT EXISTS source ON TABLE source_insight TYPE record<source>;
+DEFINE FIELD IF NOT EXISTS insight_type ON TABLE source_insight TYPE string;
+DEFINE FIELD IF NOT EXISTS content ON TABLE source_insight TYPE string;
+DEFINE FIELD IF NOT EXISTS embedding ON TABLE source_insight TYPE array<float>;
 
 
-DEFINE EVENT source_delete ON TABLE source WHEN ($after == NONE) THEN {
+DEFINE EVENT IF NOT EXISTS source_delete ON TABLE source WHEN ($after == NONE) THEN {
     delete source_embedding where source == $before.id;
     delete source_insight where source == $before.id;
 };
 
 DEFINE TABLE IF NOT EXISTS note SCHEMAFULL;
 
-DEFINE FIELD title ON TABLE note TYPE option<string>;
-DEFINE FIELD summary ON TABLE note TYPE option<string>;
-DEFINE FIELD content ON TABLE note TYPE option<string>;
-DEFINE FIELD embedding ON TABLE note TYPE array<float>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS summary ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS content ON TABLE note TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS embedding ON TABLE note TYPE array<float>;
 
-DEFINE FIELD created ON note DEFAULT time::now() VALUE $before OR time::now();
-DEFINE FIELD updated ON note DEFAULT time::now() VALUE time::now();
+DEFINE FIELD IF NOT EXISTS created ON note DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON note DEFAULT time::now() VALUE time::now();
 
 DEFINE TABLE IF NOT EXISTS notebook SCHEMAFULL;
 
-DEFINE FIELD name ON TABLE notebook TYPE option<string>;
-DEFINE FIELD description ON TABLE notebook TYPE option<string>;
-DEFINE FIELD archived ON TABLE notebook TYPE option<bool> DEFAULT False;
+DEFINE FIELD IF NOT EXISTS name ON TABLE notebook TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS description ON TABLE notebook TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS archived ON TABLE notebook TYPE option<bool> DEFAULT False;
 
 
-DEFINE FIELD created ON notebook DEFAULT time::now() VALUE $before OR time::now();
-DEFINE FIELD updated ON notebook DEFAULT time::now() VALUE time::now();
+DEFINE FIELD IF NOT EXISTS created ON notebook DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON notebook DEFAULT time::now() VALUE time::now();
 
-DEFINE TABLE reference
+DEFINE TABLE IF NOT EXISTS reference
 TYPE RELATION 
 FROM source TO notebook;
 
-DEFINE TABLE artifact
+DEFINE TABLE IF NOT EXISTS artifact
 TYPE RELATION 
 FROM note TO notebook;
 
--- entender o analyzer
-DEFINE ANALYZER my_analyzer TOKENIZERS blank,class,camel,punct FILTERS snowball(english), lowercase;
+DEFINE TABLE IF NOT EXISTS podcast_config SCHEMALESS;
 
-DEFINE INDEX idx_source_title ON TABLE source COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_source_full_text ON TABLE source COLUMNS full_text SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_source_embed_chunk ON TABLE source_embedding COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_source_insight ON TABLE source_insight COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_note ON TABLE note COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX idx_note_title ON TABLE note COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+-- entender o analyzer
+DEFINE ANALYZER IF NOT EXISTS my_analyzer TOKENIZERS blank,class,camel,punct FILTERS snowball(english), lowercase;
+
+DEFINE INDEX IF NOT EXISTS idx_source_title ON TABLE source COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_full_text ON TABLE source COLUMNS full_text SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_embed_chunk ON TABLE source_embedding COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_insight ON TABLE source_insight COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_note ON TABLE note COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_note_title ON TABLE note COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
 
 DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources:bool, $show_notes:bool) {
-
-   
+  
     let $source_title_search = 
         IF $sources {(
             SELECT id as item_id, math::max(search::score(1)) AS relevance
@@ -150,8 +136,6 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
 };
 
 
-REMOVE FUNCTION fn::vector_search;
-
 DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_count: int, $sources:bool, $show_notes:bool) {
    
     let $source_embedding_search = 
@@ -188,10 +172,7 @@ DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_cou
     
 };
 
-CREATE open_notebook:database_info SET
-    version= "0.0.2";
-
-UPDATE open_notebook:database_info SET
-    version= "0.0.2";
-
-
+IF array::len(select * from open_notebook:default_models) == 0 THEN
+    CREATE open_notebook:default_models SET
+    default_chat_model= ""
+END;

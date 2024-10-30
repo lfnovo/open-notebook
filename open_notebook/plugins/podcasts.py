@@ -1,10 +1,10 @@
-from typing import ClassVar, List, Literal, Optional
+from typing import ClassVar, List, Optional
 
 from loguru import logger
 from podcastfy.client import generate_podcast
 from pydantic import Field, field_validator
 
-from open_notebook.domain import ObjectModel
+from open_notebook.domain.notebook import ObjectModel
 
 
 class PodcastEpisode(ObjectModel):
@@ -31,7 +31,7 @@ class PodcastConfig(ObjectModel):
     ending_message: Optional[str] = None
     wordcount: int = Field(ge=400, le=10000)
     creativity: float = Field(ge=0, le=1)
-    provider: Literal["openai", "elevenlabs", "edge"] = Field(default="openai")
+    provider: str = Field(default="openai")
     voice1: Optional[str] = None
     voice2: Optional[str] = None
     model: str

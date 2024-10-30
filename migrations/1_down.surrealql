@@ -1,0 +1,24 @@
+REMOVE TABLE IF EXISTS source;
+REMOVE TABLE IF EXISTS source_embedding;
+REMOVE TABLE IF EXISTS source_insight;
+REMOVE TABLE IF EXISTS note;
+REMOVE TABLE IF EXISTS notebook;
+REMOVE TABLE IF EXISTS reference;
+REMOVE TABLE IF EXISTS artifact;
+REMOVE TABLE IF EXISTS podcast_config;
+
+REMOVE EVENT IF EXISTS source_delete ON TABLE source;
+
+REMOVE ANALYZER IF EXISTS my_analyzer;
+
+REMOVE INDEX IF EXISTS idx_source_title ON TABLE source;
+REMOVE INDEX IF EXISTS idx_source_full_text ON TABLE source;
+REMOVE INDEX IF EXISTS idx_source_embed_chunk ON TABLE source_embedding;
+REMOVE INDEX IF EXISTS idx_source_insight ON TABLE source_insight;
+REMOVE INDEX IF EXISTS idx_note ON TABLE note;
+REMOVE INDEX IF EXISTS idx_note_title ON TABLE note;
+
+REMOVE FUNCTION IF EXISTS fn::text_search;
+REMOVE FUNCTION IF EXISTS fn::vector_search;
+
+DELETE open_notebook:default_models;

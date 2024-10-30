@@ -63,7 +63,6 @@ services:
       - "8080:8502"
     environment:
         - OPENAI_API_KEY=API_KEY
-        - DEFAULT_MODEL=gpt-4o-mini
         - SURREAL_ADDRESSsurrealdb
         - SURREAL_PORT=8000
         - SURREAL_USER=root
@@ -105,7 +104,7 @@ or the shourcut
 make run
 ```
 
-## Setting up the providers
+## Setting up the providers and models
 
 Several new providers are supported now:
 
@@ -121,30 +120,33 @@ All providers are installed out of the box. All you need to do is to setup the e
 
 Please refer to the `.env.example` file for instructions on which ENV variables are necessary for each. 
 
-### Use provider-modelname convention
+### Create models on the Settings page
 
-You should prepend the provider name to the model_name when setting up your env variables, examples: 
+Go to the settings page and create your different models. 
 
-- openai/gpt-4o-mini
-- anthropic/claude-3-5-sonnet-20240620
-- ollama/gemma2
-- openrouter/nvidia/llama-3.1-nemotron-70b-instruct
-- vertexai/gemini-1.5-flash-001
-- gemini/gemini-1.5-flash-001
+| Model Type | Supported Providers |
+|------------|-----------|
+| Language | OpenAI, Anthropic, Open Router, LiteLLM, Vertex AI, Vertex AI, Anthropic, Gemini, Ollama |
+| Embedding | OpenAI, Gemini, Vertex AI, Ollama |
+| Speech to Text | OpenAI |
+| Text to Speech | OpenAI, ElevenLabs |
 
-__There will be a UI configuration for models in the coming days.__
 
-## Setup 2 models for more flexibility
+> 📝 **Notice:** For complete usage of all the features, you need to setup at least 4 models (one of each type). 
 
-There are 2 configurations for models at this point: 
+After setting up the models, head to the Model Defaults tab to define the default models. There are several defaults to setup. 
 
-```
-DEFAULT_MODEL="openai/gpt-4o-mini"
-SUMMARIZATION_MODEL="openrouter/nvidia/llama-3.1-nemotron-70b-instruct"
-```
 
-- **DEFAULT_MODEL** is used by the chat tool
-- **SUMMARIZATION_MODEL (optional)** is used on the content summarization
+| Model Default | Purpose |
+|------------|-----------|
+| Chat Model | Will be used on all chats |
+| Transformation Model | Will be used for summaries, insights, etc |
+| Large Context | For content higher then 110k tokens (use Gemini here) |
+| Speech to Text | For transcribing text from your audio/video uploads |
+| Text to Speech | For generating podcasts  |
+| Embedding | For creating vector representation of content |
+
+All model types and defaults are required for now. If you are not sure which to pick, go with OpenAI, the only one that covers all possible model types.
 
 The reason for opting for this route is because different LLMs, will behave better/worse depending on the type of request and type of tools offered. So it makes sense to build a more refined system to decide which model should process which task.
 

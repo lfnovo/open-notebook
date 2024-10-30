@@ -29,7 +29,7 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8502:8502"
+      - "8080:8502"
     env_file:
       - ./docker.env
     depends_on:
@@ -52,15 +52,28 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 
 - **Multi-Notebook Support**: Organize your research across multiple notebooks effortlessly.
-- **Broad Content Integration**: Works with links, PDFs, TXT files, PowerPoint presentations, YouTube videos, and pasted text (audio/video support coming soon).
+- **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, Ollama.
+- **Podcast Generator**: Automatically convert your notes into a podcast format.
+- **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.
 - **AI-Powered Notes**: Write notes yourself or let the AI assist you in generating insights.
-- **Recursive Summarization**: Tackle large content by recursively summarizing it.
 - **Integrated Search Engines**: Built-in full-text and vector search for faster information retrieval.
 - **Fine-Grained Context Management**: Choose exactly what to share with the AI to maintain control.
-- **Podcast Generator**: Automatically convert your notes into a podcast format.
-- **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, Ollama.
 
 ## 🚀 New Features
+
+### v0.0.7 - Model Management  🗂️
+
+- Manage your AI models and providers in a single interface
+- Define default models for several tasks such as chat, transformation, embedding, etc
+- Enabled support for Embedding models from Gemini, Vertex and Ollama
+
+### v0.0.6 - ePub and Office files support 📄
+
+You can now process ePub and Office files (Word, Excel, PowerPoint), extracting text and insights from them. Perfect for books, reports, presentations, and more.
+
+### v0.0.5 - Audio and Video support 📽️
+
+You can now process audio and video files, extracting transcripts and insights from them. Perfect for podcasts, interviews, lectures, and more.
 
 ### v0.0.4 - Podcasts  🎙️
 

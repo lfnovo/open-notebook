@@ -8,7 +8,7 @@ from humanize import naturaltime
 from loguru import logger
 
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain import Asset, Source
+from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.content_processing import graph
 from open_notebook.graphs.multipattern import graph as transform_graph

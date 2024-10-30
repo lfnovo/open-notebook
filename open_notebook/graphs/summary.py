@@ -9,6 +9,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
+from open_notebook.config import DEFAULT_MODELS
 from open_notebook.graphs.utils import run_pattern
 from open_notebook.utils import split_text
 
@@ -57,9 +58,9 @@ def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: 
     return END
 
 
-def call_model(state: SummaryState, config: RunnableConfig) -> dict:
+def call_model(state: dict, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
-        "model_name", os.environ.get("SUMMARIZATION_MODEL")
+        "model_name", DEFAULT_MODELS.default_transformation_model
     )
     parser = PydanticOutputParser(pydantic_object=SummaryResponse)
     return {

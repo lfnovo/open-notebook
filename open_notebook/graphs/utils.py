@@ -1,8 +1,7 @@
-import os
-
 from langchain.output_parsers import OutputFixingParser
 
-from open_notebook.llm_router import get_langchain_model
+from open_notebook.config import DEFAULT_MODELS
+from open_notebook.models.llms import get_langchain_model
 from open_notebook.prompter import Prompter
 
 
@@ -15,7 +14,7 @@ def run_pattern(
     output_fixing_model_name=None,
 ) -> dict:
     if not model_name:
-        model_name = os.environ["DEFAULT_MODEL"]
+        model_name = DEFAULT_MODELS.default_transformation_model
 
     chain = get_langchain_model(model_name)
     if parser:

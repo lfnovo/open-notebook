@@ -4,7 +4,7 @@ from loguru import logger
 from podcastfy.client import generate_podcast
 from pydantic import Field, field_validator
 
-from open_notebook.domain import ObjectModel
+from open_notebook.domain.notebook import ObjectModel
 
 
 class PodcastEpisode(ObjectModel):

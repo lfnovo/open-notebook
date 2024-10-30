@@ -1,5 +1,5 @@
 """
-Classes for supporting different language and vector models
+Classes for supporting different language models
 """
 
 import os
@@ -15,9 +15,9 @@ from langchain_google_vertexai import ChatVertexAI
 from langchain_google_vertexai.model_garden import ChatAnthropicVertex
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
+from pydantic import SecretStr
 
-# from redisvl.utils.vectorize import BaseVectorizer
-# from redisvl.utils.vectorize.text.openai import OpenAITextVectorizer
+from open_notebook.domain.models import Model
 
 
 @dataclass
@@ -186,7 +186,7 @@ class OpenRouterLanguageModel(LanguageModel):
             max_tokens=self.max_tokens,
             model_kwargs=kwargs,
             streaming=self.streaming,
-            api_key=os.environ.get("OPENROUTER_API_KEY", "openrouter"),
+            api_key=SecretStr(os.environ.get("OPENROUTER_API_KEY", "openrouter")),
             top_p=self.top_p,
         )
 
@@ -240,26 +240,26 @@ class OpenAILanguageModel(LanguageModel):
         )
 
 
-# @dataclass
-# class EmbeddingModel(ABC):
-#     model_name: str
-#     dimensions: int
+# Map provider names to classes
+PROVIDER_CLASS_MAP = {
+    "ollama": OllamaLanguageModel,
+    "openrouter": OpenRouterLanguageModel,
+    "vertexai-anthropic": VertexAnthropicLanguageModel,
+    "litellm": LiteLLMLanguageModel,
+    "vertexai": VertexAILanguageModel,
+    "anthropic": AnthropicLanguageModel,
+    "openai": OpenAILanguageModel,
+    "gemini": GeminiLanguageModel,
+}
 
-#     def to_redis_vectorizer(self) -> BaseVectorizer:
-#         raise NotImplementedError
 
-
-# @dataclass
-# class OpenAIEmbeddingModel(EmbeddingModel):
-#     """
-#     Embedding model that uses the OpenAI text embedding model.
-#     """
-
-#     model_name: str
-#     dimensions: int
-
-#     def to_redis_vectorizer(self) -> OpenAITextVectorizer:
-#         """
-#         Convert the embedding model to a Redis vectorizer.
-#         """
-#         return OpenAITextVectorizer(model=self.model_name)
+# todo: make the provider check type specific
+def get_langchain_model(model_id, json=False):
+    model = Model.get(model_id)
+    if not model:
+        raise ValueError(f"Model {model_id} not found")
+    if model.provider not in PROVIDER_CLASS_MAP.keys():
+        raise ValueError(f"Provider {model.provider} not found")
+    return PROVIDER_CLASS_MAP[model.provider](
+        model_name=model.name, json=json
+    ).to_langchain()

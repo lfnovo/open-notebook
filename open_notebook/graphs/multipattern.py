@@ -1,5 +1,4 @@
 import operator
-import os
 from typing import List, Literal, Sequence
 
 from langchain_core.runnables import (
@@ -8,6 +7,7 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import Annotated, TypedDict
 
+from open_notebook.config import DEFAULT_MODELS
 from open_notebook.graphs.utils import run_pattern
 
 
@@ -19,7 +19,7 @@ class PatternChainState(TypedDict):
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
     model_name = config.get("configurable", {}).get(
-        "model_name", os.environ.get("DEFAULT_MODEL")
+        "model_name", DEFAULT_MODELS.default_transformation_model
     )
     transformations = state["transformations"]
     current_transformation = transformations.pop(0)

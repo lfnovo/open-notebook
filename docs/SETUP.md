@@ -63,7 +63,6 @@ services:
       - "8080:8502"
     environment:
         - OPENAI_API_KEY=API_KEY
-        - DEFAULT_MODEL=gpt-4o-mini
         - SURREAL_ADDRESSsurrealdb
         - SURREAL_PORT=8000
         - SURREAL_USER=root

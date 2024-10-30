@@ -30,6 +30,7 @@ MODEL_CLASS_MAP = {
     "speech_to_text": {
         "openai": OpenAISpeechToTextModel,
     },
+    "text_to_speech": {"openai": None, "elevenlabs": None},
 }
 
 

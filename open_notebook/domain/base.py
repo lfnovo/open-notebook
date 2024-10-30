@@ -48,7 +48,7 @@ class ObjectModel(BaseModel):
             raise DatabaseOperationError(e)
 
     @classmethod
-    def get(cls: Type[T], id: str) -> Optional[T]:
+    def get(cls: Type[T], id: str) -> T:
         if not id:
             raise InvalidInputError("ID cannot be empty")
         try:

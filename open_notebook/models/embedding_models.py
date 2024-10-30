@@ -39,7 +39,6 @@ class OllamaEmbeddingModel(EmbeddingModel):
         """
         Embeds the content using Open AI embedding
         """
-        # todo: make this Singleton
         text = text.replace("\n", " ")
         response = requests.post(
             f"{self.base_url}/api/embed",

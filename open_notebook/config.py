@@ -6,7 +6,6 @@ from loguru import logger
 from open_notebook.domain.models import DefaultModels
 from open_notebook.models import get_model
 
-# todo: enable config file overwrite with env vars
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 config_path = os.path.join(project_root, "open_notebook_config.yaml")

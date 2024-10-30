@@ -32,9 +32,13 @@ class ObjectModel(BaseModel):
     updated: Optional[datetime] = None
 
     @classmethod
-    def get_all(cls: Type[T]) -> List[T]:
+    def get_all(cls: Type[T], order_by=None) -> List[T]:
         try:
-            result = repo_query(f"SELECT * FROM {cls.table_name}")
+            if order_by:
+                order = f" ORDER BY {order_by}"
+            else:
+                order = ""
+            result = repo_query(f"SELECT * FROM {cls.table_name} {order}")
             objects = []
             for obj in result:
                 try:
@@ -73,6 +77,7 @@ class ObjectModel(BaseModel):
             logger.debug(f"Validating {self.__class__.__name__}")
             self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
+            data["updated"] = datetime.now().isoformat()
 
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
@@ -80,6 +85,7 @@ class ObjectModel(BaseModel):
                     data["embedding"] = get_embedding(embedding_content)
 
             if self.id is None:
+                data["created"] = datetime.now().isoformat()
                 logger.debug("Creating new record")
                 repo_result = repo_create(self.__class__.table_name, data)
             else:
@@ -108,8 +114,8 @@ class ObjectModel(BaseModel):
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
-        del data["created"]
-        del data["updated"]
+        # del data["created"]
+        # del data["updated"]
         return {key: value for key, value in data.items() if value is not None}
 
     def delete(self) -> bool:

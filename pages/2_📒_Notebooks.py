@@ -117,7 +117,7 @@ st.title("📒 My Notebooks")
 st.caption("Here are all your notebooks")
 
 
-notebooks = Notebook.get_all()
+notebooks = Notebook.get_all(order_by="updated desc")
 
 for notebook in notebooks:
     if notebook.archived:

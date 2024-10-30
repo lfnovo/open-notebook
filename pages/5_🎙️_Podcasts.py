@@ -20,7 +20,7 @@ version_sidebar()
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 
 with episodes_tab:
-    episodes = PodcastEpisode.get_all()
+    episodes = PodcastEpisode.get_all(order_by="created desc")
     for episode in episodes:
         with st.container(border=True):
             episode_name = episode.name if episode.name else "No Name"
@@ -98,8 +98,9 @@ with templates_tab:
                 st.rerun()
             except Exception as e:
                 st.error(e)
+                st.exception(e)
 
-    for pd_config in PodcastConfig.get_all():
+    for pd_config in PodcastConfig.get_all(order_by="created desc"):
         with st.expander(pd_config.name):
             pd_config.name = st.text_input(
                 "Template Name", value=pd_config.name, key=f"name_{pd_config.id}"

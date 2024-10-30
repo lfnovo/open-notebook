@@ -38,10 +38,16 @@ os.makedirs(PODCASTS_FOLDER, exist_ok=True)
 
 DEFAULT_MODELS = DefaultModels.load()
 
-EMBEDDING_MODEL = get_model(
-    DEFAULT_MODELS.default_embedding_model, model_type="embedding"
-)
+if DEFAULT_MODELS.default_embedding_model:
+    EMBEDDING_MODEL = get_model(
+        DEFAULT_MODELS.default_embedding_model, model_type="embedding"
+    )
+else:
+    EMBEDDING_MODEL = None
 
-SPEECH_TO_TEXT_MODEL = get_model(
-    DEFAULT_MODELS.default_speech_to_text_model, model_type="speech_to_text"
-)
+if DEFAULT_MODELS.default_speech_to_text_model:
+    SPEECH_TO_TEXT_MODEL = get_model(
+        DEFAULT_MODELS.default_speech_to_text_model, model_type="speech_to_text"
+    )
+else:
+    SPEECH_TO_TEXT_MODEL = None

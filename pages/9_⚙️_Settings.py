@@ -65,7 +65,6 @@ with model_tab:
         st.caption(
             f"Unavailable Providers: {', '.join(unavailable_providers)}. Please check docs page if you wish to enable them."
         )
-    model_name = st.text_input("Model Name", "")
 
     # Filter model types based on provider availability in MODEL_CLASS_MAP
     available_model_types = []
@@ -76,7 +75,14 @@ with model_tab:
     if not available_model_types:
         st.error(f"No compatible model types available for provider: {provider}")
     else:
-        model_type = st.selectbox("Model Type", available_model_types)
+        model_type = st.selectbox(
+            "Model Type",
+            available_model_types,
+            help="Use language for text generation models, text_to_speech for TTS models for generating podcasts, etc.",
+        )
+        model_name = st.text_input(
+            "Model Name", "", help="gpt-4o-mini, claude, gemini, llama3, etc"
+        )
         if st.button("Save"):
             model = Model(name=model_name, provider=provider, type=model_type)
             model.save()
@@ -209,9 +215,8 @@ with model_defaults_tab:
         "Caution: you cannot change the embedding model once there is embeddings or they will need to be regenerated"
     )
 
+    # if st.button("Save Defaults", key="save_defaults"):
     for k, v in defs.items():
-        defs[k] = v.id
-
-    if st.button("Save Defaults", key="save_defaults"):
-        DefaultModels.update(defs)
-        st.rerun()
+        if v:
+            defs[k] = v.id
+    DefaultModels.update(defs)

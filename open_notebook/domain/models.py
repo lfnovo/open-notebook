@@ -1,6 +1,5 @@
 from typing import ClassVar, Optional
 
-from loguru import logger
 from pydantic import BaseModel
 
 from open_notebook.database.repository import (
@@ -37,8 +36,10 @@ class DefaultModels(BaseModel):
     def load(self):
         result = repo_query("SELECT * FROM open_notebook:default_models;")
         if result:
-            logger.debug(result)
-            return DefaultModels(**result[0])
+            result = result[0]
+            dm = DefaultModels(**result)
+            return dm
+        return DefaultModels()
 
     @classmethod
     def update(self, data):

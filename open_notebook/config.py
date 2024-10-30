@@ -4,8 +4,7 @@ import yaml
 from loguru import logger
 
 from open_notebook.domain.models import DefaultModels
-from open_notebook.models.embedding_models import get_embedding_model
-from open_notebook.models.speech_to_text_models import get_speech_to_text_model
+from open_notebook.models import get_model
 
 # todo: enable config file overwrite with env vars
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -40,8 +39,10 @@ os.makedirs(PODCASTS_FOLDER, exist_ok=True)
 
 DEFAULT_MODELS = DefaultModels.load()
 
-EMBEDDING_MODEL = get_embedding_model(DEFAULT_MODELS.default_embedding_model)
+EMBEDDING_MODEL = get_model(
+    DEFAULT_MODELS.default_embedding_model, model_type="embedding"
+)
 
-SPEECH_TO_TEXT_MODEL = get_speech_to_text_model(
-    DEFAULT_MODELS.default_speech_to_text_model
+SPEECH_TO_TEXT_MODEL = get_model(
+    DEFAULT_MODELS.default_speech_to_text_model, model_type="speech_to_text"
 )

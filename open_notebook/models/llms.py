@@ -17,8 +17,6 @@ from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
 from pydantic import SecretStr
 
-from open_notebook.domain.models import Model
-
 
 @dataclass
 class LanguageModel(ABC):
@@ -238,28 +236,3 @@ class OpenAILanguageModel(LanguageModel):
             streaming=self.streaming,
             top_p=self.top_p,
         )
-
-
-# Map provider names to classes
-PROVIDER_CLASS_MAP = {
-    "ollama": OllamaLanguageModel,
-    "openrouter": OpenRouterLanguageModel,
-    "vertexai-anthropic": VertexAnthropicLanguageModel,
-    "litellm": LiteLLMLanguageModel,
-    "vertexai": VertexAILanguageModel,
-    "anthropic": AnthropicLanguageModel,
-    "openai": OpenAILanguageModel,
-    "gemini": GeminiLanguageModel,
-}
-
-
-# todo: make the provider check type specific
-def get_langchain_model(model_id, json=False):
-    model = Model.get(model_id)
-    if not model:
-        raise ValueError(f"Model {model_id} not found")
-    if model.provider not in PROVIDER_CLASS_MAP.keys():
-        raise ValueError(f"Provider {model.provider} not found")
-    return PROVIDER_CLASS_MAP[model.provider](
-        model_name=model.name, json=json
-    ).to_langchain()

@@ -45,7 +45,7 @@ provider_status["openrouter"] = (
     and os.environ.get("OPENROUTER_BASE_URL") is not None
 )
 provider_status["anthropic"] = os.environ.get("ANTHROPIC_API_KEY") is not None
-provider_status["eleven_labs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
+provider_status["elevenlabs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
 provider_status["litellm"] = (
     provider_status["ollama"]
     or provider_status["vertexai"]
@@ -104,7 +104,6 @@ with model_tab:
             st.warning(f"No models available for {model_type}")
 
 
-# todo: check for each type of model
 def get_selected_index(models, model_id, default=0):
     """Returns the index of the selected model in the list of models"""
     if not model_id or not models:
@@ -216,6 +215,3 @@ with model_defaults_tab:
     if st.button("Save Defaults", key="save_defaults"):
         DefaultModels.update(defs)
         st.rerun()
-
-# todo: return an error if a selected model is no longer supported
-# todo: do this check on the app homepage as well

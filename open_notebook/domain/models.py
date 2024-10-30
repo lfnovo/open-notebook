@@ -16,6 +16,13 @@ class Model(ObjectModel):
     provider: str
     type: str
 
+    @classmethod
+    def get_models_by_type(cls, model_type):
+        models = repo_query(
+            "SELECT * FROM model WHERE type=$model_type;", {"model_type": model_type}
+        )
+        return [Model(**model) for model in models]
+
 
 class DefaultModels(BaseModel):
     default_chat_model: Optional[str] = None

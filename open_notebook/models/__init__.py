@@ -16,6 +16,10 @@ from open_notebook.models.llms import (
     VertexAnthropicLanguageModel,
 )
 from open_notebook.models.speech_to_text_models import OpenAISpeechToTextModel
+from open_notebook.models.text_to_speech_models import (
+    ElevenLabsTextToSpeechModel,
+    OpenAITextToSpeechModel,
+)
 
 # Unified model class map with type information
 MODEL_CLASS_MAP = {
@@ -38,7 +42,10 @@ MODEL_CLASS_MAP = {
     "speech_to_text": {
         "openai": OpenAISpeechToTextModel,
     },
-    "text_to_speech": {"openai": None, "elevenlabs": None},
+    "text_to_speech": {
+        "openai": OpenAITextToSpeechModel,
+        "elevenlabs": ElevenLabsTextToSpeechModel,
+    },
 }
 
 

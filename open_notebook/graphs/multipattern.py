@@ -30,7 +30,7 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
             "input_text": state["content_stack"][-1],
             "command": current_transformation,
         }
-        current_transformation = "patterns/custom"
+        current_transformation = "patterns/default/command"
 
     transformation_result = run_pattern(
         pattern_name=current_transformation,

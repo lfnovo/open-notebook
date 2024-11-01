@@ -54,7 +54,7 @@ def call_model(state: TocState, config: RunnableConfig) -> dict:
     )
     return {
         "toc": run_pattern(
-            pattern_name="recursive_toc",
+            pattern_name="default/recursive_toc",
             model_id=model_id,
             state=state,
         ).content

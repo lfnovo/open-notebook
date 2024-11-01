@@ -1,7 +1,7 @@
 from langchain.output_parsers import OutputFixingParser
 from loguru import logger
 
-from open_notebook.config import DEFAULT_MODELS
+from open_notebook.config import load_default_models
 from open_notebook.models import get_model
 from open_notebook.prompter import Prompter
 from open_notebook.utils import token_count
@@ -18,7 +18,7 @@ def run_pattern(
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-
+    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
     tokens = token_count(str(system_prompt) + str(messages))
 
     model_id = (

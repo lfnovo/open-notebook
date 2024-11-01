@@ -68,7 +68,9 @@ class ObjectModel(BaseModel):
         return None
 
     def save(self) -> None:
-        from open_notebook.config import EMBEDDING_MODEL
+        from open_notebook.config import load_default_models
+
+        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
         try:
             logger.debug(f"Validating {self.__class__.__name__}")

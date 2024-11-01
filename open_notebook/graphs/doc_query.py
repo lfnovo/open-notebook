@@ -1,13 +1,14 @@
-import os
-
 from langchain_core.runnables import (
     RunnableConfig,
 )
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
+from open_notebook.config import load_default_models
 from open_notebook.domain.notebook import Note, Notebook, Source
 from open_notebook.graphs.utils import run_pattern
+
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 
 class DocQueryState(TypedDict):
@@ -20,7 +21,7 @@ class DocQueryState(TypedDict):
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
     model_id = config.get("configurable", {}).get(
-        "model_id", os.environ.get("RETRIEVAL_MODEL")
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
     return {"answer": run_pattern("doc_query", model_id, state)}
 

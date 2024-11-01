@@ -31,5 +31,5 @@ source_insights:
   #   description: "Generates a list of insightful questions to provoke reflection"
   #   patterns:
   #     - patterns/default/reflection_questions
-  #     - patterns/default/translate
+  #     - patterns/user/translate
 

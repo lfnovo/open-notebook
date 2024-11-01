@@ -4,7 +4,7 @@ from math import ceil
 from loguru import logger
 from pydub import AudioSegment
 
-from open_notebook.config import SPEECH_TO_TEXT_MODEL
+from open_notebook.config import load_default_models
 from open_notebook.graphs.content_processing.state import SourceState
 
 # future: parallelize the transcription process
@@ -72,6 +72,8 @@ def split_audio(input_file, segment_length_minutes=15, output_prefix=None):
 
 
 def extract_audio(data: SourceState):
+    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
     input_audio_path = data.get("file_path")
     audio_files = []
 

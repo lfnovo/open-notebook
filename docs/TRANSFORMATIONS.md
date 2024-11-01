@@ -31,28 +31,28 @@ source_insights:
   - name: "Summarize"
     insight_type: "Content Summary"
     description: "Summarize the content"
-    transformations:
+    patterns:
       - patterns/makeitdense
       - patterns/summarize
   - name: "Key Insights"
     insight_type: "Key Insights"
     description: "Extracts a list of the Key Insights of the content"
-    transformations:
+    patterns:
       - patterns/keyinsights
   - name: "Make it Dense"
     insight_type: "Dense Representation"
     description: "Create a dense representation of the content"
-    transformations:
+    patterns:
       - patterns/makeitdense
   - name: "Analyze Paper"
     insight_type: "Paper Analysis"
     description: "Analyze the paper and provide a quick summary"
-    transformations:
+    patterns:
       - patterns/analyze_paper
   - name: "Reflection"
     insight_type: "Reflection Questions"
     description: "Generates a list of insightful questions to provoke reflection"
-    transformations:
+    patterns:
       - patterns/reflection_questions
 ```
 

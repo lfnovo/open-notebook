@@ -9,9 +9,11 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
-from open_notebook.config import DEFAULT_MODELS, LANGGRAPH_CHECKPOINT_FILE
+from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE, load_default_models
 from open_notebook.domain.notebook import Notebook
 from open_notebook.graphs.utils import run_pattern
+
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 
 class ThreadState(TypedDict):

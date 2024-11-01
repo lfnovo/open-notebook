@@ -5,7 +5,7 @@ from langchain_core.runnables.config import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from open_notebook.config import EMBEDDING_MODEL
+from open_notebook.config import load_default_models
 from open_notebook.database.repository import (
     repo_create,
     repo_query,
@@ -140,6 +140,8 @@ class Source(ObjectModel):
             raise DatabaseOperationError(e)
 
     def vectorize(self) -> None:
+        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
         try:
             if not self.full_text:
                 return
@@ -189,6 +191,8 @@ class Source(ObjectModel):
             raise DatabaseOperationError("Failed to search sources")
 
     def add_insight(self, insight_type: str, content: str) -> Any:
+        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
@@ -209,6 +213,8 @@ class Source(ObjectModel):
 
     # todo: move this to content processing pipeline as a major graph
     def generate_toc_and_title(self) -> "Source":
+        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
         try:
             config = RunnableConfig(configurable=dict(thread_id=self.id))
             result = toc_graph.invoke({"content": self.full_text}, config=config)

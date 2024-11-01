@@ -29,22 +29,3 @@ class DefaultModels(RecordModel):
     default_speech_to_text_model: Optional[str] = None
     # default_vision_model: Optional[str] = None
     default_embedding_model: Optional[str] = None
-
-
-# def load_default_models():
-#     default_models = DefaultModels.load()
-#     embedding_model = (
-#         get_model(default_models.default_embedding_model, model_type="embedding")
-#         if default_models.default_embedding_model
-#         else None
-#     )
-
-#     speech_to_text_model = (
-#         get_model(
-#             default_models.default_speech_to_text_model, model_type="speech_to_text"
-#         )
-#         if default_models.default_speech_to_text_model
-#         else None
-#     )
-
-#     return default_models, embedding_model, speech_to_text_model

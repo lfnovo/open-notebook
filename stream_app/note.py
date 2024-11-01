@@ -27,7 +27,7 @@ def note_panel(session_id=None, note_id=None):
     if note_id:
         note: Note = Note.get(note_id)
     else:
-        note: Note = Note()
+        note: Note = Note(note_type="human")
 
     t_preview, t_edit = st.tabs(["Preview", "Edit"])
     with t_preview:

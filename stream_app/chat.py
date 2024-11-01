@@ -111,5 +111,6 @@ def chat_sidebar(session_id):
                             make_note_from_chat(
                                 content=msg.content,
                                 notebook_id=st.session_state[session_id]["notebook"].id,
+                                type="ai",
                             )
                             st.rerun()

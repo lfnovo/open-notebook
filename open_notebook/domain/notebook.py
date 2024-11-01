@@ -1,7 +1,6 @@
 import os
 from typing import Any, ClassVar, Dict, List, Literal, Optional
 
-from langchain_core.runnables.config import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
@@ -15,8 +14,8 @@ from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
 )
-from open_notebook.graphs.multipattern import graph as pattern_graph
-from open_notebook.graphs.recursive_toc import graph as toc_graph
+
+# from temp.recursive_toc import graph as toc_graph
 from open_notebook.utils import split_text, surreal_clean
 
 
@@ -209,29 +208,6 @@ class Source(ObjectModel):
             )
         except Exception as e:
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
-            raise DatabaseOperationError(e)
-
-    # todo: move this to content processing pipeline as a major graph
-    def generate_toc_and_title(self) -> "Source":
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
-
-        try:
-            config = RunnableConfig(configurable=dict(thread_id=self.id))
-            result = toc_graph.invoke({"content": self.full_text}, config=config)
-            self.add_insight("Table of Contents", surreal_clean(result["toc"]))
-            if not self.title:
-                transformations = [
-                    "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
-                ]
-                output = pattern_graph.invoke(
-                    dict(content_stack=[result["toc"]], transformations=transformations)
-                )
-                self.title = surreal_clean(output["output"])
-                self.save()
-            return self
-        except Exception as e:
-            logger.error(f"Error summarizing source {self.id}: {str(e)}")
-            logger.exception(e)
             raise DatabaseOperationError(e)
 
 

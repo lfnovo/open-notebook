@@ -24,6 +24,28 @@ def run_patterns(input_text, patterns):
     return output["output"]
 
 
+# moved it here to replace it with the pipeline on 0.1.0
+def generate_toc_and_title(source) -> "Source":
+    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
+    try:
+        patterns = ["patterns/default/toc"]
+        result = run_patterns(source.full_text, patterns=patterns)
+        source.add_insight("Table of Contents", surreal_clean(result))
+        if not source.title:
+            transformations = [
+                "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
+            ]
+            output = run_patterns(result["toc"], transformations=transformations)
+            source.title = surreal_clean(output["output"])
+            source.save()
+        return source
+    except Exception as e:
+        logger.error(f"Error summarizing source {source.id}: {str(e)}")
+        logger.exception(e)
+        raise
+
+
 @st.dialog("Source", width="large")
 def source_panel(source_id):
     source: Source = Source.get(source_id)
@@ -151,7 +173,7 @@ def add_source(session_id):
                 source.save()
                 source.add_to_notebook(st.session_state[session_id]["notebook"].id)
                 st.write("Summarizing...")
-                source.generate_toc_and_title()
+                generate_toc_and_title(source)
             except UnsupportedTypeException as e:
                 st.warning(
                     "This type of content is not supported yet. If you think it should be, let us know on the project Issues's page"

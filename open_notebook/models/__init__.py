@@ -51,39 +51,6 @@ MODEL_CLASS_MAP = {
 }
 
 
-# def get_model(model_id, **kwargs):
-#     """
-#     Get a model instance based on model_id and type.
-
-#     Args:
-#         model_id: The ID of the model to retrieve
-#         **kwargs: Additional arguments to pass to the model constructor
-#     """
-#     assert model_id, "Model ID cannot be empty"
-#     model: Model = Model.get(model_id)
-
-#     if not model:
-#         raise ValueError(f"Model with ID {model_id} not found")
-
-#     if not model.type or model.type not in MODEL_CLASS_MAP:
-#         raise ValueError(f"Invalid model type: {model.type}")
-
-#     provider_map = MODEL_CLASS_MAP[model.type]
-#     if model.provider not in provider_map:
-#         raise ValueError(
-#             f"Provider {model.provider} not compatible with {model.type} models"
-#         )
-
-#     model_class = provider_map[model.provider]
-#     model_instance = model_class(model_name=model.name, **kwargs)
-
-#     # Special handling for language models that need langchain conversion
-#     if model.type == "language":
-#         return model_instance.to_langchain()
-
-#     return model_instance
-
-
 class ModelManager:
     _instance = None
     _model_cache: Dict[str, object] = {}

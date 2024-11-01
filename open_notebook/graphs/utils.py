@@ -2,7 +2,7 @@ from langchain.output_parsers import OutputFixingParser
 from loguru import logger
 
 from open_notebook.domain.models import DefaultModels
-from open_notebook.models import get_model
+from open_notebook.models import model_manager
 from open_notebook.prompter import Prompter
 from open_notebook.utils import token_count
 
@@ -33,12 +33,12 @@ def run_pattern(
         or DEFAULT_MODELS.default_chat_model
     )
 
-    chain = get_model(model_id)
+    chain = model_manager.get_default_model("transformation")
     if parser:
         chain = chain | parser
 
     if output_fixing_model_id and parser:
-        output_fix_model = get_model(output_fixing_model_id)
+        output_fix_model = model_manager.get_model(output_fixing_model_id)
         chain = chain | OutputFixingParser.from_llm(
             parser=parser,
             llm=output_fix_model,

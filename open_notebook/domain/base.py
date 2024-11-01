@@ -68,11 +68,9 @@ class ObjectModel(BaseModel):
         return None
 
     def save(self) -> None:
-        from open_notebook.domain.models import DefaultModels
-        from open_notebook.models import get_model
+        from open_notebook.models import model_manager
 
-        DEFAULT_MODELS = DefaultModels.load()
-        EMBEDDING_MODEL = get_model(DEFAULT_MODELS.default_embedding_model)
+        EMBEDDING_MODEL = model_manager.get_default_model("embedding")
 
         try:
             logger.debug(f"Validating {self.__class__.__name__}")

@@ -41,44 +41,7 @@ volumes:
   notebook_data:
 ```
 
-or with the environment variables:
-
-```yaml
-version: '3'
-
-services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
-    volumes:
-      - surreal_data:/mydata
-    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
-    pull_policy: always
-    user: root
-
-  open_notebook:
-    image: lfnovo/open_notebook:latest
-    ports:
-      - "8080:8502"
-    environment:
-        - OPENAI_API_KEY=API_KEY
-        - SURREAL_ADDRESSsurrealdb
-        - SURREAL_PORT=8000
-        - SURREAL_USER=root
-        - SURREAL_PASS=root
-        - SURREAL_NAMESPACE=open_notebook
-        - SURREAL_DATABASE=staging
-    depends_on:
-      - surrealdb
-    pull_policy: always
-    volumes:
-      - notebook_data:/app/data
-
-volumes:
-  surreal_data:
-  notebook_data:
-```
+Take a look at the [Open Notebook Boilerplate](https://github.com/lfnovo/open-notebook-boilerplate) repo with a sample of how to set it up for maximum feature usability. 
 
 ### 📦 Installing from Source
 

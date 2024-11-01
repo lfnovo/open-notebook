@@ -7,10 +7,10 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import Annotated, TypedDict
 
-from open_notebook.config import load_default_models
+from open_notebook.domain.models import DefaultModels
 from open_notebook.graphs.utils import run_pattern
 
-DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+DEFAULT_MODELS = DefaultModels.load()
 
 
 class PatternChainState(TypedDict):

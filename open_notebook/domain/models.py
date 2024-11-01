@@ -1,12 +1,7 @@
 from typing import ClassVar, Optional
 
-from pydantic import BaseModel
-
-from open_notebook.database.repository import (
-    repo_query,
-    repo_update,
-)
-from open_notebook.domain.base import ObjectModel
+from open_notebook.database.repository import repo_query
+from open_notebook.domain.base import ObjectModel, RecordModel
 
 
 class Model(ObjectModel):
@@ -23,7 +18,10 @@ class Model(ObjectModel):
         return [Model(**model) for model in models]
 
 
-class DefaultModels(BaseModel):
+# todo: future: colocar um cache aqui
+class DefaultModels(RecordModel):
+    record_id: ClassVar[str] = "open_notebook:default_models"
+
     default_chat_model: Optional[str] = None
     default_transformation_model: Optional[str] = None
     large_context_model: Optional[str] = None
@@ -32,15 +30,21 @@ class DefaultModels(BaseModel):
     # default_vision_model: Optional[str] = None
     default_embedding_model: Optional[str] = None
 
-    @classmethod
-    def load(self):
-        result = repo_query("SELECT * FROM open_notebook:default_models;")
-        if result:
-            result = result[0]
-            dm = DefaultModels(**result)
-            return dm
-        return DefaultModels()
 
-    @classmethod
-    def update(self, data):
-        repo_update("open_notebook:default_models", data)
+# def load_default_models():
+#     default_models = DefaultModels.load()
+#     embedding_model = (
+#         get_model(default_models.default_embedding_model, model_type="embedding")
+#         if default_models.default_embedding_model
+#         else None
+#     )
+
+#     speech_to_text_model = (
+#         get_model(
+#             default_models.default_speech_to_text_model, model_type="speech_to_text"
+#         )
+#         if default_models.default_speech_to_text_model
+#         else None
+#     )
+
+#     return default_models, embedding_model, speech_to_text_model

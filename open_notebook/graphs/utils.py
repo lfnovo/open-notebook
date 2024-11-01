@@ -1,7 +1,7 @@
 from langchain.output_parsers import OutputFixingParser
 from loguru import logger
 
-from open_notebook.config import load_default_models
+from open_notebook.domain.models import DefaultModels
 from open_notebook.models import get_model
 from open_notebook.prompter import Prompter
 from open_notebook.utils import token_count
@@ -18,7 +18,7 @@ def run_pattern(
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+    DEFAULT_MODELS = DefaultModels.load()
     tokens = token_count(str(system_prompt) + str(messages))
 
     if tokens > 105_000:
@@ -33,12 +33,12 @@ def run_pattern(
         or DEFAULT_MODELS.default_chat_model
     )
 
-    chain = get_model(model_id, model_type="language")
+    chain = get_model(model_id)
     if parser:
         chain = chain | parser
 
     if output_fixing_model_id and parser:
-        output_fix_model = get_model(output_fixing_model_id, model_type="language")
+        output_fix_model = get_model(output_fixing_model_id)
         chain = chain | OutputFixingParser.from_llm(
             parser=parser,
             llm=output_fix_model,

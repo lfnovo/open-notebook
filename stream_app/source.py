@@ -7,7 +7,7 @@ import yaml
 from humanize import naturaltime
 from loguru import logger
 
-from open_notebook.config import UPLOADS_FOLDER, load_default_models
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.content_processing import graph
@@ -15,8 +15,6 @@ from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
-
-DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 
 def run_patterns(input_text, patterns):
@@ -26,18 +24,16 @@ def run_patterns(input_text, patterns):
 
 # moved it here to replace it with the pipeline on 0.1.0
 def generate_toc_and_title(source) -> "Source":
-    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
-
     try:
         patterns = ["patterns/default/toc"]
         result = run_patterns(source.full_text, patterns=patterns)
         source.add_insight("Table of Contents", surreal_clean(result))
         if not source.title:
-            transformations = [
+            patterns = [
                 "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
             ]
-            output = run_patterns(result["toc"], transformations=transformations)
-            source.title = surreal_clean(output["output"])
+            output = run_patterns(result, patterns=patterns)
+            source.title = surreal_clean(output)
             source.save()
         return source
     except Exception as e:

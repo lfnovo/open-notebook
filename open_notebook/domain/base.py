@@ -68,9 +68,11 @@ class ObjectModel(BaseModel):
         return None
 
     def save(self) -> None:
-        from open_notebook.config import load_default_models
+        from open_notebook.domain.models import DefaultModels
+        from open_notebook.models import get_model
 
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+        DEFAULT_MODELS = DefaultModels.load()
+        EMBEDDING_MODEL = get_model(DEFAULT_MODELS.default_embedding_model)
 
         try:
             logger.debug(f"Validating {self.__class__.__name__}")
@@ -88,7 +90,11 @@ class ObjectModel(BaseModel):
                 logger.debug("Creating new record")
                 repo_result = repo_create(self.__class__.table_name, data)
             else:
-                data["created"] = self.created.strftime("%Y-%m-%d %H:%M:%S")
+                data["created"] = (
+                    self.created.strftime("%Y-%m-%d %H:%M:%S")
+                    if type(self.created) == datetime
+                    else self.created
+                )
                 logger.debug(f"Updating record with id {self.id}")
                 repo_result = repo_update(self.id, data)
 
@@ -148,3 +154,20 @@ class ObjectModel(BaseModel):
         if isinstance(value, str):
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
         return value
+
+
+class RecordModel(BaseModel):
+    record_id: ClassVar[str] = "open_notebook:default_models"
+
+    @classmethod
+    def load(cls):
+        result = repo_query(f"SELECT * FROM {cls.record_id};")
+        if result:
+            result = result[0]
+            dm = cls(**result)
+            return dm
+        return cls()
+
+    @classmethod
+    def update(self, data):
+        repo_update(self.record_id, data)

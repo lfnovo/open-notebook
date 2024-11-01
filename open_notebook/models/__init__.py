@@ -49,13 +49,12 @@ MODEL_CLASS_MAP = {
 }
 
 
-def get_model(model_id, model_type="language", **kwargs):
+def get_model(model_id, **kwargs):
     """
     Get a model instance based on model_id and type.
 
     Args:
         model_id: The ID of the model to retrieve
-        model_type: Type of model ('language', 'embedding', or 'speech_to_text')
         **kwargs: Additional arguments to pass to the model constructor
     """
     assert model_id, "Model ID cannot be empty"
@@ -64,20 +63,20 @@ def get_model(model_id, model_type="language", **kwargs):
     if not model:
         raise ValueError(f"Model with ID {model_id} not found")
 
-    if model_type not in MODEL_CLASS_MAP:
-        raise ValueError(f"Invalid model type: {model_type}")
+    if not model.type or model.type not in MODEL_CLASS_MAP:
+        raise ValueError(f"Invalid model type: {model.type}")
 
-    provider_map = MODEL_CLASS_MAP[model_type]
+    provider_map = MODEL_CLASS_MAP[model.type]
     if model.provider not in provider_map:
         raise ValueError(
-            f"Provider {model.provider} not compatible with {model_type} models"
+            f"Provider {model.provider} not compatible with {model.type} models"
         )
 
     model_class = provider_map[model.provider]
     model_instance = model_class(model_name=model.name, **kwargs)
 
     # Special handling for language models that need langchain conversion
-    if model_type == "language":
+    if model.type == "language":
         return model_instance.to_langchain()
 
     return model_instance

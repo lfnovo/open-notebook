@@ -18,8 +18,16 @@ class MigrationManager:
             database=os.environ["SURREAL_DATABASE"],
             encrypted=False,  # Set to True if using SSL
         )
-        self.up_migrations = [Migration.from_file("migrations/1.surrealql")]
-        self.down_migrations = [Migration.from_file("migrations/1_down.surrealql")]
+        self.up_migrations = [
+            Migration.from_file("migrations/1.surrealql"),
+            Migration.from_file("migrations/2.surrealql"),
+        ]
+        self.down_migrations = [
+            Migration.from_file(
+                "migrations/1_down.surrealql",
+            ),
+            Migration.from_file("migrations/2_down.surrealql"),
+        ]
         self.runner = MigrationRunner(
             up_migrations=self.up_migrations,
             down_migrations=self.down_migrations,

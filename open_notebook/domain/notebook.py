@@ -4,18 +4,19 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from open_notebook.config import load_default_models
 from open_notebook.database.repository import (
     repo_create,
     repo_query,
 )
 from open_notebook.domain.base import ObjectModel
+from open_notebook.domain.models import DefaultModels
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
 )
 
 # from temp.recursive_toc import graph as toc_graph
+from open_notebook.models import get_model
 from open_notebook.utils import split_text, surreal_clean
 
 
@@ -139,7 +140,8 @@ class Source(ObjectModel):
             raise DatabaseOperationError(e)
 
     def vectorize(self) -> None:
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+        DEFAULT_MODELS = DefaultModels.load()
+        EMBEDDING_MODEL = get_model(DEFAULT_MODELS.default_embedding_model)
 
         try:
             if not self.full_text:
@@ -190,7 +192,8 @@ class Source(ObjectModel):
             raise DatabaseOperationError("Failed to search sources")
 
     def add_insight(self, insight_type: str, content: str) -> Any:
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+        DEFAULT_MODELS = DefaultModels.load()
+        EMBEDDING_MODEL = get_model(DEFAULT_MODELS.default_embedding_model)
 
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
@@ -214,7 +217,7 @@ class Source(ObjectModel):
 class Note(ObjectModel):
     table_name: ClassVar[str] = "note"
     title: Optional[str] = None
-    note_type: Optional[Literal["human", "ai"]] = "human"
+    note_type: Optional[Literal["human", "ai"]] = None
     content: Optional[str] = None
 
     @field_validator("content")

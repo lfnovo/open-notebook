@@ -17,10 +17,8 @@ from open_notebook.utils import surreal_clean
 from .consts import context_icons
 
 
-def run_transformations(input_text, transformations):
-    output = transform_graph.invoke(
-        dict(content_stack=[input_text], transformations=transformations)
-    )
+def run_patterns(input_text, patterns):
+    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
     return output["output"]
 
 
@@ -66,8 +64,8 @@ def source_panel(source_id):
                     if st.button(
                         transformation["name"], help=transformation["description"]
                     ):
-                        result = run_transformations(
-                            source.full_text, transformation["transformations"]
+                        result = run_patterns(
+                            source.full_text, transformation["patterns"]
                         )
                         source.add_insight(
                             transformation["insight_type"], surreal_clean(result)

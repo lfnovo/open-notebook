@@ -13,7 +13,7 @@ from open_notebook.graphs.utils import run_pattern
 
 class PatternChainState(TypedDict):
     content_stack: Annotated[Sequence[str], operator.add]
-    transformations: List[str]
+    patterns: List[str]
     output: str
 
 
@@ -21,8 +21,8 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
     model_id = config.get("configurable", {}).get(
         "model_id", DEFAULT_MODELS.default_transformation_model
     )
-    transformations = state["transformations"]
-    current_transformation = transformations.pop(0)
+    patterns = state["patterns"]
+    current_transformation = patterns.pop(0)
     if current_transformation.startswith("patterns/"):
         input_args = {"input_text": state["content_stack"][-1]}
     else:
@@ -40,7 +40,7 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
     return {
         "content_stack": [transformation_result.content],
         "output": transformation_result.content,
-        "transformations": state["transformations"],
+        "patterns": state["patterns"],
     }
 
 
@@ -48,7 +48,7 @@ def transform_condition(state: PatternChainState) -> Literal["agent", END]:  # t
     """
     Checks whether there are more chunks to process.
     """
-    if len(state["transformations"]) > 0:
+    if len(state["patterns"]) > 0:
         return "agent"
     return END
 

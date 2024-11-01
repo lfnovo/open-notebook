@@ -24,6 +24,8 @@ For example, you could start by summarizing a text, then use that summary to gen
 
 ### Setting Up Transformations
 
+Take a look at the [Open Notebook Boilerplate](https://github.com/lfnovo/open-notebook-boilerplate) repo with a sample of how to set it up for maximum feature usability. 
+
 To set up your own Transformations, you'll define them in the `transformations.yaml` file. Below is an example setup:
 
 ```yaml
@@ -31,35 +33,38 @@ source_insights:
   - name: "Summarize"
     insight_type: "Content Summary"
     description: "Summarize the content"
-    transformations:
-      - patterns/makeitdense
-      - patterns/summarize
+    patterns:
+      - patterns/default/makeitdense
+      - patterns/default/summarize
   - name: "Key Insights"
     insight_type: "Key Insights"
     description: "Extracts a list of the Key Insights of the content"
-    transformations:
-      - patterns/keyinsights
+    patterns:
+      - patterns/default/keyinsights
   - name: "Make it Dense"
     insight_type: "Dense Representation"
     description: "Create a dense representation of the content"
-    transformations:
-      - patterns/makeitdense
+    patterns:
+      - patterns/default/makeitdense
   - name: "Analyze Paper"
     insight_type: "Paper Analysis"
     description: "Analyze the paper and provide a quick summary"
-    transformations:
-      - patterns/analyze_paper
+    patterns:
+      - patterns/default/analyze_paper
   - name: "Reflection"
     insight_type: "Reflection Questions"
     description: "Generates a list of insightful questions to provoke reflection"
-    transformations:
-      - patterns/reflection_questions
+    patterns:
+      - patterns/default/reflection_questions
 ```
 
-Once you've defined your transformation, make sure to add the corresponding prompts to the `prompts/patterns` folder. Here's an example of a transformation prompt:
+You can mount this file to the docker image to replace its default value. 
+
+
+Once you've defined your transformation, make sure to add the corresponding prompts to the `prompts/patterns/user` folder. Here's an example of a transformation prompt:
 
 ```jinja
-{% include 'patterns/common_text.jinja' %}
+{% include 'patterns/user/common_text.jinja' %}
 
 # IDENTITY and PURPOSE
 
@@ -93,7 +98,6 @@ You extract deep, thought-provoking, and meaningful reflections from text conten
 - You can use `include` statements, like in the example above, to insert common instructions across all your patterns.
 - Paths that start with `patterns/` will point to a corresponding `.jinja` file in the `patterns` folder.
 - Any item that doesn't follow the `patterns/` format will be interpreted as a command (refer to `command.jinja` for clarity).
-
 
 
 ### Call for Contributions

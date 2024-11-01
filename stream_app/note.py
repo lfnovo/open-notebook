@@ -52,12 +52,10 @@ def note_panel(session_id=None, note_id=None):
 
 def make_note_from_chat(content, notebook_id=None):
     # todo: make this more efficient
-    transformations = [
+    patterns = [
         "Based on the Note below, please provide a Title for this content, with max 15 words"
     ]
-    output = pattern_graph.invoke(
-        dict(content_stack=[content], transformations=transformations)
-    )
+    output = pattern_graph.invoke(dict(content_stack=[content], patterns=patterns))
     title = surreal_clean(output["output"])
 
     note = Note(

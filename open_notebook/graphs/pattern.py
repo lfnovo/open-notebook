@@ -4,8 +4,10 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from open_notebook.config import DEFAULT_MODELS
+from open_notebook.config import load_default_models
 from open_notebook.graphs.utils import run_pattern
+
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 
 class PatternState(TypedDict):
@@ -15,13 +17,13 @@ class PatternState(TypedDict):
 
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_transformation_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
     return {
         "output": run_pattern(
             pattern_name=state["pattern"],
-            model_name=model_name,
+            model_id=model_id,
             state=state,
         )
     }

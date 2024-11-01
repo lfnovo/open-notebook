@@ -6,6 +6,8 @@ In a world dominated by Artificial Intelligence, having the ability to think �
 
 Open Notebook empowers you to manage your research, generate AI-assisted notes, and interact with your content—on your terms.
 
+Learn more about our project at [https://www.open-notebook.ai](https://www.open-notebook.ai)
+
 ## ⚙️ Setting Up
 
 Go to the [Setup Guide](docs/SETUP.md) to learn how to set up the tool in details.

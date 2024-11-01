@@ -12,7 +12,7 @@ st.set_page_config(
 version_sidebar()
 
 
-st.title("Settings")
+st.title("⚙️ Settings")
 
 model_tab, model_defaults_tab = st.tabs(["Models", "Model Defaults"])
 

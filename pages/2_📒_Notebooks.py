@@ -1,6 +1,7 @@
 import streamlit as st
 from humanize import naturaltime
 
+from open_notebook.config import load_default_models
 from open_notebook.domain.notebook import Notebook
 from stream_app.chat import chat_sidebar
 from stream_app.note import add_note, note_card
@@ -10,7 +11,6 @@ from stream_app.utils import setup_stream_state, version_sidebar
 st.set_page_config(
     layout="wide", page_title="📒 Open Notebook", initial_sidebar_state="expanded"
 )
-
 
 version_sidebar()
 
@@ -71,6 +71,9 @@ def notebook_page(current_notebook_id):
     sources = current_notebook.sources
     notes = current_notebook.notes
 
+    # Load the default models dynamically
+    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+
     notebook_header(current_notebook)
 
     work_tab, chat_tab = st.columns([4, 2])
@@ -115,7 +118,6 @@ if st.session_state["current_notebook"]:
 
 st.title("📒 My Notebooks")
 st.caption("Here are all your notebooks")
-
 
 notebooks = Notebook.get_all(order_by="updated desc")
 

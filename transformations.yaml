@@ -3,33 +3,33 @@ source_insights:
   - name: "Summarize"
     insight_type: "Content Summary"
     description: "Summarize the content"
-    transformations:
-      - patterns/makeitdense
-      - patterns/summarize
+    patterns:
+      - patterns/default/makeitdense
+      - patterns/default/summarize
   - name: "Key Insights"
     insight_type: "Key Insights"
     description: "Extracts a list of the Key Insights of the content"
-    transformations:
-      - patterns/keyinsights
+    patterns:
+      - patterns/default/keyinsights
   - name: "Make it Dense"
     insight_type: "Dense Representation"
     description: "Create a dense representation of the content"
-    transformations:
-      - patterns/makeitdense
+    patterns:
+      - patterns/default/makeitdense
   - name: "Analyze Paper"
     insight_type: "Paper Analysis"
     description: "Analyze the paper and provide a quick summary"
-    transformations:
-      - patterns/analyze_paper
+    patterns:
+      - patterns/default/analyze_paper
   - name: "Reflection"
     insight_type: "Reflection Questions"
     description: "Generates a list of insightful questions to provoke reflection"
-    transformations:
-      - patterns/reflection_questions
+    patterns:
+      - patterns/default/reflection_questions
   # - name: "Reflection [PT]"
   #   insight_type: "Reflection Questions [PT]"
   #   description: "Generates a list of insightful questions to provoke reflection"
-  #   transformations:
-  #     - patterns/reflection_questions
-  #     - patterns/translate
+  #   patterns:
+  #     - patterns/default/reflection_questions
+  #     - patterns/user/translate
 

@@ -68,13 +68,15 @@ class ObjectModel(BaseModel):
         return None
 
     def save(self) -> None:
-        from open_notebook.config import EMBEDDING_MODEL
+        from open_notebook.config import load_default_models
+
+        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
         try:
             logger.debug(f"Validating {self.__class__.__name__}")
             self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
-            data["updated"] = datetime.now().isoformat()
+            data["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
@@ -82,10 +84,11 @@ class ObjectModel(BaseModel):
                     data["embedding"] = EMBEDDING_MODEL.embed(embedding_content)
 
             if self.id is None:
-                data["created"] = datetime.now().isoformat()
+                data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 logger.debug("Creating new record")
                 repo_result = repo_create(self.__class__.table_name, data)
             else:
+                data["created"] = self.created.strftime("%Y-%m-%d %H:%M:%S")
                 logger.debug(f"Updating record with id {self.id}")
                 repo_result = repo_update(self.id, data)
 

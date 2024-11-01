@@ -221,10 +221,15 @@ with templates_tab:
                 key=f"voice2_{pd_config.id}",
                 help="You can use Elevenlabs voice ID",
             )
+            if pd_config.model not in provider_models[pd_config.provider]:
+                st.warning(f"Model {pd_config.model} not setup. Changing to default.")
+                index = 0
+            else:
+                index = provider_models[pd_config.provider].index(pd_config.model)
             pd_config.model = st.selectbox(
                 "Model",
                 provider_models[pd_config.provider],
-                index=provider_models[pd_config.provider].index(pd_config.model),
+                index=index,
                 key=f"model_{pd_config.id}",
             )
             st.caption(

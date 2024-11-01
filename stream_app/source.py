@@ -7,7 +7,7 @@ import yaml
 from humanize import naturaltime
 from loguru import logger
 
-from open_notebook.config import UPLOADS_FOLDER
+from open_notebook.config import UPLOADS_FOLDER, load_default_models
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.content_processing import graph
@@ -16,11 +16,11 @@ from open_notebook.utils import surreal_clean
 
 from .consts import context_icons
 
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
-def run_transformations(input_text, transformations):
-    output = transform_graph.invoke(
-        dict(content_stack=[input_text], transformations=transformations)
-    )
+
+def run_patterns(input_text, patterns):
+    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
     return output["output"]
 
 
@@ -66,8 +66,8 @@ def source_panel(source_id):
                     if st.button(
                         transformation["name"], help=transformation["description"]
                     ):
-                        result = run_transformations(
-                            source.full_text, transformation["transformations"]
+                        result = run_patterns(
+                            source.full_text, transformation["patterns"]
                         )
                         source.add_insight(
                             transformation["insight_type"], surreal_clean(result)
@@ -164,7 +164,7 @@ def add_source(session_id):
                 st.stop()
 
             except Exception as e:
-                st.error(e)
+                st.exception(e)
                 return
 
         st.rerun()

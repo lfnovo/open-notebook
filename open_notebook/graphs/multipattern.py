@@ -7,22 +7,24 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import Annotated, TypedDict
 
-from open_notebook.config import DEFAULT_MODELS
+from open_notebook.config import load_default_models
 from open_notebook.graphs.utils import run_pattern
+
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 
 class PatternChainState(TypedDict):
     content_stack: Annotated[Sequence[str], operator.add]
-    transformations: List[str]
+    patterns: List[str]
     output: str
 
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_transformation_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
-    transformations = state["transformations"]
-    current_transformation = transformations.pop(0)
+    patterns = state["patterns"]
+    current_transformation = patterns.pop(0)
     if current_transformation.startswith("patterns/"):
         input_args = {"input_text": state["content_stack"][-1]}
     else:
@@ -30,17 +32,17 @@ def call_model(state: dict, config: RunnableConfig) -> dict:
             "input_text": state["content_stack"][-1],
             "command": current_transformation,
         }
-        current_transformation = "patterns/custom"
+        current_transformation = "patterns/default/command"
 
     transformation_result = run_pattern(
         pattern_name=current_transformation,
-        model_name=model_name,
+        model_id=model_id,
         state=input_args,
     )
     return {
         "content_stack": [transformation_result.content],
         "output": transformation_result.content,
-        "transformations": state["transformations"],
+        "patterns": state["patterns"],
     }
 
 
@@ -48,7 +50,7 @@ def transform_condition(state: PatternChainState) -> Literal["agent", END]:  # t
     """
     Checks whether there are more chunks to process.
     """
-    if len(state["transformations"]) > 0:
+    if len(state["patterns"]) > 0:
         return "agent"
     return END
 

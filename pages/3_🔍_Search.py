@@ -1,6 +1,6 @@
 import streamlit as st
 
-from open_notebook.config import EMBEDDING_MODEL
+from open_notebook.config import load_default_models
 from open_notebook.domain.notebook import text_search, vector_search
 from stream_app.note import note_list_item
 from stream_app.source import source_list_item
@@ -10,6 +10,8 @@ st.set_page_config(
     layout="wide", page_title="🔍 Search", initial_sidebar_state="expanded"
 )
 version_sidebar()
+
+DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
 # search_tab, ask_tab = st.tabs(["Search", "Ask"])
 # notebooks = Notebook.get_all()

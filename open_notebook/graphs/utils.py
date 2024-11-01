@@ -21,11 +21,6 @@ def run_pattern(
     DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
     tokens = token_count(str(system_prompt) + str(messages))
 
-    model_id = (
-        DEFAULT_MODELS.large_context_model
-        or DEFAULT_MODELS.default_transformation_model
-        or DEFAULT_MODELS.default_chat_model
-    )
     if tokens > 105_000:
         model_id = DEFAULT_MODELS.large_context_model
         logger.debug(

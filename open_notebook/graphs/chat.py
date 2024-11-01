@@ -22,12 +22,12 @@ class ThreadState(TypedDict):
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_chat_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_chat_model
     )
     ai_message = run_pattern(
         "chat",
-        model_name,
+        model_id,
         messages=state["messages"],
         state=state,
     )

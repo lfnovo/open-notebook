@@ -59,14 +59,14 @@ def chunk_condition(state: SummaryState) -> Literal["get_chunk", END]:  # type: 
 
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_transformation_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
     parser = PydanticOutputParser(pydantic_object=SummaryResponse)
     return {
         "output": run_pattern(
             pattern_name="summarize",
-            model_name=model_name,
+            model_id=model_id,
             state=state,
             parser=parser,
         )

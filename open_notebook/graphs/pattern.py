@@ -15,13 +15,13 @@ class PatternState(TypedDict):
 
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_transformation_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
     return {
         "output": run_pattern(
             pattern_name=state["pattern"],
-            model_name=model_name,
+            model_id=model_id,
             state=state,
         )
     }

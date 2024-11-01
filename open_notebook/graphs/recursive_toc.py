@@ -49,13 +49,13 @@ def chunk_condition(state: TocState) -> Literal["get_chunk", END]:  # type: igno
 
 
 def call_model(state: TocState, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", DEFAULT_MODELS.default_transformation_model
+    model_id = config.get("configurable", {}).get(
+        "model_id", DEFAULT_MODELS.default_transformation_model
     )
     return {
         "toc": run_pattern(
             pattern_name="recursive_toc",
-            model_name=model_name,
+            model_id=model_id,
             state=state,
         ).content
     }

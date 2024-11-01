@@ -19,10 +19,10 @@ class DocQueryState(TypedDict):
 
 
 def call_model(state: dict, config: RunnableConfig) -> dict:
-    model_name = config.get("configurable", {}).get(
-        "model_name", os.environ.get("RETRIEVAL_MODEL")
+    model_id = config.get("configurable", {}).get(
+        "model_id", os.environ.get("RETRIEVAL_MODEL")
     )
-    return {"answer": run_pattern("doc_query", model_name, state)}
+    return {"answer": run_pattern("doc_query", model_id, state)}
 
 
 # todo: there is probably a better way to do this and avoid repetition

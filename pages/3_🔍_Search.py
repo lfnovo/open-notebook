@@ -1,7 +1,8 @@
 import streamlit as st
 
+from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import text_search, vector_search
-from open_notebook.models import EmbeddingModel, model_manager
+from open_notebook.models import EmbeddingModel
 from pages.stream_app.note import note_list_item
 from pages.stream_app.source import source_list_item
 from pages.stream_app.utils import setup_page

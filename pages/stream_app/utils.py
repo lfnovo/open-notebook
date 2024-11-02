@@ -2,8 +2,8 @@ import streamlit as st
 from loguru import logger
 
 from open_notebook.database.migrate import MigrationManager
+from open_notebook.domain.models import model_manager
 from open_notebook.graphs.chat import ThreadState, graph
-from open_notebook.models import model_manager
 from open_notebook.utils import (
     compare_versions,
     get_installed_version,

@@ -10,11 +10,9 @@ from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
-from open_notebook.domain.models import DefaultModels
 from open_notebook.domain.notebook import Notebook
-from open_notebook.graphs.utils import run_pattern
-
-DEFAULT_MODELS = DefaultModels.load()
+from open_notebook.graphs.utils import provision_model
+from open_notebook.prompter import Prompter
 
 
 class ThreadState(TypedDict):
@@ -25,15 +23,11 @@ class ThreadState(TypedDict):
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
-    model_id = config.get("configurable", {}).get(
-        "model_id", DEFAULT_MODELS.default_chat_model
+    system_prompt = Prompter(prompt_template="chat").render(data=state)
+    model = provision_model(
+        str(system_prompt) + str(state.get("messages", [])), config, "chat"
     )
-    ai_message = run_pattern(
-        "chat",
-        model_id,
-        messages=state["messages"],
-        state=state,
-    )
+    ai_message = model.invoke([system_prompt] + state.get("messages", []))
     return {"messages": ai_message}
 
 

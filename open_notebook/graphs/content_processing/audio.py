@@ -73,7 +73,7 @@ def split_audio(input_file, segment_length_minutes=15, output_prefix=None):
 
 
 def extract_audio(data: SourceState):
-    SPEECH_TO_TEXT_MODEL = model_manager.get_default_model("speech_to_text")
+    SPEECH_TO_TEXT_MODEL = model_manager.speech_to_text
 
     input_audio_path = data.get("file_path")
     audio_files = []

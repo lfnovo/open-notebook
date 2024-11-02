@@ -20,11 +20,11 @@ def provision_model(content, config, default_type):
         logger.debug(
             f"Using large context model because the content has {tokens} tokens"
         )
-        return model_manager.get_default_model("large_context")
+        return model_manager.get_default_model("large_context").to_langchain()
     elif config.get("configurable", {}).get("model_id"):
         return model_manager.get_model(config.get("configurable", {}).get("model_id"))
     else:
-        return model_manager.get_default_model(default_type)
+        return model_manager.get_default_model(default_type).to_langchain()
 
 
 # todo: turn into a graph

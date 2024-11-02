@@ -106,6 +106,22 @@ class ModelManager:
         return self._default_models
 
     @property
+    def speech_to_text(self, **kwargs) -> SpeechToTextModel:
+        """Get the default speech-to-text model"""
+        model = self.get_default_model("speech_to_text", **kwargs)
+        if not isinstance(model, SpeechToTextModel):
+            raise TypeError(f"Expected SpeechToTextModel but got {type(model)}")
+        return model
+
+    @property
+    def text_to_speech(self, **kwargs) -> TextToSpeechModel:
+        """Get the default text-to-speech model"""
+        model = self.get_default_model("text_to_speech", **kwargs)
+        if not isinstance(model, TextToSpeechModel):
+            raise TypeError(f"Expected TextToSpeechModel but got {type(model)}")
+        return model
+
+    @property
     def embedding_model(self, **kwargs) -> EmbeddingModel:
         """Get the default embedding model"""
         model = self.get_default_model("embedding", **kwargs)

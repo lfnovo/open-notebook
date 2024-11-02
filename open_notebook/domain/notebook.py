@@ -265,7 +265,9 @@ def text_search(keyword: str, results: int, source: bool = True, note: bool = Tr
         raise DatabaseOperationError("Failed to perform text search")
 
 
-def vector_search(keyword: str, results: int, source: bool = True, note: bool = True):
+def vector_search(
+    keyword: List[float], results: int, source: bool = True, note: bool = True
+):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:

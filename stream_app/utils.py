@@ -13,9 +13,7 @@ from open_notebook.utils import (
 def version_sidebar():
     with st.sidebar:
         try:
-            current_version = get_installed_version(
-                "open-notebook"
-            )  # Note the hyphen instead of underscore
+            current_version = get_installed_version("open-notebook")
         except Exception:
             # Fallback to reading directly from pyproject.toml
             import tomli

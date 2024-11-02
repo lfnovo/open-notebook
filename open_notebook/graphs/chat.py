@@ -26,7 +26,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
     system_prompt = Prompter(prompt_template="chat").render(data=state)
     payload = [system_prompt] + state.get("messages", [])
     model = provision_model(str(payload), config, "chat")
-    ai_message = model.invoke(payload, [])
+    ai_message = model.invoke(payload)
     return {"messages": ai_message}
 
 

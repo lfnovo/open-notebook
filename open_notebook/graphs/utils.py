@@ -22,7 +22,9 @@ def provision_model(content, config, default_type):
         )
         return model_manager.get_default_model("large_context").to_langchain()
     elif config.get("configurable", {}).get("model_id"):
-        return model_manager.get_model(config.get("configurable", {}).get("model_id"))
+        return model_manager.get_model(
+            config.get("configurable", {}).get("model_id")
+        ).to_langchain()
     else:
         return model_manager.get_default_model(default_type).to_langchain()
 

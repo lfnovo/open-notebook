@@ -12,13 +12,9 @@ from open_notebook.plugins.podcasts import (
     engagement_techniques,
     participant_roles,
 )
-from stream_app.utils import page_commons
+from pages.stream_app.utils import setup_page
 
-st.set_page_config(
-    layout="wide", page_title="🎙️ Podcasts", initial_sidebar_state="expanded"
-)
-
-page_commons()
+setup_page("🎙️ Podcasts")
 
 text_to_speech_models = Model.get_models_by_type("text_to_speech")
 

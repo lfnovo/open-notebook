@@ -3,12 +3,9 @@ import yaml
 
 from open_notebook.domain.models import Model
 from open_notebook.graphs.multipattern import graph as pattern_graph
-from stream_app.utils import page_commons
+from pages.stream_app.utils import setup_page
 
-st.set_page_config(
-    layout="wide", page_title="🛝 Playground", initial_sidebar_state="expanded"
-)
-page_commons()
+setup_page("🛝 Playground")
 
 st.title("🛝 Playground")
 with open("transformations.yaml", "r") as file:

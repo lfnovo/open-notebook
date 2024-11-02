@@ -1,4 +1,5 @@
 import streamlit as st
+from loguru import logger
 
 from open_notebook.database.migrate import MigrationManager
 from open_notebook.graphs.chat import ThreadState, graph
@@ -90,7 +91,25 @@ def check_models():
         st.stop()
 
 
-def page_commons():
-    version_sidebar()
+def handle_error(func):
+    """Decorator for consistent error handling"""
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error in {func.__name__}: {str(e)}")
+            logger.exception(e)
+            st.error(f"An error occurred: {str(e)}")
+
+    return wrapper
+
+
+def setup_page(title: str, layout="wide", sidebar_state="expanded"):
+    """Common page setup for all pages"""
+    st.set_page_config(
+        page_title=title, layout=layout, initial_sidebar_state=sidebar_state
+    )
     check_migration()
     check_models()
+    version_sidebar()

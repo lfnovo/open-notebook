@@ -5,7 +5,8 @@ from open_notebook.domain.notebook import Note, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import token_count
-from stream_app.note import make_note_from_chat
+
+from .note import make_note_from_chat
 
 
 # todo: build a smarter, more robust context manager function

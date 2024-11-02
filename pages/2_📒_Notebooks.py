@@ -2,16 +2,12 @@ import streamlit as st
 from humanize import naturaltime
 
 from open_notebook.domain.notebook import Notebook
-from stream_app.chat import chat_sidebar
-from stream_app.note import add_note, note_card
-from stream_app.source import add_source, source_card
-from stream_app.utils import page_commons, setup_stream_state
+from pages.stream_app.chat import chat_sidebar
+from pages.stream_app.note import add_note, note_card
+from pages.stream_app.source import add_source, source_card
+from pages.stream_app.utils import setup_page, setup_stream_state
 
-st.set_page_config(
-    layout="wide", page_title="📒 Open Notebook", initial_sidebar_state="expanded"
-)
-
-page_commons()
+setup_page("📒 Open Notebook")
 
 
 def notebook_header(current_notebook):

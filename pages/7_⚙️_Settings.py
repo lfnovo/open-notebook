@@ -4,12 +4,9 @@ import streamlit as st
 
 from open_notebook.domain.models import DefaultModels, Model
 from open_notebook.models import MODEL_CLASS_MAP
-from stream_app.utils import page_commons
+from pages.stream_app.utils import setup_page
 
-st.set_page_config(
-    layout="wide", page_title="⚙️ Settings", initial_sidebar_state="expanded"
-)
-page_commons()
+setup_page("⚙️ Settings")
 
 
 st.title("⚙️ Settings")

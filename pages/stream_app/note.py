@@ -94,7 +94,6 @@ def note_card(session_id, note):
 
 
 def note_list_item(note_id, score=None):
-    logger.debug(note_id)
     note: Note = Note.get(note_id)
     if note.note_type == "human":
         icon = "🤵"

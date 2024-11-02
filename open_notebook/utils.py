@@ -28,7 +28,7 @@ def split_text(txt: str, chunk=1000, overlap=0, separator=" "):
     return text_splitter.split_text(txt)
 
 
-def token_count(input_string):
+def token_count(input_string) -> int:
     """
     Count the number of tokens in the input string using the 'o200k_base' encoding.
 
@@ -46,7 +46,7 @@ def token_count(input_string):
     return token_count
 
 
-def token_cost(token_count, cost_per_million=0.150):
+def token_cost(token_count, cost_per_million=0.150) -> float:
     """
     Calculate the cost of tokens based on the token count and cost per million tokens.
 
@@ -60,11 +60,11 @@ def token_cost(token_count, cost_per_million=0.150):
     return cost_per_million * (token_count / 1_000_000)
 
 
-def remove_non_ascii(text):
+def remove_non_ascii(text) -> str:
     return re.sub(r"[^\x00-\x7F]+", "", text)
 
 
-def remove_non_printable(text):
+def remove_non_printable(text) -> str:
     # Remove control characters, except newlines and tabs
     text = "".join(
         char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
@@ -74,7 +74,7 @@ def remove_non_printable(text):
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 
 
-def surreal_clean(text):
+def surreal_clean(text) -> str:
     """
     Clean the input text by removing non-ASCII and non-printable characters,
     and adjusting colon placement for SurrealDB compatibility.

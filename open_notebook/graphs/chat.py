@@ -11,7 +11,7 @@ from typing_extensions import TypedDict
 
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
-from open_notebook.graphs.utils import provision_model
+from open_notebook.graphs.utils import provision_langchain_model
 from open_notebook.prompter import Prompter
 
 
@@ -25,7 +25,7 @@ class ThreadState(TypedDict):
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)
     payload = [system_prompt] + state.get("messages", [])
-    model = provision_model(str(payload), config, "chat")
+    model = provision_langchain_model(str(payload), config, "chat")
     ai_message = model.invoke(payload)
     return {"messages": ai_message}
 

@@ -4,9 +4,10 @@ from math import ceil
 from loguru import logger
 from pydub import AudioSegment
 
+from open_notebook.domain.models import model_manager
 from open_notebook.graphs.content_processing.state import SourceState
-from open_notebook.models import model_manager
 
+# todo: remove reference to model_manager
 # future: parallelize the transcription process
 
 

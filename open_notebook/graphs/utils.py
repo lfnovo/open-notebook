@@ -2,7 +2,7 @@ from langchain.output_parsers import OutputFixingParser
 from langchain_core.messages import AIMessage
 from loguru import logger
 
-from open_notebook.models import model_manager
+from open_notebook.domain.models import model_manager
 from open_notebook.prompter import Prompter
 from open_notebook.utils import token_count
 

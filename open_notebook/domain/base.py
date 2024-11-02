@@ -55,7 +55,8 @@ class ObjectModel(BaseModel):
             result = repo_query(f"SELECT * FROM {id}")
             if result:
                 return cls(**result[0])
-            return None
+            else:
+                raise NotFoundError(f"{cls.table_name} with id {id} not found")
         except Exception as e:
             logger.error(f"Error fetching {cls.table_name} with id {id}: {str(e)}")
             logger.exception(e)
@@ -68,12 +69,12 @@ class ObjectModel(BaseModel):
         return None
 
     def save(self) -> None:
-        from open_notebook.models import model_manager
+        from open_notebook.domain.models import model_manager
+        from open_notebook.models import EmbeddingModel
 
-        EMBEDDING_MODEL = model_manager.get_default_model("embedding")
+        EMBEDDING_MODEL: EmbeddingModel = model_manager.embedding_model
 
         try:
-            logger.debug(f"Validating {self.__class__.__name__}")
             self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
             data["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -90,7 +91,7 @@ class ObjectModel(BaseModel):
             else:
                 data["created"] = (
                     self.created.strftime("%Y-%m-%d %H:%M:%S")
-                    if type(self.created) == datetime
+                    if isinstance(self.created, datetime)
                     else self.created
                 )
                 logger.debug(f"Updating record with id {self.id}")
@@ -118,8 +119,6 @@ class ObjectModel(BaseModel):
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
-        # del data["created"]
-        # del data["updated"]
         return {key: value for key, value in data.items() if value is not None}
 
     def delete(self) -> bool:

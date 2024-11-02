@@ -9,13 +9,11 @@ from open_notebook.database.repository import (
     repo_query,
 )
 from open_notebook.domain.base import ObjectModel
+from open_notebook.domain.models import model_manager
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
 )
-
-# from temp.recursive_toc import graph as toc_graph
-from open_notebook.models import model_manager
 from open_notebook.utils import split_text, surreal_clean
 
 
@@ -139,7 +137,7 @@ class Source(ObjectModel):
             raise DatabaseOperationError(e)
 
     def vectorize(self) -> None:
-        EMBEDDING_MODEL = model_manager.get_default_model("embedding")
+        EMBEDDING_MODEL = model_manager.embedding_model
 
         try:
             if not self.full_text:
@@ -190,7 +188,7 @@ class Source(ObjectModel):
             raise DatabaseOperationError("Failed to search sources")
 
     def add_insight(self, insight_type: str, content: str) -> Any:
-        EMBEDDING_MODEL = model_manager.get_default_model("embedding")
+        EMBEDDING_MODEL = model_manager.embedding_model
 
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")

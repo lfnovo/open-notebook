@@ -39,9 +39,8 @@ def run_pattern(
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    chain = provision_model(
-        str(system_prompt) + str(messages), config, "transformation"
-    )
+    payload = [system_prompt] + messages
+    chain = provision_model(str(payload), config, "transformation")
 
     if parser:
         chain = chain | parser
@@ -53,10 +52,6 @@ def run_pattern(
             llm=output_fix_model,
         )
 
-    # todo: precisa deste if?
-    if len(messages) > 0:
-        response = chain.invoke([system_prompt] + messages)
-    else:
-        response = chain.invoke(system_prompt)
+    response = chain.invoke(payload)
 
     return response

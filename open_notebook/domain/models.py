@@ -36,6 +36,7 @@ class DefaultModels(RecordModel):
     default_speech_to_text_model: Optional[str] = None
     # default_vision_model: Optional[str] = None
     default_embedding_model: Optional[str] = None
+    default_tools_model: Optional[str] = None
 
 
 class ModelManager:
@@ -94,7 +95,7 @@ class ModelManager:
 
     def refresh_defaults(self):
         """Refresh the default models from the database"""
-        self._default_models = DefaultModels.load()
+        self._default_models = DefaultModels()
 
     @property
     def defaults(self) -> DefaultModels:
@@ -145,6 +146,10 @@ class ModelManager:
             model_id = (
                 self.defaults.default_transformation_model
                 or self.defaults.default_chat_model
+            )
+        elif model_type == "tools":
+            model_id = (
+                self.defaults.default_tools_model or self.defaults.default_chat_model
             )
         elif model_type == "embedding":
             model_id = self.defaults.default_embedding_model

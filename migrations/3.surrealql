@@ -1,4 +1,11 @@
-REMOVE FUNCTION fn::vector_search;
+
+DEFINE TABLE IF NOT EXISTS chat_session SCHEMALESS;
+
+DEFINE TABLE IF NOT EXISTS refers_to
+TYPE RELATION 
+FROM chat_session TO notebook;
+
+REMOVE FUNCTION IF EXISTS fn::vector_search;
 
 DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_count: int, $sources: bool, $show_notes: bool, $min_similarity: float) {
     let $source_embedding_search = 
@@ -16,7 +23,6 @@ DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_cou
         )}
         ELSE { [] };
 
-    -- Busca em source_insight com threshold
     let $source_insight_search = 
         IF $sources {(
             SELECT 
@@ -67,10 +73,10 @@ DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_cou
 };
 
 
-REMOVE FUNCTION fn::text_search;
+REMOVE FUNCTION IF EXISTS fn::text_search;
 
 
- DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources:bool, $show_notes:bool) {
+DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources:bool, $show_notes:bool) {
   
     let $source_title_search = 
         IF $sources {(

@@ -1,8 +1,12 @@
+from datetime import datetime
+from typing import List, Union
+
 import streamlit as st
 from loguru import logger
 
 from open_notebook.database.migrate import MigrationManager
 from open_notebook.domain.models import model_manager
+from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import ThreadState, graph
 from open_notebook.utils import (
     compare_versions,
@@ -33,19 +37,65 @@ def version_sidebar():
             )
 
 
-def setup_stream_state(session_id) -> None:
+def create_session_for_notebook(notebook_id: str, session_name: str = None):
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    title = f"Chat Session {current_time}" if not session_name else session_name
+    chat_session = ChatSession(title=title)
+    chat_session.save()
+    chat_session.relate_to_notebook(notebook_id)
+    return chat_session
+
+
+def setup_stream_state(current_notebook: Notebook) -> ChatSession:
     """
     Sets the value of the current session_id for langgraph thread state.
     If there is no existing thread state for this session_id, it creates a new one.
+    Finally, it acquires the existing state for the session from Langgraph state and sets it in the streamlit session state.
     """
-    existing_state = graph.get_state({"configurable": {"thread_id": session_id}}).values
-    if len(existing_state.keys()) == 0:
-        st.session_state[session_id] = ThreadState(
+    assert (
+        current_notebook is not None and current_notebook.id
+    ), "Current Notebook not selected properly"
+
+    if "context_config" not in st.session_state[current_notebook.id]:
+        st.session_state[current_notebook.id]["context_config"] = {}
+
+    current_session_id = st.session_state[current_notebook.id].get("active_session")
+
+    # gets the chat session if provided
+    chat_session: Union[ChatSession, None] = (
+        ChatSession.get(current_session_id) if current_session_id else None
+    )
+
+    # if there is no chat session, create one or get the first one
+    if not chat_session:
+        sessions: List[ChatSession] = current_notebook.chat_sessions
+        if not sessions or len(sessions) == 0:
+            logger.debug("Creating new chat session")
+            chat_session = create_session_for_notebook(current_notebook.id)
+        else:
+            logger.debug("Getting last updated session")
+            chat_session = sessions[0]
+
+    logger.debug(f"Chat session: {chat_session}")
+
+    if not chat_session or chat_session.id is None:
+        raise ValueError("Problem acquiring chat session")
+    # sets the active session for the notebook
+    st.session_state[current_notebook.id]["active_session"] = chat_session.id
+
+    # gets the existing state for the session from Langgraph state
+    existing_state = graph.get_state(
+        {"configurable": {"thread_id": chat_session.id}}
+    ).values
+    if not existing_state or len(existing_state.keys()) == 0:
+        st.session_state[chat_session.id] = ThreadState(
             messages=[], context=None, notebook=None, context_config={}
         )
     else:
-        st.session_state[session_id] = existing_state
-    st.session_state["active_session"] = session_id
+        st.session_state[chat_session.id] = existing_state
+
+    st.session_state[current_notebook.id]["active_session"] = chat_session.id
+    return chat_session
 
 
 def check_migration():

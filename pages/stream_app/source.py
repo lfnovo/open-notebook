@@ -95,6 +95,7 @@ def source_panel(source_id):
             if st.button(
                 "Embed vectors",
                 icon="🦾",
+                disabled=source.embedded_chunks > 0,
                 help="This will generate your embedding vectors on the database for powerful search capabilities",
             ):
                 source.vectorize()
@@ -119,7 +120,7 @@ def source_panel(source_id):
 
 
 @st.dialog("Add a Source", width="large")
-def add_source(session_id):
+def add_source(notebook_id):
     source_link = None
     source_file = None
     source_text = None
@@ -167,7 +168,7 @@ def add_source(session_id):
                     title=result.get("title"),
                 )
                 source.save()
-                source.add_to_notebook(st.session_state[session_id]["notebook"].id)
+                source.add_to_notebook(notebook_id)
                 st.write("Summarizing...")
                 generate_toc_and_title(source)
             except UnsupportedTypeException as e:
@@ -188,7 +189,7 @@ def add_source(session_id):
         st.rerun()
 
 
-def source_card(session_id, source):
+def source_card(source, notebook_id):
     # todo: more descriptive icons
     icon = "🔗"
 
@@ -208,7 +209,7 @@ def source_card(session_id, source):
         if st.button("Expand", icon="📝", key=source.id):
             source_panel(source.id)
 
-    st.session_state[session_id]["context_config"][source.id] = context_state
+    st.session_state[notebook_id]["context_config"][source.id] = context_state
 
 
 def source_list_item(source_id, score=None):

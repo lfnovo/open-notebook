@@ -1,3 +1,8 @@
+REMOVE TABLE IF EXISTS chat_session;
+
+REMOVE TABLE IF EXISTS refers_to;
+
+
 REMOVE FUNCTION fn::vector_search;
 
 

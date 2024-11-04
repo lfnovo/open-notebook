@@ -154,17 +154,21 @@ class ObjectModel(BaseModel):
 
 
 class RecordModel(BaseModel):
-    record_id: ClassVar[str] = "open_notebook:default_models"
+    record_id: ClassVar[str]
 
-    @classmethod
-    def load(cls):
-        result = repo_query(f"SELECT * FROM {cls.record_id};")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.load()
+
+    def load(self):
+        result = repo_query(f"SELECT * FROM {self.record_id};")
         if result:
             result = result[0]
-            dm = cls(**result)
-            return dm
-        return cls()
+            for key, value in result.items():
+                if hasattr(self, key):
+                    setattr(self, key, value)
+        return self
 
-    @classmethod
     def update(self, data):
         repo_update(self.record_id, data)
+        return self.load()

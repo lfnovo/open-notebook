@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
 
 from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator
@@ -29,15 +29,26 @@ class ObjectModel(BaseModel):
     @classmethod
     def get_all(cls: Type[T], order_by=None) -> List[T]:
         try:
+            # If called from a specific subclass, use its table_name
+            if cls.table_name:
+                target_class = cls
+                table_name = cls.table_name
+            else:
+                # This path is taken if called directly from ObjectModel
+                raise InvalidInputError(
+                    "get_all() must be called from a specific model class"
+                )
+
             if order_by:
                 order = f" ORDER BY {order_by}"
             else:
                 order = ""
-            result = repo_query(f"SELECT * FROM {cls.table_name} {order}")
+
+            result = repo_query(f"SELECT * FROM {table_name} {order}")
             objects = []
             for obj in result:
                 try:
-                    objects.append(cls(**obj))
+                    objects.append(target_class(**obj))
                 except Exception as e:
                     logger.critical(f"Error creating object: {str(e)}")
 
@@ -52,15 +63,44 @@ class ObjectModel(BaseModel):
         if not id:
             raise InvalidInputError("ID cannot be empty")
         try:
+            # Get the table name from the ID (everything before the first colon)
+            table_name = id.split(":")[0] if ":" in id else id
+
+            # If we're calling from a specific subclass and IDs match, use that class
+            if cls.table_name and cls.table_name == table_name:
+                target_class: Type[T] = cls
+            else:
+                # Otherwise, find the appropriate subclass based on table_name
+                found_class = cls._get_class_by_table_name(table_name)
+                if not found_class:
+                    raise InvalidInputError(f"No class found for table {table_name}")
+                target_class = cast(Type[T], found_class)
+
             result = repo_query(f"SELECT * FROM {id}")
             if result:
-                return cls(**result[0])
+                return target_class(**result[0])
             else:
-                raise NotFoundError(f"{cls.table_name} with id {id} not found")
+                raise NotFoundError(f"{table_name} with id {id} not found")
         except Exception as e:
-            logger.error(f"Error fetching {cls.table_name} with id {id}: {str(e)}")
+            logger.error(f"Error fetching object with id {id}: {str(e)}")
             logger.exception(e)
-            raise NotFoundError(f"{cls.table_name} with id {id} not found")
+            raise NotFoundError(f"Object with id {id} not found - {str(e)}")
+
+    @classmethod
+    def _get_class_by_table_name(cls, table_name: str) -> Optional[Type["ObjectModel"]]:
+        """Find the appropriate subclass based on table_name."""
+
+        def get_all_subclasses(c: Type["ObjectModel"]) -> List[Type["ObjectModel"]]:
+            all_subclasses: List[Type["ObjectModel"]] = []
+            for subclass in c.__subclasses__():
+                all_subclasses.append(subclass)
+                all_subclasses.extend(get_all_subclasses(subclass))
+            return all_subclasses
+
+        for subclass in get_all_subclasses(ObjectModel):
+            if hasattr(subclass, "table_name") and subclass.table_name == table_name:
+                return subclass
+        return None
 
     def needs_embedding(self) -> bool:
         return False

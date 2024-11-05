@@ -2,8 +2,6 @@ import os
 from pathlib import Path
 
 import streamlit as st
-import streamlit_scrollable_textbox as stx  # type: ignore
-import yaml
 from humanize import naturaltime
 from loguru import logger
 
@@ -11,15 +9,11 @@ from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.content_processing import graph
-from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
+from pages.components import source_panel
+from pages.stream_app.utils import run_patterns
 
 from .consts import context_icons
-
-
-def run_patterns(input_text, patterns):
-    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
-    return output["output"]
 
 
 # moved it here to replace it with the pipeline on 0.1.0
@@ -43,80 +37,8 @@ def generate_toc_and_title(source) -> "Source":
 
 
 @st.dialog("Source", width="large")
-def source_panel(source_id):
-    source: Source = Source.get(source_id)
-    if not source:
-        st.error("Source not found")
-        return
-    current_title = source.title if source.title else "No Title"
-    source.title = st.text_input("Title", value=current_title)
-    if source.title != current_title:
-        st.toast("Saved new Title")
-        source.save()
-
-    process_tab, source_tab = st.tabs(["Process", "Source"])
-    with process_tab:
-        c1, c2 = st.columns([3, 1])
-        with c1:
-            title = st.empty()
-            if source.title:
-                title.subheader(source.title)
-            if source.asset.url:
-                from_src = f"from URL: {source.asset.url}"
-            elif source.asset.file_path:
-                from_src = f"from file: {source.asset.file_path}"
-            else:
-                from_src = "from text"
-            st.caption(f"Created {naturaltime(source.created)}, {from_src}")
-            for insight in source.insights:
-                with st.expander(f"**{insight.insight_type}**"):
-                    st.markdown(insight.content)
-                    if st.button(
-                        "Delete", type="primary", key=f"delete_insight_{insight.id}"
-                    ):
-                        insight.delete()
-                        st.rerun(scope="fragment")
-
-        with c2:
-            with open("transformations.yaml", "r") as file:
-                transformations = yaml.safe_load(file)
-                for transformation in transformations["source_insights"]:
-                    if st.button(
-                        transformation["name"], help=transformation["description"]
-                    ):
-                        result = run_patterns(
-                            source.full_text, transformation["patterns"]
-                        )
-                        source.add_insight(
-                            transformation["insight_type"], surreal_clean(result)
-                        )
-                        st.rerun(scope="fragment")
-
-            if st.button(
-                "Embed vectors",
-                icon="🦾",
-                disabled=source.embedded_chunks > 0,
-                help="This will generate your embedding vectors on the database for powerful search capabilities",
-            ):
-                source.vectorize()
-                st.success("Embedding complete")
-
-            chk_delete = st.checkbox(
-                "🗑️ Delete source", key=f"delete_source_{source.id}", value=False
-            )
-            if chk_delete:
-                st.warning(
-                    "Source will be deleted with all its insights and embeddings"
-                )
-                if st.button(
-                    "Delete", type="primary", key=f"bt_delete_source_{source.id}"
-                ):
-                    source.delete()
-                    st.rerun()
-
-    with source_tab:
-        st.subheader("Content")
-        stx.scrollableTextbox(source.full_text, height=300)
+def source_panel_dialog(source_id):
+    source_panel(source_id)
 
 
 @st.dialog("Add a Source", width="large")
@@ -207,7 +129,7 @@ def source_card(source, notebook_id):
             f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
         )
         if st.button("Expand", icon="📝", key=source.id):
-            source_panel(source.id)
+            source_panel_dialog(source.id)
 
     st.session_state[notebook_id]["context_config"][source.id] = context_state
 
@@ -226,4 +148,4 @@ def source_list_item(source_id, score=None):
             st.markdown(f"**{insight.insight_type}**")
             st.write(insight.content)
         if st.button("Edit source", icon="📝", key=f"x_edit_source_{source.id}"):
-            source_panel(source_id=source.id)
+            source_panel_dialog(source_id=source.id)

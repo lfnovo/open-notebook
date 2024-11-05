@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import List, Union
 
@@ -8,11 +9,17 @@ from open_notebook.database.migrate import MigrationManager
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import ThreadState, graph
+from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import (
     compare_versions,
     get_installed_version,
     get_version_from_github,
 )
+
+
+def run_patterns(input_text, patterns):
+    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
+    return output["output"]
 
 
 def version_sidebar():
@@ -75,8 +82,6 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
         else:
             logger.debug("Getting last updated session")
             chat_session = sessions[0]
-
-    logger.debug(f"Chat session: {chat_session}")
 
     if not chat_session or chat_session.id is None:
         raise ValueError("Problem acquiring chat session")
@@ -163,3 +168,36 @@ def setup_page(title: str, layout="wide", sidebar_state="expanded"):
     check_migration()
     check_models()
     version_sidebar()
+
+
+def convert_source_references(text):
+    """
+    Converts source references in brackets to markdown-style links.
+
+    Matches patterns like [source_insight:id], [note:id], [source:id], or [source_embedding:id]
+    and converts them to markdown links.
+
+    Args:
+        text (str): The input text containing source references
+
+    Returns:
+        str: Text with source references converted to markdown links
+
+    Example:
+        >>> text = "Here is a reference [source_insight:abc123]"
+        >>> convert_source_references(text)
+        'Here is a reference [source_insight:abc123](/?object_id=source_insight:abc123)'
+    """
+
+    # Pattern matches [type:id] where type can be source_insight, note, source, or source_embedding
+    pattern = r"\[((?:source_insight|note|source|source_embedding):[\w\d]+)\]"
+
+    def replace_match(match):
+        """Helper function to create the markdown link"""
+        source_ref = match.group(1)  # Gets the content inside brackets
+        return f"[[{source_ref}]](/?object_id={source_ref})"
+
+    # Replace all matches in the text
+    converted_text = re.sub(pattern, replace_match, text)
+
+    return converted_text

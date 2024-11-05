@@ -1,12 +1,18 @@
+from typing import Union
+
 import humanize
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
 
+from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import token_count
-from pages.stream_app.utils import create_session_for_notebook
+from pages.stream_app.utils import (
+    convert_source_references,
+    create_session_for_notebook,
+)
 
 from .note import make_note_from_chat
 
@@ -26,13 +32,7 @@ def build_context(notebook_id):
         if "not in" in status:
             continue
 
-        # todo: there is problably a better way to handle this
-        if item_type == "note":
-            item: Note = Note.get(id)
-        elif item_type == "source":
-            item: Source = Source.get(id)
-        else:
-            continue
+        item: Union[Note, Source] = ObjectModel.get(id)
 
         if not item:
             continue
@@ -48,9 +48,10 @@ def build_context(notebook_id):
     return st.session_state[notebook_id]["context"]
 
 
-def execute_chat(txt_input, current_session):
+def execute_chat(txt_input, context, current_session):
     current_state = st.session_state[current_session.id]
     current_state["messages"] += [txt_input]
+    current_state["context"] = context
     result = chat_graph.invoke(
         input=current_state,
         config=RunnableConfig(configurable={"thread_id": current_session.id}),
@@ -146,10 +147,10 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
         with st.container(border=True):
             request = st.chat_input("Enter your question")
             # removing for now since it's not multi-model capable right now
-            st.caption(f"Total tokens: {tokens}")
             if request:
                 response = execute_chat(
                     txt_input=request,
+                    context=context,
                     current_session=current_session,
                 )
                 st.session_state[current_session.id]["messages"] = response["messages"]
@@ -161,7 +162,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                     continue
 
                 with st.chat_message(name=msg.type):
-                    st.write(msg.content)
+                    st.markdown(convert_source_references(msg.content))
                     if msg.type == "ai":
                         if st.button("💾 New Note", key=f"render_save_{msg.id}"):
                             make_note_from_chat(

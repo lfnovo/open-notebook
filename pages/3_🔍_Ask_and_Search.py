@@ -3,7 +3,7 @@ import streamlit as st
 from open_notebook.domain.models import Model
 from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.graphs.rag import graph as rag_graph
-from pages.stream_app.utils import setup_page
+from pages.stream_app.utils import convert_source_references, setup_page
 
 setup_page("🔍 Search")
 
@@ -40,7 +40,7 @@ with ask_tab:
                 messages=messages
             ),  # config=dict(configurable=dict(model_id=model.id))
         )
-        st.markdown(rag_results["messages"][-1].content)
+        st.markdown(convert_source_references(rag_results["messages"][-1].content))
         with st.expander("Details (for debugging)"):
             st.json(rag_results)
 

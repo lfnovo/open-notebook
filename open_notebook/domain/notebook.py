@@ -93,9 +93,41 @@ class Asset(BaseModel):
     url: Optional[str] = None
 
 
+class SourceEmbedding(ObjectModel):
+    table_name: ClassVar[str] = "source_embedding"
+    content: str
+
+    @property
+    def source(self) -> "Source":
+        try:
+            src = repo_query(f"""
+            select source.* from {self.id}                    fetch source
+
+            """)
+            return Source(**src[0]["source"])
+        except Exception as e:
+            logger.error(f"Error fetching source for embedding {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
+
+
 class SourceInsight(ObjectModel):
+    table_name: ClassVar[str] = "source_insight"
     insight_type: str
     content: str
+
+    @property
+    def source(self) -> "Source":
+        try:
+            src = repo_query(f"""
+            select source.* from {self.id}                    fetch source
+
+            """)
+            return Source(**src[0]["source"])
+        except Exception as e:
+            logger.error(f"Error fetching source for insight {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
 
 
 class Source(ObjectModel):
@@ -112,7 +144,7 @@ class Source(ObjectModel):
             return dict(
                 id=self.id,
                 title=self.title,
-                insights=self.insights,
+                insights=[insight.model_dump() for insight in self.insights],
                 full_text=self.full_text,
             )
         else:

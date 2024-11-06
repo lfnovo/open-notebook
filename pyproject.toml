@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "open-notebook"
-version = "0.0.8"
+version = "0.0.9"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = ["Luis Novo <lfnovo@gmail.com>"]
 license = "MIT"

@@ -37,8 +37,9 @@ with ask_tab:
         messages = [question]
         rag_results = rag_graph.invoke(
             dict(
-                messages=messages
-            ),  # config=dict(configurable=dict(model_id=model.id))
+                messages=messages,
+            ),
+            config=dict(configurable=dict(model_id=model.id)),
         )
         st.markdown(convert_source_references(rag_results["messages"][-1].content))
         with st.expander("Details (for debugging)"):

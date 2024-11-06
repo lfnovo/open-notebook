@@ -1,22 +1,17 @@
-import os
 from typing import Any, ClassVar, Dict, List, Literal, Optional
 
-from langchain_core.runnables.config import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from open_notebook.config import load_default_models
 from open_notebook.database.repository import (
-    repo_create,
     repo_query,
 )
 from open_notebook.domain.base import ObjectModel
+from open_notebook.domain.models import model_manager
 from open_notebook.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
 )
-from open_notebook.graphs.multipattern import graph as pattern_graph
-from open_notebook.graphs.recursive_toc import graph as toc_graph
 from open_notebook.utils import split_text, surreal_clean
 
 
@@ -71,15 +66,68 @@ class Notebook(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
+    @property
+    def chat_sessions(self) -> List["ChatSession"]:
+        try:
+            srcs = repo_query(f"""
+                select * from (
+                    select
+                    <- chat_session as chat_session
+                    from refers_to
+                    where out={self.id}
+                    fetch chat_session
+                )
+                order by chat_session.updated desc
+            """)
+            return (
+                [ChatSession(**src["chat_session"][0]) for src in srcs] if srcs else []
+            )
+        except Exception as e:
+            logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
+
 
 class Asset(BaseModel):
     file_path: Optional[str] = None
     url: Optional[str] = None
 
 
+class SourceEmbedding(ObjectModel):
+    table_name: ClassVar[str] = "source_embedding"
+    content: str
+
+    @property
+    def source(self) -> "Source":
+        try:
+            src = repo_query(f"""
+            select source.* from {self.id}                    fetch source
+
+            """)
+            return Source(**src[0]["source"])
+        except Exception as e:
+            logger.error(f"Error fetching source for embedding {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
+
+
 class SourceInsight(ObjectModel):
+    table_name: ClassVar[str] = "source_insight"
     insight_type: str
     content: str
+
+    @property
+    def source(self) -> "Source":
+        try:
+            src = repo_query(f"""
+            select source.* from {self.id}                    fetch source
+
+            """)
+            return Source(**src[0]["source"])
+        except Exception as e:
+            logger.error(f"Error fetching source for insight {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
 
 
 class Source(ObjectModel):
@@ -96,11 +144,27 @@ class Source(ObjectModel):
             return dict(
                 id=self.id,
                 title=self.title,
-                insights=self.insights,
+                insights=[insight.model_dump() for insight in self.insights],
                 full_text=self.full_text,
             )
         else:
             return dict(id=self.id, title=self.title, insights=self.insights)
+
+    @property
+    def embedded_chunks(self) -> int:
+        try:
+            result = repo_query(
+                f"""
+                select count() as chunks from source_embedding where source={self.id} GROUP ALL
+                """
+            )
+            if len(result) == 0:
+                return 0
+            return result[0]["chunks"]
+        except Exception as e:
+            logger.error(f"Error fetching insights for source {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(f"Failed to count chunks for source: {str(e)}")
 
     @property
     def insights(self) -> List[SourceInsight]:
@@ -121,34 +185,14 @@ class Source(ObjectModel):
             raise InvalidInputError("Notebook ID must be provided")
         return self.relate("reference", notebook_id)
 
-    def save_chunks(self, text: str) -> None:
-        if not text:
-            raise InvalidInputError("Text cannot be empty")
-        try:
-            chunks = split_text(text, chunk=500000, overlap=1000)
-            logger.debug(f"Split into {len(chunks)} chunks")
-            for i, chunk in enumerate(chunks):
-                logger.debug(f"Saving chunk {i}")
-                data = {"source": self.id, "order": i, "content": surreal_clean(chunk)}
-                repo_create(
-                    "source_chunk",
-                    data,
-                )
-        except Exception as e:
-            logger.exception(e)
-            logger.error(f"Error saving chunks for source {self.id}: {str(e)}")
-            raise DatabaseOperationError(e)
-
     def vectorize(self) -> None:
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+        EMBEDDING_MODEL = model_manager.embedding_model
 
         try:
             if not self.full_text:
                 return
             chunks = split_text(
                 self.full_text,
-                chunk=int(os.environ.get("EMBEDDING_CHUNK_SIZE", 1000)),
-                overlap=int(os.environ.get("EMBEDDING_CHUNK_OVERLAP", 1000)),
             )
             logger.debug(f"Split into {len(chunks)} chunks")
 
@@ -169,29 +213,29 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    @classmethod
-    def search(cls, query: str) -> List[Dict[str, Any]]:
-        if not query:
-            raise InvalidInputError("Search query cannot be empty")
-        try:
-            result = repo_query(
-                """
-                SELECT * omit full_text
-                FROM source
-                WHERE string::lowercase(title) CONTAINS $query or title @@ $query 
-                OR string::lowercase(summary) CONTAINS $query or summary @@ $query 
-                OR string::lowercase(full_text) CONTAINS $query or full_text @@ $query 
-            """,
-                {"query": query},
-            )
-            return result
-        except Exception as e:
-            logger.error(f"Error searching sources: {str(e)}")
-            logger.exception(e)
-            raise DatabaseOperationError("Failed to search sources")
+    # @classmethod
+    # def search(cls, query: str) -> List[Dict[str, Any]]:
+    #     if not query:
+    #         raise InvalidInputError("Search query cannot be empty")
+    #     try:
+    #         result = repo_query(
+    #             """
+    #             SELECT * omit full_text
+    #             FROM source
+    #             WHERE string::lowercase(title) CONTAINS $query or title @@ $query
+    #             OR string::lowercase(summary) CONTAINS $query or summary @@ $query
+    #             OR string::lowercase(full_text) CONTAINS $query or full_text @@ $query
+    #         """,
+    #             {"query": query},
+    #         )
+    #         return result
+    #     except Exception as e:
+    #         logger.error(f"Error searching sources: {str(e)}")
+    #         logger.exception(e)
+    #         raise DatabaseOperationError("Failed to search sources")
 
     def add_insight(self, insight_type: str, content: str) -> Any:
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
+        EMBEDDING_MODEL = model_manager.embedding_model
 
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
@@ -211,34 +255,11 @@ class Source(ObjectModel):
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
             raise DatabaseOperationError(e)
 
-    # todo: move this to content processing pipeline as a major graph
-    def generate_toc_and_title(self) -> "Source":
-        DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
-
-        try:
-            config = RunnableConfig(configurable=dict(thread_id=self.id))
-            result = toc_graph.invoke({"content": self.full_text}, config=config)
-            self.add_insight("Table of Contents", surreal_clean(result["toc"]))
-            if not self.title:
-                transformations = [
-                    "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
-                ]
-                output = pattern_graph.invoke(
-                    dict(content_stack=[result["toc"]], transformations=transformations)
-                )
-                self.title = surreal_clean(output["output"])
-                self.save()
-            return self
-        except Exception as e:
-            logger.error(f"Error summarizing source {self.id}: {str(e)}")
-            logger.exception(e)
-            raise DatabaseOperationError(e)
-
 
 class Note(ObjectModel):
     table_name: ClassVar[str] = "note"
     title: Optional[str] = None
-    note_type: Optional[Literal["human", "ai"]] = "human"
+    note_type: Optional[Literal["human", "ai"]] = None
     content: Optional[str] = None
 
     @field_validator("content")
@@ -272,6 +293,16 @@ class Note(ObjectModel):
         return self.content
 
 
+class ChatSession(ObjectModel):
+    table_name: ClassVar[str] = "chat_session"
+    title: Optional[str] = None
+
+    def relate_to_notebook(self, notebook_id: str) -> Any:
+        if not notebook_id:
+            raise InvalidInputError("Notebook ID must be provided")
+        return self.relate("refers_to", notebook_id)
+
+
 def text_search(keyword: str, results: int, source: bool = True, note: bool = True):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -286,21 +317,142 @@ def text_search(keyword: str, results: int, source: bool = True, note: bool = Tr
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)
-        raise DatabaseOperationError("Failed to perform text search")
+        raise DatabaseOperationError(e)
 
 
 def vector_search(keyword: str, results: int, source: bool = True, note: bool = True):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
+        EMBEDDING_MODEL = model_manager.embedding_model
+        embed = EMBEDDING_MODEL.embed(keyword)
         results = repo_query(
             """
-            SELECT * FROM fn::vector_search($keyword, $results, $source, $note);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, 0.15);
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {"embed": embed, "results": results, "source": source, "note": note},
         )
         return results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)
-        raise DatabaseOperationError("Failed to perform vector search")
+        raise DatabaseOperationError(e)
+
+
+def hybrid_search(
+    keyword_search: List[str],
+    embed_search: List[str],
+    results: int = 50,
+    source: bool = True,
+    note: bool = True,
+    max_chunks_per_doc: int = 3,
+    min_results_per_query: int = 3,
+) -> Dict[str, List[Dict]]:
+    if not keyword_search and not embed_search:
+        raise InvalidInputError("At least one search term required")
+
+    # Process keyword searches
+    all_keyword_results = {}  # Dictionary to store results per keyword
+    for keyword in keyword_search:
+        try:
+            search_results = text_search(keyword, results, source, note)
+            # Sort results by relevance
+            sorted_results = sorted(
+                search_results, key=lambda x: x.get("relevance", 0), reverse=True
+            )
+            # Group by parent_id and limit chunks per document
+            seen_parent_ids = {}
+            filtered_results = []
+            for result in sorted_results:
+                parent_id = result["parent_id"]
+                if parent_id not in seen_parent_ids:
+                    seen_parent_ids[parent_id] = 1
+                    filtered_results.append(result)
+                elif seen_parent_ids[parent_id] < max_chunks_per_doc:
+                    seen_parent_ids[parent_id] += 1
+                    filtered_results.append(result)
+            all_keyword_results[keyword] = filtered_results
+        except Exception as e:
+            logger.warning(f"Error in keyword search for term '{keyword}': {str(e)}")
+            continue
+
+    # Ensure minimum results from each keyword query
+    keyword_results = []
+    remaining_slots = results
+
+    # First pass: add minimum results from each query
+    for keyword, query_results in all_keyword_results.items():
+        keyword_results.extend(query_results[:min_results_per_query])
+        remaining_slots -= min(len(query_results), min_results_per_query)
+
+    # Second pass: fill remaining slots with best results
+    all_remaining = []
+    for keyword, query_results in all_keyword_results.items():
+        all_remaining.extend(query_results[min_results_per_query:])
+
+    # Sort remaining by relevance and add until we hit the limit
+    all_remaining = sorted(
+        all_remaining, key=lambda x: x.get("relevance", 0), reverse=True
+    )
+    seen_ids = {r["id"] for r in keyword_results}
+    for result in all_remaining:
+        if remaining_slots <= 0:
+            break
+        if result["id"] not in seen_ids:
+            keyword_results.append(result)
+            seen_ids.add(result["id"])
+            remaining_slots -= 1
+
+    # Process vector searches with the same approach
+    all_vector_results = {}  # Dictionary to store results per embedding
+    for embed in embed_search:
+        try:
+            search_results = vector_search(embed, results, source, note)
+            # Sort results by similarity
+            sorted_results = sorted(
+                search_results, key=lambda x: x.get("similarity", 0), reverse=True
+            )
+            # Group by parent_id and limit chunks per document
+            seen_parent_ids = {}
+            filtered_results = []
+            for result in sorted_results:
+                parent_id = result["parent_id"]
+                if parent_id not in seen_parent_ids:
+                    seen_parent_ids[parent_id] = 1
+                    filtered_results.append(result)
+                elif seen_parent_ids[parent_id] < max_chunks_per_doc:
+                    seen_parent_ids[parent_id] += 1
+                    filtered_results.append(result)
+            all_vector_results[embed] = filtered_results
+        except Exception as e:
+            logger.warning(f"Error in vector search for term '{embed}': {str(e)}")
+            continue
+
+    # Ensure minimum results from each vector query
+    vector_results = []
+    remaining_slots = results
+
+    # First pass: add minimum results from each query
+    for embed, query_results in all_vector_results.items():
+        vector_results.extend(query_results[:min_results_per_query])
+        remaining_slots -= min(len(query_results), min_results_per_query)
+
+    # Second pass: fill remaining slots with best results
+    all_remaining = []
+    for embed, query_results in all_vector_results.items():
+        all_remaining.extend(query_results[min_results_per_query:])
+
+    # Sort remaining by similarity and add until we hit the limit
+    all_remaining = sorted(
+        all_remaining, key=lambda x: x.get("similarity", 0), reverse=True
+    )
+    seen_ids = {r["id"] for r in vector_results}
+    for result in all_remaining:
+        if remaining_slots <= 0:
+            break
+        if result["id"] not in seen_ids:
+            vector_results.append(result)
+            seen_ids.add(result["id"])
+            remaining_slots -= 1
+
+    return {"keyword_results": keyword_results, "vector_results": vector_results}

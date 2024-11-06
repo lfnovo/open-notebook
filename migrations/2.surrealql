@@ -1,0 +1,1 @@
+DEFINE FIELD IF NOT EXISTS note_type ON TABLE note TYPE option<string>;

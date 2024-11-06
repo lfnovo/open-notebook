@@ -1,25 +1,23 @@
 import streamlit as st
 from humanize import naturaltime
 
-from open_notebook.config import load_default_models
 from open_notebook.domain.notebook import Notebook
-from stream_app.chat import chat_sidebar
-from stream_app.note import add_note, note_card
-from stream_app.source import add_source, source_card
-from stream_app.utils import setup_stream_state, version_sidebar
+from pages.stream_app.chat import chat_sidebar
+from pages.stream_app.note import add_note, note_card
+from pages.stream_app.source import add_source, source_card
+from pages.stream_app.utils import setup_page, setup_stream_state
 
-st.set_page_config(
-    layout="wide", page_title="📒 Open Notebook", initial_sidebar_state="expanded"
-)
-
-version_sidebar()
+setup_page("📒 Open Notebook")
 
 
-def notebook_header(current_notebook):
+def notebook_header(current_notebook: Notebook):
+    """
+    Defines the header of the notebook page, including the ability to edit the notebook's name and description.
+    """
     c1, c2, c3 = st.columns([8, 2, 2])
     c1.header(current_notebook.name)
     if c2.button("Back to the list", icon="🔙"):
-        st.session_state["current_notebook"] = None
+        st.session_state["current_notebook_id"] = None
         st.rerun()
 
     if c3.button("Refresh", icon="🔄"):
@@ -54,25 +52,22 @@ def notebook_header(current_notebook):
                 st.toast("Notebook unarchived", icon="🗃️")
         if c3.button("Delete forever", type="primary", icon="☠️"):
             current_notebook.delete()
-            st.session_state["current_notebook"] = None
+            st.session_state["current_notebook_id"] = None
             st.rerun()
 
 
-def notebook_page(current_notebook_id):
-    current_notebook: Notebook = Notebook.get(current_notebook_id)
-    if not current_notebook:
-        st.error("Notebook not found")
-        return
-    if current_notebook_id not in st.session_state.keys():
-        st.session_state[current_notebook_id] = current_notebook
+def notebook_page(current_notebook: Notebook):
+    # Guarantees that we have an entry for this notebook in the session state
+    if current_notebook.id not in st.session_state:
+        st.session_state[current_notebook.id] = {"notebook": current_notebook}
 
-    session_id = st.session_state["active_session"]
-    st.session_state[session_id]["notebook"] = current_notebook
+    # sets up the active session
+    current_session = setup_stream_state(
+        current_notebook=current_notebook,
+    )
+
     sources = current_notebook.sources
     notes = current_notebook.notes
-
-    # Load the default models dynamically
-    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
 
     notebook_header(current_notebook)
 
@@ -82,18 +77,18 @@ def notebook_page(current_notebook_id):
         with sources_tab:
             with st.container(border=True):
                 if st.button("Add Source", icon="➕"):
-                    add_source(session_id)
+                    add_source(current_notebook.id)
                 for source in sources:
-                    source_card(session_id=session_id, source=source)
+                    source_card(source=source, notebook_id=current_notebook.id)
 
         with notes_tab:
             with st.container(border=True):
                 if st.button("Write a Note", icon="📝"):
-                    add_note(session_id)
+                    add_note(current_notebook.id)
                 for note in notes:
-                    note_card(session_id=session_id, note=note)
+                    note_card(note=note, notebook_id=current_notebook.id)
     with chat_tab:
-        chat_sidebar(session_id=session_id)
+        chat_sidebar(current_notebook=current_notebook, current_session=current_session)
 
 
 def notebook_list_item(notebook):
@@ -104,40 +99,50 @@ def notebook_list_item(notebook):
         )
         st.write(notebook.description)
         if st.button("Open", key=f"open_notebook_{notebook.id}"):
-            setup_stream_state(notebook.id)
-            st.session_state["current_notebook"] = notebook.id
+            st.session_state["current_notebook_id"] = notebook.id
             st.rerun()
 
 
-if "current_notebook" not in st.session_state:
-    st.session_state["current_notebook"] = None
+if "current_notebook_id" not in st.session_state:
+    st.session_state["current_notebook_id"] = None
 
-if st.session_state["current_notebook"]:
-    notebook_page(st.session_state["current_notebook"])
+# todo: get the notebook, check if it exists and if it's archived
+if st.session_state["current_notebook_id"]:
+    current_notebook: Notebook = Notebook.get(st.session_state["current_notebook_id"])
+    if not current_notebook:
+        st.error("Notebook not found")
+        st.stop()
+    notebook_page(current_notebook)
     st.stop()
 
 st.title("📒 My Notebooks")
-st.caption("Here are all your notebooks")
+st.caption(
+    "Notebooks are a great way to organize your thoughts, ideas, and sources. You can create notebooks for different research topics and projects, to create new articles, etc. "
+)
+
+with st.expander("➕ **New Notebook**"):
+    new_notebook_title = st.text_input("New Notebook Name")
+    new_notebook_description = st.text_area(
+        "Description",
+        placeholder="Explain the purpose of this notebook. The more details the better.",
+    )
+    if st.button("Create a new Notebook", icon="➕"):
+        notebook = Notebook(
+            name=new_notebook_title, description=new_notebook_description
+        )
+        notebook.save()
+        st.toast("Notebook created successfully", icon="📒")
 
 notebooks = Notebook.get_all(order_by="updated desc")
+archived_notebooks = [nb for nb in notebooks if nb.archived]
 
 for notebook in notebooks:
     if notebook.archived:
         continue
     notebook_list_item(notebook)
 
-with st.expander("➕ **New Notebook**"):
-    new_notebook_title = st.text_input("New Notebook Name")
-    new_notebook_description = st.text_area("Description")
-    if st.button("Create a new Notebook", icon="➕"):
-        notebook = Notebook(
-            name=new_notebook_title, description=new_notebook_description
-        )
-        notebook.save()
-        st.rerun()
-
-archived_notebooks = [nb for nb in notebooks if nb.archived]
 if len(archived_notebooks) > 0:
     with st.expander(f"**🗃️ {len(archived_notebooks)} archived Notebooks**"):
+        st.write("ℹ Archived Notebooks can still be accessed and used in search.")
         for notebook in archived_notebooks:
             notebook_list_item(notebook)

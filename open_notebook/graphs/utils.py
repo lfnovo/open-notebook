@@ -1,52 +1,52 @@
-from langchain.output_parsers import OutputFixingParser
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import BaseMessage
 from loguru import logger
 
-from open_notebook.config import load_default_models
-from open_notebook.models import get_model
+from open_notebook.domain.models import model_manager
+from open_notebook.models.llms import LanguageModel
 from open_notebook.prompter import Prompter
 from open_notebook.utils import token_count
 
 
+def provision_langchain_model(content, config, default_type, **kwargs) -> BaseChatModel:
+    """
+    Returns the best model to use based on the context size and on whether there is a specific model being requested in Config.
+    If context > 105_000, returns the large_context_model
+    If model_id is specified in Config, returns that model
+    Otherwise, returns the default model for the given type
+    """
+    tokens = token_count(content)
+
+    if tokens > 105_000:
+        logger.debug(
+            f"Using large context model because the content has {tokens} tokens"
+        )
+        model = model_manager.get_default_model("large_context", **kwargs)
+    elif config.get("configurable", {}).get("model_id"):
+        model = model_manager.get_model(
+            config.get("configurable", {}).get("model_id"), **kwargs
+        )
+    else:
+        model = model_manager.get_default_model(default_type, **kwargs)
+
+    assert isinstance(model, LanguageModel), f"Model is not a LanguageModel: {model}"
+    return model.to_langchain()
+
+
+# todo: turn into a graph
 def run_pattern(
     pattern_name: str,
-    model_id=None,
+    config,
     messages=[],
     state: dict = {},
     parser=None,
-    output_fixing_model_id=None,
-) -> dict:
+) -> BaseMessage:
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    DEFAULT_MODELS, EMBEDDING_MODEL, SPEECH_TO_TEXT_MODEL = load_default_models()
-    tokens = token_count(str(system_prompt) + str(messages))
+    payload = [system_prompt] + messages
+    chain = provision_langchain_model(str(payload), config, "transformation")
 
-    if tokens > 105_000:
-        model_id = DEFAULT_MODELS.large_context_model
-        logger.debug(
-            f"Using large context model ({model_id}) because the content has {tokens} tokens"
-        )
-
-    model_id = (
-        model_id
-        or DEFAULT_MODELS.default_transformation_model
-        or DEFAULT_MODELS.default_chat_model
-    )
-
-    chain = get_model(model_id, model_type="language")
-    if parser:
-        chain = chain | parser
-
-    if output_fixing_model_id and parser:
-        output_fix_model = get_model(output_fixing_model_id, model_type="language")
-        chain = chain | OutputFixingParser.from_llm(
-            parser=parser,
-            llm=output_fix_model,
-        )
-
-    if len(messages) > 0:
-        response = chain.invoke([system_prompt] + messages)
-    else:
-        response = chain.invoke(system_prompt)
+    response = chain.invoke(payload)
 
     return response

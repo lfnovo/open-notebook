@@ -1,53 +1,32 @@
+from typing import Optional
+
 import streamlit as st
 from humanize import naturaltime
 from loguru import logger
-from streamlit_monaco import st_monaco  # type: ignore
 
 from open_notebook.domain.notebook import Note
 from open_notebook.graphs.multipattern import graph as pattern_graph
 from open_notebook.utils import surreal_clean
+from pages.components import note_panel
 
 from .consts import context_icons
 
 
 @st.dialog("Write a Note", width="large")
-def add_note(session_id):
+def add_note(notebook_id):
     note_title = st.text_input("Title")
     note_content = st.text_area("Content")
     if st.button("Save", key="add_note"):
         logger.debug("Adding note")
         note = Note(title=note_title, content=note_content, note_type="human")
         note.save()
-        note.add_to_notebook(st.session_state[session_id]["notebook"].id)
+        note.add_to_notebook(notebook_id)
         st.rerun()
 
 
 @st.dialog("Add a Source", width="large")
-def note_panel(session_id=None, note_id=None):
-    if note_id:
-        note: Note = Note.get(note_id)
-    else:
-        note: Note = Note()
-
-    t_preview, t_edit = st.tabs(["Preview", "Edit"])
-    with t_preview:
-        st.subheader(note.title)
-        st.markdown(note.content)
-    with t_edit:
-        note.title = st.text_input("Title", value=note.title)
-        note.content = st_monaco(
-            value=note.content, height="600px", language="markdown"
-        )
-        if st.button("Save", key=f"pn_edit_note_{note_id}"):
-            logger.debug("Editing note")
-            note.save()
-            if not note.id:
-                note.add_to_notebook(st.session_state[session_id]["notebook"].id)
-            st.rerun()
-    if st.button("Delete", type="primary", key=f"delete_note_{note_id}"):
-        logger.debug("Deleting note")
-        note.delete()
-        st.rerun()
+def note_panel_dialog(note: Optional[Note] = None, notebook_id=None):
+    note_panel(note_id=note.id, notebook_id=notebook_id)
 
 
 def make_note_from_chat(content, notebook_id=None):
@@ -70,7 +49,7 @@ def make_note_from_chat(content, notebook_id=None):
     st.rerun()
 
 
-def note_card(session_id, note):
+def note_card(note, notebook_id):
     if note.note_type == "human":
         icon = "🤵"
     else:
@@ -88,13 +67,12 @@ def note_card(session_id, note):
         st.caption(f"Updated: {naturaltime(note.updated)}")
 
         if st.button("Expand", icon="📝", key=f"edit_note_{note.id}"):
-            note_panel(session_id, note.id)
+            note_panel_dialog(notebook_id=notebook_id, note=note)
 
-    st.session_state[session_id]["context_config"][note.id] = context_state
+    st.session_state[notebook_id]["context_config"][note.id] = context_state
 
 
 def note_list_item(note_id, score=None):
-    logger.debug(note_id)
     note: Note = Note.get(note_id)
     if note.note_type == "human":
         icon = "🤵"
@@ -106,4 +84,4 @@ def note_list_item(note_id, score=None):
     ):
         st.write(note.content)
         if st.button("Edit Note", icon="📝", key=f"x_edit_note_{note.id}"):
-            note_panel(note_id=note.id)
+            note_panel_dialog(note=note)

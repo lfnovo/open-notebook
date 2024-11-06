@@ -2,14 +2,11 @@ import os
 
 import streamlit as st
 
-from open_notebook.domain.models import DefaultModels, Model
+from open_notebook.domain.models import DefaultModels, Model, model_manager
 from open_notebook.models import MODEL_CLASS_MAP
-from stream_app.utils import version_sidebar
+from pages.stream_app.utils import setup_page
 
-st.set_page_config(
-    layout="wide", page_title="⚙️ Settings", initial_sidebar_state="expanded"
-)
-version_sidebar()
+setup_page("⚙️ Settings")
 
 
 st.title("⚙️ Settings")
@@ -121,7 +118,7 @@ def get_selected_index(models, model_id, default=0):
 
 
 with model_defaults_tab:
-    default_models = DefaultModels.load().model_dump()
+    default_models = DefaultModels().model_dump()
     all_models = Model.get_all()
     text_generation_models = [model for model in all_models if model.type == "language"]
 
@@ -157,7 +154,16 @@ with model_defaults_tab:
             text_generation_models, default_models.get("default_transformation_model")
         ),
     )
-    st.caption("You can override this model on individual transformations")
+    st.divider()
+    defs["default_tools_model"] = st.selectbox(
+        "Default Tools Model",
+        text_generation_models,
+        format_func=lambda x: x.name,
+        help="This model will be used for calling tools. Currently, it's best to use Open AI and Anthropic for this.",
+        index=get_selected_index(
+            text_generation_models, default_models.get("default_tools_model")
+        ),
+    )
     st.divider()
     defs["large_context_model"] = st.selectbox(
         "Large Context Model",
@@ -219,4 +225,5 @@ with model_defaults_tab:
     for k, v in defs.items():
         if v:
             defs[k] = v.id
-    DefaultModels.update(defs)
+    DefaultModels().update(defs)
+    model_manager.refresh_defaults()

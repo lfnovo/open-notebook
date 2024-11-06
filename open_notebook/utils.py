@@ -5,30 +5,11 @@ from urllib.parse import urlparse
 
 import requests
 import tomli
-from langchain_text_splitters import CharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from packaging.version import parse as parse_version
 
 
-def split_text(txt: str, chunk=1000, overlap=0, separator=" "):
-    """
-    Split the input text into chunks.
-
-    Args:
-        txt (str): The input text to be split.
-        chunk (int): The size of each chunk. Default is 1000.
-        overlap (int): The number of characters to overlap between chunks. Default is 0.
-        separator (str): The separator to use when splitting the text. Default is " ".
-
-    Returns:
-        list: A list of text chunks.
-    """
-    text_splitter = CharacterTextSplitter(
-        chunk_size=chunk, chunk_overlap=overlap, separator=separator
-    )
-    return text_splitter.split_text(txt)
-
-
-def token_count(input_string):
+def token_count(input_string) -> int:
     """
     Count the number of tokens in the input string using the 'o200k_base' encoding.
 
@@ -46,7 +27,7 @@ def token_count(input_string):
     return token_count
 
 
-def token_cost(token_count, cost_per_million=0.150):
+def token_cost(token_count, cost_per_million=0.150) -> float:
     """
     Calculate the cost of tokens based on the token count and cost per million tokens.
 
@@ -60,21 +41,60 @@ def token_cost(token_count, cost_per_million=0.150):
     return cost_per_million * (token_count / 1_000_000)
 
 
-def remove_non_ascii(text):
+def split_text(txt: str, chunk_size=500):
+    """
+    Split the input text into chunks.
+
+    Args:
+        txt (str): The input text to be split.
+        chunk (int): The size of each chunk. Default is 1000.
+        overlap (int): The number of characters to overlap between chunks. Default is 0.
+        separator (str): The separator to use when splitting the text. Default is " ".
+
+    Returns:
+        list: A list of text chunks.
+    """
+    overlap = int(chunk_size * 0.15)
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=overlap,
+        length_function=token_count,
+        separators=[
+            "\n\n",
+            "\n",
+            ".",
+            ",",
+            " ",
+            "\u200b",  # Zero-width space
+            "\uff0c",  # Fullwidth comma
+            "\u3001",  # Ideographic comma
+            "\uff0e",  # Fullwidth full stop
+            "\u3002",  # Ideographic full stop
+            "",
+        ],
+    )
+    return text_splitter.split_text(txt)
+
+
+def remove_non_ascii(text) -> str:
     return re.sub(r"[^\x00-\x7F]+", "", text)
 
 
-def remove_non_printable(text):
+def remove_non_printable(text) -> str:
+    # Replace any special Unicode whitespace characters with a regular space
+    text = re.sub(r"[\u2000-\u200B\u202F\u205F\u3000]", " ", text)
+
     # Remove control characters, except newlines and tabs
     text = "".join(
         char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
     )
+    # Replace non-breaking spaces with regular spaces
     text = text.replace("\xa0", " ").strip()
     # Keep letters (including accented ones), numbers, spaces, newlines, tabs, and basic punctuation
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 
 
-def surreal_clean(text):
+def surreal_clean(text) -> str:
     """
     Clean the input text by removing non-ASCII and non-printable characters,
     and adjusting colon placement for SurrealDB compatibility.

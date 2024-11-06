@@ -8,17 +8,8 @@ Analyze the provided content and create a Table of Contents:
 - Captures the core topics included in the text
 - Gives a small description of what is covered
 
-# INSTRUCTIONS FOR LARGE DOCUMENTS
+# INPUT
 
-If you see a PREVIOUS TOC section below, it means that this request is a continuation of a previous request. Most likely to handle context length issues.
-Every time, you should replace the previous toc with the new one, and append the new content to the previous content.
+{{input_text}}
 
-{% if toc %}
-# PREVIOUS TOC
-
-{{toc}}
-{% endif %}
-
-# CONTENT
-
-{{content}}
+# OUTPUT

@@ -1,0 +1,1 @@
+REMOVE FIELD IF EXISTS note_type ON TABLE note;

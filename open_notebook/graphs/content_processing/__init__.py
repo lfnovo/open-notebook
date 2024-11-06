@@ -48,15 +48,6 @@ def file_type(state: SourceState):
     return return_dict
 
 
-# def _get_title(url):
-#     """
-#     Get the content of a URL
-#     """
-#     response = extract_url(dict(url=url))
-#     if "title" in response:
-#         return response["title"]
-
-
 def file_type_edge(data: SourceState):
     assert data.get("identified_type"), "Type not identified"
     identified_type = data["identified_type"]

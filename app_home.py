@@ -1,43 +1,35 @@
 import streamlit as st
 
-from open_notebook.database.migrate import MigrationManager
+from open_notebook.domain.base import ObjectModel
+from open_notebook.exceptions import NotFoundError
+from pages.components import (
+    note_panel,
+    source_embedding_panel,
+    source_insight_panel,
+    source_panel,
+)
+from pages.stream_app.utils import setup_page
 
-# from open_notebook.config import DEFAULT_MODELS
-from open_notebook.domain.models import DefaultModels
-from stream_app.utils import version_sidebar
+setup_page("📒 Open Notebook", sidebar_state="collapsed")
 
-default_models = DefaultModels.load()
-
-version_sidebar()
-mm = MigrationManager()
-if mm.needs_migration:
-    st.warning("The Open Notebook database needs a migration to run properly.")
-    if st.button("Run Migration"):
-        mm.run_migration_up()
-        st.success("Migration successful")
-        st.rerun()
-elif (
-    not default_models.default_chat_model
-    or not default_models.default_transformation_model
-):
-    st.warning(
-        "You don't have default chat and transformation models selected. Please, select them on the settings page."
-    )
-elif not default_models.default_embedding_model:
-    st.warning(
-        "You don't have a default embedding model selected. Vector search will not be possible and your assistant will be less able to answer your queries. Please, select one on the settings page."
-    )
-elif not default_models.default_speech_to_text_model:
-    st.warning(
-        "You don't have a default speech to text model selected. Your assistant will not be able to transcribe audio. Please, select one on the settings page."
-    )
-elif not default_models.default_text_to_speech_model:
-    st.warning(
-        "You don't have a default text to speech model selected. Your assistant will not be able to generate audio and podcasts. Please, select one on the settings page."
-    )
-elif not default_models.large_context_model:
-    st.warning(
-        "You don't have a large context model selected. Your assistant will not be able to process large documents. Please, select one on the settings page."
-    )
-else:
+if "object_id" not in st.query_params:
     st.switch_page("pages/2_📒_Notebooks.py")
+    st.stop()
+
+object_id = st.query_params["object_id"]
+try:
+    obj = ObjectModel.get(object_id)
+except NotFoundError:
+    st.switch_page("pages/2_📒_Notebooks.py")
+    st.stop()
+
+obj_type = object_id.split(":")[0]
+
+if obj_type == "note":
+    note_panel(object_id)
+elif obj_type == "source":
+    source_panel(object_id)
+elif obj_type == "source_insight":
+    source_insight_panel(object_id)
+elif obj_type == "source_embedding":
+    source_embedding_panel(object_id)

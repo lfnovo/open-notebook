@@ -1,12 +1,99 @@
-# Open Notebook
+<a id="readme-top"></a>
+
+<!-- [![Contributors][contributors-shield]][contributors-url] -->
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+[![MIT License][license-shield]][license-url]
+<!-- [![LinkedIn][linkedin-shield]][linkedin-url] -->
+
+
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/lfnovo/open-notebook">
+    <img src="docs/assets/hero.svg" alt="Logo">
+  </a>
+
+  <h3 align="center">Open Notebook</h3>
+
+  <p align="center">
+    An open source, privacy-focused alternative to Google's Notebook LM!
+    <br />
+    <a href="https://www.open-notebook.ai"><strong>Checkout our website »</strong></a>
+    <br />
+    <br />
+    <a href="docs/SETUP.md">Setup</a>
+    ·
+    <a href="docs/USAGE.md">Usage</a>
+    ·
+    <a href="docs/TRANSFORMATIONS.md">Transformations</a>
+    ·
+    <a href="docs/PODCASTS.md">Podcasts</a>
+
+  </p>
+</div>
+
+
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li>
+      <a href="#setting-up">Setting Up</a>
+      <ul>
+        <li><a href="#prerequisites">Prerequisites</a></li>
+        <li><a href="#installation">Installation</a></li>
+      </ul>
+    </li>
+    <li><a href="#usage">Usage</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#acknowledgments">Acknowledgments</a></li>
+  </ol>
+</details>
+
+
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+![New Notebook](docs/assets/asset_list.png)
+
 
 An open source, privacy-focused alternative to Google's Notebook LM. Why give Google more of our data when we can take control of our own research workflows?
 
-In a world dominated by Artificial Intelligence, having the ability to think 🧠 and acquire new knowledge 💡, is a skill that should not be a privilege for a few, nor restricted to a single company.
+In a world dominated by Artificial Intelligence, having the ability to think 🧠 and acquire new knowledge 💡, is a skill that should not be a privilege for a few, nor restricted to a single provider.
 
 Open Notebook empowers you to manage your research, generate AI-assisted notes, and interact with your content—on your terms.
 
 Learn more about our project at [https://www.open-notebook.ai](https://www.open-notebook.ai)
+
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+### Built With
+
+* [![Python][Python]][Python-url]
+* [![SurrealDB][SurrealDB]][SurrealDB-url]
+* [![LangChain][LangChain]][LangChain-url]
+* [![Streamlit][Streamlit]][Streamlit-url]
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 ## ⚙️ Setting Up
 
@@ -44,14 +131,18 @@ volumes:
 ```
 
 
-## Usage Instructions
+Take a look at the [Open Notebook Boilerplate](https://github.com/lfnovo/open-notebook-boilerplate) repo with a sample of how to set it up for maximum feature usability. 
+
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## Usage
 
 Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Features
-
-![New Notebook](docs/assets/asset_list.png)
-
 
 - **Multi-Notebook Support**: Organize your research across multiple notebooks effortlessly.
 - **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, Ollama.
@@ -60,6 +151,8 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **AI-Powered Notes**: Write notes yourself or let the AI assist you in generating insights.
 - **Integrated Search Engines**: Built-in full-text and vector search for faster information retrieval.
 - **Fine-Grained Context Management**: Choose exactly what to share with the AI to maintain control.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 🚀 New Features
 
@@ -130,30 +223,30 @@ Locate anything across your research with ease using full-text and vector-based 
 
 Jinja based prompts that are easy to customize to your own preferences.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## 🌟 Roadmap
+<!-- ROADMAP -->
+## Roadmap
 
-- **Enhanced Citations**: Improved layout and finer control for citations.
-- **Better Embeddings & Summarization**: Smarter ways to distill information.
-- **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
-- **Live Front-End Updates**: Real-time UI updates for a smoother experience.
-- **Async Processing**: Faster UI through asynchronous content processing.
-- **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
-- **Bookmark Integration**: Integrate with your favorite bookmarking app.
-- **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc. ✅ 0.0.2
-- **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md) ✅ 0.0.3
-- **Podcast Generator**: Automatically convert your notes into a podcast format.  ✅ 0.0.4
+- [ ] **Live Front-End Updates**: Real-time UI updates for a smoother experience.
+- [ ] **Async Processing**: Faster UI through asynchronous content processing.
+- [ ] **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
+- [ ] **Bookmark Integration**: Integrate with your favorite bookmarking app.
+- ✅ **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc.
+- ✅ **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md)
+- ✅ **Podcast Generator**: Automatically convert your notes into a podcast format. 
+- ✅ **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
+- ✅ **Enhanced Citations**: Improved layout and finer control for citations.
+- ✅ **Better Embeddings & Summarization**: Smarter ways to distill information.
 
+See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full list of proposed features (and known issues).
 
-## 💻 Tech Stack
-
-- **Streamlit**: For the front-end (Looking to move out of Streamlit. Contributors welcome!).
-- **SurrealDB**: Fast, scalable database solution.
-- **Langchain/Langgraph**: The backbone for LLM interactions.
-- **Podcastfy**: For generating podcasts from your notes.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 
-## 🙌 Help Wanted
+
+<!-- CONTRIBUTING -->
+## Contributing
 
 We would love your contributions! Specifically, we're looking for help with:
 - **Front-End Development**: Improve the UI/UX by moving beyond Streamlit.
@@ -161,16 +254,58 @@ We would love your contributions! Specifically, we're looking for help with:
 - **Feature Development**: Let’s make the coolest note-taking tool together!
 
 See more at [CONTRIBUTING](CONTRIBUTING.md)
-## 📄 License
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- LICENSE -->
+## License
 
 Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 
----
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Your contributions, feature requests, and bug reports are always welcome. Let's build a research tool that respects our privacy and makes learning truly open for everyone. ✨
 
----
 
-This project uses the following third-party libraries:
+<!-- CONTACT -->
+## Contact
 
-- [Podcastfy](https://github.com/souzatharsis/podcastfy) - Licensed under the Apache License 2.0
+Luis Novo - [@lfnovo](https://twitter.com/lfnovo)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
+<!-- ACKNOWLEDGMENTS -->
+## Acknowledgments
+
+This project uses some amazing third-party libraries
+
+* [Podcastfy](https://github.com/souzatharsis/podcastfy) - Licensed under the Apache License 2.0
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+<!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+[contributors-shield]: https://img.shields.io/github/contributors/lfnovo/open-notebook.svg?style=for-the-badge
+[contributors-url]: https://github.com/lfnovo/open-notebook/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/lfnovo/open-notebook.svg?style=for-the-badge
+[forks-url]: https://github.com/lfnovo/open-notebook/network/members
+[stars-shield]: https://img.shields.io/github/stars/lfnovo/open-notebook.svg?style=for-the-badge
+[stars-url]: https://github.com/lfnovo/open-notebook/stargazers
+[issues-shield]: https://img.shields.io/github/issues/lfnovo/open-notebook.svg?style=for-the-badge
+[issues-url]: https://github.com/lfnovo/open-notebook/issues
+[license-shield]: https://img.shields.io/github/license/lfnovo/open-notebook.svg?style=for-the-badge
+[license-url]: https://github.com/lfnovo/open-notebook/blob/master/LICENSE.txt
+[linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
+[linkedin-url]: https://linkedin.com/in/lfnovo
+[product-screenshot]: images/screenshot.png
+[Streamlit]: https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white
+[Streamlit-url]: https://streamlit.io/
+[Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
+[Python-url]: https://www.python.org/
+[LangChain]: https://img.shields.io/badge/LangChain-3A3A3A?style=for-the-badge&logo=chainlink&logoColor=white
+[LangChain-url]: https://www.langchain.com/
+[SurrealDB]: https://img.shields.io/badge/SurrealDB-FF5E00?style=for-the-badge&logo=databricks&logoColor=white
+[SurrealDB-url]: https://surrealdb.com/

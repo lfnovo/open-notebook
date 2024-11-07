@@ -153,6 +153,10 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 ## 🚀 New Features
 
+### v0.0.10 - Gemini podcast model
+
+- Added the Gemini model for generating much more fluid and engaging podcasts
+
 ### v0.0.9 - Ask your Documents and Citations  ❓
 
 - Ask questions about your documents and get answers with citations

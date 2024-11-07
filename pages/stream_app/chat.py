@@ -88,14 +88,17 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                         "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
                     )
                 else:
-                    if st.button("Generate"):
-                        with st.spinner("Go grab a coffee, almost there..."):
-                            selected_template.generate_episode(
-                                episode_name=episode_name,
-                                text=context,
-                                instructions=instructions,
-                            )
-                        st.success("Episode generated successfully")
+                    try:
+                        if st.button("Generate"):
+                            with st.spinner("Go grab a coffee, almost there..."):
+                                selected_template.generate_episode(
+                                    episode_name=episode_name,
+                                    text=context,
+                                    instructions=instructions,
+                                )
+                            st.success("Episode generated successfully")
+                    except Exception as e:
+                        st.error(f"Error generating episode - {str(e)}")
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.expander(

@@ -87,10 +87,7 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 ### Built With
 
-* [![Python][Python]][Python-url]
-* [![SurrealDB][SurrealDB]][SurrealDB-url]
-* [![LangChain][LangChain]][LangChain-url]
-* [![Streamlit][Streamlit]][Streamlit-url]
+[![Python][Python]][Python-url] [![SurrealDB][SurrealDB]][SurrealDB-url] [![LangChain][LangChain]][LangChain-url] [![Streamlit][Streamlit]][Streamlit-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -155,6 +152,10 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 🚀 New Features
+
+### v0.0.9 - Ask your Documents and Citations  ❓
+
+- Ask questions about your documents and get answers with citations
 
 ### v0.0.7 - Model Management  🗂️
 

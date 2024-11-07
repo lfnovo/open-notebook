@@ -24,3 +24,8 @@ class OpenAITextToSpeechModel(TextToSpeechModel):
 @dataclass
 class ElevenLabsTextToSpeechModel(TextToSpeechModel):
     model_name: str
+
+
+@dataclass
+class GeminiTextToSpeechModel(TextToSpeechModel):
+    model_name: str

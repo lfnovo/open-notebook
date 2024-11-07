@@ -97,6 +97,10 @@ with templates_tab:
         st.markdown(
             "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
         )
+        st.markdown(
+            "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
+        )
+
         pd_cfg["voice2"] = st.text_input(
             "Voice 2", help="You can use Elevenlabs voice ID"
         )
@@ -210,6 +214,9 @@ with templates_tab:
             )
             st.markdown(
                 "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
+            )
+            st.markdown(
+                "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
             )
             pd_config.voice2 = st.text_input(
                 "Voice 2",

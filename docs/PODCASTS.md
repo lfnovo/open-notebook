@@ -14,9 +14,16 @@ Setup a template for your podcast, you can get very creative here.
 - Pick a language for the podcast
 - Customize conversation style, engagement techniques, dialogue structure
 - Define the length of each episode
-- Pick your voice models (Open AI and Eleven Labs supported)
+- Pick your voice models (Open AI, Gemini and Eleven Labs supported)
 
 ![Podcast Temmplates](assets/podcast_template.png)
+
+### ⚠️ Important instructions for Gemini
+
+The new Gemini Text to Speech models are amazing and definitely worth using. But in order to use them, you need to do a little setup. Please refer to this [Podcastfy help page](https://github.com/souzatharsis/podcastfy/blob/main/usage/config.md) for details. But it basically requires you to enable the Text to Speech API and add it to your API Key.
+
+
+
 
 ### Pick your context
 

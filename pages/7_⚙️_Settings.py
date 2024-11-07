@@ -77,9 +77,13 @@ with model_tab:
             available_model_types,
             help="Use language for text generation models, text_to_speech for TTS models for generating podcasts, etc.",
         )
-        model_name = st.text_input(
-            "Model Name", "", help="gpt-4o-mini, claude, gemini, llama3, etc"
-        )
+        if model_type == "text_to_speech" and provider == "gemini":
+            model_name = "gemini-default"
+            st.markdown("Gemini models are pre-configured. Using the default model.")
+        else:
+            model_name = st.text_input(
+                "Model Name", "", help="gpt-4o-mini, claude, gemini, llama3, etc"
+            )
         if st.button("Save"):
             model = Model(name=model_name, provider=provider, type=model_type)
             model.save()

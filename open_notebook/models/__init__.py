@@ -24,6 +24,7 @@ from open_notebook.models.speech_to_text_models import (
 )
 from open_notebook.models.text_to_speech_models import (
     ElevenLabsTextToSpeechModel,
+    GeminiTextToSpeechModel,
     OpenAITextToSpeechModel,
     TextToSpeechModel,
 )
@@ -56,6 +57,7 @@ MODEL_CLASS_MAP: Dict[str, ProviderMap] = {
     "text_to_speech": {
         "openai": OpenAITextToSpeechModel,
         "elevenlabs": ElevenLabsTextToSpeechModel,
+        "gemini": GeminiTextToSpeechModel,
     },
 }
 

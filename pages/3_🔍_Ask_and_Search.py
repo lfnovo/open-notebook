@@ -2,7 +2,7 @@ import streamlit as st
 
 from open_notebook.domain.models import Model
 from open_notebook.domain.notebook import text_search, vector_search
-from open_notebook.graphs.rag import graph as rag_graph
+from open_notebook.graphs.ask import graph as ask_graph
 from pages.stream_app.utils import convert_source_references, setup_page
 
 setup_page("🔍 Search")
@@ -15,10 +15,13 @@ if "search_results" not in st.session_state:
 
 def results_card(item):
     score = item.get("relevance", item.get("similarity", item.get("score", 0)))
-    with st.expander(f"[{score:.2f}] **{item['title']}**"):
-        st.markdown(f"**{item['content']}**")
-        st.write(item["id"])
-        st.write(item["parent_id"])
+    with st.container(border=True):
+        st.markdown(
+            f"[{score:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
+        )
+        with st.expander("Matches"):
+            for match in item["matches"]:
+                st.markdown(match)
 
 
 with ask_tab:
@@ -26,22 +29,41 @@ with ask_tab:
     st.caption(
         "The LLM will answer your query based on the documents in your knowledge base. "
     )
-    st.warning(
-        "This functionality requires the use of Tools and, at this moment, works well with Open AI and Anthropic models only."
-    )
     question = st.text_input("Question", "")
     models = Model.get_models_by_type("language")
-    model: Model = st.selectbox("Model", models, format_func=lambda x: x.name)
+    strategy_model: Model = st.selectbox(
+        "Query Strategy Model",
+        models,
+        format_func=lambda x: x.name,
+        help="This is the LLM that will be responsible for strategizing the search",
+    )
+    answer_model: Model = st.selectbox(
+        "Indivual Answer Model",
+        models,
+        format_func=lambda x: x.name,
+        help="This is the LLM that will be responsible for processing individual subqueries",
+    )
+    final_answer_model: Model = st.selectbox(
+        "Final Answer Model",
+        models,
+        format_func=lambda x: x.name,
+        help="This is the LLM that will be responsible for processing the final answer",
+    )
     if st.button("Ask"):
         st.write(f"Searching for {question}")
-        messages = [question]
-        rag_results = rag_graph.invoke(
+        rag_results = ask_graph.invoke(
             dict(
-                messages=messages,
+                question=question,
             ),
-            config=dict(configurable=dict(model_id=model.id)),
+            config=dict(
+                configurable=dict(
+                    strategy_model=strategy_model.id,
+                    answer_model=answer_model.id,
+                    final_answer_model=final_answer_model.id,
+                )
+            ),
         )
-        st.markdown(convert_source_references(rag_results["messages"][-1].content))
+        st.markdown(convert_source_references(rag_results["final_answer"]))
         with st.expander("Details (for debugging)"):
             st.json(rag_results)
 

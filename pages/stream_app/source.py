@@ -38,7 +38,7 @@ def generate_toc_and_title(source) -> "Source":
 
 @st.dialog("Source", width="large")
 def source_panel_dialog(source_id):
-    source_panel(source_id)
+    source_panel(source_id, modal=True)
 
 
 @st.dialog("Add a Source", width="large")

@@ -1,0 +1,36 @@
+# Use an official Python runtime as a base image
+FROM python:3.11.7-slim-bullseye 
+
+# Install system dependencies required for building certain Python packages
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl wget libmagic-dev ffmpeg supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install SurrealDB
+RUN curl --proto '=https' --tlsv1.2 -sSf https://install.surrealdb.com | sh
+
+# Set the working directory in the container to /app
+WORKDIR /app
+
+COPY pyproject.toml poetry.lock /app/
+RUN pip install poetry --no-cache-dir
+RUN poetry self add poetry-plugin-dotenv
+RUN poetry config virtualenvs.create false
+
+RUN poetry install --only main
+
+COPY . /app
+
+# Create supervisor configuration directory
+RUN mkdir -p /etc/supervisor/conf.d
+
+# Copy supervisor configuration file
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+EXPOSE 8502
+
+RUN mkdir -p /app/data
+
+# Use supervisor as the main process
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

@@ -14,9 +14,10 @@ RUN pip install poetry --no-cache-dir
 RUN poetry self add poetry-plugin-dotenv
 RUN poetry config virtualenvs.create false
 
-COPY . /app
-
+COPY pyproject.toml poetry.lock /app/
 RUN poetry install --only main
+
+COPY . /app
 EXPOSE 8502
 
 RUN mkdir -p /app/data

@@ -4,6 +4,7 @@ from loguru import logger
 from podcastfy.client import generate_podcast
 from pydantic import Field, field_validator
 
+from open_notebook.config import DATA_FOLDER
 from open_notebook.domain.notebook import ObjectModel
 
 
@@ -27,6 +28,8 @@ class PodcastConfig(ObjectModel):
     conversation_style: List[str]
     engagement_technique: List[str]
     dialogue_structure: List[str]
+    transcript_model: Optional[str] = None
+    transcript_model_provider: Optional[str] = None
     user_instructions: Optional[str] = None
     ending_message: Optional[str] = None
     wordcount: int = Field(ge=400, le=10000)
@@ -53,7 +56,11 @@ class PodcastConfig(ObjectModel):
             "engagement_techniques": self.engagement_technique,
             "creativity": self.creativity,
             "text_to_speech": {
-                # "temp_audio_dir": f"{PODCASTS_FOLDER}/tmp",
+                "output_directories": {
+                    "transcripts": f"{DATA_FOLDER}/podcasts/transcripts",
+                    "audio": f"{DATA_FOLDER}/podcasts/audio",
+                },
+                "temp_audio_dir": f"{DATA_FOLDER}/podcasts/audio/tmp",
                 "ending_message": "Thank you for listening to this episode. Don't forget to subscribe to our podcast for more interesting conversations.",
                 "default_tts_model": self.provider,
                 self.provider: {
@@ -71,8 +78,25 @@ class PodcastConfig(ObjectModel):
             f"Generating episode {episode_name} with config {conversation_config}"
         )
 
+        api_key_label = None
+        llm_model_name = None
+        if self.transcript_model_provider:
+            if self.transcript_model_provider == "openai":
+                api_key_label = "OPENAI_API_KEY"
+                llm_model_name = self.transcript_model
+            elif self.transcript_model_provider == "anthropic":
+                api_key_label = "ANTHROPIC_API_KEY"
+                llm_model_name = self.transcript_model
+            elif self.transcript_model_provider == "gemini":
+                api_key_label = "GEMINI_API_KEY"
+                llm_model_name = self.transcript_model
+
         audio_file = generate_podcast(
-            conversation_config=conversation_config, text=text, tts_model=self.provider
+            conversation_config=conversation_config,
+            text=text,
+            tts_model=self.provider,
+            llm_model_name=llm_model_name,
+            api_key_label=api_key_label,
         )
         episode = PodcastEpisode(
             name=episode_name,

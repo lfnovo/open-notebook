@@ -18,7 +18,6 @@ setup_page("🎙️ Podcasts")
 
 text_to_speech_models = Model.get_models_by_type("text_to_speech")
 
-
 provider_models: Dict[str, List[str]] = {}
 
 for model in text_to_speech_models:
@@ -26,9 +25,26 @@ for model in text_to_speech_models:
         provider_models[model.provider] = []
     provider_models[model.provider].append(model.name)
 
+text_models = Model.get_models_by_type("language")
+
+transcript_provider_models: Dict[str, List[str]] = {}
+
+for model in text_models:
+    if model.provider not in ["gemini", "openai", "anthropic"]:
+        continue
+    if model.provider not in transcript_provider_models:
+        transcript_provider_models[model.provider] = []
+    transcript_provider_models[model.provider].append(model.name)
+
 
 if len(text_to_speech_models) == 0:
     st.error("No text to speech models found. Please set one up in the Settings page.")
+    st.stop()
+
+if len(text_models) == 0:
+    st.error(
+        "No language models found. Please set one up in the Settings page. Only Gemini, Open AI and Anthropic models supported for transcript generation."
+    )
     st.stop()
 
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
@@ -90,7 +106,23 @@ with templates_tab:
         pd_cfg["ending_message"] = st.text_input(
             "Ending Message", placeholder="Thank you for listening!"
         )
-        pd_cfg["provider"] = st.selectbox("Provider", provider_models.keys())
+        pd_cfg["transcript_model_provider"] = st.selectbox(
+            "Transcript Model Provider", transcript_provider_models.keys()
+        )
+        pd_cfg["transcript_model"] = st.selectbox(
+            "Transcript Model",
+            transcript_provider_models[pd_cfg["transcript_model_provider"]],
+        )
+
+        pd_cfg["provider"] = st.selectbox(
+            "Audio Model Provider", provider_models.keys()
+        )
+        pd_cfg["model"] = st.selectbox(
+            "Audio Model", provider_models[pd_cfg["provider"]]
+        )
+        st.caption(
+            "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
+        )
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
         )
@@ -105,10 +137,6 @@ with templates_tab:
             "Voice 2", help="You can use Elevenlabs voice ID"
         )
 
-        pd_cfg["model"] = st.selectbox("Model", provider_models[pd_cfg["provider"]])
-        st.caption(
-            "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
-        )
         if st.button("Save"):
             try:
                 pd = PodcastConfig(**pd_cfg)
@@ -200,11 +228,64 @@ with templates_tab:
                 placeholder="Thank you for listening!",
                 key=f"ending_message_{pd_config.id}",
             )
+
+            if pd_config.transcript_model_provider not in transcript_provider_models:
+                st.warning(
+                    f"Transcript Model Provider {pd_config.transcript_model_provider} not setup. Changing to default."
+                )
+                index = 0
+            else:
+                index = list(transcript_provider_models.keys()).index(
+                    pd_config.transcript_model_provider
+                )
+
+            pd_config.transcript_model_provider = st.selectbox(
+                "Transcript Model Provider",
+                list(transcript_provider_models.keys()),
+                index=index,
+                key=f"transcript_provider_{pd_config.id}",
+            )
+            if (
+                not pd_config.transcript_model
+                or pd_config.transcript_model
+                not in transcript_provider_models[pd_config.transcript_model_provider]
+            ):
+                st.warning(
+                    f"Transcript Model {pd_config.transcript_model} not setup. Changing to default."
+                )
+                index = 0
+            else:
+                index = transcript_provider_models[
+                    pd_config.transcript_model_provider
+                ].index(pd_config.transcript_model)
+            pd_config.transcript_model = st.selectbox(
+                "Transcript Model",
+                transcript_provider_models[pd_config.transcript_model_provider],
+                index=index,
+                key=f"transcript_model_{pd_config.id}",
+            )
+
             pd_config.provider = st.selectbox(
-                "Provider",
+                "Audio Model Provider",
                 list(provider_models.keys()),
                 index=list(provider_models.keys()).index(pd_config.provider),
                 key=f"provider_{pd_config.id}",
+            )
+            if pd_config.model not in provider_models[pd_config.provider]:
+                st.warning(
+                    f"Audio Model {pd_config.model} not setup. Changing to default."
+                )
+                index = 0
+            else:
+                index = provider_models[pd_config.provider].index(pd_config.model)
+            pd_config.model = st.selectbox(
+                "Model",
+                provider_models[pd_config.provider],
+                index=index,
+                key=f"model_{pd_config.id}",
+            )
+            st.caption(
+                "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
             )
             pd_config.voice1 = st.text_input(
                 "Voice 1",
@@ -223,20 +304,6 @@ with templates_tab:
                 value=pd_config.voice2,
                 key=f"voice2_{pd_config.id}",
                 help="You can use Elevenlabs voice ID",
-            )
-            if pd_config.model not in provider_models[pd_config.provider]:
-                st.warning(f"Model {pd_config.model} not setup. Changing to default.")
-                index = 0
-            else:
-                index = provider_models[pd_config.provider].index(pd_config.model)
-            pd_config.model = st.selectbox(
-                "Model",
-                provider_models[pd_config.provider],
-                index=index,
-                key=f"model_{pd_config.id}",
-            )
-            st.caption(
-                "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
             )
 
             if st.button("Save Config", key=f"btn_save{pd_config.id}"):

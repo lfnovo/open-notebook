@@ -1,7 +1,9 @@
+import asyncio
+
 import streamlit as st
 
 from open_notebook.domain.models import Model
-from open_notebook.domain.notebook import text_search, vector_search
+from open_notebook.domain.notebook import Note, Notebook, text_search, vector_search
 from open_notebook.graphs.ask import graph as ask_graph
 from pages.stream_app.utils import convert_source_references, setup_page
 
@@ -11,6 +13,40 @@ ask_tab, search_tab = st.tabs(["Ask Your Knowledge Base (beta)", "Search"])
 
 if "search_results" not in st.session_state:
     st.session_state["search_results"] = []
+
+if "ask_results" not in st.session_state:
+    st.session_state["ask_results"] = {}
+
+
+async def process_ask_query(question, strategy_model, answer_model, final_answer_model):
+    async for chunk in ask_graph.astream(
+        input=dict(
+            question=question,
+        ),
+        config=dict(
+            configurable=dict(
+                strategy_model=strategy_model.id,
+                answer_model=answer_model.id,
+                final_answer_model=final_answer_model.id,
+            )
+        ),
+        stream_mode="updates",
+    ):
+        yield (chunk)
+
+    # result = await ask_graph.ainvoke(
+    #     dict(
+    #         question=question,
+    #     ),
+    #     config=dict(
+    #         configurable=dict(
+    #             strategy_model=strategy_model.id,
+    #             answer_model=answer_model.id,
+    #             final_answer_model=final_answer_model.id,
+    #         )
+    #     ),
+    # )
+    # return result
 
 
 def results_card(item):
@@ -49,23 +85,57 @@ with ask_tab:
         format_func=lambda x: x.name,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    if st.button("Ask"):
-        st.write(f"Searching for {question}")
-        rag_results = ask_graph.invoke(
-            dict(
-                question=question,
-            ),
-            config=dict(
-                configurable=dict(
-                    strategy_model=strategy_model.id,
-                    answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id,
+    ask_bt = st.button("Ask")
+    placeholder = st.container()
+
+    async def stream_results():
+        async for chunk in process_ask_query(
+            question, strategy_model, answer_model, final_answer_model
+        ):
+            if "agent" in chunk:
+                with placeholder.expander(
+                    f"Agent Strategy: {chunk['agent']['strategy'].reasoning}"
+                ):
+                    for search in chunk["agent"]["strategy"].searches:
+                        st.markdown(f"**{search.type} - {search.term}**")
+                        st.markdown(f"Instructions: {search.instructions}")
+            elif "provide_answer" in chunk:
+                for answer in chunk["provide_answer"]["answers"]:
+                    with placeholder.expander("Answer"):
+                        st.markdown(convert_source_references(answer))
+            elif "write_final_answer" in chunk:
+                st.session_state["ask_results"]["answer"] = chunk["write_final_answer"][
+                    "final_answer"
+                ]
+                with placeholder.container(border=True):
+                    st.markdown(
+                        convert_source_references(
+                            chunk["write_final_answer"]["final_answer"]
+                        )
+                    )
+
+    if ask_bt:
+        placeholder.write(f"Searching for {question}")
+        st.session_state["ask_results"]["question"] = question
+        st.session_state["ask_results"]["answer"] = None
+
+        asyncio.run(stream_results())
+
+    if st.session_state["ask_results"].get("answer"):
+        with st.container(border=True):
+            with st.form("save_note_form"):
+                notebook = st.selectbox(
+                    "Notebook", Notebook.get_all(), format_func=lambda x: x.name
                 )
-            ),
-        )
-        st.markdown(convert_source_references(rag_results["final_answer"]))
-        with st.expander("Details (for debugging)"):
-            st.json(rag_results)
+                if st.form_submit_button("Save Answer as Note"):
+                    note = Note(
+                        title=st.session_state["ask_results"]["question"],
+                        content=st.session_state["ask_results"]["answer"],
+                    )
+                    note.save()
+                    note.add_to_notebook(notebook.id)
+                    st.success("Note saved successfully")
+
 
 with search_tab:
     with st.container(border=True):

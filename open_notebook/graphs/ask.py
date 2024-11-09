@@ -49,7 +49,7 @@ class ThreadState(TypedDict):
     final_answer: str
 
 
-def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
+async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     parser = PydanticOutputParser(pydantic_object=Strategy)
     system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(
         data=state
@@ -65,7 +65,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
     return {"strategy": ai_message}
 
 
-def trigger_queries(state: ThreadState, config: RunnableConfig):
+async def trigger_queries(state: ThreadState, config: RunnableConfig):
     return [
         Send(
             "provide_answer",
@@ -80,7 +80,7 @@ def trigger_queries(state: ThreadState, config: RunnableConfig):
     ]
 
 
-def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
+async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     payload = state
     if state["type"] == "text":
         results = text_search(state["term"], 10, True, True)
@@ -100,7 +100,7 @@ def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     return {"answers": [ai_message.content]}
 
 
-def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
+async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)
     model = provision_langchain_model(
         system_prompt,

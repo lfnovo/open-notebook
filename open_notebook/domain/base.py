@@ -204,9 +204,13 @@ class RecordModel(BaseModel):
         result = repo_query(f"SELECT * FROM {self.record_id};")
         if result:
             result = result[0]
-            for key, value in result.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)
+        else:
+            repo_create(self.record_id, {})
+            result = {}
+        for key, value in result.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
         return self
 
     def update(self, data):

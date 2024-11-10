@@ -1,9 +1,9 @@
 import streamlit as st
 import streamlit_scrollable_textbox as stx  # type: ignore
-import yaml
 from humanize import naturaltime
 
 from open_notebook.domain.notebook import Source
+from open_notebook.domain.transformation import Transformation
 from open_notebook.utils import surreal_clean
 from pages.stream_app.utils import run_patterns
 
@@ -43,19 +43,16 @@ def source_panel(source_id: str, modal=False):
                         st.rerun(scope="fragment" if modal else "app")
 
         with c2:
-            with open("transformations.yaml", "r") as file:
-                transformations = yaml.safe_load(file)
-                for transformation in transformations["source_insights"]:
-                    if st.button(
-                        transformation["name"], help=transformation["description"]
-                    ):
-                        result = run_patterns(
-                            source.full_text, transformation["patterns"]
-                        )
-                        source.add_insight(
-                            transformation["insight_type"], surreal_clean(result)
-                        )
-                        st.rerun(scope="fragment" if modal else "app")
+            transformations = Transformation.get_all()
+            for transformation in transformations["source_insights"]:
+                if st.button(
+                    transformation["name"], help=transformation["description"]
+                ):
+                    result = run_patterns(source.full_text, transformation["patterns"])
+                    source.add_insight(
+                        transformation["insight_type"], surreal_clean(result)
+                    )
+                    st.rerun(scope="fragment" if modal else "app")
 
             if st.button(
                 "Embed vectors",

@@ -9,7 +9,7 @@ from youtube_transcript_api.formatters import TextFormatter  # type: ignore
 
 from open_notebook.config import CONFIG
 from open_notebook.exceptions import NoTranscriptFound
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -129,7 +129,7 @@ def get_best_transcript(video_id, preferred_langs=["en", "es", "pt"]):
         return None
 
 
-def extract_youtube_transcript(state: SourceState):
+def extract_youtube_transcript(state: ContentState):
     """
     Parse the text file and print its content.
     """

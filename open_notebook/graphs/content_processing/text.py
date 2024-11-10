@@ -1,9 +1,9 @@
 from loguru import logger
 
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 
-def extract_txt(state: SourceState):
+def extract_txt(state: ContentState):
     """
     Parse the text file and print its content.
     """

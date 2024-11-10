@@ -5,14 +5,14 @@ import requests  # type: ignore
 from bs4 import BeautifulSoup, Comment
 from loguru import logger
 
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 # future: better extraction methods
 # https://github.com/buriy/python-readability
 # also try readability: from readability import Document
 
 
-def url_provider(state: SourceState):
+def url_provider(state: ContentState):
     """
     Identify the provider
     """
@@ -173,7 +173,7 @@ def extract_url_jina(url: str):
         return {"content": text}
 
 
-def extract_url(state: SourceState):
+def extract_url(state: ContentState):
     assert state.get("url"), "No URL provided"
     url = state["url"]
     try:

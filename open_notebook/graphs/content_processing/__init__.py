@@ -14,14 +14,14 @@ from open_notebook.graphs.content_processing.pdf import (
     SUPPORTED_FITZ_TYPES,
     extract_pdf,
 )
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 from open_notebook.graphs.content_processing.text import extract_txt
 from open_notebook.graphs.content_processing.url import extract_url, url_provider
 from open_notebook.graphs.content_processing.video import extract_best_audio_from_video
 from open_notebook.graphs.content_processing.youtube import extract_youtube_transcript
 
 
-def source_identification(state: SourceState):
+def source_identification(state: ContentState):
     """
     Identify the content source based on parameters
     """
@@ -37,7 +37,7 @@ def source_identification(state: SourceState):
     return {"source_type": doc_type}
 
 
-def file_type(state: SourceState):
+def file_type(state: ContentState):
     """
     Identify the file using python-magic
     """
@@ -45,10 +45,11 @@ def file_type(state: SourceState):
     file_path = state.get("file_path")
     if file_path is not None:
         return_dict["identified_type"] = magic.from_file(file_path, mime=True)
+        return_dict["title"] = os.path.basename(file_path)
     return return_dict
 
 
-def file_type_edge(data: SourceState):
+def file_type_edge(data: ContentState):
     assert data.get("identified_type"), "Type not identified"
     identified_type = data["identified_type"]
 
@@ -68,7 +69,7 @@ def file_type_edge(data: SourceState):
         )
 
 
-def delete_file(data: SourceState):
+def delete_file(data: ContentState):
     if data.get("delete_source"):
         logger.debug(f"Deleting file: {data.get('file_path')}")
         file_path = data.get("file_path")
@@ -82,7 +83,7 @@ def delete_file(data: SourceState):
         logger.debug("Not deleting file")
 
 
-workflow = StateGraph(SourceState)
+workflow = StateGraph(ContentState)
 workflow.add_node("source", source_identification)
 workflow.add_node("url_provider", url_provider)
 workflow.add_node("file_type", file_type)

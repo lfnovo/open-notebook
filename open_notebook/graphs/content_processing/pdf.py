@@ -4,7 +4,7 @@ import unicodedata
 import fitz  # type: ignore
 from loguru import logger
 
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 # todo: find tables - https://pymupdf.readthedocs.io/en/latest/the-basics.html#extracting-tables-from-a-page
 # todo: what else can we do to make the text more readable?
@@ -127,7 +127,7 @@ def _extract_text_from_pdf(pdf_path):
         doc.close()
 
 
-def extract_pdf(state: SourceState):
+def extract_pdf(state: ContentState):
     """
     Parse the text file and print its content.
     """

@@ -5,7 +5,7 @@ from loguru import logger
 from pydub import AudioSegment
 
 from open_notebook.domain.models import model_manager
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 # todo: remove reference to model_manager
 # future: parallelize the transcription process
@@ -72,7 +72,7 @@ def split_audio(input_file, segment_length_minutes=15, output_prefix=None):
     return output_files
 
 
-def extract_audio(data: SourceState):
+def extract_audio(data: ContentState):
     SPEECH_TO_TEXT_MODEL = model_manager.speech_to_text
 
     input_audio_path = data.get("file_path")

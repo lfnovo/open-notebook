@@ -1,7 +1,7 @@
 from typing_extensions import TypedDict
 
 
-class SourceState(TypedDict):
+class ContentState(TypedDict):
     content: str
     file_path: str
     url: str

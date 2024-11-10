@@ -4,7 +4,7 @@ import subprocess
 
 from loguru import logger
 
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 
 def extract_audio_from_video(input_file, output_file, stream_index):
@@ -102,7 +102,7 @@ def select_best_audio_stream(streams):
     return max(scored_streams, key=lambda x: x[0])[1]
 
 
-def extract_best_audio_from_video(data: SourceState):
+def extract_best_audio_from_video(data: ContentState):
     """
     Main function to extract the best audio stream from a video file
     """

@@ -3,7 +3,7 @@ from loguru import logger
 from openpyxl import load_workbook
 from pptx import Presentation
 
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 SUPPORTED_OFFICE_TYPES = [
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -251,7 +251,7 @@ def get_xlsx_info(file_path):
         return None
 
 
-def extract_office_content(state: SourceState):
+def extract_office_content(state: ContentState):
     """Universal function to extract content from Office files"""
     assert state.get("file_path"), "No file path provided"
     assert (

@@ -47,7 +47,10 @@ def add_source(notebook_id):
         options=available_transformations,
         default=default_transformations,
     )
-    embed = st.checkbox("Embed content for vector search", value=False)
+    run_embed = st.checkbox(
+        "Embed content for vector search",
+        help="Creates an embedded content for vector search. Costs a little money and takes a little bit more time. You can do this later if you prefer.",
+    )
     if st.button("Process", key="add_source"):
         logger.debug("Adding source")
         with st.status("Processing...", expanded=True):
@@ -78,7 +81,7 @@ def add_source(notebook_id):
                             "content_state": req,
                             "notebook_id": notebook_id,
                             "transformations": apply_transformations,
-                            "embed": embed,
+                            "embed": run_embed,
                         }
                     )
                 )

@@ -44,19 +44,20 @@ def source_panel(source_id: str, modal=False):
 
         with c2:
             transformations = Transformation.get_all()
-            transformation = st.selectbox(
-                "Run a transformation",
-                transformations["source_insights"],
-                key=f"transformation_{source.id}",
-                format_func=lambda x: x["name"],
-            )
-            st.caption(transformation["description"])
-            if st.button("Run"):
-                result = run_patterns(source.full_text, transformation["patterns"])
-                source.add_insight(
-                    transformation["insight_type"], surreal_clean(result)
+            with st.container(border=True):
+                transformation = st.selectbox(
+                    "Run a transformation",
+                    transformations["source_insights"],
+                    key=f"transformation_{source.id}",
+                    format_func=lambda x: x["name"],
                 )
-                st.rerun(scope="fragment" if modal else "app")
+                st.caption(transformation["description"])
+                if st.button("Run"):
+                    result = run_patterns(source.full_text, transformation["patterns"])
+                    source.add_insight(
+                        transformation["insight_type"], surreal_clean(result)
+                    )
+                    st.rerun(scope="fragment" if modal else "app")
 
             if source.embedded_chunks == 0 and st.button(
                 "Embed vectors",

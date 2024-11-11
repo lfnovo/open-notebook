@@ -1,7 +1,7 @@
 import re
 from urllib.parse import urlparse
 
-import requests  # type: ignore
+import aiohttp
 from bs4 import BeautifulSoup, Comment
 from loguru import logger
 
@@ -29,7 +29,7 @@ def url_provider(state: ContentState):
     return return_dict
 
 
-def extract_url_bs4(url: str):
+async def extract_url_bs4(url: str):
     """
     Get the title and content of a URL using bs4
     """
@@ -42,9 +42,10 @@ def extract_url_bs4(url: str):
         if url.startswith("<!DOCTYPE html>") or url.startswith("<html"):
             html_content = url
         else:
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            html_content = response.text
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, headers=headers, timeout=10) as response:
+                    response.raise_for_status()
+                    html_content = await response.text()
 
         soup = BeautifulSoup(html_content, "html.parser")
 
@@ -143,7 +144,7 @@ def extract_url_bs4(url: str):
             "url": url if not url.startswith("<!DOCTYPE html>") else None,
         }
 
-    except requests.exceptions.RequestException as e:
+    except aiohttp.ClientError as e:
         logger.error(f"Failed to fetch URL {url}: {e}")
         return None
     except Exception as e:
@@ -151,38 +152,38 @@ def extract_url_bs4(url: str):
         return None
 
 
-def extract_url_jina(url: str):
+async def extract_url_jina(url: str):
     """
     Get the content of a URL using Jina
     """
-    response = requests.get(f"https://r.jina.ai/{url}")
-    text = response.text
-    if text.startswith("Title:") and "\n" in text:
-        title_end = text.index("\n")
-        title = text[6:title_end].strip()
-        content = text[title_end + 1 :].strip()
-        logger.debug(
-            f"Processed url: {url}, found title: {title}, content: {content[:100]}..."
-        )
-        return {"title": title, "content": content}
-    else:
-        content = text
-        logger.debug(
-            f"Processed url: {url}, does not have Title prefix, returning full content: {content[:100]}..."
-        )
-        return {"content": text}
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://r.jina.ai/{url}") as response:
+            text = await response.text()
+            if text.startswith("Title:") and "\n" in text:
+                title_end = text.index("\n")
+                title = text[6:title_end].strip()
+                content = text[title_end + 1 :].strip()
+                logger.debug(
+                    f"Processed url: {url}, found title: {title}, content: {content[:100]}..."
+                )
+                return {"title": title, "content": content}
+            else:
+                logger.debug(
+                    f"Processed url: {url}, does not have Title prefix, returning full content: {text[:100]}..."
+                )
+                return {"content": text}
 
 
-def extract_url(state: ContentState):
+async def extract_url(state: ContentState):
     assert state.get("url"), "No URL provided"
     url = state["url"]
     try:
-        result = extract_url_bs4(url)
+        result = await extract_url_bs4(url)
         if not result or not result.get("content"):
             logger.debug(
                 f"BS4 extraction failed for url {url}, falling back to Jina extractor"
             )
-            result = extract_url_jina(url)
+            result = await extract_url_jina(url)
         return result
     except Exception as e:
         logger.error(f"URL extraction failed for URL: {url}")

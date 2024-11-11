@@ -1,3 +1,4 @@
+import asyncio
 import re
 import unicodedata
 
@@ -114,7 +115,7 @@ def clean_pdf_text(text):
     return text.strip()
 
 
-def _extract_text_from_pdf(pdf_path):
+async def _extract_text_from_pdf(pdf_path):
     doc = fitz.open(pdf_path)
     try:
         text = ""
@@ -127,20 +128,39 @@ def _extract_text_from_pdf(pdf_path):
         doc.close()
 
 
-def extract_pdf(state: ContentState):
+async def _extract_text_from_pdf(pdf_path):
+    """Extract text from PDF asynchronously"""
+
+    def _extract():
+        doc = fitz.open(pdf_path)
+        try:
+            text = ""
+            logger.debug(f"Found {len(doc)} pages in PDF")
+            for page in doc:
+                text += page.get_text()
+            return clean_pdf_text(text)
+        finally:
+            doc.close()
+
+    # Run CPU-bound PDF processing in a thread pool
+    return await asyncio.get_event_loop().run_in_executor(None, _extract)
+
+
+async def extract_pdf(state: ContentState):
     """
-    Parse the text file and print its content.
+    Parse the PDF file and extract its content asynchronously.
     """
     return_dict = {}
     assert state.get("file_path"), "No file path provided"
     assert state.get("identified_type") in SUPPORTED_FITZ_TYPES, "Unsupported File Type"
+
     if (
         state.get("file_path") is not None
         and state.get("identified_type") in SUPPORTED_FITZ_TYPES
     ):
         file_path = state.get("file_path")
         try:
-            text = _extract_text_from_pdf(file_path)
+            text = await _extract_text_from_pdf(file_path)
             return_dict["content"] = text
         except FileNotFoundError:
             raise FileNotFoundError(f"File not found at {file_path}")

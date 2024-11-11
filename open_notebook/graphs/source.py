@@ -16,8 +16,6 @@ from open_notebook.graphs.content_processing import graph as content_graph
 from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
-# todo: we can make this more efficient
-
 
 class SourceState(TypedDict):
     content_state: ContentState
@@ -32,20 +30,24 @@ class TransformationState(TypedDict):
     transformation: dict
 
 
-def content_process(state: SourceState):
+async def content_process(state: SourceState) -> dict:
     content_state = state["content_state"]
     logger.debug("Content processing started for new content")
-    return {"content_state": content_graph.invoke(content_state)}
+    processed_state = await content_graph.ainvoke(content_state)
+    return {"content_state": processed_state}
 
 
-def run_patterns(input_text, patterns):
-    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
+async def run_patterns(input_text: str, patterns: List[dict]) -> str:
+    output = await transform_graph.ainvoke(
+        dict(content_stack=[input_text], patterns=patterns)
+    )
     return output["output"]
 
 
-def save_source(state: SourceState):
+def save_source(state: SourceState) -> dict:
     logger.debug("Saving source")
     content_state = state["content_state"]
+
     source = Source(
         asset=Asset(
             url=content_state.get("url"), file_path=content_state.get("file_path")
@@ -61,9 +63,10 @@ def save_source(state: SourceState):
     return {"source": source}
 
 
-def trigger_transformations(state: SourceState, config: RunnableConfig):
+def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[Send]:
     if len(state["transformations"]) == 0:
         return []
+
     transformations = Transformation.get_all()
     to_apply = [
         t
@@ -71,6 +74,7 @@ def trigger_transformations(state: SourceState, config: RunnableConfig):
         if t["name"] in state["transformations"]
     ]
     logger.debug(f"Applying transformations {to_apply}")
+
     return [
         Send(
             "transform_content",
@@ -83,24 +87,34 @@ def trigger_transformations(state: SourceState, config: RunnableConfig):
     ]
 
 
-def transform_content(state: TransformationState):
+async def transform_content(state: TransformationState) -> dict:
     source = state["source"]
     content = source.full_text
     transformation = state["transformation"]
+
     logger.debug(f"Applying transformation {transformation['name']}")
-    result = run_patterns(content, patterns=transformation["patterns"])
+    result = await run_patterns(content, patterns=transformation["patterns"])
+
     source.add_insight(transformation["name"], surreal_clean(result))
+
     return {"transformations": [{"name": transformation["name"], "content": result}]}
 
 
+# Create and compile the workflow
 workflow = StateGraph(SourceState)
+
+# Add nodes
 workflow.add_node("content_process", content_process)
 workflow.add_node("save_source", save_source)
 workflow.add_node("transform_content", transform_content)
+
+# Define the graph edges
 workflow.add_edge(START, "content_process")
 workflow.add_edge("content_process", "save_source")
 workflow.add_conditional_edges(
     "save_source", trigger_transformations, ["transform_content"]
 )
 workflow.add_edge("transform_content", END)
+
+# Compile the graph
 source_graph = workflow.compile()

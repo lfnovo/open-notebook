@@ -1,4 +1,5 @@
 import os
+from typing import Any, Dict
 
 import magic
 from langgraph.graph import END, START, StateGraph
@@ -21,7 +22,7 @@ from open_notebook.graphs.content_processing.video import extract_best_audio_fro
 from open_notebook.graphs.content_processing.youtube import extract_youtube_transcript
 
 
-def source_identification(state: ContentState):
+async def source_identification(state: ContentState) -> Dict[str, str]:
     """
     Identify the content source based on parameters
     """
@@ -37,7 +38,7 @@ def source_identification(state: ContentState):
     return {"source_type": doc_type}
 
 
-def file_type(state: ContentState):
+async def file_type(state: ContentState) -> Dict[str, Any]:
     """
     Identify the file using python-magic
     """
@@ -49,7 +50,7 @@ def file_type(state: ContentState):
     return return_dict
 
 
-def file_type_edge(data: ContentState):
+async def file_type_edge(data: ContentState) -> str:
     assert data.get("identified_type"), "Type not identified"
     identified_type = data["identified_type"]
 
@@ -69,7 +70,7 @@ def file_type_edge(data: ContentState):
         )
 
 
-def delete_file(data: ContentState):
+async def delete_file(data: ContentState) -> Dict[str, Any]:
     if data.get("delete_source"):
         logger.debug(f"Deleting file: {data.get('file_path')}")
         file_path = data.get("file_path")
@@ -81,9 +82,21 @@ def delete_file(data: ContentState):
                 logger.warning(f"File not found while trying to delete: {file_path}")
     else:
         logger.debug("Not deleting file")
+    return {}
 
 
+async def url_type_router(x: ContentState) -> str:
+    return x.get("identified_type", "")
+
+
+async def source_type_router(x: ContentState) -> str:
+    return x.get("source_type", "")
+
+
+# Create workflow
 workflow = StateGraph(ContentState)
+
+# Add nodes
 workflow.add_node("source", source_identification)
 workflow.add_node("url_provider", url_provider)
 workflow.add_node("file_type", file_type)
@@ -95,10 +108,12 @@ workflow.add_node("extract_best_audio_from_video", extract_best_audio_from_video
 workflow.add_node("extract_audio", extract_audio)
 workflow.add_node("extract_youtube_transcript", extract_youtube_transcript)
 workflow.add_node("delete_file", delete_file)
+
+# Add edges
 workflow.add_edge(START, "source")
 workflow.add_conditional_edges(
     "source",
-    lambda x: x.get("source_type"),
+    source_type_router,
     {
         "url": "url_provider",
         "file": "file_type",
@@ -111,7 +126,7 @@ workflow.add_conditional_edges(
 )
 workflow.add_conditional_edges(
     "url_provider",
-    lambda x: x.get("identified_type"),
+    url_type_router,
     {"article": "extract_url", "youtube": "extract_youtube_transcript"},
 )
 workflow.add_edge("url_provider", END)
@@ -125,4 +140,6 @@ workflow.add_edge("extract_office_content", "delete_file")
 workflow.add_edge("extract_best_audio_from_video", "extract_audio")
 workflow.add_edge("extract_audio", "delete_file")
 workflow.add_edge("delete_file", END)
+
+# Compile graph
 graph = workflow.compile()

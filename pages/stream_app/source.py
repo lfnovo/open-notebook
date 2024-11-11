@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 
@@ -71,12 +72,14 @@ def add_source(notebook_id):
                         f.write(source_file.getbuffer())
 
                 st.write("Processing content..")
-                source_graph.invoke(
-                    {
-                        "content_state": req,
-                        "notebook_id": notebook_id,
-                        "transformations": apply_transformations,
-                    }
+                asyncio.run(
+                    source_graph.ainvoke(
+                        {
+                            "content_state": req,
+                            "notebook_id": notebook_id,
+                            "transformations": apply_transformations,
+                        }
+                    )
                 )
             except UnsupportedTypeException as e:
                 st.warning(

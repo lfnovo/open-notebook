@@ -90,6 +90,8 @@ def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[
 async def transform_content(state: TransformationState) -> dict:
     source = state["source"]
     content = source.full_text
+    if not content:
+        return None
     transformation = state["transformation"]
 
     logger.debug(f"Applying transformation {transformation['name']}")

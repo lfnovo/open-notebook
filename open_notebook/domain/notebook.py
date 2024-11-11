@@ -1,4 +1,5 @@
-from typing import Any, ClassVar, Dict, List, Literal, Optional
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
@@ -186,28 +187,62 @@ class Source(ObjectModel):
         return self.relate("reference", notebook_id)
 
     def vectorize(self) -> None:
+        logger.info(f"Starting vectorization for source {self.id}")
         EMBEDDING_MODEL = model_manager.embedding_model
 
         try:
             if not self.full_text:
+                logger.warning(f"No text to vectorize for source {self.id}")
                 return
+
             chunks = split_text(
                 self.full_text,
             )
-            logger.debug(f"Split into {len(chunks)} chunks")
+            chunk_count = len(chunks)
+            logger.info(f"Split into {chunk_count} chunks for source {self.id}")
 
-            # future: we can increase the batch size after surreal launches their new SDK
-            for i, chunk in enumerate(chunks):
+            if chunk_count == 0:
+                logger.warning("No chunks created after splitting")
+                return
+
+            def process_chunk(args: Tuple[int, str]) -> Tuple[int, List[float], str]:
+                idx, chunk = args
+                logger.debug(f"Processing chunk {idx}/{chunk_count}")
+                try:
+                    embedding = EMBEDDING_MODEL.embed(chunk)
+                    cleaned_content = surreal_clean(chunk)
+                    logger.debug(f"Successfully processed chunk {idx}")
+                    return (idx, embedding, cleaned_content)
+                except Exception as e:
+                    logger.error(f"Error processing chunk {idx}: {str(e)}")
+                    raise
+
+            # Process chunks in parallel while preserving order
+            logger.info("Starting parallel processing of chunks")
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                # Create list of (index, chunk) tuples
+                chunk_tasks = list(enumerate(chunks))
+                # Process all chunks in parallel and get results
+                results = list(executor.map(process_chunk, chunk_tasks))
+
+            logger.info(f"Parallel processing complete. Got {len(results)} results")
+
+            # Insert results in order (they're already ordered by index)
+            for idx, embedding, content in results:
+                logger.debug(f"Inserting chunk {idx} into database")
                 repo_query(
                     f"""
                     CREATE source_embedding CONTENT {{
                             "source": {self.id},
-                            "order": {i},
+                            "order": {idx},
                             "content": $content,
-                            "embedding": {EMBEDDING_MODEL.embed(chunk)},
+                            "embedding": {embedding},
                     }};""",
-                    {"content": surreal_clean(chunk)},
+                    {"content": content},
                 )
+
+            logger.info(f"Vectorization complete for source {self.id}")
+
         except Exception as e:
             logger.error(f"Error vectorizing source {self.id}: {str(e)}")
             logger.exception(e)

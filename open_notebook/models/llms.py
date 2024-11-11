@@ -171,7 +171,7 @@ class OpenRouterLanguageModel(LanguageModel):
 
     def to_langchain(self) -> ChatOpenAI:
         """
-        Convert the language model to a LangChain chat model.
+        Convert the language model to a LangChain chat model for Open Router.
         """
         kwargs = self.kwargs
         if self.json:
@@ -187,6 +187,34 @@ class OpenRouterLanguageModel(LanguageModel):
             model_kwargs=kwargs,
             streaming=self.streaming,
             api_key=SecretStr(os.environ.get("OPENROUTER_API_KEY", "openrouter")),
+            top_p=self.top_p,
+        )
+
+
+@dataclass
+class XAILanguageModel(LanguageModel):
+    """
+    Language model that uses the OpenAI chat model for X.AI.
+    """
+
+    model_name: str
+
+    def to_langchain(self) -> ChatOpenAI:
+        """
+        Convert the language model to a LangChain chat model.
+        """
+        kwargs = self.kwargs
+        if self.json:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        return ChatOpenAI(
+            model=self.model_name,
+            temperature=self.temperature or 0.5,
+            base_url=os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1"),
+            max_tokens=self.max_tokens,
+            model_kwargs=kwargs,
+            streaming=self.streaming,
+            api_key=SecretStr(os.environ.get("XAI_API_KEY", "xai")),
             top_p=self.top_p,
         )
 

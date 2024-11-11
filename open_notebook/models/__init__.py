@@ -17,6 +17,7 @@ from open_notebook.models.llms import (
     OpenRouterLanguageModel,
     VertexAILanguageModel,
     VertexAnthropicLanguageModel,
+    XAILanguageModel,
 )
 from open_notebook.models.speech_to_text_models import (
     OpenAISpeechToTextModel,
@@ -44,6 +45,7 @@ MODEL_CLASS_MAP: Dict[str, ProviderMap] = {
         "anthropic": AnthropicLanguageModel,
         "openai": OpenAILanguageModel,
         "gemini": GeminiLanguageModel,
+        "xai": XAILanguageModel,
     },
     "embedding": {
         "openai": OpenAIEmbeddingModel,

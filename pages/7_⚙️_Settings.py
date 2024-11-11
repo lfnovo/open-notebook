@@ -28,6 +28,7 @@ model_types = [
 
 provider_status["ollama"] = os.environ.get("OLLAMA_API_BASE") is not None
 provider_status["openai"] = os.environ.get("OPENAI_API_KEY") is not None
+provider_status["xai"] = os.environ.get("XAI_API_KEY") is not None
 provider_status["vertexai"] = (
     os.environ.get("VERTEX_PROJECT") is not None
     and os.environ.get("VERTEX_LOCATION") is not None

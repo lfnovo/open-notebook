@@ -23,6 +23,7 @@ class SourceState(TypedDict):
     notebook_id: str
     source: Source
     transformations: Annotated[list, operator.add]
+    embed: bool = False
 
 
 class TransformationState(TypedDict):
@@ -102,6 +103,14 @@ async def transform_content(state: TransformationState) -> dict:
     return {"transformations": [{"name": transformation["name"], "content": result}]}
 
 
+async def embed_content(state: SourceState) -> dict:
+    source: Source = state["source"]
+    if state["embed"]:
+        logger.debug("Embedding content for vector search")
+        source.vectorize()
+    return {"source": source}
+
+
 # Create and compile the workflow
 workflow = StateGraph(SourceState)
 
@@ -109,14 +118,15 @@ workflow = StateGraph(SourceState)
 workflow.add_node("content_process", content_process)
 workflow.add_node("save_source", save_source)
 workflow.add_node("transform_content", transform_content)
-
+workflow.add_node("embed_content", embed_content)
 # Define the graph edges
 workflow.add_edge(START, "content_process")
 workflow.add_edge("content_process", "save_source")
 workflow.add_conditional_edges(
     "save_source", trigger_transformations, ["transform_content"]
 )
-workflow.add_edge("transform_content", END)
+workflow.add_edge("transform_content", "embed_content")
+workflow.add_edge("embed_content", END)
 
 # Compile the graph
 source_graph = workflow.compile()

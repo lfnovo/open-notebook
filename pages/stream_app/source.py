@@ -47,6 +47,7 @@ def add_source(notebook_id):
         options=available_transformations,
         default=default_transformations,
     )
+    embed = st.checkbox("Embed content for vector search", value=False)
     if st.button("Process", key="add_source"):
         logger.debug("Adding source")
         with st.status("Processing...", expanded=True):
@@ -71,13 +72,13 @@ def add_source(notebook_id):
                     with open(new_path, "wb") as f:
                         f.write(source_file.getbuffer())
 
-                st.write("Processing content..")
                 asyncio.run(
                     source_graph.ainvoke(
                         {
                             "content_state": req,
                             "notebook_id": notebook_id,
                             "transformations": apply_transformations,
+                            "embed": embed,
                         }
                     )
                 )

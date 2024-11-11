@@ -213,27 +213,6 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    # @classmethod
-    # def search(cls, query: str) -> List[Dict[str, Any]]:
-    #     if not query:
-    #         raise InvalidInputError("Search query cannot be empty")
-    #     try:
-    #         result = repo_query(
-    #             """
-    #             SELECT * omit full_text
-    #             FROM source
-    #             WHERE string::lowercase(title) CONTAINS $query or title @@ $query
-    #             OR string::lowercase(summary) CONTAINS $query or summary @@ $query
-    #             OR string::lowercase(full_text) CONTAINS $query or full_text @@ $query
-    #         """,
-    #             {"query": query},
-    #         )
-    #         return result
-    #     except Exception as e:
-    #         logger.error(f"Error searching sources: {str(e)}")
-    #         logger.exception(e)
-    #         raise DatabaseOperationError("Failed to search sources")
-
     def add_insight(self, insight_type: str, content: str) -> Any:
         EMBEDDING_MODEL = model_manager.embedding_model
 

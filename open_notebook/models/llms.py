@@ -254,15 +254,24 @@ class OpenAILanguageModel(LanguageModel):
         """
         Convert the language model to a LangChain chat model.
         """
-        kwargs = self.kwargs
+        kwargs = self.kwargs.copy()  # Make a copy to avoid modifying the original
         if self.json:
             kwargs["response_format"] = {"type": "json_object"}
+
+        # Set the token limit in kwargs with the appropriate key
+        if self.model_name in ["o1-mini", "o1-preview"]:
+            kwargs["max_completion_tokens"] = self.max_tokens
+            top_p = 1
+            streaming = False
+        else:
+            kwargs["max_tokens"] = self.max_tokens
+            top_p = self.top_p
+            streaming = self.streaming
 
         return ChatOpenAI(
             model=self.model_name,
             temperature=self.temperature or 0.5,
-            max_tokens=self.max_tokens,
             model_kwargs=kwargs,
-            streaming=self.streaming,
-            top_p=self.top_p,
+            streaming=streaming,
+            top_p=top_p,
         )

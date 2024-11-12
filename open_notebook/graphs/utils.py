@@ -1,5 +1,5 @@
 from langchain_core.language_models.chat_models import BaseChatModel
-from langchain_core.messages import BaseMessage
+from langchain_core.messages import BaseMessage, HumanMessage, SystemMessage
 from loguru import logger
 
 from open_notebook.domain.models import model_manager
@@ -37,18 +37,18 @@ def provision_langchain_model(
 def run_pattern(
     pattern_name: str,
     config,
-    messages=[],
     state: dict = {},
     parser=None,
 ) -> BaseMessage:
     system_prompt = Prompter(prompt_template=pattern_name, parser=parser).render(
         data=state
     )
-    payload = [system_prompt] + messages
+    payload = [SystemMessage(content=system_prompt)] + [
+        HumanMessage(content=state["input_text"])
+    ]
     chain = provision_langchain_model(
         str(payload), config.get("configurable", {}).get("model_id"), "transformation"
     )
 
     response = chain.invoke(payload)
-
     return response

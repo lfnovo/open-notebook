@@ -141,15 +141,16 @@ class Source(ObjectModel):
     def get_context(
         self, context_size: Literal["short", "long"] = "short"
     ) -> Dict[str, Any]:
+        insights = [insight.model_dump() for insight in self.insights]
         if context_size == "long":
             return dict(
                 id=self.id,
                 title=self.title,
-                insights=[insight.model_dump() for insight in self.insights],
+                insights=insights,
                 full_text=self.full_text,
             )
         else:
-            return dict(id=self.id, title=self.title, insights=self.insights)
+            return dict(id=self.id, title=self.title, insights=insights)
 
     @property
     def embedded_chunks(self) -> int:

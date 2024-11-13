@@ -17,8 +17,8 @@ from .consts import source_context_icons
 
 
 @st.dialog("Source", width="large")
-def source_panel_dialog(source_id):
-    source_panel(source_id, modal=True)
+def source_panel_dialog(source_id, notebook_id=None):
+    source_panel(source_id, notebook_id=notebook_id, modal=True)
 
 
 @st.dialog("Add a Source", width="large")
@@ -121,7 +121,7 @@ def source_card(source, notebook_id):
             f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
         )
         if st.button("Expand", icon="📝", key=source.id):
-            source_panel_dialog(source.id)
+            source_panel_dialog(source.id, notebook_id)
 
     st.session_state[notebook_id]["context_config"][source.id] = context_state
 

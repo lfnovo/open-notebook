@@ -130,6 +130,16 @@ class SourceInsight(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
+    def save_as_note(self, notebook_id: str = None) -> Any:
+        note = Note(
+            title=f"{self.insight_type} from source {self.source.title}",
+            content=self.content,
+        )
+        note.save()
+        if notebook_id:
+            note.add_to_notebook(notebook_id)
+        return note
+
 
 class Source(ObjectModel):
     table_name: ClassVar[str] = "source"

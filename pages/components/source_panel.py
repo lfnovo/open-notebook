@@ -8,7 +8,7 @@ from open_notebook.utils import surreal_clean
 from pages.stream_app.utils import run_patterns
 
 
-def source_panel(source_id: str, modal=False):
+def source_panel(source_id: str, notebook_id=None, modal=False):
     source: Source = Source.get(source_id)
     if not source:
         raise ValueError(f"Source not found: {source_id}")
@@ -36,11 +36,18 @@ def source_panel(source_id: str, modal=False):
             for insight in source.insights:
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
-                    if st.button(
+                    x1, x2 = st.columns(2)
+                    if x1.button(
                         "Delete", type="primary", key=f"delete_insight_{insight.id}"
                     ):
                         insight.delete()
                         st.rerun(scope="fragment" if modal else "app")
+                    if notebook_id:
+                        if x2.button(
+                            "Save as Note", icon="📝", key=f"save_note_{insight.id}"
+                        ):
+                            insight.save_as_note(notebook_id)
+                            st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:
             transformations = Transformation.get_all()

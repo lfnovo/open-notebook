@@ -34,20 +34,6 @@ async def process_ask_query(question, strategy_model, answer_model, final_answer
     ):
         yield (chunk)
 
-    # result = await ask_graph.ainvoke(
-    #     dict(
-    #         question=question,
-    #     ),
-    #     config=dict(
-    #         configurable=dict(
-    #             strategy_model=strategy_model.id,
-    #             answer_model=answer_model.id,
-    #             final_answer_model=final_answer_model.id,
-    #         )
-    #     ),
-    # )
-    # return result
-
 
 def results_card(item):
     score = item.get("relevance", item.get("similarity", item.get("score", 0)))

@@ -89,6 +89,8 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     if len(results) == 0:
         return {"answers": []}
     payload["results"] = results
+    ids = [r["id"] for r in results]
+    payload["ids"] = ids
     system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)
     model = provision_langchain_model(
         system_prompt,

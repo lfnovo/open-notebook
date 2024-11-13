@@ -82,19 +82,26 @@ with templates_tab:
             "User Instructions",
             help="Any additional intructions to pass to the LLM that will generate the transcript",
         )
-        pd_cfg["person1_role"] = st.text_input("Person 1 role")
+        pd_cfg["person1_role"] = st_tags(
+            [], participant_roles, "Person 1 roles", key="person1_roles"
+        )
         st.caption(f"Suggestions:{', '.join(participant_roles)}")
-        pd_cfg["person2_role"] = st.text_input("Person 2 role")
+        pd_cfg["person2_role"] = st_tags(
+            [], participant_roles, "Person 2 roles", key="person2_roles"
+        )
         pd_cfg["conversation_style"] = st_tags(
-            [], conversation_styles, "Conversation Style"
+            [], conversation_styles, "Conversation Style", key="conversation_styles"
         )
         st.caption(f"Suggestions:{', '.join(conversation_styles)}")
         pd_cfg["engagement_technique"] = st_tags(
-            [], engagement_techniques, "Engagement Techniques"
+            [],
+            engagement_techniques,
+            "Engagement Techniques",
+            key="engagement_techniques",
         )
         st.caption(f"Suggestions:{', '.join(engagement_techniques)}")
         pd_cfg["dialogue_structure"] = st_tags(
-            [], dialogue_structures, "Dialogue Structure"
+            [], dialogue_structures, "Dialogue Structure", key="dialogue_structures"
         )
         st.caption(f"Suggestions:{', '.join(dialogue_structures)}")
         pd_cfg["wordcount"] = st.slider(
@@ -126,6 +133,8 @@ with templates_tab:
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
         )
+        st.caption("Voice names are case sensitive. Be sure to add the exact name.")
+
         st.markdown(
             "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
         )
@@ -142,10 +151,8 @@ with templates_tab:
                 pd = PodcastConfig(**pd_cfg)
                 pd_cfg = {}
                 pd.save()
-                st.rerun()
             except Exception as e:
                 st.error(e)
-                st.exception(e)
 
     for pd_config in PodcastConfig.get_all(order_by="created desc"):
         with st.expander(pd_config.name):
@@ -174,17 +181,20 @@ with templates_tab:
                 value=pd_config.output_language,
                 key=f"output_language_{pd_config.id}",
             )
-            pd_config.person1_role = st.text_input(
-                "Person 1 role",
-                value=pd_config.person1_role,
-                key=f"person1_role_{pd_config.id}",
+            pd_config.person1_role = st_tags(
+                pd_config.person1_role,
+                conversation_styles,
+                "Person 1 Roles",
+                key=f"person_1_roles_{pd_config.id}",
             )
             st.caption(f"Suggestions:{', '.join(participant_roles)}")
-            pd_config.person2_role = st.text_input(
-                "Person 2 role",
-                value=pd_config.person2_role,
-                key=f"person2_role_{pd_config.id}",
+            pd_config.person2_role = st_tags(
+                pd_config.person2_role,
+                conversation_styles,
+                "Person 2 Roles",
+                key=f"person_2_roles_{pd_config.id}",
             )
+
             pd_config.conversation_style = st_tags(
                 pd_config.conversation_style,
                 conversation_styles,
@@ -293,6 +303,7 @@ with templates_tab:
                 key=f"voice1_{pd_config.id}",
                 help="You can use Elevenlabs voice ID",
             )
+            st.caption("Voice names are case sensitive. Be sure to add the exact name.")
             st.markdown(
                 "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
             )

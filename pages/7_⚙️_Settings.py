@@ -268,7 +268,8 @@ with transformations_tab:
             selected_transformations[transformation["name"]] = st.checkbox(
                 f"**{transformation['name']}**",
                 value=(
-                    transformation["name"] in default_transformations.source_insights
+                    transformation["name"]
+                    in (default_transformations.source_insights or [])
                 ),
             )
             st.write(transformation["description"])

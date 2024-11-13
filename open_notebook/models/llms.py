@@ -295,12 +295,17 @@ class OpenAILanguageModel(LanguageModel):
             kwargs["max_completion_tokens"] = self.max_tokens
             data["top_p"] = 1
             data["streaming"] = False
+            data["max_tokens"] = None
         else:
             data["max_tokens"] = self.max_tokens
             data["top_p"] = self.top_p
             data["streaming"] = self.streaming
 
         return ChatOpenAI(
-            **data,
+            model_name=data.get("model_name"),
+            temperature=data.get("temperature"),
+            streaming=data.get("streaming"),
+            max_tokens=data.get("max_tokens"),
+            top_p=data.get("top_p"),
             model_kwargs=kwargs,
         )

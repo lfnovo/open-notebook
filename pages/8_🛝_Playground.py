@@ -13,7 +13,7 @@ with open("transformations.yaml", "r") as file:
 
 insight_transformations = transformations["source_insights"]
 
-transformation = st.selectbox(
+transformation: dict = st.selectbox(
     "Pick a transformation",
     insight_transformations,
     format_func=lambda x: x.get("name", "No Name"),

@@ -32,7 +32,6 @@ class PodcastConfig(ObjectModel):
     transcript_model_provider: Optional[str] = None
     user_instructions: Optional[str] = None
     ending_message: Optional[str] = None
-    wordcount: int = Field(ge=400, le=10000)
     creativity: float = Field(ge=0, le=1)
     provider: str = Field(default="openai")
     voice1: str
@@ -53,12 +52,12 @@ class PodcastConfig(ObjectModel):
             raise ValueError("Both voice1 and voice2 must be provided")
         return self
 
-    def generate_episode(self, episode_name, text, instructions=None):
+    def generate_episode(self, episode_name, text, longform=False, instructions=None):
         self.user_instructions = (
             instructions if instructions else self.user_instructions
         )
         conversation_config = {
-            "word_count": self.wordcount,
+            "longform": longform,
             "conversation_style": self.conversation_style,
             "roles_person1": self.person1_role,
             "roles_person2": self.person2_role,
@@ -129,12 +128,6 @@ class PodcastConfig(ObjectModel):
         if value is None or value.strip() == "":
             raise ValueError(f"{field.field_name} cannot be None or empty string")
         return value.strip()
-
-    @field_validator("wordcount")
-    def validate_wordcount(cls, value):
-        if not 400 <= value <= 6000:
-            raise ValueError("Wordcount must be between 400 and 10000")
-        return value
 
     @field_validator("creativity")
     def validate_creativity(cls, value):

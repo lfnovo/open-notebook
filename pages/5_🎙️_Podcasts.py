@@ -104,9 +104,6 @@ with templates_tab:
             [], dialogue_structures, "Dialogue Structure", key="dialogue_structures"
         )
         st.caption(f"Suggestions:{', '.join(dialogue_structures)}")
-        pd_cfg["wordcount"] = st.slider(
-            "Word Count", min_value=400, max_value=6000, step=50
-        )
         pd_cfg["creativity"] = st.slider(
             "Creativity", min_value=0.0, max_value=1.0, step=0.05
         )
@@ -216,14 +213,6 @@ with templates_tab:
                 key=f"dialogue_structure_{pd_config.id}",
             )
             st.caption(f"Suggestions:{', '.join(dialogue_structures)}")
-            pd_config.wordcount = st.slider(
-                "Word Count",
-                min_value=400,
-                max_value=6000,
-                step=50,
-                value=pd_config.wordcount,
-                key=f"wordcount_{pd_config.id}",
-            )
             pd_config.creativity = st.slider(
                 "Creativity",
                 min_value=0.0,
@@ -240,9 +229,6 @@ with templates_tab:
             )
 
             if pd_config.transcript_model_provider not in transcript_provider_models:
-                st.warning(
-                    f"Transcript Model Provider {pd_config.transcript_model_provider} not setup. Changing to default."
-                )
                 index = 0
             else:
                 index = list(transcript_provider_models.keys()).index(

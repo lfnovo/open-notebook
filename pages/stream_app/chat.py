@@ -83,6 +83,11 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 instructions = st.text_area(
                     "Instructions", value=selected_template.user_instructions
                 )
+                podcast_length = st.radio(
+                    "Podcast Length",
+                    ["Short (5-10 min)", "Long (20-30 min)"],
+                )
+                longform = podcast_length == "Long (20-30 min)"
                 if len(context.get("note", [])) + len(context.get("source", [])) == 0:
                     st.warning(
                         "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
@@ -94,6 +99,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                                 selected_template.generate_episode(
                                     episode_name=episode_name,
                                     text=context,
+                                    longform=longform,
                                     instructions=instructions,
                                 )
                             st.success("Episode generated successfully")

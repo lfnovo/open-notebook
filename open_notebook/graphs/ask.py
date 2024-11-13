@@ -7,7 +7,6 @@ from langchain_core.runnables import (
 )
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
-from loguru import logger
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
@@ -63,7 +62,6 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
     )
     # model = model.bind_tools(tools)
     ai_message = (model | parser).invoke(system_prompt)
-    logger.debug(ai_message)
     return {"strategy": ai_message}
 
 

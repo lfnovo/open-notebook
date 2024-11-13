@@ -22,6 +22,7 @@ class MigrationManager:
             Migration.from_file("migrations/1.surrealql"),
             Migration.from_file("migrations/2.surrealql"),
             Migration.from_file("migrations/3.surrealql"),
+            Migration.from_file("migrations/4.surrealql"),
         ]
         self.down_migrations = [
             Migration.from_file(
@@ -29,6 +30,7 @@ class MigrationManager:
             ),
             Migration.from_file("migrations/2_down.surrealql"),
             Migration.from_file("migrations/3_down.surrealql"),
+            Migration.from_file("migrations/4_down.surrealql"),
         ]
         self.runner = MigrationRunner(
             up_migrations=self.up_migrations,

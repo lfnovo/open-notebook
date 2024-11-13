@@ -42,9 +42,10 @@ def results_card(item):
         st.markdown(
             f"[{score:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
         )
-        with st.expander("Matches"):
-            for match in item["matches"]:
-                st.markdown(match)
+        if "matches" in item:
+            with st.expander("Matches"):
+                for match in item["matches"]:
+                    st.markdown(match)
 
 
 with ask_tab:

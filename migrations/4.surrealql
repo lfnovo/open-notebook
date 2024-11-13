@@ -63,12 +63,12 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
     let $note_results = array::union($note_title_search, $note_content_search );
     let $final_results = array::union($source_results, $note_results );
 
-        RETURN (select id, parent_id, title, math::max(relevance) as relevance,
-        array::flatten(content) as matches
+        RETURN (select id, parent_id, title, math::max(relevance) as relevance
         from $final_results where id is not None
         group by id, parent_id, title ORDER BY relevance DESC LIMIT $match_count);
 
 };
+
 
 REMOVE FUNCTION IF EXISTS fn::vector_search;
 

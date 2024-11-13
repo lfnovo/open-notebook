@@ -13,7 +13,7 @@ from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
 
-from .consts import context_icons
+from .consts import source_context_icons
 
 
 @st.dialog("Source", width="large")
@@ -113,7 +113,7 @@ def source_card(source, notebook_id):
         context_state = st.selectbox(
             "Context",
             label_visibility="collapsed",
-            options=context_icons,
+            options=source_context_icons,
             index=1,
             key=f"source_{source.id}",
         )

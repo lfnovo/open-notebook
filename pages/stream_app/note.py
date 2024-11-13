@@ -61,7 +61,7 @@ def note_card(note, notebook_id):
             "Context",
             label_visibility="collapsed",
             options=context_icons,
-            index=0,
+            index=1,
             key=f"note_{note.id}",
         )
         st.caption(f"Updated: {naturaltime(note.updated)}")

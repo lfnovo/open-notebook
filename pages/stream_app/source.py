@@ -114,7 +114,7 @@ def source_card(source, notebook_id):
             "Context",
             label_visibility="collapsed",
             options=context_icons,
-            index=0,
+            index=1,
             key=f"source_{source.id}",
         )
         st.caption(

@@ -33,7 +33,7 @@ class TransformationState(TypedDict):
 
 async def content_process(state: SourceState) -> dict:
     content_state = state["content_state"]
-    logger.debug("Content processing started for new content")
+    logger.info("Content processing started for new content")
     processed_state = await content_graph.ainvoke(content_state)
     return {"content_state": processed_state}
 
@@ -46,7 +46,6 @@ async def run_patterns(input_text: str, patterns: List[dict]) -> str:
 
 
 def save_source(state: SourceState) -> dict:
-    logger.debug("Saving source")
     content_state = state["content_state"]
 
     source = Source(

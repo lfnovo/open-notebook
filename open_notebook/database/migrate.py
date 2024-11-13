@@ -53,14 +53,14 @@ class MigrationManager:
 
     def run_migration_up(self):
         current_version = self.get_current_version()
-        logger.debug(f"Current version before migration: {current_version}")
+        logger.info(f"Current version before migration: {current_version}")
 
         if self.needs_migration:
             try:
                 self.runner.run()
                 new_version = self.get_current_version()
-                logger.debug(f"Migration successful. New version: {new_version}")
+                logger.info(f"Migration successful. New version: {new_version}")
             except Exception as e:
                 logger.error(f"Migration failed: {str(e)}")
         else:
-            logger.debug("Database is already at the latest version")
+            logger.info("Database is already at the latest version")

@@ -126,7 +126,6 @@ class ObjectModel(BaseModel):
 
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                logger.debug("Creating new record")
                 repo_result = repo_create(self.__class__.table_name, data)
             else:
                 data["created"] = (

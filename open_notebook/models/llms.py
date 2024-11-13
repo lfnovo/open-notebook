@@ -13,6 +13,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_vertexai import ChatVertexAI
 from langchain_google_vertexai.model_garden import ChatAnthropicVertex
+from langchain_groq.chat_models import ChatGroq
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
 from pydantic import SecretStr
@@ -188,6 +189,30 @@ class OpenRouterLanguageModel(LanguageModel):
             streaming=self.streaming,
             api_key=SecretStr(os.environ.get("OPENROUTER_API_KEY", "openrouter")),
             top_p=self.top_p,
+        )
+
+
+@dataclass
+class GroqLanguageModel(LanguageModel):
+    """
+    Language model that uses the Groq chat model.
+    """
+
+    model_name: str
+
+    def to_langchain(self) -> ChatGroq:
+        """
+        Convert the language model to a LangChain chat model for Groq.
+        """
+        kwargs = self.kwargs
+        kwargs["top_p"] = self.top_p
+
+        return ChatGroq(
+            model=self.model_name,
+            temperature=self.temperature or 0.5,
+            max_tokens=self.max_tokens,
+            model_kwargs=kwargs,
+            stop_sequences=None,
         )
 
 

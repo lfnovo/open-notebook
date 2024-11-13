@@ -80,13 +80,14 @@ def generate_new_models(models, suggested_models):
 
                 # Check if model already exists
                 if model_key not in existing_model_keys:
-                    new_models.append(
-                        {
-                            "name": model_name,
-                            "type": type_,
-                            "provider": provider,
-                        }
-                    )
+                    if provider_status.get(provider):
+                        new_models.append(
+                            {
+                                "name": model_name,
+                                "type": type_,
+                                "provider": provider,
+                            }
+                        )
 
     return new_models
 

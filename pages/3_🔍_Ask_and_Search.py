@@ -83,7 +83,7 @@ with ask_tab:
                     f"Agent Strategy: {chunk['agent']['strategy'].reasoning}"
                 ):
                     for search in chunk["agent"]["strategy"].searches:
-                        st.markdown(f"**{search.type} - {search.term}**")
+                        st.markdown(f"Searched for: **{search.term}**")
                         st.markdown(f"Instructions: {search.instructions}")
             elif "provide_answer" in chunk:
                 for answer in chunk["provide_answer"]["answers"]:

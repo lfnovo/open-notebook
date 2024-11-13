@@ -2,9 +2,10 @@ import asyncio
 
 import streamlit as st
 
-from open_notebook.domain.models import Model
+from open_notebook.domain.models import DefaultModels
 from open_notebook.domain.notebook import Note, Notebook, text_search, vector_search
 from open_notebook.graphs.ask import graph as ask_graph
+from pages.components.model_selector import model_selector
 from pages.stream_app.utils import convert_source_references, setup_page
 
 setup_page("🔍 Search")
@@ -52,23 +53,26 @@ with ask_tab:
         "The LLM will answer your query based on the documents in your knowledge base. "
     )
     question = st.text_input("Question", "")
-    models = Model.get_models_by_type("language")
-    strategy_model: Model = st.selectbox(
+    default_model = DefaultModels().load().default_chat_model
+    strategy_model = model_selector(
         "Query Strategy Model",
-        models,
-        format_func=lambda x: x.name,
+        "strategy_model",
+        selected_id=default_model,
+        model_type="language",
         help="This is the LLM that will be responsible for strategizing the search",
     )
-    answer_model: Model = st.selectbox(
-        "Indivual Answer Model",
-        models,
-        format_func=lambda x: x.name,
+    answer_model = model_selector(
+        "Individual Answer Model",
+        "answer_model",
+        model_type="language",
+        selected_id=default_model,
         help="This is the LLM that will be responsible for processing individual subqueries",
     )
-    final_answer_model: Model = st.selectbox(
+    final_answer_model = model_selector(
         "Final Answer Model",
-        models,
-        format_func=lambda x: x.name,
+        "final_answer_model",
+        model_type="language",
+        selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
     ask_bt = st.button("Ask")

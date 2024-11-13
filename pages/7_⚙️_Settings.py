@@ -2,9 +2,11 @@ import os
 
 import streamlit as st
 
+from open_notebook.config import CONFIG
 from open_notebook.domain.models import DefaultModels, Model, model_manager
 from open_notebook.domain.transformation import DefaultTransformations, Transformation
 from open_notebook.models import MODEL_CLASS_MAP
+from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
 setup_page("⚙️ Settings")
@@ -59,8 +61,41 @@ provider_status["litellm"] = (
 available_providers = [k for k, v in provider_status.items() if v]
 unavailable_providers = [k for k, v in provider_status.items() if not v]
 
+
+def generate_new_models(models, suggested_models):
+    # Create a set of existing model keys for efficient lookup
+    existing_model_keys = {
+        f"{model.provider}-{model.name}-{model.type}" for model in models
+    }
+
+    new_models = []
+
+    # Iterate through suggested models by provider
+    for provider, types in suggested_models.items():
+        # Iterate through each type (language, embedding, etc.)
+        for type_, model_list in types.items():
+            for model_name in model_list:
+                model_key = f"{provider}-{model_name}-{type_}"
+
+                # Check if model already exists
+                if model_key not in existing_model_keys:
+                    new_models.append(
+                        {
+                            "name": model_name,
+                            "type": type_,
+                            "provider": provider,
+                        }
+                    )
+
+    return new_models
+
+
+default_models = DefaultModels().model_dump()
+all_models = Model.get_all()
+
 with model_tab:
     st.subheader("Add Model")
+
     provider = st.selectbox("Provider", available_providers)
     if len(unavailable_providers) > 0:
         st.caption(
@@ -92,8 +127,20 @@ with model_tab:
             model = Model(name=model_name, provider=provider, type=model_type)
             model.save()
             st.success("Saved")
+
     st.divider()
-    all_models = Model.get_all()
+    suggested_models = CONFIG.get("suggested_models", [])
+    recommendations = generate_new_models(all_models, suggested_models)
+    if len(recommendations) > 0:
+        with st.expander("💁‍♂️ Recommended models to get you started.."):
+            for recommendation in recommendations:
+                st.markdown(
+                    f"**{recommendation['name']}** ({recommendation['provider']}, {recommendation['type']})"
+                )
+                if st.button("Add", key=f"add_{recommendation['name']}"):
+                    new_model = Model(**recommendation)
+                    new_model.save()
+                    st.rerun()
     st.subheader("Configured Models")
     model_types_available = {
         # "vision": False,
@@ -114,20 +161,7 @@ with model_tab:
         if not available:
             st.warning(f"No models available for {model_type}")
 
-
-def get_selected_index(models, model_id, default=0):
-    """Returns the index of the selected model in the list of models"""
-    if not model_id or not models:
-        return default
-    for i, model in enumerate(models):
-        if model.id == model_id:
-            return i
-    return default
-
-
 with model_defaults_tab:
-    default_models = DefaultModels().model_dump()
-    all_models = Model.get_all()
     text_generation_models = [model for model in all_models if model.type == "language"]
 
     text_to_speech_models = [
@@ -143,93 +177,80 @@ with model_defaults_tab:
         "In this section, you can select the default models to be used on the various content operations done by Open Notebook. Some of these can be overriden in the different modules."
     )
     defs = {}
-    defs["default_chat_model"] = st.selectbox(
+    defs["default_chat_model"] = model_selector(
         "Default Chat Model",
-        text_generation_models,
-        format_func=lambda x: x.name,
+        "default_chat_model",
+        selected_id=default_models.get("default_chat_model"),
         help="This model will be used for chat.",
-        index=get_selected_index(
-            text_generation_models, default_models.get("default_chat_model")
-        ),
+        model_type="language",
     )
     st.divider()
-    defs["default_transformation_model"] = st.selectbox(
+    defs["default_transformation_model"] = model_selector(
         "Default Transformation Model",
-        text_generation_models,
-        format_func=lambda x: x.name,
+        "default_transformation_model",
+        selected_id=default_models.get("default_transformation_model"),
         help="This model will be used for text transformations such as summaries, insights, etc.",
-        index=get_selected_index(
-            text_generation_models, default_models.get("default_transformation_model")
-        ),
+        model_type="language",
     )
+    st.caption("You can use a cheap model here like gpt-4o-mini, llama3, etc.")
     st.divider()
-    defs["default_tools_model"] = st.selectbox(
+    defs["default_tools_model"] = model_selector(
         "Default Tools Model",
-        text_generation_models,
-        format_func=lambda x: x.name,
+        "default_tools_model",
+        selected_id=default_models.get("default_tools_model"),
         help="This model will be used for calling tools. Currently, it's best to use Open AI and Anthropic for this.",
-        index=get_selected_index(
-            text_generation_models, default_models.get("default_tools_model")
-        ),
+        model_type="language",
     )
+    st.caption("Recommended to use a capable model here, like gpt-4o, claude, etc.")
     st.divider()
-    defs["large_context_model"] = st.selectbox(
+    defs["large_context_model"] = model_selector(
         "Large Context Model",
-        text_generation_models,
-        format_func=lambda x: x.name,
+        "large_context_model",
+        selected_id=default_models.get("large_context_model"),
         help="This model will be used for larger context generation -- recommended: Gemini",
-        index=get_selected_index(
-            text_generation_models, default_models.get("large_context_model")
-        ),
+        model_type="language",
     )
     st.caption("Recommended to use Gemini models for larger context processing")
     st.divider()
-    defs["default_text_to_speech_model"] = st.selectbox(
+    defs["default_text_to_speech_model"] = model_selector(
         "Default Text to Speech Model",
-        text_to_speech_models,
-        format_func=lambda x: x.name,
+        "default_text_to_speech_model",
+        selected_id=default_models.get("default_text_to_speech_model"),
         help="This is the default model for converting text to speech (podcasts, etc)",
-        index=get_selected_index(
-            text_to_speech_models, default_models.get("default_text_to_speech_model")
-        ),
+        model_type="text_to_speech",
     )
     st.caption("You can override this model on different podcasts")
     st.divider()
-    defs["default_speech_to_text_model"] = st.selectbox(
+    defs["default_speech_to_text_model"] = model_selector(
         "Default Speech to Text Model",
-        speech_to_text_models,
-        format_func=lambda x: x.name,
+        "default_speech_to_text_model",
+        selected_id=default_models.get("default_speech_to_text_model"),
         help="This is the default model for converting speech to text (audio transcriptions, etc)",
-        index=get_selected_index(
-            speech_to_text_models, default_models.get("default_speech_to_text_model")
-        ),
+        model_type="speech_to_text",
     )
+
     st.divider()
-    # defs["default_vision_model"] = st.selectbox(
-    #     "Default Vision Model",
-    #     vision_models,
-    #     format_func=lambda x: x.name,
-    #     help="This is the default model for vision tasks (image recognition, PDF recognition, etc)",
-    #     index=get_selected_index(
-    #         vision_models, default_models.get("default_vision_model")
+    # defs["default_vision_model"] = (
+    #     model_selector(
+    #         "Default Speech to Text Model",
+    #         "default_vision_model",
+    #         selected_id=default_models.get("default_vision_model"),
+    #         help="This is the default model for vision tasks",
+    #         model_type="vision",
     #     ),
     # )
-    # st.divider()
 
-    defs["default_embedding_model"] = st.selectbox(
-        "Default Embedding Model",
-        embedding_models,
-        format_func=lambda x: x.name,
+    defs["default_embedding_model"] = model_selector(
+        "Default Speech to Text Model",
+        "default_embedding_model",
+        selected_id=default_models.get("default_embedding_model"),
         help="This is the default model for embeddings (semantic search, etc)",
-        index=get_selected_index(
-            embedding_models, default_models.get("default_embedding_model")
-        ),
+        model_type="embedding",
     )
     st.caption(
         "Caution: you cannot change the embedding model once there is embeddings or they will need to be regenerated"
     )
 
-    # if st.button("Save Defaults", key="save_defaults"):
     for k, v in defs.items():
         if v:
             defs[k] = v.id

@@ -7,6 +7,7 @@ from humanize import naturaltime
 from loguru import logger
 
 from open_notebook.config import UPLOADS_FOLDER
+from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultTransformations, Transformation
 from open_notebook.exceptions import UnsupportedTypeException
@@ -23,6 +24,10 @@ def source_panel_dialog(source_id, notebook_id=None):
 
 @st.dialog("Add a Source", width="large")
 def add_source(notebook_id):
+    if not model_manager.speech_to_text:
+        st.warning(
+            "Since there is no speech to text model selected, you can't upload audio/video files."
+        )
     source_link = None
     source_file = None
     source_text = None

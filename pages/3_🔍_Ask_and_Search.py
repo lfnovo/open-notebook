@@ -2,7 +2,7 @@ import asyncio
 
 import streamlit as st
 
-from open_notebook.domain.models import DefaultModels
+from open_notebook.domain.models import DefaultModels, model_manager
 from open_notebook.domain.notebook import Note, Notebook, text_search, vector_search
 from open_notebook.graphs.ask import graph as ask_graph
 from pages.components.model_selector import model_selector
@@ -76,7 +76,11 @@ with ask_tab:
         selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    ask_bt = st.button("Ask")
+    if not model_manager.embedding_model:
+        st.warning(
+            "You can't use this feature because you have no embedding model selected. Please set one up in the Settings page."
+        )
+    ask_bt = st.button("Ask") if model_manager.embedding_model else None
     placeholder = st.container()
 
     async def stream_results():
@@ -133,7 +137,13 @@ with search_tab:
         st.subheader("🔍 Search")
         st.caption("Search your knowledge base for specific keywords or concepts")
         search_term = st.text_input("Search", "")
-        search_type = st.radio("Search Type", ["Text Search", "Vector Search"])
+        if not model_manager.embedding_model:
+            st.warning(
+                "You can't use vector search because you have no embedding model selected. Only text search will be available."
+            )
+            search_type = "Text Search"
+        else:
+            search_type = st.radio("Search Type", ["Text Search", "Vector Search"])
         search_sources = st.checkbox("Search Sources", value=True)
         search_notes = st.checkbox("Search Notes", value=True)
         if st.button("Search"):

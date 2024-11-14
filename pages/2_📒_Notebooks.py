@@ -7,7 +7,7 @@ from pages.stream_app.note import add_note, note_card
 from pages.stream_app.source import add_source, source_card
 from pages.stream_app.utils import setup_page, setup_stream_state
 
-setup_page("📒 Open Notebook")
+setup_page("📒 Open Notebook", only_check_mandatory_models=True)
 
 
 def notebook_header(current_notebook: Notebook):

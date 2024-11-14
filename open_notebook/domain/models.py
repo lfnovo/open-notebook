@@ -109,27 +109,30 @@ class ModelManager:
         return self._default_models
 
     @property
-    def speech_to_text(self, **kwargs) -> SpeechToTextModel:
+    def speech_to_text(self, **kwargs) -> Optional[SpeechToTextModel]:
         """Get the default speech-to-text model"""
         model = self.get_default_model("speech_to_text", **kwargs)
-        if not isinstance(model, SpeechToTextModel):
-            raise TypeError(f"Expected SpeechToTextModel but got {type(model)}")
+        assert model is None or isinstance(
+            model, SpeechToTextModel
+        ), f"Expected SpeechToTextModel but got {type(model)}"
         return model
 
     @property
-    def text_to_speech(self, **kwargs) -> TextToSpeechModel:
+    def text_to_speech(self, **kwargs) -> Optional[TextToSpeechModel]:
         """Get the default text-to-speech model"""
         model = self.get_default_model("text_to_speech", **kwargs)
-        if not isinstance(model, TextToSpeechModel):
-            raise TypeError(f"Expected TextToSpeechModel but got {type(model)}")
+        assert model is None or isinstance(
+            model, TextToSpeechModel
+        ), f"Expected TextToSpeechModel but got {type(model)}"
         return model
 
     @property
-    def embedding_model(self, **kwargs) -> EmbeddingModel:
+    def embedding_model(self, **kwargs) -> Optional[EmbeddingModel]:
         """Get the default embedding model"""
         model = self.get_default_model("embedding", **kwargs)
-        if not isinstance(model, EmbeddingModel):
-            raise TypeError(f"Expected EmbeddingModel but got {type(model)}")
+        assert model is None or isinstance(
+            model, EmbeddingModel
+        ), f"Expected EmbeddingModel but got {type(model)}"
         return model
 
     def get_default_model(self, model_type: str, **kwargs) -> ModelType:

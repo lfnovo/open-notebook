@@ -110,7 +110,6 @@ class ObjectModel(BaseModel):
 
     def save(self) -> None:
         from open_notebook.domain.models import model_manager
-        from open_notebook.models import EmbeddingModel
 
         try:
             self.model_validate(self.model_dump(), strict=True)
@@ -120,8 +119,16 @@ class ObjectModel(BaseModel):
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
                 if embedding_content:
-                    EMBEDDING_MODEL: EmbeddingModel = model_manager.embedding_model
-                    data["embedding"] = EMBEDDING_MODEL.embed(embedding_content)
+                    EMBEDDING_MODEL = model_manager.embedding_model
+                    if not EMBEDDING_MODEL:
+                        logger.warning(
+                            "No embedding model found. Content will not be searchable."
+                        )
+                    data["embedding"] = (
+                        EMBEDDING_MODEL.embed(embedding_content)
+                        if EMBEDDING_MODEL
+                        else []
+                    )
 
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

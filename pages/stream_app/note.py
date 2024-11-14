@@ -2,8 +2,8 @@ from typing import Optional
 
 import streamlit as st
 from humanize import naturaltime
-from loguru import logger
 
+from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
 from open_notebook.graphs.multipattern import graph as pattern_graph
 from open_notebook.utils import surreal_clean
@@ -14,17 +14,20 @@ from .consts import note_context_icons
 
 @st.dialog("Write a Note", width="large")
 def add_note(notebook_id):
+    if not model_manager.embedding_model:
+        st.warning(
+            "Since there is no embedding model selected, your note will be saved but not searchable."
+        )
     note_title = st.text_input("Title")
     note_content = st.text_area("Content")
     if st.button("Save", key="add_note"):
-        logger.debug("Adding note")
         note = Note(title=note_title, content=note_content, note_type="human")
         note.save()
         note.add_to_notebook(notebook_id)
         st.rerun()
 
 
-@st.dialog("Add a Source", width="large")
+@st.dialog("Add a Note", width="large")
 def note_panel_dialog(note: Optional[Note] = None, notebook_id=None):
     note_panel(note_id=note.id, notebook_id=notebook_id)
 

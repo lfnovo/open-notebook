@@ -9,7 +9,7 @@ from open_notebook.models import MODEL_CLASS_MAP
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
-setup_page("⚙️ Settings")
+setup_page("⚙️ Settings", only_check_mandatory_models=False, stop_on_model_error=False)
 
 
 st.title("⚙️ Settings")

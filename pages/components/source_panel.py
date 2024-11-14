@@ -2,13 +2,15 @@ import streamlit as st
 import streamlit_scrollable_textbox as stx  # type: ignore
 from humanize import naturaltime
 
+from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.utils import surreal_clean
-from pages.stream_app.utils import run_patterns
+from pages.stream_app.utils import check_models, run_patterns
 
 
 def source_panel(source_id: str, notebook_id=None, modal=False):
+    check_models(only_mandatory=False)
     source: Source = Source.get(source_id)
     if not source:
         raise ValueError(f"Source not found: {source_id}")
@@ -41,7 +43,8 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                         "Delete", type="primary", key=f"delete_insight_{insight.id}"
                     ):
                         insight.delete()
-                        st.rerun(scope="fragment" if modal else "app")
+                        # st.rerun(scope="fragment" if modal else "app")
+                        st.toast("Source deleted")
                     if notebook_id:
                         if x2.button(
                             "Save as Note", icon="📝", key=f"save_note_{insight.id}"
@@ -66,11 +69,18 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     )
                     st.rerun(scope="fragment" if modal else "app")
 
+            if not model_manager.embedding_model:
+                help = (
+                    "No embedding model found. Please, select one on the settings page."
+                )
+            else:
+                help = "This will generate your embedding vectors on the database for powerful search capabilities"
+
             if source.embedded_chunks == 0 and st.button(
                 "Embed vectors",
                 icon="🦾",
-                disabled=source.embedded_chunks > 0,
-                help="This will generate your embedding vectors on the database for powerful search capabilities",
+                help=help,
+                disabled=model_manager.embedding_model is None,
             ):
                 source.vectorize()
                 st.success("Embedding complete")

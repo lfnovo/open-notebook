@@ -114,20 +114,30 @@ def check_migration():
         st.stop()
 
 
-def check_models():
+def check_models(only_mandatory=True, stop_on_error=True):
     default_models = model_manager.defaults
-    if not all(
-        [
-            default_models.default_chat_model,
-            default_models.default_transformation_model,
-            default_models.default_embedding_model,
-            default_models.default_speech_to_text_model,
-            default_models.large_context_model,
-        ]
-    ):
-        st.warning(
-            "You are missing some default models and the app might not work as expected. Please, select them on the settings page."
+    mandatory_models = [
+        default_models.default_chat_model,
+        default_models.default_transformation_model,
+    ]
+    all_models = mandatory_models + [
+        default_models.default_embedding_model,
+        default_models.default_speech_to_text_model,
+        default_models.large_context_model,
+    ]
+
+    if not all(mandatory_models):
+        st.error(
+            "You are missing some default models and the app will not work as expected. Please, select them on the settings page."
         )
+        if stop_on_error:
+            st.stop()
+
+    if not only_mandatory:
+        if not all(all_models):
+            st.warning(
+                "You are missing some important optional models. The app might not work as expected. Please, select them on the settings page."
+            )
 
 
 def handle_error(func):
@@ -144,13 +154,21 @@ def handle_error(func):
     return wrapper
 
 
-def setup_page(title: str, layout="wide", sidebar_state="expanded"):
+def setup_page(
+    title: str,
+    layout="wide",
+    sidebar_state="expanded",
+    only_check_mandatory_models=True,
+    stop_on_model_error=True,
+):
     """Common page setup for all pages"""
     st.set_page_config(
         page_title=title, layout=layout, initial_sidebar_state=sidebar_state
     )
     check_migration()
-    check_models()
+    check_models(
+        only_mandatory=only_check_mandatory_models, stop_on_error=stop_on_model_error
+    )
     version_sidebar()
 
 

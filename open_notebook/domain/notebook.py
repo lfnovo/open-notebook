@@ -261,11 +261,13 @@ class Source(ObjectModel):
 
     def add_insight(self, insight_type: str, content: str) -> Any:
         EMBEDDING_MODEL = model_manager.embedding_model
+        if not EMBEDDING_MODEL:
+            logger.warning("No embedding model found. Insight will not be searchable.")
 
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
-            embedding = EMBEDDING_MODEL.embed(content)
+            embedding = EMBEDDING_MODEL.embed(content) if EMBEDDING_MODEL else []
             return repo_query(
                 f"""
                 CREATE source_insight CONTENT {{
@@ -278,7 +280,7 @@ class Source(ObjectModel):
             )
         except Exception as e:
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
-            raise DatabaseOperationError(e)
+            raise  # DatabaseOperationError(e)
 
 
 class Note(ObjectModel):

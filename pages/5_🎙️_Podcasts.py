@@ -14,7 +14,7 @@ from open_notebook.plugins.podcasts import (
 )
 from pages.stream_app.utils import setup_page
 
-setup_page("🎙️ Podcasts")
+setup_page("🎙️ Podcasts", only_check_mandatory_models=False)
 
 text_to_speech_models = Model.get_models_by_type("text_to_speech")
 

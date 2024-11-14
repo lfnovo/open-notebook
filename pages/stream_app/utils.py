@@ -119,9 +119,9 @@ def check_models(only_mandatory=True, stop_on_error=True):
     mandatory_models = [
         default_models.default_chat_model,
         default_models.default_transformation_model,
+        default_models.default_embedding_model,
     ]
     all_models = mandatory_models + [
-        default_models.default_embedding_model,
         default_models.default_speech_to_text_model,
         default_models.large_context_model,
     ]

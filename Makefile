@@ -8,7 +8,7 @@ PLATFORMS=linux/amd64,linux/arm64
 #,linux/arm/v7,linux/386
 
 database:
-	docker compose up surrealdb
+	docker compose --profile db_only up
 
 run:
 	poetry run streamlit run app_home.py

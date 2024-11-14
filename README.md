@@ -109,40 +109,41 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 Go to the [Setup Guide](docs/SETUP.md) to learn how to set up the tool in details.
 
-To setup with Docker/Portainer:
-
-```yaml
-version: '3'
-
-services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
-    volumes:
-      - surreal_data:/mydata
-    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
-    pull_policy: always
-    user: root
-
-  open_notebook:
-    image: lfnovo/open_notebook:latest
-    ports:
-      - "8080:8502"
-    env_file:
-      - ./docker.env
-    depends_on:
-      - surrealdb
-    pull_policy: always
-
-volumes:
-  surreal_data:
-
-```
-
-
+You don't need to clone this repo if you just want to use the app without building from source! 
 Take a look at the [Open Notebook Boilerplate](https://github.com/lfnovo/open-notebook-boilerplate) repo with a sample of how to set it up for maximum feature usability. 
 
+### Running from source
+
+Start by cloning this repo and cd into it.
+
+```bash
+git clone https://github.com/lfnovo/open-notebook
+cd open-notebook
+```
+
+Rename `.env.example` into `.env` and set up your API keys.
+Also, repeat the process for `docker.env` if you plan to run this using docker.
+
+```bash
+cp .env.example .env
+cp .env.example docker.env
+```
+
+Edit .env for your API keys.
+
+To run the source code locally and experiment with the code, you just need to run:
+
+```bash
+poetry install
+docker compose --profile db_only up
+poetry run streamlit run app_home.py
+```
+
+If you don't want to mess around with the code and just want to run it as a docker image:
+
+```bash
+docker compose --profile multi up
+```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

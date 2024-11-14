@@ -78,6 +78,8 @@ Several new providers are supported now:
 - Vertex AI
 - Gemini
 - Ollama
+- Groq
+- xAI
 
 All providers are installed out of the box. All you need to do is to setup the environment variable configurations (API Keys, etc) for your selected provider and decide which models to use. 
 

@@ -1,5 +1,7 @@
-version: '3'
-
+# Instructions on how to use the different compose profiles
+# 1. Run `docker compose --profile single up` to start the app and database on the same container
+# 2. Run `docker compose --profile multi up` to start the multi container with app and database separate
+# 3. Run `docker compose --profile db_only up` to start the database only -- useful if developing locally
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
@@ -10,7 +12,7 @@ services:
     command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
-
+    profiles: [db_only, multi]
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
@@ -20,8 +22,21 @@ services:
     depends_on:
       - surrealdb
     pull_policy: always
+    profiles: [multi]
     volumes:
       - notebook_data:/app/data
+  open_notebook_single:
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    ports:
+      - "8080:8502"
+    profiles:
+      - single
+    volumes:
+      - ./.docker_data/data:/app/data
+      - ./docker2.env:/app/.env
+      - ./google-credentials.json:/app/google-credentials.json
 
 volumes:
   surreal_data:

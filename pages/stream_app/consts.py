@@ -6,6 +6,5 @@ source_context_icons = [
 
 note_context_icons = [
     "⛔ not in context",
-    "🟡 summary",
     "🟢 full content",
 ]

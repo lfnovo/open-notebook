@@ -2430,13 +2430,13 @@ six = "*"
 
 [[package]]
 name = "langgraph"
-version = "0.2.46"
+version = "0.2.47"
 description = "Building stateful, multi-actor applications with LLMs"
 optional = false
 python-versions = "<4.0,>=3.9.0"
 files = [
-    {file = "langgraph-0.2.46-py3-none-any.whl", hash = "sha256:7ca4031bc8f06cb3697ccee21ca80464588656391d3888090b6790dd89bffad1"},
-    {file = "langgraph-0.2.46.tar.gz", hash = "sha256:f1a39ba0d9b3df3b807b14015e682bc2b445ceb760d113e75ab34209a7eaadef"},
+    {file = "langgraph-0.2.47-py3-none-any.whl", hash = "sha256:597bad088c245741b79d46aea351df1b9bc0b2b127122c39ca2a7c0164e40b4f"},
+    {file = "langgraph-0.2.47.tar.gz", hash = "sha256:23b6ea1fe5c6d57f510dee9a66fbc2cdb546ab6c13756fc28534343b36b7935f"},
 ]
 
 [package.dependencies]
@@ -3807,13 +3807,13 @@ files = [
 
 [[package]]
 name = "podcastfy"
-version = "0.3.5"
+version = "0.3.6"
 description = "An Open Source alternative to NotebookLM's podcast feature: Transforming Multimodal Content into Captivating Multilingual Audio Conversations with GenAI"
 optional = false
 python-versions = "<4.0,>=3.11"
 files = [
-    {file = "podcastfy-0.3.5-py3-none-any.whl", hash = "sha256:c5aef31a1320800e5d22257ee763abb0e748a115112e1914084f5331462d1a32"},
-    {file = "podcastfy-0.3.5.tar.gz", hash = "sha256:5b3111a28aaadd31c6e13983719996f05de7b70a7f656dd56ce6ed74e294e1ef"},
+    {file = "podcastfy-0.3.6-py3-none-any.whl", hash = "sha256:8584fd044f63e236d30678a75188f5e7c7335170e24f80e647f7a480661e0c13"},
+    {file = "podcastfy-0.3.6.tar.gz", hash = "sha256:b4c787b999b4dda70504f99520802b0dfc99e76703089443a9b4a76c85bf5047"},
 ]
 
 [package.dependencies]

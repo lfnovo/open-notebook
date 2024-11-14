@@ -52,12 +52,17 @@ class PodcastConfig(ObjectModel):
             raise ValueError("Both voice1 and voice2 must be provided")
         return self
 
-    def generate_episode(self, episode_name, text, longform=False, instructions=None):
+    def generate_episode(
+        self,
+        episode_name: str,
+        text: str,
+        instructions: str = "",
+        longform: bool = False,
+    ):
         self.user_instructions = (
             instructions if instructions else self.user_instructions
         )
         conversation_config = {
-            "longform": longform,
             "conversation_style": self.conversation_style,
             "roles_person1": self.person1_role,
             "roles_person2": self.person2_role,
@@ -87,10 +92,6 @@ class PodcastConfig(ObjectModel):
             },
         }
 
-        logger.debug(
-            f"Generating episode {episode_name} with config {conversation_config}"
-        )
-
         api_key_label = None
         llm_model_name = None
         if self.transcript_model_provider:
@@ -104,12 +105,17 @@ class PodcastConfig(ObjectModel):
                 api_key_label = "GEMINI_API_KEY"
                 llm_model_name = self.transcript_model
 
+        logger.debug(
+            f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}"
+        )
+
         audio_file = generate_podcast(
             conversation_config=conversation_config,
             text=text,
             tts_model=self.provider,
             llm_model_name=llm_model_name,
             api_key_label=api_key_label,
+            longform=longform,
         )
         episode = PodcastEpisode(
             name=episode_name,

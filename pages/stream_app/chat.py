@@ -98,7 +98,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                             with st.spinner("Go grab a coffee, almost there..."):
                                 selected_template.generate_episode(
                                     episode_name=episode_name,
-                                    text=context,
+                                    text=str(context),
                                     longform=longform,
                                     instructions=instructions,
                                 )

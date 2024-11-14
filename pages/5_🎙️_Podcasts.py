@@ -246,9 +246,6 @@ with templates_tab:
                 or pd_config.transcript_model
                 not in transcript_provider_models[pd_config.transcript_model_provider]
             ):
-                st.warning(
-                    f"Transcript Model {pd_config.transcript_model} not setup. Changing to default."
-                )
                 index = 0
             else:
                 index = transcript_provider_models[
@@ -268,9 +265,6 @@ with templates_tab:
                 key=f"provider_{pd_config.id}",
             )
             if pd_config.model not in provider_models[pd_config.provider]:
-                st.warning(
-                    f"Audio Model {pd_config.model} not setup. Changing to default."
-                )
                 index = 0
             else:
                 index = provider_models[pd_config.provider].index(pd_config.model)

@@ -35,6 +35,19 @@
 </div>
 
 
+## 📢 Open Notebook is under very active development
+
+> Open Notebook is under active development! We're moving fast and making improvements every week. Your feedback is incredibly valuable to me during this exciting phase and it gives me motivation to keep improving and building this amazing tool. Please feel free to star the project if you find it useful, and don't hesitate to reach out with any questions or suggestions. I'm excited to see how you'll use it and what ideas you'll bring to the project! Let's build something amazing together! 🚀
+>
+> ⚠️ **API Changes**: As we optimize and enhance the project, some APIs and interfaces might change. We'll do our best to document these changes and minimize disruption.
+>
+> 🙏 **We Need Your Feedback**: Please try out Open Notebook and let us know what you think! Submit issues, feature requests, or just share your experience through:
+> - GitHub Issues
+> - Discussions
+> - Pull Requests
+>
+> Together, we can make it even better! 
+
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -152,6 +165,15 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 🚀 New Features
+
+### v0.1 - Release Candidate
+
+- Better citations and improved search capabilities
+- The "Ask" feature is much smarter now and let's you check its thinking
+- Enabled support for X.AI and Groq models
+- Select default transformations to apply to all content
+- Save insights as custom notes
+- Items are added to context by default
 
 ### v0.0.10 - Gemini podcast model
 

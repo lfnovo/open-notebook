@@ -89,10 +89,10 @@ Go to the settings page and create your different models.
 
 | Model Type | Supported Providers |
 |------------|-----------|
-| Language | OpenAI, Anthropic, Open Router, LiteLLM, Vertex AI, Vertex AI, Anthropic, Gemini, Ollama |
+| Language | OpenAI, Anthropic, Open Router, LiteLLM, Vertex AI, Vertex AI, Anthropic, Gemini, Ollama, xAI, Groq |
 | Embedding | OpenAI, Gemini, Vertex AI, Ollama |
-| Speech to Text | OpenAI |
-| Text to Speech | OpenAI, ElevenLabs |
+| Speech to Text | OpenAI, Groq |
+| Text to Speech | OpenAI, ElevenLabs, Gemini |
 
 
 > 📝 **Notice:** For complete usage of all the features, you need to setup at least 4 models (one of each type). 

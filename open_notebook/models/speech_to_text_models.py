@@ -40,3 +40,22 @@ class OpenAISpeechToTextModel(SpeechToTextModel):
                 model=self.model_name, file=audio
             )
             return transcription.text
+
+
+@dataclass
+class GroqSpeechToTextModel(SpeechToTextModel):
+    model_name: str
+
+    def transcribe(self, audio_file_path: str) -> str:
+        """
+        Transcribes an audio file into text
+        """
+        from groq import Groq
+
+        # todo: make this Singleton
+        client = Groq()
+        with open(audio_file_path, "rb") as audio:
+            transcription = client.audio.transcriptions.create(
+                model=self.model_name, file=audio
+            )
+            return transcription.text

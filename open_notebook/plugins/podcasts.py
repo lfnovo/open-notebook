@@ -2,8 +2,9 @@ from typing import ClassVar, List, Optional
 
 from loguru import logger
 from podcastfy.client import generate_podcast
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 
+from open_notebook.config import DATA_FOLDER
 from open_notebook.domain.notebook import ObjectModel
 
 
@@ -22,26 +23,46 @@ class PodcastConfig(ObjectModel):
     podcast_name: str
     podcast_tagline: str
     output_language: str = Field(default="English")
-    person1_role: str
-    person2_role: str
+    person1_role: List[str]
+    person2_role: List[str]
     conversation_style: List[str]
     engagement_technique: List[str]
     dialogue_structure: List[str]
+    transcript_model: Optional[str] = None
+    transcript_model_provider: Optional[str] = None
     user_instructions: Optional[str] = None
     ending_message: Optional[str] = None
-    wordcount: int = Field(ge=400, le=10000)
     creativity: float = Field(ge=0, le=1)
     provider: str = Field(default="openai")
-    voice1: Optional[str] = None
-    voice2: Optional[str] = None
+    voice1: str
+    voice2: str
     model: str
 
-    def generate_episode(self, episode_name, text, instructions=None):
+    # Backwards compatibility
+    @field_validator("person1_role", "person2_role", mode="before")
+    @classmethod
+    def split_string_to_list(cls, value):
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",")]
+        return value
+
+    @model_validator(mode="after")
+    def validate_voices(self) -> "PodcastConfig":
+        if not self.voice1 or not self.voice2:
+            raise ValueError("Both voice1 and voice2 must be provided")
+        return self
+
+    def generate_episode(
+        self,
+        episode_name: str,
+        text: str,
+        instructions: str = "",
+        longform: bool = False,
+    ):
         self.user_instructions = (
             instructions if instructions else self.user_instructions
         )
         conversation_config = {
-            "word_count": self.wordcount,
             "conversation_style": self.conversation_style,
             "roles_person1": self.person1_role,
             "roles_person2": self.person2_role,
@@ -53,7 +74,11 @@ class PodcastConfig(ObjectModel):
             "engagement_techniques": self.engagement_technique,
             "creativity": self.creativity,
             "text_to_speech": {
-                # "temp_audio_dir": f"{PODCASTS_FOLDER}/tmp",
+                "output_directories": {
+                    "transcripts": f"{DATA_FOLDER}/podcasts/transcripts",
+                    "audio": f"{DATA_FOLDER}/podcasts/audio",
+                },
+                "temp_audio_dir": f"{DATA_FOLDER}/podcasts/audio/tmp",
                 "ending_message": "Thank you for listening to this episode. Don't forget to subscribe to our podcast for more interesting conversations.",
                 "default_tts_model": self.provider,
                 self.provider: {
@@ -67,12 +92,30 @@ class PodcastConfig(ObjectModel):
             },
         }
 
+        api_key_label = None
+        llm_model_name = None
+        if self.transcript_model_provider:
+            if self.transcript_model_provider == "openai":
+                api_key_label = "OPENAI_API_KEY"
+                llm_model_name = self.transcript_model
+            elif self.transcript_model_provider == "anthropic":
+                api_key_label = "ANTHROPIC_API_KEY"
+                llm_model_name = self.transcript_model
+            elif self.transcript_model_provider == "gemini":
+                api_key_label = "GEMINI_API_KEY"
+                llm_model_name = self.transcript_model
+
         logger.debug(
-            f"Generating episode {episode_name} with config {conversation_config}"
+            f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}"
         )
 
         audio_file = generate_podcast(
-            conversation_config=conversation_config, text=text, tts_model=self.provider
+            conversation_config=conversation_config,
+            text=text,
+            tts_model=self.provider,
+            llm_model_name=llm_model_name,
+            api_key_label=api_key_label,
+            longform=longform,
         )
         episode = PodcastEpisode(
             name=episode_name,
@@ -92,12 +135,6 @@ class PodcastConfig(ObjectModel):
             raise ValueError(f"{field.field_name} cannot be None or empty string")
         return value.strip()
 
-    @field_validator("wordcount")
-    def validate_wordcount(cls, value):
-        if not 400 <= value <= 6000:
-            raise ValueError("Wordcount must be between 400 and 10000")
-        return value
-
     @field_validator("creativity")
     def validate_creativity(cls, value):
         if not 0 <= value <= 1:
@@ -116,13 +153,8 @@ conversation_styles = [
     "Debate-style",
     "Interview-style",
     "Storytelling",
-    "Reflective",
-    "Narrative",
     "Satirical",
     "Educational",
-    "Conversational",
-    "Critical",
-    "Empathetic",
     "Philosophical",
     "Speculative",
     "Motivational",
@@ -132,25 +164,15 @@ conversation_styles = [
     "Serious",
     "Investigative",
     "Debunking",
-    "Collaborative",
     "Didactic",
     "Thought-provoking",
     "Controversial",
-    "Skeptical",
-    "Optimistic",
-    "Pessimistic",
-    "Objective",
-    "Subjective",
     "Sarcastic",
     "Emotional",
     "Exploratory",
-    "Friendly",
     "Fast-paced",
     "Slow-paced",
     "Introspective",
-    "Open-ended",
-    "Affirmative",
-    "Dissenting",
 ]
 
 # Dialogue Structures
@@ -167,15 +189,10 @@ dialogue_structures = [
     "Pro Arguments",
     "Con Arguments",
     "Cross-examination",
-    "Rebuttal",
     "Expert Interviews",
-    "Panel Discussion",
     "Case Studies",
     "Myth Busting",
-    "Debunking Misconceptions",
-    "Audience Questions",
     "Q&A Session",
-    "Listener Feedback",
     "Rapid-fire Questions",
     "Summary of Key Points",
     "Recap",
@@ -183,29 +200,11 @@ dialogue_structures = [
     "Actionable Tips",
     "Call to Action",
     "Future Outlook",
-    "Teaser for Next Episode",
     "Closing Remarks",
-    "Thank You and Credits",
-    "Outtakes or Bloopers",
-    "Sponsor Messages",
-    "Social Media Shout-outs",
     "Resource Recommendations",
-    "Feedback Request",
-    "Lightning Round",
-    "Behind-the-Scenes Insights",
-    "Ethical Considerations",
-    "Fact-checking Segment",
     "Trending Topics",
     "Closing Inspirational Quote",
     "Final Reflections",
-    "Debrief",
-    "Farewell Messages",
-    "Next Episode Preview",
-    "Live Reactions",
-    "Call-in Segment",
-    "Acknowledgements",
-    "Transition Segments",
-    "Break Segments",
 ]
 
 # Podcast Participant Roles
@@ -241,15 +240,7 @@ participant_roles = [
     "Researcher",
     "Reporter",
     "Advocate",
-    "Influencer",
-    "Observer",
-    "Listener",
-    "Facilitator",
-    "Innovator",
     "Debater",
-    "Educator",
-    "Motivator",
-    "Narrator",
     "Explorer",
     "Opponent",
     "Proponent",
@@ -265,49 +256,17 @@ participant_roles = [
     "Author",
     "Journalist",
     "Activist",
-    "Challenger",
-    "Supporter",
-    "Mentor",
-    "Mentee",
     "Panelist",
-    "Audience Representative",
-    "Case Study Presenter",
     "Data Analyst",
-    "Ethicist",
-    "Cultural Critic",
-    "Technologist",
-    "Environmentalist",
-    "Legal Expert",
-    "Healthcare Professional",
-    "Financial Advisor",
-    "Policy Maker",
-    "Sociologist",
-    "Anthropologist",
     "Myth Buster",
     "Trend Analyst",
     "Futurist",
-    "Negotiator",
-    "Community Leader",
     "Voice of Reason",
-    "Conflict Resolver",
-    "Emotional Support",
     "Pragmatist",
     "Idealist",
     "Realist",
     "Satirist",
-    "Story Analyst",
-    "Language Expert",
-    "Historical Witness",
-    "Survivor",
-    "Inspirational Figure",
-    "Cultural Ambassador",
-    "Digital Nomad",
-    "Remote Correspondent",
     "Field Reporter",
-    "Data Scientist",
-    "Gamer",
-    "Musician",
-    "Filmmaker",
 ]
 
 # Engagement Techniques

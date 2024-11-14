@@ -1,8 +1,8 @@
 import streamlit as st
 import yaml
 
-from open_notebook.domain.models import Model
 from open_notebook.graphs.multipattern import graph as pattern_graph
+from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
 setup_page("🛝 Playground")
@@ -13,7 +13,7 @@ with open("transformations.yaml", "r") as file:
 
 insight_transformations = transformations["source_insights"]
 
-transformation = st.selectbox(
+transformation: dict = st.selectbox(
     "Pick a transformation",
     insight_transformations,
     format_func=lambda x: x.get("name", "No Name"),
@@ -22,12 +22,13 @@ transformation = st.selectbox(
 with st.expander("Details"):
     st.json(transformation)
 
-models = Model.get_models_by_type("language")
-model = st.selectbox(
+model = model_selector(
     "Pick a pattern model",
-    models,
-    format_func=lambda x: x.name,
+    key="model",
+    help="This is the model that will be used to run the transformation",
+    model_type="language",
 )
+
 input_text = st.text_area("Enter some text", height=200)
 
 if st.button("Run"):

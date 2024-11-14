@@ -1,4 +1,5 @@
-from typing import Any, ClassVar, Dict, List, Literal, Optional
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
@@ -129,6 +130,16 @@ class SourceInsight(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
+    def save_as_note(self, notebook_id: str = None) -> Any:
+        note = Note(
+            title=f"{self.insight_type} from source {self.source.title}",
+            content=self.content,
+        )
+        note.save()
+        if notebook_id:
+            note.add_to_notebook(notebook_id)
+        return note
+
 
 class Source(ObjectModel):
     table_name: ClassVar[str] = "source"
@@ -140,15 +151,16 @@ class Source(ObjectModel):
     def get_context(
         self, context_size: Literal["short", "long"] = "short"
     ) -> Dict[str, Any]:
+        insights = [insight.model_dump() for insight in self.insights]
         if context_size == "long":
             return dict(
                 id=self.id,
                 title=self.title,
-                insights=[insight.model_dump() for insight in self.insights],
+                insights=insights,
                 full_text=self.full_text,
             )
         else:
-            return dict(id=self.id, title=self.title, insights=self.insights)
+            return dict(id=self.id, title=self.title, insights=insights)
 
     @property
     def embedded_chunks(self) -> int:
@@ -186,53 +198,66 @@ class Source(ObjectModel):
         return self.relate("reference", notebook_id)
 
     def vectorize(self) -> None:
+        logger.info(f"Starting vectorization for source {self.id}")
         EMBEDDING_MODEL = model_manager.embedding_model
 
         try:
             if not self.full_text:
+                logger.warning(f"No text to vectorize for source {self.id}")
                 return
+
             chunks = split_text(
                 self.full_text,
             )
-            logger.debug(f"Split into {len(chunks)} chunks")
+            chunk_count = len(chunks)
+            logger.info(f"Split into {chunk_count} chunks for source {self.id}")
 
-            # future: we can increase the batch size after surreal launches their new SDK
-            for i, chunk in enumerate(chunks):
+            if chunk_count == 0:
+                logger.warning("No chunks created after splitting")
+                return
+
+            def process_chunk(args: Tuple[int, str]) -> Tuple[int, List[float], str]:
+                idx, chunk = args
+                logger.debug(f"Processing chunk {idx}/{chunk_count}")
+                try:
+                    embedding = EMBEDDING_MODEL.embed(chunk)
+                    cleaned_content = surreal_clean(chunk)
+                    logger.debug(f"Successfully processed chunk {idx}")
+                    return (idx, embedding, cleaned_content)
+                except Exception as e:
+                    logger.error(f"Error processing chunk {idx}: {str(e)}")
+                    raise
+
+            # Process chunks in parallel while preserving order
+            logger.info("Starting parallel processing of chunks")
+            with ThreadPoolExecutor(max_workers=8) as executor:
+                # Create list of (index, chunk) tuples
+                chunk_tasks = list(enumerate(chunks))
+                # Process all chunks in parallel and get results
+                results = list(executor.map(process_chunk, chunk_tasks))
+
+            logger.info(f"Parallel processing complete. Got {len(results)} results")
+
+            # Insert results in order (they're already ordered by index)
+            for idx, embedding, content in results:
+                logger.debug(f"Inserting chunk {idx} into database")
                 repo_query(
                     f"""
                     CREATE source_embedding CONTENT {{
                             "source": {self.id},
-                            "order": {i},
+                            "order": {idx},
                             "content": $content,
-                            "embedding": {EMBEDDING_MODEL.embed(chunk)},
+                            "embedding": {embedding},
                     }};""",
-                    {"content": surreal_clean(chunk)},
+                    {"content": content},
                 )
+
+            logger.info(f"Vectorization complete for source {self.id}")
+
         except Exception as e:
             logger.error(f"Error vectorizing source {self.id}: {str(e)}")
             logger.exception(e)
             raise DatabaseOperationError(e)
-
-    # @classmethod
-    # def search(cls, query: str) -> List[Dict[str, Any]]:
-    #     if not query:
-    #         raise InvalidInputError("Search query cannot be empty")
-    #     try:
-    #         result = repo_query(
-    #             """
-    #             SELECT * omit full_text
-    #             FROM source
-    #             WHERE string::lowercase(title) CONTAINS $query or title @@ $query
-    #             OR string::lowercase(summary) CONTAINS $query or summary @@ $query
-    #             OR string::lowercase(full_text) CONTAINS $query or full_text @@ $query
-    #         """,
-    #             {"query": query},
-    #         )
-    #         return result
-    #     except Exception as e:
-    #         logger.error(f"Error searching sources: {str(e)}")
-    #         logger.exception(e)
-    #         raise DatabaseOperationError("Failed to search sources")
 
     def add_insight(self, insight_type: str, content: str) -> Any:
         EMBEDDING_MODEL = model_manager.embedding_model
@@ -309,7 +334,8 @@ def text_search(keyword: str, results: int, source: bool = True, note: bool = Tr
     try:
         results = repo_query(
             """
-            SELECT * FROM fn::text_search($keyword, $results, $source, $note);
+            select *
+            from fn::text_search($keyword, $results, $source, $note)
             """,
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
@@ -320,7 +346,13 @@ def text_search(keyword: str, results: int, source: bool = True, note: bool = Tr
         raise DatabaseOperationError(e)
 
 
-def vector_search(keyword: str, results: int, source: bool = True, note: bool = True):
+def vector_search(
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    minimum_score=0.2,
+):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
@@ -328,131 +360,18 @@ def vector_search(keyword: str, results: int, source: bool = True, note: bool = 
         embed = EMBEDDING_MODEL.embed(keyword)
         results = repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, 0.15);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
             """,
-            {"embed": embed, "results": results, "source": source, "note": note},
+            {
+                "embed": embed,
+                "results": results,
+                "source": source,
+                "note": note,
+                "minimum_score": minimum_score,
+            },
         )
         return results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)
         raise DatabaseOperationError(e)
-
-
-def hybrid_search(
-    keyword_search: List[str],
-    embed_search: List[str],
-    results: int = 50,
-    source: bool = True,
-    note: bool = True,
-    max_chunks_per_doc: int = 3,
-    min_results_per_query: int = 3,
-) -> Dict[str, List[Dict]]:
-    if not keyword_search and not embed_search:
-        raise InvalidInputError("At least one search term required")
-
-    # Process keyword searches
-    all_keyword_results = {}  # Dictionary to store results per keyword
-    for keyword in keyword_search:
-        try:
-            search_results = text_search(keyword, results, source, note)
-            # Sort results by relevance
-            sorted_results = sorted(
-                search_results, key=lambda x: x.get("relevance", 0), reverse=True
-            )
-            # Group by parent_id and limit chunks per document
-            seen_parent_ids = {}
-            filtered_results = []
-            for result in sorted_results:
-                parent_id = result["parent_id"]
-                if parent_id not in seen_parent_ids:
-                    seen_parent_ids[parent_id] = 1
-                    filtered_results.append(result)
-                elif seen_parent_ids[parent_id] < max_chunks_per_doc:
-                    seen_parent_ids[parent_id] += 1
-                    filtered_results.append(result)
-            all_keyword_results[keyword] = filtered_results
-        except Exception as e:
-            logger.warning(f"Error in keyword search for term '{keyword}': {str(e)}")
-            continue
-
-    # Ensure minimum results from each keyword query
-    keyword_results = []
-    remaining_slots = results
-
-    # First pass: add minimum results from each query
-    for keyword, query_results in all_keyword_results.items():
-        keyword_results.extend(query_results[:min_results_per_query])
-        remaining_slots -= min(len(query_results), min_results_per_query)
-
-    # Second pass: fill remaining slots with best results
-    all_remaining = []
-    for keyword, query_results in all_keyword_results.items():
-        all_remaining.extend(query_results[min_results_per_query:])
-
-    # Sort remaining by relevance and add until we hit the limit
-    all_remaining = sorted(
-        all_remaining, key=lambda x: x.get("relevance", 0), reverse=True
-    )
-    seen_ids = {r["id"] for r in keyword_results}
-    for result in all_remaining:
-        if remaining_slots <= 0:
-            break
-        if result["id"] not in seen_ids:
-            keyword_results.append(result)
-            seen_ids.add(result["id"])
-            remaining_slots -= 1
-
-    # Process vector searches with the same approach
-    all_vector_results = {}  # Dictionary to store results per embedding
-    for embed in embed_search:
-        try:
-            search_results = vector_search(embed, results, source, note)
-            # Sort results by similarity
-            sorted_results = sorted(
-                search_results, key=lambda x: x.get("similarity", 0), reverse=True
-            )
-            # Group by parent_id and limit chunks per document
-            seen_parent_ids = {}
-            filtered_results = []
-            for result in sorted_results:
-                parent_id = result["parent_id"]
-                if parent_id not in seen_parent_ids:
-                    seen_parent_ids[parent_id] = 1
-                    filtered_results.append(result)
-                elif seen_parent_ids[parent_id] < max_chunks_per_doc:
-                    seen_parent_ids[parent_id] += 1
-                    filtered_results.append(result)
-            all_vector_results[embed] = filtered_results
-        except Exception as e:
-            logger.warning(f"Error in vector search for term '{embed}': {str(e)}")
-            continue
-
-    # Ensure minimum results from each vector query
-    vector_results = []
-    remaining_slots = results
-
-    # First pass: add minimum results from each query
-    for embed, query_results in all_vector_results.items():
-        vector_results.extend(query_results[:min_results_per_query])
-        remaining_slots -= min(len(query_results), min_results_per_query)
-
-    # Second pass: fill remaining slots with best results
-    all_remaining = []
-    for embed, query_results in all_vector_results.items():
-        all_remaining.extend(query_results[min_results_per_query:])
-
-    # Sort remaining by similarity and add until we hit the limit
-    all_remaining = sorted(
-        all_remaining, key=lambda x: x.get("similarity", 0), reverse=True
-    )
-    seen_ids = {r["id"] for r in vector_results}
-    for result in all_remaining:
-        if remaining_slots <= 0:
-            break
-        if result["id"] not in seen_ids:
-            vector_results.append(result)
-            seen_ids.add(result["id"])
-            remaining_slots -= 1
-
-    return {"keyword_results": keyword_results, "vector_results": vector_results}

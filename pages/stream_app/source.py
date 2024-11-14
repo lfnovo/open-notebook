@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 
@@ -6,39 +7,18 @@ from humanize import naturaltime
 from loguru import logger
 
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.notebook import Asset, Source
+from open_notebook.domain.notebook import Source
+from open_notebook.domain.transformation import DefaultTransformations, Transformation
 from open_notebook.exceptions import UnsupportedTypeException
-from open_notebook.graphs.content_processing import graph
-from open_notebook.utils import surreal_clean
+from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
-from pages.stream_app.utils import run_patterns
 
-from .consts import context_icons
-
-
-# moved it here to replace it with the pipeline on 0.1.0
-def generate_toc_and_title(source) -> "Source":
-    try:
-        patterns = ["patterns/default/toc"]
-        result = run_patterns(source.full_text, patterns=patterns)
-        source.add_insight("Table of Contents", surreal_clean(result))
-        if not source.title:
-            patterns = [
-                "Based on the Table of Contents below, please provide a Title for this content, with max 15 words"
-            ]
-            output = run_patterns(result, patterns=patterns)
-            source.title = surreal_clean(output)
-            source.save()
-        return source
-    except Exception as e:
-        logger.error(f"Error summarizing source {source.id}: {str(e)}")
-        logger.exception(e)
-        raise
+from .consts import source_context_icons
 
 
 @st.dialog("Source", width="large")
-def source_panel_dialog(source_id):
-    source_panel(source_id)
+def source_panel_dialog(source_id, notebook_id=None):
+    source_panel(source_id, notebook_id=notebook_id, modal=True)
 
 
 @st.dialog("Add a Source", width="large")
@@ -48,6 +28,7 @@ def add_source(notebook_id):
     source_text = None
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
     req = {}
+    transformations = Transformation.get_all()
     if source_type == "Link":
         source_link = st.text_input("Link")
         req["url"] = source_link
@@ -58,6 +39,18 @@ def add_source(notebook_id):
     else:
         source_text = st.text_area("Text")
         req["content"] = source_text
+
+    default_transformations = [t for t in DefaultTransformations().source_insights]
+    available_transformations = [t["name"] for t in transformations["source_insights"]]
+    apply_transformations = st.multiselect(
+        "Apply transformations",
+        options=available_transformations,
+        default=default_transformations,
+    )
+    run_embed = st.checkbox(
+        "Embed content for vector search",
+        help="Creates an embedded content for vector search. Costs a little money and takes a little bit more time. You can do this later if you prefer.",
+    )
     if st.button("Process", key="add_source"):
         logger.debug("Adding source")
         with st.status("Processing...", expanded=True):
@@ -82,17 +75,16 @@ def add_source(notebook_id):
                     with open(new_path, "wb") as f:
                         f.write(source_file.getbuffer())
 
-                result = graph.invoke(req)
-                st.write("Saving..")
-                source = Source(
-                    asset=Asset(url=req.get("url"), file_path=req.get("file_path")),
-                    full_text=surreal_clean(result["content"]),
-                    title=result.get("title"),
+                asyncio.run(
+                    source_graph.ainvoke(
+                        {
+                            "content_state": req,
+                            "notebook_id": notebook_id,
+                            "transformations": apply_transformations,
+                            "embed": run_embed,
+                        }
+                    )
                 )
-                source.save()
-                source.add_to_notebook(notebook_id)
-                st.write("Summarizing...")
-                generate_toc_and_title(source)
             except UnsupportedTypeException as e:
                 st.warning(
                     "This type of content is not supported yet. If you think it should be, let us know on the project Issues's page"
@@ -121,15 +113,15 @@ def source_card(source, notebook_id):
         context_state = st.selectbox(
             "Context",
             label_visibility="collapsed",
-            options=context_icons,
-            index=0,
+            options=source_context_icons,
+            index=1,
             key=f"source_{source.id}",
         )
         st.caption(
             f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
         )
         if st.button("Expand", icon="📝", key=source.id):
-            source_panel_dialog(source.id)
+            source_panel_dialog(source.id, notebook_id)
 
     st.session_state[notebook_id]["context_config"][source.id] = context_state
 

@@ -22,6 +22,7 @@ class MigrationManager:
             Migration.from_file("migrations/1.surrealql"),
             Migration.from_file("migrations/2.surrealql"),
             Migration.from_file("migrations/3.surrealql"),
+            Migration.from_file("migrations/4.surrealql"),
         ]
         self.down_migrations = [
             Migration.from_file(
@@ -29,6 +30,7 @@ class MigrationManager:
             ),
             Migration.from_file("migrations/2_down.surrealql"),
             Migration.from_file("migrations/3_down.surrealql"),
+            Migration.from_file("migrations/4_down.surrealql"),
         ]
         self.runner = MigrationRunner(
             up_migrations=self.up_migrations,
@@ -53,14 +55,14 @@ class MigrationManager:
 
     def run_migration_up(self):
         current_version = self.get_current_version()
-        logger.debug(f"Current version before migration: {current_version}")
+        logger.info(f"Current version before migration: {current_version}")
 
         if self.needs_migration:
             try:
                 self.runner.run()
                 new_version = self.get_current_version()
-                logger.debug(f"Migration successful. New version: {new_version}")
+                logger.info(f"Migration successful. New version: {new_version}")
             except Exception as e:
                 logger.error(f"Migration failed: {str(e)}")
         else:
-            logger.debug("Database is already at the latest version")
+            logger.info("Database is already at the latest version")

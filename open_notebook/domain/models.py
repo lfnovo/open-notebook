@@ -68,7 +68,9 @@ class ModelManager:
                 )
             return cached_model
 
-        assert model_id, "Model ID cannot be empty"
+        if not model_id:
+            return None
+
         model: Model = Model.get(model_id)
 
         if not model:
@@ -159,9 +161,6 @@ class ModelManager:
             model_id = self.defaults.default_speech_to_text_model
         elif model_type == "large_context":
             model_id = self.defaults.large_context_model
-
-        if not model_id:
-            raise ValueError(f"No default model configured for type: {model_type}")
 
         return self.get_model(model_id, **kwargs)
 

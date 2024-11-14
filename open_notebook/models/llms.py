@@ -13,6 +13,7 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_google_vertexai import ChatVertexAI
 from langchain_google_vertexai.model_garden import ChatAnthropicVertex
+from langchain_groq.chat_models import ChatGroq
 from langchain_ollama.chat_models import ChatOllama
 from langchain_openai.chat_models import ChatOpenAI
 from pydantic import SecretStr
@@ -171,7 +172,7 @@ class OpenRouterLanguageModel(LanguageModel):
 
     def to_langchain(self) -> ChatOpenAI:
         """
-        Convert the language model to a LangChain chat model.
+        Convert the language model to a LangChain chat model for Open Router.
         """
         kwargs = self.kwargs
         if self.json:
@@ -187,6 +188,58 @@ class OpenRouterLanguageModel(LanguageModel):
             model_kwargs=kwargs,
             streaming=self.streaming,
             api_key=SecretStr(os.environ.get("OPENROUTER_API_KEY", "openrouter")),
+            top_p=self.top_p,
+        )
+
+
+@dataclass
+class GroqLanguageModel(LanguageModel):
+    """
+    Language model that uses the Groq chat model.
+    """
+
+    model_name: str
+
+    def to_langchain(self) -> ChatGroq:
+        """
+        Convert the language model to a LangChain chat model for Groq.
+        """
+        kwargs = self.kwargs
+        kwargs["top_p"] = self.top_p
+
+        return ChatGroq(
+            model=self.model_name,
+            temperature=self.temperature or 0.5,
+            max_tokens=self.max_tokens,
+            model_kwargs=kwargs,
+            stop_sequences=None,
+        )
+
+
+@dataclass
+class XAILanguageModel(LanguageModel):
+    """
+    Language model that uses the OpenAI chat model for X.AI.
+    """
+
+    model_name: str
+
+    def to_langchain(self) -> ChatOpenAI:
+        """
+        Convert the language model to a LangChain chat model.
+        """
+        kwargs = self.kwargs
+        if self.json:
+            kwargs["response_format"] = {"type": "json_object"}
+
+        return ChatOpenAI(
+            model=self.model_name,
+            temperature=self.temperature or 0.5,
+            base_url=os.environ.get("XAI_BASE_URL", "https://api.x.ai/v1"),
+            max_tokens=self.max_tokens,
+            model_kwargs=kwargs,
+            streaming=self.streaming,
+            api_key=SecretStr(os.environ.get("XAI_API_KEY", "xai")),
             top_p=self.top_p,
         )
 
@@ -226,15 +279,27 @@ class OpenAILanguageModel(LanguageModel):
         """
         Convert the language model to a LangChain chat model.
         """
-        kwargs = self.kwargs
+
+        kwargs = self.kwargs.copy()  # Make a copy to avoid modifying the original
         if self.json:
             kwargs["response_format"] = {"type": "json_object"}
 
+        # Set the token limit in kwargs with the appropriate key
+        if self.model_name in ["o1-mini", "o1-preview"]:
+            kwargs["max_completion_tokens"] = self.max_tokens
+            top_p = 1
+            streaming = False
+            max_tokens = None
+        else:
+            max_tokens = self.max_tokens
+            top_p = self.top_p
+            streaming = self.streaming
+
         return ChatOpenAI(
             model=self.model_name,
-            temperature=self.temperature or 0.5,
-            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            streaming=streaming,
+            max_tokens=max_tokens,
+            top_p=top_p,
             model_kwargs=kwargs,
-            streaming=self.streaming,
-            top_p=self.top_p,
         )

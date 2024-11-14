@@ -52,6 +52,8 @@ docker-update-latest: docker-buildx-prepare
 # Release with latest
 docker-release-all: docker-release docker-update-latest
 
-
 dev:
 	docker compose -f docker-compose.dev.yml up --build 
+
+full:
+	docker compose -f docker-compose.full.yml up --build 

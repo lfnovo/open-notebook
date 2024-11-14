@@ -1,7 +1,7 @@
 import re
 import ssl
 
-import requests
+import aiohttp
 from bs4 import BeautifulSoup
 from loguru import logger
 from youtube_transcript_api import YouTubeTranscriptApi  # type: ignore
@@ -9,16 +9,20 @@ from youtube_transcript_api.formatters import TextFormatter  # type: ignore
 
 from open_notebook.config import CONFIG
 from open_notebook.exceptions import NoTranscriptFound
-from open_notebook.graphs.content_processing.state import SourceState
+from open_notebook.graphs.content_processing.state import ContentState
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 
-def get_video_title(video_id):
+async def get_video_title(video_id):
     try:
         url = f"https://www.youtube.com/watch?v={video_id}"
-        response = requests.get(url)
-        soup = BeautifulSoup(response.text, "html.parser")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                html = await response.text()
+
+        # BeautifulSoup doesn't support async operations
+        soup = BeautifulSoup(html, "html.parser")
 
         # YouTube stores title in a meta tag
         title = soup.find("meta", property="og:title")["content"]
@@ -63,7 +67,7 @@ def _extract_youtube_id(url):
     return match.group(1) if match else None
 
 
-def get_best_transcript(video_id, preferred_langs=["en", "es", "pt"]):
+async def get_best_transcript(video_id, preferred_langs=["en", "es", "pt"]):
     try:
         transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
 
@@ -129,7 +133,7 @@ def get_best_transcript(video_id, preferred_langs=["en", "es", "pt"]):
         return None
 
 
-def extract_youtube_transcript(state: SourceState):
+async def extract_youtube_transcript(state: ContentState):
     """
     Parse the text file and print its content.
     """
@@ -139,12 +143,12 @@ def extract_youtube_transcript(state: SourceState):
     )
 
     video_id = _extract_youtube_id(state.get("url"))
-    transcript = get_best_transcript(video_id, languages)
+    transcript = await get_best_transcript(video_id, languages)
 
     logger.debug(f"Found transcript: {transcript}")
     formatter = TextFormatter()
     try:
-        title = get_video_title(video_id)
+        title = await get_video_title(video_id)
     except Exception as e:
         logger.critical(f"Failed to get video title for video_id: {video_id}")
         logger.exception(e)

@@ -13,3 +13,6 @@ docker-compose*
 docs/
 surreal-data/
 temp/
+*.env
+.mypy_cache/
+.ruff_cache/

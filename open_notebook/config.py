@@ -27,7 +27,3 @@ LANGGRAPH_CHECKPOINT_FILE = f"{sqlite_folder}/checkpoints.sqlite"
 # UPLOADS FOLDER
 UPLOADS_FOLDER = f"{DATA_FOLDER}/uploads"
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
-
-# PODCASTS FOLDER
-PODCASTS_FOLDER = f"{DATA_FOLDER}/podcasts"
-os.makedirs(PODCASTS_FOLDER, exist_ok=True)

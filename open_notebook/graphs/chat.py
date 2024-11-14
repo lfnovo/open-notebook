@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Annotated, Optional
 
+from langchain_core.messages import SystemMessage
 from langchain_core.runnables import (
     RunnableConfig,
 )
@@ -24,8 +25,13 @@ class ThreadState(TypedDict):
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)
-    payload = [system_prompt] + state.get("messages", [])
-    model = provision_langchain_model(str(payload), config, "chat", max_tokens=2000)
+    payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+    model = provision_langchain_model(
+        str(payload),
+        config.get("configurable", {}).get("model_id"),
+        "chat",
+        max_tokens=2000,
+    )
     ai_message = model.invoke(payload)
     return {"messages": ai_message}
 

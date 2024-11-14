@@ -11,3 +11,27 @@ youtube_transcripts:
     - de
     - hi
     - ja
+suggested_models:
+  openai:
+    language:
+      - gpt-4o-mini
+    embedding:
+      - text-embedding-3-small
+    text_to_speech:
+      - tts-1-hd
+    speech_to_text:
+      - whisper-1
+  gemini:
+    language:
+      - gemini-1.5-flash
+    text_to_speech:
+      - default
+  xai:
+    language:
+      - grok-beta
+  anthropic:
+    language:
+      - claude-3-5-sonnet-20241022
+  elevenlabs:
+    text_to_speech:
+      - eleven_turbo_v2_5

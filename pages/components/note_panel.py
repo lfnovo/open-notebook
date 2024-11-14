@@ -3,6 +3,7 @@ from loguru import logger
 from streamlit_monaco import st_monaco  # type: ignore
 
 from open_notebook.domain.notebook import Note
+from pages.stream_app.utils import convert_source_references
 
 
 def note_panel(note_id, notebook_id=None):
@@ -12,7 +13,7 @@ def note_panel(note_id, notebook_id=None):
     t_preview, t_edit = st.tabs(["Preview", "Edit"])
     with t_preview:
         st.subheader(note.title)
-        st.markdown(note.content)
+        st.markdown(convert_source_references(note.content))
     with t_edit:
         note.title = st.text_input("Title", value=note.title)
         note.content = st_monaco(

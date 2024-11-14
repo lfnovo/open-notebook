@@ -30,7 +30,7 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
             result = connection.query(query_str, vars)
             return result
         except Exception as e:
-            logger.critical(f"Query: {query_str}, Variables: {vars}")
+            logger.critical(f"Query: {query_str}")
             logger.exception(e)
             raise
 
@@ -62,7 +62,5 @@ def repo_relate(source: str, relationship: str, target: str):
     #     "target": target,
     #  #   "content": {},  # You can add properties to the relation here if needed
     # }
-    logger.debug(f"Executing RELATE query: {query}")
     result = repo_query(query)
-    logger.debug(f"RELATE query result: {result}")
     return result

@@ -112,8 +112,6 @@ class ObjectModel(BaseModel):
         from open_notebook.domain.models import model_manager
         from open_notebook.models import EmbeddingModel
 
-        EMBEDDING_MODEL: EmbeddingModel = model_manager.embedding_model
-
         try:
             self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
@@ -122,11 +120,11 @@ class ObjectModel(BaseModel):
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
                 if embedding_content:
+                    EMBEDDING_MODEL: EmbeddingModel = model_manager.embedding_model
                     data["embedding"] = EMBEDDING_MODEL.embed(embedding_content)
 
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                logger.debug("Creating new record")
                 repo_result = repo_create(self.__class__.table_name, data)
             else:
                 data["created"] = (
@@ -204,9 +202,13 @@ class RecordModel(BaseModel):
         result = repo_query(f"SELECT * FROM {self.record_id};")
         if result:
             result = result[0]
-            for key, value in result.items():
-                if hasattr(self, key):
-                    setattr(self, key, value)
+        else:
+            repo_create(self.record_id, {})
+            result = {}
+        for key, value in result.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+
         return self
 
     def update(self, data):

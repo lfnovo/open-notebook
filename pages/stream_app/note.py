@@ -9,7 +9,7 @@ from open_notebook.graphs.multipattern import graph as pattern_graph
 from open_notebook.utils import surreal_clean
 from pages.components import note_panel
 
-from .consts import context_icons
+from .consts import note_context_icons
 
 
 @st.dialog("Write a Note", width="large")
@@ -60,8 +60,8 @@ def note_card(note, notebook_id):
         context_state = st.selectbox(
             "Context",
             label_visibility="collapsed",
-            options=context_icons,
-            index=0,
+            options=note_context_icons,
+            index=1,
             key=f"note_{note.id}",
         )
         st.caption(f"Updated: {naturaltime(note.updated)}")

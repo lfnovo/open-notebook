@@ -4,7 +4,6 @@ source_insights:
     insight_type: "Content Summary"
     description: "Summarize the content"
     patterns:
-      - patterns/default/makeitdense
       - patterns/default/summarize
   - name: "Key Insights"
     insight_type: "Key Insights"

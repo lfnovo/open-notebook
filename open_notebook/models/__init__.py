@@ -10,6 +10,7 @@ from open_notebook.models.embedding_models import (
 from open_notebook.models.llms import (
     AnthropicLanguageModel,
     GeminiLanguageModel,
+    GroqLanguageModel,
     LanguageModel,
     LiteLLMLanguageModel,
     OllamaLanguageModel,
@@ -17,8 +18,10 @@ from open_notebook.models.llms import (
     OpenRouterLanguageModel,
     VertexAILanguageModel,
     VertexAnthropicLanguageModel,
+    XAILanguageModel,
 )
 from open_notebook.models.speech_to_text_models import (
+    GroqSpeechToTextModel,
     OpenAISpeechToTextModel,
     SpeechToTextModel,
 )
@@ -44,6 +47,8 @@ MODEL_CLASS_MAP: Dict[str, ProviderMap] = {
         "anthropic": AnthropicLanguageModel,
         "openai": OpenAILanguageModel,
         "gemini": GeminiLanguageModel,
+        "xai": XAILanguageModel,
+        "groq": GroqLanguageModel,
     },
     "embedding": {
         "openai": OpenAIEmbeddingModel,
@@ -53,6 +58,7 @@ MODEL_CLASS_MAP: Dict[str, ProviderMap] = {
     },
     "speech_to_text": {
         "openai": OpenAISpeechToTextModel,
+        "groq": GroqSpeechToTextModel,
     },
     "text_to_speech": {
         "openai": OpenAITextToSpeechModel,

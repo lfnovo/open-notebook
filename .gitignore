@@ -1,3 +1,4 @@
+*.env
 prompts/patterns/user/
 notebooks/
 data/

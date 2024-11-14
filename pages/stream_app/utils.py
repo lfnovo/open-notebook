@@ -116,34 +116,18 @@ def check_migration():
 
 def check_models():
     default_models = model_manager.defaults
-    if (
-        not default_models.default_chat_model
-        or not default_models.default_transformation_model
+    if not all(
+        [
+            default_models.default_chat_model,
+            default_models.default_transformation_model,
+            default_models.default_embedding_model,
+            default_models.default_speech_to_text_model,
+            default_models.large_context_model,
+        ]
     ):
         st.warning(
-            "You don't have default chat and transformation models selected. Please, select them on the settings page."
+            "You are missing some default models and the app might not work as expected. Please, select them on the settings page."
         )
-        st.stop()
-    elif not default_models.default_embedding_model:
-        st.warning(
-            "You don't have a default embedding model selected. Vector search will not be possible and your assistant will be less able to answer your queries. Please, select one on the settings page."
-        )
-        st.stop()
-    elif not default_models.default_speech_to_text_model:
-        st.warning(
-            "You don't have a default speech to text model selected. Your assistant will not be able to transcribe audio. Please, select one on the settings page."
-        )
-        st.stop()
-    elif not default_models.default_text_to_speech_model:
-        st.warning(
-            "You don't have a default text to speech model selected. Your assistant will not be able to generate audio and podcasts. Please, select one on the settings page."
-        )
-        st.stop()
-    elif not default_models.large_context_model:
-        st.warning(
-            "You don't have a large context model selected. Your assistant will not be able to process large documents. Please, select one on the settings page."
-        )
-        st.stop()
 
 
 def handle_error(func):

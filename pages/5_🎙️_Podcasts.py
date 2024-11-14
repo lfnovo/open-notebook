@@ -18,7 +18,6 @@ setup_page("🎙️ Podcasts")
 
 text_to_speech_models = Model.get_models_by_type("text_to_speech")
 
-
 provider_models: Dict[str, List[str]] = {}
 
 for model in text_to_speech_models:
@@ -26,9 +25,26 @@ for model in text_to_speech_models:
         provider_models[model.provider] = []
     provider_models[model.provider].append(model.name)
 
+text_models = Model.get_models_by_type("language")
+
+transcript_provider_models: Dict[str, List[str]] = {}
+
+for model in text_models:
+    if model.provider not in ["gemini", "openai", "anthropic"]:
+        continue
+    if model.provider not in transcript_provider_models:
+        transcript_provider_models[model.provider] = []
+    transcript_provider_models[model.provider].append(model.name)
+
 
 if len(text_to_speech_models) == 0:
     st.error("No text to speech models found. Please set one up in the Settings page.")
+    st.stop()
+
+if len(text_models) == 0:
+    st.error(
+        "No language models found. Please set one up in the Settings page. Only Gemini, Open AI and Anthropic models supported for transcript generation."
+    )
     st.stop()
 
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
@@ -66,34 +82,56 @@ with templates_tab:
             "User Instructions",
             help="Any additional intructions to pass to the LLM that will generate the transcript",
         )
-        pd_cfg["person1_role"] = st.text_input("Person 1 role")
+        pd_cfg["person1_role"] = st_tags(
+            [], participant_roles, "Person 1 roles", key="person1_roles"
+        )
         st.caption(f"Suggestions:{', '.join(participant_roles)}")
-        pd_cfg["person2_role"] = st.text_input("Person 2 role")
+        pd_cfg["person2_role"] = st_tags(
+            [], participant_roles, "Person 2 roles", key="person2_roles"
+        )
         pd_cfg["conversation_style"] = st_tags(
-            [], conversation_styles, "Conversation Style"
+            [], conversation_styles, "Conversation Style", key="conversation_styles"
         )
         st.caption(f"Suggestions:{', '.join(conversation_styles)}")
         pd_cfg["engagement_technique"] = st_tags(
-            [], engagement_techniques, "Engagement Techniques"
+            [],
+            engagement_techniques,
+            "Engagement Techniques",
+            key="engagement_techniques",
         )
         st.caption(f"Suggestions:{', '.join(engagement_techniques)}")
         pd_cfg["dialogue_structure"] = st_tags(
-            [], dialogue_structures, "Dialogue Structure"
+            [], dialogue_structures, "Dialogue Structure", key="dialogue_structures"
         )
         st.caption(f"Suggestions:{', '.join(dialogue_structures)}")
-        pd_cfg["wordcount"] = st.slider(
-            "Word Count", min_value=400, max_value=6000, step=50
-        )
         pd_cfg["creativity"] = st.slider(
             "Creativity", min_value=0.0, max_value=1.0, step=0.05
         )
         pd_cfg["ending_message"] = st.text_input(
             "Ending Message", placeholder="Thank you for listening!"
         )
-        pd_cfg["provider"] = st.selectbox("Provider", provider_models.keys())
+        pd_cfg["transcript_model_provider"] = st.selectbox(
+            "Transcript Model Provider", transcript_provider_models.keys()
+        )
+        pd_cfg["transcript_model"] = st.selectbox(
+            "Transcript Model",
+            transcript_provider_models[pd_cfg["transcript_model_provider"]],
+        )
+
+        pd_cfg["provider"] = st.selectbox(
+            "Audio Model Provider", provider_models.keys()
+        )
+        pd_cfg["model"] = st.selectbox(
+            "Audio Model", provider_models[pd_cfg["provider"]]
+        )
+        st.caption(
+            "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
+        )
         pd_cfg["voice1"] = st.text_input(
             "Voice 1", help="You can use Elevenlabs voice ID"
         )
+        st.caption("Voice names are case sensitive. Be sure to add the exact name.")
+
         st.markdown(
             "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
         )
@@ -105,19 +143,13 @@ with templates_tab:
             "Voice 2", help="You can use Elevenlabs voice ID"
         )
 
-        pd_cfg["model"] = st.selectbox("Model", provider_models[pd_cfg["provider"]])
-        st.caption(
-            "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
-        )
         if st.button("Save"):
             try:
                 pd = PodcastConfig(**pd_cfg)
                 pd_cfg = {}
                 pd.save()
-                st.rerun()
             except Exception as e:
                 st.error(e)
-                st.exception(e)
 
     for pd_config in PodcastConfig.get_all(order_by="created desc"):
         with st.expander(pd_config.name):
@@ -146,17 +178,20 @@ with templates_tab:
                 value=pd_config.output_language,
                 key=f"output_language_{pd_config.id}",
             )
-            pd_config.person1_role = st.text_input(
-                "Person 1 role",
-                value=pd_config.person1_role,
-                key=f"person1_role_{pd_config.id}",
+            pd_config.person1_role = st_tags(
+                pd_config.person1_role,
+                conversation_styles,
+                "Person 1 Roles",
+                key=f"person_1_roles_{pd_config.id}",
             )
             st.caption(f"Suggestions:{', '.join(participant_roles)}")
-            pd_config.person2_role = st.text_input(
-                "Person 2 role",
-                value=pd_config.person2_role,
-                key=f"person2_role_{pd_config.id}",
+            pd_config.person2_role = st_tags(
+                pd_config.person2_role,
+                conversation_styles,
+                "Person 2 Roles",
+                key=f"person_2_roles_{pd_config.id}",
             )
+
             pd_config.conversation_style = st_tags(
                 pd_config.conversation_style,
                 conversation_styles,
@@ -178,14 +213,6 @@ with templates_tab:
                 key=f"dialogue_structure_{pd_config.id}",
             )
             st.caption(f"Suggestions:{', '.join(dialogue_structures)}")
-            pd_config.wordcount = st.slider(
-                "Word Count",
-                min_value=400,
-                max_value=6000,
-                step=50,
-                value=pd_config.wordcount,
-                key=f"wordcount_{pd_config.id}",
-            )
             pd_config.creativity = st.slider(
                 "Creativity",
                 min_value=0.0,
@@ -200,32 +227,44 @@ with templates_tab:
                 placeholder="Thank you for listening!",
                 key=f"ending_message_{pd_config.id}",
             )
+
+            if pd_config.transcript_model_provider not in transcript_provider_models:
+                index = 0
+            else:
+                index = list(transcript_provider_models.keys()).index(
+                    pd_config.transcript_model_provider
+                )
+
+            pd_config.transcript_model_provider = st.selectbox(
+                "Transcript Model Provider",
+                list(transcript_provider_models.keys()),
+                index=index,
+                key=f"transcript_provider_{pd_config.id}",
+            )
+            if (
+                not pd_config.transcript_model
+                or pd_config.transcript_model
+                not in transcript_provider_models[pd_config.transcript_model_provider]
+            ):
+                index = 0
+            else:
+                index = transcript_provider_models[
+                    pd_config.transcript_model_provider
+                ].index(pd_config.transcript_model)
+            pd_config.transcript_model = st.selectbox(
+                "Transcript Model",
+                transcript_provider_models[pd_config.transcript_model_provider],
+                index=index,
+                key=f"transcript_model_{pd_config.id}",
+            )
+
             pd_config.provider = st.selectbox(
-                "Provider",
+                "Audio Model Provider",
                 list(provider_models.keys()),
                 index=list(provider_models.keys()).index(pd_config.provider),
                 key=f"provider_{pd_config.id}",
             )
-            pd_config.voice1 = st.text_input(
-                "Voice 1",
-                value=pd_config.voice1,
-                key=f"voice1_{pd_config.id}",
-                help="You can use Elevenlabs voice ID",
-            )
-            st.markdown(
-                "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
-            )
-            st.markdown(
-                "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
-            )
-            pd_config.voice2 = st.text_input(
-                "Voice 2",
-                value=pd_config.voice2,
-                key=f"voice2_{pd_config.id}",
-                help="You can use Elevenlabs voice ID",
-            )
             if pd_config.model not in provider_models[pd_config.provider]:
-                st.warning(f"Model {pd_config.model} not setup. Changing to default.")
                 index = 0
             else:
                 index = provider_models[pd_config.provider].index(pd_config.model)
@@ -237,6 +276,25 @@ with templates_tab:
             )
             st.caption(
                 "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
+            )
+            pd_config.voice1 = st.text_input(
+                "Voice 1",
+                value=pd_config.voice1,
+                key=f"voice1_{pd_config.id}",
+                help="You can use Elevenlabs voice ID",
+            )
+            st.caption("Voice names are case sensitive. Be sure to add the exact name.")
+            st.markdown(
+                "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
+            )
+            st.markdown(
+                "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
+            )
+            pd_config.voice2 = st.text_input(
+                "Voice 2",
+                value=pd_config.voice2,
+                key=f"voice2_{pd_config.id}",
+                help="You can use Elevenlabs voice ID",
             )
 
             if st.button("Save Config", key=f"btn_save{pd_config.id}"):

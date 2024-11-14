@@ -2,7 +2,7 @@
 FROM python:3.11.7-slim-bullseye 
 
 # Install system dependencies required for building certain Python packages
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     gcc \
     curl wget libmagic-dev ffmpeg supervisor \
     && rm -rf /var/lib/apt/lists/*

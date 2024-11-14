@@ -5,7 +5,6 @@ VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
 IMAGE_NAME := lfnovo/open_notebook
 
 PLATFORMS=linux/amd64,linux/arm64
-#,linux/arm/v7,linux/386
 
 database:
 	docker compose --profile db_only up
@@ -19,26 +18,22 @@ lint:
 ruff:
 	ruff check . --fix
 
-# Configuração do buildx para multi-plataforma
+# buildx config for multi-plataform
 docker-buildx-prepare:
 	docker buildx create --use --name multi-platform-builder || true
 
-# Build multi-plataforma com buildx
+# multi-plataform build with buildx
 docker-build: docker-buildx-prepare
-	docker buildx build \
+	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		-t $(IMAGE_NAME):$(VERSION) \
 		--push \
 		.
 
-# O push já é feito durante o build com buildx
-docker-push:
-	@echo "Push já foi realizado durante o build com buildx"
-
-# Build e push combinados
+# Build and push combined
 docker-release: docker-build
 
-# Comando útil para verificar as plataformas suportadas após o build
+# Check supported platforms
 docker-check-platforms:
 	docker manifest inspect $(IMAGE_NAME):$(VERSION)
 

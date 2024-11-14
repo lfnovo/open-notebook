@@ -84,12 +84,17 @@ def remove_non_printable(text) -> str:
     # Replace any special Unicode whitespace characters with a regular space
     text = re.sub(r"[\u2000-\u200B\u202F\u205F\u3000]", " ", text)
 
+    # Replace unusual line terminators with a single newline
+    text = re.sub(r"[\u2028\u2029\r]", "\n", text)
+
     # Remove control characters, except newlines and tabs
     text = "".join(
         char for char in text if unicodedata.category(char)[0] != "C" or char in "\n\t"
     )
+
     # Replace non-breaking spaces with regular spaces
     text = text.replace("\xa0", " ").strip()
+
     # Keep letters (including accented ones), numbers, spaces, newlines, tabs, and basic punctuation
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 

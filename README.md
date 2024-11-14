@@ -23,14 +23,9 @@
     <a href="https://www.open-notebook.ai"><strong>Checkout our website »</strong></a>
     <br />
     <br />
-    <a href="docs/SETUP.md">Setup</a>
+    <a href="https://www.open-notebook.ai/get-started.html">Get Started (Setup)</a>
     ·
-    <a href="docs/USAGE.md">Usage</a>
-    ·
-    <a href="docs/TRANSFORMATIONS.md">Transformations</a>
-    ·
-    <a href="docs/PODCASTS.md">Podcasts</a>
-
+    <a href="https://www.open-notebook.ai/features.html">Features</a>
   </p>
 </div>
 

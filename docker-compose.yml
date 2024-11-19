@@ -8,7 +8,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - surreal_data:/mydata
+      - ./surreal_data:/mydata
     command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
@@ -24,7 +24,7 @@ services:
     pull_policy: always
     profiles: [multi]
     volumes:
-      - notebook_data:/app/data
+      - ./notebook_data:/app/data
   open_notebook_single:
     build:
       context: .
@@ -37,7 +37,3 @@ services:
       - ./.docker_data/data:/app/data
       - ./docker2.env:/app/.env
       - ./google-credentials.json:/app/google-credentials.json
-
-volumes:
-  surreal_data:
-  notebook_data:

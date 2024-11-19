@@ -133,10 +133,7 @@ with templates_tab:
         st.caption("Voice names are case sensitive. Be sure to add the exact name.")
 
         st.markdown(
-            "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
-        )
-        st.markdown(
-            "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
+            "Sample voices from: [Open AI](https://platform.openai.com/docs/guides/text-to-speech), [Gemini](https://cloud.google.com/text-to-speech/docs/voices), [Elevenlabs](https://elevenlabs.io/text-to-speech)"
         )
 
         pd_cfg["voice2"] = st.text_input(
@@ -285,11 +282,9 @@ with templates_tab:
             )
             st.caption("Voice names are case sensitive. Be sure to add the exact name.")
             st.markdown(
-                "[Open AI voices](https://platform.openai.com/docs/guides/text-to-speech)"
+                "Sample voices from: [Open AI](https://platform.openai.com/docs/guides/text-to-speech), [Gemini](https://cloud.google.com/text-to-speech/docs/voices), [Elevenlabs](https://elevenlabs.io/text-to-speech)"
             )
-            st.markdown(
-                "[Gemini voices](https://cloud.google.com/text-to-speech/docs/voices)"
-            )
+
             pd_config.voice2 = st.text_input(
                 "Voice 2",
                 value=pd_config.voice2,

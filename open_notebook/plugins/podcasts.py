@@ -58,11 +58,15 @@ class PodcastConfig(ObjectModel):
         text: str,
         instructions: str = "",
         longform: bool = False,
+        chunks: int = 8,
+        min_chunk_size=600,
     ):
         self.user_instructions = (
             instructions if instructions else self.user_instructions
         )
         conversation_config = {
+            "max_num_chunks": chunks,
+            "min_chunk_size": min_chunk_size,
             "conversation_style": self.conversation_style,
             "roles_person1": self.person1_role,
             "roles_person2": self.person2_role,
@@ -94,6 +98,8 @@ class PodcastConfig(ObjectModel):
 
         api_key_label = None
         llm_model_name = None
+        tts_model = None
+
         if self.transcript_model_provider:
             if self.transcript_model_provider == "openai":
                 api_key_label = "OPENAI_API_KEY"
@@ -105,14 +111,21 @@ class PodcastConfig(ObjectModel):
                 api_key_label = "GEMINI_API_KEY"
                 llm_model_name = self.transcript_model
 
+        if self.provider == "gemini":
+            tts_model = "geminimulti"
+        elif self.provider == "openai":
+            tts_model = "openai"
+        elif self.provider == "anthropic":
+            tts_model = "anthropic"
+
         logger.debug(
-            f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}"
+            f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}, tts model {tts_model}"
         )
 
         audio_file = generate_podcast(
             conversation_config=conversation_config,
             text=text,
-            tts_model=self.provider,
+            tts_model=tts_model,
             llm_model_name=llm_model_name,
             api_key_label=api_key_label,
             longform=longform,
@@ -242,31 +255,6 @@ participant_roles = [
     "Advocate",
     "Debater",
     "Explorer",
-    "Opponent",
-    "Proponent",
-    "Philosopher",
-    "Engineer",
-    "Doctor",
-    "Psychologist",
-    "Economist",
-    "Politician",
-    "Scientist",
-    "Entrepreneur",
-    "Artist",
-    "Author",
-    "Journalist",
-    "Activist",
-    "Panelist",
-    "Data Analyst",
-    "Myth Buster",
-    "Trend Analyst",
-    "Futurist",
-    "Voice of Reason",
-    "Pragmatist",
-    "Idealist",
-    "Realist",
-    "Satirist",
-    "Field Reporter",
 ]
 
 # Engagement Techniques
@@ -278,50 +266,20 @@ engagement_techniques = [
     "Metaphors",
     "Storytelling",
     "Quizzes",
-    "Polls",
-    "Contests/Giveaways",
-    "Guest Appearances",
-    "Sound Effects",
-    "Music Interludes",
-    "Shout-outs",
-    "Interactive Challenges",
     "Personal Testimonials",
     "Quotes",
     "Jokes",
-    "Surprise Elements",
     "Emotional Appeals",
     "Provocative Statements",
-    "Irony",
     "Sarcasm",
-    "Alliteration",
-    "Repetition",
-    "Foreshadowing",
-    "Cliffhangers",
-    "Audience Participation",
-    "Sensory Descriptions",
-    "Visual Aids (if applicable)",
-    "Callbacks to Earlier Points",
     "Pop Culture References",
-    "Hyperbole",
-    "Parables",
     "Thought Experiments",
     "Puzzles and Riddles",
     "Role-playing",
-    "Mock Scenarios",
     "Debates",
-    "Sound Bites",
     "Catchphrases",
-    "Voice Modulation",
-    "Interactive Games",
-    "Live Demos",
-    "Behind-the-Scenes Insights",
-    "Vivid Imagery",
     "Statistics and Facts",
     "Open-ended Questions",
     "Challenges to Assumptions",
     "Evoking Curiosity",
-    "Memes (if visual components are included)",
-    "Surveys",
-    "Testimonials",
-    "Provocations",
 ]

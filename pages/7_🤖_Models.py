@@ -4,19 +4,16 @@ import streamlit as st
 
 from open_notebook.config import CONFIG
 from open_notebook.domain.models import DefaultModels, Model, model_manager
-from open_notebook.domain.transformation import DefaultTransformations, Transformation
 from open_notebook.models import MODEL_CLASS_MAP
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
-setup_page("⚙️ Settings", only_check_mandatory_models=False, stop_on_model_error=False)
+setup_page("🤖 Models", only_check_mandatory_models=False, stop_on_model_error=False)
 
 
-st.title("⚙️ Settings")
+st.title("🤖 Models")
 
-model_tab, model_defaults_tab, transformations_tab = st.tabs(
-    ["Models", "Model Defaults", "Transformations"]
-)
+model_tab, model_defaults_tab = st.tabs(["Models", "Model Defaults"])
 
 provider_status = {}
 
@@ -258,29 +255,3 @@ with model_defaults_tab:
             defs[k] = v.id
     DefaultModels().update(defs)
     model_manager.refresh_defaults()
-
-with transformations_tab:
-    transformations = Transformation.get_all()
-    default_transformations = DefaultTransformations()
-    st.markdown("Please, select which transformations to apply by default on sources")
-    selected_transformations = {}
-    for transformation in transformations["source_insights"]:
-        with st.container(border=True):
-            selected_transformations[transformation["name"]] = st.checkbox(
-                f"**{transformation['name']}**",
-                value=(
-                    transformation["name"]
-                    in (default_transformations.source_insights or [])
-                ),
-            )
-            st.write(transformation["description"])
-            p = ["- " + pattern for pattern in transformation["patterns"]]
-            st.markdown("\n".join(p))
-    if st.button("Save Defaults", key="save_transformations"):
-        default_transformations.source_insights = [
-            transformation
-            for transformation, selected in selected_transformations.items()
-            if selected
-        ]
-        default_transformations.update(default_transformations.model_dump())
-        st.toast("Default Transformations saved successfully")

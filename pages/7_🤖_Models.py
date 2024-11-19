@@ -89,7 +89,7 @@ def generate_new_models(models, suggested_models):
     return new_models
 
 
-default_models = DefaultModels().model_dump()
+default_models = DefaultModels()
 all_models = Model.get_all()
 
 with model_tab:
@@ -176,82 +176,101 @@ with model_defaults_tab:
         "In this section, you can select the default models to be used on the various content operations done by Open Notebook. Some of these can be overriden in the different modules."
     )
     defs = {}
-    defs["default_chat_model"] = model_selector(
+    # Handle chat model selection
+    selected_model = model_selector(
         "Default Chat Model",
         "default_chat_model",
-        selected_id=default_models.get("default_chat_model"),
+        selected_id=default_models.default_chat_model,
         help="This model will be used for chat.",
         model_type="language",
     )
+    if selected_model:
+        default_models.default_chat_model = selected_model.id
     st.divider()
-    defs["default_transformation_model"] = model_selector(
+    # Handle transformation model selection
+    selected_model = model_selector(
         "Default Transformation Model",
         "default_transformation_model",
-        selected_id=default_models.get("default_transformation_model"),
+        selected_id=default_models.default_transformation_model,
         help="This model will be used for text transformations such as summaries, insights, etc.",
         model_type="language",
     )
+    if selected_model:
+        default_models.default_transformation_model = selected_model.id
     st.caption("You can use a cheap model here like gpt-4o-mini, llama3, etc.")
     st.divider()
-    defs["default_tools_model"] = model_selector(
+
+    # Handle tools model selection
+    selected_model = model_selector(
         "Default Tools Model",
         "default_tools_model",
-        selected_id=default_models.get("default_tools_model"),
+        selected_id=default_models.default_tools_model,
         help="This model will be used for calling tools. Currently, it's best to use Open AI and Anthropic for this.",
         model_type="language",
     )
+    if selected_model:
+        default_models.default_tools_model = selected_model.id
     st.caption("Recommended to use a capable model here, like gpt-4o, claude, etc.")
     st.divider()
-    defs["large_context_model"] = model_selector(
+
+    # Handle large context model selection
+    selected_model = model_selector(
         "Large Context Model",
         "large_context_model",
-        selected_id=default_models.get("large_context_model"),
+        selected_id=default_models.large_context_model,
         help="This model will be used for larger context generation -- recommended: Gemini",
         model_type="language",
     )
+    if selected_model:
+        default_models.large_context_model = selected_model.id
     st.caption("Recommended to use Gemini models for larger context processing")
     st.divider()
-    defs["default_text_to_speech_model"] = model_selector(
+
+    # Handle text-to-speech model selection
+    selected_model = model_selector(
         "Default Text to Speech Model",
         "default_text_to_speech_model",
-        selected_id=default_models.get("default_text_to_speech_model"),
+        selected_id=default_models.default_text_to_speech_model,
         help="This is the default model for converting text to speech (podcasts, etc)",
         model_type="text_to_speech",
     )
     st.caption("You can override this model on different podcasts")
+    if selected_model:
+        default_models.default_text_to_speech_model = selected_model.id
     st.divider()
-    defs["default_speech_to_text_model"] = model_selector(
+
+    # Handle speech-to-text model selection
+    selected_model = model_selector(
         "Default Speech to Text Model",
-        "default_speech_to_text_model",
-        selected_id=default_models.get("default_speech_to_text_model"),
+        selected_id=default_models.default_speech_to_text_model,
         help="This is the default model for converting speech to text (audio transcriptions, etc)",
         model_type="speech_to_text",
+        key="default_speech_to_text_model",
     )
 
-    st.divider()
-    # defs["default_vision_model"] = (
-    #     model_selector(
-    #         "Default Speech to Text Model",
-    #         "default_vision_model",
-    #         selected_id=default_models.get("default_vision_model"),
-    #         help="This is the default model for vision tasks",
-    #         model_type="vision",
-    #     ),
-    # )
+    if selected_model:
+        default_models.default_speech_to_text_model = selected_model.id
 
-    defs["default_embedding_model"] = model_selector(
+    st.divider()
+    # Handle embedding model selection
+    selected_model = model_selector(
         "Default Speech to Text Model",
         "default_embedding_model",
-        selected_id=default_models.get("default_embedding_model"),
+        selected_id=default_models.default_embedding_model,
         help="This is the default model for embeddings (semantic search, etc)",
         model_type="embedding",
     )
-    st.caption(
+    if selected_model:
+        default_models.default_embedding_model = selected_model.id
+    st.warning(
         "Caution: you cannot change the embedding model once there is embeddings or they will need to be regenerated"
     )
 
     for k, v in defs.items():
         if v:
             defs[k] = v.id
-    DefaultModels().update(defs)
-    model_manager.refresh_defaults()
+
+    if st.button("Save Defaults"):
+        default_models.patch(defs)
+        model_manager.refresh_defaults()
+        st.success("Saved")

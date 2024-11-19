@@ -40,6 +40,11 @@ def repo_create(table: str, data: Dict[str, Any]):
     return repo_query(query)
 
 
+def repo_upsert(table: str, data: Dict[str, Any]):
+    query = f"UPSERT {table} CONTENT {data};"
+    return repo_query(query)
+
+
 def repo_update(id: str, data: Dict[str, Any]):
     query = "UPDATE $id CONTENT $data;"
     vars = {"id": id, "data": data}

@@ -25,7 +25,7 @@ with transformations_tab:
     st.markdown(
         "Transformations are prompts that will be used by the LLM to process a source and extract insights, summaries, etc. "
     )
-    default_prompts: DefaultPrompts = DefaultPrompts().load()
+    default_prompts: DefaultPrompts = DefaultPrompts()
     with st.expander("**⚙️ Default Transformation Prompt**"):
         default_prompts.transformation_instructions = st.text_area(
             "Default Transformation Prompt",
@@ -34,7 +34,7 @@ with transformations_tab:
         )
         st.caption("This will be added to all your transformation prompts.")
         if st.button("Save", key="save_default_prompt"):
-            default_prompts.update(default_prompts.model_dump())
+            default_prompts.update()
             st.toast("Default prompt saved successfully!")
     if st.button("Create new Transformation", icon="➕", key="new_transformation"):
         new_transformation = Transformation(

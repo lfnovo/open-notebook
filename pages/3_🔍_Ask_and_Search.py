@@ -54,7 +54,7 @@ with ask_tab:
         "The LLM will answer your query based on the documents in your knowledge base. "
     )
     question = st.text_input("Question", "")
-    default_model = DefaultModels().load().default_chat_model
+    default_model = DefaultModels().default_chat_model
     strategy_model = model_selector(
         "Query Strategy Model",
         "strategy_model",

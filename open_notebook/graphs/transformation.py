@@ -1,4 +1,3 @@
-from executing import Source
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import (
     RunnableConfig,
@@ -6,6 +5,7 @@ from langchain_core.runnables import (
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
+from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.graphs.utils import provision_langchain_model
 from open_notebook.prompter import Prompter
@@ -26,7 +26,7 @@ def run_transformation(state: dict, config: RunnableConfig) -> dict:
     if not content:
         content = source.full_text
     transformation_prompt_text = transformation.prompt
-    default_prompts: DefaultPrompts = DefaultPrompts().load()
+    default_prompts: DefaultPrompts = DefaultPrompts()
     if default_prompts.transformation_instructions:
         transformation_prompt_text = f"{default_prompts.transformation_instructions}\n\n{transformation_prompt_text}"
 

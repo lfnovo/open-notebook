@@ -1,0 +1,11 @@
+
+DEFINE TABLE IF NOT EXISTS transformation SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE transformation TYPE string;
+DEFINE FIELD IF NOT EXISTS title ON TABLE transformation TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE transformation TYPE string;
+DEFINE FIELD IF NOT EXISTS prompt ON TABLE transformation TYPE string;
+DEFINE FIELD IF NOT EXISTS apply_default ON TABLE transformation TYPE bool DEFAULT False;
+DEFINE FIELD IF NOT EXISTS created ON transformation DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON transformation DEFAULT time::now() VALUE time::now();
+

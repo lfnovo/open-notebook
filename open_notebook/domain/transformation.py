@@ -1,19 +1,21 @@
-from typing import ClassVar, List, Optional
+from typing import ClassVar, Optional
 
-import yaml
 from pydantic import Field
 
-from open_notebook.domain.base import RecordModel
+from open_notebook.domain.base import ObjectModel, RecordModel
 
 
-class Transformation:
-    @classmethod
-    def get_all(cls):
-        with open("transformations.yaml", "r") as file:
-            transformations = yaml.safe_load(file)
-        return transformations
+class Transformation(ObjectModel):
+    table_name: ClassVar[str] = "transformation"
+    name: str
+    title: str
+    description: str
+    prompt: str
+    apply_default: bool
 
 
-class DefaultTransformations(RecordModel):
-    record_id: ClassVar[str] = "open_notebook:default_transformations"
-    source_insights: Optional[List[str]] = Field(default_factory=list)
+class DefaultPrompts(RecordModel):
+    record_id: ClassVar[str] = "open_notebook:default_prompts"
+    transformation_instructions: Optional[str] = Field(
+        None, description="Instructions for executing a transformation"
+    )

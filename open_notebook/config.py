@@ -16,7 +16,6 @@ except Exception:
     CONFIG = {}
 
 # ROOT DATA FOLDER
-# todo: make this configurable once podcastfy supports it
 DATA_FOLDER = "./data"
 
 # LANGGRAPH CHECKPOINT FILE

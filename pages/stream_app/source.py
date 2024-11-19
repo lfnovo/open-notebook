@@ -9,7 +9,7 @@ from loguru import logger
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
-from open_notebook.domain.transformation import DefaultTransformations, Transformation
+from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
@@ -45,11 +45,12 @@ def add_source(notebook_id):
         source_text = st.text_area("Text")
         req["content"] = source_text
 
-    default_transformations = [t for t in DefaultTransformations().source_insights]
-    available_transformations = [t["name"] for t in transformations["source_insights"]]
+    transformations = Transformation.get_all()
+    default_transformations = [t for t in transformations if t.apply_default]
     apply_transformations = st.multiselect(
         "Apply transformations",
-        options=available_transformations,
+        options=transformations,
+        format_func=lambda t: t.name,
         default=default_transformations,
     )
     run_embed = st.checkbox(
@@ -85,7 +86,7 @@ def add_source(notebook_id):
                         {
                             "content_state": req,
                             "notebook_id": notebook_id,
-                            "transformations": apply_transformations,
+                            "apply_transformations": apply_transformations,
                             "embed": run_embed,
                         }
                     )

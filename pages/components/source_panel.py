@@ -1,3 +1,5 @@
+import asyncio
+
 import streamlit as st
 import streamlit_scrollable_textbox as stx  # type: ignore
 from humanize import naturaltime
@@ -5,8 +7,8 @@ from humanize import naturaltime
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.utils import surreal_clean
-from pages.stream_app.utils import check_models, run_patterns
+from open_notebook.graphs.transformation import graph as transform_graph
+from pages.stream_app.utils import check_models
 
 
 def source_panel(source_id: str, notebook_id=None, modal=False):
@@ -23,7 +25,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
 
     process_tab, source_tab = st.tabs(["Process", "Source"])
     with process_tab:
-        c1, c2 = st.columns([3, 1])
+        c1, c2 = st.columns([4, 2])
         with c1:
             title = st.empty()
             if source.title:
@@ -43,7 +45,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                         "Delete", type="primary", key=f"delete_insight_{insight.id}"
                     ):
                         insight.delete()
-                        # st.rerun(scope="fragment" if modal else "app")
+                        st.rerun(scope="fragment" if modal else "app")
                         st.toast("Source deleted")
                     if notebook_id:
                         if x2.button(
@@ -53,19 +55,20 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                             st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:
-            transformations = Transformation.get_all()
+            transformations = Transformation.get_all(order_by="name asc")
             with st.container(border=True):
                 transformation = st.selectbox(
                     "Run a transformation",
-                    transformations["source_insights"],
+                    transformations,
                     key=f"transformation_{source.id}",
-                    format_func=lambda x: x["name"],
+                    format_func=lambda x: x.name,
                 )
-                st.caption(transformation["description"])
+                st.caption(transformation.description)
                 if st.button("Run"):
-                    result = run_patterns(source.full_text, transformation["patterns"])
-                    source.add_insight(
-                        transformation["insight_type"], surreal_clean(result)
+                    asyncio.run(
+                        transform_graph.ainvoke(
+                            input=dict(source=source, transformation=transformation)
+                        )
                     )
                     st.rerun(scope="fragment" if modal else "app")
 

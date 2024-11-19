@@ -284,22 +284,11 @@ class OpenAILanguageModel(LanguageModel):
         if self.json:
             kwargs["response_format"] = {"type": "json_object"}
 
-        # Set the token limit in kwargs with the appropriate key
-        if self.model_name in ["o1-mini", "o1-preview"]:
-            kwargs["max_completion_tokens"] = self.max_tokens
-            top_p = 1
-            streaming = False
-            max_tokens = None
-        else:
-            max_tokens = self.max_tokens
-            top_p = self.top_p
-            streaming = self.streaming
-
         return ChatOpenAI(
             model=self.model_name,
-            temperature=self.temperature,
-            streaming=streaming,
-            max_tokens=max_tokens,
-            top_p=top_p,
+            temperature=self.temperature or 0.5,
+            streaming=self.streaming,
+            max_tokens=self.max_tokens,
+            top_p=self.top_p,
             model_kwargs=kwargs,
         )

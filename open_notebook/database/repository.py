@@ -37,7 +37,6 @@ def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None):
 
 def repo_create(table: str, data: Dict[str, Any]):
     query = f"CREATE {table} CONTENT {data};"
-    # vars = {"table": table, "data": data}
     return repo_query(query)
 
 
@@ -53,14 +52,7 @@ def repo_delete(id: str):
     return repo_query(query, vars)
 
 
-def repo_relate(source: str, relationship: str, target: str):
-    query = f"RELATE {source}->{relationship}->{target}"
-    # CONTENT $content;"
-    # vars = {
-    #     "source": source,
-    #     "relationship": relationship,
-    #     "target": target,
-    #  #   "content": {},  # You can add properties to the relation here if needed
-    # }
-    result = repo_query(query)
+def repo_relate(source: str, relationship: str, target: str, data: Optional[Dict] = {}):
+    query = f"RELATE {source}->{relationship}->{target} CONTENT $content;"
+    result = repo_query(query, {"content": data})
     return result

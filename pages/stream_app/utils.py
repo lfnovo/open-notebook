@@ -9,17 +9,11 @@ from open_notebook.database.migrate import MigrationManager
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import ThreadState, graph
-from open_notebook.graphs.multipattern import graph as transform_graph
 from open_notebook.utils import (
     compare_versions,
     get_installed_version,
     get_version_from_github,
 )
-
-
-def run_patterns(input_text, patterns):
-    output = transform_graph.invoke(dict(content_stack=[input_text], patterns=patterns))
-    return output["output"]
 
 
 def version_sidebar():

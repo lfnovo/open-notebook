@@ -1,0 +1,2 @@
+
+REMOVE TABLE IF EXISTS transformation SCHEMAFULL;

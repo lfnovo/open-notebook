@@ -33,16 +33,12 @@ class Notebook(ObjectModel):
     def sources(self) -> List["Source"]:
         try:
             srcs = repo_query(f"""
-                select * OMIT full_text from (
-                    select
-                    <- source as source
-                    from reference
-                    where out={self.id}
-                    fetch source
-                )
-                order by source.updated desc
+                select * omit source.full_text from (
+                select in as source from reference where out={self.id}
+                fetch source
+            ) order by source.updated desc
             """)
-            return [Source(**src["source"][0]) for src in srcs] if srcs else []
+            return [Source(**src["source"]) for src in srcs] if srcs else []
         except Exception as e:
             logger.error(f"Error fetching sources for notebook {self.id}: {str(e)}")
             logger.exception(e)
@@ -52,16 +48,12 @@ class Notebook(ObjectModel):
     def notes(self) -> List["Note"]:
         try:
             srcs = repo_query(f"""
-                select * OMIT content from (
-                    select
-                    <- note as note
-                    from artifact
-                    where out={self.id}
-                    fetch note
-                )
-                order by updated desc
+            select * omit note.content, note.embedding from (
+                select in as note from artifact where out={self.id}
+                fetch note
+            ) order by note.updated desc
             """)
-            return [Note(**src["note"][0]) for src in srcs] if srcs else []
+            return [Note(**src["note"]) for src in srcs] if srcs else []
         except Exception as e:
             logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
             logger.exception(e)

@@ -32,11 +32,12 @@ def build_context(notebook_id):
         if "not in" in status:
             continue
 
-        item: Union[Note, Source] = ObjectModel.get(id)
-
-        if not item:
+        try:
+            item: Union[Note, Source] = ObjectModel.get(id)
+        except Exception:
             continue
-        if "summary" in status:
+
+        if "insights" in status:
             st.session_state[notebook_id]["context"][item_type] += [
                 item.get_context(context_size="short")
             ]

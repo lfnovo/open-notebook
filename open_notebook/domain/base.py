@@ -180,11 +180,15 @@ class ObjectModel(BaseModel):
                 f"Failed to delete {self.__class__.table_name}"
             )
 
-    def relate(self, relationship: str, target_id: str) -> Any:
+    def relate(
+        self, relationship: str, target_id: str, data: Optional[Dict] = {}
+    ) -> Any:
         if not relationship or not target_id or not self.id:
             raise InvalidInputError("Relationship and target ID must be provided")
         try:
-            return repo_relate(self.id, relationship, target_id)
+            return repo_relate(
+                source=self.id, relationship=relationship, target=target_id, data=data
+            )
         except Exception as e:
             logger.error(f"Error creating relationship: {str(e)}")
             logger.exception(e)

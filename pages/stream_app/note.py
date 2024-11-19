@@ -5,7 +5,7 @@ from humanize import naturaltime
 
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
-from open_notebook.graphs.multipattern import graph as pattern_graph
+from open_notebook.graphs.prompt import graph as prompt_graph
 from open_notebook.utils import surreal_clean
 from pages.components import note_panel
 
@@ -34,10 +34,8 @@ def note_panel_dialog(note: Optional[Note] = None, notebook_id=None):
 
 def make_note_from_chat(content, notebook_id=None):
     # todo: make this more efficient
-    patterns = [
-        "Based on the Note below, please provide a Title for this content, with max 15 words"
-    ]
-    output = pattern_graph.invoke(dict(content_stack=[content], patterns=patterns))
+    prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
+    output = prompt_graph.invoke(dict(input_text=content, prompt=prompt))
     title = surreal_clean(output["output"])
 
     note = Note(

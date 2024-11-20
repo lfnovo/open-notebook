@@ -37,7 +37,7 @@ langchain-openai = "^0.2.3"
 langchain-anthropic = "^0.2.3"
 langchain-ollama = "^0.2.0"
 langchain-google-vertexai = "^2.0.5"
-sdblpy = "^0.3.0"
+sdblpy = {git = "https://github.com/lfnovo/surreal-lite-py.git"}
 langchain-google-genai = "^2.0.1"
 podcastfy = "^0.4"
 tomli = "^2.0.2"

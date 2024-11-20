@@ -9,7 +9,9 @@ services:
       - "8000:8000"
     volumes:
       - ./surreal_data:/mydata
-    command: start --log trace --user root --pass root rocksdb:/mydata/mydatabase.db
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
     profiles: [db_only, multi]

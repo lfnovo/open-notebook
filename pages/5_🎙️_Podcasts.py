@@ -38,12 +38,12 @@ for model in text_models:
 
 
 if len(text_to_speech_models) == 0:
-    st.error("No text to speech models found. Please set one up in the Settings page.")
+    st.error("No text to speech models found. Please set one up in the Models page.")
     st.stop()
 
 if len(text_models) == 0:
     st.error(
-        "No language models found. Please set one up in the Settings page. Only Gemini, Open AI and Anthropic models supported for transcript generation."
+        "No language models found. Please set one up in the Models page. Only Gemini, Open AI and Anthropic models supported for transcript generation."
     )
     st.stop()
 

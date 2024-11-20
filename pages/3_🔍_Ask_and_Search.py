@@ -78,7 +78,7 @@ with ask_tab:
     )
     if not model_manager.embedding_model:
         st.warning(
-            "You can't use this feature because you have no embedding model selected. Please set one up in the Settings page."
+            "You can't use this feature because you have no embedding model selected. Please set one up in the Models page."
         )
     ask_bt = st.button("Ask") if model_manager.embedding_model else None
     placeholder = st.container()

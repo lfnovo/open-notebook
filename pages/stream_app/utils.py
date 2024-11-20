@@ -122,7 +122,7 @@ def check_models(only_mandatory=True, stop_on_error=True):
 
     if not all(mandatory_models):
         st.error(
-            "You are missing some default models and the app will not work as expected. Please, select them on the settings page."
+            "You are missing some default models and the app will not work as expected. Please, select them on the Models page."
         )
         if stop_on_error:
             st.stop()
@@ -130,7 +130,7 @@ def check_models(only_mandatory=True, stop_on_error=True):
     if not only_mandatory:
         if not all(all_models):
             st.warning(
-                "You are missing some important optional models. The app might not work as expected. Please, select them on the settings page."
+                "You are missing some important optional models. The app might not work as expected. Please, select them on the Models page."
             )
 
 

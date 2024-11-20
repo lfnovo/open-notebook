@@ -88,6 +88,8 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                     "Podcast Length",
                     ["Short (5-10 min)", "Medium (10-20 min)", "Longer (20+ min)"],
                 )
+                chunks = None
+                min_chunk_size = None
                 if podcast_length == "Short (5-10 min)":
                     longform = False
                 elif podcast_length == "Medium (10-20 min)":

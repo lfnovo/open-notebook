@@ -74,7 +74,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
 
             if not model_manager.embedding_model:
                 help = (
-                    "No embedding model found. Please, select one on the settings page."
+                    "No embedding model found. Please, select one on the Models page."
                 )
             else:
                 help = "This will generate your embedding vectors on the database for powerful search capabilities"

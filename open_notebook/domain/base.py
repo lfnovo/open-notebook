@@ -252,15 +252,17 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "__dict__", {})
             # Load data from DB first
             result = repo_query(f"SELECT * FROM {self.record_id};")
+
+            # Initialize empty object with None for all non-ClassVar fields
+            db_data = {
+                field_name: None
+                for field_name, field_info in self.model_fields.items()
+                if not str(field_info.annotation).startswith("typing.ClassVar")
+            }
+
+            # Update with DB data if it exists
             if result:
-                db_data = result[0]
-            else:
-                # Initialize empty object with None for Optional fields
-                db_data = {
-                    field_name: None
-                    for field_name, field_info in self.model_fields.items()
-                    if not str(field_info.annotation).startswith("typing.ClassVar")
-                }
+                db_data.update(result[0])
 
             # Initialize with DB data and any overrides
             super().__init__(**{**db_data, **kwargs})

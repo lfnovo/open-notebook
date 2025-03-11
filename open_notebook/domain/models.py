@@ -28,14 +28,14 @@ class Model(ObjectModel):
 
 class DefaultModels(RecordModel):
     record_id: ClassVar[str] = "open_notebook:default_models"
-    default_chat_model: Optional[str]
-    default_transformation_model: Optional[str]
-    large_context_model: Optional[str]
-    default_text_to_speech_model: Optional[str]
-    default_speech_to_text_model: Optional[str]
+    default_chat_model: Optional[str] = None
+    default_transformation_model: Optional[str] = None
+    large_context_model: Optional[str] = None
+    default_text_to_speech_model: Optional[str] = None
+    default_speech_to_text_model: Optional[str] = None
     # default_vision_model: Optional[str]
-    default_embedding_model: Optional[str]
-    default_tools_model: Optional[str]
+    default_embedding_model: Optional[str] = None
+    default_tools_model: Optional[str] = None
 
 
 class ModelManager:

@@ -26,7 +26,7 @@ def version_sidebar():
 
             with open("pyproject.toml", "rb") as f:
                 pyproject = tomli.load(f)
-                current_version = pyproject["tool"]["poetry"]["version"]
+                current_version = pyproject["project"]["version"]
 
         latest_version = get_version_from_github(
             "https://www.github.com/lfnovo/open-notebook", "main"
@@ -98,6 +98,7 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
 
 
 def check_migration():
+    logger.critical("Running migration check")
     mm = MigrationManager()
     if mm.needs_migration:
         st.warning("The Open Notebook database needs a migration to run properly.")

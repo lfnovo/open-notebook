@@ -10,10 +10,10 @@ database:
 	docker compose --profile db_only up
 
 run:
-	poetry run streamlit run app_home.py
+	uv run streamlit run app_home.py
 
 lint:
-	poetry run python -m mypy .
+	uv run python -m mypy .
 
 ruff:
 	ruff check . --fix

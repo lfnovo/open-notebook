@@ -117,6 +117,8 @@ class PodcastConfig(ObjectModel):
             tts_model = "openai"
         elif self.provider == "anthropic":
             tts_model = "anthropic"
+        elif self.provider == "elevenlabs":
+            tts_model = "elevenlabs"
 
         logger.debug(
             f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}, tts model {tts_model}"

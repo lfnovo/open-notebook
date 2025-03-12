@@ -1,5 +1,9 @@
-# Use an official Python runtime as a base image
-FROM python:3.11.7-slim-bullseye 
+# Use Python 3.11 slim image as base
+FROM python:3.11-slim-bookworm
+
+# Install uv using the official method
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 
 # Install system dependencies required for building certain Python packages
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
@@ -13,14 +17,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://install.surrealdb.com | sh
 # Set the working directory in the container to /app
 WORKDIR /app
 
-COPY pyproject.toml poetry.lock /app/
-RUN pip install poetry --no-cache-dir
-RUN poetry self add poetry-plugin-dotenv
-RUN poetry config virtualenvs.create false
-
-RUN poetry install --only main
-
 COPY . /app
+RUN uv sync
 
 # Create supervisor configuration directory
 RUN mkdir -p /etc/supervisor/conf.d

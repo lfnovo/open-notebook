@@ -253,19 +253,19 @@ class RecordModel(BaseModel):
             # Load data from DB first
             result = repo_query(f"SELECT * FROM {self.record_id};")
 
-            # Initialize empty object with None for all non-ClassVar fields
-            db_data = {
-                field_name: None
-                for field_name, field_info in self.model_fields.items()
-                if not str(field_info.annotation).startswith("typing.ClassVar")
-            }
-
-            # Update with DB data if it exists
-            if result:
-                db_data.update(result[0])
-
             # Initialize with DB data and any overrides
-            super().__init__(**{**db_data, **kwargs})
+            init_data = {}
+            if result and result[0]:
+                init_data.update(result[0])
+
+            # Override with any provided kwargs
+            if kwargs:
+                init_data.update(kwargs)
+
+            # Initialize base model first
+            super().__init__(**init_data)
+
+            # Mark as initialized
             object.__setattr__(self, "_initialized", True)
 
     @classmethod

@@ -1,4 +1,5 @@
 import streamlit as st
+from dotenv import load_dotenv
 
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import NotFoundError
@@ -10,6 +11,7 @@ from pages.components import (
 )
 from pages.stream_app.utils import setup_page
 
+load_dotenv()
 setup_page("📒 Open Notebook", sidebar_state="collapsed")
 
 if "object_id" not in st.query_params:

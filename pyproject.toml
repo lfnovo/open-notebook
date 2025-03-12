@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "0.1.1"
+version = "0.1.2"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}

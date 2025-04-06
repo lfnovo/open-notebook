@@ -129,9 +129,9 @@ Edit .env for your API keys.
 To run the source code locally and experiment with the code, you just need to run:
 
 ```bash
-poetry install
+uv sync
 docker compose --profile db_only up
-poetry run streamlit run app_home.py
+uv run streamlit run app_home.py
 ```
 
 If you don't want to mess around with the code and just want to run it as a docker image:

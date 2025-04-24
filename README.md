@@ -19,7 +19,7 @@
 
   <p align="center">
     An open source, privacy-focused alternative to Google's Notebook LM!
-    <br /><strong>Join our <a href="https://discord.gg/9CyPqZGH">Discord server</a> for help, to share workflow ideas, and suggest features!</strong>
+    <br /><strong>Join our <a href="https://discord.gg/37XJPXfz2w">Discord server</a> for help, to share workflow ideas, and suggest features!</strong>
     <br />
     <a href="https://www.open-notebook.ai"><strong>Checkout our website »</strong></a>
     <br />
@@ -295,7 +295,7 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 ## Contact
 
 Luis Novo - [@lfnovo](https://twitter.com/lfnovo)
-Join our [Discord server](https://discord.gg/9CyPqZGH) for help, share workflow ideas, and suggest features.
+Join our [Discord server](https://discord.gg/37XJPXfz2w) for help, share workflow ideas, and suggest features.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

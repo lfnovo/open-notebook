@@ -118,5 +118,3 @@ desktop.ini
 *.db
 *.sqlite3
 
-# Virtual environment
-.python-version

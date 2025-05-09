@@ -135,6 +135,16 @@ docker compose --profile db_only up
 uv run streamlit run app_home.py
 ```
 
+#### libmagic under windows
+If you get an error that libmagic is missing simply add python-magic-bin to ``` pyproject.toml ``` like 
+```bash
+[...]
+    "python-magic>=0.4.27",
+    "python-magic-bin==0.4.14",
+    "langdetect>=1.0.9",
+[...]
+```
+
 If you don't want to mess around with the code and just want to run it as a docker image:
 
 ```bash
@@ -142,6 +152,9 @@ docker compose --profile multi up
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+
 
 ## Usage
 

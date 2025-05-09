@@ -115,7 +115,7 @@ if st.session_state["current_notebook_id"]:
     notebook_page(current_notebook)
     st.stop()
 
-st.title("📒 My Fabian")
+st.title("📒 My Notebooks")
 st.caption(
     "Notebooks are a great way to organize your thoughts, ideas, and sources. You can create notebooks for different research topics and projects, to create new articles, etc. "
 )

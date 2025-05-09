@@ -27,6 +27,7 @@ dependencies = [
     "langgraph-checkpoint-sqlite>=2.0.0",
     "pymupdf==1.24.11",
     "python-magic>=0.4.27",
+    "python-magic-bin==0.4.14",
     "langdetect>=1.0.9",
     "youtube-transcript-api>=0.6.2",
     "openai>=1.52.0",

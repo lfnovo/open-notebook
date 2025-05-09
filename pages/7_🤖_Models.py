@@ -254,7 +254,7 @@ with model_defaults_tab:
     st.divider()
     # Handle embedding model selection
     selected_model = model_selector(
-        "Default Speech to Text Model",
+        "Default Embedding Model",
         "default_embedding_model",
         selected_id=default_models.default_embedding_model,
         help="This is the default model for embeddings (semantic search, etc)",

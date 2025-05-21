@@ -41,6 +41,7 @@ dependencies = [
     "podcastfy>=0.4",
     "tomli>=2.0.2",
     "bs4>=0.0.2",
+    "fastapi>=0.110.0",
     "python-docx>=1.1.2",
     "python-pptx>=1.0.2",
     "openpyxl>=3.1.5",
@@ -50,6 +51,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",
     "sdblpy",
+    "uvicorn>=0.29.0",
 ]
 
 [tool.setuptools]

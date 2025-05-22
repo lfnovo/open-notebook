@@ -108,7 +108,7 @@ class PodcastConfig(ObjectModel):
                 api_key_label = "ANTHROPIC_API_KEY"
                 llm_model_name = self.transcript_model
             elif self.transcript_model_provider == "gemini":
-                api_key_label = "GEMINI_API_KEY"
+                api_key_label = "GOOGLE_API_KEY"
                 llm_model_name = self.transcript_model
 
         if self.provider == "gemini":

@@ -14,7 +14,6 @@ classifiers = [
 requires-python = ">=3.11,<3.13"
 dependencies = [
     "streamlit>=1.39.0",
-    "watchdog>=5.0.3",
     "pydantic>=2.9.2",
     "loguru>=0.7.2",
     "langchain>=0.3.3",
@@ -25,31 +24,23 @@ dependencies = [
     "tiktoken>=0.8.0",
     "streamlit-monaco>=0.1.3",
     "langgraph-checkpoint-sqlite>=2.0.0",
-    "pymupdf==1.24.11",
-    "python-magic>=0.4.27",
-    "langdetect>=1.0.9",
-    "youtube-transcript-api>=0.6.2",
     "openai>=1.52.0",
-    "pre-commit>=4.0.1",
     "langchain-community>=0.3.3",
-    "litellm>=1.50.1",
     "langchain-openai>=0.2.3",
     "langchain-anthropic>=0.2.3",
     "langchain-ollama>=0.2.0",
     "langchain-google-vertexai>=2.0.5",
     "langchain-google-genai>=2.0.1",
-    "podcastfy>=0.4",
     "tomli>=2.0.2",
-    "bs4>=0.0.2",
-    "python-docx>=1.1.2",
-    "python-pptx>=1.0.2",
-    "openpyxl>=3.1.5",
     "google-generativeai>=0.8.3",
     "langchain-groq>=0.2.1",
     "groq>=0.12.0",
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",
     "sdblpy",
+    "content-core>=0.8.5",
+    "podcastfy",
+    "nest-asyncio>=1.6.0",
 ]
 
 [tool.setuptools]
@@ -63,11 +54,18 @@ dev = [
     "mypy>=1.11.1",
     "types-requests>=2.32.0.20241016",
     "ipywidgets>=8.1.5",
+    "pre-commit>=4.0.1",
 ]
 
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.1.0",
+    "watchdog>=6.0.0",
+]
 
 [tool.isort]
 profile = "black"
@@ -82,3 +80,4 @@ ignore = ["E501"]
 
 [tool.uv.sources]
 sdblpy = { git = "https://github.com/lfnovo/surreal-lite-py" }
+podcastfy = { path = "/Users/luisnovo/dev/experimentos/podcastfy/dist/podcastfy-0.4.1-py3-none-any.whl" }

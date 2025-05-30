@@ -2773,7 +2773,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=1.52.0" },
-    { name = "podcastfy", path = "../../../experimentos/podcastfy/dist/podcastfy-0.4.1-py3-none-any.whl" },
+    { name = "podcastfy", git = "https://github.com/lfnovo/podcastfy" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
@@ -3078,7 +3078,7 @@ wheels = [
 [[package]]
 name = "podcastfy"
 version = "0.4.1"
-source = { path = "../../../experimentos/podcastfy/dist/podcastfy-0.4.1-py3-none-any.whl" }
+source = { git = "https://github.com/lfnovo/podcastfy#41e42dc4caacacf307a7f5a31905c93dfa06992f" }
 dependencies = [
     { name = "beautifulsoup4" },
     { name = "cython" },
@@ -3115,48 +3115,6 @@ dependencies = [
     { name = "types-pyyaml" },
     { name = "wheel" },
     { name = "youtube-transcript-api" },
-]
-wheels = [
-    { filename = "podcastfy-0.4.1-py3-none-any.whl", hash = "sha256:3dcbabe9354fb3ada29c35410baea0f5fca8d6ecca20fac5fa2a235ece1ebeb2" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.12.3,<5.0.0" },
-    { name = "cython", specifier = ">=3.0.11,<4.0.0" },
-    { name = "edge-tts", specifier = ">=6.1.12,<7.0.0" },
-    { name = "elevenlabs", specifier = ">=1.9.0,<2.0.0" },
-    { name = "ffmpeg", specifier = ">=1.4,<2.0" },
-    { name = "fuzzywuzzy", specifier = ">=0.18.0,<0.19.0" },
-    { name = "google-cloud-texttospeech", specifier = ">=2.21.0,<3.0.0" },
-    { name = "google-generativeai", specifier = ">=0.8.2,<0.9.0" },
-    { name = "httpx", specifier = ">=0.27.2,<0.28.0" },
-    { name = "langchain", specifier = ">=0.3.3,<0.4.0" },
-    { name = "langchain-community", specifier = ">=0.3.5,<0.4.0" },
-    { name = "langchain-google-genai", specifier = ">=2.0.1,<3.0.0" },
-    { name = "langchain-google-vertexai", specifier = ">=2.0.4,<3.0.0" },
-    { name = "litellm", specifier = ">=1.52.0,<2.0.0" },
-    { name = "nbsphinx", specifier = ">=0.9.5,<0.10.0" },
-    { name = "nest-asyncio", specifier = ">=1.6.0,<2.0.0" },
-    { name = "numpy", specifier = ">=1,<2" },
-    { name = "openai", specifier = ">=1.51.0,<2.0.0" },
-    { name = "pandas", specifier = ">=2.2.3,<3.0.0" },
-    { name = "pandoc", specifier = ">=2.4,<3.0" },
-    { name = "pydub", specifier = ">=0.25.1,<0.26.0" },
-    { name = "pymupdf", specifier = ">=1.24.11,<2.0.0" },
-    { name = "pytest", specifier = ">=8.3.3,<9.0.0" },
-    { name = "pytest-xdist", specifier = ">=3.6.1,<4.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
-    { name = "python-levenshtein", specifier = ">=0.26.0,<0.27.0" },
-    { name = "pyyaml", specifier = ">=6.0.2,<7.0.0" },
-    { name = "requests", specifier = ">=2.32.3,<3.0.0" },
-    { name = "setuptools", specifier = ">=75.1.0,<76.0.0" },
-    { name = "sphinx-autodoc-typehints", specifier = ">=2.5.0,<3.0.0" },
-    { name = "sphinx-rtd-theme", specifier = ">=3.0.1,<4.0.0" },
-    { name = "typer", specifier = ">=0.12.5,<0.13.0" },
-    { name = "types-pyyaml", specifier = ">=6.0.12.20240917,<7.0.0.0" },
-    { name = "wheel", specifier = ">=0.44.0,<0.45.0" },
-    { name = "youtube-transcript-api", marker = "python_full_version < '3.14'", specifier = ">=1.0" },
 ]
 
 [[package]]

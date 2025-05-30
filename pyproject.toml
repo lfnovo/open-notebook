@@ -80,4 +80,4 @@ ignore = ["E501"]
 
 [tool.uv.sources]
 sdblpy = { git = "https://github.com/lfnovo/surreal-lite-py" }
-podcastfy = { path = "/Users/luisnovo/dev/experimentos/podcastfy/dist/podcastfy-0.4.1-py3-none-any.whl" }
+podcastfy = { git = "https://github.com/lfnovo/podcastfy" }

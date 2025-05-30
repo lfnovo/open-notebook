@@ -418,7 +418,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "0.8.5"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -446,9 +446,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b4/41/2b3ad704c1f6071bcb290dd249e524c06a884c09df90c028d96f5520e6a4/content_core-0.8.5.tar.gz", hash = "sha256:f03935cae190761df005c01af433aa85705666e89f60e9147e0409d03ef6d239", size = 20047169 }
+sdist = { url = "https://files.pythonhosted.org/packages/79/22/58dafe43676ab36eea18edbeb4b54050f49d9b261740d37cd93761fe6cb7/content_core-1.0.0.tar.gz", hash = "sha256:7aefe6c4f0d4ea5638d77f5b208d3583763852513dd17399374c7eaa766c2ac7", size = 20050207 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b2/9b/cc3f44c9420f8cae0a5570ffef62b9b16dc0ac164fa10b0428a08bed76ef/content_core-0.8.5-py3-none-any.whl", hash = "sha256:e6f9b5bd50d2cca5ff4d65859da0f5c74110c2b28f7c743c29a354cfa9e6bea7", size = 154487 },
+    { url = "https://files.pythonhosted.org/packages/1f/8a/13c36e808f4feb93ec8778f442d88a0accdb8357ddeaac815353a9ca0594/content_core-1.0.0-py3-none-any.whl", hash = "sha256:8d7885e51a43976c59ff43acb32a5d4fc4e593d38ddda39cdafd4dd0c80a0818", size = 154458 },
 ]
 
 [[package]]
@@ -635,7 +635,7 @@ wheels = [
 chunking = [
     { name = "semchunk" },
     { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and platform_machine != 'x86_64') or (python_full_version >= '3.12' and sys_platform != 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin')" },
-    { name = "transformers", version = "4.52.3", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
+    { name = "transformers", version = "4.52.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
 ]
 
 [[package]]
@@ -655,7 +655,7 @@ dependencies = [
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "transformers", version = "4.42.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and platform_machine != 'x86_64') or (python_full_version >= '3.12' and sys_platform != 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin')" },
-    { name = "transformers", version = "4.52.3", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
+    { name = "transformers", version = "4.52.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/75/78/a6c8d55c3a177a0192e785f5496cbee41500d2d99398f8f166bc72753941/docling_ibm_models-3.4.3.tar.gz", hash = "sha256:f172334f4a723ad3ab91304d759ca887cce9f283179d60cc7c7167d920b57909", size = 69874 }
 wheels = [
@@ -2701,7 +2701,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "0.1.2"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "content-core" },
@@ -2752,7 +2752,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "content-core", specifier = ">=0.8.5" },
+    { name = "content-core", specifier = ">=1.0.0" },
     { name = "google-generativeai", specifier = ">=0.8.3" },
     { name = "groq", specifier = ">=0.12.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
@@ -4765,7 +4765,7 @@ wheels = [
 
 [[package]]
 name = "transformers"
-version = "4.52.3"
+version = "4.52.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "(python_full_version < '3.12' and platform_machine != 'x86_64' and platform_system == 'Darwin') or (python_full_version < '3.12' and platform_system == 'Darwin' and sys_platform != 'darwin')",
@@ -4784,9 +4784,9 @@ dependencies = [
     { name = "tokenizers", version = "0.21.1", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
     { name = "tqdm", marker = "(python_full_version < '3.12' and platform_machine != 'x86_64') or (python_full_version < '3.12' and sys_platform != 'darwin')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/07/42/271bcf364788337ac24e7f200005ac7142aaf022206bd6119d2daca22c04/transformers-4.52.3.tar.gz", hash = "sha256:2e1de29374f27920aaf6d589d4e6339f33def2fb08809e1a1d792e040e9fbce7", size = 8951324 }
+sdist = { url = "https://files.pythonhosted.org/packages/da/a9/275037087f9d846580b02f2d7cae0e0a6955d46f84583d0151d6227bd416/transformers-4.52.4.tar.gz", hash = "sha256:aff3764441c1adc192a08dba49740d3cbbcb72d850586075aed6bd89b98203e6", size = 8945376 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/36/f8/1f086942bc6a044e4e68dacf6de761a45367795efd5f57ad356765691c79/transformers-4.52.3-py3-none-any.whl", hash = "sha256:cd04059da50e7cf2a617ce3143ba8beffbf119f8c25a0717c3454fd9d0f19609", size = 10460322 },
+    { url = "https://files.pythonhosted.org/packages/96/f2/25b27b396af03d5b64e61976b14f7209e2939e9e806c10749b6d277c273e/transformers-4.52.4-py3-none-any.whl", hash = "sha256:203f5c19416d5877e36e88633943761719538a25d9775977a24fe77a1e5adfc7", size = 10460375 },
 ]
 
 [[package]]

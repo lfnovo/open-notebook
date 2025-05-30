@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "0.1.2"
+version = "0.2.0"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -38,9 +38,9 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",
     "sdblpy",
-    "content-core>=0.8.5",
     "podcastfy",
     "nest-asyncio>=1.6.0",
+    "content-core>=1.0.0",
 ]
 
 [tool.setuptools]

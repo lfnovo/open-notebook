@@ -98,15 +98,19 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
 
 
 def check_migration():
-    logger.critical("Running migration check")
-    mm = MigrationManager()
-    if mm.needs_migration:
-        st.warning("The Open Notebook database needs a migration to run properly.")
-        if st.button("Run Migration"):
-            mm.run_migration_up()
-            st.success("Migration successful")
-            st.rerun()
-        st.stop()
+    if "migration_required" not in st.session_state:
+        st.session_state["migration_required"] = None
+        logger.critical("Running migration check")
+        mm = MigrationManager()
+        if mm.needs_migration:
+            st.warning("The Open Notebook database needs a migration to run properly.")
+            if st.button("Run Migration"):
+                mm.run_migration_up()
+                st.success("Migration successful")
+                st.rerun()
+            st.stop()
+        else:
+            st.session_state["migration_required"] = False
 
 
 def check_models(only_mandatory=True, stop_on_error=True):

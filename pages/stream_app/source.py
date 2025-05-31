@@ -2,19 +2,22 @@ import asyncio
 import os
 from pathlib import Path
 
+import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 from loguru import logger
 
 from open_notebook.config import UPLOADS_FOLDER
+from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import UnsupportedTypeException
 from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
+from pages.stream_app.consts import source_context_icons
 
-from .consts import source_context_icons
+nest_asyncio.apply()
 
 
 @st.dialog("Source", width="large")
@@ -31,6 +34,7 @@ def add_source(notebook_id):
     source_link = None
     source_file = None
     source_text = None
+    content_settings = ContentSettings()
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
     req = {}
     transformations = Transformation.get_all()
@@ -39,7 +43,7 @@ def add_source(notebook_id):
         req["url"] = source_link
     elif source_type == "Upload":
         source_file = st.file_uploader("Upload")
-        req["delete_source"] = st.checkbox("Delete source after processing", value=True)
+        req["delete_source"] = content_settings.auto_delete_files == "yes"
 
     else:
         source_text = st.text_area("Text")
@@ -53,10 +57,22 @@ def add_source(notebook_id):
         format_func=lambda t: t.name,
         default=default_transformations,
     )
-    run_embed = st.checkbox(
-        "Embed content for vector search",
-        help="Creates an embedded content for vector search. Costs a little money and takes a little bit more time. You can do this later if you prefer.",
-    )
+    if content_settings.default_embedding_option == "ask":
+        run_embed = st.checkbox(
+            "Embed content for vector search",
+            help="Creates an embedded content for vector search. Costs a little money and takes a little bit more time. You can do this later if you prefer.",
+        )
+        if not run_embed:
+            st.caption("You can always embed later by clicking on the source.")
+    elif content_settings.default_embedding_option == "always":
+        st.caption("Embedding content for vector search automatically")
+        run_embed = True
+    else:
+        st.caption(
+            "Not embedding content for vector search as per settings. You can always embed later by clicking on the source."
+        )
+        run_embed = False
+
     if st.button("Process", key="add_source"):
         logger.debug("Adding source")
         with st.status("Processing...", expanded=True):

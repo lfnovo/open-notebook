@@ -1,7 +1,7 @@
 import asyncio
 
+import nest_asyncio
 import streamlit as st
-import streamlit_scrollable_textbox as stx  # type: ignore
 from humanize import naturaltime
 
 from open_notebook.domain.models import model_manager
@@ -9,6 +9,8 @@ from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 from pages.stream_app.utils import check_models
+
+nest_asyncio.apply()
 
 
 def source_panel(source_id: str, notebook_id=None, modal=False):
@@ -100,4 +102,4 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
 
     with source_tab:
         st.subheader("Content")
-        stx.scrollableTextbox(source.full_text, height=300)
+        st.markdown(source.full_text)

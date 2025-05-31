@@ -1,24 +1,23 @@
 import operator
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from langchain_core.runnables import (
-    RunnableConfig,
-)
+from content_core import extract_content
+from content_core.common import ProcessSourceState
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
+from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.graphs.content_processing import ContentState
-from open_notebook.graphs.content_processing import graph as content_graph
 from open_notebook.graphs.transformation import graph as transform_graph
 from open_notebook.utils import surreal_clean
 
 
 class SourceState(TypedDict):
-    content_state: ContentState
+    content_state: ProcessSourceState
     apply_transformations: List[Transformation]
     notebook_id: str
     source: Source
@@ -32,9 +31,18 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
-    content_state = state["content_state"]
-    logger.info("Content processing started for new content")
-    processed_state = await content_graph.ainvoke(content_state)
+    content_settings = ContentSettings()
+    content_state: Dict[str, Any] = state["content_state"]
+
+    content_state["url_engine"] = (
+        content_settings.default_content_processing_engine_url or "auto"
+    )
+    content_state["document_engine"] = (
+        content_settings.default_content_processing_engine_doc or "auto"
+    )
+    content_state["output_format"] = "markdown"
+
+    processed_state = await extract_content(content_state)
     return {"content_state": processed_state}
 
 
@@ -42,11 +50,9 @@ def save_source(state: SourceState) -> dict:
     content_state = state["content_state"]
 
     source = Source(
-        asset=Asset(
-            url=content_state.get("url"), file_path=content_state.get("file_path")
-        ),
-        full_text=surreal_clean(content_state["content"]),
-        title=content_state.get("title"),
+        asset=Asset(url=content_state.url, file_path=content_state.file_path),
+        full_text=surreal_clean(content_state.content),
+        title=content_state.title,
     )
     source.save()
 

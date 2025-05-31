@@ -1,5 +1,6 @@
 import asyncio
 
+import nest_asyncio
 import streamlit as st
 
 from open_notebook.domain.models import DefaultModels, model_manager
@@ -7,6 +8,8 @@ from open_notebook.domain.notebook import Note, Notebook, text_search, vector_se
 from open_notebook.graphs.ask import graph as ask_graph
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import convert_source_references, setup_page
+
+nest_asyncio.apply()
 
 setup_page("🔍 Search")
 

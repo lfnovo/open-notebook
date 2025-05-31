@@ -39,7 +39,7 @@ provider_status["vertexai-anthropic"] = (
     and os.environ.get("VERTEX_LOCATION") is not None
     and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
 )
-provider_status["gemini"] = os.environ.get("GEMINI_API_KEY") is not None
+provider_status["gemini"] = os.environ.get("GOOGLE_API_KEY") is not None
 provider_status["openrouter"] = (
     os.environ.get("OPENROUTER_API_KEY") is not None
     and os.environ.get("OPENAI_API_KEY") is not None

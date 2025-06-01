@@ -47,6 +47,13 @@ docker-update-latest: docker-buildx-prepare
 # Release with latest
 docker-release-all: docker-release docker-update-latest
 
+tag:
+	@version=$$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/'); \
+	echo "Creating tag v$$version"; \
+	git tag "v$$version"; \
+	git push origin "v$$version"
+
+
 dev:
 	docker compose -f docker-compose.dev.yml up --build 
 

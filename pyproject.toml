@@ -42,6 +42,7 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "content-core>=1.0.0",
     "ai-prompter>=0.3",
+    "python-magic-bin==0.4.14; sys_platform == 'win32'"
 ]
 
 [tool.setuptools]

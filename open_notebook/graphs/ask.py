@@ -1,6 +1,7 @@
 import operator
 from typing import Annotated, List
 
+from ai_prompter import Prompter
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
 from langchain_core.runnables import (
     RunnableConfig,
@@ -12,7 +13,6 @@ from typing_extensions import TypedDict
 
 from open_notebook.domain.notebook import vector_search
 from open_notebook.graphs.utils import provision_langchain_model
-from open_notebook.prompter import Prompter
 
 
 class SubGraphState(TypedDict):

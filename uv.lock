@@ -20,16 +20,16 @@ resolution-markers = [
 
 [[package]]
 name = "ai-prompter"
-version = "0.2.3"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "pip" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/39/ff/cf13c31b88c06e11a1ffeed505601c167293b23d3e2e4e02adac93cc9300/ai_prompter-0.2.3.tar.gz", hash = "sha256:40f55c18f87df250a13f84d0cf7a4e8b31815a01f27666039386d6592849694b", size = 72955 }
+sdist = { url = "https://files.pythonhosted.org/packages/88/1a/263b2fb49a485d1b394ead887361cb8855ab28daa20a184cef0d2a0f8f2c/ai_prompter-0.3.0.tar.gz", hash = "sha256:3369555345386c6b9eebb7edbbb96df268977ab2657acb2890c217290bf92569", size = 74091 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5f/11/9e3712b8393dbef152258c68617baec343040c3d08b372d77b57e51d8e5d/ai_prompter-0.2.3-py3-none-any.whl", hash = "sha256:e8c0becbb3c8bdff399e372830e2c0a3cc3292e02d67921e2b255871329ee477", size = 7345 },
+    { url = "https://files.pythonhosted.org/packages/90/ae/cc493d9d37cd1501e442154aa7265fa05814d0e8519ddf549ebd2f5fcb1b/ai_prompter-0.3.0-py3-none-any.whl", hash = "sha256:b70569bf6a64258ab3453e1ff99a7a4cd1c7709296093dc2a35127230d408e7b", size = 8419 },
 ]
 
 [[package]]
@@ -2701,9 +2701,10 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "0.2.0"
+version = "0.2.1"
 source = { editable = "." }
 dependencies = [
+    { name = "ai-prompter" },
     { name = "content-core" },
     { name = "google-generativeai" },
     { name = "groq" },
@@ -2752,6 +2753,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ai-prompter", specifier = ">=0.3" },
     { name = "content-core", specifier = ">=1.0.0" },
     { name = "google-generativeai", specifier = ">=0.8.3" },
     { name = "groq", specifier = ">=0.12.0" },

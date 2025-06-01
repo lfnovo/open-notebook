@@ -1,15 +1,13 @@
 from typing import Any, Optional
 
+from ai_prompter import Prompter
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.runnables import (
-    RunnableConfig,
-)
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from loguru import logger
 from typing_extensions import TypedDict
 
 from open_notebook.graphs.utils import provision_langchain_model
-from open_notebook.prompter import Prompter
 
 
 class PatternChainState(TypedDict):
@@ -22,7 +20,7 @@ class PatternChainState(TypedDict):
 def call_model(state: dict, config: RunnableConfig) -> dict:
     content = state["input_text"]
     system_prompt = Prompter(
-        prompt_text=state["prompt"], parser=state.get("parser")
+        template_text=state["prompt"], parser=state.get("parser")
     ).render(data=state)
     logger.warning(content)
     payload = [SystemMessage(content=system_prompt)] + [HumanMessage(content=content)]

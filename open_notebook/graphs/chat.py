@@ -1,6 +1,7 @@
 import sqlite3
 from typing import Annotated, Optional
 
+from ai_prompter import Prompter
 from langchain_core.messages import SystemMessage
 from langchain_core.runnables import (
     RunnableConfig,
@@ -13,7 +14,6 @@ from typing_extensions import TypedDict
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
 from open_notebook.graphs.utils import provision_langchain_model
-from open_notebook.prompter import Prompter
 
 
 class ThreadState(TypedDict):

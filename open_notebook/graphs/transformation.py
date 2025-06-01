@@ -1,14 +1,12 @@
+from ai_prompter import Prompter
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_core.runnables import (
-    RunnableConfig,
-)
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.graphs.utils import provision_langchain_model
-from open_notebook.prompter import Prompter
 
 
 class TransformationState(TypedDict):
@@ -25,14 +23,16 @@ def run_transformation(state: dict, config: RunnableConfig) -> dict:
     transformation: Transformation = state["transformation"]
     if not content:
         content = source.full_text
-    transformation_prompt_text = transformation.prompt
+    transformation_template_text = transformation.prompt
     default_prompts: DefaultPrompts = DefaultPrompts()
     if default_prompts.transformation_instructions:
-        transformation_prompt_text = f"{default_prompts.transformation_instructions}\n\n{transformation_prompt_text}"
+        transformation_template_text = f"{default_prompts.transformation_instructions}\n\n{transformation_template_text}"
 
-    transformation_prompt_text = f"{transformation_prompt_text}\n\n# INPUT"
+    transformation_template_text = f"{transformation_template_text}\n\n# INPUT"
 
-    system_prompt = Prompter(prompt_text=transformation_prompt_text).render(data=state)
+    system_prompt = Prompter(template_text=transformation_template_text).render(
+        data=state
+    )
     payload = [SystemMessage(content=system_prompt)] + [HumanMessage(content=content)]
     chain = provision_langchain_model(
         str(payload),

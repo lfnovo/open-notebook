@@ -127,13 +127,67 @@ cp .env.example docker.env
 
 Edit .env for your API keys.
 
-To run the source code locally and experiment with the code, you just need to run:
+### System Dependencies
+
+This project requires some system dependencies:
+
+```bash
+# macOS
+brew install libmagic
+
+# Ubuntu/Debian
+sudo apt-get install libmagic-dev
+
+# Fedora/RHEL/CentOS
+sudo dnf install file-devel
+```
+
+### Installing Python Dependencies
+
+Install all required Python packages:
 
 ```bash
 uv sync
-docker compose --profile db_only up
-uv run streamlit run app_home.py
+uv pip install python-magic
 ```
+
+### Running the Application
+
+Start the SurrealDB database first:
+
+```bash
+docker compose --profile db_only up -d
+```
+
+Then run the Streamlit application:
+
+```bash
+# Load environment variables from .env file and run the app
+export $(grep -v '^#' .env | xargs) && uv run streamlit run app_home.py
+```
+
+### Common Issues and Solutions
+
+If you encounter a port already in use error:
+```
+Port 8502 is already in use
+```
+
+Find and stop the running process:
+```bash
+# Find the process using port 8502
+lsof -i :8502
+
+# Kill the process (replace PID with the actual process ID)
+kill -9 PID
+```
+
+Or specify a different port:
+```bash
+uv run streamlit run app_home.py -- --server.port=8503
+```
+
+### Running with Docker
 
 If you don't want to mess around with the code and just want to run it as a docker image:
 

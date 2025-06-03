@@ -163,7 +163,7 @@ Then run the Streamlit application:
 
 ```bash
 # Load environment variables from .env file and run the app
-export $(grep -v '^#' .env | xargs) && uv run streamlit run app_home.py
+uv run --env-file .env streamlit run app_home.py
 ```
 
 ### Common Issues and Solutions
@@ -184,7 +184,7 @@ kill -9 PID
 
 Or specify a different port:
 ```bash
-uv run streamlit run app_home.py -- --server.port=8503
+uv run --env-file .env streamlit run app_home.py --server.port=8503
 ```
 
 ### Running with Docker

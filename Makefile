@@ -10,7 +10,7 @@ database:
 	docker compose --profile db_only up
 
 run:
-	uv run streamlit run app_home.py
+	uv run --env-file .env streamlit run app_home.py
 
 lint:
 	uv run python -m mypy .

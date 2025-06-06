@@ -12,6 +12,7 @@ docker-compose*
 .docker_data/
 docs/
 surreal-data/
+notebook_data/
 temp/
 *.env
 .mypy_cache/

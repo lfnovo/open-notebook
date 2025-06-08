@@ -4,15 +4,10 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from open_notebook.database.repository import (
-    repo_query,
-)
+from open_notebook.database.repository import repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.models import model_manager
-from open_notebook.exceptions import (
-    DatabaseOperationError,
-    InvalidInputError,
-)
+from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.utils import split_text, surreal_clean
 
 
@@ -212,7 +207,7 @@ class Source(ObjectModel):
                 idx, chunk = args
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
-                    embedding = EMBEDDING_MODEL.embed(chunk)
+                    embedding = EMBEDDING_MODEL.embed([chunk])[0]
                     cleaned_content = surreal_clean(chunk)
                     logger.debug(f"Successfully processed chunk {idx}")
                     return (idx, embedding, cleaned_content)
@@ -259,7 +254,7 @@ class Source(ObjectModel):
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
-            embedding = EMBEDDING_MODEL.embed(content) if EMBEDDING_MODEL else []
+            embedding = EMBEDDING_MODEL.embed([content])[0] if EMBEDDING_MODEL else []
             return repo_query(
                 f"""
                 CREATE source_insight CONTENT {{
@@ -351,7 +346,7 @@ def vector_search(
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         EMBEDDING_MODEL = model_manager.embedding_model
-        embed = EMBEDDING_MODEL.embed(keyword)
+        embed = EMBEDDING_MODEL.embed([keyword])[0]
         results = repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);

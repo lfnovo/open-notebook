@@ -15,23 +15,43 @@ suggested_models:
   openai:
     language:
       - gpt-4o-mini
+      - gpt-4o
     embedding:
       - text-embedding-3-small
     text_to_speech:
       - tts-1-hd
     speech_to_text:
       - whisper-1
-  gemini:
+  google:
     language:
-      - gemini-1.5-flash
+      - gemini-2.0-flash
+      - gemini-2.5-pro-preview-06-05
     text_to_speech:
-      - default
+      - gemini-2.5-flash-preview-tts
   xai:
     language:
       - grok-beta
   anthropic:
     language:
-      - claude-3-5-sonnet-20241022
+      - claude-3-5-sonnet-latest
   elevenlabs:
     text_to_speech:
       - eleven_turbo_v2_5
+  xai:
+    language:
+      - grok-3
+      - grok-3-mini
+  ollama:
+    language:
+      - qwen:14b
+    embedding:
+      - mxbai-embed-large
+  deepseek:
+    language:
+      - deepseek-chat
+  mistral:
+    language:
+      - mistral-large-latest
+  voyage:
+    embedding:
+      - voyage-3.5-lite

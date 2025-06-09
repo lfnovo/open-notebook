@@ -3,7 +3,6 @@ import os
 import streamlit as st
 from esperanto import AIFactory
 
-from open_notebook.config import CONFIG
 from open_notebook.domain.models import DefaultModels, Model, model_manager
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
@@ -34,11 +33,6 @@ def check_available_providers():
         and os.environ.get("VERTEX_LOCATION") is not None
         and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
     )
-    # provider_status["vertexai-anthropic"] = (
-    #     os.environ.get("VERTEX_PROJECT") is not None
-    #     and os.environ.get("VERTEX_LOCATION") is not None
-    #     and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
-    # )
     provider_status["gemini"] = os.environ.get("GOOGLE_API_KEY") is not None
     provider_status["openrouter"] = (
         os.environ.get("OPENROUTER_API_KEY") is not None
@@ -63,35 +57,6 @@ def check_available_providers():
     return available_providers, unavailable_providers
 
 
-def generate_new_models(models, suggested_models):
-    # Create a set of existing model keys for efficient lookup
-    existing_model_keys = {
-        f"{model.provider}-{model.name}-{model.type}" for model in models
-    }
-
-    new_models = []
-
-    # Iterate through suggested models by provider
-    for provider, types in suggested_models.items():
-        # Iterate through each type (language, embedding, etc.)
-        for type_, model_list in types.items():
-            for model_name in model_list:
-                model_key = f"{provider}-{model_name}-{type_}"
-
-                # Check if model already exists
-                if model_key not in existing_model_keys:
-                    if provider_status.get(provider):
-                        new_models.append(
-                            {
-                                "name": model_name,
-                                "type": type_,
-                                "provider": provider,
-                            }
-                        )
-
-    return new_models
-
-
 default_models = DefaultModels()
 all_models = Model.get_all()
 esperanto_available_providers = AIFactory.get_available_providers()
@@ -108,180 +73,249 @@ with st.expander("Unavailable Providers"):
     st.write(unavailable_providers)
 
 st.divider()
-st.subheader("Add Model")
-st.markdown(
-    "Even though a lot of models can be supported, not all will perform optimally. Some are more fit for use in this tool than others. To help you decide which models to use, please refer to [Which model to choose?](https://github.com/lfnovo/open-notebook/blob/main/docs/SETUP.md#which-model-to-choose) for more information. You can also play with some models in the [Transformations](https://try-it-out.open-notebook.com) page to see if they match your needs."
-)
 
-available_model_types = esperanto_available_providers.keys()
-model_type = st.selectbox(
-    "Model Type",
-    available_model_types,
-    help="Use language for text generation models, text_to_speech for TTS models for generating podcasts, etc.",
-)
-provider = st.selectbox("Provider", esperanto_available_providers[model_type])
 
-if model_type == "text_to_speech" and provider == "gemini":
-    model_name = "gemini-default"
-    st.markdown("Gemini models are pre-configured. Using the default model.")
-else:
-    model_name = st.text_input(
-        "Model Name", "", help="gpt-4o-mini, claude, gemini, llama3, etc"
-    )
-if st.button("Save"):
-    model = Model(name=model_name, provider=provider, type=model_type)
-    model.save()
-    st.success("Saved")
+# Helper function to add model with auto-save
+def add_model_form(model_type, container_key):
+    available_providers = esperanto_available_providers.get(model_type, [])
+    if not available_providers:
+        st.info(f"No providers available for {model_type}")
+        return
 
-st.divider()
-suggested_models = CONFIG.get("suggested_models", [])
-recommendations = generate_new_models(all_models, suggested_models)
-if len(recommendations) > 0:
-    with st.expander("💁‍♂️ Recommended models to get you started.."):
-        for recommendation in recommendations:
-            st.markdown(
-                f"**{recommendation['name']}** ({recommendation['provider']}, {recommendation['type']})"
+    st.markdown("**Add New Model**")
+
+    with st.form(key=f"add_{model_type}_{container_key}"):
+        provider = st.selectbox(
+            "Provider",
+            available_providers,
+            key=f"provider_{model_type}_{container_key}",
+        )
+
+        if model_type == "text_to_speech" and provider == "gemini":
+            model_name = "gemini-default"
+            st.markdown("Gemini models are pre-configured. Using the default model.")
+        else:
+            model_name = st.text_input(
+                "Model Name",
+                key=f"name_{model_type}_{container_key}",
+                help="gpt-4o-mini, claude, gemini, llama3, etc",
             )
-            if st.button("Add", key=f"add_{recommendation['name']}"):
-                new_model = Model(**recommendation)
-                new_model.save()
+
+        if st.form_submit_button("Add Model"):
+            if model_name:
+                model = Model(name=model_name, provider=provider, type=model_type)
+                model.save()
+                st.success("Model added!")
                 st.rerun()
-st.divider()
 
-st.subheader("Configured Models")
-model_types_available = {
-    # "vision": False,
-    "language": False,
-    "embedding": False,
-    "text_to_speech": False,
-    "speech_to_text": False,
+
+# Helper function to handle default model selection with auto-save
+def handle_default_selection(
+    label, key, current_value, help_text, model_type, caption=None
+):
+    selected_model = model_selector(
+        label,
+        key,
+        selected_id=current_value,
+        help=help_text,
+        model_type=model_type,
+    )
+    # Auto-save when selection changes
+    if selected_model and (not current_value or selected_model.id != current_value):
+        setattr(default_models, key, selected_model.id)
+        default_models.update()
+        model_manager.refresh_defaults()
+    elif not selected_model and current_value:
+        setattr(default_models, key, None)
+        default_models.update()
+        model_manager.refresh_defaults()
+
+    if caption:
+        st.caption(caption)
+    return selected_model
+
+
+# Group models by type
+models_by_type = {
+    "language": [],
+    "embedding": [],
+    "text_to_speech": [],
+    "speech_to_text": [],
 }
+
 for model in all_models:
-    model_types_available[model.type] = True
-    with st.container(border=True):
-        st.markdown(f"{model.name} ({model.provider}, {model.type})")
-        if st.button("Delete", key=f"delete_{model.id}"):
-            model.delete()
-            st.rerun()
-
-for model_type, available in model_types_available.items():
-    if not available:
-        st.warning(f"No models available for {model_type}")
+    if model.type in models_by_type:
+        models_by_type[model.type].append(model)
 
 
-st.divider()
+st.markdown("""
+**Model Management Guide:** For optimal performance, refer to [Which model to choose?](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) 
+You can test models in the [Transformations](https://try-it-out.open-notebook.com) page.
+""")
 
-st.subheader("Select Default Models")
-text_generation_models = [model for model in all_models if model.type == "language"]
+# Language Models Section
+st.subheader("🗣️ Language Models")
+with st.container(border=True):
+    col1, col2 = st.columns([2, 1])
 
-text_to_speech_models = [
-    model for model in all_models if model.type == "text_to_speech"
-]
+    with col1:
+        st.markdown("**Configured Models**")
+        language_models = models_by_type["language"]
+        if language_models:
+            for model in language_models:
+                subcol1, subcol2 = st.columns([4, 1])
+                with subcol1:
+                    st.markdown(f"• {model.provider}/{model.name}")
+                with subcol2:
+                    if st.button(
+                        "🗑️", key=f"delete_lang_{model.id}", help="Delete model"
+                    ):
+                        model.delete()
+                        st.rerun()
+        else:
+            st.info("No language models configured")
 
-speech_to_text_models = [
-    model for model in all_models if model.type == "speech_to_text"
-]
-vision_models = [model for model in all_models if model.type == "vision"]
-embedding_models = [model for model in all_models if model.type == "embedding"]
-st.write(
-    "In this section, you can select the default models to be used on the various content operations done by Open Notebook. Some of these can be overriden in the different modules."
-)
-defs = {}
-# Handle chat model selection
-selected_model = model_selector(
-    "Default Chat Model",
-    "default_chat_model",
-    selected_id=default_models.default_chat_model,
-    help="This model will be used for chat.",
-    model_type="language",
-)
-if selected_model:
-    default_models.default_chat_model = selected_model.id
-st.divider()
-# Handle transformation model selection
-selected_model = model_selector(
-    "Default Transformation Model",
-    "default_transformation_model",
-    selected_id=default_models.default_transformation_model,
-    help="This model will be used for text transformations such as summaries, insights, etc.",
-    model_type="language",
-)
-if selected_model:
-    default_models.default_transformation_model = selected_model.id
-st.caption("You can use a cheap model here like gpt-4o-mini, llama3, etc.")
-st.divider()
+    with col2:
+        add_model_form("language", "main")
 
-# Handle tools model selection
-selected_model = model_selector(
-    "Default Tools Model",
-    "default_tools_model",
-    selected_id=default_models.default_tools_model,
-    help="This model will be used for calling tools. Currently, it's best to use Open AI and Anthropic for this.",
-    model_type="language",
-)
-if selected_model:
-    default_models.default_tools_model = selected_model.id
-st.caption("Recommended to use a capable model here, like gpt-4o, claude, etc.")
-st.divider()
+    st.markdown("**Default Model Assignments**")
+    col1, col2 = st.columns(2)
 
-# Handle large context model selection
-selected_model = model_selector(
-    "Large Context Model",
-    "large_context_model",
-    selected_id=default_models.large_context_model,
-    help="This model will be used for larger context generation -- recommended: Gemini",
-    model_type="language",
-)
-if selected_model:
-    default_models.large_context_model = selected_model.id
-st.caption("Recommended to use Gemini models for larger context processing")
-st.divider()
+    with col1:
+        handle_default_selection(
+            "Chat Model",
+            "default_chat_model",
+            default_models.default_chat_model,
+            "Used for chat conversations",
+            "language",
+            "Pick the one that vibes with you.",
+        )
 
-# Handle text-to-speech model selection
-selected_model = model_selector(
-    "Default Text to Speech Model",
-    "default_text_to_speech_model",
-    selected_id=default_models.default_text_to_speech_model,
-    help="This is the default model for converting text to speech (podcasts, etc)",
-    model_type="text_to_speech",
-)
-st.caption("You can override this model on different podcasts")
-if selected_model:
-    default_models.default_text_to_speech_model = selected_model.id
-st.divider()
+        handle_default_selection(
+            "Tools Model",
+            "default_tools_model",
+            default_models.default_tools_model,
+            "Used for calling tools - use OpenAI or Anthropic",
+            "language",
+            "Recommended: gpt-4o, claude, qwen3, etc.",
+        )
 
-# Handle speech-to-text model selection
-selected_model = model_selector(
-    "Default Speech to Text Model",
-    selected_id=default_models.default_speech_to_text_model,
-    help="This is the default model for converting speech to text (audio transcriptions, etc)",
-    model_type="speech_to_text",
-    key="default_speech_to_text_model",
-)
+    with col2:
+        handle_default_selection(
+            "Transformation Model",
+            "default_transformation_model",
+            default_models.default_transformation_model,
+            "Used for summaries, insights, etc.",
+            "language",
+            "Can use cheaper models: gpt-4o-mini, llama3, gemma3, etc.",
+        )
 
-if selected_model:
-    default_models.default_speech_to_text_model = selected_model.id
+        handle_default_selection(
+            "Large Context Model",
+            "large_context_model",
+            default_models.large_context_model,
+            "Used for large context processing",
+            "language",
+            "Recommended: Gemini models",
+        )
 
-st.divider()
-# Handle embedding model selection
-selected_model = model_selector(
-    "Default Embedding Model",
-    "default_embedding_model",
-    selected_id=default_models.default_embedding_model,
-    help="This is the default model for embeddings (semantic search, etc)",
-    model_type="embedding",
-)
-if selected_model:
-    default_models.default_embedding_model = selected_model.id
-st.warning(
-    "Caution: you cannot change the embedding model once there is embeddings or they will need to be regenerated"
-)
+# Embedding Models Section
+st.subheader("🔍 Embedding Models")
+with st.container(border=True):
+    col1, col2 = st.columns([2, 1])
 
-for k, v in defs.items():
-    if v:
-        defs[k] = v.id
+    with col1:
+        st.markdown("**Configured Models**")
+        embedding_models = models_by_type["embedding"]
+        if embedding_models:
+            for model in embedding_models:
+                subcol1, subcol2 = st.columns([4, 1])
+                with subcol1:
+                    st.markdown(f"• {model.provider}/{model.name}")
+                with subcol2:
+                    if st.button(
+                        "🗑️", key=f"delete_emb_{model.id}", help="Delete model"
+                    ):
+                        model.delete()
+                        st.rerun()
+        else:
+            st.info("No embedding models configured")
 
-if st.button("Save Defaults"):
-    default_models.patch(defs)
-    model_manager.refresh_defaults()
-    st.success("Saved")
+        handle_default_selection(
+            "Default Embedding Model",
+            "default_embedding_model",
+            default_models.default_embedding_model,
+            "Used for semantic search and embeddings",
+            "embedding",
+        )
+        st.warning("⚠️ Changing embedding models requires regenerating all embeddings")
+
+    with col2:
+        add_model_form("embedding", "main")
+
+# Text-to-Speech Models Section
+st.subheader("🎙️ Text-to-Speech Models")
+with st.container(border=True):
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown("**Configured Models**")
+        tts_models = models_by_type["text_to_speech"]
+        if tts_models:
+            for model in tts_models:
+                subcol1, subcol2 = st.columns([4, 1])
+                with subcol1:
+                    st.markdown(f"• {model.provider}/{model.name}")
+                with subcol2:
+                    if st.button(
+                        "🗑️", key=f"delete_tts_{model.id}", help="Delete model"
+                    ):
+                        model.delete()
+                        st.rerun()
+        else:
+            st.info("No text-to-speech models configured")
+
+        handle_default_selection(
+            "Default TTS Model",
+            "default_text_to_speech_model",
+            default_models.default_text_to_speech_model,
+            "Used for podcasts and audio generation",
+            "text_to_speech",
+            "Can be overridden per podcast",
+        )
+
+    with col2:
+        add_model_form("text_to_speech", "main")
+
+# Speech-to-Text Models Section
+st.subheader("🎤 Speech-to-Text Models")
+with st.container(border=True):
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown("**Configured Models**")
+        stt_models = models_by_type["speech_to_text"]
+        if stt_models:
+            for model in stt_models:
+                subcol1, subcol2 = st.columns([4, 1])
+                with subcol1:
+                    st.markdown(f"• {model.provider}/{model.name}")
+                with subcol2:
+                    if st.button(
+                        "🗑️", key=f"delete_stt_{model.id}", help="Delete model"
+                    ):
+                        model.delete()
+                        st.rerun()
+        else:
+            st.info("No speech-to-text models configured")
+
+        handle_default_selection(
+            "Default STT Model",
+            "default_speech_to_text_model",
+            default_models.default_speech_to_text_model,
+            "Used for audio transcriptions",
+            "speech_to_text",
+        )
+
+    with col2:
+        add_model_form("speech_to_text", "main")

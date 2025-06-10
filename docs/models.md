@@ -184,6 +184,7 @@ Here are the environment variables that you need to set up for each provider:
 | Azure OpenAI | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME` |
 | Groq | `GROQ_API_KEY` |
 | Vertex AI | `VERTEX_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEX_LOCATION` |
+| VOYAGE AI | `VOYAGE_API_KEY` |
 
 ## Tips to use Text to Speech
 

@@ -78,6 +78,13 @@ st.divider()
 # Helper function to add model with auto-save
 def add_model_form(model_type, container_key):
     available_providers = esperanto_available_providers.get(model_type, [])
+    # Sort providers alphabetically for easier navigation
+    available_providers.sort()
+
+    # Remove perplexity from available_providers if it exists
+    if "perplexity" in available_providers:
+        available_providers.remove("perplexity")
+
     if not available_providers:
         st.info(f"No providers available for {model_type}")
         return
@@ -91,15 +98,11 @@ def add_model_form(model_type, container_key):
             key=f"provider_{model_type}_{container_key}",
         )
 
-        if model_type == "text_to_speech" and provider == "gemini":
-            model_name = "gemini-default"
-            st.markdown("Gemini models are pre-configured. Using the default model.")
-        else:
-            model_name = st.text_input(
-                "Model Name",
-                key=f"name_{model_type}_{container_key}",
-                help="gpt-4o-mini, claude, gemini, llama3, etc",
-            )
+        model_name = st.text_input(
+            "Model Name",
+            key=f"name_{model_type}_{container_key}",
+            help="gpt-4o-mini, claude, gemini, llama3, etc. For azure, use the deployment_name as the model_name",
+        )
 
         if st.form_submit_button("Add Model"):
             if model_name:
@@ -125,10 +128,12 @@ def handle_default_selection(
         setattr(default_models, key, selected_model.id)
         default_models.update()
         model_manager.refresh_defaults()
+        st.toast(f"Default {model_type} model set to {selected_model.name}")
     elif not selected_model and current_value:
         setattr(default_models, key, None)
         default_models.update()
         model_manager.refresh_defaults()
+        st.toast(f"Default {model_type} model removed")
 
     if caption:
         st.caption(caption)
@@ -150,7 +155,7 @@ for model in all_models:
 
 st.markdown("""
 **Model Management Guide:** For optimal performance, refer to [Which model to choose?](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) 
-You can test models in the [Transformations](https://try-it-out.open-notebook.com) page.
+You can test models in the [Transformations](Transformations) page.
 """)
 
 # Language Models Section

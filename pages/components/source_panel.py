@@ -58,21 +58,26 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
 
         with c2:
             transformations = Transformation.get_all(order_by="name asc")
-            with st.container(border=True):
-                transformation = st.selectbox(
-                    "Run a transformation",
-                    transformations,
-                    key=f"transformation_{source.id}",
-                    format_func=lambda x: x.name,
-                )
-                st.caption(transformation.description)
-                if st.button("Run"):
-                    asyncio.run(
-                        transform_graph.ainvoke(
-                            input=dict(source=source, transformation=transformation)
-                        )
+            if transformations:
+                with st.container(border=True):
+                    transformation = st.selectbox(
+                        "Run a transformation",
+                        transformations,
+                        key=f"transformation_{source.id}",
+                        format_func=lambda x: x.name,
                     )
-                    st.rerun(scope="fragment" if modal else "app")
+                    st.caption(transformation.description if transformation else "")
+                    if st.button("Run"):
+                        asyncio.run(
+                            transform_graph.ainvoke(
+                                input=dict(source=source, transformation=transformation)
+                            )
+                        )
+                        st.rerun(scope="fragment" if modal else "app")
+            else:
+                st.markdown(
+                    "No transformations created yet. Create new Transformation to use this feature."
+                )
 
             if not model_manager.embedding_model:
                 help = (

@@ -85,21 +85,6 @@ class ModelManager:
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
 
-        # todo: change to providers in the future
-        if model.provider not in [
-            "ollama",
-            "openrouter",
-            "vertexai-anthropic",
-            "litellm",
-            "vertexai",
-            "anthropic",
-            "openai",
-            "xai",
-        ]:
-            raise ValueError(
-                f"Provider {model.provider} not compatible with {model.type} models"
-            )
-
         if model.type == "language":
             model_instance: LanguageModel = AIFactory.create_language(
                 model_name=model.name,
@@ -148,9 +133,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, SpeechToTextModel
-        ), f"Expected SpeechToTextModel but got {type(model)}"
+        assert model is None or isinstance(model, SpeechToTextModel), (
+            f"Expected SpeechToTextModel but got {type(model)}"
+        )
         return model
 
     @property
@@ -160,9 +145,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, TextToSpeechModel
-        ), f"Expected TextToSpeechModel but got {type(model)}"
+        assert model is None or isinstance(model, TextToSpeechModel), (
+            f"Expected TextToSpeechModel but got {type(model)}"
+        )
         return model
 
     @property
@@ -172,9 +157,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, EmbeddingModel
-        ), f"Expected EmbeddingModel but got {type(model)}"
+        assert model is None or isinstance(model, EmbeddingModel), (
+            f"Expected EmbeddingModel but got {type(model)}"
+        )
         return model
 
     def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:

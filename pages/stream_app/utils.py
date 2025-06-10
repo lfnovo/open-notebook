@@ -53,9 +53,9 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
     If there is no existing thread state for this session_id, it creates a new one.
     Finally, it acquires the existing state for the session from Langgraph state and sets it in the streamlit session state.
     """
-    assert (
-        current_notebook is not None and current_notebook.id
-    ), "Current Notebook not selected properly"
+    assert current_notebook is not None and current_notebook.id, (
+        "Current Notebook not selected properly"
+    )
 
     if "context_config" not in st.session_state[current_notebook.id]:
         st.session_state[current_notebook.id]["context_config"] = {}
@@ -99,7 +99,6 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
 
 def check_migration():
     if "migration_required" not in st.session_state:
-        st.session_state["migration_required"] = None
         logger.debug("Running migration check")
         mm = MigrationManager()
         if mm.needs_migration:
@@ -108,6 +107,7 @@ def check_migration():
             if st.button("Run Migration"):
                 mm.run_migration_up()
                 st.success("Migration successful")
+                st.session_state["migration_required"] = False
                 st.rerun()
             st.stop()
         else:

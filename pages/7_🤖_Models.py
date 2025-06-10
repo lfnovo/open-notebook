@@ -64,7 +64,7 @@ esperanto_available_providers = AIFactory.get_available_providers()
 
 st.subheader("Provider Availability")
 st.markdown(
-    "Below, you'll find all AI providers supported and their current availability status. To enable more providers, you need to setup some of their ENV Variables. Please check [the documentation](https://github.com/lfnovo/open-notebook) for instructions on how to do so."
+    "Below, you'll find all AI providers supported and their current availability status. To enable more providers, you need to setup some of their ENV Variables. Please check [the documentation](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) for instructions on how to do so."
 )
 available_providers, unavailable_providers = check_available_providers()
 with st.expander("Available Providers"):

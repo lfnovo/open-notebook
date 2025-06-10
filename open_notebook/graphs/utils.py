@@ -1,8 +1,8 @@
+from esperanto import LanguageModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 
 from open_notebook.domain.models import model_manager
-from open_notebook.models.llms import LanguageModel
 from open_notebook.utils import token_count
 
 
@@ -27,5 +27,6 @@ def provision_langchain_model(
     else:
         model = model_manager.get_default_model(default_type, **kwargs)
 
+    logger.debug(f"Using model: {model}")
     assert isinstance(model, LanguageModel), f"Model is not a LanguageModel: {model}"
     return model.to_langchain()

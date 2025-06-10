@@ -1,15 +1,17 @@
-from typing import ClassVar, Dict, Optional
+from typing import ClassVar, Dict, Optional, Union
 
-from open_notebook.database.repository import repo_query
-from open_notebook.domain.base import ObjectModel, RecordModel
-from open_notebook.models import (
-    MODEL_CLASS_MAP,
+from esperanto import (
+    AIFactory,
     EmbeddingModel,
     LanguageModel,
-    ModelType,
     SpeechToTextModel,
     TextToSpeechModel,
 )
+
+from open_notebook.database.repository import repo_query
+from open_notebook.domain.base import ObjectModel, RecordModel
+
+ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
 
 
 class Model(ObjectModel):
@@ -75,21 +77,38 @@ class ModelManager:
         if not model:
             raise ValueError(f"Model with ID {model_id} not found")
 
-        if not model.type or model.type not in MODEL_CLASS_MAP:
+        if not model.type or model.type not in [
+            "language",
+            "embedding",
+            "speech_to_text",
+            "text_to_speech",
+        ]:
             raise ValueError(f"Invalid model type: {model.type}")
 
-        provider_map = MODEL_CLASS_MAP[model.type]
-        if model.provider not in provider_map:
-            raise ValueError(
-                f"Provider {model.provider} not compatible with {model.type} models"
-            )
-
-        model_class = provider_map[model.provider]
-        model_instance = model_class(model_name=model.name, **kwargs)
-
-        # Special handling for language models that need langchain conversion
         if model.type == "language":
-            model_instance = model_instance
+            model_instance: LanguageModel = AIFactory.create_language(
+                model_name=model.name,
+                provider=model.provider,
+                config=kwargs,
+            )
+        elif model.type == "embedding":
+            model_instance: EmbeddingModel = AIFactory.create_embedding(
+                model_name=model.name,
+                provider=model.provider,
+                config=kwargs,
+            )
+        elif model.type == "speech_to_text":
+            model_instance: SpeechToTextModel = AIFactory.create_speech_to_text(
+                model_name=model.name,
+                provider=model.provider,
+                config=kwargs,
+            )
+        elif model.type == "text_to_speech":
+            model_instance: TextToSpeechModel = AIFactory.create_text_to_speech(
+                model_name=model.name,
+                provider=model.provider,
+                config=kwargs,
+            )
 
         self._model_cache[cache_key] = model_instance
         return model_instance
@@ -114,9 +133,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, SpeechToTextModel
-        ), f"Expected SpeechToTextModel but got {type(model)}"
+        assert model is None or isinstance(model, SpeechToTextModel), (
+            f"Expected SpeechToTextModel but got {type(model)}"
+        )
         return model
 
     @property
@@ -126,9 +145,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, TextToSpeechModel
-        ), f"Expected TextToSpeechModel but got {type(model)}"
+        assert model is None or isinstance(model, TextToSpeechModel), (
+            f"Expected TextToSpeechModel but got {type(model)}"
+        )
         return model
 
     @property
@@ -138,9 +157,9 @@ class ModelManager:
         if not model_id:
             return None
         model = self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(
-            model, EmbeddingModel
-        ), f"Expected EmbeddingModel but got {type(model)}"
+        assert model is None or isinstance(model, EmbeddingModel), (
+            f"Expected EmbeddingModel but got {type(model)}"
+        )
         return model
 
     def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:

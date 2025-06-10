@@ -255,6 +255,14 @@ with templates_tab:
                 key=f"transcript_model_{pd_config.id}",
             )
 
+            # Cleanup provider_models to only include specified providers
+            # filtered_provider_models = {
+            #     k: v
+            #     for k, v in provider_models.items()
+            #     if k in ["openai", "vertex", "elevenlabs"]
+            # }
+            # provider_models = filtered_provider_models
+
             pd_config.provider = st.selectbox(
                 "Audio Model Provider",
                 list(provider_models.keys()),
@@ -271,9 +279,6 @@ with templates_tab:
                 index=index,
                 key=f"model_{pd_config.id}",
             )
-            st.caption(
-                "OpenAI: tts-1 or tts-1-hd, Elevenlabs: eleven_multilingual_v2, eleven_turbo_v2_5"
-            )
             pd_config.voice1 = st.text_input(
                 "Voice 1",
                 value=pd_config.voice1,
@@ -282,7 +287,7 @@ with templates_tab:
             )
             st.caption("Voice names are case sensitive. Be sure to add the exact name.")
             st.markdown(
-                "Sample voices from: [Open AI](https://platform.openai.com/docs/guides/text-to-speech), [Gemini](https://cloud.google.com/text-to-speech/docs/voices), [Elevenlabs](https://elevenlabs.io/text-to-speech)"
+                "Sample voices from: [Open AI](https://platform.openai.com/docs/guides/text-to-speech), [Elevenlabs](https://elevenlabs.io/text-to-speech), [Gemini](https://ai.google.dev/gemini-api/docs/speech-generation), [Vertex AI](https://cloud.google.com/text-to-speech/docs/list-voices-and-types)"
             )
 
             pd_config.voice2 = st.text_input(

@@ -1,16 +1,16 @@
 [server]
-
 port = 8502
 maxMessageSize = 500
+fileWatcherType = "none"
 
 [browser]
 serverPort = 8502
 
-# [theme]
+[theme]
 
 # # The preset Streamlit theme that your custom theme inherits from.
 # # One of "light" or "dark".
-# base =
+base = "light"
 
 # # Primary accent color for interactive elements.
 # primaryColor =

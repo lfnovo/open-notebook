@@ -1,0 +1,1 @@
+update model set provider='vertex' where provider='vertexai';

@@ -105,6 +105,8 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 Go to the [Setup Guide](docs/SETUP.md) to learn how to set up the tool in details.
 
+📚 **Need help choosing AI models?** Check out our [Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) for recommended combinations and provider comparisons.
+
 You don't need to clone this repo if you just want to use the app without building from source! 
 Take a look at the [Open Notebook Boilerplate](https://github.com/lfnovo/open-notebook-boilerplate) repo with a sample of how to set it up for maximum feature usability. 
 
@@ -166,6 +168,27 @@ Then run the Streamlit application:
 uv run --env-file .env streamlit run app_home.py
 ```
 
+## Provider Support Matrix
+
+Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we support this providers out of the box!
+
+| Provider     | LLM Support | Embedding Support | Speech-to-Text | Text-to-Speech |
+|--------------|-------------|------------------|----------------|----------------|
+| OpenAI       | ✅          | ✅               | ✅             | ✅             |
+| Anthropic    | ✅          | ❌               | ❌             | ❌             |
+| Groq         | ✅          | ❌               | ✅             | ❌             |
+| Google (GenAI) | ✅          | ✅               | ❌             | ✅             |
+| Vertex AI    | ✅          | ✅               | ❌             | ✅             |
+| Ollama       | ✅          | ✅               | ❌             | ❌             |
+| Perplexity   | ✅          | ❌               | ❌             | ❌             |
+| ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
+| Azure OpenAI | ✅          | ❌               | ❌             | ❌             |
+| Mistral      | ✅          | ✅               | ❌             | ❌             |
+| DeepSeek     | ✅          | ❌               | ❌             | ❌             |
+| Voyage       | ❌          | ✅               | ❌             | ❌             |
+| xAI          | ✅          | ❌               | ❌             | ❌             |
+| OpenRouter   | ✅          | ❌               | ❌             | ❌             |
+
 ### Common Issues and Solutions
 
 If you encounter a port already in use error:
@@ -206,7 +229,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 ## Features
 
 - **Multi-Notebook Support**: Organize your research across multiple notebooks effortlessly.
-- **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq,Ollama.
+- **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq, Ollama. ([Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md))
 - **Podcast Generator**: Automatically convert your notes into a podcast format.
 - **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.
 - **Content Transformation**: Powerful customizable actions to summarize, extract insights, and more.
@@ -226,7 +249,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 Three intuitive columns to streamline your work:
 1. **Sources**: Manage all research materials.
-2. **Notes**: Create or AI-generate notes.
+2. **Notes**: Create or AI-generated notes.
 3. **Chat**: Chat with the AI, leveraging your content.
 
 ### ⚙️ Context Configuration

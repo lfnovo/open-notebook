@@ -1,22 +1,8 @@
 from datetime import datetime
-from typing import (
-    Any,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-    cast,
-)
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
 
 from loguru import logger
-from pydantic import (
-    BaseModel,
-    ValidationError,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from open_notebook.database.repository import (
     repo_create,
@@ -140,7 +126,7 @@ class ObjectModel(BaseModel):
                             "No embedding model found. Content will not be searchable."
                         )
                     data["embedding"] = (
-                        EMBEDDING_MODEL.embed(embedding_content)
+                        EMBEDDING_MODEL.embed([embedding_content])[0]
                         if EMBEDDING_MODEL
                         else []
                     )

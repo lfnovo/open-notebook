@@ -11,9 +11,13 @@ google-credentials.json
 docker-compose*
 .docker_data/
 docs/
+surreal_data/
 surreal-data/
 notebook_data/
 temp/
 *.env
 .mypy_cache/
 .ruff_cache/
+.pytest_cache
+.ruff_cache
+notebooks/

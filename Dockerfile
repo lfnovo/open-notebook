@@ -18,6 +18,8 @@ WORKDIR /app
 COPY . /app
 
 RUN uv sync
+
+
 EXPOSE 8502
 
 RUN mkdir -p /app/data

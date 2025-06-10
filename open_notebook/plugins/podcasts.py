@@ -111,35 +111,41 @@ class PodcastConfig(ObjectModel):
                 api_key_label = "GOOGLE_API_KEY"
                 llm_model_name = self.transcript_model
 
-        if self.provider == "gemini":
-            tts_model = "geminimulti"
+        if self.provider == "google":
+            tts_model = "gemini"
         elif self.provider == "openai":
             tts_model = "openai"
         elif self.provider == "anthropic":
             tts_model = "anthropic"
+        elif self.provider == "vertexai":
+            tts_model = "geminimulti"
         elif self.provider == "elevenlabs":
             tts_model = "elevenlabs"
 
-        logger.debug(
+        logger.info(
             f"Generating episode {episode_name} with config {conversation_config} and using model {llm_model_name}, tts model {tts_model}"
         )
 
-        audio_file = generate_podcast(
-            conversation_config=conversation_config,
-            text=text,
-            tts_model=tts_model,
-            llm_model_name=llm_model_name,
-            api_key_label=api_key_label,
-            longform=longform,
-        )
-        episode = PodcastEpisode(
-            name=episode_name,
-            template=self.name,
-            instructions=instructions,
-            text=str(text),
-            audio_file=audio_file,
-        )
-        episode.save()
+        try:
+            audio_file = generate_podcast(
+                conversation_config=conversation_config,
+                text=text,
+                tts_model=tts_model,
+                llm_model_name=llm_model_name,
+                api_key_label=api_key_label,
+                longform=longform,
+            )
+            episode = PodcastEpisode(
+                name=episode_name,
+                template=self.name,
+                instructions=instructions,
+                text=str(text),
+                audio_file=audio_file,
+            )
+            episode.save()
+        except Exception as e:
+            logger.error(f"Failed to generate episode {episode_name}: {e}")
+            raise
 
     @field_validator(
         "name", "podcast_name", "podcast_tagline", "output_language", "model"

@@ -145,7 +145,7 @@ Great for getting started or keeping costs low
 - **Tools**: `qwen3` (Ollama) - Handles basic tool calling
 - **Transformations**: `gemma3` (Ollama) - Free and fast
 - **Embedding**: `mxbai-embed-large` (Ollama) - Free, high quality
-- **TTS**: `tts-1` (OpenAI) - Reasonable cost
+- **TTS**: `gpt-4o-mini-tts` (OpenAI) - Reasonable cost
 - **STT**: `whisper-1` (OpenAI) - Best value
 
 ### 🚀 High Performance (Premium)
@@ -164,14 +164,49 @@ Simplify billing and setup with one provider
 - **Tools**: `gpt-4o` - Complex operations
 - **Transformations**: `gpt-4o-mini` - Cost-effective processing
 - **Embedding**: `text-embedding-3-small` - Solid performance
-- **TTS**: `tts-1` - Good enough quality
+- **TTS**: `gpt-4o-mini-tts` - Great quality
 - **STT**: `whisper-1` - Industry standard
 
-## Getting Started
+## Setting up Models
 
-1. **New users**: Start with the "Budget-Friendly" combination
-2. **Want convenience**: Use the "Single Provider (OpenAI)" setup  
-3. **Need quality**: Go with "Best Value" for optimal balance
-4. **Budget isn't a concern**: Choose "High Performance"
+Here are the environment variables that you need to set up for each provider:
 
-Remember: You can always start simple and upgrade specific models as your needs grow!
+| Provider | Environment Variables |
+|----------|----------------------|
+| Mistral | `MISTRAL_API_KEY` |
+| Deepseek | `DEEPSEEK_API_KEY` |
+| OpenAI | `OPENAI_API_KEY` |
+| Google (Gemini) | `GEMINI_API_KEY` |
+| X.AI | `XAI_API_KEY` |
+| ElevenLabs | `ELEVENLABS_API_KEY` |
+| Anthropic | `ANTHROPIC_API_KEY` |
+| Ollama | `OLLAMA_BASE_URL` |
+| Azure OpenAI | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_DEPLOYMENT_NAME` |
+| Groq | `GROQ_API_KEY` |
+| Vertex AI | `VERTEX_PROJECT`, `GOOGLE_APPLICATION_CREDENTIALS`, `VERTEX_LOCATION` |
+
+## Tips to use Text to Speech
+
+### OpenAI
+To use the OpenAI provider for audio: 
+1. Use "gpt-4o-mini-tts" as the audio model name
+2. pass the following Environment Variables
+    - OPENAI_API_KEY=your-openai-api-key
+
+### Gemini
+To use the Gemini provider for audio: 
+1. Use "default" as the audio model name (since vertex does not require a model name)
+2. pass the following Environment Variables
+    - GEMINI_API_KEY=gemini-2.5-flash-preview-tts
+
+### Google Cloud  / Vertex (previously supported as Google)
+
+**If you were using this before, we recommend moving to GEMINI for better quality, price and ease of configuration.**
+
+To use the Google Cloud (Vertex) provider for audio: 
+1. Use "default" as the audio model name (since vertex does not require a model name)
+2. pass the following Environment Variables
+    - VERTEX_PROJECT=your-google-cloud-project-name
+    - GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
+    - VERTEX_LOCATION=your-google-cloud-project-location
+3. Setup the correct permissions in the [Google Cloud Console](https://github.com/souzatharsis/podcastfy/blob/main/usage/config.md)

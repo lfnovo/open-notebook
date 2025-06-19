@@ -182,7 +182,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
-| Azure OpenAI | ✅          | ❌               | ❌             | ❌             |
+| Azure OpenAI | ✅          | ✅               | ❌             | ❌             |
 | Mistral      | ✅          | ✅               | ❌             | ❌             |
 | DeepSeek     | ✅          | ❌               | ❌             | ❌             |
 | Voyage       | ❌          | ✅               | ❌             | ❌             |

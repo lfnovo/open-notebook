@@ -40,10 +40,9 @@ async def process_ask_query(question, strategy_model, answer_model, final_answer
 
 
 def results_card(item):
-    score = item.get("relevance", item.get("similarity", item.get("score", 0)))
     with st.container(border=True):
         st.markdown(
-            f"[{score:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
+            f"[{item['final_score']:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
         )
         if "matches" in item:
             with st.expander("Matches"):
@@ -161,15 +160,14 @@ with search_tab:
                     search_term, 100, search_sources, search_notes
                 )
 
-        for item in st.session_state["search_results"]:
+        search_results = st.session_state["search_results"].copy()
+        for item in search_results:
             item["final_score"] = item.get(
                 "relevance", item.get("similarity", item.get("score", 0))
             )
 
         # Sort search results by final_score in descending order
-        st.session_state["search_results"].sort(
-            key=lambda x: x["final_score"], reverse=True
-        )
+        search_results.sort(key=lambda x: x["final_score"], reverse=True)
 
-        for item in st.session_state["search_results"]:
+        for item in search_results:
             results_card(item)

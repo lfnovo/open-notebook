@@ -17,6 +17,7 @@ Open Notebook uses four types of AI models:
 **🎯 Quality**: Higher quality models often cost more but produce better results
 **⚡ Speed**: Smaller models are faster but may be less capable
 **🔧 Features**: Some models excel at specific tasks like tool calling or large contexts
+**🧠 Reasoning**: Newer reasoning models can show their thought process for transparent decision-making
 
 ---
 
@@ -68,19 +69,21 @@ Open Notebook uses four types of AI models:
 ---
 
 ### 🔵 DeepSeek
-**Best for**: Cost-effective language models with good performance
+**Best for**: Cost-effective language models with good performance and advanced reasoning
 
 **Language Models**
 - `deepseek-chat` - Excellent quality-to-price ratio with 64k context window
+- `deepseek-reasoner` - Advanced reasoning model that shows its thinking process (available via Ollama)
 
 ---
 
 ### 🟡 Mistral
-**Best for**: European-based alternative with competitive pricing
+**Best for**: European-based alternative with competitive pricing and reasoning capabilities
 
 **Language Models**
 - `mistral-medium-latest` - Good balance of quality and price
 - `ministral-8b-latest` - Perfect for simple tasks like transformations
+- `magistral` - Reasoning model with transparent thinking process
 
 **Embedding**
 - `mistral-embed` - Good quality, though not the most cost-effective
@@ -116,14 +119,45 @@ Open Notebook uses four types of AI models:
 **Best for**: Privacy, offline use, and zero ongoing costs
 
 **Language Models**
-- `qwen3` - Excellent free alternative for most language tasks
+- `qwen3` - Excellent free alternative for most language tasks with reasoning capabilities
 - `gemma3` - Great for chat and simple transformations
 - `phi4` - Compact but capable model
-- `deepseek-r1` - Advanced reasoning capabilities
+- `deepseek-r1` - Advanced reasoning capabilities with transparent thinking
 - `llama4` - Well-rounded performance
+- `magistral` - Light-weight reasoning model
+
 
 **Embedding**
 - `mxbai-embed-large` - Outstanding free embedding model
+
+---
+
+## 🧠 Reasoning Models Support
+
+Open Notebook fully supports **reasoning models** that show their thought process. These models output their internal reasoning within `<think>` tags, which Open Notebook automatically handles:
+
+### How It Works
+- **In Chat**: Reasoning content appears in a collapsible "🤔 AI Reasoning" section
+- **In Transformations**: Clean output is stored while reasoning is filtered out
+- **In Search**: Final answers are clean and focused
+
+### Tested Models
+We've tested extensively with these reasoning models:
+
+- **DeepSeek-R1** (via Ollama) - Exceptional reasoning quality, completely free
+- **Qwen3** (via Ollama) - Good reasoning capabilities with fast performance
+- **Magistral** (via Mistral) - European alternative with solid reasoning
+
+### Benefits
+- **Transparency**: See exactly how the AI reached its conclusions
+- **Trust**: Understand the reasoning behind responses
+- **Learning**: Gain insights into AI problem-solving approaches
+- **Clean Output**: Stored content remains focused and professional
+
+### Getting Started
+1. Install any reasoning model (we recommend starting with `deepseek-r1` via Ollama)
+2. Use it like any other model - the reasoning interface appears automatically
+3. Click the "🤔 AI Reasoning" expander to explore the AI's thought process
 
 ---
 

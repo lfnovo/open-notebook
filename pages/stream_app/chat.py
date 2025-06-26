@@ -200,6 +200,8 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                         # Show the cleaned regular content
                         if cleaned_content:
                             st.markdown(convert_source_references(cleaned_content))
+                        elif msg.content:  # Fallback to original if cleaning resulted in empty content
+                            st.markdown(convert_source_references(msg.content))
                         
                         # New Note button for AI messages
                         if st.button("💾 New Note", key=f"render_save_{msg.id}"):

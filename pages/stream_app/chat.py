@@ -14,6 +14,8 @@ from pages.stream_app.utils import (
     create_session_for_notebook,
 )
 
+from open_notebook.utils import parse_thinking_content
+
 from .note import make_note_from_chat
 
 
@@ -186,11 +188,26 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                     continue
 
                 with st.chat_message(name=msg.type):
-                    st.markdown(convert_source_references(msg.content))
                     if msg.type == "ai":
+                        # Parse thinking content for AI messages
+                        thinking_content, cleaned_content = parse_thinking_content(msg.content)
+                        
+                        # Show thinking content in expander if present
+                        if thinking_content:
+                            with st.expander("🤔 AI Reasoning", expanded=False):
+                                st.markdown(thinking_content)
+                        
+                        # Show the cleaned regular content
+                        if cleaned_content:
+                            st.markdown(convert_source_references(cleaned_content))
+                        
+                        # New Note button for AI messages
                         if st.button("💾 New Note", key=f"render_save_{msg.id}"):
                             make_note_from_chat(
                                 content=msg.content,
                                 notebook_id=current_notebook.id,
                             )
                             st.rerun()
+                    else:
+                        # Human messages - display normally
+                        st.markdown(convert_source_references(msg.content))

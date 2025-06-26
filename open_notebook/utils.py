@@ -1,6 +1,7 @@
 import re
 import unicodedata
 from importlib.metadata import PackageNotFoundError, version
+from typing import Tuple
 from urllib.parse import urlparse
 
 import requests
@@ -217,3 +218,66 @@ def compare_versions(version1: str, version2: str) -> int:
         return 1
     else:
         return 0
+
+
+def parse_thinking_content(content: str) -> Tuple[str, str]:
+    """
+    Parse message content to extract thinking content from <think> tags.
+    
+    Args:
+        content (str): The original message content
+        
+    Returns:
+        Tuple[str, str]: (thinking_content, cleaned_content)
+            - thinking_content: Content from within <think> tags
+            - cleaned_content: Original content with <think> blocks removed
+    
+    Example:
+        >>> content = "<think>Let me analyze this</think>Here's my answer"
+        >>> thinking, cleaned = parse_thinking_content(content)
+        >>> print(thinking)
+        "Let me analyze this"
+        >>> print(cleaned) 
+        "Here's my answer"
+    """
+    # Pattern to match <think>...</think> blocks (including multiline)
+    think_pattern = r'<think>(.*?)</think>'
+    
+    # Find all thinking blocks
+    thinking_matches = re.findall(think_pattern, content, re.DOTALL)
+    
+    if not thinking_matches:
+        return "", content
+    
+    # Join all thinking content with double newlines
+    thinking_content = "\n\n".join(match.strip() for match in thinking_matches)
+    
+    # Remove all <think>...</think> blocks from the original content
+    cleaned_content = re.sub(think_pattern, "", content, flags=re.DOTALL)
+    
+    # Clean up extra whitespace
+    cleaned_content = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_content).strip()
+    
+    return thinking_content, cleaned_content
+
+
+def clean_thinking_content(content: str) -> str:
+    """
+    Remove thinking content from AI responses, returning only the cleaned content.
+    
+    This is a convenience function for cases where you only need the cleaned
+    content and don't need access to the thinking process.
+    
+    Args:
+        content (str): The original message content with potential <think> tags
+        
+    Returns:
+        str: Content with <think> blocks removed and whitespace cleaned
+        
+    Example:
+        >>> content = "<think>Let me think...</think>Here's the answer"
+        >>> clean_thinking_content(content)
+        "Here's the answer"
+    """
+    _, cleaned_content = parse_thinking_content(content)
+    return cleaned_content

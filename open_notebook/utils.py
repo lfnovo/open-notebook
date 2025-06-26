@@ -220,6 +220,10 @@ def compare_versions(version1: str, version2: str) -> int:
         return 0
 
 
+# Compile regex pattern once for better performance
+THINK_PATTERN = re.compile(r'<think>(.*?)</think>', re.DOTALL)
+
+
 def parse_thinking_content(content: str) -> Tuple[str, str]:
     """
     Parse message content to extract thinking content from <think> tags.
@@ -240,11 +244,16 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
         >>> print(cleaned) 
         "Here's my answer"
     """
-    # Pattern to match <think>...</think> blocks (including multiline)
-    think_pattern = r'<think>(.*?)</think>'
+    # Input validation
+    if not isinstance(content, str):
+        return "", str(content) if content is not None else ""
+    
+    # Limit processing for very large content (100KB limit)
+    if len(content) > 100000:
+        return "", content
     
     # Find all thinking blocks
-    thinking_matches = re.findall(think_pattern, content, re.DOTALL)
+    thinking_matches = THINK_PATTERN.findall(content)
     
     if not thinking_matches:
         return "", content
@@ -253,7 +262,7 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
     thinking_content = "\n\n".join(match.strip() for match in thinking_matches)
     
     # Remove all <think>...</think> blocks from the original content
-    cleaned_content = re.sub(think_pattern, "", content, flags=re.DOTALL)
+    cleaned_content = THINK_PATTERN.sub("", content)
     
     # Clean up extra whitespace
     cleaned_content = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_content).strip()

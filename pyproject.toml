@@ -45,7 +45,6 @@ dependencies = [
     "esperanto>=2.0.4",
     "langchain-google-vertexai>=2.0.10",
     "surrealdb>=1.0.4",
-    "sdblpy",
 ]
 
 [tool.setuptools]
@@ -85,4 +84,3 @@ ignore = ["E501"]
 
 [tool.uv.sources]
 podcastfy = { git = "https://github.com/lfnovo/podcastfy" }
-sdblpy = { path = "../../../experimentos/surreal-lite-py" }

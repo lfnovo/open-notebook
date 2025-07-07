@@ -9,6 +9,23 @@ from surrealdb import AsyncSurreal, RecordID  # type: ignore
 T = TypeVar("T", Dict[str, Any], List[Dict[str, Any]])
 
 
+def get_database_url():
+    """Get database URL with backward compatibility"""
+    surreal_url = os.getenv("SURREAL_URL")
+    if surreal_url:
+        return surreal_url
+    
+    # Fallback to old format - WebSocket URL format
+    address = os.getenv("SURREAL_ADDRESS", "localhost")
+    port = os.getenv("SURREAL_PORT", "8000")
+    return f"ws://{address}/rpc:{port}"
+
+
+def get_database_password():
+    """Get password with backward compatibility"""
+    return os.getenv("SURREAL_PASSWORD") or os.getenv("SURREAL_PASS")
+
+
 def parse_record_ids(obj: Any) -> Any:
     """Recursively parse and convert RecordIDs into strings."""
     if isinstance(obj, dict):
@@ -29,11 +46,11 @@ def ensure_record_id(value: Union[str, RecordID]) -> RecordID:
 
 @asynccontextmanager
 async def db_connection():
-    db = AsyncSurreal(os.environ["SURREAL_URL"])
+    db = AsyncSurreal(get_database_url())
     await db.signin(
         {
             "username": os.environ["SURREAL_USER"],
-            "password": os.environ["SURREAL_PASSWORD"],
+            "password": get_database_password(),
         }
     )
     await db.use(os.environ["SURREAL_NAMESPACE"], os.environ["SURREAL_DATABASE"])

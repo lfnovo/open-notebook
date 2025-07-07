@@ -21,8 +21,8 @@ class Model(ObjectModel):
     type: str
 
     @classmethod
-    def get_models_by_type(cls, model_type):
-        models = repo_query(
+    async def get_models_by_type(cls, model_type):
+        models = await repo_query(
             "SELECT * FROM model WHERE type=$model_type;", {"model_type": model_type}
         )
         return [Model(**model) for model in models]
@@ -53,9 +53,8 @@ class ModelManager:
             self._initialized = True
             self._model_cache: Dict[str, ModelType] = {}
             self._default_models = None
-            self.refresh_defaults()
 
-    def get_model(self, model_id: str, **kwargs) -> Optional[ModelType]:
+    async def get_model(self, model_id: str, **kwargs) -> Optional[ModelType]:
         if not model_id:
             return None
 
@@ -72,9 +71,9 @@ class ModelManager:
                 )
             return cached_model
 
-        model: Model = Model.get(model_id)
-
-        if not model:
+        try:
+            model: Model = await Model.get(model_id)
+        except Exception:
             raise ValueError(f"Model with ID {model_id} not found")
 
         if not model.type or model.type not in [
@@ -85,84 +84,86 @@ class ModelManager:
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
 
+        model_instance: ModelType
         if model.type == "language":
-            model_instance: LanguageModel = AIFactory.create_language(
+            model_instance = AIFactory.create_language(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "embedding":
-            model_instance: EmbeddingModel = AIFactory.create_embedding(
+            model_instance = AIFactory.create_embedding(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "speech_to_text":
-            model_instance: SpeechToTextModel = AIFactory.create_speech_to_text(
+            model_instance = AIFactory.create_speech_to_text(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "text_to_speech":
-            model_instance: TextToSpeechModel = AIFactory.create_text_to_speech(
+            model_instance = AIFactory.create_text_to_speech(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
+        else:
+            raise ValueError(f"Invalid model type: {model.type}")
 
         self._model_cache[cache_key] = model_instance
         return model_instance
 
-    def refresh_defaults(self):
+    async def refresh_defaults(self):
         """Refresh the default models from the database"""
-        self._default_models = DefaultModels()
+        self._default_models = await DefaultModels.get_instance()
 
-    @property
-    def defaults(self) -> DefaultModels:
+    async def get_defaults(self) -> DefaultModels:
         """Get the default models configuration"""
         if not self._default_models:
-            self.refresh_defaults()
+            await self.refresh_defaults()
             if not self._default_models:
                 raise RuntimeError("Failed to initialize default models configuration")
         return self._default_models
 
-    @property
-    def speech_to_text(self, **kwargs) -> Optional[SpeechToTextModel]:
+    async def get_speech_to_text(self, **kwargs) -> Optional[SpeechToTextModel]:
         """Get the default speech-to-text model"""
-        model_id = self.defaults.default_speech_to_text_model
+        defaults = await self.get_defaults()
+        model_id = defaults.default_speech_to_text_model
         if not model_id:
             return None
-        model = self.get_model(model_id, **kwargs)
+        model = await self.get_model(model_id, **kwargs)
         assert model is None or isinstance(model, SpeechToTextModel), (
             f"Expected SpeechToTextModel but got {type(model)}"
         )
         return model
 
-    @property
-    def text_to_speech(self, **kwargs) -> Optional[TextToSpeechModel]:
+    async def get_text_to_speech(self, **kwargs) -> Optional[TextToSpeechModel]:
         """Get the default text-to-speech model"""
-        model_id = self.defaults.default_text_to_speech_model
+        defaults = await self.get_defaults()
+        model_id = defaults.default_text_to_speech_model
         if not model_id:
             return None
-        model = self.get_model(model_id, **kwargs)
+        model = await self.get_model(model_id, **kwargs)
         assert model is None or isinstance(model, TextToSpeechModel), (
             f"Expected TextToSpeechModel but got {type(model)}"
         )
         return model
 
-    @property
-    def embedding_model(self, **kwargs) -> Optional[EmbeddingModel]:
+    async def get_embedding_model(self, **kwargs) -> Optional[EmbeddingModel]:
         """Get the default embedding model"""
-        model_id = self.defaults.default_embedding_model
+        defaults = await self.get_defaults()
+        model_id = defaults.default_embedding_model
         if not model_id:
             return None
-        model = self.get_model(model_id, **kwargs)
+        model = await self.get_model(model_id, **kwargs)
         assert model is None or isinstance(model, EmbeddingModel), (
             f"Expected EmbeddingModel but got {type(model)}"
         )
         return model
 
-    def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:
+    async def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:
         """
         Get the default model for a specific type.
 
@@ -170,32 +171,33 @@ class ModelManager:
             model_type: The type of model to retrieve (e.g., 'chat', 'embedding', etc.)
             **kwargs: Additional arguments to pass to the model constructor
         """
+        defaults = await self.get_defaults()
         model_id = None
 
         if model_type == "chat":
-            model_id = self.defaults.default_chat_model
+            model_id = defaults.default_chat_model
         elif model_type == "transformation":
             model_id = (
-                self.defaults.default_transformation_model
-                or self.defaults.default_chat_model
+                defaults.default_transformation_model
+                or defaults.default_chat_model
             )
         elif model_type == "tools":
             model_id = (
-                self.defaults.default_tools_model or self.defaults.default_chat_model
+                defaults.default_tools_model or defaults.default_chat_model
             )
         elif model_type == "embedding":
-            model_id = self.defaults.default_embedding_model
+            model_id = defaults.default_embedding_model
         elif model_type == "text_to_speech":
-            model_id = self.defaults.default_text_to_speech_model
+            model_id = defaults.default_text_to_speech_model
         elif model_type == "speech_to_text":
-            model_id = self.defaults.default_speech_to_text_model
+            model_id = defaults.default_speech_to_text_model
         elif model_type == "large_context":
-            model_id = self.defaults.large_context_model
+            model_id = defaults.large_context_model
 
         if not model_id:
             return None
 
-        return self.get_model(model_id, **kwargs)
+        return await self.get_model(model_id, **kwargs)
 
     def clear_cache(self):
         """Clear the model cache"""

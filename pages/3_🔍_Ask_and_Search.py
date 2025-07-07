@@ -17,13 +17,10 @@ if "ask_results" not in st.session_state:
     st.session_state["ask_results"] = {}
 
 
-
-
 def results_card(item):
-    score = item.get("relevance", item.get("similarity", item.get("score", 0)))
     with st.container(border=True):
         st.markdown(
-            f"[{score:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
+            f"[{item['final_score']:.2f}] **[{item['title']}](/?object_id={item['parent_id']})**"
         )
         if "matches" in item:
             with st.expander("Matches"):
@@ -66,28 +63,27 @@ with ask_tab:
     ask_bt = st.button("Ask") if model_manager.embedding_model else None
     placeholder = st.container()
 
-
     if ask_bt:
         placeholder.write(f"Searching for {question}")
         st.session_state["ask_results"]["question"] = question
         st.session_state["ask_results"]["answer"] = None
-        
+
         with st.spinner("Processing your question..."):
             try:
                 result = search_service.ask_knowledge_base(
                     question=question,
                     strategy_model=strategy_model.id,
                     answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id
+                    final_answer_model=final_answer_model.id,
                 )
-                
+
                 if result.get("answer"):
                     st.session_state["ask_results"]["answer"] = result["answer"]
                     with placeholder.container(border=True):
                         st.markdown(convert_source_references(result["answer"]))
                 else:
                     placeholder.error("No answer generated")
-                    
+
             except Exception as e:
                 placeholder.error(f"Error processing question: {str(e)}")
 
@@ -129,7 +125,17 @@ with search_tab:
                 search_type=search_type_api,
                 limit=100,
                 search_sources=search_sources,
-                search_notes=search_notes
+                search_notes=search_notes,
             )
-        for item in st.session_state["search_results"]:
+
+        search_results = st.session_state["search_results"].copy()
+        for item in search_results:
+            item["final_score"] = item.get(
+                "relevance", item.get("similarity", item.get("score", 0))
+            )
+
+        # Sort search results by final_score in descending order
+        search_results.sort(key=lambda x: x["final_score"], reverse=True)
+
+        for item in search_results:
             results_card(item)

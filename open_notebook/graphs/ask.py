@@ -3,9 +3,7 @@ from typing import Annotated, List
 
 from ai_prompter import Prompter
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
-from langchain_core.runnables import (
-    RunnableConfig,
-)
+from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from pydantic import BaseModel, Field
@@ -13,6 +11,7 @@ from typing_extensions import TypedDict
 
 from open_notebook.domain.notebook import vector_search
 from open_notebook.graphs.utils import provision_langchain_model
+from open_notebook.utils import clean_thinking_content
 
 
 class SubGraphState(TypedDict):
@@ -59,10 +58,19 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
         config.get("configurable", {}).get("strategy_model"),
         "tools",
         max_tokens=2000,
+        structured=dict(type="json"),
     )
     # model = model.bind_tools(tools)
-    ai_message = (model | parser).invoke(system_prompt)
-    return {"strategy": ai_message}
+    # First get the raw response from the model
+    ai_message = model.invoke(system_prompt)
+    
+    # Clean the thinking content from the response
+    cleaned_content = clean_thinking_content(ai_message.content)
+    
+    # Parse the cleaned JSON content
+    strategy = parser.parse(cleaned_content)
+    
+    return {"strategy": strategy}
 
 
 async def trigger_queries(state: ThreadState, config: RunnableConfig):
@@ -99,7 +107,7 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         max_tokens=2000,
     )
     ai_message = model.invoke(system_prompt)
-    return {"answers": [ai_message.content]}
+    return {"answers": [clean_thinking_content(ai_message.content)]}
 
 
 async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
@@ -111,7 +119,7 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
         max_tokens=2000,
     )
     ai_message = model.invoke(system_prompt)
-    return {"final_answer": ai_message.content}
+    return {"final_answer": clean_thinking_content(ai_message.content)}
 
 
 agent_state = StateGraph(ThreadState)

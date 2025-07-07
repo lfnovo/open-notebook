@@ -187,7 +187,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
-| Azure OpenAI | ✅          | ❌               | ❌             | ❌             |
+| Azure OpenAI | ✅          | ✅               | ❌             | ❌             |
 | Mistral      | ✅          | ✅               | ❌             | ❌             |
 | DeepSeek     | ✅          | ❌               | ❌             | ❌             |
 | Voyage       | ❌          | ✅               | ❌             | ❌             |
@@ -257,6 +257,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 
 - **Multi-Notebook Support**: Organize your research across multiple notebooks effortlessly.
 - **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq, Ollama. ([Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md))
+- **Reasoning Model Support**: Full support for thinking models like DeepSeek-R1, Qwen3, and Magistral with collapsible reasoning sections.
 - **Comprehensive REST API**: Full programmatic access to all functionality for building custom integrations.
 - **Podcast Generator**: Automatically convert your notes into a podcast format.
 - **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.

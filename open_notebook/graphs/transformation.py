@@ -7,6 +7,7 @@ from typing_extensions import TypedDict
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.graphs.utils import provision_langchain_model
+from open_notebook.utils import clean_thinking_content
 
 
 class TransformationState(TypedDict):
@@ -42,11 +43,15 @@ def run_transformation(state: dict, config: RunnableConfig) -> dict:
     )
 
     response = chain.invoke(payload)
+    
+    # Clean thinking content from the response
+    cleaned_content = clean_thinking_content(response.content)
+    
     if source:
-        source.add_insight(transformation.title, response.content)
+        source.add_insight(transformation.title, cleaned_content)
 
     return {
-        "output": response.content,
+        "output": cleaned_content,
     }
 
 

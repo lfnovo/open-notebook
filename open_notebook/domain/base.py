@@ -128,7 +128,7 @@ class ObjectModel(BaseModel):
                             "No embedding model found. Content will not be searchable."
                         )
                     data["embedding"] = (
-                        EMBEDDING_MODEL.embed([embedding_content])[0]
+                        (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
                         if EMBEDDING_MODEL
                         else []
                     )

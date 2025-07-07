@@ -6,7 +6,6 @@ from humanize import naturaltime
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
 from open_notebook.graphs.prompt import graph as prompt_graph
-from open_notebook.utils import surreal_clean
 from pages.components import note_panel
 
 from .consts import note_context_icons
@@ -36,7 +35,7 @@ def make_note_from_chat(content, notebook_id=None):
     # todo: make this more efficient
     prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
     output = prompt_graph.invoke(dict(input_text=content, prompt=prompt))
-    title = surreal_clean(output["output"])
+    title = output["output"]
 
     note = Note(
         title=title,

@@ -1,3 +1,4 @@
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 
@@ -192,11 +193,13 @@ class Source(ObjectModel):
                 logger.warning("No chunks created after splitting")
                 return
 
-            def process_chunk(args: Tuple[int, str]) -> Tuple[int, List[float], str]:
-                idx, chunk = args
+            # Process chunks concurrently using async gather
+            logger.info("Starting concurrent processing of chunks")
+            
+            async def process_chunk(idx: int, chunk: str) -> Tuple[int, List[float], str]:
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
-                    embedding = EMBEDDING_MODEL.embed([chunk])[0]
+                    embedding = (await EMBEDDING_MODEL.aembed([chunk]))[0]
                     cleaned_content = chunk
                     logger.debug(f"Successfully processed chunk {idx}")
                     return (idx, embedding, cleaned_content)
@@ -204,13 +207,9 @@ class Source(ObjectModel):
                     logger.error(f"Error processing chunk {idx}: {str(e)}")
                     raise
 
-            # Process chunks in parallel while preserving order
-            logger.info("Starting parallel processing of chunks")
-            with ThreadPoolExecutor(max_workers=8) as executor:
-                # Create list of (index, chunk) tuples
-                chunk_tasks = list(enumerate(chunks))
-                # Process all chunks in parallel and get results
-                results = list(executor.map(process_chunk, chunk_tasks))
+            # Create tasks for all chunks and process them concurrently
+            tasks = [process_chunk(idx, chunk) for idx, chunk in enumerate(chunks)]
+            results = await asyncio.gather(*tasks)
 
             logger.info(f"Parallel processing complete. Got {len(results)} results")
 
@@ -246,7 +245,7 @@ class Source(ObjectModel):
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
-            embedding = EMBEDDING_MODEL.embed([content])[0] if EMBEDDING_MODEL else []
+            embedding = (await EMBEDDING_MODEL.aembed([content]))[0] if EMBEDDING_MODEL else []
             return await repo_query("""
                 CREATE source_insight CONTENT {
                         "source": $source_id,
@@ -341,7 +340,7 @@ async def vector_search(
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        embed = EMBEDDING_MODEL.embed([keyword])[0]
+        embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
         results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);

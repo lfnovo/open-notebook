@@ -34,10 +34,10 @@ def get_database_url():
     if surreal_url:
         return surreal_url
     
-    # Fallback to old format
+    # Fallback to old format - WebSocket URL format
     address = os.getenv("SURREAL_ADDRESS", "localhost")
     port = os.getenv("SURREAL_PORT", "8000")
-    return f"http://{address}:{port}"
+    return f"ws://{address}/rpc:{port}"
 
 def get_database_password():
     """Get password with backward compatibility"""
@@ -67,7 +67,7 @@ class AsyncMigrationManager:
 
 #### 1.4 Update Dependencies
 - Remove `sdblpy` from pyproject.toml
-- Ensure `surrealdb` and `nest-asyncio` are properly configured
+- Dependencies `surrealdb` and `nest-asyncio` are already properly configured
 
 ### ✅ Testing Strategy
 1. Test database connection with both old and new env vars
@@ -79,6 +79,7 @@ class AsyncMigrationManager:
 - **DO NOT** update any domain models in this phase
 - Keep existing function signatures identical
 - Test thoroughly before proceeding to Phase 2
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -162,6 +163,7 @@ class ModelManager:
 - This phase establishes the async pattern for all other models
 - Property methods that use database queries will need attention in future phases
 - Keep backward compatibility for method names
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -226,6 +228,7 @@ result = await repo_query(
 - **BREAKING CHANGE**: Properties become async methods (`.sources` → `await .get_sources()`)
 - All SQL queries must be parameterized for security
 - Document property → method name changes
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -302,6 +305,7 @@ async def vector_search(query: str, limit: int = 10):
 - ThreadPoolExecutor pattern for CPU-bound work
 - Async/sync boundary management crucial
 - Search functions are heavily used - test thoroughly
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -365,6 +369,7 @@ async def get_notebook(notebook_id: str):
 - FastAPI endpoints are already async, just need proper await calls
 - Service layer acts as adapter between API and domain
 - Maintain existing API response formats
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -455,6 +460,7 @@ if user_input:
 - Some pages already use `nest_asyncio` - check before adding
 - Service layer HTTP calls don't need changes
 - Chat system needs special attention due to streaming
+- **STOP** at end of phase and request human approval before continuing
 
 ---
 
@@ -513,14 +519,18 @@ async def check_migration():
 3. Test all major functionality paths
 4. Performance check
 
+### ⚠️ Critical Notes
+- **STOP** at end of phase and request human approval
+- Mark migration as complete in plan.md
+
 ---
 
 ## 🚨 Risk Mitigation Strategies
 
 ### Git Strategy
-- Create branch for each phase: `migration-phase-1`, `migration-phase-2`, etc.
-- Commit after each major step within a phase
-- Tag working states for easy rollback
+- Work directly on current branch (no additional branches needed)
+- Human will review and commit after each phase completion
+- Agent must request human approval before proceeding to next phase
 
 ### Testing Approach
 - Manual testing after each phase
@@ -532,12 +542,6 @@ async def check_migration():
 - Each phase is designed to be independently rollback-able
 - Keep environment variable compatibility for easy switching
 - Maintain backup of current working state
-
-### Debugging Strategy
-- Add comprehensive logging to new async operations
-- Use `loguru` for structured logging
-- Monitor database connection patterns
-- Track async operation performance
 
 ---
 
@@ -582,3 +586,25 @@ async def check_migration():
 - Environment variable additions (backward compatible)
 
 This plan provides a systematic approach to migrating the entire codebase while minimizing risk and maintaining functionality throughout the process.
+
+---
+
+## 📝 Phase Completion Tracking
+
+### Phase Status
+- [ ] **Phase 1**: Foundation & Database Layer Migration - *PENDING*
+- [ ] **Phase 2**: Base Domain Model Migration - *PENDING*  
+- [ ] **Phase 3**: Medium Complexity Domain Models - *PENDING*
+- [ ] **Phase 4**: Complex Domain Models - *PENDING*
+- [ ] **Phase 5**: API Layer Migration - *PENDING*
+- [ ] **Phase 6**: Streamlit Integration - *PENDING*
+- [ ] **Phase 7**: Migration System & Cleanup - *PENDING*
+
+### Important Notes for Agent
+- **ALWAYS STOP** at the end of each phase and request human approval
+- **UPDATE** this plan.md file after each successful phase:
+  - Mark phase as complete with ✅
+  - Add any lessons learned or additional notes
+  - Update next steps if requirements change
+- **ASK HUMAN** to review and commit changes before proceeding
+- **DO NOT** proceed to next phase without explicit human approval

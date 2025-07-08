@@ -116,13 +116,15 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                     try:
                         if st.button("Generate"):
                             with st.spinner("Go grab a coffee, almost there..."):
-                                selected_template.generate_episode(
-                                    episode_name=episode_name,
-                                    text=str(context),
-                                    longform=longform,
-                                    chunks=chunks,
-                                    min_chunk_size=min_chunk_size,
-                                    instructions=instructions,
+                                asyncio.run(
+                                    selected_template.generate_episode(
+                                        episode_name=episode_name,
+                                        text=str(context),
+                                        longform=longform,
+                                        chunks=chunks,
+                                        min_chunk_size=min_chunk_size,
+                                        instructions=instructions,
+                                    )
                                 )
                             st.success("Episode generated successfully")
                     except Exception as e:

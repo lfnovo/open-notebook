@@ -34,7 +34,7 @@ text_models = asyncio.run(Model.get_models_by_type("language"))
 transcript_provider_models: Dict[str, List[str]] = {}
 
 for model in text_models:
-    if model.provider not in ["gemini", "openai", "anthropic"]:
+    if model.provider not in ["gemini", "openai", "anthropic", "google"]:
         continue
     if model.provider not in transcript_provider_models:
         transcript_provider_models[model.provider] = []
@@ -54,7 +54,7 @@ if len(text_models) == 0:
 episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 
 with episodes_tab:
-    episodes = PodcastEpisode.get_all(order_by="created desc")
+    episodes = asyncio.run(PodcastEpisode.get_all(order_by="created desc"))
     for episode in episodes:
         with st.container(border=True):
             episode_name = episode.name if episode.name else "No Name"
@@ -152,7 +152,7 @@ with templates_tab:
             except Exception as e:
                 st.error(e)
 
-    for pd_config in PodcastConfig.get_all(order_by="created desc"):
+    for pd_config in asyncio.run(PodcastConfig.get_all(order_by="created desc")):
         with st.expander(pd_config.name):
             pd_config.name = st.text_input(
                 "Template Name", value=pd_config.name, key=f"name_{pd_config.id}"

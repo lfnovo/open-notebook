@@ -24,11 +24,6 @@ if "object_id" not in st.query_params:
     st.stop()
 
 object_id = st.query_params["object_id"]
-try:
-    obj = asyncio.run(ObjectModel.get(object_id))
-except NotFoundError:
-    st.switch_page("pages/2_📒_Notebooks.py")
-    st.stop()
 
 obj_type = object_id.split(":")[0]
 

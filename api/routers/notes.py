@@ -5,7 +5,7 @@ from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
 from open_notebook.domain.notebook import Note
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -49,8 +49,19 @@ async def get_notes(
 async def create_note(note_data: NoteCreate):
     """Create a new note."""
     try:
+        # Auto-generate title if not provided and it's an AI note
+        title = note_data.title
+        if not title and note_data.note_type == "ai" and note_data.content:
+            from open_notebook.graphs.prompt import graph as prompt_graph
+            prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
+            result = await prompt_graph.ainvoke({
+                "input_text": note_data.content,
+                "prompt": prompt
+            })
+            title = result.get("output", "Untitled Note")
+        
         new_note = Note(
-            title=note_data.title,
+            title=title,
             content=note_data.content,
             note_type=note_data.note_type,
         )

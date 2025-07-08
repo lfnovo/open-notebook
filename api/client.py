@@ -326,6 +326,13 @@ class APIClient:
             data["notebook_id"] = notebook_id
         return self._make_request("POST", f"/api/insights/{insight_id}/save-as-note", json=data)
 
+    def create_source_insight(self, source_id: str, transformation_id: str, model_id: Optional[str] = None) -> Dict:
+        """Create a new insight for a source by running a transformation."""
+        data = {"transformation_id": transformation_id}
+        if model_id:
+            data["model_id"] = model_id
+        return self._make_request("POST", f"/api/sources/{source_id}/insights", json=data)
+
 
 # Global client instance
 api_client = APIClient()

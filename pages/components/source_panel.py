@@ -5,11 +5,9 @@ import streamlit as st
 from humanize import naturaltime
 
 from api.insights_service import insights_service
-from api.sources_service import sources_service
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.graphs.transformation import graph as transform_graph
 from pages.stream_app.utils import check_models
 
 nest_asyncio.apply()
@@ -72,10 +70,9 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     )
                     st.caption(transformation.description if transformation else "")
                     if st.button("Run"):
-                        asyncio.run(
-                            transform_graph.ainvoke(
-                                input=dict(source=source, transformation=transformation)
-                            )
+                        insights_service.create_source_insight(
+                            source_id=source.id,
+                            transformation_id=transformation.id
                         )
                         st.rerun(scope="fragment" if modal else "app")
             else:

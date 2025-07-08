@@ -251,6 +251,11 @@ class SaveAsNoteRequest(BaseModel):
     notebook_id: Optional[str] = Field(None, description="Notebook ID to add note to")
 
 
+class CreateSourceInsightRequest(BaseModel):
+    transformation_id: str = Field(..., description="ID of transformation to apply")
+    model_id: Optional[str] = Field(None, description="Model ID (uses default if not provided)")
+
+
 # Error response
 class ErrorResponse(BaseModel):
     error: str

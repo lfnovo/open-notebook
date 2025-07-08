@@ -63,6 +63,19 @@ class InsightsService:
         note.created = note_data["created"]
         note.updated = note_data["updated"]
         return note
+    
+    def create_source_insight(self, source_id: str, transformation_id: str, model_id: Optional[str] = None) -> SourceInsight:
+        """Create a new insight for a source by running a transformation."""
+        insight_data = api_client.create_source_insight(source_id, transformation_id, model_id)
+        insight = SourceInsight(
+            insight_type=insight_data["insight_type"],
+            content=insight_data["content"],
+        )
+        insight.id = insight_data["id"]
+        insight.created = insight_data["created"]
+        insight.updated = insight_data["updated"]
+        insight._source_id = insight_data["source_id"]
+        return insight
 
 
 # Global service instance

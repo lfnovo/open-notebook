@@ -1,21 +1,20 @@
-import asyncio
-from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.models import (
     AssetModel,
+    CreateSourceInsightRequest,
     SourceCreate,
     SourceInsightResponse,
     SourceListResponse,
     SourceResponse,
     SourceUpdate,
 )
-from open_notebook.domain.notebook import Asset, Notebook, Source
+from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.source import source_graph
 
 router = APIRouter()
@@ -264,3 +263,48 @@ async def get_source_insights(source_id: str):
     except Exception as e:
         logger.error(f"Error fetching insights for source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching insights: {str(e)}")
+
+
+@router.post("/sources/{source_id}/insights", response_model=SourceInsightResponse)
+async def create_source_insight(
+    source_id: str,
+    request: CreateSourceInsightRequest
+):
+    """Create a new insight for a source by running a transformation."""
+    try:
+        # Get source
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+        
+        # Get transformation
+        transformation = await Transformation.get(request.transformation_id)
+        if not transformation:
+            raise HTTPException(status_code=404, detail="Transformation not found")
+        
+        # Run transformation graph
+        from open_notebook.graphs.transformation import graph as transform_graph
+        await transform_graph.ainvoke(
+            input=dict(source=source, transformation=transformation)
+        )
+        
+        # Get the newly created insight (last one)
+        insights = await source.get_insights()
+        if insights:
+            newest = insights[-1]
+            return SourceInsightResponse(
+                id=newest.id,
+                source_id=source_id,
+                insight_type=newest.insight_type,
+                content=newest.content,
+                created=str(newest.created),
+                updated=str(newest.updated)
+            )
+        else:
+            raise HTTPException(status_code=500, detail="Failed to create insight")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating insight for source {source_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error creating insight: {str(e)}")

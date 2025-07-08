@@ -100,27 +100,6 @@ def remove_non_printable(text) -> str:
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
 
 
-def surreal_clean(text) -> str:
-    """
-    Clean the input text by removing non-ASCII and non-printable characters,
-    and adjusting colon placement for SurrealDB compatibility.
-
-    Args:
-        text (str): The input text to clean.
-    Returns:
-        str: The cleaned text with adjusted formatting.
-    """
-    text = remove_non_printable(text)
-
-    # Add space after colon if it's before the first space
-    first_space_index = text.find(" ")
-    colon_index = text.find(":")
-    if colon_index != -1 and (
-        first_space_index == -1 or colon_index < first_space_index
-    ):
-        text = text.replace(":", "\:", 1)
-
-    return text
 
 
 def get_version_from_github(repo_url: str, branch: str = "main") -> str:

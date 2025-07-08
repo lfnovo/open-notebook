@@ -1,8 +1,12 @@
+import asyncio
 from typing import Union
 
 import humanize
+import nest_asyncio
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
+
+nest_asyncio.apply()
 
 from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
@@ -158,7 +162,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 st.session_state[current_notebook.id]["active_session"] = new_session.id
                 st.rerun()
             st.divider()
-            sessions = current_notebook.chat_sessions
+            sessions = asyncio.run(current_notebook.get_chat_sessions())
             if len(sessions) > 1:
                 st.markdown("**Other Sessions:**")
                 for session in sessions:

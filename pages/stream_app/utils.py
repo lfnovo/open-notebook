@@ -1,9 +1,13 @@
+import asyncio
 import re
 from datetime import datetime
 from typing import List, Union
 
+import nest_asyncio
 import streamlit as st
 from loguru import logger
+
+nest_asyncio.apply()
 
 from open_notebook.database.migrate import MigrationManager
 from open_notebook.domain.models import DefaultModels
@@ -42,8 +46,8 @@ def create_session_for_notebook(notebook_id: str, session_name: str = None):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     title = f"Chat Session {current_time}" if not session_name else session_name
     chat_session = ChatSession(title=title)
-    chat_session.save()
-    chat_session.relate_to_notebook(notebook_id)
+    asyncio.run(chat_session.save())
+    asyncio.run(chat_session.relate_to_notebook(notebook_id))
     return chat_session
 
 
@@ -64,12 +68,12 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
 
     # gets the chat session if provided
     chat_session: Union[ChatSession, None] = (
-        ChatSession.get(current_session_id) if current_session_id else None
+        asyncio.run(ChatSession.get(current_session_id)) if current_session_id else None
     )
 
     # if there is no chat session, create one or get the first one
     if not chat_session:
-        sessions: List[ChatSession] = current_notebook.chat_sessions
+        sessions: List[ChatSession] = asyncio.run(current_notebook.get_chat_sessions())
         if not sessions or len(sessions) == 0:
             logger.debug("Creating new chat session")
             chat_session = create_session_for_notebook(current_notebook.id)
@@ -105,7 +109,7 @@ def check_migration():
             logger.critical("Migration required")
             st.warning("The Open Notebook database needs a migration to run properly.")
             if st.button("Run Migration"):
-                mm.run_migration_up()
+                asyncio.run(mm.run_migration_up())
                 st.success("Migration successful")
                 st.session_state["migration_required"] = False
                 st.rerun()
@@ -115,7 +119,7 @@ def check_migration():
 
 
 def check_models(only_mandatory=True, stop_on_error=True):
-    default_models = DefaultModels()
+    default_models = asyncio.run(DefaultModels.get_instance())
     mandatory_models = [
         default_models.default_chat_model,
         default_models.default_transformation_model,

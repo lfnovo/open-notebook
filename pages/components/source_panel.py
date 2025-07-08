@@ -15,7 +15,7 @@ nest_asyncio.apply()
 
 def source_panel(source_id: str, notebook_id=None, modal=False):
     check_models(only_mandatory=False)
-    source: Source = Source.get(source_id)
+    source: Source = asyncio.run(Source.get(source_id))
     if not source:
         raise ValueError(f"Source not found: {source_id}")
 
@@ -40,7 +40,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
             else:
                 from_src = "from text"
             st.caption(f"Created {naturaltime(source.created)}, {from_src}")
-            for insight in source.insights:
+            for insight in asyncio.run(source.get_insights()):
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
                     x1, x2 = st.columns(2)
@@ -93,7 +93,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
             else:
                 help = "This will generate your embedding vectors on the database for powerful search capabilities"
 
-            if source.embedded_chunks == 0 and st.button(
+            if len(asyncio.run(source.get_embedded_chunks())) == 0 and st.button(
                 "Embed vectors",
                 icon="🦾",
                 help=help,

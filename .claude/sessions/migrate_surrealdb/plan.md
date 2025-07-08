@@ -597,7 +597,7 @@ This plan provides a systematic approach to migrating the entire codebase while 
 - [x] **Phase 3**: Medium Complexity Domain Models - ✅ **COMPLETED**
 - [x] **Phase 4**: Complex Domain Models - ✅ **COMPLETED**
 - [x] **Phase 5**: API Layer Migration - ✅ **COMPLETED**
-- [ ] **Phase 6**: Streamlit Integration - *PENDING*
+- [x] **Phase 6**: Streamlit Integration - ✅ **COMPLETED**
 - [ ] **Phase 7**: Migration System & Cleanup - *PENDING*
 
 ### Important Notes for Agent
@@ -809,3 +809,59 @@ All complex domain model operations are now fully async. The core business logic
 The API layer is now fully compatible with async domain models. All FastAPI endpoints properly await domain operations, and the property → method conversions are complete. The API maintains all existing functionality while using the new async patterns.
 
 **🛑 STOPPING FOR HUMAN APPROVAL** - Please review and commit these changes before proceeding to Phase 6.
+
+---
+
+## 📋 Phase 6 Completion Summary
+
+**✅ PHASE 6 COMPLETED SUCCESSFULLY**
+
+### What Was Accomplished
+1. **nest_asyncio Integration**: Added `nest_asyncio.apply()` to all Streamlit files requiring async domain model access
+2. **Property → Method Conversion**: Converted all property access to async method calls throughout Streamlit UI:
+   - `notebook.sources` → `asyncio.run(notebook.get_sources())`
+   - `notebook.notes` → `asyncio.run(notebook.get_notes())`
+   - `notebook.chat_sessions` → `asyncio.run(notebook.get_chat_sessions())`
+   - `source.insights` → `asyncio.run(source.get_insights())`
+   - `source.embedded_chunks` → `asyncio.run(source.get_embedded_chunks())`
+3. **Domain Model Calls**: Wrapped all direct domain model operations with `asyncio.run()`:
+   - `ObjectModel.get()` → `asyncio.run(ObjectModel.get())`
+   - `Source.get()` → `asyncio.run(Source.get())`
+   - `Note.save()` → `asyncio.run(note.save())`
+   - `ChatSession.get()` → `asyncio.run(ChatSession.get())`
+4. **RecordModel Pattern Updates**: Updated singleton pattern calls:
+   - `DefaultModels()` → `asyncio.run(DefaultModels.get_instance())`
+   - All RecordModel access now uses async get_instance()
+5. **Bug Fix**: Fixed RecordModel._load_from_db() to handle both list and dict responses from SurrealDB queries
+
+### Files Modified
+- `app_home.py` - Added nest_asyncio, converted ObjectModel.get() to async
+- `pages/2_📒_Notebooks.py` - Added nest_asyncio, converted property access to async methods
+- `pages/stream_app/utils.py` - Fixed migration check and model manager calls to async
+- `pages/components/source_panel.py` - Updated Source.get() and property access to async
+- `pages/components/note_panel.py` - Added nest_asyncio, converted Note.get() to async
+- `pages/components/source_insight.py` - Added nest_asyncio, converted all domain calls to async
+- `pages/components/source_embedding_panel.py` - Added nest_asyncio, converted all domain calls to async
+- `pages/stream_app/note.py` - Added nest_asyncio, converted save/relate calls to async
+- `pages/stream_app/chat.py` - Added nest_asyncio, converted chat_sessions property to async
+- `pages/3_🔍_Ask_and_Search.py` - Added nest_asyncio, converted Notebook.get_all() and Note operations to async
+- `pages/5_🎙️_Podcasts.py` - Added nest_asyncio, converted Model.get_models_by_type() to async
+- `open_notebook/domain/base.py` - Fixed RecordModel._load_from_db() for SurrealDB compatibility
+
+### Key Technical Changes
+- **Streamlit Async Pattern**: All Streamlit files now use `nest_asyncio.apply()` + `asyncio.run()` pattern
+- **Property Access Elimination**: All property access converted to explicit async method calls
+- **Database Compatibility**: Fixed RecordModel loading to handle new SurrealDB client response format
+- **Service Layer Preservation**: HTTP-based service calls remained unchanged (no async conversion needed)
+
+### Testing Results
+- ✅ All Streamlit files import successfully
+- ✅ Domain model async operations working
+- ✅ nest_asyncio integration functional
+- ✅ RecordModel singleton pattern working with async
+- ✅ No import or syntax errors detected
+
+### Ready for Phase 7
+All Streamlit pages now properly integrate with async domain models. The UI layer maintains identical functionality while using the new async patterns. Only Phase 7 (Migration System & Cleanup) remains to complete the full migration.
+
+**🛑 STOPPING FOR HUMAN APPROVAL** - Please review and commit these changes before proceeding to Phase 7.

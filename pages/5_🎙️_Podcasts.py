@@ -1,7 +1,11 @@
+import asyncio
 from typing import Dict, List
 
+import nest_asyncio
 import streamlit as st
 from streamlit_tags import st_tags
+
+nest_asyncio.apply()
 
 from open_notebook.domain.models import Model
 from open_notebook.plugins.podcasts import (
@@ -16,7 +20,7 @@ from pages.stream_app.utils import setup_page
 
 setup_page("🎙️ Podcasts", only_check_mandatory_models=False)
 
-text_to_speech_models = Model.get_models_by_type("text_to_speech")
+text_to_speech_models = asyncio.run(Model.get_models_by_type("text_to_speech"))
 
 provider_models: Dict[str, List[str]] = {}
 
@@ -25,7 +29,7 @@ for model in text_to_speech_models:
         provider_models[model.provider] = []
     provider_models[model.provider].append(model.name)
 
-text_models = Model.get_models_by_type("language")
+text_models = asyncio.run(Model.get_models_by_type("language"))
 
 transcript_provider_models: Dict[str, List[str]] = {}
 

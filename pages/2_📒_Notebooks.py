@@ -1,5 +1,10 @@
+import asyncio
+
+import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
+
+nest_asyncio.apply()
 
 from api.notebook_service import notebook_service
 from open_notebook.domain.notebook import Notebook
@@ -67,8 +72,8 @@ def notebook_page(current_notebook: Notebook):
         current_notebook=current_notebook,
     )
 
-    sources = current_notebook.sources
-    notes = current_notebook.notes
+    sources = asyncio.run(current_notebook.get_sources())
+    notes = asyncio.run(current_notebook.get_notes())
 
     notebook_header(current_notebook)
 

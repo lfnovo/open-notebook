@@ -1,7 +1,12 @@
+import asyncio
+
+import nest_asyncio
 import streamlit as st
 from dotenv import load_dotenv
 
 from open_notebook.domain.base import ObjectModel
+
+nest_asyncio.apply()
 from open_notebook.exceptions import NotFoundError
 from pages.components import (
     note_panel,
@@ -20,7 +25,7 @@ if "object_id" not in st.query_params:
 
 object_id = st.query_params["object_id"]
 try:
-    obj = ObjectModel.get(object_id)
+    obj = asyncio.run(ObjectModel.get(object_id))
 except NotFoundError:
     st.switch_page("pages/2_📒_Notebooks.py")
     st.stop()

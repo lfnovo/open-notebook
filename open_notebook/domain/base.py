@@ -5,6 +5,7 @@ from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from open_notebook.database.repository import (
+    ensure_record_id,
     repo_create,
     repo_delete,
     repo_query,
@@ -245,13 +246,22 @@ class RecordModel(BaseModel):
     async def _load_from_db(self):
         """Load data from database if not already loaded"""
         if not getattr(self, "_db_loaded", False):
-            result = await repo_query("SELECT * FROM $record_id", {"record_id": self.record_id})
+            result = await repo_query("SELECT * FROM ONLY $record_id", {"record_id": ensure_record_id(self.record_id)})
             
-            if result and result[0]:
-                # Update instance with DB data
-                for key, value in result[0].items():
-                    if hasattr(self, key):
-                        object.__setattr__(self, key, value)
+            # Handle case where record doesn't exist yet
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    # Standard list response
+                    row = result[0]
+                    if isinstance(row, dict):
+                        for key, value in row.items():
+                            if hasattr(self, key):
+                                object.__setattr__(self, key, value)
+                elif isinstance(result, dict):
+                    # Direct dict response
+                    for key, value in result.items():
+                        if hasattr(self, key):
+                            object.__setattr__(self, key, value)
             
             object.__setattr__(self, "_db_loaded", True)
 

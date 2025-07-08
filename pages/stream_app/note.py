@@ -1,7 +1,11 @@
+import asyncio
 from typing import Optional
 
+import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
+
+nest_asyncio.apply()
 
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
@@ -21,8 +25,8 @@ def add_note(notebook_id):
     note_content = st.text_area("Content")
     if st.button("Save", key="add_note"):
         note = Note(title=note_title, content=note_content, note_type="human")
-        note.save()
-        note.add_to_notebook(notebook_id)
+        asyncio.run(note.save())
+        asyncio.run(note.add_to_notebook(notebook_id))
         st.rerun()
 
 

@@ -20,30 +20,35 @@ async def get_sources(notebook_id: Optional[str] = Query(None, description="Filt
     try:
         if notebook_id:
             # Get sources for a specific notebook
-            notebook = Notebook.get(notebook_id)
+            notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
-            sources = notebook.sources
+            sources = await notebook.get_sources()
         else:
             # Get all sources
-            sources = Source.get_all(order_by="updated desc")
+            sources = await Source.get_all(order_by="updated desc")
         
-        return [
-            SourceListResponse(
-                id=source.id,
-                title=source.title,
-                topics=source.topics or [],
-                asset=AssetModel(
-                    file_path=source.asset.file_path if source.asset else None,
-                    url=source.asset.url if source.asset else None
-                ) if source.asset else None,
-                embedded_chunks=source.embedded_chunks,
-                insights_count=len(source.insights),
-                created=str(source.created),
-                updated=str(source.updated),
+        # Create response list with async insights count
+        response_list = []
+        for source in sources:
+            insights = await source.get_insights()
+            response_list.append(
+                SourceListResponse(
+                    id=source.id,
+                    title=source.title,
+                    topics=source.topics or [],
+                    asset=AssetModel(
+                        file_path=source.asset.file_path if source.asset else None,
+                        url=source.asset.url if source.asset else None
+                    ) if source.asset else None,
+                    embedded_chunks=source.embedded_chunks,
+                    insights_count=len(insights),
+                    created=str(source.created),
+                    updated=str(source.updated),
+                )
             )
-            for source in sources
-        ]
+        
+        return response_list
     except HTTPException:
         raise
     except Exception as e:
@@ -56,7 +61,7 @@ async def create_source(source_data: SourceCreate):
     """Create a new source."""
     try:
         # Verify notebook exists
-        notebook = Notebook.get(source_data.notebook_id)
+        notebook = await Notebook.get(source_data.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
@@ -83,7 +88,7 @@ async def create_source(source_data: SourceCreate):
         transformations = []
         if source_data.transformations:
             for trans_id in source_data.transformations:
-                transformation = Transformation.get(trans_id)
+                transformation = await Transformation.get(trans_id)
                 if not transformation:
                     raise HTTPException(status_code=404, detail=f"Transformation {trans_id} not found")
                 transformations.append(transformation)
@@ -124,7 +129,7 @@ async def create_source(source_data: SourceCreate):
 async def get_source(source_id: str):
     """Get a specific source by ID."""
     try:
-        source = Source.get(source_id)
+        source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         
@@ -152,7 +157,7 @@ async def get_source(source_id: str):
 async def update_source(source_id: str, source_update: SourceUpdate):
     """Update a source."""
     try:
-        source = Source.get(source_id)
+        source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         
@@ -162,7 +167,7 @@ async def update_source(source_id: str, source_update: SourceUpdate):
         if source_update.topics is not None:
             source.topics = source_update.topics
         
-        source.save()
+        await source.save()
         
         return SourceResponse(
             id=source.id,
@@ -190,11 +195,11 @@ async def update_source(source_id: str, source_update: SourceUpdate):
 async def delete_source(source_id: str):
     """Delete a source."""
     try:
-        source = Source.get(source_id)
+        source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         
-        source.delete()
+        await source.delete()
         
         return {"message": "Source deleted successfully"}
     except HTTPException:

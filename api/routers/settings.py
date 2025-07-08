@@ -12,7 +12,7 @@ router = APIRouter()
 async def get_settings():
     """Get all application settings."""
     try:
-        settings = ContentSettings()
+        settings = await ContentSettings.get_instance()
         
         return SettingsResponse(
             default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
@@ -30,7 +30,7 @@ async def get_settings():
 async def update_settings(settings_update: SettingsUpdate):
     """Update application settings."""
     try:
-        settings = ContentSettings()
+        settings = await ContentSettings.get_instance()
         
         # Update only provided fields
         if settings_update.default_content_processing_engine_doc is not None:
@@ -44,7 +44,7 @@ async def update_settings(settings_update: SettingsUpdate):
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
         
-        settings.update()
+        await settings.update()
         
         return SettingsResponse(
             default_content_processing_engine_doc=settings.default_content_processing_engine_doc,

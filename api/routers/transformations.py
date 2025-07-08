@@ -22,7 +22,7 @@ router = APIRouter()
 async def get_transformations():
     """Get all transformations."""
     try:
-        transformations = Transformation.get_all(order_by="name asc")
+        transformations = await Transformation.get_all(order_by="name asc")
         
         return [
             TransformationResponse(
@@ -53,7 +53,7 @@ async def create_transformation(transformation_data: TransformationCreate):
             prompt=transformation_data.prompt,
             apply_default=transformation_data.apply_default,
         )
-        new_transformation.save()
+        await new_transformation.save()
         
         return TransformationResponse(
             id=new_transformation.id,
@@ -76,7 +76,7 @@ async def create_transformation(transformation_data: TransformationCreate):
 async def get_transformation(transformation_id: str):
     """Get a specific transformation by ID."""
     try:
-        transformation = Transformation.get(transformation_id)
+        transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
         
@@ -101,7 +101,7 @@ async def get_transformation(transformation_id: str):
 async def update_transformation(transformation_id: str, transformation_update: TransformationUpdate):
     """Update a transformation."""
     try:
-        transformation = Transformation.get(transformation_id)
+        transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
         
@@ -117,7 +117,7 @@ async def update_transformation(transformation_id: str, transformation_update: T
         if transformation_update.apply_default is not None:
             transformation.apply_default = transformation_update.apply_default
         
-        transformation.save()
+        await transformation.save()
         
         return TransformationResponse(
             id=transformation.id,
@@ -142,11 +142,11 @@ async def update_transformation(transformation_id: str, transformation_update: T
 async def delete_transformation(transformation_id: str):
     """Delete a transformation."""
     try:
-        transformation = Transformation.get(transformation_id)
+        transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
         
-        transformation.delete()
+        await transformation.delete()
         
         return {"message": "Transformation deleted successfully"}
     except HTTPException:
@@ -161,12 +161,12 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
     """Execute a transformation on input text."""
     try:
         # Validate transformation exists
-        transformation = Transformation.get(execute_request.transformation_id)
+        transformation = await Transformation.get(execute_request.transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
         
         # Validate model exists
-        model = Model.get(execute_request.model_id)
+        model = await Model.get(execute_request.model_id)
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
         

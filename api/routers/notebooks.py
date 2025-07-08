@@ -17,7 +17,7 @@ async def get_notebooks(
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
-        notebooks = Notebook.get_all(order_by=order_by)
+        notebooks = await Notebook.get_all(order_by=order_by)
         
         # Filter by archived status if specified
         if archived is not None:
@@ -47,7 +47,7 @@ async def create_notebook(notebook: NotebookCreate):
             name=notebook.name,
             description=notebook.description,
         )
-        new_notebook.save()
+        await new_notebook.save()
         
         return NotebookResponse(
             id=new_notebook.id,
@@ -68,7 +68,7 @@ async def create_notebook(notebook: NotebookCreate):
 async def get_notebook(notebook_id: str):
     """Get a specific notebook by ID."""
     try:
-        notebook = Notebook.get(notebook_id)
+        notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
@@ -91,7 +91,7 @@ async def get_notebook(notebook_id: str):
 async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
     """Update a notebook."""
     try:
-        notebook = Notebook.get(notebook_id)
+        notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
@@ -103,7 +103,7 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         if notebook_update.archived is not None:
             notebook.archived = notebook_update.archived
         
-        notebook.save()
+        await notebook.save()
         
         return NotebookResponse(
             id=notebook.id,
@@ -126,11 +126,11 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
 async def delete_notebook(notebook_id: str):
     """Delete a notebook."""
     try:
-        notebook = Notebook.get(notebook_id)
+        notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
-        notebook.delete()
+        await notebook.delete()
         
         return {"message": "Notebook deleted successfully"}
     except HTTPException:

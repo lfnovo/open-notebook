@@ -17,7 +17,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
     """Get context for a notebook based on configuration."""
     try:
         # Verify notebook exists
-        notebook = Notebook.get(notebook_id)
+        notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
@@ -34,16 +34,16 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
                 try:
                     # Add table prefix if not present
                     full_source_id = source_id if source_id.startswith("source:") else f"source:{source_id}"
-                    source = Source.get(full_source_id)
+                    source = await Source.get(full_source_id)
                     if not source:
                         continue
                     
                     if "insights" in status:
-                        source_context = source.get_context(context_size="short")
+                        source_context = await source.get_context(context_size="short")
                         context_data["source"].append(source_context)
                         total_content += str(source_context)
                     elif "full content" in status:
-                        source_context = source.get_context(context_size="long")
+                        source_context = await source.get_context(context_size="long")
                         context_data["source"].append(source_context)
                         total_content += str(source_context)
                 except Exception as e:
@@ -58,12 +58,12 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
                 try:
                     # Add table prefix if not present
                     full_note_id = note_id if note_id.startswith("note:") else f"note:{note_id}"
-                    note = Note.get(full_note_id)
+                    note = await Note.get(full_note_id)
                     if not note:
                         continue
                     
                     if "full content" in status:
-                        note_context = note.get_context(context_size="long")
+                        note_context = await note.get_context(context_size="long")
                         context_data["note"].append(note_context)
                         total_content += str(note_context)
                 except Exception as e:
@@ -71,18 +71,20 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
                     continue
         else:
             # Default behavior - include all sources and notes with short context
-            for source in notebook.sources:
+            sources = await notebook.get_sources()
+            for source in sources:
                 try:
-                    source_context = source.get_context(context_size="short")
+                    source_context = await source.get_context(context_size="short")
                     context_data["source"].append(source_context)
                     total_content += str(source_context)
                 except Exception as e:
                     logger.warning(f"Error processing source {source.id}: {str(e)}")
                     continue
             
-            for note in notebook.notes:
+            notes = await notebook.get_notes()
+            for note in notes:
                 try:
-                    note_context = note.get_context(context_size="short")
+                    note_context = await note.get_context(context_size="short")
                     context_data["note"].append(note_context)
                     total_content += str(note_context)
                 except Exception as e:

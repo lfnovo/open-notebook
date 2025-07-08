@@ -17,9 +17,9 @@ async def get_models(
     """Get all configured models with optional type filtering."""
     try:
         if type:
-            models = Model.get_models_by_type(type)
+            models = await Model.get_models_by_type(type)
         else:
-            models = Model.get_all()
+            models = await Model.get_all()
         
         return [
             ModelResponse(
@@ -54,7 +54,7 @@ async def create_model(model_data: ModelCreate):
             provider=model_data.provider,
             type=model_data.type,
         )
-        new_model.save()
+        await new_model.save()
         
         return ModelResponse(
             id=new_model.id,
@@ -75,11 +75,11 @@ async def create_model(model_data: ModelCreate):
 async def delete_model(model_id: str):
     """Delete a model configuration."""
     try:
-        model = Model.get(model_id)
+        model = await Model.get(model_id)
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
         
-        model.delete()
+        await model.delete()
         
         return {"message": "Model deleted successfully"}
     except HTTPException:
@@ -93,7 +93,7 @@ async def delete_model(model_id: str):
 async def get_default_models():
     """Get default model assignments."""
     try:
-        defaults = DefaultModels()
+        defaults = await DefaultModels.get_instance()
         
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,
@@ -113,7 +113,7 @@ async def get_default_models():
 async def update_default_models(defaults_data: DefaultModelsResponse):
     """Update default model assignments."""
     try:
-        defaults = DefaultModels()
+        defaults = await DefaultModels.get_instance()
         
         # Update only provided fields
         if defaults_data.default_chat_model is not None:
@@ -131,11 +131,11 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
         if defaults_data.default_tools_model is not None:
             defaults.default_tools_model = defaults_data.default_tools_model
         
-        defaults.update()
+        await defaults.update()
         
         # Refresh the model manager cache
         from open_notebook.domain.models import model_manager
-        model_manager.refresh_defaults()
+        await model_manager.refresh_defaults()
         
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,

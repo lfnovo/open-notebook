@@ -31,7 +31,7 @@ async def embed_content(embed_request: EmbedRequest):
         
         # Get the item and embed it
         if item_type == "source":
-            item = Source.get(item_id)
+            item = await Source.get(item_id)
             if not item:
                 raise HTTPException(status_code=404, detail="Source not found")
             
@@ -45,11 +45,11 @@ async def embed_content(embed_request: EmbedRequest):
                 )
             
             # Perform embedding
-            item.vectorize()
+            await item.vectorize()
             message = "Source embedded successfully"
             
         elif item_type == "note":
-            item = Note.get(item_id)
+            item = await Note.get(item_id)
             if not item:
                 raise HTTPException(status_code=404, detail="Note not found")
             

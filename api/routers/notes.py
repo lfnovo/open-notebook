@@ -19,13 +19,13 @@ async def get_notes(
         if notebook_id:
             # Get notes for a specific notebook
             from open_notebook.domain.notebook import Notebook
-            notebook = Notebook.get(notebook_id)
+            notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
-            notes = notebook.notes
+            notes = await notebook.get_notes()
         else:
             # Get all notes
-            notes = Note.get_all(order_by="updated desc")
+            notes = await Note.get_all(order_by="updated desc")
         
         return [
             NoteResponse(
@@ -54,15 +54,15 @@ async def create_note(note_data: NoteCreate):
             content=note_data.content,
             note_type=note_data.note_type,
         )
-        new_note.save()
+        await new_note.save()
         
         # Add to notebook if specified
         if note_data.notebook_id:
             from open_notebook.domain.notebook import Notebook
-            notebook = Notebook.get(note_data.notebook_id)
+            notebook = await Notebook.get(note_data.notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
-            new_note.add_to_notebook(note_data.notebook_id)
+            await new_note.add_to_notebook(note_data.notebook_id)
         
         return NoteResponse(
             id=new_note.id,
@@ -85,7 +85,7 @@ async def create_note(note_data: NoteCreate):
 async def get_note(note_id: str):
     """Get a specific note by ID."""
     try:
-        note = Note.get(note_id)
+        note = await Note.get(note_id)
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
         
@@ -108,7 +108,7 @@ async def get_note(note_id: str):
 async def update_note(note_id: str, note_update: NoteUpdate):
     """Update a note."""
     try:
-        note = Note.get(note_id)
+        note = await Note.get(note_id)
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
         
@@ -120,7 +120,7 @@ async def update_note(note_id: str, note_update: NoteUpdate):
         if note_update.note_type is not None:
             note.note_type = note_update.note_type
         
-        note.save()
+        await note.save()
         
         return NoteResponse(
             id=note.id,
@@ -143,11 +143,11 @@ async def update_note(note_id: str, note_update: NoteUpdate):
 async def delete_note(note_id: str):
     """Delete a note."""
     try:
-        note = Note.get(note_id)
+        note = await Note.get(note_id)
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
         
-        note.delete()
+        await note.delete()
         
         return {"message": "Note deleted successfully"}
     except HTTPException:

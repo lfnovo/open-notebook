@@ -26,7 +26,7 @@ async def search_knowledge_base(search_request: SearchRequest):
                     detail="Vector search requires an embedding model. Please configure one in the Models section."
                 )
             
-            results = vector_search(
+            results = await vector_search(
                 keyword=search_request.query,
                 results=search_request.limit,
                 source=search_request.search_sources,
@@ -35,7 +35,7 @@ async def search_knowledge_base(search_request: SearchRequest):
             )
         else:
             # Text search
-            results = text_search(
+            results = await text_search(
                 keyword=search_request.query,
                 results=search_request.limit,
                 source=search_request.search_sources,

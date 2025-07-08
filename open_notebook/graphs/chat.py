@@ -3,9 +3,7 @@ from typing import Annotated, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import SystemMessage
-from langchain_core.runnables import (
-    RunnableConfig,
-)
+from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
@@ -23,16 +21,16 @@ class ThreadState(TypedDict):
     context_config: Optional[dict]
 
 
-def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
+async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
-    model = provision_langchain_model(
+    model = await provision_langchain_model(
         str(payload),
         config.get("configurable", {}).get("model_id"),
         "chat",
         max_tokens=2000,
     )
-    ai_message = model.invoke(payload)
+    ai_message = await model.ainvoke(payload)
     return {"messages": ai_message}
 
 

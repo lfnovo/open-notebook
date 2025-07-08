@@ -7,15 +7,15 @@ from typing import Dict, List, Optional
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.notebook import Source, Asset
+from open_notebook.domain.notebook import Asset, Source
 
 
 class SourcesService:
     """Service layer for sources operations using API."""
-    
+
     def __init__(self):
         logger.info("Using API for sources operations")
-    
+
     def get_all_sources(self, notebook_id: Optional[str] = None) -> List[Source]:
         """Get all sources with optional notebook filtering."""
         sources_data = api_client.get_sources(notebook_id=notebook_id)
@@ -26,16 +26,20 @@ class SourcesService:
                 title=source_data["title"],
                 topics=source_data["topics"],
                 asset=Asset(
-                    file_path=source_data["asset"]["file_path"] if source_data["asset"] else None,
-                    url=source_data["asset"]["url"] if source_data["asset"] else None
-                ) if source_data["asset"] else None,
+                    file_path=source_data["asset"]["file_path"]
+                    if source_data["asset"]
+                    else None,
+                    url=source_data["asset"]["url"] if source_data["asset"] else None,
+                )
+                if source_data["asset"]
+                else None,
             )
             source.id = source_data["id"]
             source.created = source_data["created"]
             source.updated = source_data["updated"]
             sources.append(source)
         return sources
-    
+
     def get_source(self, source_id: str) -> Source:
         """Get a specific source."""
         source_data = api_client.get_source(source_id)
@@ -44,15 +48,19 @@ class SourcesService:
             topics=source_data["topics"],
             full_text=source_data["full_text"],
             asset=Asset(
-                file_path=source_data["asset"]["file_path"] if source_data["asset"] else None,
-                url=source_data["asset"]["url"] if source_data["asset"] else None
-            ) if source_data["asset"] else None,
+                file_path=source_data["asset"]["file_path"]
+                if source_data["asset"]
+                else None,
+                url=source_data["asset"]["url"] if source_data["asset"] else None,
+            )
+            if source_data["asset"]
+            else None,
         )
         source.id = source_data["id"]
         source.created = source_data["created"]
         source.updated = source_data["updated"]
         return source
-    
+
     def create_source(
         self,
         notebook_id: str,
@@ -63,7 +71,7 @@ class SourcesService:
         title: Optional[str] = None,
         transformations: Optional[List[str]] = None,
         embed: bool = False,
-        delete_source: bool = False
+        delete_source: bool = False,
     ) -> Source:
         """Create a new source."""
         source_data = api_client.create_source(
@@ -75,23 +83,27 @@ class SourcesService:
             title=title,
             transformations=transformations,
             embed=embed,
-            delete_source=delete_source
+            delete_source=delete_source,
         )
-        
+
         source = Source(
             title=source_data["title"],
             topics=source_data["topics"],
             full_text=source_data["full_text"],
             asset=Asset(
-                file_path=source_data["asset"]["file_path"] if source_data["asset"] else None,
-                url=source_data["asset"]["url"] if source_data["asset"] else None
-            ) if source_data["asset"] else None,
+                file_path=source_data["asset"]["file_path"]
+                if source_data["asset"]
+                else None,
+                url=source_data["asset"]["url"] if source_data["asset"] else None,
+            )
+            if source_data["asset"]
+            else None,
         )
         source.id = source_data["id"]
         source.created = source_data["created"]
         source.updated = source_data["updated"]
         return source
-    
+
     def update_source(self, source: Source) -> Source:
         """Update a source."""
         updates = {
@@ -99,14 +111,14 @@ class SourcesService:
             "topics": source.topics,
         }
         source_data = api_client.update_source(source.id, **updates)
-        
+
         # Update the source object with the response
         source.title = source_data["title"]
         source.topics = source_data["topics"]
         source.updated = source_data["updated"]
-        
+
         return source
-    
+
     def delete_source(self, source_id: str) -> bool:
         """Delete a source."""
         api_client.delete_source(source_id)

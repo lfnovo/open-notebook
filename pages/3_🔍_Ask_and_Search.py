@@ -61,11 +61,12 @@ with ask_tab:
         selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    if not model_manager.embedding_model:
+    embedding_model = asyncio.run(model_manager.get_embedding_model())
+    if not embedding_model:
         st.warning(
             "You can't use this feature because you have no embedding model selected. Please set one up in the Models page."
         )
-    ask_bt = st.button("Ask") if model_manager.embedding_model else None
+    ask_bt = st.button("Ask") if embedding_model else None
     placeholder = st.container()
 
     if ask_bt:
@@ -96,7 +97,9 @@ with ask_tab:
         with st.container(border=True):
             with st.form("save_note_form"):
                 notebook = st.selectbox(
-                    "Notebook", asyncio.run(Notebook.get_all()), format_func=lambda x: x.name
+                    "Notebook",
+                    asyncio.run(Notebook.get_all()),
+                    format_func=lambda x: x.name,
                 )
                 if st.form_submit_button("Save Answer as Note"):
                     note = Note(
@@ -113,7 +116,7 @@ with search_tab:
         st.subheader("🔍 Search")
         st.caption("Search your knowledge base for specific keywords or concepts")
         search_term = st.text_input("Search", "")
-        if not model_manager.embedding_model:
+        if not embedding_model:
             st.warning(
                 "You can't use vector search because you have no embedding model selected. Only text search will be available."
             )

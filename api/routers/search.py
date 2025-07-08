@@ -20,12 +20,12 @@ async def search_knowledge_base(search_request: SearchRequest):
     try:
         if search_request.type == "vector":
             # Check if embedding model is available for vector search
-            if not model_manager.embedding_model:
+            if not await model_manager.get_embedding_model():
                 raise HTTPException(
-                    status_code=400, 
-                    detail="Vector search requires an embedding model. Please configure one in the Models section."
+                    status_code=400,
+                    detail="Vector search requires an embedding model. Please configure one in the Models section.",
                 )
-            
+
             results = await vector_search(
                 keyword=search_request.query,
                 results=search_request.limit,
@@ -41,13 +41,13 @@ async def search_knowledge_base(search_request: SearchRequest):
                 source=search_request.search_sources,
                 note=search_request.search_notes,
             )
-        
+
         return SearchResponse(
             results=results or [],
             total_count=len(results) if results else 0,
-            search_type=search_request.type
+            search_type=search_request.type,
         )
-        
+
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except DatabaseOperationError as e:
@@ -64,7 +64,7 @@ async def stream_ask_response(
     """Stream the ask response as Server-Sent Events."""
     try:
         final_answer = None
-        
+
         async for chunk in ask_graph.astream(
             input=dict(question=question),
             config=dict(
@@ -83,23 +83,23 @@ async def stream_ask_response(
                     "searches": [
                         {"term": search.term, "instructions": search.instructions}
                         for search in chunk["agent"]["strategy"].searches
-                    ]
+                    ],
                 }
                 yield f"data: {strategy_data}\n\n"
-                
+
             elif "provide_answer" in chunk:
                 for answer in chunk["provide_answer"]["answers"]:
                     answer_data = {"type": "answer", "content": answer}
                     yield f"data: {answer_data}\n\n"
-                    
+
             elif "write_final_answer" in chunk:
                 final_answer = chunk["write_final_answer"]["final_answer"]
                 final_data = {"type": "final_answer", "content": final_answer}
                 yield f"data: {final_data}\n\n"
-        
+
         # Send completion signal
         yield f"data: {{'type': 'complete', 'final_answer': '{final_answer}'}}\n\n"
-        
+
     except Exception as e:
         logger.error(f"Error in ask streaming: {str(e)}")
         error_data = {"type": "error", "message": str(e)}
@@ -111,35 +111,41 @@ async def ask_knowledge_base(ask_request: AskRequest):
     """Ask the knowledge base a question using AI models."""
     try:
         # Validate models exist
-        strategy_model = Model.get(ask_request.strategy_model)
-        answer_model = Model.get(ask_request.answer_model)
-        final_answer_model = Model.get(ask_request.final_answer_model)
-        
+        strategy_model = await Model.get(ask_request.strategy_model)
+        answer_model = await Model.get(ask_request.answer_model)
+        final_answer_model = await Model.get(ask_request.final_answer_model)
+
         if not strategy_model:
-            raise HTTPException(status_code=400, detail=f"Strategy model {ask_request.strategy_model} not found")
-        if not answer_model:
-            raise HTTPException(status_code=400, detail=f"Answer model {ask_request.answer_model} not found")
-        if not final_answer_model:
-            raise HTTPException(status_code=400, detail=f"Final answer model {ask_request.final_answer_model} not found")
-        
-        # Check if embedding model is available
-        if not model_manager.embedding_model:
             raise HTTPException(
                 status_code=400,
-                detail="Ask feature requires an embedding model. Please configure one in the Models section."
+                detail=f"Strategy model {ask_request.strategy_model} not found",
             )
-        
+        if not answer_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Answer model {ask_request.answer_model} not found",
+            )
+        if not final_answer_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Final answer model {ask_request.final_answer_model} not found",
+            )
+
+        # Check if embedding model is available
+        if not await model_manager.get_embedding_model():
+            raise HTTPException(
+                status_code=400,
+                detail="Ask feature requires an embedding model. Please configure one in the Models section.",
+            )
+
         # For streaming response
         return StreamingResponse(
-            stream_ask_response(
-                ask_request.question, 
-                strategy_model, 
-                answer_model, 
-                final_answer_model
+            await stream_ask_response(
+                ask_request.question, strategy_model, answer_model, final_answer_model
             ),
-            media_type="text/plain"
+            media_type="text/plain",
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -152,24 +158,33 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
     """Ask the knowledge base a question and return a simple response (non-streaming)."""
     try:
         # Validate models exist
-        strategy_model = Model.get(ask_request.strategy_model)
-        answer_model = Model.get(ask_request.answer_model)
-        final_answer_model = Model.get(ask_request.final_answer_model)
-        
+        strategy_model = await Model.get(ask_request.strategy_model)
+        answer_model = await Model.get(ask_request.answer_model)
+        final_answer_model = await Model.get(ask_request.final_answer_model)
+
         if not strategy_model:
-            raise HTTPException(status_code=400, detail=f"Strategy model {ask_request.strategy_model} not found")
-        if not answer_model:
-            raise HTTPException(status_code=400, detail=f"Answer model {ask_request.answer_model} not found")
-        if not final_answer_model:
-            raise HTTPException(status_code=400, detail=f"Final answer model {ask_request.final_answer_model} not found")
-        
-        # Check if embedding model is available
-        if not model_manager.embedding_model:
             raise HTTPException(
                 status_code=400,
-                detail="Ask feature requires an embedding model. Please configure one in the Models section."
+                detail=f"Strategy model {ask_request.strategy_model} not found",
             )
-        
+        if not answer_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Answer model {ask_request.answer_model} not found",
+            )
+        if not final_answer_model:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Final answer model {ask_request.final_answer_model} not found",
+            )
+
+        # Check if embedding model is available
+        if not await model_manager.get_embedding_model():
+            raise HTTPException(
+                status_code=400,
+                detail="Ask feature requires an embedding model. Please configure one in the Models section.",
+            )
+
         # Run the ask graph and get final result
         final_answer = None
         async for chunk in ask_graph.astream(
@@ -185,15 +200,12 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         ):
             if "write_final_answer" in chunk:
                 final_answer = chunk["write_final_answer"]["final_answer"]
-        
+
         if not final_answer:
             raise HTTPException(status_code=500, detail="No answer generated")
-        
-        return AskResponse(
-            answer=final_answer,
-            question=ask_request.question
-        )
-        
+
+        return AskResponse(answer=final_answer, question=ask_request.question)
+
     except HTTPException:
         raise
     except Exception as e:

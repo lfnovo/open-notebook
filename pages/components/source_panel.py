@@ -23,6 +23,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
     source.title = st.text_input("Title", value=current_title)
     if source.title != current_title:
         from api.sources_service import sources_service
+
         sources_service.update_source(source)
         st.toast("Saved new Title")
 
@@ -55,16 +56,17 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                             "Save as Note", icon="📝", key=f"save_note_{insight.id}"
                         ):
                             from api.notes_service import notes_service
+
                             notes_service.create_note(
                                 content=insight.content,
                                 title=f"{insight.insight_type} from source {source.title}",
                                 note_type="ai",
-                                notebook_id=notebook_id
+                                notebook_id=notebook_id,
                             )
                             st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:
-            transformations = Transformation.get_all(order_by="name asc")
+            transformations = asyncio.run(Transformation.get_all(order_by="name asc"))
             if transformations:
                 with st.container(border=True):
                     transformation = st.selectbox(
@@ -86,20 +88,22 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     "No transformations created yet. Create new Transformation to use this feature."
                 )
 
-            if not model_manager.embedding_model:
+            embedding_model = asyncio.run(model_manager.get_embedding_model())
+            if not embedding_model:
                 help = (
                     "No embedding model found. Please, select one on the Models page."
                 )
             else:
                 help = "This will generate your embedding vectors on the database for powerful search capabilities"
 
-            if len(asyncio.run(source.get_embedded_chunks())) == 0 and st.button(
+            if not asyncio.run(source.get_embedded_chunks()) and st.button(
                 "Embed vectors",
                 icon="🦾",
                 help=help,
-                disabled=model_manager.embedding_model is None,
+                disabled=not embedding_model,
             ):
                 from api.embedding_service import embedding_service
+
                 result = embedding_service.embed_content(source.id, "source")
                 st.success(result.get("message", "Embedding complete"))
 
@@ -111,6 +115,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     "Delete", type="primary", key=f"bt_delete_source_{source.id}"
                 ):
                     from api.sources_service import sources_service
+
                     sources_service.delete_source(source.id)
                     st.rerun()
 

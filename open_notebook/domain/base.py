@@ -40,15 +40,12 @@ class ObjectModel(BaseModel):
                 raise InvalidInputError(
                     "get_all() must be called from a specific model class"
                 )
-
             if order_by:
-                query = f"SELECT * FROM {table_name} ORDER BY $order_by"
-                params = {"order_by": order_by}
+                query = f"SELECT * FROM {table_name} ORDER BY {order_by}"
             else:
                 query = f"SELECT * FROM {table_name}"
-                params = {}
 
-            result = await repo_query(query, params)
+            result = await repo_query(query)
             objects = []
             for obj in result:
                 try:
@@ -80,7 +77,7 @@ class ObjectModel(BaseModel):
                     raise InvalidInputError(f"No class found for table {table_name}")
                 target_class = cast(Type[T], found_class)
 
-            result = await repo_query("SELECT * FROM $id", {"id": id})
+            result = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(id)})
             if result:
                 return target_class(**result[0])
             else:
@@ -144,8 +141,10 @@ class ObjectModel(BaseModel):
                     else self.created
                 )
                 logger.debug(f"Updating record with id {self.id}")
-                repo_result = await repo_update(self.__class__.table_name, self.id, data)
-
+                repo_result = await repo_update(
+                    self.__class__.table_name, self.id, data
+                )
+                logger.critical(repo_result)
             # Update the current instance with the result
             for key, value in repo_result[0].items():
                 if hasattr(self, key):
@@ -234,11 +233,11 @@ class RecordModel(BaseModel):
         # Only initialize if this is a new instance
         if not hasattr(self, "_initialized"):
             object.__setattr__(self, "__dict__", {})
-            
+
             # For RecordModel, we need to handle async initialization differently
             # Initialize with provided kwargs only for now
             super().__init__(**kwargs)
-            
+
             # Mark as initialized but not loaded from DB yet
             object.__setattr__(self, "_initialized", True)
             object.__setattr__(self, "_db_loaded", False)
@@ -246,8 +245,11 @@ class RecordModel(BaseModel):
     async def _load_from_db(self):
         """Load data from database if not already loaded"""
         if not getattr(self, "_db_loaded", False):
-            result = await repo_query("SELECT * FROM ONLY $record_id", {"record_id": ensure_record_id(self.record_id)})
-            
+            result = await repo_query(
+                "SELECT * FROM ONLY $record_id",
+                {"record_id": ensure_record_id(self.record_id)},
+            )
+
             # Handle case where record doesn't exist yet
             if result:
                 if isinstance(result, list) and len(result) > 0:
@@ -262,7 +264,7 @@ class RecordModel(BaseModel):
                     for key, value in result.items():
                         if hasattr(self, key):
                             object.__setattr__(self, key, value)
-            
+
             object.__setattr__(self, "_db_loaded", True)
 
     @classmethod
@@ -276,7 +278,9 @@ class RecordModel(BaseModel):
     def auto_save_validator(self):
         if self.__class__.auto_save:
             # Auto-save can't work with async - log warning
-            logger.warning(f"Auto-save is enabled for {self.__class__.__name__} but update() is now async. Call await instance.update() manually.")
+            logger.warning(
+                f"Auto-save is enabled for {self.__class__.__name__} but update() is now async. Call await instance.update() manually."
+            )
         return self
 
     async def update(self):
@@ -287,9 +291,17 @@ class RecordModel(BaseModel):
             if not str(field_info.annotation).startswith("typing.ClassVar")
         }
 
-        await repo_upsert(self.__class__.table_name if hasattr(self.__class__, 'table_name') else 'record', self.record_id, data)
+        await repo_upsert(
+            self.__class__.table_name
+            if hasattr(self.__class__, "table_name")
+            else "record",
+            self.record_id,
+            data,
+        )
 
-        result = await repo_query("SELECT * FROM $record_id", {"record_id": self.record_id})
+        result = await repo_query(
+            "SELECT * FROM $record_id", {"record_id": ensure_record_id(self.record_id)}
+        )
         if result:
             for key, value in result[0].items():
                 if hasattr(self, key):

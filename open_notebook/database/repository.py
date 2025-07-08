@@ -14,7 +14,7 @@ def get_database_url():
     surreal_url = os.getenv("SURREAL_URL")
     if surreal_url:
         return surreal_url
-    
+
     # Fallback to old format - WebSocket URL format
     address = os.getenv("SURREAL_ADDRESS", "localhost")
     port = os.getenv("SURREAL_PORT", "8000")
@@ -129,14 +129,14 @@ async def repo_update(
             record_id = id
         else:
             record_id = f"{table}:{id}"
-
+        data.pop("id", None)
         data["updated"] = datetime.now(timezone.utc)
         query = f"UPDATE {record_id} MERGE $data;"
         # logger.debug(f"Update query: {query}")
         result = await repo_query(query, {"data": data})
         # if isinstance(result, list):
         #     return [_return_data(item) for item in result]
-        return [parse_record_ids(result)]
+        return parse_record_ids(result)
     except Exception as e:
         raise RuntimeError(f"Failed to update record: {str(e)}")
 
@@ -158,7 +158,7 @@ async def repo_delete(record_id: Union[str, RecordID]):
 
     try:
         async with db_connection() as connection:
-            return await connection.delete(record_id)
+            return await connection.delete(ensure_record_id(record_id))
     except Exception as e:
         logger.exception(e)
         raise RuntimeError(f"Failed to delete record: {str(e)}")

@@ -17,7 +17,7 @@ from .consts import note_context_icons
 
 @st.dialog("Write a Note", width="large")
 def add_note(notebook_id):
-    if not model_manager.embedding_model:
+    if not asyncio.run(model_manager.get_embedding_model()):
         st.warning(
             "Since there is no embedding model selected, your note will be saved but not searchable."
         )

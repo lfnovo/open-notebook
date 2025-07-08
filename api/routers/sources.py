@@ -1,12 +1,18 @@
 import asyncio
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, UploadFile, File, Form
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from loguru import logger
 
-from api.models import SourceCreate, SourceUpdate, SourceResponse, SourceListResponse, AssetModel
-from open_notebook.domain.notebook import Source, Notebook, Asset
+from api.models import (
+    AssetModel,
+    SourceCreate,
+    SourceListResponse,
+    SourceResponse,
+    SourceUpdate,
+)
+from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.graphs.source import source_graph
@@ -15,7 +21,9 @@ router = APIRouter()
 
 
 @router.get("/sources", response_model=List[SourceListResponse])
-async def get_sources(notebook_id: Optional[str] = Query(None, description="Filter by notebook ID")):
+async def get_sources(
+    notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+):
     """Get all sources with optional notebook filtering."""
     try:
         if notebook_id:
@@ -27,7 +35,7 @@ async def get_sources(notebook_id: Optional[str] = Query(None, description="Filt
         else:
             # Get all sources
             sources = await Source.get_all(order_by="updated desc")
-        
+
         # Create response list with async insights count
         response_list = []
         for source in sources:
@@ -39,15 +47,17 @@ async def get_sources(notebook_id: Optional[str] = Query(None, description="Filt
                     topics=source.topics or [],
                     asset=AssetModel(
                         file_path=source.asset.file_path if source.asset else None,
-                        url=source.asset.url if source.asset else None
-                    ) if source.asset else None,
-                    embedded_chunks=source.embedded_chunks,
+                        url=source.asset.url if source.asset else None,
+                    )
+                    if source.asset
+                    else None,
+                    embedded_chunks=await source.get_embedded_chunks(),
                     insights_count=len(insights),
                     created=str(source.created),
                     updated=str(source.updated),
                 )
             )
-        
+
         return response_list
     except HTTPException:
         raise
@@ -64,55 +74,70 @@ async def create_source(source_data: SourceCreate):
         notebook = await Notebook.get(source_data.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         # Prepare content_state for source_graph
         content_state = {}
-        
+
         if source_data.type == "link":
             if not source_data.url:
-                raise HTTPException(status_code=400, detail="URL is required for link type")
+                raise HTTPException(
+                    status_code=400, detail="URL is required for link type"
+                )
             content_state["url"] = source_data.url
         elif source_data.type == "upload":
             if not source_data.file_path:
-                raise HTTPException(status_code=400, detail="File path is required for upload type")
+                raise HTTPException(
+                    status_code=400, detail="File path is required for upload type"
+                )
             content_state["file_path"] = source_data.file_path
             content_state["delete_source"] = source_data.delete_source
         elif source_data.type == "text":
             if not source_data.content:
-                raise HTTPException(status_code=400, detail="Content is required for text type")
+                raise HTTPException(
+                    status_code=400, detail="Content is required for text type"
+                )
             content_state["content"] = source_data.content
         else:
-            raise HTTPException(status_code=400, detail="Invalid source type. Must be link, upload, or text")
-        
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid source type. Must be link, upload, or text",
+            )
+
         # Get transformations to apply
         transformations = []
         if source_data.transformations:
             for trans_id in source_data.transformations:
                 transformation = await Transformation.get(trans_id)
                 if not transformation:
-                    raise HTTPException(status_code=404, detail=f"Transformation {trans_id} not found")
+                    raise HTTPException(
+                        status_code=404, detail=f"Transformation {trans_id} not found"
+                    )
                 transformations.append(transformation)
-        
+
         # Process source using the source_graph
-        result = await source_graph.ainvoke({
-            "content_state": content_state,
-            "notebook_id": source_data.notebook_id,
-            "apply_transformations": transformations,
-            "embed": source_data.embed,
-        })
-        
+        result = await source_graph.ainvoke(
+            {
+                "content_state": content_state,
+                "notebook_id": source_data.notebook_id,
+                "apply_transformations": transformations,
+                "embed": source_data.embed,
+            }
+        )
+
         source = result["source"]
-        
+
         return SourceResponse(
             id=source.id,
             title=source.title,
             topics=source.topics or [],
             asset=AssetModel(
                 file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None
-            ) if source.asset else None,
+                url=source.asset.url if source.asset else None,
+            )
+            if source.asset
+            else None,
             full_text=source.full_text,
-            embedded_chunks=source.embedded_chunks,
+            embedded_chunks=await source.get_embedded_chunks(),
             created=str(source.created),
             updated=str(source.updated),
         )
@@ -132,17 +157,19 @@ async def get_source(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         return SourceResponse(
             id=source.id,
             title=source.title,
             topics=source.topics or [],
             asset=AssetModel(
                 file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None
-            ) if source.asset else None,
+                url=source.asset.url if source.asset else None,
+            )
+            if source.asset
+            else None,
             full_text=source.full_text,
-            embedded_chunks=source.embedded_chunks,
+            embedded_chunks=await source.get_embedded_chunks(),
             created=str(source.created),
             updated=str(source.updated),
         )
@@ -160,25 +187,27 @@ async def update_source(source_id: str, source_update: SourceUpdate):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         # Update only provided fields
         if source_update.title is not None:
             source.title = source_update.title
         if source_update.topics is not None:
             source.topics = source_update.topics
-        
+
         await source.save()
-        
+
         return SourceResponse(
             id=source.id,
             title=source.title,
             topics=source.topics or [],
             asset=AssetModel(
                 file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None
-            ) if source.asset else None,
+                url=source.asset.url if source.asset else None,
+            )
+            if source.asset
+            else None,
             full_text=source.full_text,
-            embedded_chunks=source.embedded_chunks,
+            embedded_chunks=await source.get_embedded_chunks(),
             created=str(source.created),
             updated=str(source.updated),
         )
@@ -198,9 +227,9 @@ async def delete_source(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         await source.delete()
-        
+
         return {"message": "Source deleted successfully"}
     except HTTPException:
         raise

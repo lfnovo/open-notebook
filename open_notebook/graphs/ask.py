@@ -53,7 +53,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
     system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(
         data=state
     )
-    model = provision_langchain_model(
+    model = await provision_langchain_model(
         system_prompt,
         config.get("configurable", {}).get("strategy_model"),
         "tools",
@@ -62,14 +62,14 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
     )
     # model = model.bind_tools(tools)
     # First get the raw response from the model
-    ai_message = model.invoke(system_prompt)
-    
+    ai_message = await model.ainvoke(system_prompt)
+
     # Clean the thinking content from the response
     cleaned_content = clean_thinking_content(ai_message.content)
-    
+
     # Parse the cleaned JSON content
     strategy = parser.parse(cleaned_content)
-    
+
     return {"strategy": strategy}
 
 
@@ -93,32 +93,32 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     # if state["type"] == "text":
     #     results = text_search(state["term"], 10, True, True)
     # else:
-    results = vector_search(state["term"], 10, True, True)
+    results = await vector_search(state["term"], 10, True, True)
     if len(results) == 0:
         return {"answers": []}
     payload["results"] = results
     ids = [r["id"] for r in results]
     payload["ids"] = ids
     system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)
-    model = provision_langchain_model(
+    model = await provision_langchain_model(
         system_prompt,
         config.get("configurable", {}).get("answer_model"),
         "tools",
         max_tokens=2000,
     )
-    ai_message = model.invoke(system_prompt)
+    ai_message = await model.ainvoke(system_prompt)
     return {"answers": [clean_thinking_content(ai_message.content)]}
 
 
 async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)
-    model = provision_langchain_model(
+    model = await provision_langchain_model(
         system_prompt,
         config.get("configurable", {}).get("final_answer_model"),
         "tools",
         max_tokens=2000,
     )
-    ai_message = model.invoke(system_prompt)
+    ai_message = await model.ainvoke(system_prompt)
     return {"final_answer": clean_thinking_content(ai_message.content)}
 
 

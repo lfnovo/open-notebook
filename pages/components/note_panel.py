@@ -13,7 +13,7 @@ from pages.stream_app.utils import convert_source_references
 
 
 def note_panel(note_id, notebook_id=None):
-    if not model_manager.embedding_model:
+    if not asyncio.run(model_manager.get_embedding_model()):
         st.warning(
             "Since there is no embedding model selected, your note will be saved but not searchable."
         )
@@ -33,6 +33,7 @@ def note_panel(note_id, notebook_id=None):
         if b1.button("Save", key=f"pn_edit_note_{note.id or 'new'}"):
             logger.debug("Editing note")
             from api.notes_service import notes_service
+
             if note.id:
                 notes_service.update_note(note)
             else:
@@ -40,12 +41,13 @@ def note_panel(note_id, notebook_id=None):
                     content=note.content,
                     title=note.title,
                     note_type=note.note_type,
-                    notebook_id=notebook_id
+                    notebook_id=notebook_id,
                 )
             st.rerun()
     if b2.button("Delete", type="primary", key=f"delete_note_{note.id or 'new'}"):
         logger.debug("Deleting note")
         from api.notes_service import notes_service
+
         if note.id:
             notes_service.delete_note(note.id)
         st.rerun()

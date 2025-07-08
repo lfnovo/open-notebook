@@ -5,6 +5,7 @@ import humanize
 import nest_asyncio
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
+from loguru import logger
 
 nest_asyncio.apply()
 
@@ -12,13 +13,11 @@ from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.plugins.podcasts import PodcastConfig
-from open_notebook.utils import token_count
+from open_notebook.utils import parse_thinking_content, token_count
 from pages.stream_app.utils import (
     convert_source_references,
     create_session_for_notebook,
 )
-
-from open_notebook.utils import parse_thinking_content
 
 from .note import make_note_from_chat
 
@@ -26,10 +25,10 @@ from .note import make_note_from_chat
 # todo: build a smarter, more robust context manager function
 def build_context(notebook_id):
     from api.context_service import context_service
-    
+
     # Convert context_config format for API
     context_config = {"sources": {}, "notes": {}}
-    
+
     for id, status in st.session_state[notebook_id]["context_config"].items():
         if not id:
             continue
@@ -42,31 +41,30 @@ def build_context(notebook_id):
             context_config["sources"][item_id] = status
         elif item_type == "note":
             context_config["notes"][item_id] = status
-    
+
     # Get context via API
     result = context_service.get_notebook_context(
-        notebook_id=notebook_id,
-        context_config=context_config
+        notebook_id=notebook_id, context_config=context_config
     )
-    
+
     # Store in session state for compatibility
     st.session_state[notebook_id]["context"] = {
         "note": result["notes"],
-        "source": result["sources"]
+        "source": result["sources"],
     }
-    
+
     return st.session_state[notebook_id]["context"]
 
 
-def execute_chat(txt_input, context, current_session):
+async def execute_chat(txt_input, context, current_session):
     current_state = st.session_state[current_session.id]
     current_state["messages"] += [txt_input]
     current_state["context"] = context
-    result = chat_graph.invoke(
+    result = await chat_graph.ainvoke(
         input=current_state,
         config=RunnableConfig(configurable={"thread_id": current_session.id}),
     )
-    current_session.save()
+    await current_session.save()
     return result
 
 
@@ -80,7 +78,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
         st.json(context)
     with podcast_tab:
         with st.container(border=True):
-            podcast_configs = PodcastConfig.get_all()
+            podcast_configs = asyncio.run(PodcastConfig.get_all())
             podcast_config_names = [pd.name for pd in podcast_configs]
             if len(podcast_configs) == 0:
                 st.warning("No podcast configurations found")
@@ -181,10 +179,12 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
             request = st.chat_input("Enter your question")
             # removing for now since it's not multi-model capable right now
             if request:
-                response = execute_chat(
-                    txt_input=request,
-                    context=context,
-                    current_session=current_session,
+                response = asyncio.run(
+                    execute_chat(
+                        txt_input=request,
+                        context=context,
+                        current_session=current_session,
+                    )
                 )
                 st.session_state[current_session.id]["messages"] = response["messages"]
 
@@ -197,19 +197,23 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 with st.chat_message(name=msg.type):
                     if msg.type == "ai":
                         # Parse thinking content for AI messages
-                        thinking_content, cleaned_content = parse_thinking_content(msg.content)
-                        
+                        thinking_content, cleaned_content = parse_thinking_content(
+                            msg.content
+                        )
+
                         # Show thinking content in expander if present
                         if thinking_content:
                             with st.expander("🤔 AI Reasoning", expanded=False):
                                 st.markdown(thinking_content)
-                        
+
                         # Show the cleaned regular content
                         if cleaned_content:
                             st.markdown(convert_source_references(cleaned_content))
-                        elif msg.content:  # Fallback to original if cleaning resulted in empty content
+                        elif (
+                            msg.content
+                        ):  # Fallback to original if cleaning resulted in empty content
                             st.markdown(convert_source_references(msg.content))
-                        
+
                         # New Note button for AI messages
                         if st.button("💾 New Note", key=f"render_save_{msg.id}"):
                             make_note_from_chat(

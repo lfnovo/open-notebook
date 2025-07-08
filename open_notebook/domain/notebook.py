@@ -5,7 +5,7 @@ from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from open_notebook.database.repository import repo_query, ensure_record_id
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.models import model_manager
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
@@ -27,12 +27,15 @@ class Notebook(ObjectModel):
 
     async def get_sources(self) -> List["Source"]:
         try:
-            srcs = await repo_query("""
+            srcs = await repo_query(
+                """
                 select * omit source.full_text from (
                 select in as source from reference where out=$id
                 fetch source
             ) order by source.updated desc
-            """, {"id": ensure_record_id(self.id)})
+            """,
+                {"id": ensure_record_id(self.id)},
+            )
             return [Source(**src["source"]) for src in srcs] if srcs else []
         except Exception as e:
             logger.error(f"Error fetching sources for notebook {self.id}: {str(e)}")
@@ -41,12 +44,15 @@ class Notebook(ObjectModel):
 
     async def get_notes(self) -> List["Note"]:
         try:
-            srcs = await repo_query("""
+            srcs = await repo_query(
+                """
             select * omit note.content, note.embedding from (
                 select in as note from artifact where out=$id
                 fetch note
             ) order by note.updated desc
-            """, {"id": ensure_record_id(self.id)})
+            """,
+                {"id": ensure_record_id(self.id)},
+            )
             return [Note(**src["note"]) for src in srcs] if srcs else []
         except Exception as e:
             logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
@@ -55,7 +61,8 @@ class Notebook(ObjectModel):
 
     async def get_chat_sessions(self) -> List["ChatSession"]:
         try:
-            srcs = await repo_query("""
+            srcs = await repo_query(
+                """
                 select * from (
                     select
                     <- chat_session as chat_session
@@ -64,12 +71,16 @@ class Notebook(ObjectModel):
                     fetch chat_session
                 )
                 order by chat_session.updated desc
-            """, {"id": ensure_record_id(self.id)})
+            """,
+                {"id": ensure_record_id(self.id)},
+            )
             return (
                 [ChatSession(**src["chat_session"][0]) for src in srcs] if srcs else []
             )
         except Exception as e:
-            logger.error(f"Error fetching chat sessions for notebook {self.id}: {str(e)}")
+            logger.error(
+                f"Error fetching chat sessions for notebook {self.id}: {str(e)}"
+            )
             logger.exception(e)
             raise DatabaseOperationError(e)
 
@@ -85,9 +96,12 @@ class SourceEmbedding(ObjectModel):
 
     async def get_source(self) -> "Source":
         try:
-            src = await repo_query("""
+            src = await repo_query(
+                """
             select source.* from $id fetch source
-            """, {"id": ensure_record_id(self.id)})
+            """,
+                {"id": ensure_record_id(self.id)},
+            )
             return Source(**src[0]["source"])
         except Exception as e:
             logger.error(f"Error fetching source for embedding {self.id}: {str(e)}")
@@ -102,9 +116,12 @@ class SourceInsight(ObjectModel):
 
     async def get_source(self) -> "Source":
         try:
-            src = await repo_query("""
+            src = await repo_query(
+                """
             select source.* from $id fetch source
-            """, {"id": ensure_record_id(self.id)})
+            """,
+                {"id": ensure_record_id(self.id)},
+            )
             return Source(**src[0]["source"])
         except Exception as e:
             logger.error(f"Error fetching source for insight {self.id}: {str(e)}")
@@ -147,9 +164,12 @@ class Source(ObjectModel):
 
     async def get_embedded_chunks(self) -> int:
         try:
-            result = await repo_query("""
+            result = await repo_query(
+                """
                 select count() as chunks from source_embedding where source=$id GROUP ALL
-                """, {"id": ensure_record_id(self.id)})
+                """,
+                {"id": ensure_record_id(self.id)},
+            )
             if len(result) == 0:
                 return 0
             return result[0]["chunks"]
@@ -160,9 +180,12 @@ class Source(ObjectModel):
 
     async def get_insights(self) -> List[SourceInsight]:
         try:
-            result = await repo_query("""
+            result = await repo_query(
+                """
                 SELECT * FROM source_insight WHERE source=$id
-                """, {"id": ensure_record_id(self.id)})
+                """,
+                {"id": ensure_record_id(self.id)},
+            )
             return [SourceInsight(**insight) for insight in result]
         except Exception as e:
             logger.error(f"Error fetching insights for source {self.id}: {str(e)}")
@@ -195,8 +218,10 @@ class Source(ObjectModel):
 
             # Process chunks concurrently using async gather
             logger.info("Starting concurrent processing of chunks")
-            
-            async def process_chunk(idx: int, chunk: str) -> Tuple[int, List[float], str]:
+
+            async def process_chunk(
+                idx: int, chunk: str
+            ) -> Tuple[int, List[float], str]:
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
                     embedding = (await EMBEDDING_MODEL.aembed([chunk]))[0]
@@ -216,18 +241,20 @@ class Source(ObjectModel):
             # Insert results in order (they're already ordered by index)
             for idx, embedding, content in results:
                 logger.debug(f"Inserting chunk {idx} into database")
-                await repo_query("""
+                await repo_query(
+                    """
                     CREATE source_embedding CONTENT {
                             "source": $source_id,
                             "order": $order,
                             "content": $content,
                             "embedding": $embedding,
-                    };""", {
+                    };""",
+                    {
                         "source_id": ensure_record_id(self.id),
                         "order": idx,
                         "content": content,
-                        "embedding": embedding
-                    }
+                        "embedding": embedding,
+                    },
                 )
 
             logger.info(f"Vectorization complete for source {self.id}")
@@ -245,19 +272,23 @@ class Source(ObjectModel):
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
-            embedding = (await EMBEDDING_MODEL.aembed([content]))[0] if EMBEDDING_MODEL else []
-            return await repo_query("""
+            embedding = (
+                (await EMBEDDING_MODEL.aembed([content]))[0] if EMBEDDING_MODEL else []
+            )
+            return await repo_query(
+                """
                 CREATE source_insight CONTENT {
                         "source": $source_id,
                         "insight_type": $insight_type,
                         "content": $content,
                         "embedding": $embedding,
-                };""", {
+                };""",
+                {
                     "source_id": ensure_record_id(self.id),
                     "insight_type": insight_type,
                     "content": content,
-                    "embedding": embedding
-                }
+                    "embedding": embedding,
+                },
             )
         except Exception as e:
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
@@ -311,7 +342,9 @@ class ChatSession(ObjectModel):
         return await self.relate("refers_to", notebook_id)
 
 
-async def text_search(keyword: str, results: int, source: bool = True, note: bool = True):
+async def text_search(
+    keyword: str, results: int, source: bool = True, note: bool = True
+):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:

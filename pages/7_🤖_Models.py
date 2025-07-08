@@ -1,10 +1,15 @@
+import asyncio
 import os
+
+import nest_asyncio
+
+nest_asyncio.apply()
 
 import streamlit as st
 from esperanto import AIFactory
 
 from api.models_service import models_service
-from open_notebook.domain.models import DefaultModels, Model, model_manager
+from open_notebook.domain.models import model_manager
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
@@ -34,7 +39,10 @@ def check_available_providers():
         and os.environ.get("VERTEX_LOCATION") is not None
         and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
     )
-    provider_status["gemini"] = os.environ.get("GOOGLE_API_KEY") is not None
+    provider_status["gemini"] = (
+        os.environ.get("GOOGLE_API_KEY") is not None
+        or os.environ.get("GEMINI_API_KEY") is not None
+    )
     provider_status["openrouter"] = (
         os.environ.get("OPENROUTER_API_KEY") is not None
         and os.environ.get("OPENAI_API_KEY") is not None
@@ -42,7 +50,7 @@ def check_available_providers():
     )
     provider_status["anthropic"] = os.environ.get("ANTHROPIC_API_KEY") is not None
     provider_status["elevenlabs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
-    provider_status["voyage"] = os.environ.get("VORAGE_API_KEY") is not None
+    provider_status["voyage"] = os.environ.get("VOYAGE_API_KEY") is not None
     provider_status["azure"] = (
         os.environ.get("AZURE_OPENAI_API_KEY") is not None
         and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
@@ -108,9 +116,7 @@ def add_model_form(model_type, container_key):
         if st.form_submit_button("Add Model"):
             if model_name:
                 models_service.create_model(
-                    name=model_name, 
-                    provider=provider, 
-                    model_type=model_type
+                    name=model_name, provider=provider, model_type=model_type
                 )
                 st.success("Model added!")
                 st.rerun()
@@ -131,12 +137,12 @@ def handle_default_selection(
     if selected_model and (not current_value or selected_model.id != current_value):
         setattr(default_models, key, selected_model.id)
         models_service.update_default_models(default_models)
-        model_manager.refresh_defaults()
+        asyncio.run(model_manager.refresh_defaults())
         st.toast(f"Default {model_type} model set to {selected_model.name}")
     elif not selected_model and current_value:
         setattr(default_models, key, None)
         models_service.update_default_models(default_models)
-        model_manager.refresh_defaults()
+        asyncio.run(model_manager.refresh_defaults())
         st.toast(f"Default {model_type} model removed")
 
     if caption:

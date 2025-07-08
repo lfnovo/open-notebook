@@ -27,7 +27,7 @@ def source_panel_dialog(source_id, notebook_id=None):
 
 @st.dialog("Add a Source", width="large")
 def add_source(notebook_id):
-    if not model_manager.speech_to_text:
+    if not asyncio.run(model_manager.get_speech_to_text()):
         st.warning(
             "Since there is no speech to text model selected, you can't upload audio/video files."
         )
@@ -37,7 +37,7 @@ def add_source(notebook_id):
     content_settings = ContentSettings()
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
     req = {}
-    transformations = Transformation.get_all()
+    transformations = asyncio.run(Transformation.get_all())
     if source_type == "Link":
         source_link = st.text_input("Link")
         req["url"] = source_link
@@ -49,7 +49,6 @@ def add_source(notebook_id):
         source_text = st.text_area("Text")
         req["content"] = source_text
 
-    transformations = Transformation.get_all()
     default_transformations = [t for t in transformations if t.apply_default]
     apply_transformations = st.multiselect(
         "Apply transformations",
@@ -98,10 +97,14 @@ def add_source(notebook_id):
                         f.write(source_file.getbuffer())
 
                 from api.sources_service import sources_service
-                
+
                 # Convert transformations to IDs
-                transformation_ids = [t.id for t in apply_transformations] if apply_transformations else []
-                
+                transformation_ids = (
+                    [t.id for t in apply_transformations]
+                    if apply_transformations
+                    else []
+                )
+
                 # Determine source type and parameters
                 if source_type == "Link":
                     sources_service.create_source(
@@ -109,7 +112,7 @@ def add_source(notebook_id):
                         source_type="link",
                         url=source_link,
                         transformations=transformation_ids,
-                        embed=run_embed
+                        embed=run_embed,
                     )
                 elif source_type == "Upload":
                     sources_service.create_source(
@@ -118,7 +121,7 @@ def add_source(notebook_id):
                         file_path=req["file_path"],
                         transformations=transformation_ids,
                         embed=run_embed,
-                        delete_source=req.get("delete_source", False)
+                        delete_source=req.get("delete_source", False),
                     )
                 else:  # Text
                     sources_service.create_source(
@@ -126,7 +129,7 @@ def add_source(notebook_id):
                         source_type="text",
                         content=source_text,
                         transformations=transformation_ids,
-                        embed=run_embed
+                        embed=run_embed,
                     )
             except UnsupportedTypeException as e:
                 st.warning(
@@ -160,8 +163,10 @@ def source_card(source, notebook_id):
             index=1,
             key=f"source_{source.id}",
         )
+
+        insights = asyncio.run(source.get_insights())
         st.caption(
-            f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
+            f"Updated: {naturaltime(source.updated)}, **{len(insights)}** insights"
         )
         if st.button("Expand", icon="📝", key=source.id):
             source_panel_dialog(source.id, notebook_id)

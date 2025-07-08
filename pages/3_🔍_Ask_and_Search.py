@@ -5,6 +5,8 @@ import streamlit as st
 
 nest_asyncio.apply()
 
+from api.notebook_service import notebook_service
+from api.notes_service import notes_service
 from api.search_service import search_service
 from open_notebook.domain.models import DefaultModels, model_manager
 from open_notebook.domain.notebook import Note, Notebook
@@ -98,16 +100,16 @@ with ask_tab:
             with st.form("save_note_form"):
                 notebook = st.selectbox(
                     "Notebook",
-                    asyncio.run(Notebook.get_all()),
+                    notebook_service.get_all_notebooks(),
                     format_func=lambda x: x.name,
                 )
                 if st.form_submit_button("Save Answer as Note"):
-                    note = Note(
+                    notes_service.create_note(
                         title=st.session_state["ask_results"]["question"],
                         content=st.session_state["ask_results"]["answer"],
+                        note_type="ai",
+                        notebook_id=notebook.id
                     )
-                    asyncio.run(note.save())
-                    asyncio.run(note.add_to_notebook(notebook.id))
                     st.success("Note saved successfully")
 
 

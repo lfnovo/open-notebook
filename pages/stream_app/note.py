@@ -7,6 +7,7 @@ from humanize import naturaltime
 
 nest_asyncio.apply()
 
+from api.notes_service import notes_service
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
 from open_notebook.graphs.prompt import graph as prompt_graph
@@ -24,9 +25,12 @@ def add_note(notebook_id):
     note_title = st.text_input("Title")
     note_content = st.text_area("Content")
     if st.button("Save", key="add_note"):
-        note = Note(title=note_title, content=note_content, note_type="human")
-        asyncio.run(note.save())
-        asyncio.run(note.add_to_notebook(notebook_id))
+        notes_service.create_note(
+            content=note_content,
+            title=note_title,
+            note_type="human",
+            notebook_id=notebook_id
+        )
         st.rerun()
 
 
@@ -41,14 +45,12 @@ def make_note_from_chat(content, notebook_id=None):
     output = prompt_graph.invoke(dict(input_text=content, prompt=prompt))
     title = output["output"]
 
-    note = Note(
-        title=title,
+    notes_service.create_note(
         content=content,
+        title=title,
         note_type="ai",
+        notebook_id=notebook_id
     )
-    note.save()
-    if notebook_id:
-        note.add_to_notebook(notebook_id)
 
     st.rerun()
 

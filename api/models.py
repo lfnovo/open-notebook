@@ -252,6 +252,8 @@ class SaveAsNoteRequest(BaseModel):
 
 
 class CreateSourceInsightRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    
     transformation_id: str = Field(..., description="ID of transformation to apply")
     model_id: Optional[str] = Field(None, description="Model ID (uses default if not provided)")
 

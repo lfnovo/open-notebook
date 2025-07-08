@@ -56,15 +56,15 @@ def build_context(notebook_id):
     return st.session_state[notebook_id]["context"]
 
 
-async def execute_chat(txt_input, context, current_session):
+def execute_chat(txt_input, context, current_session):
     current_state = st.session_state[current_session.id]
     current_state["messages"] += [txt_input]
     current_state["context"] = context
-    result = await chat_graph.ainvoke(
+    result = chat_graph.invoke(
         input=current_state,
         config=RunnableConfig(configurable={"thread_id": current_session.id}),
     )
-    await current_session.save()
+    current_session.save()
     return result
 
 
@@ -179,12 +179,10 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
             request = st.chat_input("Enter your question")
             # removing for now since it's not multi-model capable right now
             if request:
-                response = asyncio.run(
-                    execute_chat(
-                        txt_input=request,
-                        context=context,
-                        current_session=current_session,
-                    )
+                response = execute_chat(
+                    txt_input=request,
+                    context=context,
+                    current_session=current_session,
                 )
                 st.session_state[current_session.id]["messages"] = response["messages"]
 

@@ -1,3 +1,4 @@
+import asyncio
 import sqlite3
 from typing import Annotated, Optional
 
@@ -21,16 +22,18 @@ class ThreadState(TypedDict):
     context_config: Optional[dict]
 
 
-async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
+def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
-    model = await provision_langchain_model(
-        str(payload),
-        config.get("configurable", {}).get("model_id"),
-        "chat",
-        max_tokens=2000,
+    model = asyncio.run(
+        provision_langchain_model(
+            str(payload),
+            config.get("configurable", {}).get("model_id"),
+            "chat",
+            max_tokens=2000,
+        )
     )
-    ai_message = await model.ainvoke(payload)
+    ai_message = model.invoke(payload)
     return {"messages": ai_message}
 
 

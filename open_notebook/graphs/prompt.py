@@ -17,21 +17,20 @@ class PatternChainState(TypedDict):
     output: str
 
 
-def call_model(state: dict, config: RunnableConfig) -> dict:
+async def call_model(state: dict, config: RunnableConfig) -> dict:
     content = state["input_text"]
     system_prompt = Prompter(
         template_text=state["prompt"], parser=state.get("parser")
     ).render(data=state)
-    logger.warning(content)
     payload = [SystemMessage(content=system_prompt)] + [HumanMessage(content=content)]
-    chain = provision_langchain_model(
+    chain = await provision_langchain_model(
         str(payload),
         config.get("configurable", {}).get("model_id"),
         "transformation",
         max_tokens=5000,
     )
 
-    response = chain.invoke(payload)
+    response = await chain.ainvoke(payload)
 
     return {"output": response.content}
 

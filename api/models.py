@@ -237,6 +237,20 @@ class ContextResponse(BaseModel):
     total_tokens: Optional[int] = Field(None, description="Estimated token count")
 
 
+# Insights API models
+class SourceInsightResponse(BaseModel):
+    id: str
+    source_id: str
+    insight_type: str
+    content: str
+    created: str
+    updated: str
+
+
+class SaveAsNoteRequest(BaseModel):
+    notebook_id: Optional[str] = Field(None, description="Notebook ID to add note to")
+
+
 # Error response
 class ErrorResponse(BaseModel):
     error: str

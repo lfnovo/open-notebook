@@ -8,6 +8,7 @@ from loguru import logger
 from api.models import (
     AssetModel,
     SourceCreate,
+    SourceInsightResponse,
     SourceListResponse,
     SourceResponse,
     SourceUpdate,
@@ -236,3 +237,30 @@ async def delete_source(source_id: str):
     except Exception as e:
         logger.error(f"Error deleting source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting source: {str(e)}")
+
+
+@router.get("/sources/{source_id}/insights", response_model=List[SourceInsightResponse])
+async def get_source_insights(source_id: str):
+    """Get all insights for a specific source."""
+    try:
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+        
+        insights = await source.get_insights()
+        return [
+            SourceInsightResponse(
+                id=insight.id,
+                source_id=source_id,
+                insight_type=insight.insight_type,
+                content=insight.content,
+                created=str(insight.created),
+                updated=str(insight.updated)
+            )
+            for insight in insights
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching insights for source {source_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching insights: {str(e)}")

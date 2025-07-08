@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import notebooks, search, models, transformations, notes, embedding, settings, context, sources
+from api.routers import notebooks, search, models, transformations, notes, embedding, settings, context, sources, insights
 
 app = FastAPI(
     title="Open Notebook API",
@@ -28,6 +28,7 @@ app.include_router(embedding.router, prefix="/api", tags=["embedding"])
 app.include_router(settings.router, prefix="/api", tags=["settings"])
 app.include_router(context.router, prefix="/api", tags=["context"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])
+app.include_router(insights.router, prefix="/api", tags=["insights"])
 
 @app.get("/")
 async def root():

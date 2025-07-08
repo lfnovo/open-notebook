@@ -306,6 +306,26 @@ class APIClient:
         """Delete a source."""
         return self._make_request("DELETE", f"/api/sources/{source_id}")
 
+    # Insights API methods
+    def get_source_insights(self, source_id: str) -> List[Dict]:
+        """Get all insights for a specific source."""
+        return self._make_request("GET", f"/api/sources/{source_id}/insights")
+
+    def get_insight(self, insight_id: str) -> Dict:
+        """Get a specific insight."""
+        return self._make_request("GET", f"/api/insights/{insight_id}")
+
+    def delete_insight(self, insight_id: str) -> Dict:
+        """Delete a specific insight."""
+        return self._make_request("DELETE", f"/api/insights/{insight_id}")
+
+    def save_insight_as_note(self, insight_id: str, notebook_id: Optional[str] = None) -> Dict:
+        """Convert an insight to a note."""
+        data = {}
+        if notebook_id:
+            data["notebook_id"] = notebook_id
+        return self._make_request("POST", f"/api/insights/{insight_id}/save-as-note", json=data)
+
 
 # Global client instance
 api_client = APIClient()

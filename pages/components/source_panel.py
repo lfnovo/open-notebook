@@ -4,6 +4,8 @@ import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 
+from api.insights_service import insights_service
+from api.sources_service import sources_service
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import Transformation
@@ -41,28 +43,21 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
             else:
                 from_src = "from text"
             st.caption(f"Created {naturaltime(source.created)}, {from_src}")
-            for insight in asyncio.run(source.get_insights()):
+            for insight in insights_service.get_source_insights(source.id):
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
                     x1, x2 = st.columns(2)
                     if x1.button(
                         "Delete", type="primary", key=f"delete_insight_{insight.id}"
                     ):
-                        insight.delete()
+                        insights_service.delete_insight(insight.id)
                         st.rerun(scope="fragment" if modal else "app")
-                        st.toast("Source deleted")
+                        st.toast("Insight deleted")
                     if notebook_id:
                         if x2.button(
                             "Save as Note", icon="📝", key=f"save_note_{insight.id}"
                         ):
-                            from api.notes_service import notes_service
-
-                            notes_service.create_note(
-                                content=insight.content,
-                                title=f"{insight.insight_type} from source {source.title}",
-                                note_type="ai",
-                                notebook_id=notebook_id,
-                            )
+                            insights_service.save_insight_as_note(insight.id, notebook_id)
                             st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:

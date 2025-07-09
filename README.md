@@ -165,13 +165,13 @@ Then run the application:
 
 ```bash
 # Start the FastAPI backend
-uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5000
+uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
 
 # In another terminal, start Streamlit 
 uv run --env-file .env streamlit run app_home.py
 ```
 
-The API will be available at `http://localhost:5000` and provides comprehensive REST endpoints for all Open Notebook functionality. The Streamlit interface requires the API to be running.
+The API will be available at `http://localhost:5055` and provides comprehensive REST endpoints for all Open Notebook functionality. The Streamlit interface requires the API to be running.
 
 ## Provider Support Matrix
 
@@ -226,8 +226,8 @@ docker compose --profile multi up
 
 The Docker setup now includes both the Streamlit interface and the REST API:
 - **Streamlit UI**: `http://localhost:8502`
-- **REST API**: `http://localhost:5000`
-- **API Documentation**: `http://localhost:5000/docs` (Interactive Swagger UI)
+- **REST API**: `http://localhost:5055`
+- **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
 
 ### API Documentation
 
@@ -243,7 +243,7 @@ Open Notebook now includes a comprehensive REST API that provides programmatic a
 - **Context**: Generate context for AI interactions
 - **Embedding**: Vectorize content for search
 
-Visit `http://localhost:5000/docs` when the API is running to explore the interactive API documentation.
+Visit `http://localhost:5055/docs` when the API is running to explore the interactive API documentation.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

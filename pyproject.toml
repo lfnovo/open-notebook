@@ -38,13 +38,13 @@ dependencies = [
     "groq>=0.12.0",
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",
-    "podcastfy",
     "nest-asyncio>=1.6.0",
     "content-core>=1.0.2",
     "ai-prompter>=0.3",
     "esperanto>=2.0.4",
     "langchain-google-vertexai>=2.0.10",
     "surrealdb>=1.0.4",
+    "surreal-commands>=1.0.7",
 ]
 
 [tool.setuptools]
@@ -81,6 +81,3 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
-
-[tool.uv.sources]
-podcastfy = { git = "https://github.com/lfnovo/podcastfy" }

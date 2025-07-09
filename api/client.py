@@ -14,10 +14,12 @@ class APIClient:
     """Client for Open Notebook API."""
 
     def __init__(self, base_url: Optional[str] = None):
-        self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5000")
+        self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5055")
         self.timeout = 30.0
 
-    def _make_request(self, method: str, endpoint: str, timeout: Optional[float] = None, **kwargs) -> Dict:
+    def _make_request(
+        self, method: str, endpoint: str, timeout: Optional[float] = None, **kwargs
+    ) -> Dict:
         """Make HTTP request to the API."""
         url = f"{self.base_url}{endpoint}"
         request_timeout = timeout if timeout is not None else self.timeout
@@ -105,7 +107,9 @@ class APIClient:
             "final_answer_model": final_answer_model,
         }
         # Use 5 minute timeout for long-running ask operations
-        return self._make_request("POST", "/api/search/ask/simple", json=data, timeout=300.0)
+        return self._make_request(
+            "POST", "/api/search/ask/simple", json=data, timeout=300.0
+        )
 
     # Models API methods
     def get_models(self, model_type: Optional[str] = None) -> List[Dict]:
@@ -183,7 +187,9 @@ class APIClient:
             "model_id": model_id,
         }
         # Use extended timeout for transformation operations
-        return self._make_request("POST", "/api/transformations/execute", json=data, timeout=120.0)
+        return self._make_request(
+            "POST", "/api/transformations/execute", json=data, timeout=120.0
+        )
 
     # Notes API methods
     def get_notes(self, notebook_id: Optional[str] = None) -> List[Dict]:
@@ -319,19 +325,27 @@ class APIClient:
         """Delete a specific insight."""
         return self._make_request("DELETE", f"/api/insights/{insight_id}")
 
-    def save_insight_as_note(self, insight_id: str, notebook_id: Optional[str] = None) -> Dict:
+    def save_insight_as_note(
+        self, insight_id: str, notebook_id: Optional[str] = None
+    ) -> Dict:
         """Convert an insight to a note."""
         data = {}
         if notebook_id:
             data["notebook_id"] = notebook_id
-        return self._make_request("POST", f"/api/insights/{insight_id}/save-as-note", json=data)
+        return self._make_request(
+            "POST", f"/api/insights/{insight_id}/save-as-note", json=data
+        )
 
-    def create_source_insight(self, source_id: str, transformation_id: str, model_id: Optional[str] = None) -> Dict:
+    def create_source_insight(
+        self, source_id: str, transformation_id: str, model_id: Optional[str] = None
+    ) -> Dict:
         """Create a new insight for a source by running a transformation."""
         data = {"transformation_id": transformation_id}
         if model_id:
             data["model_id"] = model_id
-        return self._make_request("POST", f"/api/sources/{source_id}/insights", json=data)
+        return self._make_request(
+            "POST", f"/api/sources/{source_id}/insights", json=data
+        )
 
 
 # Global client instance

@@ -26,13 +26,15 @@ Also available in Context7 and on /Users/luisnovo/dev/projetos/surreal-commands/
 - Establish command-based architecture foundation for all future background processing
 
 ### 📁 Files to Create/Change
-1. **NEW**: `commands/example_commands.py` - Generic command examples for testing
-2. **NEW**: `api/routers/commands.py` - Generic command execution endpoints
-3. **NEW**: `api/command_service.py` - Generic service layer for command operations
-4. **MODIFY**: `api/main.py` - Add commands router
-5. **MODIFY**: `supervisord.conf` - Add worker process
-6. **MODIFY**: `pyproject.toml` - Add surreal-commands dependency
-7. **NEW**: `Makefile` - Add worker start command
+1. **NEW**: `commands/example_commands.py` - Generic command examples for testing (moved from /api/commands)
+2. **NEW**: `commands/__init__.py` - Commands module initialization
+3. **NEW**: `api/routers/commands.py` - Generic command execution endpoints
+4. **NEW**: `api/command_service.py` - Generic service layer for command operations
+5. **MODIFY**: `api/main.py` - Add commands router and import commands module
+6. **MODIFY**: `supervisord.conf` - Add worker process
+7. **MODIFY**: `pyproject.toml` - Add surreal-commands dependency
+8. **MODIFY**: `Makefile` - Add worker start/stop/restart commands
+9. **NEW**: `test_commands.sh` - Testing script for manual verification
 
 ### 🔧 Specific Implementation Steps
 
@@ -47,10 +49,10 @@ dependencies = [
 
 #### 1.2 Create Generic Command Infrastructure
 ```python
-# api/commands/__init__.py
+# commands/__init__.py
 """Surreal-commands integration for Open Notebook"""
 
-# api/commands/example_commands.py
+# commands/example_commands.py
 from surreal_commands import command
 from pydantic import BaseModel
 from typing import Optional, List
@@ -361,17 +363,27 @@ async def cancel_command_job(job_id: str):
 #### 1.5 Add Router to Main App
 ```python
 # api/main.py - Add import and router
-from api.routers import notebooks, search, models, transformations, notes, embedding, settings, context, sources, insights, commands
+from api.routers import notebooks, search, models, transformations, notes, embedding, settings, context, sources, insights
+from api.routers import commands as commands_router
+
+# Import commands to register them in the API process
+try:
+    import commands.example_commands
+    from loguru import logger
+    logger.info("Commands imported in API process")
+except Exception as e:
+    from loguru import logger
+    logger.error(f"Failed to import commands in API process: {e}")
 
 # Add to router includes (after line 31)
-app.include_router(commands.router, prefix="/api", tags=["commands"])
+app.include_router(commands_router.router, prefix="/api", tags=["commands"])
 ```
 
 #### 1.6 Configure Worker Process
 ```bash
 # supervisord.conf - Add after [program:api] section
 [program:worker]
-command=uv run --env-file .env python -m surreal_commands.worker --import-modules commands
+command=uv run --env-file .env surreal-commands-worker --import-modules commands.example_commands
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
@@ -388,11 +400,11 @@ worker: worker-start
 
 worker-start:
 	@echo "Starting surreal-commands worker..."
-	uv run --env-file .env python -m surreal_commands.worker --import-modules commands
+	uv run --env-file .env surreal-commands-worker --import-modules commands.example_commands
 
 worker-stop:
 	@echo "Stopping surreal-commands worker..."
-	pkill -f "surreal_commands.worker" || true
+	pkill -f "surreal-commands-worker" || true
 
 worker-restart: worker-stop
 	@sleep 2
@@ -424,7 +436,7 @@ make api
 make worker
 
 # 4. Test example command endpoints (shortcuts)
-curl -X POST "http://localhost:5000/api/commands/jobs" \
+curl -X POST "http://localhost:5055/api/commands/jobs" \
   -H "Content-Type: application/json" \
   -d '{
     params
@@ -433,10 +445,10 @@ curl -X POST "http://localhost:5000/api/commands/jobs" \
 
 
 # 6. Check job status (use job_id from responses)
-curl "http://localhost:5000/api/commands/jobs/{job_id}"
+curl "http://localhost:5055/api/commands/jobs/{job_id}"
 
 # 7. List all command jobs
-curl "http://localhost:5000/api/commands/jobs"
+curl "http://localhost:5055/api/commands/jobs"
 
 # 8. Test worker with supervisord (production mode)
 docker compose up
@@ -457,6 +469,12 @@ make worker-restart
 
 ## Phase 2: Engine Integration (OSS-138) - 4 hours
 
+### 📚 Dependencies
+- Surreal Commands Library: https://github.com/lfnovo/surreal-commands
+- Available in Context7 and on /Users/luisnovo/dev/projetos/surreal-commands/surreal-commands
+- Podcast Creator Library: https://github.com/lfnovo/podcast-creator
+- Available in Context7 and on /Users/luisnovo/dev/projetos/podcast-creator/podcast-creator
+
 ### 🎯 Goals
 - Integrate podcast-creator library with Episode Profiles
 - Create domain models for Episode and Speaker profiles
@@ -464,12 +482,12 @@ make worker-restart
 - Replace placeholder implementation with production-ready engine
 
 ### 📁 Files to Create/Change
-1. **NEW**: `open_notebook/domain/podcast.py` - Episode and Speaker profile models
+1. **NEW**: `open_notebook/domain/podcast.py` - Episode, Speaker, PodcastEpisode models
 2. **NEW**: `api/routers/episode_profiles.py` - Episode profile management endpoints
 3. **NEW**: `api/routers/speaker_profiles.py` - Speaker profile management endpoints
-4. **MODIFY**: `api/commands/podcast_commands.py` - Real podcast generation implementation
+4. **MODIFY**: `commands/podcast_commands.py` - Real podcast generation implementation
 5. **MODIFY**: `api/main.py` - Add new routers
-6. **MODIFY**: `open_notebook/plugins/podcasts.py` - Enhanced PodcastEpisode model
+6. **DELETE AT THE END**: `plugins/podcasts.py` - Old Podcast module that we are replacing 
 
 ### 🔧 Specific Implementation Steps
 
@@ -496,12 +514,11 @@ class EpisodeProfile(ObjectModel):
     transcript_model: str = Field(..., description="AI model for transcript generation")
     default_briefing: str = Field(..., description="Default briefing template")
     num_segments: int = Field(default=5, description="Number of podcast segments")
-    migrated_from_podcast_config: Optional[str] = Field(None, description="Migration tracking")
     
     @validator('num_segments')
     def validate_segments(cls, v):
-        if not 3 <= v <= 10:
-            raise ValueError('Number of segments must be between 3 and 10')
+        if not 3 <= v <= 20:
+            raise ValueError('Number of segments must be between 3 and 20')
         return v
     
     @classmethod
@@ -528,7 +545,6 @@ class SpeakerProfile(ObjectModel):
     tts_provider: str = Field(..., description="TTS provider (openai, elevenlabs, etc.)")
     tts_model: str = Field(..., description="TTS model name")
     speakers: List[Dict[str, Any]] = Field(..., description="Array of speaker configurations")
-    migrated_from_podcast_config: Optional[str] = Field(None, description="Migration tracking")
     
     @validator('speakers')
     def validate_speakers(cls, v):
@@ -554,9 +570,11 @@ class SpeakerProfile(ObjectModel):
             return cls(**result[0])
         return None
 
+from surrealdb import RecordID
+
 class PodcastEpisode(ObjectModel):
     """Enhanced PodcastEpisode with job tracking and metadata"""
-    table_name: ClassVar[str] = "podcast_episode"
+    table_name: ClassVar[str] = "episode"
     
     name: str
     episode_profile: str = Field(..., description="Episode profile used")
@@ -566,7 +584,7 @@ class PodcastEpisode(ObjectModel):
     audio_file: Optional[str] = Field(None, description="Path to generated audio file")
     transcript_file: Optional[str] = Field(None, description="Path to transcript file")
     outline_file: Optional[str] = Field(None, description="Path to outline file")
-    command: Optional[str] = Field(None, description="Link to surreal-commands job")
+    command: Optional[Union[str, RecordID]] = Field(None, description="Link to surreal-commands job")
     
     async def get_job_status(self) -> Optional[str]:
         """Get the status of the associated command"""
@@ -583,125 +601,117 @@ class PodcastEpisode(ObjectModel):
 
 #### 2.2 Create Default Profiles
 ```python
-# api/podcast_service.py - Add default profile creation
-class DefaultProfiles:
-    """Default Episode and Speaker profiles for common use cases"""
+
+    Already craeted in the SurreaDB
     
-    @staticmethod
-    async def create_default_episode_profiles():
-        """Create default episode profiles"""
-        profiles = [
+    select * from episode_profile:
+    [
+        {
+            created: d'2025-07-09T02:11:21.607Z',
+            default_briefing: 'Create an engaging technical discussion about the provided content. Focus on practical insights, real-world applications, and detailed explanations that would interest developers and technical professionals.',
+            description: 'Technical discussion between 2 experts',
+            id: episode_profile:xtipsn22hspdhevad8vq,
+            name: 'tech_discussion',
+            num_segments: 5,
+            outline_model: 'gpt-4o-mini',
+            outline_provider: 'openai',
+            speaker_config: 'tech_experts',
+            transcript_model: 'gpt-4o-mini',
+            transcript_provider: 'openai',
+            updated: d'2025-07-09T02:11:21.607Z'
+        },
+        {
+            created: d'2025-07-09T02:11:21.610Z',
+            default_briefing: 'Create an educational explanation of the provided content. Break down complex concepts into digestible segments, use analogies and examples, and maintain an engaging teaching style.',
+            description: 'Single expert explaining complex topics',
+            id: episode_profile:1j2bufu1lfq6nnqoozvb,
+            name: 'solo_expert',
+            num_segments: 4,
+            outline_model: 'gpt-4o-mini',
+            outline_provider: 'openai',
+            speaker_config: 'solo_expert',
+            transcript_model: 'gpt-4o-mini',
+            transcript_provider: 'openai',
+            updated: d'2025-07-09T02:11:21.610Z'
+        },
+        {
+            created: d'2025-07-09T02:11:21.610Z',
+            default_briefing: 'Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.',
+            description: 'Business-focused analysis and discussion',
+            id: episode_profile:dc18t5e7yxdphigar5lp,
+            name: 'business_analysis',
+            num_segments: 6,
+            outline_model: 'gpt-4o-mini',
+            outline_provider: 'openai',
+            speaker_config: 'business_panel',
+            transcript_model: 'gpt-4o-mini',
+            transcript_provider: 'openai',
+            updated: d'2025-07-09T02:11:21.610Z'
+        }
+    ]
+
+        select * from speaker_profile;
+        [
             {
-                "name": "tech_discussion",
-                "description": "Technical discussion between 2 experts",
-                "speaker_config": "tech_experts",
-                "outline_provider": "openai",
-                "outline_model": "gpt-4o-mini",
-                "transcript_provider": "openai", 
-                "transcript_model": "gpt-4o-mini",
-                "default_briefing": "Create an engaging technical discussion about the provided content. Focus on practical insights, real-world applications, and detailed explanations that would interest developers and technical professionals.",
-                "num_segments": 5
-            },
-            {
-                "name": "solo_expert",
-                "description": "Single expert explaining complex topics",
-                "speaker_config": "solo_expert",
-                "outline_provider": "openai",
-                "outline_model": "gpt-4o-mini",
-                "transcript_provider": "openai",
-                "transcript_model": "gpt-4o-mini", 
-                "default_briefing": "Create an educational explanation of the provided content. Break down complex concepts into digestible segments, use analogies and examples, and maintain an engaging teaching style.",
-                "num_segments": 4
-            },
-            {
-                "name": "business_analysis",
-                "description": "Business-focused analysis and discussion",
-                "speaker_config": "business_panel",
-                "outline_provider": "openai",
-                "outline_model": "gpt-4o-mini",
-                "transcript_provider": "openai",
-                "transcript_model": "gpt-4o-mini",
-                "default_briefing": "Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.",
-                "num_segments": 6
-            }
-        ]
-        
-        for profile_data in profiles:
-            existing = await EpisodeProfile.get_by_name(profile_data["name"])
-            if not existing:
-                profile = EpisodeProfile(**profile_data)
-                await profile.save()
-    
-    @staticmethod
-    async def create_default_speaker_profiles():
-        """Create default speaker profiles"""
-        profiles = [
-            {
-                "name": "tech_experts",
-                "description": "Two technical experts for tech discussions",
-                "tts_provider": "openai",
-                "tts_model": "tts-1",
-                "speakers": [
+                name: "tech_experts",
+                description: "Two technical experts for tech discussions",
+                tts_provider: "openai",
+                tts_model: "tts-1",
+                speakers: [
                     {
-                        "name": "Dr. Alex Chen",
-                        "voice_id": "nova",
-                        "backstory": "Senior AI researcher and former tech lead at major companies. Specializes in making complex technical concepts accessible.",
-                        "personality": "Analytical, clear communicator, asks probing questions to dig deeper into technical details"
+                        name: "Dr. Alex Chen",
+                        voice_id: "nova",
+                        backstory: "Senior AI researcher and former tech lead at major companies. Specializes in making complex technical concepts accessible.",
+                        personality: "Analytical, clear communicator, asks probing questions to dig deeper into technical details"
                     },
                     {
-                        "name": "Jamie Rodriguez",
-                        "voice_id": "alloy", 
-                        "backstory": "Full-stack engineer and tech entrepreneur. Loves practical applications and real-world implementations.",
-                        "personality": "Enthusiastic, practical-minded, great at explaining implementation details and trade-offs"
+                        name: "Jamie Rodriguez",
+                        voice_id: "alloy", 
+                        backstory: "Full-stack engineer and tech entrepreneur. Loves practical applications and real-world implementations.",
+                        personality: "Enthusiastic, practical-minded, great at explaining implementation details and trade-offs"
                     }
                 ]
             },
             {
-                "name": "solo_expert",
-                "description": "Single expert for educational content",
-                "tts_provider": "openai",
-                "tts_model": "tts-1",
-                "speakers": [
+                name: "solo_expert",
+                description: "Single expert for educational content",
+                tts_provider: "openai",
+                tts_model: "tts-1",
+                speakers: [
                     {
-                        "name": "Professor Sarah Kim",
-                        "voice_id": "nova",
-                        "backstory": "Distinguished professor and researcher. Has a gift for making complex topics accessible to broad audiences.",
-                        "personality": "Patient teacher, uses analogies and examples, breaks down complex concepts step by step"
+                        name: "Professor Sarah Kim",
+                        voice_id: "nova",
+                        backstory: "Distinguished professor and researcher. Has a gift for making complex topics accessible to broad audiences.",
+                        personality: "Patient teacher, uses analogies and examples, breaks down complex concepts step by step"
                     }
                 ]
             },
             {
-                "name": "business_panel",
-                "description": "Business analysis panel with diverse perspectives",
-                "tts_provider": "openai", 
-                "tts_model": "tts-1",
-                "speakers": [
+                name: "business_panel",
+                description: "Business analysis panel with diverse perspectives",
+                tts_provider: "openai", 
+                tts_model: "tts-1",
+                speakers: [
                     {
-                        "name": "Marcus Thompson",
-                        "voice_id": "echo",
-                        "backstory": "Former McKinsey consultant, now startup advisor. Expert in strategic analysis and market dynamics.",
-                        "personality": "Strategic thinker, data-driven, excellent at identifying key insights and implications"
+                        name: "Marcus Thompson",
+                        voice_id: "echo",
+                        backstory: "Former McKinsey consultant, now startup advisor. Expert in strategic analysis and market dynamics.",
+                        personality: "Strategic thinker, data-driven, excellent at identifying key insights and implications"
                     },
                     {
-                        "name": "Elena Vasquez", 
-                        "voice_id": "shimmer",
-                        "backstory": "Serial entrepreneur and investor. Focuses on practical implementation and execution.",
-                        "personality": "Action-oriented, pragmatic, brings startup experience and execution focus"
+                        name: "Elena Vasquez", 
+                        voice_id: "shimmer",
+                        backstory: "Serial entrepreneur and investor. Focuses on practical implementation and execution.",
+                        personality: "Action-oriented, pragmatic, brings startup experience and execution focus"
                     }
                 ]
             }
         ]
-        
-        for profile_data in profiles:
-            existing = await SpeakerProfile.get_by_name(profile_data["name"])
-            if not existing:
-                profile = SpeakerProfile(**profile_data)
-                await profile.save()
 ```
 
 #### 2.3 Implement Real Podcast Generation
 ```python
-# api/commands/podcast_commands.py - Replace placeholder with real implementation
+# commands/podcast_commands.py - Replace placeholder with real implementation
 from podcast_creator import create_podcast, configure
 from open_notebook.domain.podcast import EpisodeProfile, SpeakerProfile, PodcastEpisode
 from open_notebook.domain.notebook import Notebook
@@ -727,15 +737,6 @@ async def generate_podcast_command(
         if not speaker_profile:
             raise ValueError(f"Speaker profile not found: {episode_profile.speaker_config}")
         
-        # 2. Get notebook context
-        notebook = await Notebook.get_by_id(input_data.notebook_id)
-        if not notebook:
-            raise ValueError(f"Notebook not found: {input_data.notebook_id}")
-        
-        context = await notebook.get_context()
-        if not context or not str(context).strip():
-            raise ValueError("No content found in notebook context")
-        
         # 3. Configure podcast-creator with speaker profile
         configure("speakers_config", {
             "profiles": {
@@ -758,7 +759,7 @@ async def generate_podcast_command(
         
         # 6. Generate podcast using podcast-creator
         result = await create_podcast(
-            content=str(context),
+            content=input_data.content,
             briefing=briefing,
             episode_name=input_data.episode_name,
             output_dir=str(output_dir),
@@ -907,14 +908,14 @@ async def list_speaker_profiles():
 ### 🧪 Manual Testing Commands
 ```bash
 # 1. Create default profiles
-curl -X POST "http://localhost:5000/api/episode-profiles/initialize-defaults"
+curl -X POST "http://localhost:5055/api/episode-profiles/initialize-defaults"
 
 # 2. List available profiles  
-curl "http://localhost:5000/api/episode-profiles"
-curl "http://localhost:5000/api/speaker-profiles"
+curl "http://localhost:5055/api/episode-profiles"
+curl "http://localhost:5055/api/speaker-profiles"
 
 # 3. Generate real podcast
-curl -X POST "http://localhost:5000/api/podcasts/generate" \
+curl -X POST "http://localhost:5055/api/podcasts/generate" \
   -H "Content-Type: application/json" \
   -d '{
     "notebook_id": "valid_notebook_id",
@@ -923,7 +924,7 @@ curl -X POST "http://localhost:5000/api/podcasts/generate" \
   }'
 
 # 4. Monitor job progress
-curl "http://localhost:5000/api/podcasts/jobs/{job_id}"
+curl "http://localhost:5055/api/podcasts/jobs/{job_id}"
 ```
 
 ### ⚠️ Critical Notes
@@ -1406,7 +1407,6 @@ with podcast_tab:
 #### 4.1 Create New Database Schema
 ```sql
 -- migrations/7.surrealql
--- Create Episode Profile table
 DEFINE TABLE IF NOT EXISTS episode_profile SCHEMAFULL;
 DEFINE FIELD IF NOT EXISTS name ON TABLE episode_profile TYPE string;
 DEFINE FIELD IF NOT EXISTS description ON TABLE episode_profile TYPE option<string>;
@@ -1433,46 +1433,20 @@ DEFINE FIELD IF NOT EXISTS created ON TABLE speaker_profile TYPE datetime DEFAUL
 DEFINE FIELD IF NOT EXISTS updated ON TABLE speaker_profile TYPE datetime DEFAULT time::now();
 
 -- Enhance PodcastEpisode table
-ALTER TABLE podcast_episode ADD episode_profile string DEFAULT "";
-ALTER TABLE podcast_episode ADD generation_metadata object DEFAULT {};
-ALTER TABLE podcast_episode ADD briefing string DEFAULT "";
-ALTER TABLE podcast_episode ADD transcript_file string DEFAULT "";
-ALTER TABLE podcast_episode ADD outline_file string DEFAULT "";
-ALTER TABLE podcast_episode ADD command string DEFAULT "";
+DEFINE TABLE IF NOT EXISTS episode SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode TYPE string;
+DEFINE FIELD IF NOT EXISTS generation_metadata ON TABLE episode TYPE object;
+DEFINE FIELD IF NOT EXISTS briefing ON TABLE episode TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS outline ON TABLE episode TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE record<command>;
 
 -- Create indexes for better performance
-DEFINE INDEX IF NOT EXISTS idx_episode_profile_name ON TABLE episode_profile COLUMNS name UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_speaker_profile_name ON TABLE speaker_profile COLUMNS name UNIQUE;
-DEFINE INDEX IF NOT EXISTS idx_podcast_episode_profile ON TABLE podcast_episode COLUMNS episode_profile;
-DEFINE INDEX IF NOT EXISTS idx_podcast_episode_command ON TABLE podcast_episode COLUMNS command;
+DEFINE INDEX IF NOT EXISTS idx_episode_profile_name ON TABLE episode_profile COLUMNS name UNIQUE CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_speaker_profile_name ON TABLE speaker_profile COLUMNS name UNIQUE CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_profile ON TABLE episode COLUMNS episode_profile CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_command ON TABLE episode COLUMNS command CONCURRENTLY;
 
--- Update migration version
-UPSERT open_notebook:migration_version SET version = 7, updated = time::now();
-```
-
-#### 4.2 Create Rollback Script  
-```sql
--- migrations/7_down.surrealql
--- Remove new tables
-REMOVE TABLE IF EXISTS episode_profile;
-REMOVE TABLE IF EXISTS speaker_profile;
-
--- Remove new fields from podcast_episode
-ALTER TABLE podcast_episode DROP episode_profile;
-ALTER TABLE podcast_episode DROP generation_metadata;
-ALTER TABLE podcast_episode DROP briefing;
-ALTER TABLE podcast_episode DROP transcript_file;
-ALTER TABLE podcast_episode DROP outline_file;
-ALTER TABLE podcast_episode DROP command;
-
--- Remove indexes
-REMOVE INDEX IF EXISTS idx_episode_profile_name;
-REMOVE INDEX IF EXISTS idx_speaker_profile_name;
-REMOVE INDEX IF EXISTS idx_podcast_episode_profile;
-REMOVE INDEX IF EXISTS idx_podcast_episode_command;
-
--- Revert migration version
-UPSERT open_notebook:migration_version SET version = 6, updated = time::now();
 ```
 
 #### 4.3 Create Migration Service
@@ -1822,23 +1796,23 @@ async def get_migration_status() -> Dict[str, Any]:
 ### 🧪 Manual Testing Commands
 ```bash
 # 1. Check migration status
-curl "http://localhost:5000/api/migration/status"
+curl "http://localhost:5055/api/migration/status"
 
 # 2. Analyze existing configs
-curl "http://localhost:5000/api/migration/podcast-analysis"
+curl "http://localhost:5055/api/migration/podcast-analysis"
 
 # 3. Migrate specific config
-curl -X POST "http://localhost:5000/api/migration/podcast-config/{config_id}"
+curl -X POST "http://localhost:5055/api/migration/podcast-config/{config_id}"
 
 # 4. Migrate all configs
-curl -X POST "http://localhost:5000/api/migration/podcast-configs/all"
+curl -X POST "http://localhost:5055/api/migration/podcast-configs/all"
 
 # 5. Verify new profiles work
-curl "http://localhost:5000/api/episode-profiles"
-curl "http://localhost:5000/api/speaker-profiles"
+curl "http://localhost:5055/api/episode-profiles"
+curl "http://localhost:5055/api/speaker-profiles"
 
 # 6. Test generation with migrated profile
-curl -X POST "http://localhost:5000/api/podcasts/generate" \
+curl -X POST "http://localhost:5055/api/podcasts/generate" \
   -H "Content-Type: application/json" \
   -d '{
     "notebook_id": "test_notebook",
@@ -1860,7 +1834,7 @@ curl -X POST "http://localhost:5000/api/podcasts/generate" \
 ## 📋 Implementation Summary & Progress Tracking
 
 ### Phase Completion Status
-- [ ] **Phase 1**: Async Foundation (OSS-137) - 4 hours estimated
+- [x] **Phase 1**: Async Foundation (OSS-137) - ✅ COMPLETED (4 hours actual)
 - [ ] **Phase 2**: Engine Integration (OSS-138) - 4 hours estimated  
 - [ ] **Phase 3**: UI Modernization (OSS-139) - 3 hours estimated
 - [ ] **Phase 4**: Data Migration (OSS-141) - 3 hours estimated
@@ -1891,7 +1865,7 @@ curl -X POST "http://localhost:5000/api/podcasts/generate" \
 ```
 
 ### Key Success Metrics
-- [ ] **Async Foundation**: Background podcast generation working
+- [x] **Async Foundation**: Background job processing working ✅ COMPLETED
 - [ ] **Episode Profiles**: 3-click workflow operational  
 - [ ] **Professional Quality**: 2-3 minute generation time achieved
 - [ ] **Competitive Advantage**: 1-4 speaker flexibility vs Google's 2-host limit
@@ -1899,13 +1873,13 @@ curl -X POST "http://localhost:5000/api/podcasts/generate" \
 - [ ] **Data Migration**: All existing configs successfully migrated
 
 ### Final Deliverables
-1. ✅ **Async Job Processing**: Surreal-commands integration
-2. ✅ **Podcast Engine**: Podcast-creator with Episode Profiles
-3. ✅ **Simplified UI**: 3-click generation workflow
-4. ✅ **Professional Audio**: High-quality multi-speaker podcasts
-5. ✅ **Status Tracking**: Job monitoring without real-time updates
-6. ✅ **Data Migration**: Seamless transition from old system
-7. ✅ **Competitive Positioning**: Superior flexibility vs Google Notebook LM
+1. ✅ **Async Job Processing**: Surreal-commands integration ✅ COMPLETED PHASE 1
+2. ⏳ **Podcast Engine**: Podcast-creator with Episode Profiles
+3. ⏳ **Simplified UI**: 3-click generation workflow
+4. ⏳ **Professional Audio**: High-quality multi-speaker podcasts
+5. ⏳ **Status Tracking**: Job monitoring without real-time updates
+6. ⏳ **Data Migration**: Seamless transition from old system
+7. ⏳ **Competitive Positioning**: Superior flexibility vs Google Notebook LM
 
 ### Rollback Strategy
 Each phase includes rollback procedures:

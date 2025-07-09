@@ -63,3 +63,19 @@ full:
 
 api:
 	uv run run_api.py
+
+.PHONY: worker worker-start worker-stop worker-restart
+
+worker: worker-start
+
+worker-start:
+	@echo "Starting surreal-commands worker..."
+	uv run --env-file .env surreal-commands-worker --import-modules commands.example_commands
+
+worker-stop:
+	@echo "Stopping surreal-commands worker..."
+	pkill -f "surreal-commands-worker" || true
+
+worker-restart: worker-stop
+	@sleep 2
+	@$(MAKE) worker-start

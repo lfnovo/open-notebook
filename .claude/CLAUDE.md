@@ -25,12 +25,12 @@ uv pip install python-magic
 make database
 # or: docker compose up -d surrealdb
 
-# Start API backend (port 5000)
+# Start API backend (port 5055)
 make api
 # or: uv run run_api.py
-# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5000
+# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
 
-# Start Streamlit UI (port 8501)
+# Start Streamlit UI (port 8502)
 make run
 # or: uv run --env-file .env streamlit run app_home.py
 ```
@@ -62,7 +62,7 @@ make docker-release
 
 ### Three-Layer Architecture
 1. **Frontend**: Streamlit UI (`app_home.py` and `/pages/`)
-2. **API**: FastAPI backend (`/api/`) on port 5000
+2. **API**: FastAPI backend (`/api/`) on port 5055
 3. **Database**: SurrealDB graph database
 
 ### Key Directories
@@ -118,4 +118,4 @@ Check README or search codebase for test configuration before running tests. The
 
 ## API Documentation
 
-Interactive API docs available at http://localhost:5000/docs when API is running. Comprehensive endpoints for notebooks, sources, notes, search, models, transformations, and embeddings.
+Interactive API docs available at http://localhost:5055/docs when API is running. Comprehensive endpoints for notebooks, sources, notes, search, models, transformations, and embeddings.

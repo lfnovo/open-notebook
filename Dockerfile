@@ -22,7 +22,7 @@ RUN uv sync
 
 
 # Expose ports for Streamlit and API
-EXPOSE 8502 5000
+EXPOSE 8502 5055
 
 RUN mkdir -p /app/data
 

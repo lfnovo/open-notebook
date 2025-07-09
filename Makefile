@@ -70,7 +70,7 @@ worker: worker-start
 
 worker-start:
 	@echo "Starting surreal-commands worker..."
-	uv run --env-file .env surreal-commands-worker --import-modules commands.example_commands
+	uv run --env-file .env surreal-commands-worker --import-modules commands
 
 worker-stop:
 	@echo "Stopping surreal-commands worker..."

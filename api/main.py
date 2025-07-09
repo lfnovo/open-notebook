@@ -1,16 +1,34 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routers import notebooks, search, models, transformations, notes, embedding, settings, context, sources, insights
 from api.routers import commands as commands_router
+from api.routers import (
+    context,
+    embedding,
+    episode_profiles,
+    insights,
+    models,
+    notebooks,
+    notes,
+    podcasts,
+    search,
+    settings,
+    sources,
+    speaker_profiles,
+    transformations,
+)
 
 # Import commands to register them in the API process
 try:
-    import commands.example_commands
     from loguru import logger
+
+    import commands.example_commands
+    import commands.podcast_commands
+
     logger.info("Commands imported in API process")
 except Exception as e:
     from loguru import logger
+
     logger.error(f"Failed to import commands in API process: {e}")
 
 app = FastAPI(
@@ -40,10 +58,15 @@ app.include_router(context.router, prefix="/api", tags=["context"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])
 app.include_router(insights.router, prefix="/api", tags=["insights"])
 app.include_router(commands_router.router, prefix="/api", tags=["commands"])
+app.include_router(podcasts.router, prefix="/api", tags=["podcasts"])
+app.include_router(episode_profiles.router, prefix="/api", tags=["episode-profiles"])
+app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profiles"])
+
 
 @app.get("/")
 async def root():
     return {"message": "Open Notebook API is running"}
+
 
 @app.get("/health")
 async def health():

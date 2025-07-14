@@ -129,6 +129,16 @@ cp .env.example docker.env
 
 Edit .env for your API keys.
 
+### 🚀 Quick Start
+
+After setting up your environment, simply run:
+
+```bash
+make start-all
+```
+
+This single command will start all required services (database, API, worker, and UI) for you!
+
 ### System Dependencies
 
 This project requires some system dependencies:
@@ -155,23 +165,66 @@ uv pip install python-magic
 
 ### Running the Application
 
-Start the SurrealDB database first:
+Open Notebook now requires **four services** to run: the database, API backend, worker, and Streamlit interface.
+
+#### ✨ Easiest Way: Use `make start-all`
+
+After completing the setup above, the recommended way to run Open Notebook is:
 
 ```bash
-docker compose up -d surrealdb
+make start-all
 ```
 
-Then run the application:
+This single command will:
+- Start **SurrealDB** database on port 8000
+- Start **FastAPI** backend on port 5055  
+- Start **Background Worker** for podcast generation and transformations
+- Start **Streamlit UI** on port 8502
+
+Once running, access Open Notebook at `http://localhost:8502` 🎉
+
+#### Manual Setup (Development)
+
+If you prefer to start services individually:
 
 ```bash
-# Start the FastAPI backend
-uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
+# 1. Start SurrealDB database
+make database
+# or: docker compose up -d surrealdb
 
-# In another terminal, start Streamlit 
-uv run --env-file .env streamlit run app_home.py
+# 2. Start the FastAPI backend (in terminal 1)
+make api
+# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
+
+# 3. Start the background worker (in terminal 2)
+make worker
+# or: uv run --env-file .env surreal-commands-worker --import-modules commands
+
+# 4. Start Streamlit UI (in terminal 3)
+make run
+# or: uv run --env-file .env streamlit run app_home.py
 ```
 
-The API will be available at `http://localhost:5055` and provides comprehensive REST endpoints for all Open Notebook functionality. The Streamlit interface requires the API to be running.
+#### Service Endpoints
+- **Streamlit UI**: `http://localhost:8502`
+- **REST API**: `http://localhost:5055`
+- **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
+- **SurrealDB**: `http://localhost:8000`
+
+#### Service Management
+
+```bash
+# Check if all services are running
+make status
+
+# Stop all services
+make stop-all
+
+# Restart worker only
+make worker-restart
+```
+
+**Note**: The worker is required for podcast generation and content transformations. Without it, these features will queue jobs but not process them.
 
 ## Provider Support Matrix
 
@@ -259,7 +312,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq, Ollama. ([Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md))
 - **Reasoning Model Support**: Full support for thinking models like DeepSeek-R1, Qwen3, and Magistral with collapsible reasoning sections.
 - **Comprehensive REST API**: Full programmatic access to all functionality for building custom integrations.
-- **Podcast Generator**: Automatically convert your notes into a podcast format.
+- **Advanced Podcast Generator**: Create professional podcasts with 1-4 speakers using Episode Profiles. Superior flexibility compared to Google Notebook LM's 2-speaker limitation.
 - **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.
 - **Content Transformation**: Powerful customizable actions to summarize, extract insights, and more.
 - **AI-Powered Notes**: Write notes yourself or let the AI assist you in generating insights.
@@ -311,7 +364,7 @@ Jinja based prompts that are easy to customize to your own preferences.
 - ✅ **Comprehensive REST API**: Full API coverage for all functionality.
 - ✅ **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc.
 - ✅ **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md)
-- ✅ **Podcast Generator**: Automatically convert your notes into a podcast format. 
+- ✅ **Advanced Podcast Generator**: Professional multi-speaker podcasts with Episode Profiles and background processing. 
 - ✅ **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
 - ✅ **Enhanced Citations**: Improved layout and finer control for citations.
 - ✅ **Better Embeddings & Summarization**: Smarter ways to distill information.
@@ -358,7 +411,8 @@ Join our [Discord server](https://discord.gg/37XJPXfz2w) for help, share workflo
 
 This project uses some amazing third-party libraries
 
-* [Podcastfy](https://github.com/souzatharsis/podcastfy) - Licensed under the Apache License 2.0
+* [Podcast Creator](https://github.com/lfnovo/podcast-creator) - Licensed under the MIT License
+* [Surreal Commands](https://github.com/lfnovo/surreal-commands) - Licensed under the MIT License
 * [Content Core](https://github.com/lfnovo/content-core) - Licensed under the MIT License
 * [Docling](https://github.com/docling-project/docling) - Licensed under the MIT License
 * [Esperanto](https://github.com/lfnovo/esperanto) - Licensed under the MIT License

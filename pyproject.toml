@@ -44,8 +44,8 @@ dependencies = [
     "esperanto>=2.0.4",
     "langchain-google-vertexai>=2.0.10",
     "surrealdb>=1.0.4",
-    "podcast-creator>=0.2.4",
     "surreal-commands>=1.0.13",
+    "podcast-creator>=0.2.6",
 ]
 
 [tool.setuptools]

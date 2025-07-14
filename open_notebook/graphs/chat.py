@@ -30,7 +30,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
             str(payload),
             config.get("configurable", {}).get("model_id"),
             "chat",
-            max_tokens=2000,
+            max_tokens=10000,
         )
     )
     ai_message = model.invoke(payload)

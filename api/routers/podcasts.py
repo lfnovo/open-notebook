@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Optional
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -20,11 +21,11 @@ class PodcastEpisodeResponse(BaseModel):
     episode_profile: dict
     speaker_profile: dict
     briefing: str
-    audio_file: str = None
-    transcript: dict = None
-    outline: dict = None
-    created: str = None
-    job_status: str = None
+    audio_file: Optional[str] = None
+    transcript: Optional[dict] = None
+    outline: Optional[dict] = None
+    created: Optional[str] = None
+    job_status: Optional[str] = None
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -142,3 +143,31 @@ async def get_podcast_episode(episode_id: str):
     except Exception as e:
         logger.error(f"Error fetching podcast episode: {str(e)}")
         raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
+
+
+@router.delete("/podcasts/episodes/{episode_id}")
+async def delete_podcast_episode(episode_id: str):
+    """Delete a podcast episode and its associated audio file"""
+    try:
+        # Get the episode first to check if it exists and get the audio file path
+        episode = await PodcastService.get_episode(episode_id)
+        
+        # Delete the physical audio file if it exists
+        if episode.audio_file:
+            audio_path = Path(episode.audio_file)
+            if audio_path.exists():
+                try:
+                    audio_path.unlink()
+                    logger.info(f"Deleted audio file: {audio_path}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+        
+        # Delete the episode from the database
+        await episode.delete()
+        
+        logger.info(f"Deleted podcast episode: {episode_id}")
+        return {"message": "Episode deleted successfully", "episode_id": episode_id}
+        
+    except Exception as e:
+        logger.error(f"Error deleting podcast episode: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete episode: {str(e)}")

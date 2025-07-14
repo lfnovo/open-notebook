@@ -1,6 +1,7 @@
 import asyncio
 from typing import Union
 
+import httpx
 import humanize
 import nest_asyncio
 import streamlit as st
@@ -11,8 +12,10 @@ nest_asyncio.apply()
 
 from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
+from open_notebook.domain.podcast import EpisodeProfile
 from open_notebook.graphs.chat import graph as chat_graph
-from open_notebook.plugins.podcasts import PodcastConfig
+
+# from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import parse_thinking_content, token_count
 from pages.stream_app.utils import (
     convert_source_references,
@@ -20,6 +23,9 @@ from pages.stream_app.utils import (
 )
 
 from .note import make_note_from_chat
+
+# API base URL
+API_BASE = "http://localhost:5055/api"
 
 
 # todo: build a smarter, more robust context manager function
@@ -78,57 +84,77 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
         st.json(context)
     with podcast_tab:
         with st.container(border=True):
-            podcast_configs = asyncio.run(PodcastConfig.get_all())
-            podcast_config_names = [pd.name for pd in podcast_configs]
-            if len(podcast_configs) == 0:
-                st.warning("No podcast configurations found")
+            # Fetch available episode profiles
+            try:
+                episode_profiles = asyncio.run(EpisodeProfile.get_all())
+                episode_profile_names = [ep.name for ep in episode_profiles]
+            except Exception as e:
+                st.error(f"Failed to load episode profiles: {str(e)}")
+                episode_profiles = []
+                episode_profile_names = []
+            
+            if len(episode_profiles) == 0:
+                st.warning("No episode profiles found. Please create profiles in the Podcast Profiles tab first.")
+                st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcast Profiles")
             else:
-                template = st.selectbox("Pick a template", podcast_config_names)
-                selected_template = next(
-                    filter(lambda x: x.name == template, podcast_configs)
-                )
-                episode_name = st.text_input("Episode Name")
+                # Episode Profile selection
+                selected_episode_profile = st.selectbox("Episode Profile", episode_profile_names)
+                
+                # Get the selected episode profile object to access speaker_config
+                selected_profile_obj = next((ep for ep in episode_profiles if ep.name == selected_episode_profile), None)
+                
+                # Episode details
+                episode_name = st.text_input("Episode Name", placeholder="e.g., AI and the Future of Work")
                 instructions = st.text_area(
-                    "Instructions", value=selected_template.user_instructions
+                    "Additional Instructions (Optional)", 
+                    placeholder="Any specific instructions beyond the episode profile's default briefing...",
+                    help="These instructions will be added to the episode profile's default briefing."
                 )
-                podcast_length = st.radio(
-                    "Podcast Length",
-                    ["Short (5-10 min)", "Medium (10-20 min)", "Longer (20+ min)"],
-                )
-                chunks = None
-                min_chunk_size = None
-                if podcast_length == "Short (5-10 min)":
-                    longform = False
-                elif podcast_length == "Medium (10-20 min)":
-                    longform = True
-                    chunks = 4
-                    min_chunk_size = 600
-                else:
-                    longform = True
-                    chunks = 8
-                    min_chunk_size = 600
 
+                # Check for context availability
                 if len(context.get("note", [])) + len(context.get("source", [])) == 0:
                     st.warning(
                         "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
                     )
                 else:
-                    try:
-                        if st.button("Generate"):
-                            with st.spinner("Go grab a coffee, almost there..."):
-                                asyncio.run(
-                                    selected_template.generate_episode(
-                                        episode_name=episode_name,
-                                        text=str(context),
-                                        longform=longform,
-                                        chunks=chunks,
-                                        min_chunk_size=min_chunk_size,
-                                        instructions=instructions,
-                                    )
-                                )
-                            st.success("Episode generated successfully")
-                    except Exception as e:
-                        st.error(f"Error generating episode - {str(e)}")
+                    # Generate button
+                    if st.button("🎙️ Generate Podcast", type="primary"):
+                        if not episode_name.strip():
+                            st.error("Please enter an episode name")
+                        else:
+                            try:
+                                with st.spinner("Starting podcast generation..."):
+                                    # Make API call to generate podcast
+                                    async def generate_podcast():
+                                        async with httpx.AsyncClient() as client:
+                                            response = await client.post(f"{API_BASE}/podcasts/generate", json={
+                                                "episode_profile": selected_episode_profile,
+                                                "speaker_profile": selected_profile_obj.speaker_config if selected_profile_obj else "",
+                                                "episode_name": episode_name.strip(),
+                                                "content": str(context),
+                                                "briefing_suffix": instructions.strip() if instructions.strip() else None,
+                                                "notebook_id": str(current_notebook.id)
+                                            })
+                                            return response
+                                    
+                                    response = asyncio.run(generate_podcast())
+                                    
+                                    if response.status_code == 200:
+                                        result = response.json()
+                                        st.success("🎉 Podcast generation started successfully!")
+                                        st.info(f"**Job ID:** `{result['job_id']}`")
+                                        st.info("📊 Check the **Episodes** tab to monitor progress and download results.")
+                                        st.page_link("pages/5_🎙️_Podcasts.py", label="📊 Go to Episodes", icon="🎙️", use_container_width=True)
+                                    else:
+                                        error_detail = response.json().get("detail", "Unknown error") if response.status_code != 500 else "Server error"
+                                        st.error(f"Failed to start podcast generation: {error_detail}")
+                                        
+                            except Exception as e:
+                                logger.error(f"Error generating podcast: {str(e)}")
+                                st.error(f"Error generating podcast: {str(e)}")
+            
+            # Navigation link
+            st.divider()
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.expander(

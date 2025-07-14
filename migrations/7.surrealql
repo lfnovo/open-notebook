@@ -29,14 +29,17 @@ DEFINE FIELD IF NOT EXISTS updated ON TABLE speaker_profile TYPE datetime DEFAUL
 
 -- Enhance PodcastEpisode table
 DEFINE TABLE IF NOT EXISTS episode SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS created ON episode DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON episode DEFAULT time::now() VALUE time::now();
+DEFINE FIELD IF NOT EXISTS name ON TABLE episode TYPE string;
+DEFINE FIELD IF NOT EXISTS briefing ON TABLE episode TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode FLEXIBLE TYPE object;
 DEFINE FIELD IF NOT EXISTS speaker_profile ON TABLE episode FLEXIBLE TYPE object;
-DEFINE FIELD IF NOT EXISTS briefing ON TABLE episode TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode FLEXIBLE TYPE option<object>;
 DEFINE FIELD IF NOT EXISTS outline ON TABLE episode FLEXIBLE TYPE option<object>;
-DEFINE FIELD IF NOT EXISTS content ON TABLE episode TYPE string;
-DEFINE FIELD IF NOT EXISTS audio_file ON TABLE episode TYPE string;
 DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE record<command>;
+DEFINE FIELD IF NOT EXISTS content ON TABLE episode TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS audio_file ON TABLE episode TYPE option<string>;
 
 -- Create indexes for better performance
 DEFINE INDEX IF NOT EXISTS idx_episode_profile_name ON TABLE episode_profile COLUMNS name UNIQUE CONCURRENTLY;

@@ -120,3 +120,5 @@ desktop.ini
 *.sqlite3
 
 .quarentena
+
+.claude/

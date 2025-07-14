@@ -96,15 +96,31 @@ async def generate_podcast_command(
             profile["name"]: profile for profile in speaker_profiles
         }
 
-        configure("speakers_config", {"profiles": speaker_profiles_dict})
-        configure("episode_config", {"profiles": episode_profiles_dict})
-
-        logger.info("Configured podcast-creator with episode and speaker profiles")
-
         # 4. Generate briefing
         briefing = episode_profile.default_briefing
         if input_data.briefing_suffix:
             briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
+
+        # Create the a record for the episose and associate with the ongoing command
+        episode = PodcastEpisode(
+            name=input_data.episode_name,
+            episode_profile=full_model_dump(episode_profile.model_dump()),
+            speaker_profile=full_model_dump(speaker_profile.model_dump()),
+            command=ensure_record_id(input_data.execution_context.command_id)
+            if input_data.execution_context
+            else None,
+            briefing=briefing,
+            content=input_data.content,
+            audio_file=None,
+            transcript=None,
+            outline=None,
+        )
+        await episode.save()
+
+        configure("speakers_config", {"profiles": speaker_profiles_dict})
+        configure("episode_config", {"profiles": episode_profiles_dict})
+
+        logger.info("Configured podcast-creator with episode and speaker profiles")
 
         logger.info(f"Generated briefing (length: {len(briefing)} chars)")
 
@@ -130,25 +146,13 @@ async def generate_podcast_command(
             f"Podcast generation completed. Result keys: {list(result.keys()) if result else 'None'}"
         )
 
-        # 7. Save episode record
-        episode = PodcastEpisode(
-            name=input_data.episode_name,
-            episode_profile=full_model_dump(episode_profile.model_dump()),
-            speaker_profile=full_model_dump(speaker_profile.model_dump()),
-            command=ensure_record_id(input_data.execution_context.command_id)
-            if input_data.execution_context
-            else None,
-            briefing=briefing,
-            content=input_data.content,
-            audio_file=str(result.get("final_output_file_path")) if result else None,
-            transcript={"transcript": full_model_dump(result["transcript"])}
-            if result.get("transcript")
-            else None,
-            outline=full_model_dump(result["outline"])
-            if result.get("outline")
-            else None,
+        episode.audio_file = (
+            str(result.get("final_output_file_path")) if result else None
         )
-
+        episode.transcript = {
+            "transcript": full_model_dump(result["transcript"]) if result else None
+        }
+        episode.outline = full_model_dump(result["outline"]) if result else None
         await episode.save()
 
         processing_time = time.time() - start_time

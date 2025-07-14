@@ -130,6 +130,8 @@ async def repo_update(
         else:
             record_id = f"{table}:{id}"
         data.pop("id", None)
+        if "created" in data and isinstance(data["created"], str):
+            data["created"] = datetime.fromisoformat(data["created"])
         data["updated"] = datetime.now(timezone.utc)
         query = f"UPDATE {record_id} MERGE $data;"
         # logger.debug(f"Update query: {query}")

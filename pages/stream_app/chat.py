@@ -1,18 +1,13 @@
 import asyncio
-from typing import Union
 
-import httpx
 import humanize
-import nest_asyncio
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
-nest_asyncio.apply()
-
-from open_notebook.domain.base import ObjectModel
-from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
-from open_notebook.domain.podcast import EpisodeProfile
+from api.episode_profiles_service import episode_profiles_service
+from api.podcast_service import PodcastService
+from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import graph as chat_graph
 
 # from open_notebook.plugins.podcasts import PodcastConfig
@@ -23,9 +18,6 @@ from pages.stream_app.utils import (
 )
 
 from .note import make_note_from_chat
-
-# API base URL
-API_BASE = "http://localhost:5055/api"
 
 
 # todo: build a smarter, more robust context manager function
@@ -86,7 +78,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
         with st.container(border=True):
             # Fetch available episode profiles
             try:
-                episode_profiles = asyncio.run(EpisodeProfile.get_all())
+                episode_profiles = episode_profiles_service.get_all_episode_profiles()
                 episode_profile_names = [ep.name for ep in episode_profiles]
             except Exception as e:
                 st.error(f"Failed to load episode profiles: {str(e)}")
@@ -137,49 +129,32 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                         else:
                             try:
                                 with st.spinner("Starting podcast generation..."):
-                                    # Make API call to generate podcast
+                                    # Use podcast service to generate podcast
                                     async def generate_podcast():
-                                        async with httpx.AsyncClient() as client:
-                                            response = await client.post(
-                                                f"{API_BASE}/podcasts/generate",
-                                                json={
-                                                    "episode_profile": selected_episode_profile,
-                                                    "speaker_profile": selected_profile_obj.speaker_config
-                                                    if selected_profile_obj
-                                                    else "",
-                                                    "episode_name": episode_name.strip(),
-                                                    "content": str(context),
-                                                    "briefing_suffix": instructions.strip()
-                                                    if instructions.strip()
-                                                    else None,
-                                                    "notebook_id": str(
-                                                        current_notebook.id
-                                                    ),
-                                                },
-                                            )
-                                            return response
+                                        return await PodcastService.submit_generation_job(
+                                            episode_profile_name=selected_episode_profile,
+                                            speaker_profile_name=selected_profile_obj.speaker_config
+                                            if selected_profile_obj
+                                            else "",
+                                            episode_name=episode_name.strip(),
+                                            content=str(context),
+                                            briefing_suffix=instructions.strip()
+                                            if instructions.strip()
+                                            else None,
+                                            notebook_id=str(current_notebook.id),
+                                        )
 
-                                    response = asyncio.run(generate_podcast())
+                                    job_id = asyncio.run(generate_podcast())
 
-                                    if response.status_code == 200:
-                                        result = response.json()
+                                    if job_id:
                                         st.success(
-                                            f"🎉 Podcast generation started successfully! Job ID: `{result['job_id']}`"
+                                            f"🎉 Podcast generation started successfully! Job ID: `{job_id}`"
                                         )
                                         st.info(
                                             "📊 Check the **Episodes** tab to monitor progress and download results."
                                         )
                                     else:
-                                        error_detail = (
-                                            response.json().get(
-                                                "detail", "Unknown error"
-                                            )
-                                            if response.status_code != 500
-                                            else "Server error"
-                                        )
-                                        st.error(
-                                            f"Failed to start podcast generation: {error_detail}"
-                                        )
+                                        st.error("Failed to start podcast generation: No job ID returned")
 
                             except Exception as e:
                                 logger.error(f"Error generating podcast: {str(e)}")

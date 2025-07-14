@@ -347,6 +347,49 @@ class APIClient:
             "POST", f"/api/sources/{source_id}/insights", json=data
         )
 
+    # Episode Profiles API methods
+    def get_episode_profiles(self) -> List[Dict]:
+        """Get all episode profiles."""
+        return self._make_request("GET", "/api/episode-profiles")
+
+    def get_episode_profile(self, profile_name: str) -> Dict:
+        """Get a specific episode profile by name."""
+        return self._make_request("GET", f"/api/episode-profiles/{profile_name}")
+
+    def create_episode_profile(
+        self,
+        name: str,
+        description: str = "",
+        speaker_config: str = "",
+        outline_provider: str = "",
+        outline_model: str = "",
+        transcript_provider: str = "",
+        transcript_model: str = "",
+        default_briefing: str = "",
+        num_segments: int = 5,
+    ) -> Dict:
+        """Create a new episode profile."""
+        data = {
+            "name": name,
+            "description": description,
+            "speaker_config": speaker_config,
+            "outline_provider": outline_provider,
+            "outline_model": outline_model,
+            "transcript_provider": transcript_provider,
+            "transcript_model": transcript_model,
+            "default_briefing": default_briefing,
+            "num_segments": num_segments,
+        }
+        return self._make_request("POST", "/api/episode-profiles", json=data)
+
+    def update_episode_profile(self, profile_id: str, **updates) -> Dict:
+        """Update an episode profile."""
+        return self._make_request("PUT", f"/api/episode-profiles/{profile_id}", json=updates)
+
+    def delete_episode_profile(self, profile_id: str) -> Dict:
+        """Delete an episode profile."""
+        return self._make_request("DELETE", f"/api/episode-profiles/{profile_id}")
+
 
 # Global client instance
 api_client = APIClient()

@@ -4,10 +4,7 @@ from datetime import datetime
 from typing import Dict, List
 
 import httpx
-import nest_asyncio
 import streamlit as st
-
-nest_asyncio.apply()
 
 from pages.stream_app.utils import setup_page
 
@@ -421,12 +418,12 @@ with episodes_tab:
                     with col2:
                         st.markdown(f"{get_status_emoji('pending')} Pending")
 
-# Get available providers and models like the original podcast page
-from open_notebook.domain.models import Model
+# Get available providers and models using API service
+from api.models_service import models_service
 
 # Load available models
-text_to_speech_models = asyncio.run(Model.get_models_by_type("text_to_speech"))
-text_models = asyncio.run(Model.get_models_by_type("language"))
+text_to_speech_models = models_service.get_all_models(model_type="text_to_speech")
+text_models = models_service.get_all_models(model_type="language")
 
 # Build provider-model mappings
 tts_provider_models = {}

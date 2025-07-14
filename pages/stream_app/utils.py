@@ -109,7 +109,7 @@ def check_migration():
             logger.critical("Migration required")
             st.warning("The Open Notebook database needs a migration to run properly.")
             if st.button("Run Migration"):
-                asyncio.run(mm.run_migration_up())
+                mm.run_migration_up()
                 st.success("Migration successful")
                 st.session_state["migration_required"] = False
                 st.rerun()

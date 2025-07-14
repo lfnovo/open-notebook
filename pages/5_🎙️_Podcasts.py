@@ -256,6 +256,216 @@ def analyze_speaker_usage(speakers, episodes):
     
     return usage_map
 
+def render_speaker_info_inline(speaker_config, speaker_profiles):
+    """Render speaker information inline within episode profile cards"""
+    if not speaker_config:
+        st.warning("⚠️ No speaker profile assigned")
+        return
+    
+    # Find the matching speaker profile
+    speaker_profile = None
+    for profile in speaker_profiles:
+        if profile.get('name') == speaker_config:
+            speaker_profile = profile
+            break
+    
+    if not speaker_profile:
+        st.error(f"❌ Speaker profile '{speaker_config}' not found")
+        return
+    
+    # Display speaker info
+    st.write(f"**🎤 Speaker Profile:** {speaker_config}")
+    st.write(f"**TTS:** {speaker_profile.get('tts_provider', 'N/A')}/{speaker_profile.get('tts_model', 'N/A')}")
+    
+    speakers = speaker_profile.get('speakers', [])
+    if speakers:
+        st.write(f"**Speakers ({len(speakers)}):**")
+        for i, speaker in enumerate(speakers, 1):
+            st.caption(f"{i}. {speaker.get('name', 'Unknown')} - {speaker.get('voice_id', 'N/A')}")
+
+def render_episode_profiles_section():
+    """Render episode profiles in the main area"""
+    st.subheader("📺 Episode Profiles")
+    
+    # Fetch data
+    episode_profiles = asyncio.run(fetch_episode_profiles())
+    speaker_profiles = asyncio.run(fetch_speaker_profiles())
+    
+    # Create new episode profile section
+    with st.expander("➕ Create New Episode Profile", expanded=False):
+        # AI Model Configuration outside form for reactivity
+        st.subheader("🤖 AI Model Configuration")
+        col_ai1, col_ai2 = st.columns(2)
+        
+        with col_ai1:
+            outline_provider = st.selectbox("Outline Provider*", list(transcript_provider_models.keys()), key="new_outline_provider")
+            outline_model = st.selectbox("Outline Model*", transcript_provider_models[outline_provider], key="new_outline_model")
+        
+        with col_ai2:
+            transcript_provider = st.selectbox("Transcript Provider*", list(transcript_provider_models.keys()), key="new_transcript_provider")
+            transcript_model = st.selectbox("Transcript Model*", transcript_provider_models[transcript_provider], key="new_transcript_model")
+        
+        with st.form("create_episode_profile"):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                ep_name = st.text_input("Profile Name*", placeholder="e.g., tech_discussion")
+                ep_description = st.text_area("Description", placeholder="Brief description of this profile")
+                ep_segments = st.number_input("Number of Segments", min_value=3, max_value=20, value=5)
+            
+            with col2:
+                # Speaker config dropdown
+                speaker_names = [sp["name"] for sp in speaker_profiles] if speaker_profiles else []
+                
+                if speaker_names:
+                    ep_speaker_config = st.selectbox("Speaker Configuration*", speaker_names)
+                else:
+                    st.warning("No speaker profiles available. Create a speaker profile first.")
+                    ep_speaker_config = None
+            
+            # Default briefing
+            ep_briefing = st.text_area(
+                "Default Briefing*",
+                placeholder="Enter the default briefing template for this episode type...",
+                height=150
+            )
+            
+            submitted = st.form_submit_button("Create Episode Profile")
+            
+            if submitted:
+                if ep_name and ep_speaker_config and ep_briefing:
+                    success = asyncio.run(create_episode_profile({
+                        "name": ep_name,
+                        "description": ep_description,
+                        "speaker_config": ep_speaker_config,
+                        "outline_provider": outline_provider,
+                        "outline_model": outline_model,
+                        "transcript_provider": transcript_provider,
+                        "transcript_model": transcript_model,
+                        "default_briefing": ep_briefing,
+                        "num_segments": ep_segments
+                    }))
+                    if success:
+                        st.success("Episode profile created successfully!")
+                        st.rerun()
+                    else:
+                        st.error("Failed to create episode profile")
+                else:
+                    st.error("Please fill in all required fields (*)")
+    
+    # Display existing episode profiles
+    if episode_profiles:
+        st.write(f"**{len(episode_profiles)} Episode Profile(s):**")
+        
+        for profile in episode_profiles:
+            with st.container(border=True):
+                col_info, col_actions = st.columns([3, 1])
+                
+                with col_info:
+                    st.subheader(profile.get('name', 'Unknown'))
+                    st.write(f"**Description:** {profile.get('description', 'N/A')}")
+                    st.write(f"**Segments:** {profile.get('num_segments', 'N/A')}")
+                    st.write(f"**Outline Model:** {profile.get('outline_provider', 'N/A')}/{profile.get('outline_model', 'N/A')}")
+                    st.write(f"**Transcript Model:** {profile.get('transcript_provider', 'N/A')}/{profile.get('transcript_model', 'N/A')}")
+                    
+                    # Inline speaker information
+                    st.divider()
+                    render_speaker_info_inline(profile.get('speaker_config'), speaker_profiles)
+                
+                with col_actions:
+                    if st.button("⚙️ Configure Speaker", key=f"config_speaker_{profile['id']}", help="Configure speaker profile"):
+                        st.info("Speaker configuration coming in Phase 5")
+                    
+                    if st.button("✏️ Edit", key=f"edit_ep_{profile['id']}"):
+                        st.session_state[f"edit_episode_{profile['id']}"] = True
+                        st.rerun()
+                    
+                    if st.button("📋 Duplicate", key=f"dup_ep_{profile['id']}"):
+                        success = asyncio.run(duplicate_episode_profile(profile['id']))
+                        if success:
+                            st.success("Profile duplicated!")
+                            st.rerun()
+                    
+                    if st.button("🗑️ Delete", key=f"del_ep_{profile['id']}"):
+                        confirm_delete_episode_profile(profile['id'], profile['name'])
+                
+                # Show briefing
+                st.text_area(
+                    "Default Briefing:",
+                    value=profile.get('default_briefing', ''),
+                    height=100,
+                    disabled=True,
+                    key=f"briefing_display_{profile['id']}"
+                )
+                
+                # Edit form (if in edit mode)
+                if st.session_state.get(f"edit_episode_{profile['id']}", False):
+                    st.subheader("✏️ Edit Episode Profile")
+                    
+                    # AI models outside form for reactivity
+                    col5, col6 = st.columns(2)
+                    with col5:
+                        current_outline_provider = profile.get('outline_provider', list(transcript_provider_models.keys())[0])
+                        outline_idx = list(transcript_provider_models.keys()).index(current_outline_provider) if current_outline_provider in transcript_provider_models else 0
+                        edit_outline_provider = st.selectbox("Outline Provider", list(transcript_provider_models.keys()), index=outline_idx, key=f"edit_outline_provider_{profile['id']}")
+                        
+                        current_outline_model = profile.get('outline_model', '')
+                        outline_model_idx = 0
+                        if current_outline_model in transcript_provider_models[edit_outline_provider]:
+                            outline_model_idx = transcript_provider_models[edit_outline_provider].index(current_outline_model)
+                        edit_outline_model = st.selectbox("Outline Model", transcript_provider_models[edit_outline_provider], index=outline_model_idx, key=f"edit_outline_model_{profile['id']}")
+                    
+                    with col6:
+                        current_transcript_provider = profile.get('transcript_provider', list(transcript_provider_models.keys())[0])
+                        transcript_idx = list(transcript_provider_models.keys()).index(current_transcript_provider) if current_transcript_provider in transcript_provider_models else 0
+                        edit_transcript_provider = st.selectbox("Transcript Provider", list(transcript_provider_models.keys()), index=transcript_idx, key=f"edit_transcript_provider_{profile['id']}")
+                        
+                        current_transcript_model = profile.get('transcript_model', '')
+                        transcript_model_idx = 0
+                        if current_transcript_model in transcript_provider_models[edit_transcript_provider]:
+                            transcript_model_idx = transcript_provider_models[edit_transcript_provider].index(current_transcript_model)
+                        edit_transcript_model = st.selectbox("Transcript Model", transcript_provider_models[edit_transcript_provider], index=transcript_model_idx, key=f"edit_transcript_model_{profile['id']}")
+                    
+                    with st.form(f"edit_episode_form_{profile['id']}"):
+                        # Form fields with current values
+                        edit_name = st.text_input("Profile Name", value=profile.get('name', ''))
+                        edit_description = st.text_area("Description", value=profile.get('description', ''))
+                        edit_segments = st.number_input("Segments", min_value=3, max_value=20, value=profile.get('num_segments', 5))
+                        
+                        # Speaker config
+                        speaker_names = [sp["name"] for sp in speaker_profiles] if speaker_profiles else []
+                        current_speaker = profile.get('speaker_config', '')
+                        speaker_idx = speaker_names.index(current_speaker) if current_speaker in speaker_names else 0
+                        edit_speaker_config = st.selectbox("Speaker Configuration", speaker_names, index=speaker_idx)
+                        
+                        edit_briefing = st.text_area("Default Briefing", value=profile.get('default_briefing', ''), height=150)
+                        
+                        col7, col8 = st.columns(2)
+                        with col7:
+                            if st.form_submit_button("💾 Save Changes"):
+                                success = asyncio.run(update_episode_profile(profile['id'], {
+                                    "name": edit_name,
+                                    "description": edit_description,
+                                    "speaker_config": edit_speaker_config,
+                                    "outline_provider": edit_outline_provider,
+                                    "outline_model": edit_outline_model,
+                                    "transcript_provider": edit_transcript_provider,
+                                    "transcript_model": edit_transcript_model,
+                                    "default_briefing": edit_briefing,
+                                    "num_segments": edit_segments
+                                }))
+                                if success:
+                                    st.success("Profile updated!")
+                                    st.session_state[f"edit_episode_{profile['id']}"] = False
+                                    st.rerun()
+                        
+                        with col8:
+                            if st.form_submit_button("❌ Cancel"):
+                                st.session_state[f"edit_episode_{profile['id']}"] = False
+                                st.rerun()
+    else:
+        st.info("No episode profiles found. Create your first episode profile above.")
+
 def render_speaker_profiles_sidebar():
     """Render speaker profiles in the sidebar with usage indicators"""
     st.subheader("🎤 Speaker Profiles")
@@ -541,8 +751,7 @@ with templates_tab:
     col_main, col_sidebar = st.columns([3, 1])
     
     with col_main:
-        st.subheader("📺 Episode Profiles - Coming in Phase 3")
-        st.info("Episode profiles management will be moved here in Phase 3. This will be the primary focus area for creating and managing episode configurations.")
+        render_episode_profiles_section()
     
     with col_sidebar:
         render_speaker_profiles_sidebar()

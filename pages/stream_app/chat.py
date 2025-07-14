@@ -92,23 +92,36 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 st.error(f"Failed to load episode profiles: {str(e)}")
                 episode_profiles = []
                 episode_profile_names = []
-            
+
             if len(episode_profiles) == 0:
-                st.warning("No episode profiles found. Please create profiles in the Podcast Profiles tab first.")
+                st.warning(
+                    "No episode profiles found. Please create profiles in the Podcast Profiles tab first."
+                )
                 st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcast Profiles")
             else:
                 # Episode Profile selection
-                selected_episode_profile = st.selectbox("Episode Profile", episode_profile_names)
-                
+                selected_episode_profile = st.selectbox(
+                    "Episode Profile", episode_profile_names
+                )
+
                 # Get the selected episode profile object to access speaker_config
-                selected_profile_obj = next((ep for ep in episode_profiles if ep.name == selected_episode_profile), None)
-                
+                selected_profile_obj = next(
+                    (
+                        ep
+                        for ep in episode_profiles
+                        if ep.name == selected_episode_profile
+                    ),
+                    None,
+                )
+
                 # Episode details
-                episode_name = st.text_input("Episode Name", placeholder="e.g., AI and the Future of Work")
+                episode_name = st.text_input(
+                    "Episode Name", placeholder="e.g., AI and the Future of Work"
+                )
                 instructions = st.text_area(
-                    "Additional Instructions (Optional)", 
+                    "Additional Instructions (Optional)",
                     placeholder="Any specific instructions beyond the episode profile's default briefing...",
-                    help="These instructions will be added to the episode profile's default briefing."
+                    help="These instructions will be added to the episode profile's default briefing.",
                 )
 
                 # Check for context availability
@@ -127,32 +140,51 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                                     # Make API call to generate podcast
                                     async def generate_podcast():
                                         async with httpx.AsyncClient() as client:
-                                            response = await client.post(f"{API_BASE}/podcasts/generate", json={
-                                                "episode_profile": selected_episode_profile,
-                                                "speaker_profile": selected_profile_obj.speaker_config if selected_profile_obj else "",
-                                                "episode_name": episode_name.strip(),
-                                                "content": str(context),
-                                                "briefing_suffix": instructions.strip() if instructions.strip() else None,
-                                                "notebook_id": str(current_notebook.id)
-                                            })
+                                            response = await client.post(
+                                                f"{API_BASE}/podcasts/generate",
+                                                json={
+                                                    "episode_profile": selected_episode_profile,
+                                                    "speaker_profile": selected_profile_obj.speaker_config
+                                                    if selected_profile_obj
+                                                    else "",
+                                                    "episode_name": episode_name.strip(),
+                                                    "content": str(context),
+                                                    "briefing_suffix": instructions.strip()
+                                                    if instructions.strip()
+                                                    else None,
+                                                    "notebook_id": str(
+                                                        current_notebook.id
+                                                    ),
+                                                },
+                                            )
                                             return response
-                                    
+
                                     response = asyncio.run(generate_podcast())
-                                    
+
                                     if response.status_code == 200:
                                         result = response.json()
-                                        st.success("🎉 Podcast generation started successfully!")
-                                        st.info(f"**Job ID:** `{result['job_id']}`")
-                                        st.info("📊 Check the **Episodes** tab to monitor progress and download results.")
-                                        st.page_link("pages/5_🎙️_Podcasts.py", label="📊 Go to Episodes", icon="🎙️", use_container_width=True)
+                                        st.success(
+                                            f"🎉 Podcast generation started successfully! Job ID: `{result['job_id']}`"
+                                        )
+                                        st.info(
+                                            "📊 Check the **Episodes** tab to monitor progress and download results."
+                                        )
                                     else:
-                                        error_detail = response.json().get("detail", "Unknown error") if response.status_code != 500 else "Server error"
-                                        st.error(f"Failed to start podcast generation: {error_detail}")
-                                        
+                                        error_detail = (
+                                            response.json().get(
+                                                "detail", "Unknown error"
+                                            )
+                                            if response.status_code != 500
+                                            else "Server error"
+                                        )
+                                        st.error(
+                                            f"Failed to start podcast generation: {error_detail}"
+                                        )
+
                             except Exception as e:
                                 logger.error(f"Error generating podcast: {str(e)}")
                                 st.error(f"Error generating podcast: {str(e)}")
-            
+
             # Navigation link
             st.divider()
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")

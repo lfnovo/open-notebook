@@ -129,3 +129,20 @@ class PodcastEpisode(ObjectModel):
             return status.status if status else "unknown"
         except Exception:
             return "unknown"
+
+    @field_validator("command", mode="before")
+    @classmethod
+    def parse_command(cls, value):
+        if isinstance(value, str):
+            return ensure_record_id(value)
+        return value
+
+    def _prepare_save_data(self) -> dict:
+        """Override to ensure command field is always RecordID format for database"""
+        data = super()._prepare_save_data()
+        
+        # Ensure command field is RecordID format if not None
+        if data.get("command") is not None:
+            data["command"] = ensure_record_id(data["command"])
+            
+        return data

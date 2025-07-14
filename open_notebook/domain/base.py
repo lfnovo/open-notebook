@@ -144,7 +144,6 @@ class ObjectModel(BaseModel):
                 repo_result = await repo_update(
                     self.__class__.table_name, self.id, data
                 )
-                logger.critical(repo_result)
             # Update the current instance with the result
             for key, value in repo_result[0].items():
                 if hasattr(self, key):

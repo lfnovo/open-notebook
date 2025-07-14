@@ -142,10 +142,6 @@ async def generate_podcast_command(
             episode_profile=episode_profile.name,
         )
 
-        logger.info(
-            f"Podcast generation completed. Result keys: {list(result.keys()) if result else 'None'}"
-        )
-
         episode.audio_file = (
             str(result.get("final_output_file_path")) if result else None
         )

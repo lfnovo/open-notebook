@@ -72,6 +72,138 @@ def confirm_delete_episode_profile(profile_id, profile_name):
         if st.button("❌ Cancel"):
             st.rerun()
 
+@st.dialog("Configure Speaker Profile", width="large")
+def speaker_configuration_dialog(mode="create", profile_id=None, episode_context=None):
+    """Unified dialog for speaker profile create/edit/select"""
+    
+    # Initialize session state for dialog
+    if "dialog_speakers" not in st.session_state:
+        st.session_state.dialog_speakers = [{"name": "", "voice_id": "", "backstory": "", "personality": ""}]
+    
+    if mode == "create":
+        st.subheader("🎤 Create New Speaker Profile")
+    elif mode == "edit":
+        st.subheader("✏️ Edit Speaker Profile")
+        # Load existing profile data
+        if profile_id and "dialog_loaded" not in st.session_state:
+            speaker_profiles = asyncio.run(fetch_speaker_profiles())
+            profile = next((p for p in speaker_profiles if p['id'] == profile_id), None)
+            if profile:
+                st.session_state.dialog_loaded = True
+                st.session_state.dialog_speakers = profile.get('speakers', [])
+                st.session_state.dialog_name = profile.get('name', '')
+                st.session_state.dialog_description = profile.get('description', '')
+                st.session_state.dialog_tts_provider = profile.get('tts_provider', '')
+                st.session_state.dialog_tts_model = profile.get('tts_model', '')
+    elif mode == "select":
+        st.subheader("⚙️ Configure Speaker for Episode")
+        st.info("Select mode coming in Phase 5")
+        return
+    
+    # TTS Provider/Model selection outside form for reactivity
+    col1, col2 = st.columns(2)
+    with col1:
+        default_provider = st.session_state.get("dialog_tts_provider", list(tts_provider_models.keys())[0])
+        provider_idx = list(tts_provider_models.keys()).index(default_provider) if default_provider in tts_provider_models else 0
+        tts_provider = st.selectbox("TTS Provider*", list(tts_provider_models.keys()), index=provider_idx, key="dialog_tts_provider")
+    with col2:
+        default_model = st.session_state.get("dialog_tts_model", "")
+        model_idx = 0
+        if default_model in tts_provider_models[tts_provider]:
+            model_idx = tts_provider_models[tts_provider].index(default_model)
+        tts_model = st.selectbox("TTS Model*", tts_provider_models[tts_provider], index=model_idx, key="dialog_tts_model")
+    
+    with st.form("speaker_config_dialog_form"):
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            sp_name = st.text_input("Profile Name*", value=st.session_state.get("dialog_name", ""), placeholder="e.g., tech_experts")
+        
+        with col4:
+            sp_description = st.text_area("Description", value=st.session_state.get("dialog_description", ""), placeholder="Brief description of this speaker configuration")
+        
+        # Speakers configuration
+        st.subheader("🎙️ Speakers (1-4 speakers)")
+        
+        # Display current speakers
+        for i, speaker in enumerate(st.session_state.dialog_speakers):
+            with st.container(border=True):
+                st.write(f"**Speaker {i+1}:**")
+                col_spk1, col_spk2 = st.columns(2)
+                
+                with col_spk1:
+                    speaker["name"] = st.text_input(f"Name*", value=speaker.get("name", ""), key=f"dialog_speaker_{i}_name")
+                    speaker["voice_id"] = st.text_input(f"Voice ID*", value=speaker.get("voice_id", ""), key=f"dialog_speaker_{i}_voice")
+                
+                with col_spk2:
+                    speaker["backstory"] = st.text_area(f"Backstory*", value=speaker.get("backstory", ""), key=f"dialog_speaker_{i}_backstory")
+                    speaker["personality"] = st.text_area(f"Personality*", value=speaker.get("personality", ""), key=f"dialog_speaker_{i}_personality")
+        
+        # Buttons to add/remove speakers
+        col5, col6 = st.columns(2)
+        with col5:
+            if st.form_submit_button("➕ Add Speaker") and len(st.session_state.dialog_speakers) < 4:
+                st.session_state.dialog_speakers.append({"name": "", "voice_id": "", "backstory": "", "personality": ""})
+                st.rerun()
+        
+        with col6:
+            if st.form_submit_button("➖ Remove Speaker") and len(st.session_state.dialog_speakers) > 1:
+                st.session_state.dialog_speakers.pop()
+                st.rerun()
+        
+        # Submit buttons
+        col7, col8 = st.columns(2)
+        with col7:
+            submit_label = "💾 Save Changes" if mode == "edit" else "✅ Create Profile"
+            if st.form_submit_button(submit_label):
+                # Validate speakers
+                valid_speakers = []
+                for speaker in st.session_state.dialog_speakers:
+                    if speaker.get("name") and speaker.get("voice_id") and speaker.get("backstory") and speaker.get("personality"):
+                        valid_speakers.append(speaker)
+                
+                if sp_name and valid_speakers:
+                    profile_data = {
+                        "name": sp_name,
+                        "description": sp_description,
+                        "tts_provider": tts_provider,
+                        "tts_model": tts_model,
+                        "speakers": valid_speakers
+                    }
+                    
+                    if mode == "create":
+                        success = asyncio.run(create_speaker_profile(profile_data))
+                        if success:
+                            st.success("Speaker profile created successfully!")
+                            # Clear session state
+                            for key in ["dialog_speakers", "dialog_name", "dialog_description", "dialog_tts_provider", "dialog_tts_model", "dialog_loaded"]:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            st.rerun()
+                        else:
+                            st.error("Failed to create speaker profile")
+                    elif mode == "edit":
+                        success = asyncio.run(update_speaker_profile(profile_id, profile_data))
+                        if success:
+                            st.success("Speaker profile updated successfully!")
+                            # Clear session state
+                            for key in ["dialog_speakers", "dialog_name", "dialog_description", "dialog_tts_provider", "dialog_tts_model", "dialog_loaded"]:
+                                if key in st.session_state:
+                                    del st.session_state[key]
+                            st.rerun()
+                        else:
+                            st.error("Failed to update speaker profile")
+                else:
+                    st.error("Please fill in all required fields (*) for at least one speaker")
+        
+        with col8:
+            if st.form_submit_button("❌ Cancel"):
+                # Clear session state
+                for key in ["dialog_speakers", "dialog_name", "dialog_description", "dialog_tts_provider", "dialog_tts_model", "dialog_loaded"]:
+                    if key in st.session_state:
+                        del st.session_state[key]
+                st.rerun()
+
 def get_status_emoji(status: str) -> str:
     """Get emoji for job status"""
     status_map = {
@@ -472,7 +604,7 @@ def render_speaker_profiles_sidebar():
     
     # New Speaker Profile button
     if st.button("➕ New Speaker Profile", use_container_width=True):
-        st.info("Speaker creation coming in Phase 4")
+        speaker_configuration_dialog("create")
     
     # Fetch speaker profiles and episode profiles for usage analysis
     speaker_profiles = asyncio.run(fetch_speaker_profiles())
@@ -513,13 +645,16 @@ def render_speaker_profiles_sidebar():
             col1, col2, col3 = st.columns(3)
             with col1:
                 if st.button("✏️", key=f"edit_sp_sidebar_{profile['id']}", help="Edit"):
-                    st.info("Edit functionality coming in Phase 6")
+                    speaker_configuration_dialog("edit", profile['id'])
             with col2:
                 if st.button("📋", key=f"dup_sp_sidebar_{profile['id']}", help="Duplicate"):
-                    st.info("Duplicate functionality coming in Phase 6")
+                    success = asyncio.run(duplicate_speaker_profile(profile['id']))
+                    if success:
+                        st.success("Profile duplicated!")
+                        st.rerun()
             with col3:
                 if st.button("🗑️", key=f"del_sp_sidebar_{profile['id']}", help="Delete"):
-                    st.info("Delete functionality coming in Phase 6")
+                    confirm_delete_speaker_profile(profile['id'], profile['name'])
 
 # Main page title
 st.title("🎙️ Podcast Generator")

@@ -178,8 +178,3 @@ We are working hard to support more providers and model types to give users more
 ## Testing your models
 
 If you are not sure which model will work best for you, you can try them up on the Playground section and see for yourself how they handle different tasks.
-
-## ⚠️ Important instructions for Gemini
-
-The new Gemini Text to Speech models are amazing and definitely worth using. But in order to use them, you need to do a little setup. Please refer to this [Podcastfy help page](https://github.com/souzatharsis/podcastfy/blob/main/usage/config.md) for details. But it basically requires you to enable the Text to Speech API and add it to your API Key.
-

@@ -244,4 +244,3 @@ To use the Google Cloud (Vertex) provider for audio:
     - VERTEX_PROJECT=your-google-cloud-project-name
     - GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
     - VERTEX_LOCATION=your-google-cloud-project-location
-3. Setup the correct permissions in the [Google Cloud Console](https://github.com/souzatharsis/podcastfy/blob/main/usage/config.md)

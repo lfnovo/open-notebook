@@ -1,14 +1,10 @@
-import asyncio
 from typing import Optional
 
-import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 
-nest_asyncio.apply()
-
+from api.models_service import models_service
 from api.notes_service import notes_service
-from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note
 from pages.components import note_panel
 
@@ -17,7 +13,8 @@ from .consts import note_context_icons
 
 @st.dialog("Write a Note", width="large")
 def add_note(notebook_id):
-    if not asyncio.run(model_manager.get_embedding_model()):
+    default_models = models_service.get_default_models()
+    if not default_models.default_embedding_model:
         st.warning(
             "Since there is no embedding model selected, your note will be saved but not searchable."
         )
@@ -74,7 +71,7 @@ def note_card(note, notebook_id):
 
 
 def note_list_item(note_id, score=None):
-    note: Note = Note.get(note_id)
+    note = notes_service.get_note(note_id)
     if note.note_type == "human":
         icon = "🤵"
     else:

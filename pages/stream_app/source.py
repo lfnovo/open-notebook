@@ -1,23 +1,19 @@
-import asyncio
 import os
 from pathlib import Path
 
-import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 from loguru import logger
 
+from api.insights_service import insights_service
+from api.models_service import models_service
+from api.settings_service import settings_service
+from api.sources_service import sources_service
+from api.transformations_service import transformations_service
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.models import model_manager
-from open_notebook.domain.notebook import Source
-from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import UnsupportedTypeException
-from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
 from pages.stream_app.consts import source_context_icons
-
-nest_asyncio.apply()
 
 
 @st.dialog("Source", width="large")
@@ -27,17 +23,18 @@ def source_panel_dialog(source_id, notebook_id=None):
 
 @st.dialog("Add a Source", width="large")
 def add_source(notebook_id):
-    if not asyncio.run(model_manager.get_speech_to_text()):
+    default_models = models_service.get_default_models()
+    if not default_models.default_speech_to_text_model:
         st.warning(
             "Since there is no speech to text model selected, you can't upload audio/video files."
         )
     source_link = None
     source_file = None
     source_text = None
-    content_settings = ContentSettings()
+    content_settings = settings_service.get_settings()
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
     req = {}
-    transformations = asyncio.run(Transformation.get_all())
+    transformations = transformations_service.get_all_transformations()
     if source_type == "Link":
         source_link = st.text_input("Link")
         req["url"] = source_link
@@ -164,7 +161,7 @@ def source_card(source, notebook_id):
             key=f"source_{source.id}",
         )
 
-        insights = asyncio.run(source.get_insights())
+        insights = insights_service.get_source_insights(source.id)
         st.caption(
             f"Updated: {naturaltime(source.updated)}, **{len(insights)}** insights"
         )
@@ -175,7 +172,8 @@ def source_card(source, notebook_id):
 
 
 def source_list_item(source_id, score=None):
-    source: Source = Source.get(source_id)
+    source_with_metadata = sources_service.get_source(source_id)
+    source = source_with_metadata.source
     if not source:
         st.error("Source not found")
         return

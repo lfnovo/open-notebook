@@ -8,9 +8,8 @@ import streamlit as st
 from loguru import logger
 
 nest_asyncio.apply()
-
+from api.models_service import models_service
 from open_notebook.database.migrate import MigrationManager
-from open_notebook.domain.models import DefaultModels
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import ThreadState, graph
 from open_notebook.utils import (
@@ -119,7 +118,7 @@ def check_migration():
 
 
 def check_models(only_mandatory=True, stop_on_error=True):
-    default_models = asyncio.run(DefaultModels.get_instance())
+    default_models = models_service.get_default_models()
     mandatory_models = [
         default_models.default_chat_model,
         default_models.default_transformation_model,

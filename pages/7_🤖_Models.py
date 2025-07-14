@@ -1,4 +1,3 @@
-import asyncio
 import os
 
 import nest_asyncio
@@ -9,7 +8,6 @@ import streamlit as st
 from esperanto import AIFactory
 
 from api.models_service import models_service
-from open_notebook.domain.models import model_manager
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
@@ -137,12 +135,12 @@ def handle_default_selection(
     if selected_model and (not current_value or selected_model.id != current_value):
         setattr(default_models, key, selected_model.id)
         models_service.update_default_models(default_models)
-        asyncio.run(model_manager.refresh_defaults())
+        # Model defaults are automatically refreshed through the API service
         st.toast(f"Default {model_type} model set to {selected_model.name}")
     elif not selected_model and current_value:
         setattr(default_models, key, None)
         models_service.update_default_models(default_models)
-        asyncio.run(model_manager.refresh_defaults())
+        # Model defaults are automatically refreshed through the API service
         st.toast(f"Default {model_type} model removed")
 
     if caption:

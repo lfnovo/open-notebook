@@ -1,11 +1,9 @@
 import streamlit as st
 
+from api.models_service import ModelsService
 from api.notebook_service import notebook_service
 from api.notes_service import notes_service
 from api.search_service import search_service
-from api.models_service import ModelsService
-from open_notebook.domain.models import DefaultModels
-from open_notebook.domain.notebook import Note, Notebook
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import convert_source_references, setup_page
 
@@ -40,7 +38,8 @@ with ask_tab:
         "The LLM will answer your query based on the documents in your knowledge base. "
     )
     question = st.text_input("Question", "")
-    default_model = DefaultModels().default_chat_model
+    default_models = models_service.get_default_models()
+    default_model = default_models.default_chat_model
     strategy_model = model_selector(
         "Query Strategy Model",
         "strategy_model",
@@ -62,7 +61,6 @@ with ask_tab:
         selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    default_models = models_service.get_default_models()
     embedding_model = default_models.default_embedding_model
     if not embedding_model:
         st.warning(
@@ -108,7 +106,7 @@ with ask_tab:
                         title=st.session_state["ask_results"]["question"],
                         content=st.session_state["ask_results"]["answer"],
                         note_type="ai",
-                        notebook_id=notebook.id
+                        notebook_id=notebook.id,
                     )
                     st.success("Note saved successfully")
 

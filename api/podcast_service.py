@@ -84,6 +84,14 @@ class PodcastService:
                 "briefing_suffix": briefing_suffix,
             }
 
+            # Ensure command modules are imported before submitting
+            # This is needed because submit_command validates against local registry
+            try:
+                import commands.podcast_commands  # noqa: F401
+            except ImportError as import_err:
+                logger.error(f"Failed to import podcast commands: {import_err}")
+                raise ValueError("Podcast commands not available")
+
             # Submit command to surreal-commands
             job_id = submit_command("open_notebook", "generate_podcast", command_args)
 

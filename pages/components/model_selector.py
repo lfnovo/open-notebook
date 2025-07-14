@@ -1,12 +1,12 @@
-import asyncio
 from typing import Literal
 
-import nest_asyncio
 import streamlit as st
 
+from api.models_service import ModelsService
 from open_notebook.domain.models import Model
 
-nest_asyncio.apply()
+# Initialize service instance
+models_service = ModelsService()
 
 
 def model_selector(
@@ -18,7 +18,7 @@ def model_selector(
         "language", "embedding", "speech_to_text", "text_to_speech"
     ] = "language",
 ) -> Model:
-    models = asyncio.run(Model.get_models_by_type(model_type))
+    models = models_service.get_all_models(model_type=model_type)
     models.sort(key=lambda x: (x.provider, x.name))
     try:
         index = (

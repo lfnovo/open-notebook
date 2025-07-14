@@ -1,17 +1,16 @@
-import asyncio
-
-import nest_asyncio
 import streamlit as st
-
-nest_asyncio.apply()
 
 from api.notebook_service import notebook_service
 from api.notes_service import notes_service
 from api.search_service import search_service
-from open_notebook.domain.models import DefaultModels, model_manager
+from api.models_service import ModelsService
+from open_notebook.domain.models import DefaultModels
 from open_notebook.domain.notebook import Note, Notebook
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import convert_source_references, setup_page
+
+# Initialize service instances
+models_service = ModelsService()
 
 setup_page("🔍 Search")
 
@@ -63,7 +62,8 @@ with ask_tab:
         selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    embedding_model = asyncio.run(model_manager.get_embedding_model())
+    default_models = models_service.get_default_models()
+    embedding_model = default_models.default_embedding_model
     if not embedding_model:
         st.warning(
             "You can't use this feature because you have no embedding model selected. Please set one up in the Models page."

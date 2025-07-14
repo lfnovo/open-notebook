@@ -285,6 +285,7 @@ The Source API already properly exposes embedded chunks information through the 
 ✅ **API Analysis Complete**: All required APIs are implemented and available
 ✅ **Migration Plan Created**: Comprehensive mapping of 20 violations across 9 files  
 ✅ **Source API Verification**: Confirmed embedded_chunks field is properly exposed
+✅ **SourceWithMetadata Pattern**: Created clean wrapper for domain objects with API metadata
 
 ## Remaining Tasks
 
@@ -296,12 +297,12 @@ The Source API already properly exposes embedded chunks information through the 
 
 ### Phase 1: Critical Components
 - [x] pages/components/source_panel.py (4 violations) ✅
-- [ ] pages/components/note_panel.py (2 violations)  
-- [ ] pages/components/model_selector.py (1 violation)
+- [x] pages/components/note_panel.py (2 violations) ✅
+- [x] pages/components/model_selector.py (1 violation) ✅
 
 ### Phase 2: Core Streamlit Pages
 - [ ] pages/2_📒_Notebooks.py (2 violations)
-- [ ] pages/3_🔍_Ask_and_Search.py (1 violation)
+- [x] pages/3_🔍_Ask_and_Search.py (1 violation) ✅
 - [ ] pages/5_🎙️_Podcasts.py (2 violations)
 
 ### Phase 3: Supporting Pages
@@ -310,4 +311,4 @@ The Source API already properly exposes embedded chunks information through the 
 - [ ] pages/stream_app/utils.py (1 violation)
 - [ ] pages/stream_app/chat.py (1 violation)
 
-**Progress: 4/20 violations fixed (20%)**
+**Progress: 8/20 violations fixed (40%)**

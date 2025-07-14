@@ -1,12 +1,9 @@
-import asyncio
-
-import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 
-nest_asyncio.apply()
-
 from api.notebook_service import notebook_service
+from api.notes_service import notes_service
+from api.sources_service import sources_service
 from open_notebook.domain.notebook import Notebook
 from pages.stream_app.chat import chat_sidebar
 from pages.stream_app.note import add_note, note_card
@@ -72,8 +69,8 @@ def notebook_page(current_notebook: Notebook):
         current_notebook=current_notebook,
     )
 
-    sources = asyncio.run(current_notebook.get_sources())
-    notes = asyncio.run(current_notebook.get_notes())
+    sources = sources_service.get_all_sources(notebook_id=current_notebook.id)
+    notes = notes_service.get_all_notes(notebook_id=current_notebook.id)
 
     notebook_header(current_notebook)
 

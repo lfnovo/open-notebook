@@ -83,8 +83,11 @@ st.divider()
 
 
 # Helper function to add model with auto-save
-def add_model_form(model_type, container_key):
-    available_providers = esperanto_available_providers.get(model_type, [])
+def add_model_form(model_type, container_key, configured_providers):
+    # Get providers that Esperanto supports for this model type
+    esperanto_providers = esperanto_available_providers.get(model_type, [])
+    # Filter to only show providers that have API keys configured
+    available_providers = [p for p in esperanto_providers if p in configured_providers]
     # Sort providers alphabetically for easier navigation
     available_providers.sort()
 
@@ -189,7 +192,7 @@ with st.container(border=True):
             st.info("No language models configured")
 
     with col2:
-        add_model_form("language", "main")
+        add_model_form("language", "main", available_providers)
 
     st.markdown("**Default Model Assignments**")
     col1, col2 = st.columns(2)
@@ -264,7 +267,7 @@ with st.container(border=True):
         st.warning("⚠️ Changing embedding models requires regenerating all embeddings")
 
     with col2:
-        add_model_form("embedding", "main")
+        add_model_form("embedding", "main", available_providers)
 
 # Text-to-Speech Models Section
 st.subheader("🎙️ Text-to-Speech Models")
@@ -298,7 +301,7 @@ with st.container(border=True):
         )
 
     with col2:
-        add_model_form("text_to_speech", "main")
+        add_model_form("text_to_speech", "main", available_providers)
 
 # Speech-to-Text Models Section
 st.subheader("🎤 Speech-to-Text Models")
@@ -331,4 +334,4 @@ with st.container(border=True):
         )
 
     with col2:
-        add_model_form("speech_to_text", "main")
+        add_model_form("speech_to_text", "main", available_providers)

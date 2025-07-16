@@ -163,6 +163,7 @@ def setup_page(
     sidebar_state="expanded",
     only_check_mandatory_models=True,
     stop_on_model_error=True,
+    skip_model_check=False,
 ):
     """Common page setup for all pages"""
     st.set_page_config(
@@ -174,9 +175,13 @@ def setup_page(
     check_password()
     
     check_migration()
-    check_models(
-        only_mandatory=only_check_mandatory_models, stop_on_error=stop_on_model_error
-    )
+    
+    # Skip model check if requested (e.g., on Models page)
+    if not skip_model_check:
+        check_models(
+            only_mandatory=only_check_mandatory_models, stop_on_error=stop_on_model_error
+        )
+    
     version_sidebar()
 
 

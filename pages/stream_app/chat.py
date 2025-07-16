@@ -147,14 +147,13 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                                     job_id = asyncio.run(generate_podcast())
 
                                     if job_id:
-                                        st.success(
-                                            f"🎉 Podcast generation started successfully! Job ID: `{job_id}`"
-                                        )
                                         st.info(
-                                            "📊 Check the **Episodes** tab to monitor progress and download results."
+                                            "🎉 Podcast generation started successfully! Check the **Episodes** tab to monitor progress and download results."
                                         )
                                     else:
-                                        st.error("Failed to start podcast generation: No job ID returned")
+                                        st.error(
+                                            "Failed to start podcast generation: No job ID returned"
+                                        )
 
                             except Exception as e:
                                 logger.error(f"Error generating podcast: {str(e)}")

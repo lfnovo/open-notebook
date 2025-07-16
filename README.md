@@ -34,16 +34,12 @@
 ## 📢 Open Notebook is under very active development
 
 > Open Notebook is under active development! We're moving fast and making improvements every week. Your feedback is incredibly valuable to me during this exciting phase and it gives me motivation to keep improving and building this amazing tool. Please feel free to star the project if you find it useful, and don't hesitate to reach out with any questions or suggestions. I'm excited to see how you'll use it and what ideas you'll bring to the project! Let's build something amazing together! 🚀
->
-> ⚠️ **API Changes**: As we optimize and enhance the project, some APIs and interfaces might change. We'll do our best to document these changes and minimize disruption.
->
-> 🙏 **We Need Your Feedback**: Please try out Open Notebook and let us know what you think! Submit issues, feature requests, or just share your experience through:
-> - GitHub Issues
-> - Discussions
-> - Pull Requests
->
-> Together, we can make it even better! 
 
+## Installation Issues?
+
+> We have a CustomGPT built to help you install Open Notebook. [Check it out here](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant). It will help you through each step of the process.
+
+> There are also some [basic docker/openai installation guide](setup_guide/README.md) available if you prefer to install it manually.
 
 <!-- TABLE OF CONTENTS -->
 <details>

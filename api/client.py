@@ -16,6 +16,11 @@ class APIClient:
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5055")
         self.timeout = 30.0
+        # Add authentication header if password is set
+        self.headers = {}
+        password = os.getenv("OPEN_NOTEBOOK_PASSWORD")
+        if password:
+            self.headers["Authorization"] = f"Bearer {password}"
 
     def _make_request(
         self, method: str, endpoint: str, timeout: Optional[float] = None, **kwargs
@@ -23,6 +28,11 @@ class APIClient:
         """Make HTTP request to the API."""
         url = f"{self.base_url}{endpoint}"
         request_timeout = timeout if timeout is not None else self.timeout
+        
+        # Merge headers
+        headers = kwargs.get("headers", {})
+        headers.update(self.headers)
+        kwargs["headers"] = headers
 
         try:
             with httpx.Client(timeout=request_timeout) as client:

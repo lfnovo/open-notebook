@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.auth import PasswordAuthMiddleware
 from api.routers import commands as commands_router
 from api.routers import (
     context,
@@ -22,7 +23,6 @@ from api.routers import (
 try:
     from loguru import logger
 
-    import commands.example_commands
     import commands.podcast_commands
 
     logger.info("Commands imported in API process")
@@ -45,6 +45,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add password authentication middleware
+app.add_middleware(PasswordAuthMiddleware)
 
 # Include routers
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])

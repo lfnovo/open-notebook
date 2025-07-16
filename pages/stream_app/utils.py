@@ -168,6 +168,11 @@ def setup_page(
     st.set_page_config(
         page_title=title, layout=layout, initial_sidebar_state=sidebar_state
     )
+    
+    # Check authentication first
+    from pages.stream_app.auth import check_password
+    check_password()
+    
     check_migration()
     check_models(
         only_mandatory=only_check_mandatory_models, stop_on_error=stop_on_model_error

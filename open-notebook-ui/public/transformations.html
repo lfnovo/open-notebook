@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformations - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="transformations.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1><i class="fas fa-exchange-alt"></i> Transformations</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                        Back to Notebooks
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Default Prompt Section -->
+                <section class="default-prompt-section">
+                    <div class="section-header">
+                        <h2>Default Transformation Prompt</h2>
+                        <button class="btn btn-secondary btn-sm" onclick="editDefaultPrompt()">
+                            <span class="icon"><i class="fas fa-edit"></i></span>
+                            Edit
+                        </button>
+                    </div>
+
+                    <div class="default-prompt-card">
+                        <div class="prompt-info">
+                            <p class="text-sm mb-4">This prompt will be automatically added to all your transformation prompts to provide consistent context and behavior.</p>
+                        </div>
+                        <div id="default-prompt-container" class="prompt-content">
+                            <!-- Beautiful skeleton loading -->
+                            <div class="loading-skeleton">
+                                <div class="skeleton-item">
+                                    <div class="skeleton-line long"></div>
+                                    <div class="skeleton-line medium"></div>
+                                    <div class="skeleton-line short"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Create New Transformation -->
+                <section class="create-transformation-section">
+                    <div class="section-header">
+                        <h2>Create New Transformation</h2>
+                    </div>
+
+                    <div class="form-section">
+                        <form id="add-transformation-form" class="form-group">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="add-transformation-name">Transformation Name</label>
+                                    <input
+                                        type="text"
+                                        id="add-transformation-name"
+                                        class="input-field"
+                                        placeholder="e.g., Summarize, Extract Keywords, Translate to French"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-field">
+                                    <label for="add-transformation-title">Card Title</label>
+                                    <input
+                                        type="text"
+                                        id="add-transformation-title"
+                                        class="input-field"
+                                        placeholder="e.g., Key Topics, Summary, Translation"
+                                        required
+                                    >
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="add-transformation-description">Description</label>
+                                    <textarea
+                                        id="add-transformation-description"
+                                        class="input-field"
+                                        placeholder="Brief description of what this transformation does"
+                                        rows="2"
+                                    ></textarea>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="add-transformation-prompt">Transformation Prompt</label>
+                                    <textarea
+                                        id="add-transformation-prompt"
+                                        class="input-field"
+                                        placeholder="Enter your transformation prompt here..."
+                                        rows="4"
+                                        required
+                                    ></textarea>
+                                    <div class="help-text">
+                                        <p><i class="fas fa-lightbulb"></i> You can use transformations to summarize, expand, extract insights, translate, and much more.</p>
+                                        <p>For inspiration, check out <a href="https://github.com/danielmiessler/fabric/tree/main/patterns" target="_blank" rel="noopener">transformation patterns</a>.</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" id="add-transformation-default">
+                                    <span>Suggest by default on new sources</span>
+                                </label>
+                            </div>
+
+                            <div class="form-row">
+                                <button type="submit" class="btn btn-success">
+                                    Create Transformation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Existing Transformations -->
+                <section class="transformations-list-section">
+                    <div class="section-header">
+                        <h2>Your Transformations</h2>
+                        <div class="transformation-stats">
+                            <span class="stat-item">
+                                <span class="stat-number" id="total-transformations">0</span>
+                                <span class="stat-label">Total</span>
+                            </span>
+                            <span class="stat-item">
+                                <span class="stat-number" id="default-transformations">0</span>
+                                <span class="stat-label">Default</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="transformations-list-container" class="results-container">
+                        <!-- Beautiful skeleton loading -->
+                        <div class="loading-skeleton">
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line long"></div>
+                                <div class="skeleton-line medium"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Default Prompt Modal -->
+    <div id="edit-prompt-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeEditPromptModal()"><i class="fas fa-times"></i></button>
+            <h2>Edit Default Transformation Prompt</h2>
+            <form id="edit-prompt-form" class="form-group">
+                <div class="form-field">
+                    <label for="default-prompt-text">Default Prompt</label>
+                    <textarea
+                        id="default-prompt-text"
+                        class="input-field"
+                        rows="6"
+                        placeholder="Enter the default prompt that will be added to all transformations..."
+                    ></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditPromptModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="modal.js"></script>
+    <script src="transformations.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Enhanced loading functions
+        function showDefaultPromptLoading() {
+            const container = document.getElementById('default-prompt-container');
+            container.innerHTML = `
+                <div class="loading-skeleton">
+                    <div class="skeleton-item">
+                        <div class="skeleton-line long"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showTransformationsLoading() {
+            const container = document.getElementById('transformations-list-container');
+            container.innerHTML = `
+                <div class="loading-skeleton">
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line long"></div>
+                        <div class="skeleton-line medium"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayDefaultPrompt(prompt) {
+            const container = document.getElementById('default-prompt-container');
+
+            if (!prompt || !prompt.trim()) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-sticky-note"></i></div>
+                        <h3>No Default Prompt Set</h3>
+                        <p>Set a default prompt to provide consistent context for all transformations.</p>
+                        <button class="btn btn-primary mt-4" onclick="editDefaultPrompt()">
+                            Set Default Prompt
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="prompt-display">
+                    <pre class="prompt-text">${prompt}</pre>
+                </div>
+            `;
+        }
+
+        function displayTransformations(transformations) {
+            const container = document.getElementById('transformations-list-container');
+
+            if (!transformations || transformations.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-puzzle-piece"></i></div>
+                        <h3>No Transformations Yet</h3>
+                        <p>Create your first transformation to start processing content with AI.</p>
+                        <button class="btn btn-primary mt-4" onclick="document.getElementById('add-transformation-name').focus()">
+                            Create Your First Transformation
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const transformationsHtml = transformations.map(transformation => `
+                <div class="transformation-card">
+                    <div class="transformation-header">
+                        <h4>${transformation.title}</h4>
+                        <div class="transformation-meta">
+                            ${transformation.apply_default ? '<span class="default-badge">Default</span>' : ''}
+                        </div>
+                    </div>
+                    <p class="transformation-description">${transformation.description || 'No description provided'}</p>
+                    <div class="transformation-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="editTransformation('${transformation.id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTransformation('${transformation.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = transformationsHtml;
+        }
+
+        // API Functions
+        async function loadDefaultPrompt() {
+            showDefaultPromptLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/transformations/defaults`);
+                if (!response.ok) throw new Error('Failed to fetch default prompt');
+
+                const data = await response.json();
+                document.getElementById('default-prompt-text').value = data.transformation_instructions || ''; // Set modal value
+                displayDefaultPrompt(data.transformation_instructions || '');
+            } catch (error) {
+                console.error('Error loading default prompt:', error);
+                const container = document.getElementById('default-prompt-container');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Error Loading Default Prompt</h3>
+                        <p>Unable to load the default prompt. Please try again.</p>
+                        <button class="btn btn-primary mt-4" onclick="loadDefaultPrompt()">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadTransformations() {
+            showTransformationsLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/transformations/all`);
+                if (!response.ok) throw new Error('Failed to fetch transformations');
+
+                const transformations = await response.json();
+                displayTransformations(transformations);
+
+                // Update stats
+                const defaultCount = transformations.filter(t => t.apply_default).length;
+                updateTransformationStats(transformations.length, defaultCount);
+            } catch (error) {
+                console.error('Error loading transformations:', error);
+                const container = document.getElementById('transformations-list-container');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Error Loading Transformations</h3>
+                        <p>Unable to load transformations. Please try again.</p>
+                        <button class="btn btn-primary mt-4" onclick="loadTransformations()">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function createTransformation(name, title, description, prompt, applyDefault) {
+            try {
+                const response = await fetch(`${API_BASE}/api/transformations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: name,
+                        title: title,
+                        description: description,
+                        prompt: prompt,
+                        apply_default: applyDefault
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create transformation');
+
+                const transformation = await response.json();
+                loadTransformations(); // Refresh the list
+                return transformation;
+            } catch (error) {
+                console.error('Error creating transformation:', error);
+                throw error;
+            }
+        }
+
+        function editTransformation(id) {
+            console.log('Edit transformation:', id);
+            // This would open an edit modal or navigate to edit page
+        }
+
+        async function deleteTransformation(id) {
+            if (!confirm('Are you sure you want to delete this transformation?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/transformations/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete transformation');
+
+                loadTransformations(); // Refresh the list
+            } catch (error) {
+                console.error('Error deleting transformation:', error);
+                alert('Failed to delete transformation. Please try again.');
+            }
+        }
+
+        // UI Functions
+        function editDefaultPrompt() {
+            const modal = document.getElementById('edit-prompt-modal');
+            modal.classList.add('show');
+
+            // Focus on textarea
+            setTimeout(() => {
+                document.getElementById('default-prompt-text').focus();
+            }, 100);
+        }
+
+        function closeEditPromptModal() {
+            const modal = document.getElementById('edit-prompt-modal');
+            modal.classList.remove('show');
+        }
+
+        function updateTransformationStats(total, defaultCount) {
+            document.getElementById('total-transformations').textContent = total;
+            document.getElementById('default-transformations').textContent = defaultCount;
+        }
+
+        // Enhanced UI interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-resize textareas
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+            });
+
+            // Form submission handling
+            const form = document.getElementById('add-transformation-form');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                const name = document.getElementById('add-transformation-name').value.trim();
+                const title = document.getElementById('add-transformation-title').value.trim();
+                const description = document.getElementById('add-transformation-description').value.trim();
+                const prompt = document.getElementById('add-transformation-prompt').value.trim();
+                const applyDefault = document.getElementById('add-transformation-default').checked;
+
+                if (!name || !title || !prompt) return;
+
+                submitBtn.innerHTML = 'Creating...';
+                submitBtn.disabled = true;
+
+                try {
+                    await createTransformation(name, title, description, prompt, applyDefault);
+                    form.reset();
+                } catch (error) {
+                    alert('Failed to create transformation. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Edit prompt form handling
+            const editForm = document.getElementById('edit-prompt-form');
+            editForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = editForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                const promptText = document.getElementById('default-prompt-text').value.trim();
+
+                submitBtn.innerHTML = 'Saving...';
+                submitBtn.disabled = true;
+
+                try {
+                    const response = await fetch(`${API_BASE}/api/transformations/defaults`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            transformation_instructions: promptText
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Failed to update default prompt');
+
+                    closeEditPromptModal();
+                    loadDefaultPrompt(); // Refresh the display
+                } catch (error) {
+                    console.error('Error updating default prompt:', error);
+                    alert('Failed to update default prompt. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Load initial data
+            loadDefaultPrompt();
+            loadTransformations();
+        });
+
+        // Close modal on outside click
+        window.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('show');
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeEditPromptModal();
+            }
+        });
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>
+</content>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Podcasts - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="podcasts.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1><i class="fas fa-microphone-alt"></i> Podcasts</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="generateNewEpisode()">
+                        <span class="icon"><i class="fas fa-magic"></i></span>
+                        Generate Episode
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                    <button class="tab-button active" data-tab="episodes">
+                        Episodes
+                    </button>
+                    <button class="tab-button" data-tab="templates">
+                        Templates
+                    </button>
+                </div>
+
+                <!-- Episodes Tab -->
+                <section id="episodes-tab-content" class="tab-content active">
+                    <div class="section-header">
+                        <h2>Podcast Episodes</h2>
+                    </div>
+
+                    <div id="episodes-list-container" class="results-container">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line long"></div>
+                                <div class="skeleton-line medium"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Templates Tab -->
+                <section id="templates-tab-content" class="tab-content hidden">
+                    <div class="section-header">
+                        <h2>Podcast Templates</h2>
+                    </div>
+
+                    <!-- Create Template Form -->
+                    <div class="form-section">
+                        <h3>Create New Template</h3>
+                        <form id="add-template-form" class="form-group">
+                            <!-- Basic Information -->
+                            <div class="form-subsection">
+                                <h4>Basic Information</h4>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="template-name">Template Name</label>
+                                        <input type="text" id="template-name" class="input-field" placeholder="My Podcast Template" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="podcast-name">Podcast Name</label>
+                                        <input type="text" id="podcast-name" class="input-field" placeholder="The Knowledge Cast" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="podcast-tagline">Podcast Tagline</label>
+                                        <input type="text" id="podcast-tagline" class="input-field" placeholder="Exploring ideas through conversation" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="output-language">Output Language</label>
+                                        <input type="text" id="output-language" class="input-field" value="English" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="user-instructions">Additional Instructions</label>
+                                        <textarea id="user-instructions" class="input-field" placeholder="Any specific instructions for the AI..." rows="3"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Conversation Style -->
+                            <div class="form-subsection">
+                                <h4>Conversation Style</h4>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="person1-role">Person 1 Role</label>
+                                        <input type="text" id="person1-role" class="input-field" placeholder="Host, Interviewer, Expert">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="person2-role">Person 2 Role</label>
+                                        <input type="text" id="person2-role" class="input-field" placeholder="Guest, Co-host, Analyst">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="conversation-style">Conversation Style</label>
+                                        <input type="text" id="conversation-style" class="input-field" placeholder="Analytical, Humorous, Casual">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="engagement-technique">Engagement Techniques</label>
+                                        <input type="text" id="engagement-technique" class="input-field" placeholder="Anecdotes, Questions, Examples">
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="dialogue-structure">Dialogue Structure</label>
+                                        <input type="text" id="dialogue-structure" class="input-field" placeholder="Introduction, Discussion, Q&A">
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="creativity">Creativity Level (0.0 - 1.0)</label>
+                                        <input type="number" id="creativity" class="input-field" step="0.05" min="0" max="1" value="0.5" required>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="ending-message">Ending Message</label>
+                                        <input type="text" id="ending-message" class="input-field" placeholder="Thank you for listening!">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- AI Models -->
+                            <div class="form-subsection">
+                                <h4>AI Models</h4>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="transcript-model-provider">Transcript Model Provider</label>
+                                        <select id="transcript-model-provider" class="input-field" required>
+                                            <option value="">Select Provider</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="transcript-model">Transcript Model</label>
+                                        <select id="transcript-model" class="input-field" required>
+                                            <option value="">Select Model</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="audio-model-provider">Audio Model Provider</label>
+                                        <select id="audio-model-provider" class="input-field" required>
+                                            <option value="">Select Provider</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="audio-model">Audio Model</label>
+                                        <select id="audio-model" class="input-field" required>
+                                            <option value="">Select Model</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label for="voice1">Voice 1</label>
+                                        <input type="text" id="voice1" class="input-field" placeholder="alloy, Echo (OpenAI) or ElevenLabs voice ID" required>
+                                    </div>
+                                    <div class="form-field">
+                                        <label for="voice2">Voice 2</label>
+                                        <input type="text" id="voice2" class="input-field" placeholder="fable, Nova (OpenAI) or ElevenLabs voice ID" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <button type="submit" class="btn btn-success w-full">
+                                    Save Template
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Templates List -->
+                    <div class="section-header">
+                        <h2>Your Templates</h2>
+                    </div>
+                    <div id="templates-list-container" class="results-container">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line long"></div>
+                                <div class="skeleton-line medium"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="modal.js"></script>
+    <script src="podcasts.js"></script>
+    <script src="sidebar.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Tab functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const targetTab = this.getAttribute('data-tab');
+
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.add('hidden'));
+
+                    this.classList.add('active');
+                    document.getElementById(targetTab + '-tab-content').classList.remove('hidden');
+                });
+            });
+
+            // Auto-resize textareas
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+            });
+
+            // Form submission
+            const form = document.getElementById('add-template-form');
+            form.addEventListener('submit', function(e) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Saving...';
+                submitBtn.disabled = true;
+
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            });
+
+        });
+
+        function generateNewEpisode() {
+            alert('Episode generation feature would be implemented here');
+        }
+    </script>
+</body>
+</html>

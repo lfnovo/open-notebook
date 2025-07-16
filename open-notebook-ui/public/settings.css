@@ -1,0 +1,527 @@
+/* Settings Page Specific Styles */
+
+/* Settings Sections */
+.settings-section {
+  margin-bottom: var(--space-8);
+}
+
+.settings-card {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-xs);
+  position: relative;
+  overflow: hidden;
+}
+
+.settings-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--accent-500), var(--accent-600));
+}
+
+/* Setting Items */
+.setting-item {
+  margin-bottom: var(--space-6);
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
+.setting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.setting-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  margin: 0;
+}
+
+.setting-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--neutral-600);
+}
+
+.setting-description {
+  margin-bottom: var(--space-4);
+  line-height: 1.6;
+  color: var(--neutral-700);
+}
+
+.setting-description p {
+  margin-bottom: var(--space-3);
+}
+
+.setting-description p:last-child {
+  margin-bottom: 0;
+}
+
+.setting-control {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.setting-control label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--neutral-700);
+}
+
+/* Status Indicators */
+.status-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--space-1);
+}
+
+.status-indicator.online {
+  background: var(--success-500);
+  box-shadow: 0 0 0 2px var(--success-100);
+}
+
+.status-indicator.offline {
+  background: var(--error-500);
+  box-shadow: 0 0 0 2px var(--error-100);
+}
+
+.status-indicator.warning {
+  background: var(--warning-500);
+  box-shadow: 0 0 0 2px var(--warning-100);
+}
+
+/* Service Status */
+.service-status {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--neutral-100);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+}
+
+.service-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start; /* Align items to the start to accommodate wrapped text */
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--neutral-200);
+  gap: var(--space-2); /* Add some gap between name and status */
+}
+
+.service-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.service-name {
+  font-weight: 500;
+  color: var(--neutral-800);
+}
+
+.service-status-badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+  position: relative; /* Needed for tooltip positioning */
+  cursor: help; /* Indicate hoverable for tooltip */
+  flex-wrap: nowrap; /* Prevent wrapping for concise display */
+  white-space: nowrap; /* Keep text on a single line */
+  overflow: hidden; /* Hide overflow */
+  text-overflow: ellipsis; /* Add ellipsis for truncated text */
+}
+
+.service-status-badge:hover {
+  overflow: visible; /* Allow full text to be visible on hover */
+}
+
+.service-status-badge::after {
+  content: attr(data-full-message); /* Use data-full-message for tooltip content */
+  position: absolute;
+  bottom: 100%; /* Position above the element */
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--neutral-800);
+  color: white;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  white-space: normal; /* Allow tooltip text to wrap */
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--transition-fast), visibility var(--transition-fast);
+  min-width: 200px; /* Ensure tooltip is wide enough */
+  text-align: left; /* Align tooltip text to left */
+}
+
+.service-status-badge:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Information Boxes */
+.cost-info {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background: var(--warning-50);
+  border: 1px solid var(--warning-200);
+  border-radius: var(--radius-lg);
+}
+
+.cost-info h4 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--warning-800);
+  margin-bottom: var(--space-2);
+}
+
+.cost-info ul {
+  margin: 0;
+  padding-left: var(--space-5);
+  color: var(--warning-700);
+}
+
+.cost-info li {
+  margin-bottom: var(--space-1);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.warning-info {
+  margin-top: var(--space-4);
+  padding: var(--space-3);
+  background: var(--error-50);
+  border: 1px solid var(--error-200);
+  border-radius: var(--radius-lg);
+}
+
+.warning-info p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--error-700);
+}
+
+/* Save Section */
+.save-section {
+  margin-top: var(--space-12);
+}
+
+.save-card {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-8);
+  box-shadow: var(--shadow-xs);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.save-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--success-500), var(--success-600));
+}
+
+.save-info {
+  margin-bottom: var(--space-6);
+}
+
+.save-info h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  margin-bottom: var(--space-2);
+}
+
+.save-info p {
+  color: var(--neutral-600);
+  line-height: 1.6;
+}
+
+/* Button Enhancements */
+.btn-warning {
+  background: var(--warning-500);
+  color: white;
+}
+
+.btn-warning:hover {
+  background: var(--warning-600);
+  box-shadow: var(--shadow-md);
+}
+
+/* Form Field Enhancements */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.form-field label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--neutral-700);
+}
+
+/* Enhanced select styling */
+select.input-field {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .setting-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+
+  .service-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .save-card {
+    padding: var(--space-6);
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-card {
+    padding: var(--space-4);
+  }
+
+  .save-card {
+    padding: var(--space-4);
+  }
+
+  .cost-info,
+  .warning-info,
+  .service-status {
+    padding: var(--space-3);
+  }
+}
+
+/* Animation for settings cards */
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settings-card {
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+.settings-card:nth-child(2) { animation-delay: 0.1s; }
+.settings-card:nth-child(3) { animation-delay: 0.2s; }
+.settings-card:nth-child(4) { animation-delay: 0.3s; }
+
+.save-card {
+  animation: slideInFromTop 0.3s ease-out;
+  animation-delay: 0.4s;
+  animation-fill-mode: both;
+}
+
+/* Loading states */
+.setting-item.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.setting-item.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: var(--space-4);
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--neutral-200);
+  border-top: 2px solid var(--accent-500);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  transform: translateY(-50%);
+}
+
+/* Success/Error states */
+.setting-item.success {
+  background: var(--success-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin: var(--space-2) 0;
+}
+
+.setting-item.error {
+  background: var(--error-50);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin: var(--space-2) 0;
+}
+
+/* Focus states for better accessibility */
+.settings-card:focus-within {
+  outline: 2px solid var(--accent-500);
+  outline-offset: 2px;
+}
+
+/* Hover effects */
+.settings-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+.save-card:hover {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Status transitions */
+.status-indicator {
+  transition: all var(--transition-fast);
+}
+
+.setting-status {
+  transition: all var(--transition-fast);
+}
+
+/* Pulse animation for status indicators */
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}
+
+.status-indicator.online {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+/* Tooltip for status indicators */
+.setting-status:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--neutral-800);
+  color: white;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 1000;
+  animation: fadeIn var(--transition-fast);
+}
+
+/* Enhanced button states */
+#save-settings-btn {
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+#save-settings-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+#save-settings-btn:hover::before {
+  left: 100%;
+}
+
+/* Dark mode considerations (if implemented later) */
+@media (prefers-color-scheme: dark) {
+  .settings-card {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: var(--neutral-700);
+  }
+
+  .save-card {
+    background: rgba(30, 41, 59, 0.95);
+    border-color: var(--success-700);
+  }
+}
+
+/* Print styles */
+@media print {
+  .save-section {
+    display: none;
+  }
+
+  .settings-card::before {
+    display: none;
+  }
+
+  .status-indicator {
+    border: 1px solid #000;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .settings-card {
+    border-width: 2px;
+  }
+
+  .status-indicator {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .settings-card,
+  .save-card {
+    animation: none;
+  }
+
+  .status-indicator.online {
+    animation: none;
+  }
+
+  * {
+    transition: none !important;
+  }
+}

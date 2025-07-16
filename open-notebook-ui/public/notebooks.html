@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebooks - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1>My Notebooks</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary" onclick="toggleSearchView()">
+                        <span class="icon"><i class="fas fa-search"></i></span>
+                        Search
+                    </button>
+                    <button class="btn btn-primary" onclick="document.getElementById('new-notebook-title').focus()">
+                        <span class="icon"><i class="fas fa-plus"></i></span>
+                        New Notebook
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Notebook Management -->
+                <section id="notebook-list-view">
+                    <!-- Create New Notebook -->
+                    <div class="form-section">
+                        <h3>Create New Notebook</h3>
+                        <form id="new-notebook-form" class="form-group">
+                            <div class="form-row">
+                                <input
+                                    type="text"
+                                    id="new-notebook-title"
+                                    class="input-field"
+                                    placeholder="Notebook name"
+                                    required
+                                >
+                            </div>
+                            <div class="form-row">
+                                <textarea
+                                    id="new-notebook-description"
+                                    class="input-field"
+                                    placeholder="Describe the purpose of this notebook..."
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                            <div class="form-row">
+                                <button type="submit" class="btn btn-success">
+                                    Create Notebook
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Notebooks List -->
+                    <div id="notebooks-container" class="results-container">
+                        <!-- Enhanced Loading State -->
+                        <div class="loading-skeleton">
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line long"></div>
+                                <div class="skeleton-line medium"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Search Section -->
+                <section id="search-view" class="hidden">
+                    <div class="section-header">
+                        <h2>Search & Discovery</h2>
+                        <button class="btn btn-secondary" onclick="toggleSearchView()">
+                            Back to Notebooks
+                        </button>
+                    </div>
+
+                    <div class="search-container">
+                        <div class="form-group">
+                            <div class="form-row">
+                                <input
+                                    type="text"
+                                    id="search-query"
+                                    class="input-field"
+                                    placeholder="Search across notebooks, sources, and notes..."
+                                >
+                                <button id="perform-search-btn" class="btn btn-primary">
+                                    Search
+                                </button>
+                            </div>
+
+                            <div class="search-options">
+                                <label class="radio-group">
+                                    <input type="radio" name="search-type" value="text" checked>
+                                    <span>Text Search</span>
+                                </label>
+                                <label class="radio-group">
+                                    <input type="radio" name="search-type" value="vector">
+                                    <span>Vector Search</span>
+                                </label>
+                            </div>
+
+                            <div class="search-filters">
+                                <label class="checkbox-group">
+                                    <input type="checkbox" id="search-sources" checked>
+                                    <span>Search Sources</span>
+                                </label>
+                                <label class="checkbox-group">
+                                    <input type="checkbox" id="search-notes" checked>
+                                    <span>Search Notes</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="search-results-container" class="results-container">
+                        <div class="empty-state">
+                            <div class="empty-state-icon"><i class="fas fa-search"></i></div>
+                            <h3>Search Your Knowledge</h3>
+                            <p>Enter a search query to find content across all your notebooks, sources, and notes.</p>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Notebook Modal -->
+    <div id="edit-notebook-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('edit-notebook-modal')"><i class="fas fa-times"></i></button>
+            <h2>Edit Notebook</h2>
+
+            <form id="edit-notebook-form" class="form-group">
+                <input type="hidden" id="edit-notebook-id">
+                <div class="form-field">
+                    <label for="edit-notebook-title">Name</label>
+                    <input type="text" id="edit-notebook-title" class="input-field" placeholder="Notebook name" required>
+                </div>
+                <div class="form-field">
+                    <label for="edit-notebook-description">Description</label>
+                    <textarea id="edit-notebook-description" class="input-field" rows="5" placeholder="Describe the purpose of this notebook..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('edit-notebook-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('delete-confirm-modal')"><i class="fas fa-times"></i></button>
+            <h2>Confirm Deletion</h2>
+            <p>Are you sure you want to delete the notebook "<span id="delete-notebook-title-display"></span>"? This action cannot be undone.</p>
+            <input type="hidden" id="delete-notebook-id-confirm">
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('delete-confirm-modal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Clean UI interactions
+        function toggleSearchView() {
+            const notebookView = document.getElementById('notebook-list-view');
+            const searchView = document.getElementById('search-view');
+
+            if (searchView.classList.contains('hidden')) {
+                searchView.classList.remove('hidden');
+                notebookView.classList.add('hidden');
+                document.getElementById('search-query').focus();
+            } else {
+                searchView.classList.add('hidden');
+                notebookView.classList.remove('hidden');
+            }
+        }
+
+        // Enhanced loading and data handling
+        function showNotebooksLoading() {
+            const container = document.getElementById('notebooks-container');
+            container.innerHTML = `
+                <div class="loading-skeleton">
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line long"></div>
+                        <div class="skeleton-line medium"></div>
+                    </div>
+                    <div class="skeleton-item">
+                        <div class="skeleton-title"></div>
+                        <div class="skeleton-line medium"></div>
+                        <div class="skeleton-line short"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showSearchLoading() {
+            const container = document.getElementById('search-results-container');
+            container.innerHTML = `
+                <div class="loading">
+                    <div class="loading-dots">
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                        <div class="loading-dot"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayNotebooks(notebooks) {
+            const container = document.getElementById('notebooks-container');
+
+            if (!notebooks || notebooks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-book"></i></div>
+                        <h3>No Notebooks Yet</h3>
+                        <p>Create your first notebook to start organizing your knowledge and ideas.</p>
+                        <button class="btn btn-primary mt-4" onclick="document.getElementById('new-notebook-title').focus()">
+                            Create Your First Notebook
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const notebooksHtml = notebooks.map(notebook => {
+                const sourceCount = notebook.sources ? notebook.sources.length : 0;
+                const noteCount = notebook.notes ? notebook.notes.length : 0;
+                return `
+                <div class="notebook-card">
+                    <h3>${notebook.title || notebook.name}</h3>
+                    <p>${notebook.description || 'No description provided'}</p>
+                    <div class="notebook-card-actions">
+                        <button class="btn btn-primary btn-sm" onclick="openNotebook('${notebook.id}')">
+                            Open
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="editNotebook('${notebook.id}')">
+                            Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteNotebook('${notebook.id}')">
+                            Delete
+                        </button>
+                    </div>
+                    <div class="notebook-card-meta">
+                        <span><i class="fas fa-file-alt"></i> ${sourceCount} sources</span>
+                        <span><i class="fas fa-sticky-note"></i> ${noteCount} notes</span>
+                        <span><i class="fas fa-calendar-plus"></i> Created: ${formatDate(notebook.created)}</span>
+                        <span><i class="fas fa-calendar-check"></i> Updated: ${formatDate(notebook.updated)}</span>
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            container.innerHTML = notebooksHtml;
+        }
+
+        function displaySearchResults(results) {
+            const container = document.getElementById('search-results-container');
+
+            if (!results || results.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-search"></i></div>
+                        <h3>No Results Found</h3>
+                        <p>Try adjusting your search terms or search filters.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const resultsHtml = results.map(result => `
+                <div class="result-card">
+                    <h4>${result.title || result.name}</h4>
+                    <p>${result.content || result.excerpt || result.description}</p>
+                    <div class="result-meta">
+                        <span class="text-xs opacity-75">${result.type || 'Content'} • ${result.notebook_name || 'Unknown'}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = resultsHtml;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            // Use toLocaleString for a more precise date and time display
+            return date.toLocaleString();
+        }
+
+        // API Functions
+        async function loadNotebooks() {
+            showNotebooksLoading();
+
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks`);
+                if (!response.ok) throw new Error('Failed to fetch notebooks list');
+
+                const notebooksList = await response.json();
+                const detailedNotebooks = [];
+
+                // Fetch details for each notebook to get source/note counts
+                for (const notebookSummary of notebooksList) {
+                    const detailResponse = await fetch(`${API_BASE}/api/notebooks/${notebookSummary.id}`);
+                    if (detailResponse.ok) {
+                        const detailedNotebook = await detailResponse.json();
+                        detailedNotebooks.push(detailedNotebook);
+                    } else {
+                        console.warn(`Failed to fetch details for notebook ${notebookSummary.id}`);
+                        detailedNotebooks.push(notebookSummary); // Add summary if details fail
+                    }
+                }
+
+                displayNotebooks(detailedNotebooks);
+            } catch (error) {
+                console.error('Error loading notebooks:', error);
+                const container = document.getElementById('notebooks-container');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Error Loading Notebooks</h3>
+                        <p>Unable to load notebooks. Please try refreshing the page.</p>
+                        <button class="btn btn-primary mt-4" onclick="loadNotebooks()">
+                            Try Again
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function createNotebook(title, description) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: title,
+                        description: description
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create notebook');
+
+                const notebook = await response.json();
+                loadNotebooks(); // Refresh the list
+                return notebook;
+            } catch (error) {
+                console.error('Error creating notebook:', error);
+                throw error;
+            }
+        }
+
+        async function deleteNotebook(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`);
+                if (!response.ok) throw new Error('Failed to fetch notebook details for deletion');
+                const notebook = await response.json();
+
+                document.getElementById('delete-notebook-id-confirm').value = notebook.id;
+                document.getElementById('delete-notebook-title-display').textContent = notebook.name || notebook.title;
+                document.getElementById('delete-confirm-modal').classList.add('show');
+            } catch (error) {
+                console.error('Error preparing for notebook deletion:', error);
+                showError('Failed to prepare for notebook deletion. Please try again.');
+            }
+        }
+
+        async function confirmDeleteNotebook() {
+            const id = document.getElementById('delete-notebook-id-confirm').value;
+            if (!id) return;
+
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = 'Deleting...';
+            confirmBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) throw new Error('Failed to delete notebook');
+
+                closeModal('delete-confirm-modal');
+                loadNotebooks(); // Refresh the list
+            } catch (error) {
+                console.error('Error deleting notebook:', error);
+                showError('Failed to delete notebook. Please try again.');
+            } finally {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-query').value.trim();
+            if (!query) return;
+
+            const searchType = document.querySelector('input[name="search-type"]:checked').value;
+            const searchSources = document.getElementById('search-sources').checked;
+            const searchNotes = document.getElementById('search-notes').checked;
+
+            showSearchLoading();
+
+            try {
+                const endpoint = searchType === 'vector' ? '/api/search/vector' : '/api/search/text';
+                const params = new URLSearchParams({
+                    keyword: query,
+                    sources: searchSources.toString(),
+                    notes: searchNotes.toString(),
+                    limit: '50'
+                });
+
+                const response = await fetch(`${API_BASE}${endpoint}?${params}`);
+
+                if (!response.ok) throw new Error('Search failed');
+
+                const results = await response.json();
+                displaySearchResults(results);
+            } catch (error) {
+                console.error('Error performing search:', error);
+                const container = document.getElementById('search-results-container');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Search Error</h3>
+                        <p>Unable to perform search. Please try again.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Notebook actions
+        function openNotebook(id) {
+            window.location.href = `/notebook.html?id=${id}`;
+        }
+
+        // Modal functions
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        async function editNotebook(id) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`);
+                if (!response.ok) throw new Error('Failed to fetch notebook details for editing');
+                const notebook = await response.json();
+
+                document.getElementById('edit-notebook-id').value = notebook.id;
+                document.getElementById('edit-notebook-title').value = notebook.name || notebook.title;
+                document.getElementById('edit-notebook-description').value = notebook.description || '';
+
+                document.getElementById('edit-notebook-modal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading notebook for edit:', error);
+                showError('Failed to load notebook for editing. Please try again.');
+            }
+        }
+
+        async function updateNotebook(id, title, description) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: title,
+                        description: description
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update notebook');
+
+                loadNotebooks(); // Refresh the list
+                return true;
+            } catch (error) {
+                console.error('Error updating notebook:', error);
+                throw error;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Edit notebook form submission
+            document.getElementById('edit-notebook-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Saving...';
+                submitBtn.disabled = true;
+
+                const notebookId = document.getElementById('edit-notebook-id').value;
+                const title = document.getElementById('edit-notebook-title').value.trim();
+                const description = document.getElementById('edit-notebook-description').value.trim();
+
+                try {
+                    await updateNotebook(notebookId, title, description);
+                    closeModal('edit-notebook-modal');
+                } catch (error) {
+                    showError('Failed to save changes. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Confirm delete button event listener
+            document.getElementById('confirm-delete-btn').addEventListener('click', confirmDeleteNotebook);
+
+            // Close modal on outside click
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.classList.remove('show');
+                }
+            });
+
+            // Auto-resize textareas
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+            });
+
+            // Search on Enter
+            const searchInput = document.getElementById('search-query');
+            const searchBtn = document.getElementById('perform-search-btn');
+
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    performSearch();
+                }
+            });
+
+            searchBtn.addEventListener('click', performSearch);
+
+            // Form submission
+            const form = document.getElementById('new-notebook-form');
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                const title = document.getElementById('new-notebook-title').value.trim();
+                const description = document.getElementById('new-notebook-description').value.trim();
+
+                if (!title) return;
+
+                submitBtn.innerHTML = 'Creating...';
+                submitBtn.disabled = true;
+
+                try {
+                    await createNotebook(title, description);
+                    form.reset();
+                } catch (error) {
+                    showError('Failed to create notebook. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Load initial data
+            loadNotebooks();
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                toggleSearchView();
+            }
+
+            if (e.key === 'Escape') {
+                const searchView = document.getElementById('search-view');
+                if (!searchView.classList.contains('hidden')) {
+                    toggleSearchView();
+                }
+            }
+        });
+    </script>
+    <script src="sidebar.js"></script>
+    <script src="modal.js"></script>
+</body>
+</html>

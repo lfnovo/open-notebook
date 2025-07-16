@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="settings.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1><i class="fas fa-cog"></i> Settings</h1>
+                </div>
+                <div class="header-right">
+                    <button id="save-settings-btn" class="btn btn-primary btn-sm">
+                        <span class="icon"><i class="fas fa-save"></i></span>
+                        Save All Settings
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Document Processing Settings -->
+                <section class="settings-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-file-alt"></i> Document Processing</h2>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <h3>Content Processing Engine for Documents</h3>
+                                <div class="setting-status" id="doc-engine-status">
+                                    <span class="status-indicator online"></span>
+                                    <span>Active</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-description">
+                                <p><strong>Docling</strong> is slower but more accurate, especially for documents with tables and images. <strong>Simple</strong> extracts content without formatting - suitable for basic documents but loses quality with complex ones. <strong>Auto</strong> (recommended) tries Docling first and falls back to Simple if needed.</p>
+                            </div>
+
+                            <div class="setting-control">
+                                <label for="doc-processing-engine">Default Processing Engine:</label>
+                                <select id="doc-processing-engine" class="input-field">
+                                    <option value="auto"><i class="fas fa-robot"></i> Auto (Recommended)</option>
+                                    <option value="docling"><i class="fas fa-chart-bar"></i> Docling (High Quality)</option>
+                                    <option value="simple"><i class="fas fa-bolt"></i> Simple (Fast)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- URL Processing Settings -->
+                <section class="settings-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-globe"></i> URL Processing</h2>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <h3>Content Processing Engine for URLs</h3>
+                                <div class="setting-status" id="url-engine-status">
+                                    <span class="status-indicator warning"></span>
+                                    <span>Limited</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-description">
+                                <p><strong>Firecrawl</strong> is a paid service (with free tier) and very powerful. <strong>Jina</strong> is also good with a free tier. <strong>Simple</strong> uses basic HTTP extraction and misses JavaScript-based content. <strong>Auto</strong> (recommended) tries Firecrawl first (if API key present), then Jina, then falls back to Simple.</p>
+                            </div>
+
+                            <div class="setting-control">
+                                <label for="url-processing-engine">Default Processing Engine:</label>
+                                <select id="url-processing-engine" class="input-field">
+                                    <option value="auto"><i class="fas fa-robot"></i> Auto (Recommended)</option>
+                                    <option value="firecrawl"><i class="fas fa-fire"></i> Firecrawl (Premium)</option>
+                                    <option value="jina"><i class="fas fa-brain"></i> Jina (Good)</option>
+                                    <option value="simple"><i class="fas fa-bolt"></i> Simple (Basic)</option>
+                                </select>
+                            </div>
+
+                            <div class="service-status">
+                                <div class="service-item">
+                                    <span class="service-name">Firecrawl</span>
+                                    <span class="service-status-badge" id="firecrawl-status" data-full-message="">
+                                        <span class="status-indicator offline"></span>
+                                    </span>
+                                </div>
+                                <div class="service-item">
+                                    <span class="service-name">Jina</span>
+                                    <span class="service-status-badge" id="jina-status" data-full-message="">
+                                        <span class="status-indicator online"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Vector Search Settings -->
+                <section class="settings-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-search-plus"></i> Vector Search & Embeddings</h2>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <h3>Content Embedding for Vector Search</h3>
+                                <div class="setting-status" id="embedding-status">
+                                    <span class="status-indicator online"></span>
+                                    <span>Enabled</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-description">
+                                <p>Embedding content makes it easier to find by you and your AI agents. If you're running a local embedding model (Ollama), you shouldn't worry about cost. For online providers, be careful only if you process lots of content (100s of documents daily).</p>
+
+                                <div class="cost-info">
+                                    <h4><i class="fas fa-money-bill-wave"></i> Cost Reference:</h4>
+                                    <ul>
+                                        <li><strong>OpenAI text-embedding-3-small:</strong> ~$0.02 per 1M tokens (≈30x Wikipedia's Earth page)</li>
+                                        <li><strong>Gemini Text Embedding 004:</strong> Free with 1,500 requests/minute limit</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="setting-control">
+                                <label for="embedding-option">Default Embedding Option:</label>
+                                <select id="embedding-option" class="input-field">
+                                    <option value="ask"><i class="fas fa-question-circle"></i> Ask each time</option>
+                                    <option value="always"><i class="fas fa-check-circle"></i> Always embed (Recommended for local models)</option>
+                                    <option value="never"><i class="fas fa-times-circle"></i> Never embed</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- File Management Settings -->
+                <section class="settings-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-folder"></i> File Management</h2>
+                    </div>
+
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-header">
+                                <h3>Auto Delete Uploaded Files</h3>
+                                <div class="setting-status" id="file-management-status">
+                                    <span class="status-indicator online"></span>
+                                    <span>Enabled</span>
+                                </div>
+                            </div>
+
+                            <div class="setting-description">
+                                <p>Once files are uploaded and processed, they're no longer required. Most users should allow automatic deletion from the upload folder. Choose <strong>No</strong> ONLY if you're using Open Notebook as primary storage (not recommended).</p>
+
+                                <div class="warning-info">
+                                    <p><i class="fas fa-exclamation-triangle"></i> <strong>Note:</strong> This option will be deprecated in favor of always deleting files after processing.</p>
+                                </div>
+                            </div>
+
+                            <div class="setting-control">
+                                <label for="auto-delete-files">Auto Delete Uploaded Files:</label>
+                                <select id="auto-delete-files" class="input-field">
+                                    <option value="yes"><i class="fas fa-check-circle"></i> Yes (Recommended)</option>
+                                    <option value="no"><i class="fas fa-times-circle"></i> No (Keep files)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="modal.js"></script>
+    <script src="settings.js"></script>
+    <script src="sidebar.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Enhanced UI interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Save settings button handling
+            const saveBtn = document.getElementById('save-settings-btn');
+            saveBtn.addEventListener('click', function() {
+                const originalText = this.innerHTML;
+                this.innerHTML = '⏳ Saving Settings...';
+                this.disabled = true;
+
+                // Simulate save process
+                setTimeout(() => {
+                    this.innerHTML = '✅ Settings Saved!';
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    }, 1500);
+                }, 1000);
+            });
+
+            // Setting change handlers
+            const settings = document.querySelectorAll('select');
+            settings.forEach(setting => {
+                setting.addEventListener('change', function() {
+                    // Add visual feedback for unsaved changes
+                    saveBtn.classList.add('btn-warning');
+                    saveBtn.innerHTML = '⚠️ Save Changes';
+
+                    // Update status indicators based on selection
+                    updateStatusIndicators();
+                });
+            });
+
+            // Initialize status indicators
+            updateStatusIndicators();
+
+        });
+
+        function updateStatusIndicators() {
+            // Document processing status
+            const docEngine = document.getElementById('doc-processing-engine').value;
+            const docStatus = document.getElementById('doc-engine-status');
+            updateStatus(docStatus, docEngine === 'auto' ? 'online' : docEngine === 'docling' ? 'warning' : 'online');
+
+            // URL processing status
+            const urlEngine = document.getElementById('url-processing-engine').value;
+            const urlStatus = document.getElementById('url-engine-status');
+            updateStatus(urlStatus, urlEngine === 'auto' ? 'warning' : urlEngine === 'simple' ? 'offline' : 'online');
+
+            // Embedding status
+            const embeddingOption = document.getElementById('embedding-option').value;
+            const embeddingStatus = document.getElementById('embedding-status');
+            updateStatus(embeddingStatus, embeddingOption === 'never' ? 'offline' : 'online');
+
+            // File management status
+            const autoDelete = document.getElementById('auto-delete-files').value;
+            const fileStatus = document.getElementById('file-management-status');
+            updateStatus(fileStatus, autoDelete === 'yes' ? 'online' : 'warning');
+        }
+
+        function updateStatus(statusElement, type) {
+            const indicator = statusElement.querySelector('.status-indicator');
+            const text = statusElement.querySelector('span:last-child');
+
+            indicator.className = `status-indicator ${type}`;
+
+            switch(type) {
+                case 'online':
+                    text.textContent = 'Active';
+                    break;
+                case 'warning':
+                    text.textContent = 'Limited';
+                    break;
+                case 'offline':
+                    text.textContent = 'Disabled';
+                    break;
+            }
+        }
+
+        // Simulate service status checks
+        function checkServiceStatus() {
+            // This would typically make API calls to check service availability
+            const firecrawlStatus = document.getElementById('firecrawl-status');
+            const jinaStatus = document.getElementById('jina-status');
+
+            // Simulate status updates
+            setTimeout(() => {
+                firecrawlStatus.innerHTML = '<span class="status-indicator online"></span>Available';
+            }, 2000);
+        }
+
+        // Check service status on load
+        checkServiceStatus();
+    </script>
+</body>
+</html>
+</content>

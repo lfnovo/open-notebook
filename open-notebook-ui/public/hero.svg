@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient Definitions -->
+  <defs>
+    <linearGradient id="nodeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bd34fe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#41d1ff;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#bd34fe;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#41d1ff;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+
+  <!-- Connection Lines -->
+  <g class="connections">
+    <path d="M120 80L80 120" stroke="url(#lineGradient)" stroke-width="2"/>
+    <path d="M120 80L160 120" stroke="url(#lineGradient)" stroke-width="2"/>
+    <path d="M80 120L120 160" stroke="url(#lineGradient)" stroke-width="2"/>
+    <path d="M160 120L120 160" stroke="url(#lineGradient)" stroke-width="2"/>
+    <path d="M80 120L160 120" stroke="url(#lineGradient)" stroke-width="2"/>
+  </g>
+
+  <!-- Nodes -->
+  <g class="nodes">
+    <!-- Central Node -->
+    <circle cx="120" cy="80" r="20" fill="url(#nodeGradient)"/>
+    <circle cx="120" cy="80" r="24" stroke="url(#nodeGradient)" stroke-width="1" fill="none"/>
+    
+    <!-- Left Node -->
+    <circle cx="80" cy="120" r="16" fill="url(#nodeGradient)"/>
+    <circle cx="80" cy="120" r="20" stroke="url(#nodeGradient)" stroke-width="1" fill="none"/>
+    
+    <!-- Right Node -->
+    <circle cx="160" cy="120" r="16" fill="url(#nodeGradient)"/>
+    <circle cx="160" cy="120" r="20" stroke="url(#nodeGradient)" stroke-width="1" fill="none"/>
+    
+    <!-- Bottom Node -->
+    <circle cx="120" cy="160" r="18" fill="url(#nodeGradient)"/>
+    <circle cx="120" cy="160" r="22" stroke="url(#nodeGradient)" stroke-width="1" fill="none"/>
+  </g>
+
+  <!-- Pulse Animation -->
+  <style>
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.8; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 0.8; }
+    }
+    .nodes circle {
+      animation: pulse 3s infinite ease-in-out;
+    }
+    .nodes circle:nth-child(2n) {
+      animation-delay: 1s;
+    }
+    .nodes circle:nth-child(3n) {
+      animation-delay: 2s;
+    }
+  </style>
+</svg>

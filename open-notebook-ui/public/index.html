@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Notebook - AI-Powered Knowledge Management</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1>Dashboard</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" onclick="window.location.href='/notebooks.html'">
+                        <span class="icon"><i class="fas fa-plus"></i></span>
+                        New Notebook
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Hero Section -->
+                <section class="dashboard-hero">
+                    <h1><i class="fas fa-brain"></i> Open Notebook</h1>
+                    <p class="tagline-main">Your private AI workspace for thinking, learning, and discovery.</p>
+                    <p class="tagline-sub">Search, organize, and reason over your own data — all locally, all yours.</p>
+                </section>
+
+                <!-- Stats Overview -->
+                <section class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-icon notebooks">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                        <div class="stat-number" id="notebooks-count">
+                            <div class="loading-stats">
+                                <div class="loading-dots">
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-label">Notebooks</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-icon models">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                        </div>
+                        <div class="stat-number" id="models-count">
+                            <div class="loading-stats">
+                                <div class="loading-dots">
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-label">AI Models</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-icon transformations">
+                                <i class="fas fa-exchange-alt"></i>
+                            </div>
+                        </div>
+                        <div class="stat-number" id="transformations-count">
+                            <div class="loading-stats">
+                                <div class="loading-dots">
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-label">Transformations</div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-icon podcasts">
+                                <i class="fas fa-microphone-alt"></i>
+                            </div>
+                        </div>
+                        <div class="stat-number" id="podcasts-count">
+                            <div class="loading-stats">
+                                <div class="loading-dots">
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                    <div class="loading-dot"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-label">Podcast Configs</div>
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="quick-actions">
+                    <div class="action-card">
+                        <h3><i class="fas fa-book"></i> Notebooks</h3>
+                        <p>Organize your thoughts, ideas, and sources into notebooks for different research topics and projects. Add notes, manage sources, and build your knowledge base.</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="window.location.href='/notebooks.html'">
+                                <i class="fas fa-eye"></i> View Notebooks
+                            </button>
+                            <button class="btn btn-success" onclick="createQuickNotebook()">
+                                <i class="fas fa-plus"></i> New Notebook
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <h3><i class="fas fa-robot"></i> AI Models</h3>
+                        <p>Configure and manage your AI models. Set up various providers for language, embedding, and speech models to power your workflows and transformations.</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="window.location.href='/models.html'">
+                                <i class="fas fa-cogs"></i> Manage Models
+                            </button>
+                            <button class="btn btn-success" onclick="window.location.href='/models.html#add-model'">
+                                <i class="fas fa-plus"></i> Add Model
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <h3><i class="fas fa-exchange-alt"></i> Transformations</h3>
+                        <p>Create powerful data transformations using prompts to process sources, extract insights, and enhance your content with AI-powered workflows.</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="window.location.href='/transformations.html'">
+                                <i class="fas fa-list"></i> View Transformations
+                            </button>
+                            <button class="btn btn-success" onclick="window.location.href='/transformations.html#create'">
+                                <i class="fas fa-magic"></i> Create Transformation
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-card">
+                        <h3><i class="fas fa-microphone-alt"></i> Podcasts</h3>
+                        <p>Generate AI-powered podcasts from your knowledge base. Create templates, define voices, and produce engaging audio content from your notebooks.</p>
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="window.location.href='/podcasts.html'">
+                                <i class="fas fa-headphones"></i> View Podcasts
+                            </button>
+                            <button class="btn btn-success" onclick="window.location.href='/podcasts.html#create'">
+                                <i class="fas fa-broadcast-tower"></i> Create Podcast
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Recent Activity -->
+                <section class="recent-activity">
+                    <h2><i class="fas fa-clock"></i> Recent Activity</h2>
+                    <div id="recent-activity-container">
+                        <div class="activity-item">
+                            <div class="activity-icon notebooks">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">Welcome to Open Notebook!</div>
+                                <div class="activity-meta">Get started by creating your first notebook or configuring AI models</div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Quick Create Notebook Modal -->
+    <div id="quick-notebook-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('quick-notebook-modal')"><i class="fas fa-times"></i></button>
+            <h2>Create New Notebook</h2>
+
+            <form id="quick-notebook-form" class="form-group">
+                <div class="form-field">
+                    <label for="quick-notebook-title">Name</label>
+                    <input type="text" id="quick-notebook-title" class="input-field" placeholder="Notebook name" required>
+                </div>
+                <div class="form-field">
+                    <label for="quick-notebook-description">Description</label>
+                    <textarea id="quick-notebook-description" class="input-field" rows="3" placeholder="Describe the purpose of this notebook..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('quick-notebook-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Notebook</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Dashboard functionality
+        async function loadDashboardStats() {
+            try {
+                // Load notebooks count
+                const notebooksResponse = await fetch(`${API_BASE}/api/notebooks`);
+                if (notebooksResponse.ok) {
+                    const notebooks = await notebooksResponse.json();
+                    document.getElementById('notebooks-count').textContent = notebooks.length;
+                } else {
+                    document.getElementById('notebooks-count').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading notebooks count:', error);
+                document.getElementById('notebooks-count').textContent = '0';
+            }
+
+            try {
+                // Load models count
+                const modelsResponse = await fetch(`${API_BASE}/api/models/all`);
+                if (modelsResponse.ok) {
+                    const models = await modelsResponse.json();
+                    document.getElementById('models-count').textContent = models.length;
+                } else {
+                    document.getElementById('models-count').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading models count:', error);
+                document.getElementById('models-count').textContent = '0';
+            }
+
+            try {
+                // Load transformations count
+                const transformationsResponse = await fetch(`${API_BASE}/api/transformations/all`);
+                if (transformationsResponse.ok) {
+                    const transformations = await transformationsResponse.json();
+                    document.getElementById('transformations-count').textContent = transformations.length;
+                } else {
+                    document.getElementById('transformations-count').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading transformations count:', error);
+                document.getElementById('transformations-count').textContent = '0';
+            }
+
+            try {
+                // Load podcast configs count
+                const podcastsResponse = await fetch(`${API_BASE}/api/podcasts/configs`);
+                if (podcastsResponse.ok) {
+                    const podcasts = await podcastsResponse.json();
+                    document.getElementById('podcasts-count').textContent = podcasts.length;
+                } else {
+                    document.getElementById('podcasts-count').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading podcasts count:', error);
+                document.getElementById('podcasts-count').textContent = '0';
+            }
+        }
+
+        async function loadRecentActivity() {
+            try {
+                // This would typically load recent activity from an API
+                // For now, we'll show a welcome message
+                const container = document.getElementById('recent-activity-container');
+                
+                // You can expand this to show actual recent activity
+                const activities = [
+                    {
+                        type: 'welcome',
+                        icon: 'fas fa-star',
+                        iconClass: 'notebooks',
+                        title: 'Welcome to Open Notebook!',
+                        meta: 'Get started by creating your first notebook or configuring AI models'
+                    }
+                ];
+
+                const activitiesHtml = activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="activity-icon ${activity.iconClass}">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">${activity.title}</div>
+                            <div class="activity-meta">${activity.meta}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                container.innerHTML = activitiesHtml;
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+            }
+        }
+
+        function createQuickNotebook() {
+            document.getElementById('quick-notebook-modal').classList.add('show');
+            document.getElementById('quick-notebook-title').focus();
+        }
+
+        async function createNotebook(title, description) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: title,
+                        description: description
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to create notebook');
+
+                const notebook = await response.json();
+                
+                // Refresh stats
+                loadDashboardStats();
+                
+                // Redirect to the new notebook
+                window.location.href = `/notebook.html?id=${notebook.id}`;
+                
+                return notebook;
+            } catch (error) {
+                console.error('Error creating notebook:', error);
+                throw error;
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load dashboard data
+            loadDashboardStats();
+            loadRecentActivity();
+
+            // Quick notebook form submission
+            document.getElementById('quick-notebook-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                const title = document.getElementById('quick-notebook-title').value.trim();
+                const description = document.getElementById('quick-notebook-description').value.trim();
+
+                if (!title) return;
+
+                submitBtn.innerHTML = 'Creating...';
+                submitBtn.disabled = true;
+
+                try {
+                    await createNotebook(title, description);
+                    closeModal('quick-notebook-modal');
+                    this.reset();
+                } catch (error) {
+                    alert('Failed to create notebook. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Close modal on outside click
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.classList.remove('show');
+                }
+            });
+
+            // Auto-resize textareas
+            const textareas = document.querySelectorAll('textarea');
+            textareas.forEach(textarea => {
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+            });
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                createQuickNotebook();
+            }
+
+            if (e.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal.show');
+                modals.forEach(modal => modal.classList.remove('show'));
+            }
+        });
+    </script>
+    <script src="sidebar.js"></script>
+    <script src="modal.js"></script>
+</body>
+</html>

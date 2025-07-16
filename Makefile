@@ -1,4 +1,4 @@
-.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean
+.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-latest docker-release-single
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
@@ -157,3 +157,40 @@ clean-cache:
 
 # Fast development build with cache cleanup
 docker-build-dev-clean: clean-cache docker-build-dev
+
+# === Single Container Builds ===
+# Single-container build for development (much faster)
+docker-build-single-dev:
+	docker build \
+		-f Dockerfile.single \
+		-t $(IMAGE_NAME):$(VERSION)-single-dev \
+		.
+
+# Single-container multi-platform build test
+docker-build-single-multi-test: docker-buildx-prepare
+	docker buildx build --pull \
+		--platform $(PLATFORMS) \
+		-f Dockerfile.single \
+		-t $(IMAGE_NAME):$(VERSION)-single-multi \
+		.
+
+# Single-container multi-platform build with buildx (pushes to registry)
+docker-build-single: docker-buildx-prepare
+	docker buildx build --pull \
+		--platform $(PLATFORMS) \
+		-f Dockerfile.single \
+		-t $(IMAGE_NAME):$(VERSION)-single \
+		--push \
+		.
+
+# Single-container build and push with latest tag
+docker-build-single-latest: docker-buildx-prepare
+	docker buildx build --pull \
+		--platform $(PLATFORMS) \
+		-f Dockerfile.single \
+		-t $(IMAGE_NAME):latest-single \
+		--push \
+		.
+
+# Single-container release (both versioned and latest)
+docker-release-single: docker-build-single docker-build-single-latest

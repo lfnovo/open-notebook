@@ -291,20 +291,45 @@ uv run --env-file .env streamlit run app_home.py --server.port=8503
 
 ### Running with Docker
 
-If you don't want to mess around with the code and just want to run it as a docker image:
+Open Notebook offers two Docker deployment options:
+
+#### Option 1: Multi-Container (Default)
+If you prefer separate containers for each service:
 
 ```bash
 # Run the full stack (SurrealDB + Streamlit + API)
 docker compose --profile multi up
 ```
 
-The Docker setup now includes both the Streamlit interface and the REST API:
+#### Option 2: Single-Container (Recommended for Simple Deployments)
+For platforms like PikaPods or if you prefer an all-in-one solution:
+
+```bash
+# Run everything in a single container
+docker compose -f docker-compose.single.yml up -d
+```
+
+Or directly:
+
+```bash
+docker run -d \
+  --name open-notebook \
+  -p 8502:8502 -p 5055:5055 \
+  -v ./notebook_data:/app/data \
+  -v ./surreal_single_data:/mydata \
+  -e OPENAI_API_KEY=your_key \
+  lfnovo/open_notebook:latest-single
+```
+
+Both setups provide:
 - **Streamlit UI**: `http://localhost:8502`
 - **REST API**: `http://localhost:5055`
 - **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
 
+**📚 For detailed single-container deployment instructions, see the [Single-Container Deployment Guide](docs/single-container-deployment.md)**.
+
 **Docker with Password Protection:**
-To enable password protection in Docker, add `OPEN_NOTEBOOK_PASSWORD=your_password` to your `docker.env` file before running the containers.
+To enable password protection in Docker, add `OPEN_NOTEBOOK_PASSWORD=your_password` to your environment variables.
 
 ### API Documentation
 

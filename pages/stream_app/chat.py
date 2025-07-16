@@ -148,7 +148,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
 
                                     if job_id:
                                         st.info(
-                                            "🎉 Podcast generation started successfully! Check the **Episodes** tab to monitor progress and download results."
+                                            "🎉 Podcast generation started successfully! Check the **Podcasts** page to monitor progress and download results."
                                         )
                                     else:
                                         st.error(

@@ -1,16 +1,15 @@
 import asyncio
 from datetime import datetime
 
-import httpx
 import streamlit as st
 
 from api.models_service import models_service
+from api.podcast_api_service import podcast_api_service
 from pages.stream_app.utils import setup_page
 
 setup_page("🎙️ Podcasts", only_check_mandatory_models=False)
 
-# API base URL
-API_BASE = "http://localhost:5055/api"
+# Service instance is imported above
 
 
 @st.dialog("Confirm Delete Episode")
@@ -24,7 +23,7 @@ def confirm_delete_episode(episode_id, episode_name):
     col_confirm1, col_confirm2 = st.columns(2)
     with col_confirm1:
         if st.button("✅ Yes, Delete", type="primary"):
-            success = asyncio.run(delete_episode(episode_id))
+            success = delete_episode(episode_id)
             if success:
                 st.success("Episode deleted successfully!")
                 st.rerun()
@@ -41,8 +40,8 @@ def confirm_delete_speaker_profile(profile_id, profile_name):
     st.warning(f"Are you sure you want to delete speaker profile **{profile_name}**?")
 
     # Check usage before allowing deletion
-    speaker_profiles = asyncio.run(fetch_speaker_profiles())
-    episode_profiles = asyncio.run(fetch_episode_profiles())
+    speaker_profiles = fetch_speaker_profiles()
+    episode_profiles = fetch_episode_profiles()
     usage_map = analyze_speaker_usage(speaker_profiles, episode_profiles)
 
     usage_count = usage_map.get(profile_name, 0)
@@ -78,7 +77,7 @@ def confirm_delete_speaker_profile(profile_id, profile_name):
     col_confirm1, col_confirm2 = st.columns(2)
     with col_confirm1:
         if st.button("✅ Yes, Delete", type="primary"):
-            success = asyncio.run(delete_speaker_profile(profile_id))
+            success = delete_speaker_profile(profile_id)
             if success:
                 st.success("Speaker profile deleted!")
                 st.rerun()
@@ -98,7 +97,7 @@ def confirm_delete_episode_profile(profile_id, profile_name):
     col_confirm1, col_confirm2 = st.columns(2)
     with col_confirm1:
         if st.button("✅ Yes, Delete", type="primary"):
-            success = asyncio.run(delete_episode_profile(profile_id))
+            success = delete_episode_profile(profile_id)
             if success:
                 st.success("Episode profile deleted!")
                 st.rerun()
@@ -189,7 +188,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
         st.subheader("✏️ Edit Speaker Profile")
         # Load existing profile data
         if profile_id and "dialog_loaded" not in st.session_state:
-            speaker_profiles = asyncio.run(fetch_speaker_profiles())
+            speaker_profiles = fetch_speaker_profiles()
             profile = next((p for p in speaker_profiles if p["id"] == profile_id), None)
             if profile:
                 st.session_state.dialog_loaded = True
@@ -202,7 +201,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
         st.subheader("⚙️ Configure Speaker for Episode")
 
         # Fetch available speaker profiles
-        speaker_profiles = asyncio.run(fetch_speaker_profiles())
+        speaker_profiles = fetch_speaker_profiles()
 
         if not speaker_profiles:
             st.warning("No speaker profiles available. Create one first.")
@@ -224,7 +223,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
 
         # Show current episode info if available
         if episode_context:
-            episode_profiles = asyncio.run(fetch_episode_profiles())
+            episode_profiles = fetch_episode_profiles()
             current_episode = next(
                 (ep for ep in episode_profiles if ep["id"] == episode_context), None
             )
@@ -240,7 +239,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
 
         # Try to get current speaker from episode if available
         if episode_context:
-            episode_profiles = asyncio.run(fetch_episode_profiles())
+            episode_profiles = fetch_episode_profiles()
             current_episode = next(
                 (ep for ep in episode_profiles if ep["id"] == episode_context), None
             )
@@ -284,7 +283,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
             if st.button("✅ Assign Speaker", type="primary"):
                 if episode_context and selected_speaker:
                     # Update episode profile with selected speaker
-                    episode_profiles = asyncio.run(fetch_episode_profiles())
+                    episode_profiles = fetch_episode_profiles()
                     current_episode = next(
                         (ep for ep in episode_profiles if ep["id"] == episode_context),
                         None,
@@ -311,9 +310,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
                             "num_segments": current_episode.get("num_segments", 5),
                         }
 
-                        success = asyncio.run(
-                            update_episode_profile(episode_context, updated_data)
-                        )
+                        success = update_episode_profile(episode_context, updated_data)
                         if success:
                             st.success(
                                 f"Speaker '{selected_speaker}' assigned to episode!"
@@ -406,7 +403,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
                     }
 
                     if mode == "create":
-                        success = asyncio.run(create_speaker_profile(profile_data))
+                        success = create_speaker_profile(profile_data)
                         if success:
                             st.success("Speaker profile created successfully!")
 
@@ -415,7 +412,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
                                 "pending_episode_assignment"
                             )
                             if pending_episode:
-                                episode_profiles = asyncio.run(fetch_episode_profiles())
+                                episode_profiles = fetch_episode_profiles()
                                 current_episode = next(
                                     (
                                         ep
@@ -452,10 +449,8 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
                                         ),
                                     }
 
-                                    assign_success = asyncio.run(
-                                        update_episode_profile(
-                                            pending_episode, updated_data
-                                        )
+                                    assign_success = update_episode_profile(
+                                        pending_episode, updated_data
                                     )
                                     if assign_success:
                                         st.success(
@@ -480,9 +475,7 @@ def speaker_configuration_dialog(mode="create", profile_id=None, episode_context
                         else:
                             st.error("Failed to create speaker profile")
                     elif mode == "edit":
-                        success = asyncio.run(
-                            update_speaker_profile(profile_id, profile_data)
-                        )
+                        success = update_speaker_profile(profile_id, profile_data)
                         if success:
                             st.success("Speaker profile updated successfully!")
                             # Clear session state
@@ -560,160 +553,76 @@ def format_relative_time(created_str: str) -> str:
         return "Unknown"
 
 
-async def fetch_episodes():
+def fetch_episodes():
     """Fetch episodes from API"""
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE}/podcasts/episodes")
-            if response.status_code == 200:
-                return response.json()
-            else:
-                st.error(f"Failed to fetch episodes: {response.status_code}")
-                return []
+        return podcast_api_service.get_episodes()
     except Exception as e:
         st.error(f"Error fetching episodes: {str(e)}")
         return []
 
 
-async def fetch_episode_profiles():
+def fetch_episode_profiles():
     """Fetch episode profiles from API"""
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE}/episode-profiles")
-            if response.status_code == 200:
-                return response.json()
-            else:
-                st.error(f"Failed to fetch episode profiles: {response.status_code}")
-                return []
+        return podcast_api_service.get_episode_profiles()
     except Exception as e:
         st.error(f"Error fetching episode profiles: {str(e)}")
         return []
 
 
-async def fetch_speaker_profiles():
+def fetch_speaker_profiles():
     """Fetch speaker profiles from API"""
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{API_BASE}/speaker-profiles")
-            if response.status_code == 200:
-                return response.json()
-            else:
-                st.error(f"Failed to fetch speaker profiles: {response.status_code}")
-                return []
+        return podcast_api_service.get_speaker_profiles()
     except Exception as e:
         st.error(f"Error fetching speaker profiles: {str(e)}")
         return []
 
 
-async def create_episode_profile(profile_data):
+def create_episode_profile(profile_data):
     """Create new episode profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{API_BASE}/episode-profiles", json=profile_data
-            )
-            return response.status_code in [200, 201]
-    except Exception as e:
-        st.error(f"Error creating episode profile: {str(e)}")
-        return False
+    return podcast_api_service.create_episode_profile(profile_data)
 
 
-async def update_episode_profile(profile_id, profile_data):
+def update_episode_profile(profile_id, profile_data):
     """Update episode profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.put(
-                f"{API_BASE}/episode-profiles/{profile_id}", json=profile_data
-            )
-            return response.status_code == 200
-    except Exception as e:
-        st.error(f"Error updating episode profile: {str(e)}")
-        return False
+    return podcast_api_service.update_episode_profile(profile_id, profile_data)
 
 
-async def delete_episode_profile(profile_id):
+def delete_episode_profile(profile_id):
     """Delete episode profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(f"{API_BASE}/episode-profiles/{profile_id}")
-            return response.status_code == 200
-    except Exception as e:
-        st.error(f"Error deleting episode profile: {str(e)}")
-        return False
+    return podcast_api_service.delete_episode_profile(profile_id)
 
 
-async def duplicate_episode_profile(profile_id):
+def duplicate_episode_profile(profile_id):
     """Duplicate episode profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{API_BASE}/episode-profiles/{profile_id}/duplicate"
-            )
-            return response.status_code in [200, 201]
-    except Exception as e:
-        st.error(f"Error duplicating episode profile: {str(e)}")
-        return False
+    return podcast_api_service.duplicate_episode_profile(profile_id)
 
 
-async def create_speaker_profile(profile_data):
+def create_speaker_profile(profile_data):
     """Create new speaker profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{API_BASE}/speaker-profiles", json=profile_data
-            )
-            return response.status_code in [200, 201]
-    except Exception as e:
-        st.error(f"Error creating speaker profile: {str(e)}")
-        return False
+    return podcast_api_service.create_speaker_profile(profile_data)
 
 
-async def update_speaker_profile(profile_id, profile_data):
+def update_speaker_profile(profile_id, profile_data):
     """Update speaker profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.put(
-                f"{API_BASE}/speaker-profiles/{profile_id}", json=profile_data
-            )
-            return response.status_code == 200
-    except Exception as e:
-        st.error(f"Error updating speaker profile: {str(e)}")
-        return False
+    return podcast_api_service.update_speaker_profile(profile_id, profile_data)
 
 
-async def delete_speaker_profile(profile_id):
+def delete_speaker_profile(profile_id):
     """Delete speaker profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(f"{API_BASE}/speaker-profiles/{profile_id}")
-            return response.status_code == 200
-    except Exception as e:
-        st.error(f"Error deleting speaker profile: {str(e)}")
-        return False
+    return podcast_api_service.delete_speaker_profile(profile_id)
 
 
-async def duplicate_speaker_profile(profile_id):
+def duplicate_speaker_profile(profile_id):
     """Duplicate speaker profile"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                f"{API_BASE}/speaker-profiles/{profile_id}/duplicate"
-            )
-            return response.status_code in [200, 201]
-    except Exception as e:
-        st.error(f"Error duplicating speaker profile: {str(e)}")
-        return False
+    return podcast_api_service.duplicate_speaker_profile(profile_id)
 
 
-async def delete_episode(episode_id):
+def delete_episode(episode_id):
     """Delete podcast episode and its audio file"""
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.delete(f"{API_BASE}/podcasts/episodes/{episode_id}")
-            return response.status_code == 200
-    except Exception as e:
-        st.error(f"Error deleting episode: {str(e)}")
-        return False
+    return podcast_api_service.delete_episode(episode_id)
 
 
 def analyze_speaker_usage(speakers, episodes):
@@ -768,8 +677,8 @@ def render_episode_profiles_section():
     st.subheader("📺 Episode Profiles")
 
     # Fetch data
-    episode_profiles = asyncio.run(fetch_episode_profiles())
-    speaker_profiles = asyncio.run(fetch_speaker_profiles())
+    episode_profiles = fetch_episode_profiles()
+    speaker_profiles = fetch_speaker_profiles()
 
     # Create new episode profile section
     with st.expander("➕ Create New Episode Profile", expanded=False):
@@ -842,20 +751,18 @@ def render_episode_profiles_section():
 
             if submitted:
                 if ep_name and ep_speaker_config and ep_briefing:
-                    success = asyncio.run(
-                        create_episode_profile(
-                            {
-                                "name": ep_name,
-                                "description": ep_description,
-                                "speaker_config": ep_speaker_config,
-                                "outline_provider": outline_provider,
-                                "outline_model": outline_model,
-                                "transcript_provider": transcript_provider,
-                                "transcript_model": transcript_model,
-                                "default_briefing": ep_briefing,
-                                "num_segments": ep_segments,
-                            }
-                        )
+                    success = create_episode_profile(
+                        {
+                            "name": ep_name,
+                            "description": ep_description,
+                            "speaker_config": ep_speaker_config,
+                            "outline_provider": outline_provider,
+                            "outline_model": outline_model,
+                            "transcript_provider": transcript_provider,
+                            "transcript_model": transcript_model,
+                            "default_briefing": ep_briefing,
+                            "num_segments": ep_segments,
+                        }
                     )
                     if success:
                         st.success("Episode profile created successfully!")
@@ -905,7 +812,7 @@ def render_episode_profiles_section():
                         st.rerun()
 
                     if st.button("📋 Duplicate", key=f"dup_ep_{profile['id']}"):
-                        success = asyncio.run(duplicate_episode_profile(profile["id"]))
+                        success = duplicate_episode_profile(profile["id"])
                         if success:
                             st.success("Profile duplicated!")
                             st.rerun()
@@ -1038,21 +945,19 @@ def render_episode_profiles_section():
                         col7, col8 = st.columns(2)
                         with col7:
                             if st.form_submit_button("💾 Save Changes"):
-                                success = asyncio.run(
-                                    update_episode_profile(
-                                        profile["id"],
-                                        {
-                                            "name": edit_name,
-                                            "description": edit_description,
-                                            "speaker_config": edit_speaker_config,
-                                            "outline_provider": edit_outline_provider,
-                                            "outline_model": edit_outline_model,
-                                            "transcript_provider": edit_transcript_provider,
-                                            "transcript_model": edit_transcript_model,
-                                            "default_briefing": edit_briefing,
-                                            "num_segments": edit_segments,
-                                        },
-                                    )
+                                success = update_episode_profile(
+                                    profile["id"],
+                                    {
+                                        "name": edit_name,
+                                        "description": edit_description,
+                                        "speaker_config": edit_speaker_config,
+                                        "outline_provider": edit_outline_provider,
+                                        "outline_model": edit_outline_model,
+                                        "transcript_provider": edit_transcript_provider,
+                                        "transcript_model": edit_transcript_model,
+                                        "default_briefing": edit_briefing,
+                                        "num_segments": edit_segments,
+                                    },
                                 )
                                 if success:
                                     st.success("Profile updated!")
@@ -1080,8 +985,8 @@ def render_speaker_profiles_sidebar():
         speaker_configuration_dialog("create")
 
     # Fetch speaker profiles and episode profiles for usage analysis
-    speaker_profiles = asyncio.run(fetch_speaker_profiles())
-    episode_profiles = asyncio.run(fetch_episode_profiles())
+    speaker_profiles = fetch_speaker_profiles()
+    episode_profiles = fetch_episode_profiles()
 
     if not speaker_profiles:
         st.info("No speaker profiles found. Create your first speaker profile above.")
@@ -1127,7 +1032,7 @@ def render_speaker_profiles_sidebar():
                 if st.button(
                     "📋", key=f"dup_sp_sidebar_{profile['id']}", help="Duplicate"
                 ):
-                    success = asyncio.run(duplicate_speaker_profile(profile["id"]))
+                    success = duplicate_speaker_profile(profile["id"])
                     if success:
                         st.success("Profile duplicated!")
                         st.rerun()
@@ -1153,7 +1058,7 @@ with episodes_tab:
             st.rerun()
 
     # Fetch and display episodes
-    episodes = asyncio.run(fetch_episodes())
+    episodes = fetch_episodes()
 
     if not episodes:
         st.info("No episodes found. Generate your first episode in the chat interface!")

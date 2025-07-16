@@ -1,8 +1,6 @@
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:
@@ -10,6 +8,7 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
+    restart: always
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
@@ -21,3 +20,4 @@ services:
     pull_policy: always
     volumes:
       - ./notebook_data:/app/data
+    restart: always

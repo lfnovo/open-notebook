@@ -138,6 +138,12 @@ insert into speaker_profile
                         voice_id: "shimmer",
                         backstory: "Serial entrepreneur and investor. Focuses on practical implementation and execution.",
                         personality: "Action-oriented, pragmatic, brings startup experience and execution focus"
+                    },
+                    {
+                        name: "Johny Bing", 
+                        voice_id: "ash",
+                        backstory: "Youtube celebrity and business mogul. Focuses on practical implementation and execution.",
+                        personality: "Controversial, likes to question ideas and concepts. He brings a fresh perspective and always has a point to make."
                     }
                 ]
             }

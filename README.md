@@ -56,6 +56,7 @@
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#password-protection-optional">Password Protection</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
@@ -124,6 +125,30 @@ cp .env.example docker.env
 ```
 
 Edit .env for your API keys.
+
+### 🔐 Password Protection (Optional)
+
+For users hosting Open Notebook publicly (e.g., on PikaPods, cloud services), you can protect your instance with a password:
+
+```bash
+# Add this to your .env file
+OPEN_NOTEBOOK_PASSWORD=your_secure_password_here
+```
+
+When this environment variable is set:
+- **Streamlit UI**: Users must enter the password on first access
+- **REST API**: All API calls require the password in the Authorization header (`Authorization: Bearer your_password`)
+- **Local Usage**: If not set, no authentication is required (default behavior)
+
+**API Usage with Password:**
+```bash
+# Example API call with password
+curl -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
+```
+
+This provides basic protection for public deployments while keeping local usage simple and password-free.
+
+📚 **For detailed security information, see the [Security Guide](docs/security.md)**.
 
 ### 🚀 Quick Start
 
@@ -278,6 +303,9 @@ The Docker setup now includes both the Streamlit interface and the REST API:
 - **REST API**: `http://localhost:5055`
 - **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
 
+**Docker with Password Protection:**
+To enable password protection in Docker, add `OPEN_NOTEBOOK_PASSWORD=your_password` to your `docker.env` file before running the containers.
+
 ### API Documentation
 
 Open Notebook now includes a comprehensive REST API that provides programmatic access to all functionality. The API includes endpoints for:
@@ -308,6 +336,7 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq, Ollama. ([Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md))
 - **Reasoning Model Support**: Full support for thinking models like DeepSeek-R1, Qwen3, and Magistral with collapsible reasoning sections.
 - **Comprehensive REST API**: Full programmatic access to all functionality for building custom integrations.
+- **Optional Password Protection**: Secure your public deployments with simple password authentication for both UI and API.
 - **Advanced Podcast Generator**: Create professional podcasts with 1-4 speakers using Episode Profiles. Superior flexibility compared to Google Notebook LM's 2-speaker limitation.
 - **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.
 - **Content Transformation**: Powerful customizable actions to summarize, extract insights, and more.

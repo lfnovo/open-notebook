@@ -81,6 +81,10 @@ async def list_podcast_episodes():
 
         response_episodes = []
         for episode in episodes:
+            # Skip incomplete episodes without command or audio
+            if not episode.command and not episode.audio_file:
+                continue
+            
             # Get job status if available
             job_status = None
             if episode.command:
@@ -88,6 +92,9 @@ async def list_podcast_episodes():
                     job_status = await episode.get_job_status()
                 except:
                     job_status = "unknown"
+            else:
+                # No command but has audio file = completed import
+                job_status = "completed"
 
             response_episodes.append(
                 PodcastEpisodeResponse(
@@ -126,6 +133,9 @@ async def get_podcast_episode(episode_id: str):
                 job_status = await episode.get_job_status()
             except:
                 job_status = "unknown"
+        else:
+            # No command but has audio file = completed import
+            job_status = "completed" if episode.audio_file else "unknown"
 
         return PodcastEpisodeResponse(
             id=str(episode.id),

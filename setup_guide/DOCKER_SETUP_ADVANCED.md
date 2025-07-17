@@ -139,7 +139,7 @@ Docker containers can't use "localhost" to reach your computer, so we need to co
    OLLAMA_API_BASE=http://192.168.1.100:11434
    
    # Database settings (don't change these)
-   SURREAL_ADDRESS=surrealdb
+   SURREAL_ADDRESS=localhost
    SURREAL_PORT=8000
    SURREAL_USER=root
    SURREAL_PASS=root

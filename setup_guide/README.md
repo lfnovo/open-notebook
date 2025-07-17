@@ -86,29 +86,16 @@ Open Notebook uses OpenAI's powerful AI models. With just one API key, you'll ha
 
 ```yaml
 services:
-  surrealdb:
-    image: surrealdb/surrealdb:v2
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./surreal_data:/mydata
-    environment:
-      - SURREAL_EXPERIMENTAL_GRAPHQL=true
-    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
-    pull_policy: always
-    user: root
-    restart: always
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:latest-single
     ports:
       - "8080:8502"
     env_file:
       - ./docker.env
-    depends_on:
-      - surrealdb
     pull_policy: always
     volumes:
       - ./notebook_data:/app/data
+      - ./surreal_data:/app/surreal_data
     restart: always
 ```
 
@@ -124,7 +111,7 @@ services:
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 
 # Database settings (don't change these)
-SURREAL_ADDRESS=surrealdb
+SURREAL_ADDRESS=localhost
 SURREAL_PORT=8000
 SURREAL_USER=root
 SURREAL_PASS=root

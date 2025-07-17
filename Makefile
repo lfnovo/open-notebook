@@ -1,4 +1,4 @@
-.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-latest docker-release-single
+.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-latest docker-release-single docker-release-both docker-release-all-versions
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
@@ -194,3 +194,9 @@ docker-build-single-latest: docker-buildx-prepare
 
 # Single-container release (both versioned and latest)
 docker-release-single: docker-build-single docker-build-single-latest
+
+# Release both multi-container and single-container versions
+docker-release-both: docker-release docker-release-single
+
+# Release all versions (both multi and single with latest tags)
+docker-release-all-versions: docker-release-all docker-release-single

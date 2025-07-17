@@ -62,19 +62,19 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 |---------|---------------|--------------------|-----------|
 | **Privacy & Control** | Self-hosted, your data | Google cloud only | Complete data sovereignty |
 | **AI Provider Choice** | 15+ providers (OpenAI, Anthropic, Ollama, etc.) | Google models only | Flexibility and cost optimization |
-| **Podcast Speakers** | 1-4 speakers with custom profiles | 2 speakers only | Professional quality content |
+| **Podcast Speakers** | 1-4 speakers with custom profiles | 2 speakers only | Extreme flexibility |
 | **Context Control** | 3 granular levels | All-or-nothing | Privacy and performance tuning |
 | **Content Transformations** | Custom and built-in | Limited options | Unlimited processing power |
 | **API Access** | Full REST API | No API | Complete automation |
 | **Deployment** | Docker, cloud, or local | Google hosted only | Deploy anywhere |
 | **Citations** | Comprehensive with sources | Basic references | Research integrity |
 | **Customization** | Open source, fully customizable | Closed system | Unlimited extensibility |
-| **Cost** | Pay only for AI usage | Unknown/bundled pricing | Transparent and controllable |
+| **Cost** | Pay only for AI usage | Monthly subscription + usage | Transparent and controllable |
 
 **Why Choose Open Notebook?**
 - 🔒 **Privacy First**: Your sensitive research stays completely private
 - 💰 **Cost Control**: Choose cheaper AI providers or run locally with Ollama
-- 🎙️ **Better Podcasts**: Professional multi-speaker content vs limited 2-speaker conversations
+- 🎙️ **Better Podcasts**: Full script control and multi-speaker flexibility vs limited 2-speaker deep-dive format
 - 🔧 **Unlimited Customization**: Modify, extend, and integrate as needed
 - 🌐 **No Vendor Lock-in**: Switch providers, deploy anywhere, own your data
 
@@ -88,6 +88,10 @@ Ready to try Open Notebook? Choose your preferred method:
 
 ### ⚡ Instant Setup (Recommended)
 ```bash
+# Create a new directory for your Open Notebook installation
+mkdir open-notebook
+cd open-notebook
+
 # Using Docker - Get started in 2 minutes
 docker run -d \
   --name open-notebook \
@@ -98,7 +102,9 @@ docker run -d \
   lfnovo/open_notebook:latest-single
 ```
 
-> **⚠️ Important**: The volumes (`-v ./notebook_data:/app/data` and `-v ./surreal_data:/mydata`) are essential to persist your data between container restarts. Without them, you'll lose all your notebooks and research when the container stops.
+> **⚠️ Important**: 
+> 1. **Run from a dedicated folder**: Create and run this from inside a new `open-notebook` folder so your data volumes are properly organized
+> 2. **Volume persistence**: The volumes (`-v ./notebook_data:/app/data` and `-v ./surreal_data:/mydata`) are essential to persist your data between container restarts. Without them, you'll lose all your notebooks and research when the container stops.
 
 ### 🛠️ Full Installation
 For development or customization:

@@ -102,6 +102,18 @@ docker run -d \
   lfnovo/open_notebook:latest-single
 ```
 
+**What gets created:**
+```
+open-notebook/
+├── notebook_data/     # Your notebooks and research content
+└── surreal_data/      # Database files
+```
+
+**Access your installation:**
+- **🖥️ Main Interface**: http://localhost:8502 (Streamlit UI)
+- **🔧 API Access**: http://localhost:5055 (REST API)
+- **📚 API Documentation**: http://localhost:5055/docs (Interactive Swagger UI)
+
 > **⚠️ Important**: 
 > 1. **Run from a dedicated folder**: Create and run this from inside a new `open-notebook` folder so your data volumes are properly organized
 > 2. **Volume persistence**: The volumes (`-v ./notebook_data:/app/data` and `-v ./surreal_data:/mydata`) are essential to persist your data between container restarts. Without them, you'll lose all your notebooks and research when the container stops.
@@ -156,7 +168,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 ### Advanced Features
 - **⚡ Reasoning Model Support**: Full support for thinking models like DeepSeek-R1 and Qwen3
 - **🔧 Content Transformations**: Powerful customizable actions to summarize and extract insights
-- **🌐 Comprehensive REST API**: Full programmatic access for custom integrations
+- **🌐 Comprehensive REST API**: Full programmatic access for custom integrations [![API Docs](https://img.shields.io/badge/API-Documentation-blue?style=flat-square)](http://localhost:5055/docs)
 - **🔐 Optional Password Protection**: Secure public deployments with authentication
 - **📊 Fine-Grained Context Control**: Choose exactly what to share with AI models
 - **📎 Citations**: Get answers with proper source citations
@@ -188,6 +200,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **[🎙️ Podcast Generation](docs/features/podcasts.md)** - Create professional podcasts
 - **[🔧 Content Transformations](docs/features/transformations.md)** - Customize content processing
 - **[🤖 AI Models](docs/features/ai-models.md)** - AI model configuration
+- **[🔧 REST API Reference](docs/development/api-reference.md)** - Complete API documentation
 - **[🔐 Security](docs/deployment/security.md)** - Password protection and privacy
 - **[🚀 Deployment](docs/deployment/index.md)** - Complete deployment guides for all scenarios
 
@@ -224,10 +237,13 @@ See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full
 
 ### Contributing
 We welcome contributions! We're especially looking for help with:
-- **Frontend Development**: Help build a modern React-based UI
+- **Frontend Development**: Help build a modern React-based UI (planned replacement for current Streamlit interface)
 - **Testing & Bug Fixes**: Make Open Notebook more robust
 - **Feature Development**: Build the coolest research tool together
 - **Documentation**: Improve guides and tutorials
+
+**Current Tech Stack**: Python, FastAPI, SurrealDB, Streamlit  
+**Future Roadmap**: React frontend, enhanced real-time updates
 
 See our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started.
 

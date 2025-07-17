@@ -1,5 +1,5 @@
 # Build stage
-FROM python:3.11-slim-bookworm AS builder
+FROM python:3.12-slim-bookworm AS builder
 
 # Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -31,7 +31,7 @@ RUN uv sync --frozen --no-dev
 COPY . /app
 
 # Runtime stage
-FROM python:3.11-slim-bookworm AS runtime
+FROM python:3.12-slim-bookworm AS runtime
 
 # Install only runtime system dependencies (no build tools)
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \

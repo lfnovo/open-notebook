@@ -2,8 +2,6 @@ notebooks/
 data/
 .uploads/
 .venv/
-.mypy_cache/
-.ruff_cache/
 .env
 sqlite-db/
 temp/
@@ -16,8 +14,39 @@ surreal-data/
 notebook_data/
 temp/
 *.env
-.mypy_cache/
-.ruff_cache/
-.pytest_cache
-.ruff_cache
-notebooks/
+
+# Cache directories (recursive patterns)
+**/__pycache__/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.pytest_cache/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

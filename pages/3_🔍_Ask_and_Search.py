@@ -1,15 +1,14 @@
-import asyncio
-
-import nest_asyncio
 import streamlit as st
 
-from open_notebook.domain.models import DefaultModels, model_manager
-from open_notebook.domain.notebook import Note, Notebook, text_search, vector_search
-from open_notebook.graphs.ask import graph as ask_graph
+from api.models_service import ModelsService
+from api.notebook_service import notebook_service
+from api.notes_service import notes_service
+from api.search_service import search_service
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import convert_source_references, setup_page
 
-nest_asyncio.apply()
+# Initialize service instances
+models_service = ModelsService()
 
 setup_page("🔍 Search")
 
@@ -20,23 +19,6 @@ if "search_results" not in st.session_state:
 
 if "ask_results" not in st.session_state:
     st.session_state["ask_results"] = {}
-
-
-async def process_ask_query(question, strategy_model, answer_model, final_answer_model):
-    async for chunk in ask_graph.astream(
-        input=dict(
-            question=question,
-        ),
-        config=dict(
-            configurable=dict(
-                strategy_model=strategy_model.id,
-                answer_model=answer_model.id,
-                final_answer_model=final_answer_model.id,
-            )
-        ),
-        stream_mode="updates",
-    ):
-        yield (chunk)
 
 
 def results_card(item):
@@ -56,7 +38,8 @@ with ask_tab:
         "The LLM will answer your query based on the documents in your knowledge base. "
     )
     question = st.text_input("Question", "")
-    default_model = DefaultModels().default_chat_model
+    default_models = models_service.get_default_models()
+    default_model = default_models.default_chat_model
     strategy_model = model_selector(
         "Query Strategy Model",
         "strategy_model",
@@ -78,59 +61,53 @@ with ask_tab:
         selected_id=default_model,
         help="This is the LLM that will be responsible for processing the final answer",
     )
-    if not model_manager.embedding_model:
+    embedding_model = default_models.default_embedding_model
+    if not embedding_model:
         st.warning(
             "You can't use this feature because you have no embedding model selected. Please set one up in the Models page."
         )
-    ask_bt = st.button("Ask") if model_manager.embedding_model else None
+    ask_bt = st.button("Ask") if embedding_model else None
     placeholder = st.container()
-
-    async def stream_results():
-        async for chunk in process_ask_query(
-            question, strategy_model, answer_model, final_answer_model
-        ):
-            if "agent" in chunk:
-                with placeholder.expander(
-                    f"Agent Strategy: {chunk['agent']['strategy'].reasoning}"
-                ):
-                    for search in chunk["agent"]["strategy"].searches:
-                        st.markdown(f"Searched for: **{search.term}**")
-                        st.markdown(f"Instructions: {search.instructions}")
-            elif "provide_answer" in chunk:
-                for answer in chunk["provide_answer"]["answers"]:
-                    with placeholder.expander("Answer"):
-                        st.markdown(convert_source_references(answer))
-            elif "write_final_answer" in chunk:
-                st.session_state["ask_results"]["answer"] = chunk["write_final_answer"][
-                    "final_answer"
-                ]
-                with placeholder.container(border=True):
-                    st.markdown(
-                        convert_source_references(
-                            chunk["write_final_answer"]["final_answer"]
-                        )
-                    )
 
     if ask_bt:
         placeholder.write(f"Searching for {question}")
         st.session_state["ask_results"]["question"] = question
         st.session_state["ask_results"]["answer"] = None
 
-        asyncio.run(stream_results())
+        with st.spinner("Processing your question..."):
+            try:
+                result = search_service.ask_knowledge_base(
+                    question=question,
+                    strategy_model=strategy_model.id,
+                    answer_model=answer_model.id,
+                    final_answer_model=final_answer_model.id,
+                )
+
+                if result.get("answer"):
+                    st.session_state["ask_results"]["answer"] = result["answer"]
+                    with placeholder.container(border=True):
+                        st.markdown(convert_source_references(result["answer"]))
+                else:
+                    placeholder.error("No answer generated")
+
+            except Exception as e:
+                placeholder.error(f"Error processing question: {str(e)}")
 
     if st.session_state["ask_results"].get("answer"):
         with st.container(border=True):
             with st.form("save_note_form"):
                 notebook = st.selectbox(
-                    "Notebook", Notebook.get_all(), format_func=lambda x: x.name
+                    "Notebook",
+                    notebook_service.get_all_notebooks(),
+                    format_func=lambda x: x.name,
                 )
                 if st.form_submit_button("Save Answer as Note"):
-                    note = Note(
+                    notes_service.create_note(
                         title=st.session_state["ask_results"]["question"],
                         content=st.session_state["ask_results"]["answer"],
+                        note_type="ai",
+                        notebook_id=notebook.id,
                     )
-                    note.save()
-                    note.add_to_notebook(notebook.id)
                     st.success("Note saved successfully")
 
 
@@ -139,7 +116,7 @@ with search_tab:
         st.subheader("🔍 Search")
         st.caption("Search your knowledge base for specific keywords or concepts")
         search_term = st.text_input("Search", "")
-        if not model_manager.embedding_model:
+        if not embedding_model:
             st.warning(
                 "You can't use vector search because you have no embedding model selected. Only text search will be available."
             )
@@ -149,16 +126,15 @@ with search_tab:
         search_sources = st.checkbox("Search Sources", value=True)
         search_notes = st.checkbox("Search Notes", value=True)
         if st.button("Search"):
-            if search_type == "Text Search":
-                st.write(f"Searching for {search_term}")
-                st.session_state["search_results"] = text_search(
-                    search_term, 100, search_sources, search_notes
-                )
-            elif search_type == "Vector Search":
-                st.write(f"Searching for {search_term}")
-                st.session_state["search_results"] = vector_search(
-                    search_term, 100, search_sources, search_notes
-                )
+            st.write(f"Searching for {search_term}")
+            search_type_api = "text" if search_type == "Text Search" else "vector"
+            st.session_state["search_results"] = search_service.search(
+                query=search_term,
+                search_type=search_type_api,
+                limit=100,
+                search_sources=search_sources,
+                search_notes=search_notes,
+            )
 
         search_results = st.session_state["search_results"].copy()
         for item in search_results:

@@ -1,27 +1,31 @@
-from typing import Union
+import asyncio
 
 import humanize
 import streamlit as st
 from langchain_core.runnables import RunnableConfig
+from loguru import logger
 
-from open_notebook.domain.base import ObjectModel
-from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
+from api.episode_profiles_service import episode_profiles_service
+from api.podcast_service import PodcastService
+from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import graph as chat_graph
-from open_notebook.plugins.podcasts import PodcastConfig
-from open_notebook.utils import token_count
+
+# from open_notebook.plugins.podcasts import PodcastConfig
+from open_notebook.utils import parse_thinking_content, token_count
 from pages.stream_app.utils import (
     convert_source_references,
     create_session_for_notebook,
 )
-
-from open_notebook.utils import parse_thinking_content
 
 from .note import make_note_from_chat
 
 
 # todo: build a smarter, more robust context manager function
 def build_context(notebook_id):
-    st.session_state[notebook_id]["context"] = dict(note=[], source=[])
+    from api.context_service import context_service
+
+    # Convert context_config format for API
+    context_config = {"sources": {}, "notes": {}}
 
     for id, status in st.session_state[notebook_id]["context_config"].items():
         if not id:
@@ -31,22 +35,21 @@ def build_context(notebook_id):
         if item_type not in ["note", "source"]:
             continue
 
-        if "not in" in status:
-            continue
+        if item_type == "source":
+            context_config["sources"][item_id] = status
+        elif item_type == "note":
+            context_config["notes"][item_id] = status
 
-        try:
-            item: Union[Note, Source] = ObjectModel.get(id)
-        except Exception:
-            continue
+    # Get context via API
+    result = context_service.get_notebook_context(
+        notebook_id=notebook_id, context_config=context_config
+    )
 
-        if "insights" in status:
-            st.session_state[notebook_id]["context"][item_type] += [
-                item.get_context(context_size="short")
-            ]
-        elif "full content" in status:
-            st.session_state[notebook_id]["context"][item_type] += [
-                item.get_context(context_size="long")
-            ]
+    # Store in session state for compatibility
+    st.session_state[notebook_id]["context"] = {
+        "note": result["notes"],
+        "source": result["sources"],
+    }
 
     return st.session_state[notebook_id]["context"]
 
@@ -73,55 +76,91 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
         st.json(context)
     with podcast_tab:
         with st.container(border=True):
-            podcast_configs = PodcastConfig.get_all()
-            podcast_config_names = [pd.name for pd in podcast_configs]
-            if len(podcast_configs) == 0:
-                st.warning("No podcast configurations found")
-            else:
-                template = st.selectbox("Pick a template", podcast_config_names)
-                selected_template = next(
-                    filter(lambda x: x.name == template, podcast_configs)
-                )
-                episode_name = st.text_input("Episode Name")
-                instructions = st.text_area(
-                    "Instructions", value=selected_template.user_instructions
-                )
-                podcast_length = st.radio(
-                    "Podcast Length",
-                    ["Short (5-10 min)", "Medium (10-20 min)", "Longer (20+ min)"],
-                )
-                chunks = None
-                min_chunk_size = None
-                if podcast_length == "Short (5-10 min)":
-                    longform = False
-                elif podcast_length == "Medium (10-20 min)":
-                    longform = True
-                    chunks = 4
-                    min_chunk_size = 600
-                else:
-                    longform = True
-                    chunks = 8
-                    min_chunk_size = 600
+            # Fetch available episode profiles
+            try:
+                episode_profiles = episode_profiles_service.get_all_episode_profiles()
+                episode_profile_names = [ep.name for ep in episode_profiles]
+            except Exception as e:
+                st.error(f"Failed to load episode profiles: {str(e)}")
+                episode_profiles = []
+                episode_profile_names = []
 
+            if len(episode_profiles) == 0:
+                st.warning(
+                    "No episode profiles found. Please create profiles in the Podcast Profiles tab first."
+                )
+                st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcast Profiles")
+            else:
+                # Episode Profile selection
+                selected_episode_profile = st.selectbox(
+                    "Episode Profile", episode_profile_names
+                )
+
+                # Get the selected episode profile object to access speaker_config
+                selected_profile_obj = next(
+                    (
+                        ep
+                        for ep in episode_profiles
+                        if ep.name == selected_episode_profile
+                    ),
+                    None,
+                )
+
+                # Episode details
+                episode_name = st.text_input(
+                    "Episode Name", placeholder="e.g., AI and the Future of Work"
+                )
+                instructions = st.text_area(
+                    "Additional Instructions (Optional)",
+                    placeholder="Any specific instructions beyond the episode profile's default briefing...",
+                    help="These instructions will be added to the episode profile's default briefing.",
+                )
+
+                # Check for context availability
                 if len(context.get("note", [])) + len(context.get("source", [])) == 0:
                     st.warning(
                         "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
                     )
                 else:
-                    try:
-                        if st.button("Generate"):
-                            with st.spinner("Go grab a coffee, almost there..."):
-                                selected_template.generate_episode(
-                                    episode_name=episode_name,
-                                    text=str(context),
-                                    longform=longform,
-                                    chunks=chunks,
-                                    min_chunk_size=min_chunk_size,
-                                    instructions=instructions,
-                                )
-                            st.success("Episode generated successfully")
-                    except Exception as e:
-                        st.error(f"Error generating episode - {str(e)}")
+                    # Generate button
+                    if st.button("🎙️ Generate Podcast", type="primary"):
+                        if not episode_name.strip():
+                            st.error("Please enter an episode name")
+                        else:
+                            try:
+                                with st.spinner("Starting podcast generation..."):
+                                    # Use podcast service to generate podcast
+                                    async def generate_podcast():
+                                        return await PodcastService.submit_generation_job(
+                                            episode_profile_name=selected_episode_profile,
+                                            speaker_profile_name=selected_profile_obj.speaker_config
+                                            if selected_profile_obj
+                                            else "",
+                                            episode_name=episode_name.strip(),
+                                            content=str(context),
+                                            briefing_suffix=instructions.strip()
+                                            if instructions.strip()
+                                            else None,
+                                            notebook_id=str(current_notebook.id),
+                                        )
+
+                                    job_id = asyncio.run(generate_podcast())
+
+                                    if job_id:
+                                        st.info(
+                                            "🎉 Podcast generation started successfully! Check the **Podcasts** page to monitor progress and download results."
+                                        )
+                                    else:
+                                        st.error(
+                                            "Failed to start podcast generation: No job ID returned"
+                                        )
+
+                            except Exception as e:
+                                logger.error(f"Error generating podcast: {str(e)}")
+                                st.error(f"Error generating podcast: {str(e)}")
+
+            # Navigation link
+            st.divider()
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.expander(
@@ -155,7 +194,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 st.session_state[current_notebook.id]["active_session"] = new_session.id
                 st.rerun()
             st.divider()
-            sessions = current_notebook.chat_sessions
+            sessions = asyncio.run(current_notebook.get_chat_sessions())
             if len(sessions) > 1:
                 st.markdown("**Other Sessions:**")
                 for session in sessions:
@@ -190,19 +229,23 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 with st.chat_message(name=msg.type):
                     if msg.type == "ai":
                         # Parse thinking content for AI messages
-                        thinking_content, cleaned_content = parse_thinking_content(msg.content)
-                        
+                        thinking_content, cleaned_content = parse_thinking_content(
+                            msg.content
+                        )
+
                         # Show thinking content in expander if present
                         if thinking_content:
                             with st.expander("🤔 AI Reasoning", expanded=False):
                                 st.markdown(thinking_content)
-                        
+
                         # Show the cleaned regular content
                         if cleaned_content:
                             st.markdown(convert_source_references(cleaned_content))
-                        elif msg.content:  # Fallback to original if cleaning resulted in empty content
+                        elif (
+                            msg.content
+                        ):  # Fallback to original if cleaning resulted in empty content
                             st.markdown(convert_source_references(msg.content))
-                        
+
                         # New Note button for AI messages
                         if st.button("💾 New Note", key=f"render_save_{msg.id}"):
                             make_note_from_chat(

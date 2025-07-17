@@ -1,0 +1,186 @@
+name: Development Build
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'notebooks/**'
+      - '.github/workflows/claude*.yml'
+  workflow_dispatch:
+    inputs:
+      dockerfile:
+        description: 'Dockerfile to test'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - regular
+          - single
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+          - linux/amd64,linux/arm64
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: lfnovo/open_notebook
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+  lint-and-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run ruff
+        run: uv run ruff check . --output-format=github
+
+      - name: Run mypy
+        run: uv run python -m mypy .
+
+  test-build-regular:
+    needs: extract-version
+    runs-on: ubuntu-latest
+    if: github.event.inputs.dockerfile == 'regular' || github.event.inputs.dockerfile == 'both' || github.event_name != 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-dev
+          key: ${{ runner.os }}-buildx-dev-regular-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-dev-regular-
+
+      - name: Build regular image (test only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ github.event.inputs.platform || 'linux/amd64' }}
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-dev-regular
+          cache-from: type=local,src=/tmp/.buildx-cache-dev
+          cache-to: type=local,dest=/tmp/.buildx-cache-dev-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-dev
+          mv /tmp/.buildx-cache-dev-new /tmp/.buildx-cache-dev
+
+  test-build-single:
+    needs: extract-version
+    runs-on: ubuntu-latest
+    if: github.event.inputs.dockerfile == 'single' || github.event.inputs.dockerfile == 'both' || github.event_name != 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-dev-single
+          key: ${{ runner.os }}-buildx-dev-single-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-dev-single-
+
+      - name: Build single-container image (test only)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.single
+          platforms: ${{ github.event.inputs.platform || 'linux/amd64' }}
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-dev-single
+          cache-from: type=local,src=/tmp/.buildx-cache-dev-single
+          cache-to: type=local,dest=/tmp/.buildx-cache-dev-single-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-dev-single
+          mv /tmp/.buildx-cache-dev-single-new /tmp/.buildx-cache-dev-single
+
+  summary:
+    needs: [extract-version, lint-and-check, test-build-regular, test-build-single]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Development Build Summary
+        run: |
+          echo "## Development Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Platform:** ${{ github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dockerfile:** ${{ github.event.inputs.dockerfile || 'both' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Results:" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.lint-and-check.result }}" == "success" ]]; then
+            echo "✅ **Lint & Type Check:** Passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Lint & Type Check:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-build-regular.result }}" == "success" ]]; then
+            echo "✅ **Regular Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.test-build-regular.result }}" == "skipped" ]]; then
+            echo "⏭️ **Regular Dockerfile:** Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Regular Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.test-build-single.result }}" == "success" ]]; then
+            echo "✅ **Single Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
+          elif [[ "${{ needs.test-build-single.result }}" == "skipped" ]]; then
+            echo "⏭️ **Single Dockerfile:** Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Single Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Notes:" >> $GITHUB_STEP_SUMMARY
+          echo "- This is a development build (no images pushed to registry)" >> $GITHUB_STEP_SUMMARY
+          echo "- For production releases, use the 'Build and Release' workflow" >> $GITHUB_STEP_SUMMARY

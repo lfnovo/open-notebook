@@ -2,14 +2,14 @@ import os
 
 import streamlit as st
 
-from open_notebook.domain.content_settings import ContentSettings
+from api.settings_service import settings_service
 from pages.stream_app.utils import setup_page
 
 setup_page("⚙️ Settings")
 
 st.header("⚙️ Settings")
 
-content_settings = ContentSettings()
+content_settings = settings_service.get_settings()
 
 with st.container(border=True):
     st.markdown("**Content Processing Engine for Documents**")
@@ -109,6 +109,183 @@ with st.container(border=True):
             "\n\n- Choose **yes** if you are running a local embedding model or if your content volume is not that big\n- Choose **ask** if you want to decide every time\n- Choose **never** if you don't care about vector search or do not have an embedding provider."
         )
 
+with st.container(border=True):
+    st.markdown("**YouTube Preferred Languages**")
+    st.caption(
+        "Languages to prioritize when downloading YouTube transcripts (in order of preference). If the video does not include these languages, we'll get the best transcript possible. Don't worry, the language model will still be able to understand it. "
+    )
+
+    # Available language options with descriptions
+    language_options = {
+        "af": "Afrikaans",
+        "ak": "Akan",
+        "sq": "Albanian",
+        "am": "Amharic",
+        "ar": "Arabic",
+        "hy": "Armenian",
+        "as": "Assamese",
+        "ay": "Aymara",
+        "az": "Azerbaijani",
+        "bn": "Bangla",
+        "eu": "Basque",
+        "be": "Belarusian",
+        "bho": "Bhojpuri",
+        "bs": "Bosnian",
+        "bg": "Bulgarian",
+        "my": "Burmese",
+        "ca": "Catalan",
+        "ceb": "Cebuano",
+        "zh": "Chinese",
+        "zh-HK": "Chinese (Hong Kong)",
+        "zh-CN": "Chinese (China)",
+        "zh-SG": "Chinese (Singapore)",
+        "zh-TW": "Chinese (Taiwan)",
+        "zh-Hans": "Chinese (Simplified)",
+        "zh-Hant": "Chinese (Traditional)",
+        "hak-TW": "Hakka Chinese (Taiwan)",
+        "nan-TW": "Min Nan Chinese (Taiwan)",
+        "co": "Corsican",
+        "hr": "Croatian",
+        "cs": "Czech",
+        "da": "Danish",
+        "dv": "Divehi",
+        "nl": "Dutch",
+        "en": "English",
+        "en-US": "English (United States)",
+        "eo": "Esperanto",
+        "et": "Estonian",
+        "ee": "Ewe",
+        "fil": "Filipino",
+        "fi": "Finnish",
+        "fr": "French",
+        "gl": "Galician",
+        "lg": "Ganda",
+        "ka": "Georgian",
+        "de": "German",
+        "el": "Greek",
+        "gn": "Guarani",
+        "gu": "Gujarati",
+        "ht": "Haitian Creole",
+        "ha": "Hausa",
+        "haw": "Hawaiian",
+        "iw": "Hebrew",
+        "hi": "Hindi",
+        "hmn": "Hmong",
+        "hu": "Hungarian",
+        "is": "Icelandic",
+        "ig": "Igbo",
+        "id": "Indonesian",
+        "ga": "Irish",
+        "it": "Italian",
+        "ja": "Japanese",
+        "jv": "Javanese",
+        "kn": "Kannada",
+        "kk": "Kazakh",
+        "km": "Khmer",
+        "rw": "Kinyarwanda",
+        "ko": "Korean",
+        "kri": "Krio",
+        "ku": "Kurdish",
+        "ky": "Kyrgyz",
+        "lo": "Lao",
+        "la": "Latin",
+        "lv": "Latvian",
+        "ln": "Lingala",
+        "lt": "Lithuanian",
+        "lb": "Luxembourgish",
+        "mk": "Macedonian",
+        "mg": "Malagasy",
+        "ms": "Malay",
+        "ml": "Malayalam",
+        "mt": "Maltese",
+        "mi": "Māori",
+        "mr": "Marathi",
+        "mn": "Mongolian",
+        "ne": "Nepali",
+        "nso": "Northern Sotho",
+        "no": "Norwegian",
+        "ny": "Nyanja",
+        "or": "Odia",
+        "om": "Oromo",
+        "ps": "Pashto",
+        "fa": "Persian",
+        "pl": "Polish",
+        "pt": "Portuguese",
+        "pa": "Punjabi",
+        "qu": "Quechua",
+        "ro": "Romanian",
+        "ru": "Russian",
+        "sm": "Samoan",
+        "sa": "Sanskrit",
+        "gd": "Scottish Gaelic",
+        "sr": "Serbian",
+        "sn": "Shona",
+        "sd": "Sindhi",
+        "si": "Sinhala",
+        "sk": "Slovak",
+        "sl": "Slovenian",
+        "so": "Somali",
+        "st": "Southern Sotho",
+        "es": "Spanish",
+        "su": "Sundanese",
+        "sw": "Swahili",
+        "sv": "Swedish",
+        "tg": "Tajik",
+        "ta": "Tamil",
+        "tt": "Tatar",
+        "te": "Telugu",
+        "th": "Thai",
+        "ti": "Tigrinya",
+        "ts": "Tsonga",
+        "tr": "Turkish",
+        "tk": "Turkmen",
+        "uk": "Ukrainian",
+        "ur": "Urdu",
+        "ug": "Uyghur",
+        "uz": "Uzbek",
+        "vi": "Vietnamese",
+        "cy": "Welsh",
+        "fy": "Western Frisian",
+        "xh": "Xhosa",
+        "yi": "Yiddish",
+        "yo": "Yoruba",
+        "zu": "Zulu",
+        "en-GB": "English (UK)",
+    }
+
+    # Get current preferred languages or use defaults
+    current_languages = content_settings.youtube_preferred_languages or [
+        "en",
+        "pt",
+        "es",
+        "de",
+        "nl",
+        "en-GB",
+        "fr",
+        "de",
+        "hi",
+        "ja",
+    ]
+
+    youtube_preferred_languages = st.multiselect(
+        "Select preferred languages (in order of preference)",
+        options=list(language_options.keys()),
+        default=current_languages,
+        format_func=lambda x: f"{language_options[x]} ({x})",
+        help="YouTube transcripts will be downloaded in the first available language from this list",
+    )
+
+    with st.expander("Help me choose"):
+        st.markdown(
+            "When processing YouTube videos, Open Notebook will try to download transcripts in your preferred languages. "
+            "The order matters - it will try the first language first, then the second if the first isn't available, and so on. "
+            "If none of your preferred languages are available, it will fall back to any available transcript."
+        )
+        st.markdown(
+            "**Tip**: Put your most preferred language first. For example, if you speak both English and Spanish, "
+            "but prefer English content, put 'en' before 'es' in your selection."
+        )
+
 if st.button("Save", key="save_settings"):
     content_settings.default_content_processing_engine_doc = (
         default_content_processing_engine_doc
@@ -118,5 +295,6 @@ if st.button("Save", key="save_settings"):
     )
     content_settings.default_embedding_option = default_embedding_option
     content_settings.auto_delete_files = auto_delete_files
-    content_settings.update()
+    content_settings.youtube_preferred_languages = youtube_preferred_languages
+    settings_service.update_settings(content_settings)
     st.toast("Settings saved successfully!")

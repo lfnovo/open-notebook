@@ -1,7 +1,7 @@
 [server]
 port = 8502
 maxMessageSize = 500
-fileWatcherType = "none"
+# fileWatcherType = "none"
 
 [browser]
 serverPort = 8502

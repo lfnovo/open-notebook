@@ -1,6 +1,9 @@
 import streamlit as st
 from humanize import naturaltime
 
+from api.notebook_service import notebook_service
+from api.notes_service import notes_service
+from api.sources_service import sources_service
 from open_notebook.domain.notebook import Notebook
 from pages.stream_app.chat import chat_sidebar
 from pages.stream_app.note import add_note, note_card
@@ -38,20 +41,20 @@ def notebook_header(current_notebook: Notebook):
         if c1.button("Save", icon="💾", key="edit_notebook"):
             current_notebook.name = notebook_name
             current_notebook.description = notebook_description
-            current_notebook.save()
+            notebook_service.update_notebook(current_notebook)
             st.rerun()
         if not current_notebook.archived:
             if c2.button("Archive", icon="🗃️"):
                 current_notebook.archived = True
-                current_notebook.save()
+                notebook_service.update_notebook(current_notebook)
                 st.toast("Notebook archived", icon="🗃️")
         else:
             if c2.button("Unarchive", icon="🗃️"):
                 current_notebook.archived = False
-                current_notebook.save()
+                notebook_service.update_notebook(current_notebook)
                 st.toast("Notebook unarchived", icon="🗃️")
         if c3.button("Delete forever", type="primary", icon="☠️"):
-            current_notebook.delete()
+            notebook_service.delete_notebook(current_notebook)
             st.session_state["current_notebook_id"] = None
             st.rerun()
 
@@ -66,8 +69,8 @@ def notebook_page(current_notebook: Notebook):
         current_notebook=current_notebook,
     )
 
-    sources = current_notebook.sources
-    notes = current_notebook.notes
+    sources = sources_service.get_all_sources(notebook_id=current_notebook.id)
+    notes = notes_service.get_all_notes(notebook_id=current_notebook.id)
 
     notebook_header(current_notebook)
 
@@ -108,7 +111,7 @@ if "current_notebook_id" not in st.session_state:
 
 # todo: get the notebook, check if it exists and if it's archived
 if st.session_state["current_notebook_id"]:
-    current_notebook: Notebook = Notebook.get(st.session_state["current_notebook_id"])
+    current_notebook: Notebook = notebook_service.get_notebook(st.session_state["current_notebook_id"])
     if not current_notebook:
         st.error("Notebook not found")
         st.stop()
@@ -127,13 +130,12 @@ with st.expander("➕ **New Notebook**"):
         placeholder="Explain the purpose of this notebook. The more details the better.",
     )
     if st.button("Create a new Notebook", icon="➕"):
-        notebook = Notebook(
+        notebook = notebook_service.create_notebook(
             name=new_notebook_title, description=new_notebook_description
         )
-        notebook.save()
         st.toast("Notebook created successfully", icon="📒")
 
-notebooks = Notebook.get_all(order_by="updated desc")
+notebooks = notebook_service.get_all_notebooks(order_by="updated desc")
 archived_notebooks = [nb for nb in notebooks if nb.archived]
 
 for notebook in notebooks:

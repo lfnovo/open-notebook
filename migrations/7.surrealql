@@ -1,0 +1,152 @@
+DEFINE TABLE IF NOT EXISTS episode_profile SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS speaker_config ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS outline_provider ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS outline_model ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS transcript_provider ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS transcript_model ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS default_briefing ON TABLE episode_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS num_segments ON TABLE episode_profile TYPE int DEFAULT 5;
+DEFINE FIELD IF NOT EXISTS created ON TABLE episode_profile TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE episode_profile TYPE datetime DEFAULT time::now();
+
+-- Create Speaker Profile table
+remove table speaker_profile;
+DEFINE TABLE IF NOT EXISTS speaker_profile SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE speaker_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS tts_provider ON TABLE speaker_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS tts_model ON TABLE speaker_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS speakers ON TABLE speaker_profile TYPE array<object>;
+DEFINE FIELD IF NOT EXISTS speakers.*.name ON TABLE speaker_profile TYPE string;
+DEFINE FIELD IF NOT EXISTS speakers.*.voice_id ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS speakers.*.backstory ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS speakers.*.personality ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE speaker_profile TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE speaker_profile TYPE datetime DEFAULT time::now();
+
+
+-- Enhance PodcastEpisode table
+DEFINE TABLE IF NOT EXISTS episode SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS created ON episode DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON episode DEFAULT time::now() VALUE time::now();
+DEFINE FIELD IF NOT EXISTS name ON TABLE episode TYPE string;
+DEFINE FIELD IF NOT EXISTS briefing ON TABLE episode TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS speaker_profile ON TABLE episode FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS outline ON TABLE episode FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE option<record<command>>;
+DEFINE FIELD IF NOT EXISTS content ON TABLE episode TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS audio_file ON TABLE episode TYPE option<string>;
+
+-- Create indexes for better performance
+DEFINE INDEX IF NOT EXISTS idx_episode_profile_name ON TABLE episode_profile COLUMNS name UNIQUE CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_speaker_profile_name ON TABLE speaker_profile COLUMNS name UNIQUE CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_profile ON TABLE episode COLUMNS episode_profile CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_command ON TABLE episode COLUMNS command CONCURRENTLY;
+
+
+--Sample data
+
+insert into episode_profile 
+[
+            {
+                name: "tech_discussion",
+                description: "Technical discussion between 2 experts",
+                speaker_config: "tech_experts",
+                outline_provider: "openai",
+                outline_model: "gpt-4o-mini",
+                transcript_provider: "openai", 
+                transcript_model: "gpt-4o-mini",
+                default_briefing: "Create an engaging technical discussion about the provided content. Focus on practical insights, real-world applications, and detailed explanations that would interest developers and technical professionals.",
+                num_segments: 5
+            },
+            {
+                name: "solo_expert",
+                description: "Single expert explaining complex topics",
+                speaker_config: "solo_expert",
+                outline_provider: "openai",
+                outline_model: "gpt-4o-mini",
+                transcript_provider: "openai",
+                transcript_model: "gpt-4o-mini", 
+                default_briefing: "Create an educational explanation of the provided content. Break down complex concepts into digestible segments, use analogies and examples, and maintain an engaging teaching style.",
+                "num_segments":4            },
+            {
+                name: "business_analysis",
+                description: "Business-focused analysis and discussion",
+                speaker_config: "business_panel",
+                outline_provider: "openai",
+                outline_model: "gpt-4o-mini",
+                transcript_provider: "openai",
+                transcript_model: "gpt-4o-mini",
+                default_briefing: "Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.",
+                "num_segments":6            }
+        ];
+
+insert into speaker_profile
+[
+            {
+                name: "tech_experts",
+                description: "Two technical experts for tech discussions",
+                tts_provider: "openai",
+                tts_model: "tts-1",
+                speakers: [
+                    {
+                        name: "Dr. Alex Chen",
+                        voice_id: "nova",
+                        backstory: "Senior AI researcher and former tech lead at major companies. Specializes in making complex technical concepts accessible.",
+                        personality: "Analytical, clear communicator, asks probing questions to dig deeper into technical details"
+                    },
+                    {
+                        name: "Jamie Rodriguez",
+                        voice_id: "alloy", 
+                        backstory: "Full-stack engineer and tech entrepreneur. Loves practical applications and real-world implementations.",
+                        personality: "Enthusiastic, practical-minded, great at explaining implementation details and trade-offs"
+                    }
+                ]
+            },
+            {
+                name: "solo_expert",
+                description: "Single expert for educational content",
+                tts_provider: "openai",
+                tts_model: "tts-1",
+                speakers: [
+                    {
+                        name: "Professor Sarah Kim",
+                        voice_id: "nova",
+                        backstory: "Distinguished professor and researcher. Has a gift for making complex topics accessible to broad audiences.",
+                        personality: "Patient teacher, uses analogies and examples, breaks down complex concepts step by step"
+                    }
+                ]
+            },
+            {
+                name: "business_panel",
+                description: "Business analysis panel with diverse perspectives",
+                tts_provider: "openai", 
+                tts_model: "tts-1",
+                speakers: [
+                    {
+                        name: "Marcus Thompson",
+                        voice_id: "echo",
+                        backstory: "Former McKinsey consultant, now startup advisor. Expert in strategic analysis and market dynamics.",
+                        personality: "Strategic thinker, data-driven, excellent at identifying key insights and implications"
+                    },
+                    {
+                        name: "Elena Vasquez", 
+                        voice_id: "shimmer",
+                        backstory: "Serial entrepreneur and investor. Focuses on practical implementation and execution.",
+                        personality: "Action-oriented, pragmatic, brings startup experience and execution focus"
+                    },
+                    {
+                        name: "Johny Bing", 
+                        voice_id: "ash",
+                        backstory: "Youtube celebrity and business mogul. Focuses on practical implementation and execution.",
+                        personality: "Controversial, likes to question ideas and concepts. He brings a fresh perspective and always has a point to make."
+                    }
+                ]
+            }
+        ];
+
+

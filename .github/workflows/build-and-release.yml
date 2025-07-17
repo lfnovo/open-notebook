@@ -1,0 +1,168 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type to create'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - both
+          - regular
+          - single
+      push_latest:
+        description: 'Also push latest tags'
+        required: false
+        default: true
+        type: boolean
+  release:
+    types: [published]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: lfnovo/open_notebook
+
+jobs:
+  extract-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Extract version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+
+  build-regular:
+    needs: extract-version
+    runs-on: ubuntu-latest
+    if: github.event.inputs.build_type == 'regular' || github.event.inputs.build_type == 'both' || github.event_name == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-regular-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-regular-
+
+      - name: Build and push regular image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}
+            ${{ github.event.inputs.push_latest == 'true' && format('{0}:latest', env.IMAGE_NAME) || '' }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+  build-single:
+    needs: extract-version
+    runs-on: ubuntu-latest
+    if: github.event.inputs.build_type == 'single' || github.event.inputs.build_type == 'both' || github.event_name == 'release'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-single
+          key: ${{ runner.os }}-buildx-single-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-single-
+
+      - name: Build and push single-container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.single
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-single
+            ${{ github.event.inputs.push_latest == 'true' && format('{0}:latest-single', env.IMAGE_NAME) || '' }}
+          cache-from: type=local,src=/tmp/.buildx-cache-single
+          cache-to: type=local,dest=/tmp/.buildx-cache-single-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-single
+          mv /tmp/.buildx-cache-single-new /tmp/.buildx-cache-single
+
+  summary:
+    needs: [extract-version, build-regular, build-single]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Build Type:** ${{ github.event.inputs.build_type || 'both' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Push Latest:** ${{ github.event.inputs.push_latest || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Images Built:" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
+            echo "✅ **Regular:** \`${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
+              echo "✅ **Regular Latest:** \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          elif [[ "${{ needs.build-regular.result }}" == "skipped" ]]; then
+            echo "⏭️ **Regular:** Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Regular:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [[ "${{ needs.build-single.result }}" == "success" ]]; then
+            echo "✅ **Single:** \`${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
+              echo "✅ **Single Latest:** \`${{ env.IMAGE_NAME }}:latest-single\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then
+            echo "⏭️ **Single:** Skipped" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **Single:** Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Platforms:" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/amd64" >> $GITHUB_STEP_SUMMARY
+          echo "- linux/arm64" >> $GITHUB_STEP_SUMMARY

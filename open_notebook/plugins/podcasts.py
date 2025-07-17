@@ -52,7 +52,7 @@ class PodcastConfig(ObjectModel):
             raise ValueError("Both voice1 and voice2 must be provided")
         return self
 
-    def generate_episode(
+    async def generate_episode(
         self,
         episode_name: str,
         text: str,
@@ -142,7 +142,7 @@ class PodcastConfig(ObjectModel):
                 text=str(text),
                 audio_file=audio_file,
             )
-            episode.save()
+            await episode.save()
         except Exception as e:
             logger.error(f"Failed to generate episode {episode_name}: {e}")
             raise

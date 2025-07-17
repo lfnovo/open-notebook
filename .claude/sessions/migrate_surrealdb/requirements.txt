@@ -1,0 +1,15 @@
+This project uses SurrealDB as its database engine and we have been using a lightweight client: sdblpy = { git = "https://github.com/lfnovo/surreal-lite-py" }
+
+We are now migrating to the official SurrealDB Python client (surrealdb).
+
+The main difference is that surrealdb is a full SurrealDB client, while sdblpy is a lightweight client that only provides a subset of the features.
+
+I have already prepared the new library helpers we will use at /Users/luisnovo/dev/projetos/open-notebook/open-notebook/open_notebook/database/new.py
+
+There are 3 challenges with this project: 
+ - The new library is an asynchronous library and most of our database code is based in sync operations. We need to decide how to handle this.
+ - The old client has a pretty useful migration feature that we use in /Users/luisnovo/dev/projetos/open-notebook/open-notebook/open_notebook/database/migrate.py - we will need to find a way to inspect this feature and rewrite it for us to use
+ - The new client doesn't need the clean function we use in /Users/luisnovo/dev/projetos/open-notebook/open-notebook/open_notebook/utils.py - surreal_clean - since it already handles its own cleaning when used correctly
+
+This will be a pretty hefty refactoring, but it will be worth it in the end.
+

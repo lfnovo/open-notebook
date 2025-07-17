@@ -13,7 +13,6 @@ from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
-from open_notebook.utils import surreal_clean
 
 
 class SourceState(TypedDict):
@@ -46,23 +45,23 @@ async def content_process(state: SourceState) -> dict:
     return {"content_state": processed_state}
 
 
-def save_source(state: SourceState) -> dict:
+async def save_source(state: SourceState) -> dict:
     content_state = state["content_state"]
 
     source = Source(
         asset=Asset(url=content_state.url, file_path=content_state.file_path),
-        full_text=surreal_clean(content_state.content),
+        full_text=content_state.content,
         title=content_state.title,
     )
-    source.save()
+    await source.save()
 
     if state["notebook_id"]:
         logger.debug(f"Adding source to notebook {state['notebook_id']}")
-        source.add_to_notebook(state["notebook_id"])
+        await source.add_to_notebook(state["notebook_id"])
 
     if state["embed"]:
         logger.debug("Embedding content for vector search")
-        source.vectorize()
+        await source.vectorize()
 
     return {"source": source}
 
@@ -97,7 +96,7 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     result = await transform_graph.ainvoke(
         dict(input_text=content, transformation=transformation)
     )
-    source.add_insight(transformation.title, surreal_clean(result["output"]))
+    await source.add_insight(transformation.title, result["output"])
     return {
         "transformation": [
             {

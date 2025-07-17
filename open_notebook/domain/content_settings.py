@@ -1,4 +1,4 @@
-from typing import ClassVar, Literal, Optional
+from typing import ClassVar, List, Literal, Optional
 
 from pydantic import Field
 
@@ -18,4 +18,8 @@ class ContentSettings(RecordModel):
     )
     auto_delete_files: Optional[Literal["yes", "no"]] = Field(
         "yes", description="Auto Delete Uploaded Files"
+    )
+    youtube_preferred_languages: Optional[List[str]] = Field(
+        ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
+        description="Preferred languages for YouTube transcripts",
     )

@@ -5,6 +5,7 @@ from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
 
 from open_notebook.database.repository import (
+    ensure_record_id,
     repo_create,
     repo_delete,
     repo_query,
@@ -28,7 +29,7 @@ class ObjectModel(BaseModel):
     updated: Optional[datetime] = None
 
     @classmethod
-    def get_all(cls: Type[T], order_by=None) -> List[T]:
+    async def get_all(cls: Type[T], order_by=None) -> List[T]:
         try:
             # If called from a specific subclass, use its table_name
             if cls.table_name:
@@ -39,13 +40,12 @@ class ObjectModel(BaseModel):
                 raise InvalidInputError(
                     "get_all() must be called from a specific model class"
                 )
-
             if order_by:
-                order = f" ORDER BY {order_by}"
+                query = f"SELECT * FROM {table_name} ORDER BY {order_by}"
             else:
-                order = ""
+                query = f"SELECT * FROM {table_name}"
 
-            result = repo_query(f"SELECT * FROM {table_name} {order}")
+            result = await repo_query(query)
             objects = []
             for obj in result:
                 try:
@@ -60,7 +60,7 @@ class ObjectModel(BaseModel):
             raise DatabaseOperationError(e)
 
     @classmethod
-    def get(cls: Type[T], id: str) -> T:
+    async def get(cls: Type[T], id: str) -> T:
         if not id:
             raise InvalidInputError("ID cannot be empty")
         try:
@@ -77,7 +77,7 @@ class ObjectModel(BaseModel):
                     raise InvalidInputError(f"No class found for table {table_name}")
                 target_class = cast(Type[T], found_class)
 
-            result = repo_query(f"SELECT * FROM {id}")
+            result = await repo_query("SELECT * FROM $id", {"id": ensure_record_id(id)})
             if result:
                 return target_class(**result[0])
             else:
@@ -109,7 +109,7 @@ class ObjectModel(BaseModel):
     def get_embedding_content(self) -> Optional[str]:
         return None
 
-    def save(self) -> None:
+    async def save(self) -> None:
         from open_notebook.domain.models import model_manager
 
         try:
@@ -120,20 +120,20 @@ class ObjectModel(BaseModel):
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
                 if embedding_content:
-                    EMBEDDING_MODEL = model_manager.embedding_model
+                    EMBEDDING_MODEL = await model_manager.get_embedding_model()
                     if not EMBEDDING_MODEL:
                         logger.warning(
                             "No embedding model found. Content will not be searchable."
                         )
                     data["embedding"] = (
-                        EMBEDDING_MODEL.embed([embedding_content])[0]
+                        (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
                         if EMBEDDING_MODEL
                         else []
                     )
 
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                repo_result = repo_create(self.__class__.table_name, data)
+                repo_result = await repo_create(self.__class__.table_name, data)
             else:
                 data["created"] = (
                     self.created.strftime("%Y-%m-%d %H:%M:%S")
@@ -141,8 +141,9 @@ class ObjectModel(BaseModel):
                     else self.created
                 )
                 logger.debug(f"Updating record with id {self.id}")
-                repo_result = repo_update(self.id, data)
-
+                repo_result = await repo_update(
+                    self.__class__.table_name, self.id, data
+                )
             # Update the current instance with the result
             for key, value in repo_result[0].items():
                 if hasattr(self, key):
@@ -156,23 +157,18 @@ class ObjectModel(BaseModel):
             raise
         except Exception as e:
             logger.error(f"Error saving record: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error saving {self.__class__.table_name}: {str(e)}")
-            logger.exception(e)
             raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
         return {key: value for key, value in data.items() if value is not None}
 
-    def delete(self) -> bool:
+    async def delete(self) -> bool:
         if self.id is None:
             raise InvalidInputError("Cannot delete object without an ID")
         try:
             logger.debug(f"Deleting record with id {self.id}")
-            return repo_delete(self.id)
+            return await repo_delete(self.id)
         except Exception as e:
             logger.error(
                 f"Error deleting {self.__class__.table_name} with id {self.id}: {str(e)}"
@@ -181,13 +177,13 @@ class ObjectModel(BaseModel):
                 f"Failed to delete {self.__class__.table_name}"
             )
 
-    def relate(
+    async def relate(
         self, relationship: str, target_id: str, data: Optional[Dict] = {}
     ) -> Any:
         if not relationship or not target_id or not self.id:
             raise InvalidInputError("Relationship and target ID must be provided")
         try:
-            return repo_relate(
+            return await repo_relate(
                 source=self.id, relationship=relationship, target=target_id, data=data
             )
         except Exception as e:
@@ -236,36 +232,57 @@ class RecordModel(BaseModel):
         # Only initialize if this is a new instance
         if not hasattr(self, "_initialized"):
             object.__setattr__(self, "__dict__", {})
-            # Load data from DB first
-            result = repo_query(f"SELECT * FROM {self.record_id};")
 
-            # Initialize with DB data and any overrides
-            init_data = {}
-            if result and result[0]:
-                init_data.update(result[0])
+            # For RecordModel, we need to handle async initialization differently
+            # Initialize with provided kwargs only for now
+            super().__init__(**kwargs)
 
-            # Override with any provided kwargs
-            if kwargs:
-                init_data.update(kwargs)
-
-            # Initialize base model first
-            super().__init__(**init_data)
-
-            # Mark as initialized
+            # Mark as initialized but not loaded from DB yet
             object.__setattr__(self, "_initialized", True)
+            object.__setattr__(self, "_db_loaded", False)
+
+    async def _load_from_db(self):
+        """Load data from database if not already loaded"""
+        if not getattr(self, "_db_loaded", False):
+            result = await repo_query(
+                "SELECT * FROM ONLY $record_id",
+                {"record_id": ensure_record_id(self.record_id)},
+            )
+
+            # Handle case where record doesn't exist yet
+            if result:
+                if isinstance(result, list) and len(result) > 0:
+                    # Standard list response
+                    row = result[0]
+                    if isinstance(row, dict):
+                        for key, value in row.items():
+                            if hasattr(self, key):
+                                object.__setattr__(self, key, value)
+                elif isinstance(result, dict):
+                    # Direct dict response
+                    for key, value in result.items():
+                        if hasattr(self, key):
+                            object.__setattr__(self, key, value)
+
+            object.__setattr__(self, "_db_loaded", True)
 
     @classmethod
-    def get_instance(cls) -> "RecordModel":
-        """Get or create the singleton instance"""
-        return cls()
+    async def get_instance(cls) -> "RecordModel":
+        """Get or create the singleton instance and load from DB"""
+        instance = cls()
+        await instance._load_from_db()
+        return instance
 
     @model_validator(mode="after")
     def auto_save_validator(self):
         if self.__class__.auto_save:
-            self.update()
+            # Auto-save can't work with async - log warning
+            logger.warning(
+                f"Auto-save is enabled for {self.__class__.__name__} but update() is now async. Call await instance.update() manually."
+            )
         return self
 
-    def update(self):
+    async def update(self):
         # Get all non-ClassVar fields and their values
         data = {
             field_name: getattr(self, field_name)
@@ -273,9 +290,17 @@ class RecordModel(BaseModel):
             if not str(field_info.annotation).startswith("typing.ClassVar")
         }
 
-        repo_upsert(self.record_id, data)
+        await repo_upsert(
+            self.__class__.table_name
+            if hasattr(self.__class__, "table_name")
+            else "record",
+            self.record_id,
+            data,
+        )
 
-        result = repo_query(f"SELECT * FROM {self.record_id};")
+        result = await repo_query(
+            "SELECT * FROM $record_id", {"record_id": ensure_record_id(self.record_id)}
+        )
         if result:
             for key, value in result[0].items():
                 if hasattr(self, key):
@@ -291,8 +316,8 @@ class RecordModel(BaseModel):
         if cls.record_id in cls._instances:
             del cls._instances[cls.record_id]
 
-    def patch(self, model_dict: dict):
+    async def patch(self, model_dict: dict):
         """Update model attributes from dictionary and save"""
         for key, value in model_dict.items():
             setattr(self, key, value)
-        self.update()
+        await self.update()

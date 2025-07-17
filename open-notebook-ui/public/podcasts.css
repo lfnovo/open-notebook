@@ -1,0 +1,324 @@
+/* Podcasts Page - Minimal Design */
+
+/* Tab Navigation */
+.tab-navigation {
+  display: flex;
+  gap: var(--space-1);
+  margin-bottom: var(--space-6);
+  background: var(--neutral-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-1);
+}
+
+.tab-button {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background: transparent;
+  color: var(--neutral-600);
+}
+
+.tab-button:hover {
+  color: var(--neutral-800);
+}
+
+.tab-button.active {
+  background: var(--neutral-50);
+  color: var(--neutral-800);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Tab Content */
+.tab-content {
+  animation: fadeIn var(--transition-normal);
+}
+
+.tab-content.hidden {
+  display: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Form Subsections */
+.form-subsection {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.form-subsection h4 {
+  color: var(--neutral-800);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--neutral-200);
+  letter-spacing: -0.025em;
+}
+
+/* Episode Cards */
+.episode-card {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-normal);
+}
+
+.episode-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--neutral-300);
+}
+
+.episode-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.episode-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.025em;
+}
+
+.episode-meta {
+  font-size: 0.75rem;
+  color: var(--neutral-500);
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.episode-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.episode-status.completed {
+  background: var(--success-50);
+  color: var(--success-600);
+}
+
+.episode-status.processing {
+  background: var(--warning-50);
+  color: var(--warning-600);
+}
+
+.episode-status.failed {
+  background: var(--error-50);
+  color: var(--error-600);
+}
+
+.episode-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.episode-actions .btn {
+  font-size: 0.75rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Template Cards */
+.template-card {
+  background: var(--neutral-50);
+  border: 1px solid var(--neutral-200);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-normal);
+}
+
+.template-card:hover {
+  box-shadow: var(--shadow-sm);
+  border-color: var(--neutral-300);
+}
+
+.template-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+}
+
+.template-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--neutral-800);
+  margin-bottom: var(--space-1);
+  letter-spacing: -0.025em;
+}
+
+.template-podcast-name {
+  font-size: 0.875rem;
+  color: var(--neutral-600);
+  font-style: italic;
+}
+
+.template-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--neutral-100);
+  border-radius: var(--radius-lg);
+}
+
+.template-detail {
+  font-size: 0.75rem;
+}
+
+.template-detail-label {
+  font-weight: 500;
+  color: var(--neutral-700);
+}
+
+.template-detail-value {
+  color: var(--neutral-600);
+  margin-top: var(--space-1);
+}
+
+.template-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.template-actions .btn {
+  font-size: 0.75rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Audio Player */
+.audio-player {
+  background: var(--neutral-100);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin: var(--space-3) 0;
+}
+
+.audio-player audio {
+  width: 100%;
+  height: 40px;
+}
+
+/* Progress Indicators */
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: var(--neutral-200);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin: var(--space-2) 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-500);
+  border-radius: var(--radius-sm);
+  transition: width var(--transition-normal);
+}
+
+/* Empty States */
+.empty-state {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--neutral-500);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  color: var(--neutral-700);
+  letter-spacing: -0.025em;
+}
+
+.empty-state-description {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto var(--space-4);
+}
+
+/* Enhanced select styling */
+select.input-field {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1em 1em;
+  padding-right: 2.5rem;
+  appearance: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .tab-navigation {
+    flex-direction: column;
+  }
+
+  .form-subsection {
+    padding: var(--space-4);
+  }
+
+  .episode-header,
+  .template-header {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .episode-actions,
+  .template-actions {
+    flex-wrap: wrap;
+  }
+
+  .template-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .episode-card,
+  .template-card {
+    padding: var(--space-4);
+  }
+
+  .form-subsection {
+    padding: var(--space-3);
+  }
+
+  .episode-meta {
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+}

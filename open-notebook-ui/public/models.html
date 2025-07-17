@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Models - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="models.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <div id="sidebar-container"></div>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1><i class="fas fa-robot"></i> AI Models</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                        Back to Notebooks
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Provider Status Section -->
+                <section class="provider-status-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-globe"></i> Provider Availability</h2>
+                        <button class="btn btn-primary btn-sm" onclick="refreshProviderStatus()">
+                            <span class="icon"><i class="fas fa-sync-alt"></i></span>
+                            Refresh Status
+                        </button>
+                    </div>
+
+                    <div class="provider-info-card">
+                        <div class="provider-info">
+                            <p class="text-sm mb-4">Below you'll find all supported AI providers and their current availability status. To enable more providers, you need to set up their environment variables. Check the documentation for setup instructions.</p>
+                        </div>
+                        <div id="provider-status-container" class="provider-grid">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line medium"></div>
+                                    <div class="skeleton-line short"></div>
+                                </div>
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line long"></div>
+                                    <div class="skeleton-line medium"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Configured Models Section -->
+                <section class="configured-models-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cogs"></i> Configured Models</h2>
+                        <div class="model-stats">
+                            <span class="stat-item">
+                                <span class="stat-number" id="total-models">0</span>
+                                <span class="stat-label">Total</span>
+                            </span>
+                            <span class="stat-item">
+                                <span class="stat-number" id="active-models">0</span>
+                                <span class="stat-label">Active</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div id="configured-models-container" class="results-container">
+                        <div class="loading-skeleton">
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line medium"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                            <div class="skeleton-item">
+                                <div class="skeleton-title"></div>
+                                <div class="skeleton-line long"></div>
+                                <div class="skeleton-line medium"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Add New Model Section -->
+                <section class="add-model-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-plus-circle"></i> Add New Model</h2>
+                    </div>
+
+                    <div class="form-section">
+                        <form id="add-model-form" class="form-group">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="add-model-type">Model Type</label>
+                                    <select id="add-model-type" class="input-field" required>
+                                        <option value="">Select Model Type</option>
+                                        <option value="language"><i class="fas fa-brain"></i> Language Model</option>
+                                        <option value="embedding"><i class="fas fa-search-plus"></i> Embedding Model</option>
+                                        <option value="text_to_speech"><i class="fas fa-volume-up"></i> Text-to-Speech</option>
+                                        <option value="speech_to_text"><i class="fas fa-microphone"></i> Speech-to-Text</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="add-model-provider">Provider</label>
+                                    <select id="add-model-provider" class="input-field" required>
+                                        <option value="">Select Provider</option>
+                                        <!-- Options will be dynamically loaded -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="add-model-name">Model Name</label>
+                                    <input
+                                        type="text"
+                                        id="add-model-name"
+                                        class="input-field"
+                                        placeholder="e.g., gpt-4o-mini, llama3, text-embedding-3-small"
+                                        required
+                                    >
+                                    <div class="help-text">
+                                        <p><i class="fas fa-lightbulb"></i> Enter the exact model name as specified by the provider (e.g., "gpt-4o-mini" for OpenAI, "llama3" for Ollama)</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <span class="icon"><i class="fas fa-rocket"></i></span>
+                                    Add Model
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+
+                <!-- Default Model Assignments -->
+                <section class="default-models-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-bullseye"></i> Default Model Assignments</h2>
+                        <button class="btn btn-primary btn-sm" onclick="saveDefaultModels()">
+                            <span class="icon"><i class="fas fa-save"></i></span>
+                            Save Defaults
+                        </button>
+                    </div>
+
+                    <div class="default-models-card">
+                        <div class="default-models-info">
+                            <p class="text-sm mb-4">Configure which models to use by default for different types of operations. These settings will be applied automatically when creating new content.</p>
+                        </div>
+                        <div id="default-models-container" class="default-models-grid">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line medium"></div>
+                                    <div class="skeleton-line short"></div>
+                                </div>
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line long"></div>
+                                    <div class="skeleton-line medium"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script src="modal.js"></script>
+    <script src="models.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Enhanced UI interactions
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form submission handling
+            const form = document.getElementById('add-model-form');
+            form.addEventListener('submit', function(e) {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '⏳ Adding Model...';
+                submitBtn.disabled = true;
+
+                // Re-enable after processing (fallback)
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }, 3000);
+            });
+
+            // Model type change handler
+            const modelTypeSelect = document.getElementById('add-model-type');
+            const modelNameInput = document.getElementById('add-model-name');
+
+            modelTypeSelect.addEventListener('change', function() {
+                const type = this.value;
+                let placeholder = 'e.g., ';
+
+                switch(type) {
+                    case 'language':
+                        placeholder += 'gpt-4o-mini, claude-3-sonnet, llama3';
+                        break;
+                    case 'embedding':
+                        placeholder += 'text-embedding-3-small, all-MiniLM-L6-v2';
+                        break;
+                    case 'text_to_speech':
+                        placeholder += 'tts-1, eleven_multilingual_v2';
+                        break;
+                    case 'speech_to_text':
+                        placeholder += 'whisper-1, nova-2';
+                        break;
+                    default:
+                        placeholder += 'model-name';
+                }
+
+                modelNameInput.placeholder = placeholder;
+            });
+
+        });
+
+        function refreshProviderStatus() {
+            const container = document.getElementById('provider-status-container');
+            container.innerHTML = '<div class="loading">Refreshing provider status...</div>';
+
+            // This would typically make an API call
+            setTimeout(() => {
+                // Simulate refresh completion
+                console.log('Provider status refreshed');
+            }, 1000);
+        }
+
+        function saveDefaultModels() {
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Saving...';
+            btn.disabled = true;
+
+            // This would typically make an API call
+            setTimeout(() => {
+                btn.innerHTML = '✅ Saved!';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }, 1000);
+            }, 1000);
+        }
+
+        // Update stats (would be called by the main JS)
+        function updateModelStats(total, active) {
+            document.getElementById('total-models').textContent = total;
+            document.getElementById('active-models').textContent = active;
+        }
+    </script>
+    <script src="sidebar.js"></script>
+</body>
+</html>
+</content>

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notebook - Open Notebook</title>
+    <link rel="icon" href="logo.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="notebook.css">
+    <link rel="stylesheet" href="modal.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="../../docs/assets/hero.svg" alt="Open Notebook Logo" class="app-logo">
+                <h2>Open Notebook</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/index.html" class="nav-item">
+                    <span class="nav-icon"><i class="fas fa-book"></i></span>
+                    <span class="nav-text">Notebooks</span>
+                </a>
+                <a href="/models.html" class="nav-item">
+                    <span class="nav-icon"><i class="fas fa-robot"></i></span>
+                    <span class="nav-text">Models</span>
+                </a>
+                <a href="/transformations.html" class="nav-item">
+                    <span class="nav-icon"><i class="fas fa-exchange-alt"></i></span>
+                    <span class="nav-text">Transformations</span>
+                </a>
+                <a href="/podcasts.html" class="nav-item">
+                    <span class="nav-icon"><i class="fas fa-microphone-alt"></i></span>
+                    <span class="nav-text">Podcasts</span>
+                </a>
+                <a href="/settings.html" class="nav-item">
+                    <span class="nav-icon"><i class="fas fa-cog"></i></span>
+                    <span class="nav-text">Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <p class="text-sm opacity-75">AI-powered knowledge management</p>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div id="main-content">
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle-btn" id="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <h1 id="notebook-title">Loading...</h1>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-secondary" onclick="window.location.href='/'">
+                        <span class="icon"><i class="fas fa-arrow-left"></i></span>
+                        Back to Notebooks
+                    </button>
+                    <button class="btn btn-secondary" onclick="editNotebook()">
+                        <span class="icon"><i class="fas fa-edit"></i></span>
+                        Edit Notebook
+                    </button>
+                </div>
+            </header>
+
+            <main>
+                <!-- Notebook Details -->
+                <section class="form-section">
+                    <h3>Notebook Details</h3>
+                    <p id="notebook-description" class="text-sm opacity-75 mt-2">Loading notebook details...</p>
+                    <div class="notebook-meta-details text-sm opacity-75 mt-2">
+                        <span id="notebook-created"></span> | <span id="notebook-updated"></span>
+                    </div>
+                    <div class="notebook-management-actions mt-4">
+                        <button class="btn btn-secondary" id="archive-unarchive-btn" onclick="toggleArchiveStatus()">
+                            <span class="icon"><i class="fas fa-archive"></i></span>
+                            Archive
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteNotebook()">
+                            <span class="icon"><i class="fas fa-trash"></i></span>
+                            Delete Forever
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Notebook Actions -->
+                <section class="notebook-actions-section">
+                    <div class="section-header">
+                        <h2>Quick Actions</h2>
+                    </div>
+
+                    <div class="actions-grid">
+                        <button class="action-card" onclick="showAddSourceModal()">
+                            <div class="action-icon"><i class="fas fa-file-alt"></i></div>
+                            <h3>Add Source</h3>
+                            <p>Upload files, add URLs, or paste text content</p>
+                        </button>
+
+                        <button class="action-card" onclick="showAddNoteModal()">
+                            <div class="action-icon"><i class="fas fa-sticky-note"></i></div>
+                            <h3>Add Note</h3>
+                            <p>Create a new note or insight</p>
+                        </button>
+
+                        <button class="action-card" onclick="searchNotebook()">
+                            <div class="action-icon"><i class="fas fa-search"></i></div>
+                            <h3>Search</h3>
+                            <p>Search within this notebook</p>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Notebook Content -->
+                <div class="notebook-content-grid">
+                    <!-- Sources Section -->
+                    <section class="content-section">
+                        <div class="section-header">
+                            <h2>Sources</h2>
+                            <span class="count-badge" id="sources-count">0</span>
+                        </div>
+
+                        <div id="sources-container" class="content-container">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line medium"></div>
+                                    <div class="skeleton-line short"></div>
+                                </div>
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line long"></div>
+                                    <div class="skeleton-line medium"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Notes Section -->
+                    <section class="content-section">
+                        <div class="section-header">
+                            <h2>Notes</h2>
+                            <span class="count-badge" id="notes-count">0</span>
+                        </div>
+
+                        <div id="notes-container" class="content-container">
+                            <div class="loading-skeleton">
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line medium"></div>
+                                    <div class="skeleton-line short"></div>
+                                </div>
+                                <div class="skeleton-item">
+                                    <div class="skeleton-title"></div>
+                                    <div class="skeleton-line long"></div>
+                                    <div class="skeleton-line medium"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Chat Section -->
+                    <section class="content-section chat-section">
+                        <div class="section-header">
+                            <h2>Chat with Notebook</h2>
+                        </div>
+                        <div id="chat-container" class="chat-container">
+                            <div class="chat-messages" id="chat-messages">
+                                <!-- Chat messages will be loaded here -->
+                                <div class="empty-state">
+                                    <div class="empty-state-icon"><i class="fas fa-comments"></i></div>
+                                    <h3>Start a Conversation</h3>
+                                    <p>Ask questions or get insights from your notebook content.</p>
+                                </div>
+                            </div>
+                            <form id="chat-form" class="chat-input-form">
+                                <textarea id="chat-input" class="input-field chat-input" rows="1" placeholder="Ask a question or give a command..."></textarea>
+                                <button type="submit" class="btn btn-primary chat-send-btn">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Source Modal -->
+    <div id="add-source-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('add-source-modal')"><i class="fas fa-times"></i></button>
+            <h2>Add Source</h2>
+
+            <div class="source-type-tabs">
+                <button class="tab-button active" data-type="text">Text</button>
+                <button class="tab-button" data-type="url">URL</button>
+                <button class="tab-button" data-type="upload">Upload</button>
+            </div>
+
+            <form id="add-source-form" class="form-group">
+                <!-- Text Source -->
+                <div id="text-source" class="source-type-content active">
+                    <div class="form-field">
+                        <label for="source-text-title">Title (Optional)</label>
+                        <input type="text" id="source-text-title" class="input-field" placeholder="Source title">
+                    </div>
+                    <div class="form-field">
+                        <label for="source-text-content">Content</label>
+                        <textarea id="source-text-content" class="input-field" rows="8" placeholder="Paste your text content here..." required></textarea>
+                    </div>
+                </div>
+
+                <!-- URL Source -->
+                <div id="url-source" class="source-type-content">
+                    <div class="form-field">
+                        <label for="source-url">URL</label>
+                        <input type="url" id="source-url" class="input-field" placeholder="https://example.com/article">
+                    </div>
+                </div>
+
+                <!-- Upload Source -->
+                <div id="upload-source" class="source-type-content">
+                    <div class="form-field">
+                        <label for="source-file">File</label>
+                        <input type="file" id="source-file" class="input-field" accept=".pdf,.doc,.docx,.txt,.md">
+                        <p class="text-xs opacity-75 mt-2">Supported formats: PDF, DOC, DOCX, TXT, MD</p>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-source-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Source</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Note Modal -->
+    <div id="add-note-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('add-note-modal')"><i class="fas fa-times"></i></button>
+            <h2>Add Note</h2>
+
+            <form id="add-note-form" class="form-group">
+                <div class="form-field">
+                    <label for="note-title">Title</label>
+                    <input type="text" id="note-title" class="input-field" placeholder="Note title" required>
+                </div>
+                <div class="form-field">
+                    <label for="note-content">Content</label>
+                    <textarea id="note-content" class="input-field" rows="10" placeholder="Write your note here..." required></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('add-note-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Add Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Notebook Modal -->
+    <div id="edit-notebook-details-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('edit-notebook-details-modal')"><i class="fas fa-times"></i></button>
+            <h2>Edit Notebook Details</h2>
+
+            <form id="edit-notebook-details-form" class="form-group">
+                <input type="hidden" id="edit-notebook-details-id">
+                <div class="form-field">
+                    <label for="edit-notebook-details-title">Name</label>
+                    <input type="text" id="edit-notebook-details-title" class="input-field" placeholder="Notebook name" required>
+                </div>
+                <div class="form-field">
+                    <label for="edit-notebook-details-description">Description</label>
+                    <textarea id="edit-notebook-details-description" class="input-field" rows="5" placeholder="Describe the purpose of this notebook..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('edit-notebook-details-modal')">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-confirm-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-button" onclick="closeModal('delete-confirm-modal')"><i class="fas fa-times"></i></button>
+            <h2>Confirm Deletion</h2>
+            <p>Are you sure you want to delete the notebook "<span id="delete-notebook-title-display"></span>" forever? This action cannot be undone.</p>
+            <input type="hidden" id="delete-notebook-id-confirm">
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('delete-confirm-modal')">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete Forever</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="modal.js"></script>
+    <script>
+        // API Base URL
+        const API_BASE = '';
+
+        // Get notebook ID from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const notebookId = urlParams.get('id');
+
+        if (!notebookId) {
+            window.location.href = '/';
+        }
+
+        let currentNotebook = null;
+
+        // API Functions
+        async function loadNotebookDetails() {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${notebookId}`);
+                if (!response.ok) throw new Error('Failed to fetch notebook details');
+
+                const notebook = await response.json();
+                currentNotebook = notebook;
+                displayNotebookDetails(notebook);
+            } catch (error) {
+                console.error('Error loading notebook details:', error);
+                document.getElementById('notebook-title').textContent = 'Error Loading Notebook';
+                document.getElementById('notebook-description').textContent = 'Unable to load notebook details.';
+            }
+        }
+
+        function displayNotebookDetails(notebook) {
+            // Update header
+            document.getElementById('notebook-title').textContent = notebook.name || notebook.title;
+            document.getElementById('notebook-description').textContent = notebook.description || 'No description provided';
+            document.title = `${notebook.name || notebook.title} - Open Notebook`;
+
+            // Update creation and update times
+            document.getElementById('notebook-created').textContent = `Created: ${formatDate(notebook.created)}`;
+            document.getElementById('notebook-updated').textContent = `Updated: ${formatDate(notebook.updated)}`;
+
+            // Update archive/unarchive button
+            const archiveBtn = document.getElementById('archive-unarchive-btn');
+            if (notebook.archived) {
+                archiveBtn.innerHTML = `<span class="icon"><i class="fas fa-box-open"></i></span> Unarchive`;
+                archiveBtn.onclick = unarchiveNotebook;
+            } else {
+                archiveBtn.innerHTML = `<span class="icon"><i class="fas fa-archive"></i></span> Archive`;
+                archiveBtn.onclick = archiveNotebook;
+            }
+
+            // Display sources
+            displaySources(notebook.sources || []);
+
+            // Display notes
+            displayNotes(notebook.notes || []);
+        }
+
+        function displaySources(sources) {
+            const container = document.getElementById('sources-container');
+            const countBadge = document.getElementById('sources-count');
+
+            countBadge.textContent = sources.length;
+
+            if (sources.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-file-alt"></i></div>
+                        <h3>No Sources Yet</h3>
+                        <p>Add your first source to start building your knowledge base.</p>
+                        <button class="btn btn-primary mt-4" onclick="showAddSourceModal()">
+                            Add Source
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const sourcesHtml = sources.map(source => `
+                <div class="content-card source-card" data-type="${source.source_type || 'text'}">
+                    <div class="content-header">
+                        <h4>${source.title || getSourceTitle(source)}</h4>
+                        <div class="content-meta">
+                            <span class="type-badge ${source.source_type || 'text'}">${getSourceTypeLabel(source.source_type)}</span>
+                            <span class="date">${formatDate(source.created_at)}</span>
+                        </div>
+                    </div>
+                    <div class="content-preview">
+                        <p>${getSourcePreview(source)}</p>
+                    </div>
+                    <div class="content-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="viewSource('${source.id}')">View</button>
+                        <button class="btn btn-sm btn-secondary" onclick="editSource('${source.id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSource('${source.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = sourcesHtml;
+        }
+
+        function displayNotes(notes) {
+            const container = document.getElementById('notes-container');
+            const countBadge = document.getElementById('notes-count');
+
+            countBadge.textContent = notes.length;
+
+            if (notes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon"><i class="fas fa-sticky-note"></i></div>
+                        <h3>No Notes Yet</h3>
+                        <p>Create your first note to capture insights and ideas.</p>
+                        <button class="btn btn-primary mt-4" onclick="showAddNoteModal()">
+                            Add Note
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            const notesHtml = notes.map(note => `
+                <div class="content-card note-card">
+                    <div class="content-header">
+                        <h4>${note.title}</h4>
+                        <div class="content-meta">
+                            <span class="type-badge note">Note</span>
+                            <span class="date">${formatDate(note.created_at)}</span>
+                        </div>
+                    </div>
+                    <div class="content-preview">
+                        <p>${getNotePreview(note.content)}</p>
+                    </div>
+                    <div class="content-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="viewNote('${note.id}')">View</button>
+                        <button class="btn btn-sm btn-secondary" onclick="editNote('${note.id}')">Edit</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteNote('${note.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = notesHtml;
+        }
+
+        // Helper functions
+        function getSourceTitle(source) {
+            if (source.title) return source.title;
+            if (source.source_type === 'url' && source.url) return new URL(source.url).hostname;
+            if (source.source_type === 'upload' && source.file_name) return source.file_name;
+            return 'Untitled Source';
+        }
+
+        function getSourceTypeLabel(type) {
+            const labels = {
+                'text': 'Text',
+                'url': 'URL',
+                'upload': 'File'
+            };
+            return labels[type] || 'Text';
+        }
+
+        function getSourcePreview(source) {
+            const content = source.content || source.processed_content || '';
+            return content.length > 200 ? content.substring(0, 200) + '...' : content;
+        }
+
+        function getNotePreview(content) {
+            return content && content.length > 200 ? content.substring(0, 200) + '...' : content || '';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            // Use toLocaleString for a more precise date and time display
+            return date.toLocaleString();
+        }
+
+        // Modal functions
+        function showAddSourceModal() {
+            document.getElementById('add-source-modal').classList.add('show');
+        }
+
+        function showAddNoteModal() {
+            document.getElementById('add-note-modal').classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // Action functions
+        async function editNotebook() {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${notebookId}`);
+                if (!response.ok) throw new Error('Failed to fetch notebook details for editing');
+                const notebook = await response.json();
+
+                document.getElementById('edit-notebook-details-id').value = notebook.id;
+                document.getElementById('edit-notebook-details-title').value = notebook.name || notebook.title;
+                document.getElementById('edit-notebook-details-description').value = notebook.description || '';
+
+                document.getElementById('edit-notebook-details-modal').classList.add('show');
+            } catch (error) {
+                console.error('Error loading notebook for edit:', error);
+                showError('Failed to load notebook for editing. Please try again.');
+            }
+        }
+
+        async function updateNotebook(id, title, description, archived = false) {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: title,
+                        description: description,
+                        archived: archived
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to update notebook');
+
+                loadNotebookDetails(); // Refresh the page
+                return true;
+            } catch (error) {
+                console.error('Error updating notebook:', error);
+                throw error;
+            }
+        }
+
+        async function archiveNotebook() {
+            const confirmed = await showConfirm('Are you sure you want to archive this notebook?', 'Confirm Archive', 'warning');
+            if (!confirmed) return;
+            try {
+                await updateNotebook(notebookId, currentNotebook.name, currentNotebook.description, true);
+                showSuccess('Notebook archived successfully!');
+            } catch (error) {
+                showError('Failed to archive notebook. Please try again.');
+            }
+        }
+
+        async function unarchiveNotebook() {
+            const confirmed = await showConfirm('Are you sure you want to unarchive this notebook?', 'Confirm Unarchive', 'warning');
+            if (!confirmed) return;
+            try {
+                await updateNotebook(notebookId, currentNotebook.name, currentNotebook.description, false);
+                showSuccess('Notebook unarchived successfully!');
+            } catch (error) {
+                showError('Failed to unarchive notebook. Please try again.');
+            }
+        }
+
+        async function deleteNotebook() {
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${notebookId}`);
+                if (!response.ok) throw new Error('Failed to fetch notebook details for deletion');
+                const notebook = await response.json();
+
+                document.getElementById('delete-notebook-id-confirm').value = notebook.id;
+                document.getElementById('delete-notebook-title-display').textContent = notebook.name || notebook.title;
+                document.getElementById('delete-confirm-modal').classList.add('show');
+            } catch (error) {
+                console.error('Error preparing for notebook deletion:', error);
+                showError('Failed to prepare for notebook deletion. Please try again.');
+            }
+        }
+
+        async function confirmDeleteNotebook() {
+            const id = document.getElementById('delete-notebook-id-confirm').value;
+            if (!id) return;
+
+            const confirmBtn = document.getElementById('confirm-delete-btn');
+            const originalText = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = 'Deleting...';
+            confirmBtn.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/notebooks/${id}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error('Failed to delete notebook');
+                closeModal('delete-confirm-modal');
+                showSuccess('Notebook deleted successfully!');
+                window.location.href = '/'; // Go back to notebook list
+            } catch (error) {
+                console.error('Error deleting notebook:', error);
+                showError('Failed to delete notebook. Please try again.');
+            } finally {
+                confirmBtn.innerHTML = originalText;
+                confirmBtn.disabled = false;
+            }
+        }
+
+        function toggleArchiveStatus() {
+            if (currentNotebook.archived) {
+                unarchiveNotebook();
+            } else {
+                archiveNotebook();
+            }
+        }
+
+        function searchNotebook() {
+            // Navigate to search with notebook filter
+            window.location.href = `/?search=true&notebook=${notebookId}`;
+        }
+
+        function viewSource(sourceId) {
+            console.log('View source:', sourceId);
+        }
+
+        function editSource(sourceId) {
+            console.log('Edit source:', sourceId);
+        }
+
+        async function deleteSource(sourceId) {
+            const confirmed = await showConfirm('Are you sure you want to delete this source?', 'Confirm Deletion', 'error');
+            if (confirmed) {
+                console.log('Delete source:', sourceId);
+                // Implement delete functionality
+            }
+        }
+
+        function viewNote(noteId) {
+            console.log('View note:', noteId);
+        }
+
+        function editNote(noteId) {
+            console.log('Edit note:', noteId);
+        }
+
+        async function deleteNote(noteId) {
+            const confirmed = await showConfirm('Are you sure you want to delete this note?', 'Confirm Deletion', 'error');
+            if (confirmed) {
+                console.log('Delete note:', noteId);
+                // Implement delete functionality
+            }
+        }
+
+        // Form handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Edit notebook details form submission
+            document.getElementById('edit-notebook-details-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Saving...';
+                submitBtn.disabled = true;
+
+                const notebookId = document.getElementById('edit-notebook-details-id').value;
+                const title = document.getElementById('edit-notebook-details-title').value.trim();
+                const description = document.getElementById('edit-notebook-details-description').value.trim();
+
+                try {
+                    await updateNotebook(notebookId, title, description);
+                    closeModal('edit-notebook-details-modal');
+                } catch (error) {
+                    showError('Failed to save changes. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Confirm delete button event listener
+            document.getElementById('confirm-delete-btn').addEventListener('click', confirmDeleteNotebook);
+
+            // Source type tabs
+            const sourceTypeTabs = document.querySelectorAll('.source-type-tabs .tab-button');
+            const sourceTypeContents = document.querySelectorAll('.source-type-content');
+
+            sourceTypeTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const type = this.getAttribute('data-type');
+
+                    sourceTypeTabs.forEach(t => t.classList.remove('active'));
+                    sourceTypeContents.forEach(c => c.classList.remove('active'));
+
+                    this.classList.add('active');
+                    document.getElementById(`${type}-source`).classList.add('active');
+                });
+            });
+
+            // Add source form
+            document.getElementById('add-source-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const activeTab = document.querySelector('.source-type-tabs .tab-button.active');
+                const sourceType = activeTab.getAttribute('data-type');
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Adding...';
+                submitBtn.disabled = true;
+
+                try {
+                    let sourceData = {
+                        notebook_id: notebookId,
+                        source_type: sourceType
+                    };
+
+                    if (sourceType === 'text') {
+                        sourceData.content = document.getElementById('source-text-content').value;
+                        sourceData.title = document.getElementById('source-text-title').value;
+                    } else if (sourceType === 'url') {
+                        sourceData.url = document.getElementById('source-url').value;
+                    } else if (sourceType === 'upload') {
+                        // File upload would need special handling
+                        showWarning('File upload not yet implemented');
+                        return;
+                    }
+
+                    const response = await fetch('/api/sources', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(sourceData)
+                    });
+
+                    if (!response.ok) throw new Error('Failed to add source');
+
+                    closeModal('add-source-modal');
+                    this.reset();
+                    loadNotebookDetails(); // Refresh the page
+                } catch (error) {
+                    console.error('Error adding source:', error);
+                    showError('Failed to add source. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Add note form
+            document.getElementById('add-note-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = 'Adding...';
+                submitBtn.disabled = true;
+
+                try {
+                    const noteData = {
+                        notebook_id: notebookId,
+                        title: document.getElementById('note-title').value,
+                        content: document.getElementById('note-content').value
+                    };
+
+                    const response = await fetch('/api/notes', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(noteData)
+                    });
+
+                    if (!response.ok) throw new Error('Failed to add note');
+
+                    closeModal('add-note-modal');
+                    this.reset();
+                    loadNotebookDetails(); // Refresh the page
+                } catch (error) {
+                    console.error('Error adding note:', error);
+                    showError('Failed to add note. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Close modal on outside click
+            window.addEventListener('click', function(e) {
+                if (e.target.classList.contains('modal')) {
+                    e.target.classList.remove('show');
+                }
+            });
+
+            // Load notebook details on page load
+            loadNotebookDetails();
+
+            // Sidebar toggle
+            const menuToggle = document.getElementById('menu-toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const mainContent = document.getElementById('main-content');
+
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('collapsed');
+                mainContent.classList.toggle('sidebar-collapsed');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+REMOVE TABLE IF EXISTS episode_profile;
+REMOVE TABLE IF EXISTS speaker_profile;
+REMOVE TABLE IF EXISTS episode;

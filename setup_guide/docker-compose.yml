@@ -1,0 +1,12 @@
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:latest-single
+    ports:
+      - "8080:8502"
+    env_file:
+      - ./docker.env
+    pull_policy: always
+    volumes:
+      - ./notebook_data:/app/data
+      - ./surreal_data:/app/surreal_data
+    restart: always

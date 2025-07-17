@@ -17,7 +17,7 @@ class TransformationState(TypedDict):
     output: str
 
 
-def run_transformation(state: dict, config: RunnableConfig) -> dict:
+async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     source: Source = state.get("source")
     content = state.get("input_text")
     assert source or content, "No content to transform"
@@ -35,20 +35,20 @@ def run_transformation(state: dict, config: RunnableConfig) -> dict:
         data=state
     )
     payload = [SystemMessage(content=system_prompt)] + [HumanMessage(content=content)]
-    chain = provision_langchain_model(
+    chain = await provision_langchain_model(
         str(payload),
         config.get("configurable", {}).get("model_id"),
         "transformation",
-        max_tokens=5000,
+        max_tokens=5055,
     )
 
-    response = chain.invoke(payload)
-    
+    response = await chain.ainvoke(payload)
+
     # Clean thinking content from the response
     cleaned_content = clean_thinking_content(response.content)
-    
+
     if source:
-        source.add_insight(transformation.title, cleaned_content)
+        await source.add_insight(transformation.title, cleaned_content)
 
     return {
         "output": cleaned_content,

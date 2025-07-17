@@ -34,16 +34,12 @@
 ## 📢 Open Notebook is under very active development
 
 > Open Notebook is under active development! We're moving fast and making improvements every week. Your feedback is incredibly valuable to me during this exciting phase and it gives me motivation to keep improving and building this amazing tool. Please feel free to star the project if you find it useful, and don't hesitate to reach out with any questions or suggestions. I'm excited to see how you'll use it and what ideas you'll bring to the project! Let's build something amazing together! 🚀
->
-> ⚠️ **API Changes**: As we optimize and enhance the project, some APIs and interfaces might change. We'll do our best to document these changes and minimize disruption.
->
-> 🙏 **We Need Your Feedback**: Please try out Open Notebook and let us know what you think! Submit issues, feature requests, or just share your experience through:
-> - GitHub Issues
-> - Discussions
-> - Pull Requests
->
-> Together, we can make it even better! 
 
+## Installation Issues?
+
+> We have a CustomGPT built to help you install Open Notebook. [Check it out here](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant). It will help you through each step of the process.
+
+> There are also some [basic docker/openai installation guide](setup_guide/README.md) available if you prefer to install it manually.
 
 <!-- TABLE OF CONTENTS -->
 <details>
@@ -60,6 +56,7 @@
       <ul>
         <li><a href="#prerequisites">Prerequisites</a></li>
         <li><a href="#installation">Installation</a></li>
+        <li><a href="#password-protection-optional">Password Protection</a></li>
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
@@ -129,6 +126,40 @@ cp .env.example docker.env
 
 Edit .env for your API keys.
 
+### 🔐 Password Protection (Optional)
+
+For users hosting Open Notebook publicly (e.g., on PikaPods, cloud services), you can protect your instance with a password:
+
+```bash
+# Add this to your .env file
+OPEN_NOTEBOOK_PASSWORD=your_secure_password_here
+```
+
+When this environment variable is set:
+- **Streamlit UI**: Users must enter the password on first access
+- **REST API**: All API calls require the password in the Authorization header (`Authorization: Bearer your_password`)
+- **Local Usage**: If not set, no authentication is required (default behavior)
+
+**API Usage with Password:**
+```bash
+# Example API call with password
+curl -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
+```
+
+This provides basic protection for public deployments while keeping local usage simple and password-free.
+
+📚 **For detailed security information, see the [Security Guide](docs/security.md)**.
+
+### 🚀 Quick Start
+
+After setting up your environment, simply run:
+
+```bash
+make start-all
+```
+
+This single command will start all required services (database, API, worker, and UI) for you!
+
 ### System Dependencies
 
 This project requires some system dependencies:
@@ -155,18 +186,66 @@ uv pip install python-magic
 
 ### Running the Application
 
-Start the SurrealDB database first:
+Open Notebook now requires **four services** to run: the database, API backend, worker, and Streamlit interface.
+
+#### ✨ Easiest Way: Use `make start-all`
+
+After completing the setup above, the recommended way to run Open Notebook is:
 
 ```bash
-docker compose --profile db_only up -d
+make start-all
 ```
 
-Then run the Streamlit application:
+This single command will:
+- Start **SurrealDB** database on port 8000
+- Start **FastAPI** backend on port 5055  
+- Start **Background Worker** for podcast generation and transformations
+- Start **Streamlit UI** on port 8502
+
+Once running, access Open Notebook at `http://localhost:8502` 🎉
+
+#### Manual Setup (Development)
+
+If you prefer to start services individually:
 
 ```bash
-# Load environment variables from .env file and run the app
-uv run --env-file .env streamlit run app_home.py
+# 1. Start SurrealDB database
+make database
+# or: docker compose up -d surrealdb
+
+# 2. Start the FastAPI backend (in terminal 1)
+make api
+# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
+
+# 3. Start the background worker (in terminal 2)
+make worker
+# or: uv run --env-file .env surreal-commands-worker --import-modules commands
+
+# 4. Start Streamlit UI (in terminal 3)
+make run
+# or: uv run --env-file .env streamlit run app_home.py
 ```
+
+#### Service Endpoints
+- **Streamlit UI**: `http://localhost:8502`
+- **REST API**: `http://localhost:5055`
+- **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
+- **SurrealDB**: `http://localhost:8000`
+
+#### Service Management
+
+```bash
+# Check if all services are running
+make status
+
+# Stop all services
+make stop-all
+
+# Restart worker only
+make worker-restart
+```
+
+**Note**: The worker is required for podcast generation and content transformations. Without it, these features will queue jobs but not process them.
 
 ## Provider Support Matrix
 
@@ -212,11 +291,61 @@ uv run --env-file .env streamlit run app_home.py --server.port=8503
 
 ### Running with Docker
 
-If you don't want to mess around with the code and just want to run it as a docker image:
+Open Notebook offers two Docker deployment options:
+
+#### Option 1: Multi-Container (Default)
+If you prefer separate containers for each service:
 
 ```bash
+# Run the full stack (SurrealDB + Streamlit + API)
 docker compose --profile multi up
 ```
+
+#### Option 2: Single-Container (Recommended for Simple Deployments)
+For platforms like PikaPods or if you prefer an all-in-one solution:
+
+```bash
+# Run everything in a single container
+docker compose -f docker-compose.single.yml up -d
+```
+
+Or directly:
+
+```bash
+docker run -d \
+  --name open-notebook \
+  -p 8502:8502 -p 5055:5055 \
+  -v ./notebook_data:/app/data \
+  -v ./surreal_single_data:/mydata \
+  -e OPENAI_API_KEY=your_key \
+  lfnovo/open_notebook:latest-single
+```
+
+Both setups provide:
+- **Streamlit UI**: `http://localhost:8502`
+- **REST API**: `http://localhost:5055`
+- **API Documentation**: `http://localhost:5055/docs` (Interactive Swagger UI)
+
+**📚 For detailed single-container deployment instructions, see the [Single-Container Deployment Guide](docs/single-container-deployment.md)**.
+
+**Docker with Password Protection:**
+To enable password protection in Docker, add `OPEN_NOTEBOOK_PASSWORD=your_password` to your environment variables.
+
+### API Documentation
+
+Open Notebook now includes a comprehensive REST API that provides programmatic access to all functionality. The API includes endpoints for:
+
+- **Notebooks**: Create, read, update, delete notebooks
+- **Sources**: Manage research sources (links, files, text)
+- **Notes**: Create and manage notes
+- **Search**: Full-text and vector search capabilities
+- **Models**: Manage AI models and providers
+- **Transformations**: Execute content transformations
+- **Settings**: Application configuration
+- **Context**: Generate context for AI interactions
+- **Embedding**: Vectorize content for search
+
+Visit `http://localhost:5055/docs` when the API is running to explore the interactive API documentation.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -231,7 +360,9 @@ Go to the [Usage](docs/USAGE.md) page to learn how to use all features.
 - **Multi-Notebook Support**: Organize your research across multiple notebooks effortlessly.
 - **Multi-model support**: Open AI, Anthropic, Gemini, Vertex AI, Open Router, X.AI, Groq, Ollama. ([Model Selection Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md))
 - **Reasoning Model Support**: Full support for thinking models like DeepSeek-R1, Qwen3, and Magistral with collapsible reasoning sections.
-- **Podcast Generator**: Automatically convert your notes into a podcast format.
+- **Comprehensive REST API**: Full programmatic access to all functionality for building custom integrations.
+- **Optional Password Protection**: Secure your public deployments with simple password authentication for both UI and API.
+- **Advanced Podcast Generator**: Create professional podcasts with 1-4 speakers using Episode Profiles. Superior flexibility compared to Google Notebook LM's 2-speaker limitation.
 - **Broad Content Integration**: Works with links, PDFs, EPUB, Office, TXT, Markdown files, YouTube videos, Audio files, Video files and pasted text.
 - **Content Transformation**: Powerful customizable actions to summarize, extract insights, and more.
 - **AI-Powered Notes**: Write notes yourself or let the AI assist you in generating insights.
@@ -275,13 +406,15 @@ Jinja based prompts that are easy to customize to your own preferences.
 <!-- ROADMAP -->
 ## Roadmap
 
+- [ ] **React Frontend**: Modern React-based frontend to replace Streamlit.
 - [ ] **Live Front-End Updates**: Real-time UI updates for a smoother experience.
 - [ ] **Async Processing**: Faster UI through asynchronous content processing.
 - [ ] **Cross-Notebook Sources and Notes**: Reuse research notes across projects.
 - [ ] **Bookmark Integration**: Integrate with your favorite bookmarking app.
+- ✅ **Comprehensive REST API**: Full API coverage for all functionality.
 - ✅ **Multi-model support**: Open AI, Anthropic, Vertex AI, Open Router, Ollama, etc.
 - ✅ **Insight Generation**: New tools for creating insights - [transformations](docs/TRANSFORMATIONS.md)
-- ✅ **Podcast Generator**: Automatically convert your notes into a podcast format. 
+- ✅ **Advanced Podcast Generator**: Professional multi-speaker podcasts with Episode Profiles and background processing. 
 - ✅ **Multiple Chat Sessions**: Juggle different discussions within the same notebook.
 - ✅ **Enhanced Citations**: Improved layout and finer control for citations.
 - ✅ **Better Embeddings & Summarization**: Smarter ways to distill information.
@@ -328,7 +461,8 @@ Join our [Discord server](https://discord.gg/37XJPXfz2w) for help, share workflo
 
 This project uses some amazing third-party libraries
 
-* [Podcastfy](https://github.com/souzatharsis/podcastfy) - Licensed under the Apache License 2.0
+* [Podcast Creator](https://github.com/lfnovo/podcast-creator) - Licensed under the MIT License
+* [Surreal Commands](https://github.com/lfnovo/surreal-commands) - Licensed under the MIT License
 * [Content Core](https://github.com/lfnovo/content-core) - Licensed under the MIT License
 * [Docling](https://github.com/docling-project/docling) - Licensed under the MIT License
 * [Esperanto](https://github.com/lfnovo/esperanto) - Licensed under the MIT License

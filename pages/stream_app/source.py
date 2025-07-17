@@ -1,23 +1,19 @@
-import asyncio
 import os
 from pathlib import Path
 
-import nest_asyncio
 import streamlit as st
 from humanize import naturaltime
 from loguru import logger
 
+from api.insights_service import insights_service
+from api.models_service import models_service
+from api.settings_service import settings_service
+from api.sources_service import sources_service
+from api.transformations_service import transformations_service
 from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.models import model_manager
-from open_notebook.domain.notebook import Source
-from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import UnsupportedTypeException
-from open_notebook.graphs.source import source_graph
 from pages.components import source_panel
 from pages.stream_app.consts import source_context_icons
-
-nest_asyncio.apply()
 
 
 @st.dialog("Source", width="large")
@@ -27,17 +23,18 @@ def source_panel_dialog(source_id, notebook_id=None):
 
 @st.dialog("Add a Source", width="large")
 def add_source(notebook_id):
-    if not model_manager.speech_to_text:
+    default_models = models_service.get_default_models()
+    if not default_models.default_speech_to_text_model:
         st.warning(
             "Since there is no speech to text model selected, you can't upload audio/video files."
         )
     source_link = None
     source_file = None
     source_text = None
-    content_settings = ContentSettings()
+    content_settings = settings_service.get_settings()
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
     req = {}
-    transformations = Transformation.get_all()
+    transformations = transformations_service.get_all_transformations()
     if source_type == "Link":
         source_link = st.text_input("Link")
         req["url"] = source_link
@@ -49,7 +46,6 @@ def add_source(notebook_id):
         source_text = st.text_area("Text")
         req["content"] = source_text
 
-    transformations = Transformation.get_all()
     default_transformations = [t for t in transformations if t.apply_default]
     apply_transformations = st.multiselect(
         "Apply transformations",
@@ -97,16 +93,41 @@ def add_source(notebook_id):
                     with open(new_path, "wb") as f:
                         f.write(source_file.getbuffer())
 
-                asyncio.run(
-                    source_graph.ainvoke(
-                        {
-                            "content_state": req,
-                            "notebook_id": notebook_id,
-                            "apply_transformations": apply_transformations,
-                            "embed": run_embed,
-                        }
-                    )
+                from api.sources_service import sources_service
+
+                # Convert transformations to IDs
+                transformation_ids = (
+                    [t.id for t in apply_transformations]
+                    if apply_transformations
+                    else []
                 )
+
+                # Determine source type and parameters
+                if source_type == "Link":
+                    sources_service.create_source(
+                        notebook_id=notebook_id,
+                        source_type="link",
+                        url=source_link,
+                        transformations=transformation_ids,
+                        embed=run_embed,
+                    )
+                elif source_type == "Upload":
+                    sources_service.create_source(
+                        notebook_id=notebook_id,
+                        source_type="upload",
+                        file_path=req["file_path"],
+                        transformations=transformation_ids,
+                        embed=run_embed,
+                        delete_source=req.get("delete_source", False),
+                    )
+                else:  # Text
+                    sources_service.create_source(
+                        notebook_id=notebook_id,
+                        source_type="text",
+                        content=source_text,
+                        transformations=transformation_ids,
+                        embed=run_embed,
+                    )
             except UnsupportedTypeException as e:
                 st.warning(
                     "This type of content is not supported yet. If you think it should be, let us know on the project Issues's page"
@@ -139,8 +160,10 @@ def source_card(source, notebook_id):
             index=1,
             key=f"source_{source.id}",
         )
+
+        insights = insights_service.get_source_insights(source.id)
         st.caption(
-            f"Updated: {naturaltime(source.updated)}, **{len(source.insights)}** insights"
+            f"Updated: {naturaltime(source.updated)}, **{len(insights)}** insights"
         )
         if st.button("Expand", icon="📝", key=source.id):
             source_panel_dialog(source.id, notebook_id)
@@ -149,7 +172,8 @@ def source_card(source, notebook_id):
 
 
 def source_list_item(source_id, score=None):
-    source: Source = Source.get(source_id)
+    source_with_metadata = sources_service.get_source(source_id)
+    source = source_with_metadata.source
     if not source:
         st.error("Source not found")
         return

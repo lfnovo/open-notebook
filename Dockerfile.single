@@ -1,34 +1,72 @@
-# Use Python 3.11 slim image as base
-FROM python:3.11-slim-bookworm
+# Build stage
+FROM python:3.12-slim-bookworm AS builder
 
 # Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-
 # Install system dependencies required for building certain Python packages
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    gcc \
-    curl wget libmagic-dev ffmpeg supervisor \
+    gcc g++ git make \
+    libmagic-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set build optimization environment variables
+ENV MAKEFLAGS="-j$(nproc)"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+
+# Set the working directory in the container to /app
+WORKDIR /app
+
+# Copy dependency files and minimal package structure first for better layer caching
+COPY pyproject.toml uv.lock ./
+COPY open_notebook/__init__.py ./open_notebook/__init__.py
+
+# Install dependencies with optimizations (this layer will be cached unless dependencies change)
+RUN uv sync --frozen --no-dev
+
+# Copy the rest of the application code
+COPY . /app
+
+# Runtime stage
+FROM python:3.12-slim-bookworm AS runtime
+
+# Install runtime system dependencies including curl for SurrealDB installation
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    libmagic1 \
+    ffmpeg \
+    supervisor \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SurrealDB
 RUN curl --proto '=https' --tlsv1.2 -sSf https://install.surrealdb.com | sh
 
+# Install uv using the official method
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
 # Set the working directory in the container to /app
 WORKDIR /app
 
-COPY . /app
-RUN uv sync
+# Copy the virtual environment from builder stage
+COPY --from=builder /app/.venv /app/.venv
 
-# Create supervisor configuration directory
-RUN mkdir -p /etc/supervisor/conf.d
+# Copy the application code
+COPY --from=builder /app /app
 
-# Copy supervisor configuration file
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Create directories for data persistence
+RUN mkdir -p /app/data /mydata
 
-EXPOSE 8502
+# Expose ports for Streamlit and API
+EXPOSE 8502 5055
 
-RUN mkdir -p /app/data
+# Copy single-container supervisord configuration
+COPY supervisord.single.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Use supervisor as the main process
+# Create log directories
+RUN mkdir -p /var/log/supervisor
+
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

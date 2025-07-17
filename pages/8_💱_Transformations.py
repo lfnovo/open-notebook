@@ -1,7 +1,7 @@
 import streamlit as st
 
+from api.transformations_service import transformations_service
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.graphs.transformation import graph as transformation_graph
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
@@ -11,7 +11,7 @@ transformations_tab, playground_tab = st.tabs(["🧩 Transformations", "🛝 Pla
 
 
 if "transformations" not in st.session_state:
-    st.session_state.transformations = Transformation.get_all(order_by="name asc")
+    st.session_state.transformations = transformations_service.get_all_transformations()
 else:
     # work-around for streamlit losing typing on session state
     st.session_state.transformations = [
@@ -37,8 +37,8 @@ with transformations_tab:
             default_prompts.update()
             st.toast("Default prompt saved successfully!")
     if st.button("Create new Transformation", icon="➕", key="new_transformation"):
-        new_transformation = Transformation(
-            name="New Tranformation",
+        new_transformation = transformations_service.create_transformation(
+            name="New Transformation",
             title="New Transformation Title",
             description="New Transformation Description",
             prompt="New Transformation Prompt",
@@ -99,7 +99,7 @@ with transformations_tab:
                     transformation.prompt = prompt
                     transformation.apply_default = apply_default
                     st.toast(f"Transformation '{name}' saved successfully!")
-                    transformation.save()
+                    transformations_service.update_transformation(transformation)
                     st.rerun()
 
                 if transformation.id:
@@ -113,7 +113,7 @@ with transformations_tab:
                         if st.button(
                             "Delete", icon="❌", key=f"{transformation.id}_delete"
                         ):
-                            transformation.delete()
+                            transformations_service.delete_transformation(transformation.id)
                             st.session_state.transformations.remove(transformation)
                             st.toast(f"Transformation '{name}' deleted successfully!")
                             st.rerun()
@@ -137,11 +137,12 @@ with playground_tab:
     input_text = st.text_area("Enter some text", height=200)
 
     if st.button("Run"):
-        output = transformation_graph.invoke(
-            dict(
+        if transformation and model and input_text:
+            result = transformations_service.execute_transformation(
+                transformation_id=transformation.id,
                 input_text=input_text,
-                transformation=transformation,
-            ),
-            config=dict(configurable={"model_id": model.id}),
-        )
-        st.markdown(output["output"])
+                model_id=model.id
+            )
+            st.markdown(result["output"])
+        else:
+            st.warning("Please select a transformation, model, and enter some text.")

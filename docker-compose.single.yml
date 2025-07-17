@@ -1,0 +1,20 @@
+services:
+  open_notebook_single:
+    image: lfnovo/open_notebook:latest-single
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    ports:
+      - "8502:8502"  # Streamlit UI
+      - "5055:5055"  # REST API
+    env_file:
+      - ./docker.env
+    volumes:
+      - ./notebook_data:/app/data          # Application data
+      - ./surreal_single_data:/mydata      # SurrealDB data
+    restart: always
+    # Single container includes all services: SurrealDB, API, Worker, and Streamlit
+    # Access: 
+    # - Streamlit UI: http://localhost:8502
+    # - REST API: http://localhost:5055
+    # - API Documentation: http://localhost:5055/docs

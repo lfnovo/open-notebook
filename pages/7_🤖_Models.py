@@ -1,13 +1,17 @@
 import os
 
+import nest_asyncio
+
+nest_asyncio.apply()
+
 import streamlit as st
 from esperanto import AIFactory
 
-from open_notebook.domain.models import DefaultModels, Model, model_manager
+from api.models_service import models_service
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
-setup_page("🤖 Models", only_check_mandatory_models=False, stop_on_model_error=False)
+setup_page("🤖 Models", only_check_mandatory_models=False, stop_on_model_error=False, skip_model_check=True)
 
 
 st.title("🤖 Models")
@@ -33,7 +37,10 @@ def check_available_providers():
         and os.environ.get("VERTEX_LOCATION") is not None
         and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
     )
-    provider_status["gemini"] = os.environ.get("GOOGLE_API_KEY") is not None
+    provider_status["gemini"] = (
+        os.environ.get("GOOGLE_API_KEY") is not None
+        or os.environ.get("GEMINI_API_KEY") is not None
+    )
     provider_status["openrouter"] = (
         os.environ.get("OPENROUTER_API_KEY") is not None
         and os.environ.get("OPENAI_API_KEY") is not None
@@ -41,7 +48,7 @@ def check_available_providers():
     )
     provider_status["anthropic"] = os.environ.get("ANTHROPIC_API_KEY") is not None
     provider_status["elevenlabs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
-    provider_status["voyage"] = os.environ.get("VORAGE_API_KEY") is not None
+    provider_status["voyage"] = os.environ.get("VOYAGE_API_KEY") is not None
     provider_status["azure"] = (
         os.environ.get("AZURE_OPENAI_API_KEY") is not None
         and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
@@ -57,8 +64,8 @@ def check_available_providers():
     return available_providers, unavailable_providers
 
 
-default_models = DefaultModels()
-all_models = Model.get_all()
+default_models = models_service.get_default_models()
+all_models = models_service.get_all_models()
 esperanto_available_providers = AIFactory.get_available_providers()
 
 
@@ -76,8 +83,11 @@ st.divider()
 
 
 # Helper function to add model with auto-save
-def add_model_form(model_type, container_key):
-    available_providers = esperanto_available_providers.get(model_type, [])
+def add_model_form(model_type, container_key, configured_providers):
+    # Get providers that Esperanto supports for this model type
+    esperanto_providers = esperanto_available_providers.get(model_type, [])
+    # Filter to only show providers that have API keys configured
+    available_providers = [p for p in esperanto_providers if p in configured_providers]
     # Sort providers alphabetically for easier navigation
     available_providers.sort()
 
@@ -106,8 +116,9 @@ def add_model_form(model_type, container_key):
 
         if st.form_submit_button("Add Model"):
             if model_name:
-                model = Model(name=model_name, provider=provider, type=model_type)
-                model.save()
+                models_service.create_model(
+                    name=model_name, provider=provider, model_type=model_type
+                )
                 st.success("Model added!")
                 st.rerun()
 
@@ -126,13 +137,13 @@ def handle_default_selection(
     # Auto-save when selection changes
     if selected_model and (not current_value or selected_model.id != current_value):
         setattr(default_models, key, selected_model.id)
-        default_models.update()
-        model_manager.refresh_defaults()
+        models_service.update_default_models(default_models)
+        # Model defaults are automatically refreshed through the API service
         st.toast(f"Default {model_type} model set to {selected_model.name}")
     elif not selected_model and current_value:
         setattr(default_models, key, None)
-        default_models.update()
-        model_manager.refresh_defaults()
+        models_service.update_default_models(default_models)
+        # Model defaults are automatically refreshed through the API service
         st.toast(f"Default {model_type} model removed")
 
     if caption:
@@ -175,13 +186,13 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_lang_{model.id}", help="Delete model"
                     ):
-                        model.delete()
+                        models_service.delete_model(model.id)
                         st.rerun()
         else:
             st.info("No language models configured")
 
     with col2:
-        add_model_form("language", "main")
+        add_model_form("language", "main", available_providers)
 
     st.markdown("**Default Model Assignments**")
     col1, col2 = st.columns(2)
@@ -223,6 +234,12 @@ with st.container(border=True):
             "language",
             "Recommended: Gemini models",
         )
+    
+    # Show warning if mandatory language models are missing
+    if not default_models.default_chat_model or not default_models.default_transformation_model:
+        st.warning("⚠️ Please select a Chat Model and Transformation Model - these are required for Open Notebook to function properly.")
+    elif not default_models.default_tools_model:
+        st.info("💡 Consider selecting a Tools Model for better tool calling capabilities (recommended: OpenAI or Anthropic models).")
 
 # Embedding Models Section
 st.subheader("🔍 Embedding Models")
@@ -241,7 +258,7 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_emb_{model.id}", help="Delete model"
                     ):
-                        model.delete()
+                        models_service.delete_model(model.id)
                         st.rerun()
         else:
             st.info("No embedding models configured")
@@ -254,9 +271,13 @@ with st.container(border=True):
             "embedding",
         )
         st.warning("⚠️ Changing embedding models requires regenerating all embeddings")
+        
+        # Show warning if no default embedding model is selected
+        if not default_models.default_embedding_model:
+            st.warning("⚠️ Please select a default Embedding Model - this is required for search functionality.")
 
     with col2:
-        add_model_form("embedding", "main")
+        add_model_form("embedding", "main", available_providers)
 
 # Text-to-Speech Models Section
 st.subheader("🎙️ Text-to-Speech Models")
@@ -275,7 +296,7 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_tts_{model.id}", help="Delete model"
                     ):
-                        model.delete()
+                        models_service.delete_model(model.id)
                         st.rerun()
         else:
             st.info("No text-to-speech models configured")
@@ -288,9 +309,13 @@ with st.container(border=True):
             "text_to_speech",
             "Can be overridden per podcast",
         )
+        
+        # Show info if no default TTS model is selected
+        if not default_models.default_text_to_speech_model:
+            st.info("ℹ️ Select a default TTS model to enable podcast generation.")
 
     with col2:
-        add_model_form("text_to_speech", "main")
+        add_model_form("text_to_speech", "main", available_providers)
 
 # Speech-to-Text Models Section
 st.subheader("🎤 Speech-to-Text Models")
@@ -309,7 +334,7 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_stt_{model.id}", help="Delete model"
                     ):
-                        model.delete()
+                        models_service.delete_model(model.id)
                         st.rerun()
         else:
             st.info("No speech-to-text models configured")
@@ -321,6 +346,10 @@ with st.container(border=True):
             "Used for audio transcriptions",
             "speech_to_text",
         )
+        
+        # Show info if no default STT model is selected
+        if not default_models.default_speech_to_text_model:
+            st.info("ℹ️ Select a default STT model to enable audio transcription features.")
 
     with col2:
-        add_model_form("speech_to_text", "main")
+        add_model_form("speech_to_text", "main", available_providers)

@@ -1,0 +1,56 @@
+
+
+
+
+
+
+
+When you look at the Podcast page, you'll see we have a tab for managign speaker_profiles and another for managing episode_prfiles.
+
+The idea was to reuse speaker profiles for different episodes. But this ended up making the interface a bit complex and making our users confused. 
+People don't understand they should do speakers before episode profiles. 
+
+So I am wondering if we can't keep this relationship between speaker profiles and episode profiles, but solve it in a single page. 
+
+My initial though is to have the episode profiles and, when working on the episode profile, open the speaker config through a dialog using st.dialog. 
+If my profile is not there, I can ask to create one, which also happens inside the dialog. 
+
+There will also be a list of speaker profiles in a different column in case I want to duplicate, delete or edit it. 
+Editing also happens on a st.dialog so we dont make the page too complex.
+
+This page should also have a header paragraph explaining how the whole thing works so people understand the relationship between episode profiles and speaker profiles.
+
+
+
+This is an example of a speaker profile: 
+
+	{
+		description: 'Single expert for educational content',
+		name: 'solo_expert',
+		speakers: [
+			{
+				backstory: 'Distinguished professor and researcher. Has a gift for making complex topics accessible to broad audiences.',
+				name: 'Professor Sarah Kim',
+				personality: 'Patient teacher, uses analogies and examples, breaks down complex concepts step by step',
+				voice_id: 'nova'
+			}
+		],
+		tts_model: 'tts-1',
+		tts_provider: 'openai',
+	}
+
+And this is an example for the episode profile
+
+	{
+		default_briefing: 'Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.',
+		description: 'Business-focused analysis and discussion',
+		name: 'business_analysis',
+		num_segments: 6,
+		outline_model: 'gpt-4o-mini',
+		outline_provider: 'openai',
+		speaker_config: 'business_panel',
+		transcript_model: 'gpt-4o-mini',
+		transcript_provider: 'openai',
+	}
+
+

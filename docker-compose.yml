@@ -12,7 +12,7 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8080:8502"
+      - "8502:8502"
     env_file:
       - ./docker.env
     depends_on:

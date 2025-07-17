@@ -5,6 +5,7 @@ import streamlit as st
 
 from api.models_service import models_service
 from api.podcast_api_service import podcast_api_service
+from open_notebook.database.repository import repo_query
 from pages.stream_app.utils import setup_page
 
 setup_page("🎙️ Podcasts", only_check_mandatory_models=False)
@@ -1051,6 +1052,27 @@ episodes_tab, templates_tab = st.tabs(["Episodes", "Templates"])
 with episodes_tab:
     st.header("📻 Episodes")
 
+    existing_episodes = asyncio.run(
+        repo_query("select count() from podcast_episode group all")
+    )
+    existing_episodes_count = existing_episodes[0]["count"]
+    if existing_episodes_count > 0:
+        st.warning(
+            f"**Please Decide:** Found {existing_episodes_count} episode(s) from the old podcast implementation."
+        )
+        c1, c2 = st.columns(2)
+        if c1.button("Migrate them"):
+            asyncio.run(
+                repo_query(
+                    "INSERT into episode (select audio_file, created, instructions as briefing, text as content, {} as episode_profile, {} as speaker_profile,  name from podcast_episode);"
+                )
+            )
+            asyncio.run(repo_query("DELETE from podcast_episode;"))
+            st.rerun()
+        if c2.button("Delete them"):
+            asyncio.run(repo_query("DELETE from podcast_episode;"))
+            st.rerun()
+        st.divider()
     # Refresh button
     col1, col2 = st.columns([1, 4])
     with col1:
@@ -1309,6 +1331,21 @@ with templates_tab:
 
     st.divider()
 
+    old_profiles = asyncio.run(repo_query("select * from podcast_config"))
+    if old_profiles:
+        st.warning(
+            "Found old podcast profiles. You will need to recreate them on the new configuration format. They won't be migrated automatically. You can copy what you need from here and delete them when you are done."
+        )
+        with st.expander("Old Profiles"):
+            st.json(old_profiles)
+        st.write(
+            "When you are done creating your new profiles, you can safely delete the old ones"
+        )
+        if st.button("Delete old profiles"):
+            asyncio.run(repo_query("delete from podcast_config"))
+            st.success("Old profiles deleted!")
+            st.rerun()
+        st.divider()
     # Main layout: Episode profiles (main area) + Speaker profiles (sidebar)
     col_main, col_sidebar = st.columns([3, 1])
 

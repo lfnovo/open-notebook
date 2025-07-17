@@ -37,7 +37,7 @@ DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode FLEXIBLE TYPE object
 DEFINE FIELD IF NOT EXISTS speaker_profile ON TABLE episode FLEXIBLE TYPE object;
 DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode FLEXIBLE TYPE option<object>;
 DEFINE FIELD IF NOT EXISTS outline ON TABLE episode FLEXIBLE TYPE option<object>;
-DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE record<command>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE option<record<command>>;
 DEFINE FIELD IF NOT EXISTS content ON TABLE episode TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS audio_file ON TABLE episode TYPE option<string>;
 
@@ -148,3 +148,5 @@ insert into speaker_profile
                 ]
             }
         ];
+
+

@@ -109,6 +109,7 @@ make start-all
 ```
 
 ### 📖 Need Help?
+- **🤖 AI Installation Assistant**: We have a [CustomGPT built to help you install Open Notebook](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant) - it will guide you through each step!
 - **New to Open Notebook?** Start with our [Getting Started Guide](docs/getting-started/index.md)
 - **Need installation help?** Check our [Installation Guide](docs/getting-started/installation.md)
 - **Want to see it in action?** Try our [Quick Start Tutorial](docs/getting-started/quick-start.md)

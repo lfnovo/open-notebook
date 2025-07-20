@@ -24,6 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
 
 const navigation = [
   { name: 'Notebooks', href: '/notebooks', icon: Book },
@@ -106,9 +107,29 @@ export function AppSidebar() {
         </nav>
         
         <div className={cn(
-          "p-3",
+          "border-t border-sidebar-border p-3 space-y-2",
           isCollapsed && "px-2"
         )}>
+          <div className={cn(
+            "flex",
+            isCollapsed ? "justify-center" : "justify-start"
+          )}>
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <ThemeToggle iconOnly />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Theme
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <ThemeToggle />
+            )}
+          </div>
+          
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>

@@ -10,15 +10,26 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Sun, Moon, Monitor } from 'lucide-react'
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  iconOnly?: boolean
+}
+
+export function ThemeToggle({ iconOnly = false }: ThemeToggleProps) {
   const { theme, setTheme } = useTheme()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-8 w-8 px-0">
-          <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-          <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        <Button 
+          variant={iconOnly ? "ghost" : "outline"} 
+          size={iconOnly ? "icon" : "default"} 
+          className={iconOnly ? "h-9 w-full" : "w-full justify-start gap-2"}
+        >
+          <div className="relative h-[1.2rem] w-[1.2rem]">
+            <Sun className="absolute inset-0 h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute inset-0 h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+          </div>
+          {!iconOnly && <span>Theme</span>}
           <span className="sr-only">Toggle theme</span>
         </Button>
       </DropdownMenuTrigger>

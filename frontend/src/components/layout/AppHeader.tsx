@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button'
 import { RefreshCw } from 'lucide-react'
+import { ThemeToggle } from '@/components/common/ThemeToggle'
 
 interface AppHeaderProps {
   title: string
@@ -20,11 +21,10 @@ export function AppHeader({ title, onRefresh, children }: AppHeaderProps) {
           </Button>
         )}
       </div>
-      {children && (
-        <div className="flex items-center gap-2">
-          {children}
-        </div>
-      )}
+      <div className="flex items-center gap-2">
+        {children}
+        <ThemeToggle />
+      </div>
     </div>
   )
 }

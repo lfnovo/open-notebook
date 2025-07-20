@@ -29,9 +29,9 @@ export function AppSidebar() {
   const { logout } = useAuth()
 
   return (
-    <div className="flex h-full w-64 flex-col bg-gray-50 border-r">
+    <div className="app-sidebar flex h-full w-64 flex-col bg-sidebar border-sidebar-border border-r">
       <div className="flex h-16 items-center px-6">
-        <h1 className="text-lg font-semibold">Open Notebook</h1>
+        <h1 className="text-lg font-semibold text-sidebar-foreground">Open Notebook</h1>
       </div>
       
       <nav className="flex-1 space-y-1 px-3 py-4">
@@ -42,8 +42,8 @@ export function AppSidebar() {
               <Button
                 variant={isActive ? "secondary" : "ghost"}
                 className={cn(
-                  "w-full justify-start gap-3",
-                  isActive && "bg-gray-200"
+                  "w-full justify-start gap-3 text-sidebar-foreground",
+                  isActive && "bg-sidebar-accent text-sidebar-accent-foreground"
                 )}
               >
                 <item.icon className="h-4 w-4" />

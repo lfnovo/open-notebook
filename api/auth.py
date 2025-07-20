@@ -27,6 +27,10 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.excluded_paths:
             return await call_next(request)
         
+        # Skip authentication for CORS preflight requests (OPTIONS)
+        if request.method == "OPTIONS":
+            return await call_next(request)
+        
         # Check authorization header
         auth_header = request.headers.get("Authorization")
         

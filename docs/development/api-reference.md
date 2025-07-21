@@ -798,6 +798,232 @@ Update application settings.
 
 **Response**: Same as GET response
 
+## 💬 Chat API
+
+Manage chat sessions and conversational AI interactions within notebooks.
+
+### GET /api/chat/sessions
+
+Get all chat sessions for a notebook.
+
+**Query Parameters**:
+- `notebook_id` (string, required): Notebook ID to get sessions for
+
+**Response**:
+```json
+[
+  {
+    "id": "chat_session:uuid",
+    "title": "Chat Session Title",
+    "notebook_id": "notebook:uuid",
+    "created": "2024-01-01T00:00:00Z",
+    "updated": "2024-01-01T00:00:00Z",
+    "message_count": 5
+  }
+]
+```
+
+**Example**:
+```bash
+curl -X GET "http://localhost:5055/api/chat/sessions?notebook_id=notebook:uuid"
+```
+
+### POST /api/chat/sessions
+
+Create a new chat session for a notebook.
+
+**Request Body**:
+```json
+{
+  "notebook_id": "notebook:uuid",
+  "title": "Optional session title"
+}
+```
+
+**Response**: Same as GET single session
+
+**Example**:
+```bash
+curl -X POST http://localhost:5055/api/chat/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"notebook_id": "notebook:uuid", "title": "New Chat Session"}'
+```
+
+### GET /api/chat/sessions/{session_id}
+
+Get a specific chat session with its message history.
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Response**:
+```json
+{
+  "id": "chat_session:uuid",
+  "title": "Chat Session Title",
+  "notebook_id": "notebook:uuid",
+  "created": "2024-01-01T00:00:00Z",
+  "updated": "2024-01-01T00:00:00Z",
+  "message_count": 3,
+  "messages": [
+    {
+      "id": "msg_1",
+      "type": "human",
+      "content": "Hello, what can you tell me about AI?",
+      "timestamp": null
+    },
+    {
+      "id": "msg_2", 
+      "type": "ai",
+      "content": "AI, or Artificial Intelligence, refers to...",
+      "timestamp": null
+    }
+  ]
+}
+```
+
+### PUT /api/chat/sessions/{session_id}
+
+Update a chat session (currently supports title updates).
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Request Body**:
+```json
+{
+  "title": "Updated Session Title"
+}
+```
+
+**Response**: Same as GET single session (without messages)
+
+### DELETE /api/chat/sessions/{session_id}
+
+Delete a chat session and all its messages.
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Session deleted successfully"
+}
+```
+
+### POST /api/chat/execute
+
+Execute a chat message and get AI response.
+
+**Request Body**:
+```json
+{
+  "session_id": "chat_session:uuid",
+  "message": "What are the key benefits of machine learning?",
+  "context": {
+    "sources": [
+      {
+        "id": "source:uuid",
+        "title": "ML Research Paper",
+        "content": "Machine learning content..."
+      }
+    ],
+    "notes": [
+      {
+        "id": "note:uuid",
+        "title": "ML Notes",
+        "content": "My notes on ML..."
+      }
+    ]
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "session_id": "chat_session:uuid",
+  "messages": [
+    {
+      "id": "msg_1",
+      "type": "human", 
+      "content": "What are the key benefits of machine learning?",
+      "timestamp": null
+    },
+    {
+      "id": "msg_2",
+      "type": "ai",
+      "content": "Based on the provided context, machine learning offers several key benefits...",
+      "timestamp": null
+    }
+  ]
+}
+```
+
+**Example**:
+```bash
+curl -X POST http://localhost:5055/api/chat/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "chat_session:uuid",
+    "message": "Summarize the main points",
+    "context": {"sources": [], "notes": []}
+  }'
+```
+
+### POST /api/chat/context
+
+Build context for chat based on notebook content and configuration.
+
+**Request Body**:
+```json
+{
+  "notebook_id": "notebook:uuid",
+  "context_config": {
+    "sources": {
+      "source:uuid1": "full content",
+      "source:uuid2": "insights only"
+    },
+    "notes": {
+      "note:uuid1": "full content"
+    }
+  }
+}
+```
+
+**Context Configuration Values**:
+- `"full content"`: Include complete source/note content
+- `"insights only"`: Include source insights/summary only  
+- `"not in context"`: Exclude from context
+
+**Response**:
+```json
+{
+  "context": {
+    "sources": [
+      {
+        "id": "source:uuid",
+        "title": "Source Title",
+        "content": "Source content or insights...",
+        "type": "source"
+      }
+    ],
+    "notes": [
+      {
+        "id": "note:uuid",
+        "title": "Note Title", 
+        "content": "Note content...",
+        "type": "note"
+      }
+    ]
+  },
+  "token_count": 1250,
+  "char_count": 5000
+}
+```
+
 ## 📐 Context API
 
 Manage context configuration for AI operations.
@@ -1028,6 +1254,32 @@ curl -X GET http://localhost:5055/api/commands
 
 # 4. Download audio when ready
 curl -X GET http://localhost:5055/api/podcasts/$EPISODE_ID/audio -o podcast.mp3
+```
+
+### Chat Conversation Example
+
+```bash
+# 1. Create a chat session
+SESSION_ID=$(curl -X POST http://localhost:5055/api/chat/sessions \
+  -H "Content-Type: application/json" \
+  -d "{\"notebook_id\": \"$NOTEBOOK_ID\", \"title\": \"Research Discussion\"}" \
+  | jq -r '.id')
+
+# 2. Build context for the chat
+CONTEXT=$(curl -X POST http://localhost:5055/api/chat/context \
+  -H "Content-Type: application/json" \
+  -d "{\"notebook_id\": \"$NOTEBOOK_ID\", \"context_config\": {\"sources\": {\"$SOURCE_ID\": \"full content\"}}}")
+
+# 3. Send a chat message
+curl -X POST http://localhost:5055/api/chat/execute \
+  -H "Content-Type: application/json" \
+  -d "{\"session_id\": \"$SESSION_ID\", \"message\": \"What are the key insights from this research?\", \"context\": $CONTEXT}"
+
+# 4. Get chat history
+curl -X GET http://localhost:5055/api/chat/sessions/$SESSION_ID
+
+# 5. List all sessions for the notebook
+curl -X GET "http://localhost:5055/api/chat/sessions?notebook_id=$NOTEBOOK_ID"
 ```
 
 ## 📡 WebSocket Support

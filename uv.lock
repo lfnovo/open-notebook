@@ -538,15 +538,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.3.3"
+version = "2.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f4/c3/6594c9e25af0c93a633b212392f979742491eca4782f071e82b33d8c1510/esperanto-2.3.3.tar.gz", hash = "sha256:3df64556be480a93c1327e4796d57042d0b519356128de374e0e00fa91f4b307", size = 455487 }
+sdist = { url = "https://files.pythonhosted.org/packages/f0/0d/549928070ab49078b7834a5a8b251a36a807d9791d0a8a43f57df8c8ea8c/esperanto-2.3.4.tar.gz", hash = "sha256:5072c3a6bdbbf0c53d6671f28991e9f205c93c49821058e2b62c3a17710bd235", size = 457606 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/2c/5db4447f94f71a97e2d238fe8f1320ca9fb238ae7e34bc608868127ad0c6/esperanto-2.3.3-py3-none-any.whl", hash = "sha256:0fe3827d2f9aa8eb311948c7f609ab7f7d34f7fd7f6ec977e37fa0606fc5ac2b", size = 113492 },
+    { url = "https://files.pythonhosted.org/packages/26/27/f98201713ec5339388e0a00bef25ccf598ba5048f3980f556d6a243c2b30/esperanto-2.3.4-py3-none-any.whl", hash = "sha256:9759ff22f3bfff6c9cc46acc6c69ded4f038baa6f5cda592b6ec83d5f11c5eff", size = 116946 },
 ]
 
 [[package]]
@@ -1970,7 +1970,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
@@ -2028,7 +2028,7 @@ dev = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3" },
     { name = "content-core", specifier = ">=1.0.2" },
-    { name = "esperanto", specifier = ">=2.0.4" },
+    { name = "esperanto", specifier = ">=2.3.4" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "groq", specifier = ">=0.12.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },

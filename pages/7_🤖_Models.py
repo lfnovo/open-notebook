@@ -11,7 +11,12 @@ from api.models_service import models_service
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
-setup_page("🤖 Models", only_check_mandatory_models=False, stop_on_model_error=False, skip_model_check=True)
+setup_page(
+    "🤖 Models",
+    only_check_mandatory_models=False,
+    stop_on_model_error=False,
+    skip_model_check=True,
+)
 
 
 st.title("🤖 Models")
@@ -32,20 +37,16 @@ def check_available_providers():
     provider_status["openai"] = os.environ.get("OPENAI_API_KEY") is not None
     provider_status["groq"] = os.environ.get("GROQ_API_KEY") is not None
     provider_status["xai"] = os.environ.get("XAI_API_KEY") is not None
-    provider_status["vertexai"] = (
+    provider_status["vertex"] = (
         os.environ.get("VERTEX_PROJECT") is not None
         and os.environ.get("VERTEX_LOCATION") is not None
         and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
     )
-    provider_status["gemini"] = (
+    provider_status["google"] = (
         os.environ.get("GOOGLE_API_KEY") is not None
         or os.environ.get("GEMINI_API_KEY") is not None
     )
-    provider_status["openrouter"] = (
-        os.environ.get("OPENROUTER_API_KEY") is not None
-        and os.environ.get("OPENAI_API_KEY") is not None
-        and os.environ.get("OPENROUTER_BASE_URL") is not None
-    )
+    provider_status["openrouter"] = os.environ.get("OPENROUTER_API_KEY") is not None
     provider_status["anthropic"] = os.environ.get("ANTHROPIC_API_KEY") is not None
     provider_status["elevenlabs"] = os.environ.get("ELEVENLABS_API_KEY") is not None
     provider_status["voyage"] = os.environ.get("VOYAGE_API_KEY") is not None
@@ -234,12 +235,19 @@ with st.container(border=True):
             "language",
             "Recommended: Gemini models",
         )
-    
+
     # Show warning if mandatory language models are missing
-    if not default_models.default_chat_model or not default_models.default_transformation_model:
-        st.warning("⚠️ Please select a Chat Model and Transformation Model - these are required for Open Notebook to function properly.")
+    if (
+        not default_models.default_chat_model
+        or not default_models.default_transformation_model
+    ):
+        st.warning(
+            "⚠️ Please select a Chat Model and Transformation Model - these are required for Open Notebook to function properly."
+        )
     elif not default_models.default_tools_model:
-        st.info("💡 Consider selecting a Tools Model for better tool calling capabilities (recommended: OpenAI or Anthropic models).")
+        st.info(
+            "💡 Consider selecting a Tools Model for better tool calling capabilities (recommended: OpenAI or Anthropic models)."
+        )
 
 # Embedding Models Section
 st.subheader("🔍 Embedding Models")
@@ -271,10 +279,12 @@ with st.container(border=True):
             "embedding",
         )
         st.warning("⚠️ Changing embedding models requires regenerating all embeddings")
-        
+
         # Show warning if no default embedding model is selected
         if not default_models.default_embedding_model:
-            st.warning("⚠️ Please select a default Embedding Model - this is required for search functionality.")
+            st.warning(
+                "⚠️ Please select a default Embedding Model - this is required for search functionality."
+            )
 
     with col2:
         add_model_form("embedding", "main", available_providers)
@@ -309,7 +319,7 @@ with st.container(border=True):
             "text_to_speech",
             "Can be overridden per podcast",
         )
-        
+
         # Show info if no default TTS model is selected
         if not default_models.default_text_to_speech_model:
             st.info("ℹ️ Select a default TTS model to enable podcast generation.")
@@ -346,10 +356,12 @@ with st.container(border=True):
             "Used for audio transcriptions",
             "speech_to_text",
         )
-        
+
         # Show info if no default STT model is selected
         if not default_models.default_speech_to_text_model:
-            st.info("ℹ️ Select a default STT model to enable audio transcription features.")
+            st.info(
+                "ℹ️ Select a default STT model to enable audio transcription features."
+            )
 
     with col2:
         add_model_form("speech_to_text", "main", available_providers)

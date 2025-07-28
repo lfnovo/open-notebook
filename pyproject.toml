@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "0.3.1"
+version = "0.3.2"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -41,7 +41,7 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "content-core>=1.0.2",
     "ai-prompter>=0.3",
-    "esperanto>=2.0.4",
+    "esperanto>=2.3.4",
     "langchain-google-vertexai>=2.0.10",
     "surrealdb>=1.0.4",
     "surreal-commands>=1.0.13",

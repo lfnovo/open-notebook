@@ -195,6 +195,11 @@ AZURE_OPENAI_API_KEY=your-azure-key-here
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
 AZURE_OPENAI_API_VERSION="2024-12-01-preview"
 AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+
+# OpenAI Compatible (LM Studio, etc.)
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+# Optional - only if your endpoint requires authentication
+OPENAI_COMPATIBLE_API_KEY=your-key-here
 ```
 
 ### Optional Services

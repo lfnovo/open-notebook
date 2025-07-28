@@ -121,6 +121,15 @@ class TransformationExecuteResponse(BaseModel):
     model_id: str = Field(..., description="Model ID used")
 
 
+# Default Prompt API models
+class DefaultPromptResponse(BaseModel):
+    transformation_instructions: str = Field(..., description="Default transformation instructions")
+
+
+class DefaultPromptUpdate(BaseModel):
+    transformation_instructions: str = Field(..., description="Default transformation instructions")
+
+
 # Notes API models
 class NoteCreate(BaseModel):
     title: Optional[str] = Field(None, description="Note title")

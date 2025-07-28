@@ -58,7 +58,9 @@ def check_available_providers():
     )
     provider_status["mistral"] = os.environ.get("MISTRAL_API_KEY") is not None
     provider_status["deepseek"] = os.environ.get("DEEPSEEK_API_KEY") is not None
-
+    provider_status["openai-compatible"] = (
+        os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+    )
     available_providers = [k for k, v in provider_status.items() if v]
     unavailable_providers = [k for k, v in provider_status.items() if not v]
 

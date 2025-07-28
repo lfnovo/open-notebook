@@ -1,6 +1,6 @@
 # AI Models & Providers
 
-Open Notebook supports 15+ AI providers, giving you complete flexibility in choosing the AI models that best fit your needs, budget, and privacy requirements. This comprehensive guide covers everything you need to know about selecting, configuring, and optimizing your AI models.
+Open Notebook supports 16+ AI providers, giving you complete flexibility in choosing the AI models that best fit your needs, budget, and privacy requirements. This comprehensive guide covers everything you need to know about selecting, configuring, and optimizing your AI models.
 
 ## Quick Start
 
@@ -72,6 +72,7 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 | **Azure OpenAI** | ✅       | ✅        | ❌  | ❌  |
 | **OpenRouter**   | ✅       | ❌        | ❌  | ❌  |
 | **Perplexity**   | ✅       | ❌        | ❌  | ❌  |
+| **OpenAI Compatible** | ✅       | ❌        | ❌  | ❌  |
 
 ## Model Selection Guide
 
@@ -315,6 +316,34 @@ export VOYAGE_API_KEY=your_api_key_here
 - Embedding-only provider
 - Requires other providers for language models
 
+---
+
+### 🔧 OpenAI Compatible (LM Studio & Others)
+**Best for**: Using any OpenAI-compatible API endpoint, including LM Studio
+
+**Environment Setup**
+```bash
+export OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+# Optional - only if your endpoint requires authentication
+export OPENAI_COMPATIBLE_API_KEY=your_key_here
+```
+
+**Common Use Cases**
+- **LM Studio**: Run models locally with a familiar UI
+- **Text Generation WebUI**: Alternative local inference
+- **Custom Endpoints**: Any OpenAI-compatible API
+
+**Strengths**
+- Use any OpenAI-compatible endpoint
+- Perfect for LM Studio users
+- Flexibility in model deployment
+- Works with local and remote endpoints
+
+**Considerations**
+- Performance depends on your hardware (for local)
+- Model availability varies by endpoint
+- Some endpoints may not support all features
+
 ## 🧠 Reasoning Models
 
 Open Notebook fully supports **reasoning models** that show their transparent thinking process. These models output their internal reasoning within `<think>` tags, which Open Notebook automatically handles.
@@ -486,6 +515,10 @@ export AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment
 export VERTEX_PROJECT=your_project
 export GOOGLE_APPLICATION_CREDENTIALS=./google-credentials.json
 export VERTEX_LOCATION=us-east5
+
+# OpenAI Compatible (LM Studio, etc.)
+export OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+export OPENAI_COMPATIBLE_API_KEY=your_key  # Optional
 ```
 
 ### 2. Using Docker

@@ -1,9 +1,11 @@
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
+from esperanto import AIFactory
 
-from api.models import DefaultModelsResponse, ModelCreate, ModelResponse
+from api.models import DefaultModelsResponse, ModelCreate, ModelResponse, ProviderAvailabilityResponse
 from open_notebook.domain.models import DefaultModels, Model
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
@@ -151,3 +153,61 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
     except Exception as e:
         logger.error(f"Error updating default models: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating default models: {str(e)}")
+
+
+@router.get("/models/providers", response_model=ProviderAvailabilityResponse)
+async def get_provider_availability():
+    """Get provider availability based on environment variables."""
+    try:
+        # Check which providers have API keys configured
+        provider_status = {
+            "ollama": os.environ.get("OLLAMA_API_BASE") is not None,
+            "openai": os.environ.get("OPENAI_API_KEY") is not None,
+            "groq": os.environ.get("GROQ_API_KEY") is not None,
+            "xai": os.environ.get("XAI_API_KEY") is not None,
+            "vertex": (
+                os.environ.get("VERTEX_PROJECT") is not None
+                and os.environ.get("VERTEX_LOCATION") is not None
+                and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
+            ),
+            "google": (
+                os.environ.get("GOOGLE_API_KEY") is not None
+                or os.environ.get("GEMINI_API_KEY") is not None
+            ),
+            "openrouter": os.environ.get("OPENROUTER_API_KEY") is not None,
+            "anthropic": os.environ.get("ANTHROPIC_API_KEY") is not None,
+            "elevenlabs": os.environ.get("ELEVENLABS_API_KEY") is not None,
+            "voyage": os.environ.get("VOYAGE_API_KEY") is not None,
+            "azure": (
+                os.environ.get("AZURE_OPENAI_API_KEY") is not None
+                and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
+                and os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME") is not None
+                and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+            ),
+            "mistral": os.environ.get("MISTRAL_API_KEY") is not None,
+            "deepseek": os.environ.get("DEEPSEEK_API_KEY") is not None,
+            "openai-compatible": os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None,
+        }
+        
+        available_providers = [k for k, v in provider_status.items() if v]
+        unavailable_providers = [k for k, v in provider_status.items() if not v]
+        
+        # Get supported model types from Esperanto
+        esperanto_available = AIFactory.get_available_providers()
+        
+        # Build supported types mapping only for available providers
+        supported_types = {}
+        for provider in available_providers:
+            supported_types[provider] = []
+            for model_type, providers in esperanto_available.items():
+                if provider in providers:
+                    supported_types[provider].append(model_type)
+        
+        return ProviderAvailabilityResponse(
+            available=available_providers,
+            unavailable=unavailable_providers,
+            supported_types=supported_types
+        )
+    except Exception as e:
+        logger.error(f"Error checking provider availability: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error checking provider availability: {str(e)}")

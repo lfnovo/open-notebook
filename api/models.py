@@ -77,6 +77,12 @@ class DefaultModelsResponse(BaseModel):
     default_tools_model: Optional[str] = None
 
 
+class ProviderAvailabilityResponse(BaseModel):
+    available: List[str] = Field(..., description="List of available providers")
+    unavailable: List[str] = Field(..., description="List of unavailable providers")
+    supported_types: Dict[str, List[str]] = Field(..., description="Provider to supported model types mapping")
+
+
 # Transformations API models
 class TransformationCreate(BaseModel):
     name: str = Field(..., description="Transformation name")

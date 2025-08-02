@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AddModelForm } from './AddModelForm'
-import { Bot, Mic, Volume2, Search, Trash2, X } from 'lucide-react'
+import { Bot, Mic, Volume2, Search, Trash2, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useDeleteModel } from '@/lib/hooks/use-models'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -18,9 +18,12 @@ interface ModelTypeSectionProps {
   isLoading: boolean
 }
 
+const COLLAPSED_ITEM_COUNT = 5
+
 export function ModelTypeSection({ type, models, providers, isLoading }: ModelTypeSectionProps) {
   const [deleteModel, setDeleteModel] = useState<Model | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
   const deleteModelMutation = useDeleteModel()
 
   const getTypeInfo = () => {
@@ -146,24 +149,49 @@ export function ModelTypeSection({ type, models, providers, isLoading }: ModelTy
             </div>
           ) : (
             <div className="space-y-2">
-              {filteredModels.map(model => (
-                <div key={model.id} className="flex items-center gap-2 group">
-                  <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30">
-                    <span className="font-medium text-sm">{model.name}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {model.provider}
-                    </Badge>
+              <div className={`space-y-2 ${!isExpanded && filteredModels.length > COLLAPSED_ITEM_COUNT ? 'max-h-[280px] overflow-hidden relative' : ''}`}>
+                {filteredModels.slice(0, isExpanded ? undefined : COLLAPSED_ITEM_COUNT).map(model => (
+                  <div key={model.id} className="flex items-center gap-2 group">
+                    <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-md border bg-muted/30">
+                      <span className="font-medium text-sm">{model.name}</span>
+                      <Badge variant="outline" className="text-xs">
+                        {model.provider}
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setDeleteModel(model)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
+                    </Button>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => setDeleteModel(model)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                </div>
-              ))}
+                ))}
+                {!isExpanded && filteredModels.length > COLLAPSED_ITEM_COUNT && (
+                  <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+                )}
+              </div>
+              {filteredModels.length > COLLAPSED_ITEM_COUNT && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="w-full mt-2"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4 mr-2" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4 mr-2" />
+                      Show {filteredModels.length - COLLAPSED_ITEM_COUNT} more
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           )}
         </CardContent>

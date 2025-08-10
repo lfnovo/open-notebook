@@ -1,25 +1,68 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { FileText, Clock, Hash, Link as LinkIcon, Upload, AlignLeft } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const router = useRouter()
+  const tableRef = useRef<HTMLTableElement>(null)
 
   useEffect(() => {
     fetchSources()
   }, [])
+
+  useEffect(() => {
+    // Focus the table when component mounts or sources change
+    if (sources.length > 0 && tableRef.current) {
+      tableRef.current.focus()
+    }
+  }, [sources])
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (sources.length === 0) return
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault()
+          setSelectedIndex((prev) => Math.min(prev + 1, sources.length - 1))
+          break
+        case 'ArrowUp':
+          e.preventDefault()
+          setSelectedIndex((prev) => Math.max(prev - 1, 0))
+          break
+        case 'Enter':
+          e.preventDefault()
+          if (sources[selectedIndex]) {
+            router.push(`/sources/${sources[selectedIndex].id}`)
+          }
+          break
+        case 'Home':
+          e.preventDefault()
+          setSelectedIndex(0)
+          break
+        case 'End':
+          e.preventDefault()
+          setSelectedIndex(sources.length - 1)
+          break
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [sources, selectedIndex, router])
 
   const fetchSources = async () => {
     try {
@@ -35,16 +78,21 @@ export default function SourcesPage() {
   }
 
   const getSourceIcon = (source: SourceListResponse) => {
-    if (source.asset?.url) return <LinkIcon className="h-5 w-5" />
-    if (source.asset?.file_path) return <Upload className="h-5 w-5" />
-    return <AlignLeft className="h-5 w-5" />
+    if (source.asset?.url) return <LinkIcon className="h-4 w-4" />
+    if (source.asset?.file_path) return <Upload className="h-4 w-4" />
+    return <AlignLeft className="h-4 w-4" />
   }
 
   const getSourceType = (source: SourceListResponse) => {
-    if (source.asset?.url) return 'link'
-    if (source.asset?.file_path) return 'file'
-    return 'text'
+    if (source.asset?.url) return 'Link'
+    if (source.asset?.file_path) return 'File'
+    return 'Text'
   }
+
+  const handleRowClick = useCallback((index: number, sourceId: string) => {
+    setSelectedIndex(index)
+    router.push(`/sources/${sourceId}`)
+  }, [router])
 
   if (loading) {
     return (
@@ -77,71 +125,81 @@ export default function SourcesPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold">All Sources</h1>
         <p className="mt-2 text-muted-foreground">
-          Browse all sources across your notebooks
+          Browse all sources across your notebooks. Use arrow keys to navigate and Enter to open.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {sources.map((source) => (
-          <Card
-            key={source.id}
-            className="cursor-pointer transition-colors hover:bg-accent"
-            onClick={() => router.push(`/sources/${source.id}`)}
-          >
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {getSourceIcon(source)}
-                  <Badge variant="secondary">{getSourceType(source)}</Badge>
-                </div>
-              </div>
-              <CardTitle className="mt-2 line-clamp-2">
-                {source.title || 'Untitled Source'}
-              </CardTitle>
-              {source.asset?.url && (
-                <CardDescription className="line-clamp-1 text-xs">
-                  {source.asset.url}
-                </CardDescription>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                {source.topics && source.topics.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {source.topics.slice(0, 3).map((topic, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {topic}
-                      </Badge>
-                    ))}
-                    {source.topics.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{source.topics.length - 3}
-                      </Badge>
+      <div className="rounded-md border">
+        <table 
+          ref={tableRef}
+          tabIndex={0}
+          className="w-full outline-none"
+        >
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                Type
+              </th>
+              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                Title
+              </th>
+              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                Created
+              </th>
+              <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                Insights
+              </th>
+              <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                Chunks
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((source, index) => (
+              <tr
+                key={source.id}
+                onClick={() => handleRowClick(index, source.id)}
+                onMouseEnter={() => setSelectedIndex(index)}
+                className={cn(
+                  "border-b transition-colors cursor-pointer",
+                  selectedIndex === index 
+                    ? "bg-accent" 
+                    : "hover:bg-muted/50"
+                )}
+              >
+                <td className="h-12 px-4">
+                  <div className="flex items-center gap-2">
+                    {getSourceIcon(source)}
+                    <Badge variant="secondary" className="text-xs">
+                      {getSourceType(source)}
+                    </Badge>
+                  </div>
+                </td>
+                <td className="h-12 px-4">
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {source.title || 'Untitled Source'}
+                    </span>
+                    {source.asset?.url && (
+                      <span className="text-xs text-muted-foreground truncate max-w-md">
+                        {source.asset.url}
+                      </span>
                     )}
                   </div>
-                )}
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-1">
-                    <Hash className="h-3 w-3" />
-                    <span>{source.embedded_chunks || 0} chunks</span>
-                  </div>
-                  {source.insights_count > 0 && (
-                    <div className="flex items-center gap-1">
-                      <FileText className="h-3 w-3" />
-                      <span>{source.insights_count} insights</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>
-                    {formatDistanceToNow(new Date(source.created), { addSuffix: true })}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </td>
+                <td className="h-12 px-4 text-muted-foreground">
+                  {formatDistanceToNow(new Date(source.created), { addSuffix: true })}
+                </td>
+                <td className="h-12 px-4 text-center">
+                  {source.insights_count || 0}
+                </td>
+                <td className="h-12 px-4 text-center">
+                  {source.embedded_chunks || 0}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )

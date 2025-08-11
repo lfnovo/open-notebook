@@ -5,6 +5,7 @@ maxMessageSize = 500
 
 [browser]
 serverPort = 8502
+gatherUsageStats = false  # Streamlit, I'm not mad, just disappointed.
 
 [theme]
 

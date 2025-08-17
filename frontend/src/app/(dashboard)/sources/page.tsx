@@ -6,6 +6,7 @@ import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
+import { AppShell } from '@/components/layout/AppShell'
 import { FileText, Link as LinkIcon, Upload, AlignLeft } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
@@ -96,111 +97,119 @@ export default function SourcesPage() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <LoadingSpinner />
-      </div>
+      <AppShell>
+        <div className="flex h-full items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      </AppShell>
     )
   }
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-red-500">{error}</p>
-      </div>
+      <AppShell>
+        <div className="flex h-full items-center justify-center">
+          <p className="text-red-500">{error}</p>
+        </div>
+      </AppShell>
     )
   }
 
   if (sources.length === 0) {
     return (
-      <EmptyState
-        icon={<FileText className="h-12 w-12" />}
-        title="No sources yet"
-        description="Sources from all notebooks will appear here"
-      />
+      <AppShell>
+        <EmptyState
+          icon={<FileText className="h-12 w-12" />}
+          title="No sources yet"
+          description="Sources from all notebooks will appear here"
+        />
+      </AppShell>
     )
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">All Sources</h1>
-        <p className="mt-2 text-muted-foreground">
-          Browse all sources across your notebooks. Use arrow keys to navigate and Enter to open.
-        </p>
-      </div>
+    <AppShell>
+      <div className="container mx-auto py-6">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold">All Sources</h1>
+          <p className="mt-2 text-muted-foreground">
+            Browse all sources across your notebooks. Use arrow keys to navigate and Enter to open.
+          </p>
+        </div>
 
-      <div className="rounded-md border">
-        <table 
-          ref={tableRef}
-          tabIndex={0}
-          className="w-full outline-none"
-        >
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                Type
-              </th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                Title
-              </th>
-              <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                Created
-              </th>
-              <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
-                Insights
-              </th>
-              <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
-                Chunks
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {sources.map((source, index) => (
-              <tr
-                key={source.id}
-                onClick={() => handleRowClick(index, source.id)}
-                onMouseEnter={() => setSelectedIndex(index)}
-                className={cn(
-                  "border-b transition-colors cursor-pointer",
-                  selectedIndex === index 
-                    ? "bg-accent" 
-                    : "hover:bg-muted/50"
-                )}
-              >
-                <td className="h-12 px-4">
-                  <div className="flex items-center gap-2">
-                    {getSourceIcon(source)}
-                    <Badge variant="secondary" className="text-xs">
-                      {getSourceType(source)}
-                    </Badge>
-                  </div>
-                </td>
-                <td className="h-12 px-4">
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {source.title || 'Untitled Source'}
-                    </span>
-                    {source.asset?.url && (
-                      <span className="text-xs text-muted-foreground truncate max-w-md">
-                        {source.asset.url}
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="h-12 px-4 text-muted-foreground">
-                  {formatDistanceToNow(new Date(source.created), { addSuffix: true })}
-                </td>
-                <td className="h-12 px-4 text-center">
-                  {source.insights_count || 0}
-                </td>
-                <td className="h-12 px-4 text-center">
-                  {source.embedded_chunks || 0}
-                </td>
+        <div className="rounded-md border">
+          <table 
+            ref={tableRef}
+            tabIndex={0}
+            className="w-full outline-none"
+          >
+            <thead>
+              <tr className="border-b bg-muted/50">
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Type
+                </th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Title
+                </th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  Created
+                </th>
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                  Insights
+                </th>
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                  Chunks
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sources.map((source, index) => (
+                <tr
+                  key={source.id}
+                  onClick={() => handleRowClick(index, source.id)}
+                  onMouseEnter={() => setSelectedIndex(index)}
+                  className={cn(
+                    "border-b transition-colors cursor-pointer",
+                    selectedIndex === index 
+                      ? "bg-accent" 
+                      : "hover:bg-muted/50"
+                  )}
+                >
+                  <td className="h-12 px-4">
+                    <div className="flex items-center gap-2">
+                      {getSourceIcon(source)}
+                      <Badge variant="secondary" className="text-xs">
+                        {getSourceType(source)}
+                      </Badge>
+                    </div>
+                  </td>
+                  <td className="h-12 px-4">
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {source.title || 'Untitled Source'}
+                      </span>
+                      {source.asset?.url && (
+                        <span className="text-xs text-muted-foreground truncate max-w-md">
+                          {source.asset.url}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="h-12 px-4 text-muted-foreground">
+                    {formatDistanceToNow(new Date(source.created), { addSuffix: true })}
+                  </td>
+                  <td className="h-12 px-4 text-center">
+                    {source.insights_count || 0}
+                  </td>
+                  <td className="h-12 px-4 text-center">
+                    {source.embedded_chunks || 0}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </AppShell>
   )
 }

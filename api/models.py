@@ -228,7 +228,7 @@ class SourceListResponse(BaseModel):
     title: Optional[str]
     topics: Optional[List[str]]
     asset: Optional[AssetModel]
-    embedded_chunks: int
+    embedded: bool  # Changed from embedded_chunks count to boolean
     insights_count: int
     created: str
     updated: str

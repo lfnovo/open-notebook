@@ -185,7 +185,7 @@ export default function SourcesPage() {
                   Insights
                 </th>
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
-                  Chunks
+                  Embedded
                 </th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
                   Actions
@@ -232,7 +232,9 @@ export default function SourcesPage() {
                     {source.insights_count || 0}
                   </td>
                   <td className="h-12 px-4 text-center">
-                    {source.embedded_chunks || 0}
+                    <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
+                      {source.embedded ? "Yes" : "No"}
+                    </Badge>
                   </td>
                   <td className="h-12 px-4 text-right">
                     <Button

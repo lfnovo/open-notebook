@@ -12,6 +12,7 @@ from api.models import (
     SourceResponse,
     SourceUpdate,
 )
+from open_notebook.database.repository import repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
@@ -26,35 +27,54 @@ async def get_sources(
 ):
     """Get all sources with optional notebook filtering."""
     try:
+        # Build the query
         if notebook_id:
-            # Get sources for a specific notebook
+            # Verify notebook exists first
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
-            sources = await notebook.get_sources()
-        else:
-            # Get all sources
-            sources = await Source.get_all(order_by="updated desc")
 
-        # Create response list with async insights count
+            # Query sources for specific notebook
+            query = """
+                SELECT id, asset, created, title, updated, topics,
+                    (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+                    ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
+                FROM source 
+                WHERE id IN (SELECT source FROM reference WHERE notebook = $notebook_id)
+                ORDER BY updated DESC
+            """
+            result = await repo_query(query, {"notebook_id": notebook_id})
+        else:
+            # Query all sources
+            query = """
+                SELECT id, asset, created, title, updated, topics,
+                    (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+                    ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
+                FROM source 
+                ORDER BY updated DESC
+            """
+            result = await repo_query(query)
+
+        # Convert result to response model
         response_list = []
-        for source in sources:
-            insights = await source.get_insights()
+        for row in result:
             response_list.append(
                 SourceListResponse(
-                    id=source.id,
-                    title=source.title,
-                    topics=source.topics or [],
+                    id=row["id"],
+                    title=row.get("title"),
+                    topics=row.get("topics") or [],
                     asset=AssetModel(
-                        file_path=source.asset.file_path if source.asset else None,
-                        url=source.asset.url if source.asset else None,
+                        file_path=row["asset"].get("file_path")
+                        if row.get("asset")
+                        else None,
+                        url=row["asset"].get("url") if row.get("asset") else None,
                     )
-                    if source.asset
+                    if row.get("asset")
                     else None,
-                    embedded_chunks=await source.get_embedded_chunks(),
-                    insights_count=len(insights),
-                    created=str(source.created),
-                    updated=str(source.updated),
+                    embedded=row.get("embedded", False),
+                    insights_count=row.get("insights_count", 0),
+                    created=str(row["created"]),
+                    updated=str(row["updated"]),
                 )
             )
 
@@ -245,7 +265,7 @@ async def get_source_insights(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         insights = await source.get_insights()
         return [
             SourceInsightResponse(
@@ -254,7 +274,7 @@ async def get_source_insights(source_id: str):
                 insight_type=insight.insight_type,
                 content=insight.content,
                 created=str(insight.created),
-                updated=str(insight.updated)
+                updated=str(insight.updated),
             )
             for insight in insights
         ]
@@ -262,32 +282,32 @@ async def get_source_insights(source_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching insights for source {source_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching insights: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching insights: {str(e)}"
+        )
 
 
 @router.post("/sources/{source_id}/insights", response_model=SourceInsightResponse)
-async def create_source_insight(
-    source_id: str,
-    request: CreateSourceInsightRequest
-):
+async def create_source_insight(source_id: str, request: CreateSourceInsightRequest):
     """Create a new insight for a source by running a transformation."""
     try:
         # Get source
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         # Get transformation
         transformation = await Transformation.get(request.transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
-        
+
         # Run transformation graph
         from open_notebook.graphs.transformation import graph as transform_graph
+
         await transform_graph.ainvoke(
             input=dict(source=source, transformation=transformation)
         )
-        
+
         # Get the newly created insight (last one)
         insights = await source.get_insights()
         if insights:
@@ -298,11 +318,11 @@ async def create_source_insight(
                 insight_type=newest.insight_type,
                 content=newest.content,
                 created=str(newest.created),
-                updated=str(newest.updated)
+                updated=str(newest.updated),
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create insight")
-    
+
     except HTTPException:
         raise
     except Exception as e:

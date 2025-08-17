@@ -604,9 +604,11 @@ export default function SourceDetailPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Hash className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm">Embedded Chunks</span>
+                          <span className="text-sm">Embedded</span>
                         </div>
-                        <span className="font-semibold">{source.embedded_chunks || 0}</span>
+                        <Badge variant={source.embedded ? "default" : "secondary"}>
+                          {source.embedded ? "Yes" : "No"}
+                        </Badge>
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">

@@ -3,13 +3,30 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
+import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
+import { transformationsApi } from '@/lib/api/transformations'
 import { SourceDetailResponse } from '@/lib/types/api'
+import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { 
   ArrowLeft, 
   FileText, 
@@ -23,7 +40,12 @@ import {
   Copy,
   CheckCircle,
   Youtube,
-  Bot
+  Bot,
+  MoreVertical,
+  Trash2,
+  Sparkles,
+  Plus,
+  Lightbulb
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
@@ -31,7 +53,12 @@ import ReactMarkdown from 'react-markdown'
 
 export default function SourceDetailPage() {
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
+  const [insights, setInsights] = useState<SourceInsightResponse[]>([])
+  const [transformations, setTransformations] = useState<Transformation[]>([])
+  const [selectedTransformation, setSelectedTransformation] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const [loadingInsights, setLoadingInsights] = useState(false)
+  const [creatingInsight, setCreatingInsight] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const router = useRouter()
@@ -41,6 +68,8 @@ export default function SourceDetailPage() {
   useEffect(() => {
     if (sourceId) {
       fetchSource()
+      fetchInsights()
+      fetchTransformations()
     }
   }, [sourceId])
 
@@ -66,6 +95,49 @@ export default function SourceDetailPage() {
       setError('Failed to load source details')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchInsights = async () => {
+    try {
+      setLoadingInsights(true)
+      const data = await insightsApi.listForSource(sourceId)
+      setInsights(data)
+    } catch (err) {
+      console.error('Failed to fetch insights:', err)
+    } finally {
+      setLoadingInsights(false)
+    }
+  }
+
+  const fetchTransformations = async () => {
+    try {
+      const data = await transformationsApi.list()
+      setTransformations(data)
+    } catch (err) {
+      console.error('Failed to fetch transformations:', err)
+    }
+  }
+
+  const createInsight = async () => {
+    if (!selectedTransformation) {
+      toast.error('Please select a transformation')
+      return
+    }
+
+    try {
+      setCreatingInsight(true)
+      await insightsApi.create(sourceId, {
+        transformation_id: selectedTransformation
+      })
+      toast.success('Insight created successfully')
+      await fetchInsights()
+      setSelectedTransformation('')
+    } catch (err) {
+      console.error('Failed to create insight:', err)
+      toast.error('Failed to create insight')
+    } finally {
+      setCreatingInsight(false)
     }
   }
 
@@ -142,8 +214,8 @@ export default function SourceDetailPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
-      <div className="mb-6">
+    <div className="flex flex-col h-screen">
+      <div className="container mx-auto pt-6 pb-4">
         <Button
           variant="ghost"
           size="sm"
@@ -168,15 +240,53 @@ export default function SourceDetailPage() {
             <Badge variant="secondary" className="text-sm">
               {getSourceType()}
             </Badge>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {source.asset?.file_path && (
+                  <>
+                    <DropdownMenuItem disabled>
+                      <Download className="mr-2 h-4 w-4" />
+                      Download File
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                <DropdownMenuItem
+                  className="text-destructive"
+                  onClick={async () => {
+                    if (confirm('Are you sure you want to delete this source?')) {
+                      try {
+                        await sourcesApi.delete(source.id)
+                        toast.success('Source deleted successfully')
+                        router.push('/sources')
+                      } catch (err) {
+                        toast.error('Failed to delete source')
+                      }
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Source
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        <div className="lg:col-span-2">
+      <div className="flex-1 container mx-auto grid gap-6 lg:grid-cols-[3fr_2fr] overflow-hidden">
+        <div className="overflow-y-auto px-4 pb-6">
           <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
               <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="insights">
+                Insights {insights.length > 0 && `(${insights.length})`}
+              </TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
             </TabsList>
             
@@ -226,13 +336,140 @@ export default function SourceDetailPage() {
                       </div>
                     </div>
                   )}
-                  <ScrollArea className="h-[600px] w-full pr-4">
-                    <div className="prose prose-neutral dark:prose-invert max-w-none">
-                      <ReactMarkdown>
-                        {source.full_text || 'No content available'}
-                      </ReactMarkdown>
+                  <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-4">{children}</p>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
+                        ul: ({ children }) => <ul className="mb-4 list-disc pl-6">{children}</ul>,
+                        ol: ({ children }) => <ol className="mb-4 list-decimal pl-6">{children}</ol>,
+                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                      }}
+                    >
+                      {source.full_text || 'No content available'}
+                    </ReactMarkdown>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+            
+            <TabsContent value="insights" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span className="flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5" />
+                      Insights
+                    </span>
+                    <Badge variant="secondary">{insights.length}</Badge>
+                  </CardTitle>
+                  <CardDescription>
+                    AI-generated insights about this source
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Create New Insight */}
+                  <div className="rounded-lg border bg-muted/30 p-4">
+                    <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      Generate New Insight
+                    </h3>
+                    <div className="flex gap-2">
+                      <Select
+                        value={selectedTransformation}
+                        onValueChange={setSelectedTransformation}
+                        disabled={creatingInsight}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a transformation..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {transformations.map((trans) => (
+                            <SelectItem key={trans.id} value={trans.id}>
+                              {trans.title || trans.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        onClick={createInsight}
+                        disabled={!selectedTransformation || creatingInsight}
+                      >
+                        {creatingInsight ? (
+                          <>
+                            <LoadingSpinner className="mr-2 h-3 w-3" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="mr-2 h-4 w-4" />
+                            Create
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  </ScrollArea>
+                  </div>
+
+                  {/* Insights List */}
+                  {loadingInsights ? (
+                    <div className="flex items-center justify-center py-8">
+                      <LoadingSpinner />
+                    </div>
+                  ) : insights.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-sm">No insights yet</p>
+                      <p className="text-xs mt-1">Create your first insight using a transformation above</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {insights.map((insight) => (
+                        <div
+                          key={insight.id}
+                          className="rounded-lg border bg-background p-4"
+                        >
+                          <div className="mb-2 flex items-start justify-between">
+                            <Badge variant="outline" className="text-xs">
+                              {insight.insight_type}
+                            </Badge>
+                            {insight.created && (
+                              <span className="text-xs text-muted-foreground">
+                                {(() => {
+                                  try {
+                                    const date = new Date(insight.created)
+                                    if (isNaN(date.getTime())) {
+                                      return 'Unknown date'
+                                    }
+                                    return formatDistanceToNow(date, { addSuffix: true })
+                                  } catch {
+                                    return 'Unknown date'
+                                  }
+                                })()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-4">{children}</p>,
+                                h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
+                                ul: ({ children }) => <ul className="mb-4 list-disc pl-6">{children}</ul>,
+                                ol: ({ children }) => <ol className="mb-4 list-decimal pl-6">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1">{children}</li>,
+                              }}
+                            >
+                              {insight.content}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -348,41 +585,9 @@ export default function SourceDetailPage() {
           </Tabs>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          {/* Actions */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="flex gap-2">
-              {source.asset?.file_path && (
-                <Button variant="outline" size="sm" disabled>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download
-                </Button>
-              )}
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={async () => {
-                  if (confirm('Are you sure you want to delete this source?')) {
-                    try {
-                      await sourcesApi.delete(source.id)
-                      toast.success('Source deleted successfully')
-                      router.push('/sources')
-                    } catch (err) {
-                      toast.error('Failed to delete source')
-                    }
-                  }
-                }}
-              >
-                Delete Source
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Chat Placeholder */}
-          <Card className="flex-1">
+        {/* Chat Panel */}
+        <div className="flex flex-col h-full px-4 pb-6">
+          <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Bot className="h-5 w-5" />
@@ -392,31 +597,29 @@ export default function SourceDetailPage() {
                 Ask questions about this source
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex h-[500px] flex-col">
-                {/* Messages Area */}
-                <ScrollArea className="flex-1 rounded-lg border bg-muted/20 p-4">
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <div className="text-center">
-                      <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-sm">Start a conversation about this source</p>
-                      <p className="text-xs mt-2">Chat functionality coming soon...</p>
-                    </div>
+            <CardContent className="flex-1 flex flex-col min-h-0">
+              {/* Messages Area */}
+              <ScrollArea className="flex-1 rounded-lg border bg-muted/20 p-4 mb-4">
+                <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
+                  <div className="text-center">
+                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">Start a conversation about this source</p>
+                    <p className="text-xs mt-2">Chat functionality coming soon...</p>
                   </div>
-                </ScrollArea>
-                
-                {/* Input Area */}
-                <div className="mt-4 flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ask a question..."
-                    className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm"
-                    disabled
-                  />
-                  <Button size="sm" disabled>
-                    Send
-                  </Button>
                 </div>
+              </ScrollArea>
+              
+              {/* Input Area */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask a question..."
+                  className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm"
+                  disabled
+                />
+                <Button size="sm" disabled>
+                  Send
+                </Button>
               </div>
             </CardContent>
           </Card>

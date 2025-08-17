@@ -7,16 +7,23 @@ import { SourceListResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
-import { FileText, Link as LinkIcon, Upload, AlignLeft } from 'lucide-react'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
+    open: false,
+    source: null
+  })
   const router = useRouter()
   const tableRef = useRef<HTMLTableElement>(null)
 
@@ -95,6 +102,26 @@ export default function SourcesPage() {
     router.push(`/sources/${sourceId}`)
   }, [router])
 
+  const handleDeleteClick = useCallback((e: React.MouseEvent, source: SourceListResponse) => {
+    e.stopPropagation() // Prevent row click
+    setDeleteDialog({ open: true, source })
+  }, [])
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteDialog.source) return
+
+    try {
+      await sourcesApi.delete(deleteDialog.source.id)
+      toast.success('Source deleted successfully')
+      // Remove the deleted source from the list
+      setSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
+      setDeleteDialog({ open: false, source: null })
+    } catch (err) {
+      console.error('Failed to delete source:', err)
+      toast.error('Failed to delete source')
+    }
+  }
+
   if (loading) {
     return (
       <AppShell>
@@ -160,6 +187,9 @@ export default function SourcesPage() {
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
                   Chunks
                 </th>
+                <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -204,12 +234,32 @@ export default function SourcesPage() {
                   <td className="h-12 px-4 text-center">
                     {source.embedded_chunks || 0}
                   </td>
+                  <td className="h-12 px-4 text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => handleDeleteClick(e, source)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open, source: deleteDialog.source })}
+        title="Delete Source"
+        description={`Are you sure you want to delete "${deleteDialog.source?.title || 'this source'}"? This action cannot be undone.`}
+        confirmText="Delete"
+        confirmVariant="destructive"
+        onConfirm={handleDeleteConfirm}
+      />
     </AppShell>
   )
 }

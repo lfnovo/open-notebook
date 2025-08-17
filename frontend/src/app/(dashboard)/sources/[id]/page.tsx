@@ -8,6 +8,7 @@ import { transformationsApi } from '@/lib/api/transformations'
 import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -144,6 +145,22 @@ export default function SourceDetailPage() {
     }
   }
 
+  const handleUpdateTitle = async (title: string) => {
+    if (!source || title === source.title) return
+    
+    try {
+      await sourcesApi.update(sourceId, { title })
+      toast.success('Source title updated')
+      // Update local state to reflect the change immediately
+      setSource({ ...source, title })
+    } catch (err) {
+      console.error('Failed to update source title:', err)
+      toast.error('Failed to update source title')
+      // Re-fetch to ensure we have the correct data
+      await fetchSource()
+    }
+  }
+
   const getSourceIcon = () => {
     if (!source) return null
     if (source.asset?.url) return <LinkIcon className="h-5 w-5" />
@@ -242,10 +259,15 @@ export default function SourceDetailPage() {
         </Button>
         
         <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">
-              {source.title || 'Untitled Source'}
-            </h1>
+          <div className="flex-1">
+            <InlineEdit
+              value={source.title || ''}
+              onSave={handleUpdateTitle}
+              className="text-3xl font-bold"
+              inputClassName="text-3xl font-bold"
+              placeholder="Source title"
+              emptyText="Untitled Source"
+            />
             <p className="mt-2 text-muted-foreground">
               Source ID: {source.id}
             </p>

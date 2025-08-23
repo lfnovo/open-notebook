@@ -1,14 +1,26 @@
 import asyncio
-from typing import Dict, List, Optional, Any
-from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
-from loguru import logger
-from langchain_core.runnables import RunnableConfig
+from typing import Any, Dict, List, Optional
 
-from open_notebook.domain.notebook import ChatSession, Notebook, Source, Note
-from open_notebook.graphs.chat import graph as chat_graph, ThreadState
-from open_notebook.database.repository import repo_query
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError, NotFoundError
+from fastapi import APIRouter, HTTPException, Query
+from langchain_core.runnables import RunnableConfig
+from loguru import logger
+from pydantic import BaseModel, Field
+
+from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
+from open_notebook.graphs.chat import ThreadState
+from open_notebook.graphs.chat import graph as chat_graph
+    DatabaseOperationError,
+    InvalidInputError,
+    NotFoundError,
+)
+from open_notebook.graphs.chat import ThreadState
+from open_notebook.graphs.chat import graph as chat_graph
 
 router = APIRouter()
 
@@ -156,7 +168,7 @@ async def get_session(session_id: str):
         
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": full_session_id}
+            {"session_id": ensure_record_id(full_session_id)}
         )
         
         notebook_id = notebook_query[0]["out"] if notebook_query else None
@@ -199,7 +211,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": full_session_id}
+            {"session_id": ensure_record_id(full_session_id)}
         )
         notebook_id = notebook_query[0]["out"] if notebook_query else None
         

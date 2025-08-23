@@ -335,11 +335,17 @@ class Note(ObjectModel):
 class ChatSession(ObjectModel):
     table_name: ClassVar[str] = "chat_session"
     title: Optional[str] = None
+    model_override: Optional[str] = None
 
     async def relate_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
         return await self.relate("refers_to", notebook_id)
+    
+    async def relate_to_source(self, source_id: str) -> Any:
+        if not source_id:
+            raise InvalidInputError("Source ID must be provided")
+        return await self.relate("refers_to", source_id)
 
 
 async def text_search(

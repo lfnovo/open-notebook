@@ -53,6 +53,8 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
+import { useSourceChat } from '@/lib/hooks/useSourceChat'
+import { ChatPanel } from '@/components/source/ChatPanel'
 
 export default function SourceDetailPage() {
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
@@ -68,6 +70,9 @@ export default function SourceDetailPage() {
   const router = useRouter()
   const params = useParams()
   const sourceId = params.id as string
+
+  // Initialize source chat
+  const chat = useSourceChat(sourceId)
 
   useEffect(() => {
     if (sourceId) {
@@ -247,7 +252,7 @@ export default function SourceDetailPage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <div className="container mx-auto pt-6 pb-4">
+      <div className="pt-6 pb-4 px-6">
         <Button
           variant="ghost"
           size="sm"
@@ -316,7 +321,7 @@ export default function SourceDetailPage() {
         </div>
       </div>
 
-      <div className="flex-1 container mx-auto grid gap-6 lg:grid-cols-[3fr_2fr] overflow-hidden">
+      <div className="flex-1 grid gap-6 lg:grid-cols-[2fr_1fr] overflow-hidden px-6">
         <div className="overflow-y-auto px-4 pb-6">
           <Tabs defaultValue="content" className="w-full">
             <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
@@ -650,44 +655,27 @@ export default function SourceDetailPage() {
           </Tabs>
         </div>
 
-        {/* Chat Panel */}
-        <div className="flex flex-col h-full px-4 pb-6">
-          <Card className="flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                Chat with AI
-              </CardTitle>
-              <CardDescription>
-                Ask questions about this source
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0">
-              {/* Messages Area */}
-              <ScrollArea className="flex-1 rounded-lg border bg-muted/20 p-4 mb-4">
-                <div className="flex items-center justify-center min-h-[400px] text-muted-foreground">
-                  <div className="text-center">
-                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-sm">Start a conversation about this source</p>
-                    <p className="text-xs mt-2">Chat functionality coming soon...</p>
-                  </div>
-                </div>
-              </ScrollArea>
-              
-              {/* Input Area */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Ask a question..."
-                  className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm"
-                  disabled
-                />
-                <Button size="sm" disabled>
-                  Send
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Right column - Chat */}
+        <div className="overflow-y-auto px-4 pb-6">
+          <ChatPanel
+            messages={chat.messages}
+            isStreaming={chat.isStreaming}
+            contextIndicators={chat.contextIndicators}
+            onSendMessage={(message, model) => chat.sendMessage(message, model)}
+            modelOverride={chat.currentSession?.model_override}
+            onModelChange={(model) => {
+              if (chat.currentSessionId) {
+                chat.updateSession(chat.currentSessionId, { model_override: model })
+              }
+            }}
+            sessions={chat.sessions}
+            currentSessionId={chat.currentSessionId}
+            onCreateSession={(title) => chat.createSession({ title })}
+            onSelectSession={chat.switchSession}
+            onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
+            onDeleteSession={chat.deleteSession}
+            loadingSessions={chat.loadingSessions}
+          />
         </div>
       </div>
     </div>

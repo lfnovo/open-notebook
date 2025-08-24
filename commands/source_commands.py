@@ -16,11 +16,6 @@ except ImportError as e:
     raise ValueError("source_graph not available")
 
 
-# Add debugging to see if this module is being imported
-logger.info("=== IMPORTING source_commands.py ===")
-logger.info("Registering source commands...")
-
-
 def full_model_dump(model):
     if isinstance(model, BaseModel):
         return model.model_dump()
@@ -149,17 +144,3 @@ async def process_source_command(
             processing_time=processing_time,
             error_message=str(e),
         )
-
-
-# Add debugging to confirm commands are registered
-logger.info("✅ Source commands registered: process_source")
-logger.info("=== FINISHED IMPORTING source_commands.py ===")
-
-# Let's also verify what the registry contains
-try:
-    from surreal_commands import registry
-
-    commands = registry.list_commands()
-    logger.info(f"Registry after source import: {commands}")
-except Exception as e:
-    logger.error(f"Error checking registry: {e}")

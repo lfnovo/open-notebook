@@ -301,6 +301,14 @@ class CreateSourceInsightRequest(BaseModel):
     model_id: Optional[str] = Field(None, description="Model ID (uses default if not provided)")
 
 
+# Source status response
+class SourceStatusResponse(BaseModel):
+    status: Optional[str] = Field(None, description="Processing status")
+    message: str = Field(..., description="Descriptive message about the status")
+    processing_info: Optional[Dict[str, Any]] = Field(None, description="Detailed processing information")
+    command_id: Optional[str] = Field(None, description="Command ID if available")
+
+
 # Error response
 class ErrorResponse(BaseModel):
     error: str

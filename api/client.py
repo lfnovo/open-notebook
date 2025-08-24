@@ -280,8 +280,9 @@ class APIClient:
 
     def create_source(
         self,
-        notebook_id: str,
-        source_type: str,
+        notebook_id: Optional[str] = None,
+        notebooks: Optional[List[str]] = None,
+        source_type: str = "text",
         url: Optional[str] = None,
         file_path: Optional[str] = None,
         content: Optional[str] = None,
@@ -289,14 +290,24 @@ class APIClient:
         transformations: Optional[List[str]] = None,
         embed: bool = False,
         delete_source: bool = False,
+        async_processing: bool = False,
     ) -> Dict:
         """Create a new source."""
         data = {
-            "notebook_id": notebook_id,
             "type": source_type,
             "embed": embed,
             "delete_source": delete_source,
+            "async_processing": async_processing,
         }
+        
+        # Handle backward compatibility for notebook_id vs notebooks
+        if notebooks:
+            data["notebooks"] = notebooks
+        elif notebook_id:
+            data["notebook_id"] = notebook_id
+        else:
+            raise ValueError("Either notebook_id or notebooks must be provided")
+            
         if url:
             data["url"] = url
         if file_path:
@@ -308,11 +319,15 @@ class APIClient:
         if transformations:
             data["transformations"] = transformations
 
-        return self._make_request("POST", "/api/sources", json=data)
+        return self._make_request("POST", "/api/sources/json", json=data)
 
     def get_source(self, source_id: str) -> Dict:
         """Get a specific source."""
         return self._make_request("GET", f"/api/sources/{source_id}")
+
+    def get_source_status(self, source_id: str) -> Dict:
+        """Get processing status for a source."""
+        return self._make_request("GET", f"/api/sources/{source_id}/status")
 
     def update_source(self, source_id: str, **updates) -> Dict:
         """Update a source."""

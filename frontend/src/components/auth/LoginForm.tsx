@@ -14,9 +14,12 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (password.trim()) {
-      console.log('Attempting login with password length:', password.length)
-      const success = await login(password)
-      console.log('Login result:', success)
+      try {
+        await login(password)
+      } catch (error) {
+        console.error('Unhandled error during login:', error)
+        // The auth store should handle most errors, but this catches any unhandled ones
+      }
     }
   }
 

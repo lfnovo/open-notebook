@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
 import { transformationsApi } from '@/lib/api/transformations'
+import { embeddingApi } from '@/lib/api/embedding'
 import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -12,6 +13,7 @@ import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
@@ -48,7 +50,9 @@ import {
   Plus,
   Lightbulb,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Database,
+  AlertCircle,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
@@ -66,10 +70,11 @@ export default function SourceDetailPage() {
   const [creatingInsight, setCreatingInsight] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [isEmbedding, setIsEmbedding] = useState(false)
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
   const router = useRouter()
   const params = useParams()
-  const sourceId = params.id as string
+  const sourceId = decodeURIComponent(params.id as string)
 
   // Initialize source chat
   const chat = useSourceChat(sourceId)
@@ -163,6 +168,23 @@ export default function SourceDetailPage() {
       toast.error('Failed to update source title')
       // Re-fetch to ensure we have the correct data
       await fetchSource()
+    }
+  }
+
+  const handleEmbedContent = async () => {
+    if (!source) return
+    
+    try {
+      setIsEmbedding(true)
+      const response = await embeddingApi.embedContent(sourceId, 'source')
+      toast.success(response.message)
+      // Refresh source data to update embedded status
+      await fetchSource()
+    } catch (err) {
+      console.error('Failed to embed content:', err)
+      toast.error('Failed to embed content')
+    } finally {
+      setIsEmbedding(false)
     }
   }
 
@@ -298,6 +320,14 @@ export default function SourceDetailPage() {
                     <DropdownMenuSeparator />
                   </>
                 )}
+                <DropdownMenuItem
+                  onClick={handleEmbedContent}
+                  disabled={isEmbedding || source.embedded}
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  {isEmbedding ? 'Embedding...' : source.embedded ? 'Already Embedded' : 'Embed Content'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={async () => {
@@ -548,6 +578,29 @@ export default function SourceDetailPage() {
                   <CardTitle>Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {/* Embedding Alert */}
+                  {!source.embedded && (
+                    <Alert>
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>
+                        Content Not Embedded
+                      </AlertTitle>
+                      <AlertDescription>
+                        This content hasn't been embedded for vector search. Embedding enables advanced search capabilities and better content discovery.
+                        <div className="mt-3">
+                          <Button
+                            onClick={handleEmbedContent}
+                            disabled={isEmbedding}
+                            size="sm"
+                          >
+                            <Database className="mr-2 h-4 w-4" />
+                            {isEmbedding ? 'Embedding...' : 'Embed Content'}
+                          </Button>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Source Information */}
                   <div className="space-y-4">
                     {source.asset?.url && (

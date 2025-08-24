@@ -146,6 +146,7 @@ async def create_source(source_data: SourceCreate):
 
         source = result["source"]
 
+        embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
             id=source.id,
             title=source.title,
@@ -157,7 +158,8 @@ async def create_source(source_data: SourceCreate):
             if source.asset
             else None,
             full_text=source.full_text,
-            embedded_chunks=await source.get_embedded_chunks(),
+            embedded=embedded_chunks > 0,
+            embedded_chunks=embedded_chunks,
             created=str(source.created),
             updated=str(source.updated),
         )
@@ -178,6 +180,7 @@ async def get_source(source_id: str):
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
+        embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
             id=source.id,
             title=source.title,
@@ -189,7 +192,8 @@ async def get_source(source_id: str):
             if source.asset
             else None,
             full_text=source.full_text,
-            embedded_chunks=await source.get_embedded_chunks(),
+            embedded=embedded_chunks > 0,
+            embedded_chunks=embedded_chunks,
             created=str(source.created),
             updated=str(source.updated),
         )
@@ -216,6 +220,7 @@ async def update_source(source_id: str, source_update: SourceUpdate):
 
         await source.save()
 
+        embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
             id=source.id,
             title=source.title,
@@ -227,7 +232,8 @@ async def update_source(source_id: str, source_update: SourceUpdate):
             if source.asset
             else None,
             full_text=source.full_text,
-            embedded_chunks=await source.get_embedded_chunks(),
+            embedded=embedded_chunks > 0,
+            embedded_chunks=embedded_chunks,
             created=str(source.created),
             updated=str(source.updated),
         )

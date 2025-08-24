@@ -15,12 +15,6 @@ from open_notebook.exceptions import (
 )
 from open_notebook.graphs.chat import ThreadState
 from open_notebook.graphs.chat import graph as chat_graph
-    DatabaseOperationError,
-    InvalidInputError,
-    NotFoundError,
-)
-from open_notebook.graphs.chat import ThreadState
-from open_notebook.graphs.chat import graph as chat_graph
 
 router = APIRouter()
 
@@ -29,8 +23,10 @@ class CreateSessionRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to create session for")
     title: Optional[str] = Field(None, description="Optional session title")
 
+
 class UpdateSessionRequest(BaseModel):
     title: str = Field(..., description="New session title")
+
 
 class ChatMessage(BaseModel):
     id: str = Field(..., description="Message ID")
@@ -38,34 +34,47 @@ class ChatMessage(BaseModel):
     content: str = Field(..., description="Message content")
     timestamp: Optional[str] = Field(None, description="Message timestamp")
 
+
 class ChatSessionResponse(BaseModel):
     id: str = Field(..., description="Session ID")
     title: str = Field(..., description="Session title")
     notebook_id: Optional[str] = Field(None, description="Notebook ID")
     created: str = Field(..., description="Creation timestamp")
     updated: str = Field(..., description="Last update timestamp")
-    message_count: Optional[int] = Field(None, description="Number of messages in session")
+    message_count: Optional[int] = Field(
+        None, description="Number of messages in session"
+    )
+
 
 class ChatSessionWithMessagesResponse(ChatSessionResponse):
-    messages: List[ChatMessage] = Field(default_factory=list, description="Session messages")
+    messages: List[ChatMessage] = Field(
+        default_factory=list, description="Session messages"
+    )
+
 
 class ExecuteChatRequest(BaseModel):
     session_id: str = Field(..., description="Chat session ID")
     message: str = Field(..., description="User message content")
-    context: Dict[str, Any] = Field(..., description="Chat context with sources and notes")
+    context: Dict[str, Any] = Field(
+        ..., description="Chat context with sources and notes"
+    )
+
 
 class ExecuteChatResponse(BaseModel):
     session_id: str = Field(..., description="Session ID")
     messages: List[ChatMessage] = Field(..., description="Updated message list")
 
+
 class BuildContextRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID")
     context_config: Dict[str, Any] = Field(..., description="Context configuration")
+
 
 class BuildContextResponse(BaseModel):
     context: Dict[str, Any] = Field(..., description="Built context data")
     token_count: int = Field(..., description="Estimated token count")
     char_count: int = Field(..., description="Character count")
+
 
 class SuccessResponse(BaseModel):
     success: bool = Field(True, description="Operation success status")
@@ -80,10 +89,10 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         # Get sessions for this notebook
         sessions = await notebook.get_chat_sessions()
-        
+
         return [
             ChatSessionResponse(
                 id=session.id,
@@ -91,7 +100,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
                 notebook_id=notebook_id,
                 created=str(session.created),
                 updated=str(session.updated),
-                message_count=0  # TODO: Add message count if needed
+                message_count=0,  # TODO: Add message count if needed
             )
             for session in sessions
         ]
@@ -99,7 +108,9 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
         raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(f"Error fetching chat sessions: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching chat sessions: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching chat sessions: {str(e)}"
+        )
 
 
 @router.post("/chat/sessions", response_model=ChatSessionResponse)
@@ -110,73 +121,89 @@ async def create_session(request: CreateSessionRequest):
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         # Create new session
         session = ChatSession(
             title=request.title or f"Chat Session {asyncio.get_event_loop().time():.0f}"
         )
         await session.save()
-        
+
         # Relate session to notebook
         await session.relate_to_notebook(request.notebook_id)
-        
+
         return ChatSessionResponse(
             id=session.id,
             title=session.title,
             notebook_id=request.notebook_id,
             created=str(session.created),
             updated=str(session.updated),
-            message_count=0
+            message_count=0,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(f"Error creating chat session: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating chat session: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating chat session: {str(e)}"
+        )
 
 
-@router.get("/chat/sessions/{session_id}", response_model=ChatSessionWithMessagesResponse)
+@router.get(
+    "/chat/sessions/{session_id}", response_model=ChatSessionWithMessagesResponse
+)
 async def get_session(session_id: str):
     """Get a specific session with its messages."""
     try:
         # Get session
         # Ensure session_id has proper table prefix
-        full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        
+
         # Get session state from LangGraph to retrieve messages
         thread_state = chat_graph.get_state(
             config=RunnableConfig(configurable={"thread_id": session_id})
         )
-        
+
         # Extract messages from state
         messages = []
         if thread_state and thread_state.values and "messages" in thread_state.values:
             for msg in thread_state.values["messages"]:
-                messages.append(ChatMessage(
-                    id=getattr(msg, 'id', f"msg_{len(messages)}"),
-                    type=msg.type if hasattr(msg, 'type') else 'unknown',
-                    content=msg.content if hasattr(msg, 'content') else str(msg),
-                    timestamp=None  # LangChain messages don't have timestamps by default
-                ))
-        
+                messages.append(
+                    ChatMessage(
+                        id=getattr(msg, "id", f"msg_{len(messages)}"),
+                        type=msg.type if hasattr(msg, "type") else "unknown",
+                        content=msg.content if hasattr(msg, "content") else str(msg),
+                        timestamp=None,  # LangChain messages don't have timestamps by default
+                    )
+                )
+
         # Find notebook_id (we need to query the relationship)
         # Ensure session_id has proper table prefix
-        full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
-        
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
+
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)}
+            {"session_id": ensure_record_id(full_session_id)},
         )
-        
+
         notebook_id = notebook_query[0]["out"] if notebook_query else None
-        
+
         if not notebook_id:
             # This might be an old session created before API migration
-            logger.warning(f"No notebook relationship found for session {session_id} - may be an orphaned session")
-        
+            logger.warning(
+                f"No notebook relationship found for session {session_id} - may be an orphaned session"
+            )
+
         return ChatSessionWithMessagesResponse(
             id=session.id,
             title=session.title or "Untitled Session",
@@ -184,7 +211,7 @@ async def get_session(session_id: str):
             created=str(session.created),
             updated=str(session.updated),
             message_count=len(messages),
-            messages=messages
+            messages=messages,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -197,31 +224,39 @@ async def get_session(session_id: str):
 async def update_session(session_id: str, request: UpdateSessionRequest):
     """Update session title."""
     try:
-        # Ensure session_id has proper table prefix  
-        full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
+        # Ensure session_id has proper table prefix
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        
+
         session.title = request.title
         await session.save()
-        
+
         # Find notebook_id
         # Ensure session_id has proper table prefix
-        full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)}
+            {"session_id": ensure_record_id(full_session_id)},
         )
         notebook_id = notebook_query[0]["out"] if notebook_query else None
-        
+
         return ChatSessionResponse(
             id=session.id,
             title=session.title,
             notebook_id=notebook_id,
             created=str(session.created),
             updated=str(session.updated),
-            message_count=0
+            message_count=0,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -235,17 +270,18 @@ async def delete_session(session_id: str):
     """Delete a chat session."""
     try:
         # Ensure session_id has proper table prefix
-        full_session_id = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
+        full_session_id = (
+            session_id
+            if session_id.startswith("chat_session:")
+            else f"chat_session:{session_id}"
+        )
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        
+
         await session.delete()
-        
-        return SuccessResponse(
-            success=True,
-            message="Session deleted successfully"
-        )
+
+        return SuccessResponse(success=True, message="Session deleted successfully")
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
     except Exception as e:
@@ -259,49 +295,53 @@ async def execute_chat(request: ExecuteChatRequest):
     try:
         # Verify session exists
         # Ensure session_id has proper table prefix
-        full_session_id = request.session_id if request.session_id.startswith("chat_session:") else f"chat_session:{request.session_id}"
+        full_session_id = (
+            request.session_id
+            if request.session_id.startswith("chat_session:")
+            else f"chat_session:{request.session_id}"
+        )
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
-        
+
         # Get current state
         current_state = chat_graph.get_state(
             config=RunnableConfig(configurable={"thread_id": request.session_id})
         )
-        
+
         # Prepare state for execution
         state_values = current_state.values if current_state else {}
         state_values["messages"] = state_values.get("messages", [])
         state_values["context"] = request.context
-        
+
         # Add user message to state
         from langchain_core.messages import HumanMessage
+
         user_message = HumanMessage(content=request.message)
         state_values["messages"].append(user_message)
-        
+
         # Execute chat graph
         result = chat_graph.invoke(
             input=state_values,
-            config=RunnableConfig(configurable={"thread_id": request.session_id})
+            config=RunnableConfig(configurable={"thread_id": request.session_id}),
         )
-        
+
         # Update session timestamp
         await session.save()
-        
+
         # Convert messages to response format
         messages = []
         for msg in result.get("messages", []):
-            messages.append(ChatMessage(
-                id=getattr(msg, 'id', f"msg_{len(messages)}"),
-                type=msg.type if hasattr(msg, 'type') else 'unknown',
-                content=msg.content if hasattr(msg, 'content') else str(msg),
-                timestamp=None
-            ))
-        
-        return ExecuteChatResponse(
-            session_id=request.session_id,
-            messages=messages
-        )
+            messages.append(
+                ChatMessage(
+                    id=getattr(msg, "id", f"msg_{len(messages)}"),
+                    type=msg.type if hasattr(msg, "type") else "unknown",
+                    content=msg.content if hasattr(msg, "content") else str(msg),
+                    timestamp=None,
+                )
+            )
+
+        return ExecuteChatResponse(session_id=request.session_id, messages=messages)
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
     except Exception as e:
@@ -401,15 +441,14 @@ async def build_context(request: BuildContextRequest):
         # Use token count utility if available
         try:
             from open_notebook.utils import token_count
+
             estimated_tokens = token_count(total_content) if total_content else 0
         except ImportError:
             # Fallback to simple estimation
             estimated_tokens = char_count // 4
 
         return BuildContextResponse(
-            context=context_data,
-            token_count=estimated_tokens,
-            char_count=char_count
+            context=context_data, token_count=estimated_tokens, char_count=char_count
         )
     except HTTPException:
         raise

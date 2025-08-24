@@ -39,7 +39,10 @@ app = FastAPI(
     version="0.2.2",
 )
 
-# Add CORS middleware
+# Add password authentication middleware first
+app.add_middleware(PasswordAuthMiddleware)
+
+# Add CORS middleware last (so it processes first)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, replace with specific origins
@@ -47,9 +50,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add password authentication middleware
-app.add_middleware(PasswordAuthMiddleware)
 
 # Include routers
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])

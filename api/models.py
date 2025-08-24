@@ -218,6 +218,7 @@ class SourceResponse(BaseModel):
     topics: Optional[List[str]]
     asset: Optional[AssetModel]
     full_text: Optional[str]
+    embedded: bool
     embedded_chunks: int
     created: str
     updated: str

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { XIcon, FileIcon, LinkIcon, FileTextIcon, LoaderIcon } from 'lucide-react'
+import { FileIcon, LinkIcon, FileTextIcon, LoaderIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -147,7 +147,8 @@ export function AddSourceDialog({
       // Add file for upload type (extract from FileList)
       if (data.type === 'upload' && data.file) {
         const file = data.file instanceof FileList ? data.file[0] : data.file
-        (createRequest as any).file = file
+        const requestWithFile = createRequest as CreateSourceRequest & { file?: File }
+        requestWithFile.file = file
       }
 
       const result = await createSource.mutateAsync(createRequest)
@@ -267,7 +268,7 @@ export function AddSourceDialog({
                   render={({ field }) => (
                     <Tabs 
                       value={field.value} 
-                      onValueChange={(value) => field.onChange(value as any)}
+                      onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
                       className="w-full"
                     >
                       <TabsList className="grid w-full grid-cols-3">

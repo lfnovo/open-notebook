@@ -1,9 +1,9 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
+from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
@@ -146,6 +146,57 @@ class Source(ObjectModel):
     title: Optional[str] = None
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
+    command: Optional[Union[str, RecordID]] = Field(
+        default=None, description="Link to surreal-commands processing job"
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @field_validator("command", mode="before")
+    @classmethod
+    def parse_command(cls, value):
+        """Parse command field to ensure RecordID format"""
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    async def get_status(self) -> Optional[str]:
+        """Get the processing status of the associated command"""
+        if not self.command:
+            return None
+
+        try:
+            from surreal_commands import get_command_status
+
+            status = await get_command_status(str(self.command))
+            return status.status if status else "unknown"
+        except Exception as e:
+            logger.warning(f"Failed to get command status for {self.command}: {e}")
+            return "unknown"
+
+    async def get_processing_progress(self) -> Optional[Dict[str, Any]]:
+        """Get detailed processing information for the associated command"""
+        if not self.command:
+            return None
+
+        try:
+            from surreal_commands import get_command_status
+
+            status_result = await get_command_status(str(self.command))
+            if not status_result:
+                return None
+
+            return {
+                "status": status_result.status,
+                "started_at": status_result.started_at,
+                "completed_at": getattr(status_result, "completed_at", None),
+                "error": getattr(status_result, "error", None),
+                "result": getattr(status_result, "result", None),
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get command progress for {self.command}: {e}")
+            return None
 
     async def get_context(
         self, context_size: Literal["short", "long"] = "short"
@@ -294,6 +345,16 @@ class Source(ObjectModel):
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
             raise  # DatabaseOperationError(e)
 
+    def _prepare_save_data(self) -> dict:
+        """Override to ensure command field is always RecordID format for database"""
+        data = super()._prepare_save_data()
+
+        # Ensure command field is RecordID format if not None
+        if data.get("command") is not None:
+            data["command"] = ensure_record_id(data["command"])
+
+        return data
+
 
 class Note(ObjectModel):
     table_name: ClassVar[str] = "note"
@@ -341,7 +402,7 @@ class ChatSession(ObjectModel):
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
         return await self.relate("refers_to", notebook_id)
-    
+
     async def relate_to_source(self, source_id: str) -> Any:
         if not source_id:
             raise InvalidInputError("Source ID must be provided")

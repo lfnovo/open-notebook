@@ -18,7 +18,8 @@ from open_notebook.graphs.transformation import graph as transform_graph
 class SourceState(TypedDict):
     content_state: ProcessSourceState
     apply_transformations: List[Transformation]
-    notebook_id: str
+    source_id: str
+    notebook_ids: List[str]
     source: Source
     transformation: Annotated[list, operator.add]
     embed: bool
@@ -48,16 +49,28 @@ async def content_process(state: SourceState) -> dict:
 async def save_source(state: SourceState) -> dict:
     content_state = state["content_state"]
 
-    source = Source(
-        asset=Asset(url=content_state.url, file_path=content_state.file_path),
-        full_text=content_state.content,
-        title=content_state.title,
-    )
+    # Get existing source using the provided source_id
+    source = await Source.get(state["source_id"])
+    if not source:
+        raise ValueError(f"Source with ID {state['source_id']} not found")
+
+    # Update the source with processed content
+    source.asset = Asset(url=content_state.url, file_path=content_state.file_path)
+    source.full_text = content_state.content
+    
+    # Preserve existing title if none provided in processed content
+    if content_state.title:
+        source.title = content_state.title
+    
     await source.save()
 
-    if state["notebook_id"]:
-        logger.debug(f"Adding source to notebook {state['notebook_id']}")
-        await source.add_to_notebook(state["notebook_id"])
+    # Handle multiple notebook associations
+    notebook_ids = state.get("notebook_ids", [])
+    if notebook_ids:
+        for notebook_id in notebook_ids:
+            if notebook_id:  # Skip empty/None notebook IDs
+                logger.debug(f"Adding source to notebook {notebook_id}")
+                await source.add_to_notebook(notebook_id)
 
     if state["embed"]:
         logger.debug("Embedding content for vector search")

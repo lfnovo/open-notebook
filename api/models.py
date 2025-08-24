@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 
 
 # Notebook models
@@ -196,7 +196,11 @@ class AssetModel(BaseModel):
 
 
 class SourceCreate(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID to add the source to")
+    # Backward compatibility: support old single notebook_id
+    notebook_id: Optional[str] = Field(None, description="Notebook ID to add the source to (deprecated, use notebooks)")
+    # New multi-notebook support
+    notebooks: Optional[List[str]] = Field(None, description="List of notebook IDs to add the source to")
+    # Required fields
     type: str = Field(..., description="Source type: link, upload, or text")
     url: Optional[str] = Field(None, description="URL for link type")
     file_path: Optional[str] = Field(None, description="File path for upload type")
@@ -205,6 +209,25 @@ class SourceCreate(BaseModel):
     transformations: Optional[List[str]] = Field(default_factory=list, description="Transformation IDs to apply")
     embed: bool = Field(False, description="Whether to embed content for vector search")
     delete_source: bool = Field(False, description="Whether to delete uploaded file after processing")
+    # New async processing support
+    async_processing: bool = Field(False, description="Whether to process source asynchronously")
+    
+    @model_validator(mode='after')
+    def validate_notebook_fields(self):
+        # Ensure only one of notebook_id or notebooks is provided
+        if self.notebook_id is not None and self.notebooks is not None:
+            raise ValueError("Cannot specify both 'notebook_id' and 'notebooks'. Use 'notebooks' for multi-notebook support.")
+        
+        # Ensure at least one notebook is specified
+        if self.notebook_id is None and (self.notebooks is None or len(self.notebooks) == 0):
+            raise ValueError("Must specify either 'notebook_id' or 'notebooks' with at least one notebook ID.")
+        
+        # Convert single notebook_id to notebooks array for internal processing
+        if self.notebook_id is not None:
+            self.notebooks = [self.notebook_id]
+            # Keep notebook_id for backward compatibility in response
+        
+        return self
 
 
 class SourceUpdate(BaseModel):
@@ -222,6 +245,10 @@ class SourceResponse(BaseModel):
     embedded_chunks: int
     created: str
     updated: str
+    # New fields for async processing
+    command_id: Optional[str] = None
+    status: Optional[str] = None
+    processing_info: Optional[Dict] = None
 
 
 class SourceListResponse(BaseModel):

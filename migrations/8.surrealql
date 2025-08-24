@@ -8,3 +8,5 @@ FROM chat_session TO notebook|source;
 
 -- Add model_override field to chat_session for per-session model selection
 DEFINE FIELD model_override ON chat_session TYPE option<string>;
+
+DEFINE FIELD command ON source TYPE option<record<command>>;

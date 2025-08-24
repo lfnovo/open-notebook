@@ -7,3 +7,5 @@ FROM chat_session TO notebook;
 
 -- Remove model_override field from chat_session
 REMOVE FIELD model_override ON chat_session;
+
+REMOVE FIELD command ON source;

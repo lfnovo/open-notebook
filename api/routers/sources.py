@@ -137,10 +137,11 @@ async def get_sources(
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
 
-            # Query sources for specific notebook
+            # Query sources for specific notebook - include command field
             query = """
-                SELECT id, asset, created, title, updated, topics,
+                SELECT id, asset, created, title, updated, topics, command,
                     (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+                    (SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS embedded_chunks,
                     ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
                 FROM source 
                 WHERE id IN (SELECT source FROM reference WHERE notebook = $notebook_id)
@@ -148,19 +149,90 @@ async def get_sources(
             """
             result = await repo_query(query, {"notebook_id": notebook_id})
         else:
-            # Query all sources
+            # Query all sources - include command field
             query = """
-                SELECT id, asset, created, title, updated, topics,
+                SELECT id, asset, created, title, updated, topics, command,
                     (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+                    (SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS embedded_chunks,
                     ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
                 FROM source 
                 ORDER BY updated DESC
             """
             result = await repo_query(query)
 
+        # Extract command IDs for batch status fetching
+        command_ids = []
+        command_to_source = {}
+        
+        for row in result:
+            command = row.get("command")
+            if command:
+                command_str = str(command)
+                command_ids.append(command_str)
+                command_to_source[command_str] = row["id"]
+
+        # Batch fetch command statuses
+        command_statuses = {}
+        if command_ids:
+            try:
+                from surreal_commands import get_command_status
+                
+                # Get status for all commands in batch (if the library supports it)
+                # If not, we'll fall back to individual calls, but limit concurrent requests
+                import asyncio
+                
+                async def get_status_safe(command_id: str):
+                    try:
+                        status = await get_command_status(command_id)
+                        return (command_id, status)
+                    except Exception as e:
+                        logger.warning(f"Failed to get status for command {command_id}: {e}")
+                        return (command_id, None)
+                
+                # Limit concurrent requests to avoid overwhelming the command service
+                semaphore = asyncio.Semaphore(10)
+                
+                async def get_status_with_limit(command_id: str):
+                    async with semaphore:
+                        return await get_status_safe(command_id)
+                
+                # Fetch statuses concurrently but with limit
+                status_tasks = [get_status_with_limit(cmd_id) for cmd_id in command_ids]
+                status_results = await asyncio.gather(*status_tasks, return_exceptions=True)
+                
+                # Process results
+                for result_item in status_results:
+                    if isinstance(result_item, Exception):
+                        continue
+                    if isinstance(result_item, tuple) and len(result_item) == 2:
+                        cmd_id, status = result_item
+                        command_statuses[cmd_id] = status
+                
+            except Exception as e:
+                logger.warning(f"Failed to batch fetch command statuses: {e}")
+
         # Convert result to response model
         response_list = []
         for row in result:
+            command = row.get("command")
+            command_id = str(command) if command else None
+            status = None
+            processing_info = None
+            
+            # Get status information if command exists
+            if command_id and command_id in command_statuses:
+                status_obj = command_statuses[command_id]
+                if status_obj:
+                    status = status_obj.status
+                    processing_info = {
+                        "started_at": getattr(status_obj, "started_at", None),
+                        "completed_at": getattr(status_obj, "completed_at", None),
+                        "error": getattr(status_obj, "error", None),
+                    }
+            elif command_id:
+                # Command exists but status couldn't be fetched
+                status = "unknown"
+            
             response_list.append(
                 SourceListResponse(
                     id=row["id"],
@@ -175,9 +247,14 @@ async def get_sources(
                     if row.get("asset")
                     else None,
                     embedded=row.get("embedded", False),
+                    embedded_chunks=row.get("embedded_chunks", 0),
                     insights_count=row.get("insights_count", 0),
                     created=str(row["created"]),
                     updated=str(row["updated"]),
+                    # Status fields
+                    command_id=command_id,
+                    status=status,
+                    processing_info=processing_info,
                 )
             )
 
@@ -265,7 +342,7 @@ async def create_source(
                 id=ensure_record_id(f"source:{source_id}"),
                 title=source_data.title or "Processing...",
                 topics=[], 
-                notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}"),
+                notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}") if primary_notebook_id else None,
             )
             await source.save()
             
@@ -342,7 +419,7 @@ async def create_source(
                     id=ensure_record_id(f"source:{source_id}"),
                     title=source_data.title or "Processing...",
                     topics=[],
-                    notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}"),
+                    notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}") if primary_notebook_id else None,
                 )
                 await source.save()
                 
@@ -456,6 +533,17 @@ async def get_source(source_id: str):
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
+        # Get status information if command exists
+        status = None
+        processing_info = None
+        if source.command:
+            try:
+                status = await source.get_status()
+                processing_info = await source.get_processing_progress()
+            except Exception as e:
+                logger.warning(f"Failed to get status for source {source_id}: {e}")
+                status = "unknown"
+
         embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
             id=source.id,
@@ -472,6 +560,10 @@ async def get_source(source_id: str):
             embedded_chunks=embedded_chunks,
             created=str(source.created),
             updated=str(source.updated),
+            # Status fields
+            command_id=str(source.command) if source.command else None,
+            status=status,
+            processing_info=processing_info,
         )
     except HTTPException:
         raise
@@ -580,6 +672,117 @@ async def update_source(source_id: str, source_update: SourceUpdate):
     except Exception as e:
         logger.error(f"Error updating source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating source: {str(e)}")
+
+
+@router.post("/sources/{source_id}/retry", response_model=SourceResponse)
+async def retry_source_processing(source_id: str):
+    """Retry processing for a failed or stuck source."""
+    try:
+        # First, verify source exists
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        # Check if source already has a running command
+        if source.command:
+            try:
+                status = await source.get_status()
+                if status in ["running", "queued"]:
+                    raise HTTPException(
+                        status_code=400, 
+                        detail="Source is already processing. Cannot retry while processing is active."
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to check current status for source {source_id}: {e}")
+                # Continue with retry if we can't check status
+
+        # Get notebooks that this source belongs to
+        query = "SELECT notebook FROM reference WHERE source = $source_id"
+        references = await repo_query(query, {"source_id": source_id})
+        notebook_ids = [str(ref["notebook"]) for ref in references]
+        
+        if not notebook_ids:
+            raise HTTPException(status_code=400, detail="Source is not associated with any notebooks")
+
+        # Prepare content_state based on source asset
+        content_state = {}
+        if source.asset:
+            if source.asset.file_path:
+                content_state = {
+                    "file_path": source.asset.file_path,
+                    "delete_source": False  # Don't delete on retry
+                }
+            elif source.asset.url:
+                content_state = {
+                    "url": source.asset.url
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Source asset has no file_path or url")
+        else:
+            # Check if it's a text source by trying to get full_text
+            if source.full_text:
+                content_state = {
+                    "content": source.full_text
+                }
+            else:
+                raise HTTPException(status_code=400, detail="Cannot determine source content for retry")
+
+        try:
+            # Import command modules to ensure they're registered
+            import commands.source_commands  # noqa: F401
+            
+            # Submit new command for background processing
+            command_input = SourceProcessingInput(
+                source_id=str(source.id),
+                content_state=content_state,
+                notebook_ids=notebook_ids,
+                transformations=[],  # Use default transformations on retry
+                embed=True,  # Always embed on retry
+            )
+            
+            command_id = await CommandService.submit_command_job(
+                "open_notebook",  # app name
+                "process_source",  # command name
+                command_input.model_dump(),
+            )
+            
+            logger.info(f"Submitted retry processing command: {command_id} for source {source_id}")
+            
+            # Update source with new command ID
+            source.command = ensure_record_id(f"command:{command_id}")
+            await source.save()
+            
+            # Get current embedded chunks count
+            embedded_chunks = await source.get_embedded_chunks()
+            
+            # Return updated source response
+            return SourceResponse(
+                id=source.id,
+                title=source.title,
+                topics=source.topics or [],
+                asset=AssetModel(
+                    file_path=source.asset.file_path if source.asset else None,
+                    url=source.asset.url if source.asset else None,
+                ) if source.asset else None,
+                full_text=source.full_text,
+                embedded=embedded_chunks > 0,
+                embedded_chunks=embedded_chunks,
+                created=str(source.created),
+                updated=str(source.updated),
+                command_id=command_id,
+                status="queued",
+                processing_info={"retry": True, "queued": True}
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to submit retry processing command for source {source_id}: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to queue retry processing: {str(e)}")
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrying source processing for {source_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error retrying source processing: {str(e)}")
 
 
 @router.delete("/sources/{source_id}")

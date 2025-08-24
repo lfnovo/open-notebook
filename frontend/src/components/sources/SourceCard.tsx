@@ -1,0 +1,343 @@
+'use client'
+
+import { useState } from 'react'
+import { SourceListResponse } from '@/lib/types/api'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator 
+} from '@/components/ui/dropdown-menu'
+import { 
+  FileText, 
+  ExternalLink, 
+  Upload, 
+  MoreVertical, 
+  Eye, 
+  Edit3, 
+  Trash2, 
+  RefreshCw, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  Loader2,
+  MessageSquare 
+} from 'lucide-react'
+import { useSourceStatus } from '@/lib/hooks/use-sources'
+import { cn } from '@/lib/utils'
+
+interface SourceCardProps {
+  source: SourceListResponse
+  onEdit?: (source: SourceListResponse) => void
+  onDelete?: (sourceId: string) => void
+  onRetry?: (sourceId: string) => void
+  onView?: (sourceId: string) => void
+  onChat?: (sourceId: string) => void
+  className?: string
+}
+
+const SOURCE_TYPE_ICONS = {
+  link: ExternalLink,
+  upload: Upload,
+  text: FileText,
+} as const
+
+const STATUS_CONFIG = {
+  queued: {
+    icon: Clock,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    label: 'Queued',
+    description: 'Waiting to be processed'
+  },
+  running: {
+    icon: Loader2,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50', 
+    borderColor: 'border-blue-200',
+    label: 'Processing',
+    description: 'Being processed'
+  },
+  completed: {
+    icon: CheckCircle,
+    color: 'text-green-600',
+    bgColor: 'bg-green-50',
+    borderColor: 'border-green-200',
+    label: 'Completed',
+    description: 'Successfully processed'
+  },
+  failed: {
+    icon: AlertTriangle,
+    color: 'text-red-600',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200',
+    label: 'Failed',
+    description: 'Processing failed'
+  }
+} as const
+
+type SourceStatus = keyof typeof STATUS_CONFIG
+
+function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
+  // Determine type based on asset information
+  if (source.asset?.url) return 'link'
+  if (source.asset?.file_path) return 'upload'
+  return 'text'
+}
+
+export function SourceCard({ 
+  source, 
+  onEdit, 
+  onDelete, 
+  onRetry, 
+  onView, 
+  onChat,
+  className 
+}: SourceCardProps) {
+  const [showFullTitle, setShowFullTitle] = useState(false)
+  
+  // Only fetch status for sources that might have async processing
+  const sourceWithStatus = source as SourceListResponse & { command_id?: string; status?: string }
+  const shouldFetchStatus = !!sourceWithStatus.command_id || 
+    sourceWithStatus.status === 'queued' || 
+    sourceWithStatus.status === 'running'
+    
+  const { data: statusData, isLoading: statusLoading } = useSourceStatus(
+    source.id, 
+    shouldFetchStatus
+  )
+
+  // Determine current status
+  const currentStatus: SourceStatus = (
+    statusData?.status || 
+    sourceWithStatus.status || 
+    'completed'
+  ) as SourceStatus
+  
+  const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.completed
+  const StatusIcon = statusConfig.icon
+  const sourceType = getSourceType(source)
+  const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
+  
+  const title = source.title || 'Untitled Source'
+  const isLongTitle = title.length > 50
+
+  const handleRetry = () => {
+    if (onRetry) {
+      onRetry(source.id)
+    }
+  }
+
+  const handleView = () => {
+    if (onView) {
+      onView(source.id)
+    }
+  }
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(source)
+    }
+  }
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(source.id)
+    }
+  }
+
+  const handleChat = () => {
+    if (onChat) {
+      onChat(source.id)
+    }
+  }
+
+  const isProcessing = currentStatus === 'running' || currentStatus === 'queued'
+  const isFailed = currentStatus === 'failed'
+  const isCompleted = currentStatus === 'completed'
+
+  return (
+    <Card className={cn(
+      'transition-all duration-200 hover:shadow-md group relative',
+      statusConfig.borderColor,
+      'border-l-4',
+      className
+    )}>
+      <CardContent className="p-4">
+        {/* Header with status indicator */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            {/* Status badge */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+                statusConfig.bgColor,
+                statusConfig.color
+              )}>
+                <StatusIcon className={cn(
+                  'h-3 w-3',
+                  isProcessing && 'animate-spin'
+                )} />
+                {statusLoading && shouldFetchStatus ? 'Checking...' : statusConfig.label}
+              </div>
+              
+              {/* Source type indicator */}
+              <div className="flex items-center gap-1 text-gray-500">
+                <SourceTypeIcon className="h-3 w-3" />
+                <span className="text-xs capitalize">{sourceType}</span>
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="mb-2">
+              <h4 
+                className={cn(
+                  'text-sm font-medium leading-tight',
+                  isLongTitle && !showFullTitle && 'line-clamp-2'
+                )}
+                title={title}
+              >
+                {title}
+              </h4>
+              {isLongTitle && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800"
+                  onClick={() => setShowFullTitle(!showFullTitle)}
+                >
+                  {showFullTitle ? 'Show less' : 'Show more'}
+                </Button>
+              )}
+            </div>
+
+            {/* Processing message for active statuses */}
+            {statusData?.message && (isProcessing || isFailed) && (
+              <p className="text-xs text-gray-600 mb-2 italic">
+                {statusData.message}
+              </p>
+            )}
+
+            {/* Metadata badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {isCompleted && source.embedded_chunks > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {source.embedded_chunks} chunks
+                </Badge>
+              )}
+              {isCompleted && source.insights_count > 0 && (
+                <Badge variant="outline" className="text-xs">
+                  {source.insights_count} insights
+                </Badge>
+              )}
+              {source.topics.length > 0 && isCompleted && (
+                <>
+                  {source.topics.slice(0, 2).map((topic, index) => (
+                    <Badge key={index} variant="outline" className="text-xs">
+                      {topic}
+                    </Badge>
+                  ))}
+                  {source.topics.length > 2 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{source.topics.length - 2}
+                    </Badge>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Actions dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleView} disabled={!onView}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              
+              {isCompleted && (
+                <DropdownMenuItem onClick={handleChat} disabled={!onChat}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Chat with Source
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuItem onClick={handleEdit} disabled={!onEdit}>
+                <Edit3 className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              
+              {isFailed && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleRetry} disabled={!onRetry}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Retry Processing
+                  </DropdownMenuItem>
+                </>
+              )}
+              
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={handleDelete} 
+                disabled={!onDelete}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Quick action buttons for failed state */}
+        {isFailed && (
+          <div className="flex gap-2 pt-2 border-t">
+            <Button
+              variant="outline" 
+              size="sm"
+              onClick={handleRetry}
+              disabled={!onRetry}
+              className="h-7 text-xs"
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Processing progress indicator */}
+        {isProcessing && statusData?.processing_info?.progress && (
+          <div className="mt-3 pt-2 border-t">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs text-gray-600">Progress</span>
+              <span className="text-xs text-gray-600">
+                {Math.round(statusData.processing_info.progress)}%
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+                style={{ width: `${statusData.processing_info.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}

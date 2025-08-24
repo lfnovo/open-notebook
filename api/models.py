@@ -218,14 +218,14 @@ class SourceCreate(BaseModel):
         if self.notebook_id is not None and self.notebooks is not None:
             raise ValueError("Cannot specify both 'notebook_id' and 'notebooks'. Use 'notebooks' for multi-notebook support.")
         
-        # Ensure at least one notebook is specified
-        if self.notebook_id is None and (self.notebooks is None or len(self.notebooks) == 0):
-            raise ValueError("Must specify either 'notebook_id' or 'notebooks' with at least one notebook ID.")
-        
         # Convert single notebook_id to notebooks array for internal processing
         if self.notebook_id is not None:
             self.notebooks = [self.notebook_id]
             # Keep notebook_id for backward compatibility in response
+        
+        # Set empty array if no notebooks specified (allow sources without notebooks)
+        if self.notebooks is None:
+            self.notebooks = []
         
         return self
 
@@ -256,10 +256,15 @@ class SourceListResponse(BaseModel):
     title: Optional[str]
     topics: Optional[List[str]]
     asset: Optional[AssetModel]
-    embedded: bool  # Changed from embedded_chunks count to boolean
+    embedded: bool  # Boolean flag indicating if source has embeddings
+    embedded_chunks: int  # Number of embedded chunks
     insights_count: int
     created: str
     updated: str
+    # Status fields for async processing
+    command_id: Optional[str] = None
+    status: Optional[str] = None
+    processing_info: Optional[Dict[str, Any]] = None
 
 
 # Context API models

@@ -85,32 +85,23 @@ async def process_source_command(
 
         logger.info(f"Updated source {source.id} with command reference")
 
-        # 3. Process source for each notebook (source_graph expects single notebook_id)
-        # We'll process the first notebook with the main workflow, then add to additional notebooks
-        primary_notebook_id = (
-            input_data.notebook_ids[0] if input_data.notebook_ids else None
-        )
+        # 3. Process source with all notebooks
+        logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
 
-        logger.info(f"Processing with primary notebook: {primary_notebook_id}")
-
-        # Execute source_graph with the first notebook
+        # Execute source_graph with all notebooks
         result = await source_graph.ainvoke(
             {
                 "content_state": input_data.content_state,
-                "notebook_id": primary_notebook_id,
+                "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,
                 "embed": input_data.embed,
+                "source_id": input_data.source_id,  # Add the source_id to the state
             }
         )
 
         processed_source = result["source"]
 
-        # 4. Add source to additional notebooks if any
-        for notebook_id in input_data.notebook_ids[1:]:
-            logger.info(f"Adding source to additional notebook: {notebook_id}")
-            await processed_source.add_to_notebook(notebook_id)
-
-        # 5. Gather processing results
+        # 4. Gather processing results (notebook associations handled by source_graph)
         embedded_chunks = (
             await processed_source.get_embedded_chunks() if input_data.embed else 0
         )

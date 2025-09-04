@@ -161,6 +161,16 @@ class Source(ObjectModel):
             return ensure_record_id(value)
         return value
 
+    @field_validator("id", mode="before")
+    @classmethod
+    def parse_id(cls, value):
+        """Parse id field to handle both string and RecordID inputs"""
+        if value is None:
+            return None
+        if isinstance(value, RecordID):
+            return str(value)
+        return str(value) if value else None
+
     async def get_status(self) -> Optional[str]:
         """Get the processing status of the associated command"""
         if not self.command:

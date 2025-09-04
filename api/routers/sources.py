@@ -1,5 +1,4 @@
 import os
-import uuid
 from pathlib import Path
 from typing import List, Optional
 
@@ -84,13 +83,21 @@ def parse_source_form_data(
     content: Optional[str] = Form(None),
     title: Optional[str] = Form(None),
     transformations: Optional[str] = Form(None),  # JSON string of transformation IDs
-    embed: bool = Form(False),
-    delete_source: bool = Form(False),
-    async_processing: bool = Form(False),
+    embed: str = Form("false"),  # Accept as string, convert to bool
+    delete_source: str = Form("false"),  # Accept as string, convert to bool
+    async_processing: str = Form("false"),  # Accept as string, convert to bool
     file: Optional[UploadFile] = File(None),
 ) -> tuple[SourceCreate, Optional[UploadFile]]:
     """Parse form data into SourceCreate model and return upload file separately."""
     import json
+    
+    # Convert string booleans to actual booleans
+    def str_to_bool(value: str) -> bool:
+        return value.lower() in ('true', '1', 'yes', 'on')
+    
+    embed_bool = str_to_bool(embed)
+    delete_source_bool = str_to_bool(delete_source) 
+    async_processing_bool = str_to_bool(async_processing)
     
     # Parse JSON strings
     notebooks_list = None
@@ -98,6 +105,7 @@ def parse_source_form_data(
         try:
             notebooks_list = json.loads(notebooks)
         except json.JSONDecodeError:
+            logger.error(f"DEBUG - Invalid JSON in notebooks field: {notebooks}")
             raise ValueError("Invalid JSON in notebooks field")
     
     transformations_list = []
@@ -105,21 +113,27 @@ def parse_source_form_data(
         try:
             transformations_list = json.loads(transformations)
         except json.JSONDecodeError:
+            logger.error(f"DEBUG - Invalid JSON in transformations field: {transformations}")
             raise ValueError("Invalid JSON in transformations field")
     
     # Create SourceCreate instance
-    source_data = SourceCreate(
-        type=type,
-        notebook_id=notebook_id,
-        notebooks=notebooks_list,
-        url=url,
-        content=content,
-        title=title,
-        transformations=transformations_list,
-        embed=embed,
-        delete_source=delete_source,
-        async_processing=async_processing,
-    )
+    try:
+        source_data = SourceCreate(
+            type=type,
+            notebook_id=notebook_id,
+            notebooks=notebooks_list,
+            url=url,
+            content=content,
+            title=title,
+            transformations=transformations_list,
+            embed=embed_bool,
+            delete_source=delete_source_bool,
+            async_processing=async_processing_bool,
+        )
+        pass  # SourceCreate instance created successfully
+    except Exception as e:
+        logger.error(f"Failed to create SourceCreate instance: {e}")
+        raise
     
     return source_data, file
 
@@ -266,6 +280,7 @@ async def get_sources(
         raise HTTPException(status_code=500, detail=f"Error fetching sources: {str(e)}")
 
 
+
 @router.post("/sources", response_model=SourceResponse)
 async def create_source(
     form_data: tuple[SourceCreate, Optional[UploadFile]] = Depends(parse_source_form_data),
@@ -333,16 +348,10 @@ async def create_source(
             # ASYNC PATH: Create source record first, then queue command
             logger.info("Using async processing path")
             
-            # Create source record immediately with title and basic info
-            primary_notebook_id = source_data.notebooks[0] if source_data.notebooks else None
-            
-            # Create minimal source record
-            source_id = str(uuid.uuid4())
+            # Create minimal source record - let SurrealDB generate the ID
             source = Source(
-                id=ensure_record_id(f"source:{source_id}"),
                 title=source_data.title or "Processing...",
                 topics=[], 
-                notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}") if primary_notebook_id else None,
             )
             await source.save()
             
@@ -410,16 +419,10 @@ async def create_source(
                 # Import command modules to ensure they're registered  
                 import commands.source_commands  # noqa: F401
                 
-                # Create source record immediately for sync processing
-                primary_notebook_id = source_data.notebooks[0] if source_data.notebooks else None
-                
-                # Create source record
-                source_id = str(uuid.uuid4())
+                # Create source record - let SurrealDB generate the ID
                 source = Source(
-                    id=ensure_record_id(f"source:{source_id}"),
                     title=source_data.title or "Processing...",
                     topics=[],
-                    notebook_id=ensure_record_id(f"notebook:{primary_notebook_id}") if primary_notebook_id else None,
                 )
                 await source.save()
                 

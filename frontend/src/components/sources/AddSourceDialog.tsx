@@ -20,6 +20,19 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import { 
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from '@/components/ui/command'
+import { CheckIcon, ChevronDownIcon, XIcon } from 'lucide-react'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
@@ -31,21 +44,22 @@ const createSourceSchema = z.object({
     required_error: 'Please select a source type',
   }),
   title: z.string().optional(),
-  // Conditional fields based on type
-  url: z.string().url('Please enter a valid URL').optional(),
+  // Conditional fields based on type - will be validated with superRefine
+  url: z.string().optional(),
   content: z.string().optional(),
   file: z.any().optional(),
   // Multi-select fields
   notebooks: z.array(z.string()).optional(),
   transformations: z.array(z.string()).optional(),
-  embed: z.boolean().default(true),
-  async_processing: z.boolean().default(true),
+  embed: z.boolean(),
+  async_processing: z.boolean(),
 }).refine((data) => {
+  // Validate based on type
   if (data.type === 'link') {
-    return !!data.url
+    return !!data.url && data.url.trim() !== ''
   }
   if (data.type === 'text') {
-    return !!data.content
+    return !!data.content && data.content.trim() !== ''
   }
   if (data.type === 'upload') {
     if (data.file instanceof FileList) {
@@ -56,7 +70,7 @@ const createSourceSchema = z.object({
   return true
 }, {
   message: 'Please provide the required content for the selected source type',
-  path: ['type'], // Show error on the type field
+  path: ['type'],
 })
 
 type CreateSourceFormData = z.infer<typeof createSourceSchema>
@@ -98,6 +112,12 @@ export function AddSourceDialog({
     message: string
     progress?: number
   } | null>(null)
+  const [notebookOpen, setNotebookOpen] = useState(false)
+  const [transformationOpen, setTransformationOpen] = useState(false)
+  const [localSelectedNotebooks, setLocalSelectedNotebooks] = useState<string[]>(
+    defaultNotebookId ? [defaultNotebookId] : []
+  )
+  const [localSelectedTransformations, setLocalSelectedTransformations] = useState<string[]>([])
   
   const createSource = useCreateSource()
   const { data: notebooks = [], isLoading: notebooksLoading } = useNotebooks()
@@ -123,22 +143,23 @@ export function AddSourceDialog({
   })
 
   const selectedType = watch('type')
-  const selectedNotebooks = watch('notebooks') || []
-  const selectedTransformations = watch('transformations') || []
+  // Use local state instead of watch for better reactivity
+  const selectedNotebooks = localSelectedNotebooks
+  const selectedTransformations = localSelectedTransformations
 
   const onSubmit = async (data: CreateSourceFormData) => {
     try {
       setStep('processing')
       setProcessingStatus({ message: 'Submitting source for processing...' })
 
-      // Create the request object
+      // Create the request object using local state for notebooks/transformations
       const createRequest: CreateSourceRequest = {
         type: data.type,
-        notebooks: data.notebooks,
+        notebooks: localSelectedNotebooks,
         url: data.type === 'link' ? data.url : undefined,
         content: data.type === 'text' ? data.content : undefined,
         title: data.title,
-        transformations: data.transformations,
+        transformations: localSelectedTransformations,
         embed: data.embed,
         delete_source: false,
         async_processing: data.async_processing,
@@ -151,7 +172,7 @@ export function AddSourceDialog({
         requestWithFile.file = file
       }
 
-      const result = await createSource.mutateAsync(createRequest)
+      await createSource.mutateAsync(createRequest)
 
       if (data.async_processing) {
         setProcessingStatus({ 
@@ -191,22 +212,32 @@ export function AddSourceDialog({
     reset()
     setStep('form')
     setProcessingStatus(null)
+    setLocalSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
+    setLocalSelectedTransformations([])
+    setNotebookOpen(false)
+    setTransformationOpen(false)
     onOpenChange(false)
   }
 
   const handleNotebookToggle = (notebookId: string) => {
-    const current = getValues('notebooks') || []
-    const updated = current.includes(notebookId)
-      ? current.filter(id => id !== notebookId)
-      : [...current, notebookId]
+    console.log('📝 handleNotebookToggle called with:', notebookId)
+    const updated = localSelectedNotebooks.includes(notebookId)
+      ? localSelectedNotebooks.filter(id => id !== notebookId)
+      : [...localSelectedNotebooks, notebookId]
+    console.log('📝 Updated notebooks:', updated)
+    setLocalSelectedNotebooks(updated)
+    // Also update form state for submission
     setValue('notebooks', updated)
   }
 
   const handleTransformationToggle = (transformationId: string) => {
-    const current = getValues('transformations') || []
-    const updated = current.includes(transformationId)
-      ? current.filter(id => id !== transformationId)
-      : [...current, transformationId]
+    console.log('📝 handleTransformationToggle called with:', transformationId)
+    const updated = localSelectedTransformations.includes(transformationId)
+      ? localSelectedTransformations.filter(id => id !== transformationId)
+      : [...localSelectedTransformations, transformationId]
+    console.log('📝 Updated transformations:', updated)
+    setLocalSelectedTransformations(updated)
+    // Also update form state for submission
     setValue('transformations', updated)
   }
 
@@ -245,7 +276,7 @@ export function AddSourceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-hidden">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add New Source</DialogTitle>
           <DialogDescription>
@@ -253,9 +284,9 @@ export function AddSourceDialog({
           </DialogDescription>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <ScrollArea className="max-h-[60vh] pr-4">
-            <div className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <ScrollArea className="max-h-[65vh] pr-4">
+            <div className="space-y-4">
               {/* Source Type Selection */}
               <div>
                 <Label className="text-base font-medium">Source Type</Label>
@@ -290,7 +321,7 @@ export function AddSourceDialog({
                           {/* Type-specific fields */}
                           {type.value === 'link' && (
                             <div>
-                              <Label htmlFor="url">URL *</Label>
+                              <Label htmlFor="url" className="mb-2 block">URL *</Label>
                               <Input
                                 id="url"
                                 {...register('url')}
@@ -305,19 +336,11 @@ export function AddSourceDialog({
                           
                           {type.value === 'upload' && (
                             <div>
-                              <Label htmlFor="file">File *</Label>
+                              <Label htmlFor="file" className="mb-2 block">File *</Label>
                               <Input
                                 id="file"
                                 type="file"
-                                {...register('file', {
-                                  required: type.value === 'upload' ? 'Please select a file to upload' : false,
-                                  validate: (value) => {
-                                    if (type.value === 'upload') {
-                                      return value?.[0] instanceof File || 'Please select a file to upload'
-                                    }
-                                    return true
-                                  }
-                                })}
+                                {...register('file')}
                                 accept=".pdf,.doc,.docx,.txt,.md,.epub"
                               />
                               <p className="text-xs text-gray-500 mt-1">
@@ -331,7 +354,7 @@ export function AddSourceDialog({
                           
                           {type.value === 'text' && (
                             <div>
-                              <Label htmlFor="content">Text Content *</Label>
+                              <Label htmlFor="content" className="mb-2 block">Text Content *</Label>
                               <Textarea
                                 id="content"
                                 {...register('content')}
@@ -355,7 +378,7 @@ export function AddSourceDialog({
 
               {/* Title */}
               <div>
-                <Label htmlFor="title">Title (optional)</Label>
+                <Label htmlFor="title" className="mb-2 block">Title (optional)</Label>
                 <Input
                   id="title"
                   {...register('title')}
@@ -367,86 +390,99 @@ export function AddSourceDialog({
               </div>
 
               {/* Notebook Selection */}
-              <div>
+              <div className="space-y-3">
                 <Label className="text-base font-medium">Notebooks (optional)</Label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select which notebooks to add this source to ({selectedNotebooks.length} selected)
-                </p>
-                {notebooksLoading ? (
-                  <div className="flex items-center gap-2 py-4">
-                    <LoaderIcon className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-gray-600">Loading notebooks...</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                    {notebooks.map((notebook: NotebookResponse) => (
-                      <label
-                        key={notebook.id}
-                        className="flex items-start gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedNotebooks.includes(notebook.id)}
-                          onCheckedChange={() => handleNotebookToggle(notebook.id)}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{notebook.name}</p>
-                          {notebook.description && (
-                            <p className="text-xs text-gray-600 truncate">{notebook.description}</p>
+                <div className="border rounded-md p-3 bg-gray-50">
+                  <ScrollArea className="max-h-24">
+                    <div className="space-y-2 pr-3">
+                      {notebooks.map((notebook: NotebookResponse) => (
+                        <Controller
+                          key={notebook.id}
+                          control={control}
+                          name="notebooks"
+                          render={({ field }) => (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={field.value?.includes(notebook.id) || false}
+                                onCheckedChange={(checked) => {
+                                  const currentValue = field.value || []
+                                  if (checked) {
+                                    field.onChange([...currentValue, notebook.id])
+                                  } else {
+                                    field.onChange(currentValue.filter((id: string) => id !== notebook.id))
+                                  }
+                                }}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium">{notebook.name}</span>
+                                {notebook.description && (
+                                  <p className="text-xs text-gray-600">{notebook.description}</p>
+                                )}
+                              </div>
+                            </label>
                           )}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
                 {errors.notebooks && (
                   <p className="text-sm text-red-600 mt-1">{errors.notebooks.message}</p>
                 )}
               </div>
 
               {/* Transformation Selection */}
-              <div>
+              <div className="space-y-3">
                 <Label className="text-base font-medium">Transformations (optional)</Label>
-                <p className="text-sm text-gray-600 mb-3">
-                  Select transformations to apply during processing ({selectedTransformations.length} selected)
-                </p>
-                {transformationsLoading ? (
-                  <div className="flex items-center gap-2 py-4">
-                    <LoaderIcon className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-gray-600">Loading transformations...</span>
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
-                    {transformations.map((transformation: Transformation) => (
-                      <label
-                        key={transformation.id}
-                        className="flex items-start gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
-                      >
-                        <Checkbox
-                          checked={selectedTransformations.includes(transformation.id)}
-                          onCheckedChange={() => handleTransformationToggle(transformation.id)}
+                <div className="border rounded-md p-3 bg-gray-50">
+                  <ScrollArea className="max-h-24">
+                    <div className="space-y-2 pr-3">
+                      {transformations.map((transformation: Transformation) => (
+                        <Controller
+                          key={transformation.id}
+                          control={control}
+                          name="transformations"
+                          render={({ field }) => (
+                            <label className="flex items-start gap-2 cursor-pointer">
+                              <Checkbox
+                                checked={field.value?.includes(transformation.id) || false}
+                                onCheckedChange={(checked) => {
+                                  const currentValue = field.value || []
+                                  if (checked) {
+                                    field.onChange([...currentValue, transformation.id])
+                                  } else {
+                                    field.onChange(currentValue.filter((id: string) => id !== transformation.id))
+                                  }
+                                }}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <span className="text-sm font-medium">{transformation.title}</span>
+                                <p className="text-xs text-gray-600">{transformation.description}</p>
+                              </div>
+                            </label>
+                          )}
                         />
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{transformation.title}</p>
-                          <p className="text-xs text-gray-600">{transformation.description}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
 
-              {/* Options */}
+              {/* Processing Options */}
               <div className="space-y-3">
-                <Label className="text-base font-medium">Processing Options</Label>
+                <Label className="text-base font-medium mb-2 block">Processing Options</Label>
                 
                 <Controller
                   control={control}
                   name="embed"
                   render={({ field }) => (
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="mt-1"
                       />
                       <div>
                         <span className="text-sm font-medium">Enable embedding for search</span>
@@ -462,15 +498,16 @@ export function AddSourceDialog({
                   control={control}
                   name="async_processing"
                   render={({ field }) => (
-                    <label className="flex items-center gap-2 cursor-pointer">
+                    <label className="flex items-start gap-2 cursor-pointer">
                       <Checkbox
                         checked={field.value}
                         onCheckedChange={field.onChange}
+                        className="mt-1"
                       />
                       <div>
                         <span className="text-sm font-medium">Async processing (recommended)</span>
                         <p className="text-xs text-gray-600">
-                          Process in the background for better performance with large files
+                          Process in the background for better performance
                         </p>
                       </div>
                     </label>
@@ -481,31 +518,17 @@ export function AddSourceDialog({
           </ScrollArea>
 
           {/* Footer */}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <div className="flex gap-2">
-              {selectedNotebooks.length > 0 && (
-                <Badge variant="secondary">
-                  {selectedNotebooks.length} notebook{selectedNotebooks.length > 1 ? 's' : ''}
-                </Badge>
-              )}
-              {selectedTransformations.length > 0 && (
-                <Badge variant="outline">
-                  {selectedTransformations.length} transformation{selectedTransformations.length > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={createSource.isPending || !selectedType}
-              >
-                {createSource.isPending ? 'Creating...' : 'Add Source'}
-              </Button>
-            </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={createSource.isPending || !selectedType}
+              className="min-w-[120px]"
+            >
+              {createSource.isPending ? 'Creating...' : 'Add Source'}
+            </Button>
           </div>
         </form>
       </DialogContent>

@@ -74,10 +74,22 @@ When Open Notebook runs in Docker but Ollama runs on your host machine:
 export OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
+**⚠️ CRITICAL: Ollama must accept external connections:**
+```bash
+# Start Ollama with external access enabled
+export OLLAMA_HOST=0.0.0.0:11434
+ollama serve
+```
+
 **Why `host.docker.internal`?**
 - Docker containers can't reach `localhost` on the host
 - `host.docker.internal` is Docker's special hostname for the host machine
 - Available on Docker Desktop for Mac/Windows and recent Linux versions
+
+**Why `OLLAMA_HOST=0.0.0.0:11434`?**
+- By default, Ollama only binds to localhost and rejects external connections
+- Docker containers are considered "external" even when running on the same machine
+- Setting `OLLAMA_HOST=0.0.0.0:11434` allows connections from Docker containers
 
 ### Scenario 3: Both in Docker (Same Compose)
 
@@ -233,6 +245,15 @@ curl http://localhost:11434/api/tags
 ```bash
 echo $OLLAMA_API_BASE
 ```
+
+**⚠️ IMPORTANT: Enable external connections (most common fix):**
+```bash
+# If Open Notebook runs in Docker or on a different machine,
+# Ollama must bind to all interfaces, not just localhost
+export OLLAMA_HOST=0.0.0.0:11434
+ollama serve
+```
+> **Why this is needed:** By default, Ollama only accepts connections from `localhost` (127.0.0.1). When Open Notebook runs in Docker or on a different machine, it can't reach Ollama unless you configure `OLLAMA_HOST=0.0.0.0:11434` to accept external connections.
 
 **Restart Ollama:**
 ```bash

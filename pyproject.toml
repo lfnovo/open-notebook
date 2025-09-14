@@ -41,11 +41,11 @@ dependencies = [
     "nest-asyncio>=1.6.0",
     "content-core>=1.0.2",
     "ai-prompter>=0.3",
-    "esperanto>=2.3.4",
+    "esperanto>=2.4.1",
     "langchain-google-vertexai>=2.0.10",
     "surrealdb>=1.0.4",
     "surreal-commands>=1.0.13",
-    "podcast-creator>=0.2.6",
+    "podcast-creator>=0.7.0",
 ]
 
 [tool.setuptools]

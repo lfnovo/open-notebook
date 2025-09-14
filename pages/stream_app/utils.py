@@ -21,6 +21,7 @@ from open_notebook.utils import (
 
 def version_sidebar():
     with st.sidebar:
+        # Get current version
         try:
             current_version = get_installed_version("open-notebook")
         except Exception:
@@ -31,14 +32,29 @@ def version_sidebar():
                 pyproject = tomli.load(f)
                 current_version = pyproject["project"]["version"]
 
-        latest_version = get_version_from_github(
-            "https://www.github.com/lfnovo/open-notebook", "main"
-        )
         st.write(f"Open Notebook: {current_version}")
-        if compare_versions(current_version, latest_version) < 0:
-            st.warning(
-                f"New version {latest_version} available. [Click here for upgrade instructions](https://github.com/lfnovo/open-notebook/blob/main/docs/SETUP.md#upgrading-open-notebook)"
-            )
+
+        # Try to get latest version, but don't fail if unavailable
+        try:
+            # Use session state cache to avoid repeated checks
+            if 'latest_version' not in st.session_state or 'version_check_failed' not in st.session_state:
+                latest_version = get_version_from_github(
+                    "https://www.github.com/lfnovo/open-notebook", "main"
+                )
+                st.session_state.latest_version = latest_version
+                st.session_state.version_check_failed = False
+            else:
+                latest_version = st.session_state.latest_version
+
+            if not st.session_state.version_check_failed and compare_versions(current_version, latest_version) < 0:
+                st.warning(
+                    f"New version {latest_version} available. [Click here for upgrade instructions](https://github.com/lfnovo/open-notebook/blob/main/docs/SETUP.md#upgrading-open-notebook)"
+                )
+        except Exception:
+            # Cache the fact that version check failed to avoid repeated attempts
+            st.session_state.version_check_failed = True
+            # Optionally show a subtle message about failed update check
+            st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
 
 
 def create_session_for_notebook(notebook_id: str, session_name: str = None):

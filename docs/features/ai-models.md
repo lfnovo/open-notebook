@@ -25,7 +25,7 @@ export OPENAI_API_KEY=your_key_here
 # Environment variables
 export OPENAI_API_KEY=your_key
 export GEMINI_API_KEY=your_key
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 
 # Recommended configuration in settings covered below
 ```
@@ -180,8 +180,8 @@ export ANTHROPIC_API_KEY=your_api_key_here
 # Install Ollama locally
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# Set base URL (if running remotely)
-export OLLAMA_BASE_URL=http://localhost:11434
+# Set API base (if running remotely)
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 **Recommended Models**
@@ -198,6 +198,8 @@ export OLLAMA_BASE_URL=http://localhost:11434
 - Requires local hardware resources
 - Limited model variety compared to cloud providers
 - No TTS/STT capabilities
+
+> **📖 Need detailed Ollama setup help?** Check our comprehensive [Ollama Setup Guide](ollama.md) for network configuration, Docker deployment, troubleshooting, and optimization tips.
 
 ---
 
@@ -390,7 +392,7 @@ Open Notebook fully supports **reasoning models** that show their transparent th
 # Environment Variables
 export OPENAI_API_KEY=your_key
 export GEMINI_API_KEY=your_key
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 | Model Default | Recommended Model | Provider |
@@ -413,7 +415,7 @@ export OLLAMA_BASE_URL=http://localhost:11434
 ```bash
 # Environment Variables
 export OPENAI_API_KEY=your_key  # For STT/TTS only
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 | Model Default | Recommended Model | Provider |
@@ -503,7 +505,7 @@ export ELEVENLABS_API_KEY=your_key
 export VOYAGE_API_KEY=your_key
 
 # Local/Cloud Infrastructure
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 
 # Azure OpenAI
 export AZURE_OPENAI_API_KEY=your_key
@@ -581,8 +583,8 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama pull qwen3
 ollama pull mxbai-embed-large
 
-# Set base URL if remote
-export OLLAMA_BASE_URL=http://your-server:11434
+# Set API base if remote
+export OLLAMA_API_BASE=http://your-server:11434
 ```
 
 #### ElevenLabs

@@ -26,7 +26,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { AddSourceButton } from '@/components/sources/AddSourceButton'
+import { AddButton } from '@/components/common/AddButton'
 import { useState } from 'react'
 
 const navigation = [
@@ -91,6 +91,37 @@ export function AppSidebar() {
           "flex-1 space-y-4 py-4",
           isCollapsed ? "px-2" : "px-3"
         )}>
+          {/* Add button - placed before all sections */}
+          <div className={cn(
+            "mb-4",
+            isCollapsed ? "px-0" : "px-3"
+          )}>
+            {isCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <AddButton
+                      variant="default"
+                      size="sm"
+                      className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                      iconOnly={true}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  Add
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <AddButton
+                variant="default"
+                size="sm"
+                className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                iconOnly={false}
+              />
+            )}
+          </div>
+
           {navigation.map((section) => (
             <div key={section.title} className="space-y-1">
               {!isCollapsed && (
@@ -98,40 +129,7 @@ export function AppSidebar() {
                   {section.title}
                 </h3>
               )}
-              
-              {/* Add Source button for Collect section */}
-              {section.title === 'Collect' && (
-                <div className={cn(
-                  "mb-2",
-                  isCollapsed ? "px-0" : "px-3"
-                )}>
-                  {isCollapsed ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="w-full">
-                          <AddSourceButton 
-                            variant="outline" 
-                            size="sm"
-                            className="w-full justify-center px-2"
-                            iconOnly={true}
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">
-                        Add Source
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <AddSourceButton 
-                      variant="outline" 
-                      size="sm"
-                      className="w-full justify-start"
-                      iconOnly={false}
-                    />
-                  )}
-                </div>
-              )}
-              
+
               {section.items.map((item) => {
                 const isActive = pathname.startsWith(item.href)
                 const button = (

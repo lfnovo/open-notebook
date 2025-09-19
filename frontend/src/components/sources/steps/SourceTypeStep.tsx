@@ -60,7 +60,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
           name="type"
           render={({ field }) => (
             <Tabs 
-              value={field.value} 
+              value={field.value || ''} 
               onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
               className="w-full"
             >

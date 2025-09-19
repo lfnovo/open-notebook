@@ -196,6 +196,7 @@ export function AddSourceDialog({
         delete_source: false,
         async_processing: true, // Always use async processing for frontend submissions
       }
+
       
       if (data.type === 'upload' && data.file) {
         const file = data.file instanceof FileList ? data.file[0] : data.file

@@ -156,20 +156,28 @@ export default function SourcesPage() {
 
   return (
     <AppShell>
-      <div className="container mx-auto py-6">
-        <div className="mb-6">
+      <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
+        <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">All Sources</h1>
           <p className="mt-2 text-muted-foreground">
             Browse all sources across your notebooks. Use arrow keys to navigate and Enter to open.
           </p>
         </div>
 
-        <div className="rounded-md border">
-          <table 
+        <div className="flex-1 rounded-md border overflow-auto">
+          <table
             ref={tableRef}
             tabIndex={0}
-            className="w-full outline-none"
+            className="w-full min-w-[800px] outline-none table-fixed"
           >
+            <colgroup>
+              <col className="w-[120px]" />
+              <col className="w-auto" />
+              <col className="w-[140px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+              <col className="w-[100px]" />
+            </colgroup>
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
@@ -178,13 +186,13 @@ export default function SourcesPage() {
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Title
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
                   Created
                 </th>
-                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden md:table-cell">
                   Insights
                 </th>
-                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground">
+                <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden lg:table-cell">
                   Embedded
                 </th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
@@ -214,24 +222,24 @@ export default function SourcesPage() {
                     </div>
                   </td>
                   <td className="h-12 px-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium">
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="font-medium truncate">
                         {source.title || 'Untitled Source'}
                       </span>
                       {source.asset?.url && (
-                        <span className="text-xs text-muted-foreground truncate max-w-md">
+                        <span className="text-xs text-muted-foreground truncate">
                           {source.asset.url}
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="h-12 px-4 text-muted-foreground">
+                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.created), { addSuffix: true })}
                   </td>
-                  <td className="h-12 px-4 text-center">
-                    {source.insights_count || 0}
+                  <td className="h-12 px-4 text-center hidden md:table-cell">
+                    <span className="text-sm font-medium">{source.insights_count || 0}</span>
                   </td>
-                  <td className="h-12 px-4 text-center">
+                  <td className="h-12 px-4 text-center hidden lg:table-cell">
                     <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
                       {source.embedded ? "Yes" : "No"}
                     </Badge>

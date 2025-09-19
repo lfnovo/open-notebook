@@ -124,3 +124,4 @@ desktop.ini
 
 claude-logs/
 .claude/sessions
+**/claude-logs

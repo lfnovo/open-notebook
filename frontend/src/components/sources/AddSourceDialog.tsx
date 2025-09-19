@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -85,7 +85,19 @@ export function AddSourceDialog({
     defaultNotebookId ? [defaultNotebookId] : []
   )
   const [selectedTransformations, setSelectedTransformations] = useState<string[]>([])
-  
+
+  // Cleanup timeouts to prevent memory leaks
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
   // API hooks
   const createSource = useCreateSource()
   const { data: notebooks = [], isLoading: notebooksLoading } = useNotebooks()
@@ -99,7 +111,6 @@ export function AddSourceDialog({
     watch,
     formState: { errors },
     reset,
-    getValues,
   } = useForm<CreateSourceFormData>({
     resolver: zodResolver(createSourceSchema),
     defaultValues: {
@@ -206,17 +217,19 @@ export function AddSourceDialog({
 
       await createSource.mutateAsync(createRequest)
 
-      setProcessingStatus({ 
+      setProcessingStatus({
         message: 'Source submitted for async processing. You can monitor progress in the sources list.',
-        progress: 100 
+        progress: 100
       })
-      setTimeout(() => handleClose(), 3000)
+      timeoutRef.current = setTimeout(() => {
+        handleClose()
+      }, 3000)
     } catch (error) {
       console.error('Error creating source:', error)
       setProcessingStatus({ 
         message: 'Error creating source. Please try again.',
       })
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setProcessing(false)
         setProcessingStatus(null)
       }, 3000)
@@ -225,6 +238,12 @@ export function AddSourceDialog({
 
   // Dialog management
   const handleClose = () => {
+    // Clear any pending timeouts
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+
     reset()
     setCurrentStep(1)
     setProcessing(false)
@@ -237,8 +256,8 @@ export function AddSourceDialog({
   // Processing view
   if (processing) {
     return (
-      <Dialog open={open} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-[500px]" showCloseButton={false}>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
           <DialogHeader>
             <DialogTitle>Processing Source</DialogTitle>
             <DialogDescription>

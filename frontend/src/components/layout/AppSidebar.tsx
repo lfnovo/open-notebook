@@ -26,7 +26,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { AddButton } from '@/components/common/AddButton'
+import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { useState } from 'react'
 
 const navigation = [
@@ -63,6 +63,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
+  const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -100,25 +101,30 @@ export function AppSidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="w-full">
-                    <AddButton
+                    <Button
+                      onClick={() => setSourceDialogOpen(true)}
                       variant="default"
                       size="sm"
                       className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                      iconOnly={true}
-                    />
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right">
-                  Add
+                  Add Source
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <AddButton
+              <Button
+                onClick={() => setSourceDialogOpen(true)}
                 variant="default"
                 size="sm"
                 className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                iconOnly={false}
-              />
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Source
+              </Button>
             )}
           </div>
 
@@ -222,6 +228,11 @@ export function AppSidebar() {
           )}
         </div>
       </div>
+
+      <AddSourceDialog
+        open={sourceDialogOpen}
+        onOpenChange={setSourceDialogOpen}
+      />
     </TooltipProvider>
   )
 }

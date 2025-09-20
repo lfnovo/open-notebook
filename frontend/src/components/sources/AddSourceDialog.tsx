@@ -20,6 +20,7 @@ import { ProcessingStep } from './steps/ProcessingStep'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
+import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 
 const createSourceSchema = z.object({
@@ -51,6 +52,15 @@ const createSourceSchema = z.object({
 }, {
   message: 'Please provide the required content for the selected source type',
   path: ['type'],
+}).refine((data) => {
+  // Make title mandatory for text sources
+  if (data.type === 'text') {
+    return !!data.title && data.title.trim() !== ''
+  }
+  return true
+}, {
+  message: 'Title is required for text sources',
+  path: ['title'],
 })
 
 type CreateSourceFormData = z.infer<typeof createSourceSchema>
@@ -89,19 +99,11 @@ export function AddSourceDialog({
   // Cleanup timeouts to prevent memory leaks
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Cleanup effect
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
-    }
-  }, [])
-
   // API hooks
   const createSource = useCreateSource()
   const { data: notebooks = [], isLoading: notebooksLoading } = useNotebooks()
   const { data: transformations = [], isLoading: transformationsLoading } = useTransformations()
+  const { data: settings } = useSettings()
 
   // Form setup
   const {
@@ -115,16 +117,48 @@ export function AddSourceDialog({
     resolver: zodResolver(createSourceSchema),
     defaultValues: {
       notebooks: defaultNotebookId ? [defaultNotebookId] : [],
-      embed: true,
+      embed: settings?.default_embedding_option === 'always' || settings?.default_embedding_option === 'ask',
       async_processing: true,
       transformations: [],
     },
   })
 
+  // Initialize form values when settings and transformations are loaded
+  useEffect(() => {
+    if (settings && transformations.length > 0) {
+      const defaultTransformations = transformations
+        .filter(t => t.apply_default)
+        .map(t => t.id)
+
+      setSelectedTransformations(defaultTransformations)
+
+      // Reset form with proper embed value based on settings
+      const embedValue = settings.default_embedding_option === 'always' ||
+                         (settings.default_embedding_option === 'ask')
+
+      reset({
+        notebooks: defaultNotebookId ? [defaultNotebookId] : [],
+        embed: embedValue,
+        async_processing: true,
+        transformations: [],
+      })
+    }
+  }, [settings, transformations, defaultNotebookId, reset])
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
   const selectedType = watch('type')
   const watchedUrl = watch('url')
   const watchedContent = watch('content')
   const watchedFile = watch('file')
+  const watchedTitle = watch('title')
 
   // Step validation - now reactive with watched values
   const isStepValid = (step: number): boolean => {
@@ -135,7 +169,8 @@ export function AddSourceDialog({
           return !!watchedUrl && watchedUrl.trim() !== ''
         }
         if (selectedType === 'text') {
-          return !!watchedContent && watchedContent.trim() !== ''
+          return !!watchedContent && watchedContent.trim() !== '' &&
+                 !!watchedTitle && watchedTitle.trim() !== ''
         }
         if (selectedType === 'upload') {
           if (watchedFile instanceof FileList) {
@@ -249,7 +284,17 @@ export function AddSourceDialog({
     setProcessing(false)
     setProcessingStatus(null)
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
-    setSelectedTransformations([])
+
+    // Reset to default transformations
+    if (transformations.length > 0) {
+      const defaultTransformations = transformations
+        .filter(t => t.apply_default)
+        .map(t => t.id)
+      setSelectedTransformations(defaultTransformations)
+    } else {
+      setSelectedTransformations([])
+    }
+
     onOpenChange(false)
   }
 
@@ -330,6 +375,7 @@ export function AddSourceDialog({
                 selectedTransformations={selectedTransformations}
                 onToggleTransformation={handleTransformationToggle}
                 loading={transformationsLoading}
+                settings={settings}
               />
             )}
           </WizardContainer>

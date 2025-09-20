@@ -1,6 +1,6 @@
 "use client"
 
-import { Control, FieldErrors, UseFormRegister } from "react-hook-form"
+import { Control, FieldErrors, UseFormRegister, useWatch } from "react-hook-form"
 import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
 import { FormSection } from "@/components/ui/form-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -49,6 +49,8 @@ interface SourceTypeStepProps {
 }
 
 export function SourceTypeStep({ control, register, errors }: SourceTypeStepProps) {
+  // Watch the selected type to make title conditional
+  const selectedType = useWatch({ control, name: 'type' })
   return (
     <div className="space-y-6">
       <FormSection
@@ -139,14 +141,20 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
       </FormSection>
 
       <FormSection
-        title="Title (optional)"
-        description="If left empty, a title will be generated from the content"
+        title={selectedType === 'text' ? "Title *" : "Title (optional)"}
+        description={selectedType === 'text'
+          ? "A title is required for text content"
+          : "If left empty, a title will be generated from the content"
+        }
       >
         <Input
           id="title"
           {...register('title')}
           placeholder="Give your source a descriptive title"
         />
+        {errors.title && (
+          <p className="text-sm text-red-600 mt-1">{errors.title.message}</p>
+        )}
       </FormSection>
     </div>
   )

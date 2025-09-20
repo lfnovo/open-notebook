@@ -5,6 +5,7 @@ import { FormSection } from "@/components/ui/form-section"
 import { CheckboxList } from "@/components/ui/checkbox-list"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Transformation } from "@/lib/types/transformations"
+import { SettingsResponse } from "@/lib/types/api"
 
 interface CreateSourceFormData {
   type: 'link' | 'upload' | 'text'
@@ -24,6 +25,7 @@ interface ProcessingStepProps {
   selectedTransformations: string[]
   onToggleTransformation: (transformationId: string) => void
   loading?: boolean
+  settings?: SettingsResponse
 }
 
 export function ProcessingStep({
@@ -31,7 +33,8 @@ export function ProcessingStep({
   transformations,
   selectedTransformations,
   onToggleTransformation,
-  loading = false
+  loading = false,
+  settings
 }: ProcessingStepProps) {
   const transformationItems = transformations.map((transformation) => ({
     id: transformation.id,
@@ -59,25 +62,57 @@ export function ProcessingStep({
         description="Configure how your source will be processed and stored."
       >
         <div className="space-y-4">
-          <Controller
-            control={control}
-            name="embed"
-            render={({ field }) => (
-              <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-gray-50">
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  className="mt-0.5"
-                />
+          {settings?.default_embedding_option === 'ask' && (
+            <Controller
+              control={control}
+              name="embed"
+              render={({ field }) => (
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-gray-50">
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <span className="text-sm font-medium block">Enable embedding for search</span>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Allows this source to be found in vector searches and AI queries
+                    </p>
+                  </div>
+                </label>
+              )}
+            />
+          )}
+
+          {settings?.default_embedding_option === 'always' && (
+            <div className="p-3 rounded-md bg-blue-50 border border-blue-200">
+              <div className="flex items-start gap-3">
+                <div className="w-4 h-4 bg-blue-500 rounded-full mt-0.5 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium block">Enable embedding for search</span>
-                  <p className="text-xs text-gray-600 mt-1">
-                    Allows this source to be found in vector searches and AI queries
+                  <span className="text-sm font-medium block text-blue-900">Embedding enabled automatically</span>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Your settings are configured to always embed content for vector search.
+                    You can change this in <span className="font-medium">Settings</span>.
                   </p>
                 </div>
-              </label>
-            )}
-          />
+              </div>
+            </div>
+          )}
+
+          {settings?.default_embedding_option === 'never' && (
+            <div className="p-3 rounded-md bg-gray-50 border border-gray-200">
+              <div className="flex items-start gap-3">
+                <div className="w-4 h-4 bg-gray-400 rounded-full mt-0.5 flex-shrink-0"></div>
+                <div className="flex-1">
+                  <span className="text-sm font-medium block text-gray-900">Embedding disabled</span>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Your settings are configured to skip embedding. Vector search won&apos;t be available for this source.
+                    You can change this in <span className="font-medium">Settings</span>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </FormSection>
     </div>

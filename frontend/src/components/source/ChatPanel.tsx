@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -86,8 +87,12 @@ export function ChatPanel({
     }
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Detect platform for correct modifier key
+    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
+
+    if (e.key === 'Enter' && isModifierPressed) {
       e.preventDefault()
       handleSend()
     }
@@ -109,6 +114,10 @@ export function ChatPanel({
   }
 
   const currentSession = sessions.find(s => s.id === currentSessionId)
+
+  // Detect platform for placeholder text
+  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
     <>
@@ -289,19 +298,21 @@ export function ChatPanel({
             </div>
           )}
           
-          <div className="flex gap-2">
-            <Input
+          <div className="flex gap-2 items-end">
+            <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Ask a question about this source..."
+              onKeyDown={handleKeyDown}
+              placeholder={`Ask a question about this source... (${keyHint} to send)`}
               disabled={isStreaming}
-              className="flex-1"
+              className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3"
+              rows={1}
             />
             <Button
               onClick={handleSend}
               disabled={!input.trim() || isStreaming}
               size="icon"
+              className="h-[40px] w-[40px] flex-shrink-0"
             >
               {isStreaming ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -328,7 +339,7 @@ export function ChatPanel({
             value={newSessionTitle}
             onChange={(e) => setNewSessionTitle(e.target.value)}
             placeholder="Session title..."
-            onKeyPress={(e) => {
+            onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault()
                 handleCreateSession()

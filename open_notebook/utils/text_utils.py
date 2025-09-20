@@ -6,30 +6,13 @@ Extracted from main utils to avoid circular imports.
 import re
 import unicodedata
 from typing import Tuple
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from .token_utils import token_count
 
 # Pattern for matching thinking content in AI responses
 THINK_PATTERN = re.compile(r'<think>(.*?)</think>', re.DOTALL)
-
-
-def token_count(input_string: str) -> int:
-    """
-    Count the number of tokens in the input string using the 'o200k_base' encoding.
-
-    Args:
-        input_string (str): The input string to count tokens for.
-
-    Returns:
-        int: The number of tokens in the input string.
-    """
-    try:
-        import tiktoken
-        encoding = tiktoken.get_encoding("o200k_base")
-        tokens = encoding.encode(input_string)
-        return len(tokens)
-    except ImportError:
-        # Fallback: simple word count estimation
-        return int(len(input_string.split()) * 1.3)
 
 
 def split_text(txt: str, chunk_size=500):

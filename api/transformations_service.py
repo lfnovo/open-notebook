@@ -81,6 +81,9 @@ class TransformationsService:
     
     def update_transformation(self, transformation: Transformation) -> Transformation:
         """Update a transformation."""
+        if transformation.id is None:
+            raise ValueError("Cannot update a transformation without an id")
+
         updates = {
             "name": transformation.name,
             "title": transformation.title,

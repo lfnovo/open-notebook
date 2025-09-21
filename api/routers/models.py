@@ -5,7 +5,7 @@ from loguru import logger
 
 from api.models import DefaultModelsResponse, ModelCreate, ModelResponse
 from open_notebook.domain.models import DefaultModels, Model
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -20,18 +20,24 @@ async def get_models(
             models = await Model.get_models_by_type(type)
         else:
             models = await Model.get_all()
-        
-        return [
-            ModelResponse(
-                id=model.id,
-                name=model.name,
-                provider=model.provider,
-                type=model.type,
-                created=str(model.created),
-                updated=str(model.updated),
+
+        responses: List[ModelResponse] = []
+        for model in models:
+            if model.id is None:
+                logger.warning("Skipping model without an id")
+                continue
+            responses.append(
+                ModelResponse(
+                    id=model.id,
+                    name=model.name,
+                    provider=model.provider,
+                    type=model.type,
+                    created=str(model.created),
+                    updated=str(model.updated),
+                )
             )
-            for model in models
-        ]
+
+        return responses
     except Exception as e:
         logger.error(f"Error fetching models: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching models: {str(e)}")
@@ -56,6 +62,11 @@ async def create_model(model_data: ModelCreate):
         )
         await new_model.save()
         
+        if new_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Persisted model is missing an identifier"
+            )
+
         return ModelResponse(
             id=new_model.id,
             name=new_model.name,

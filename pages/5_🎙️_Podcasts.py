@@ -48,7 +48,7 @@ def confirm_delete_speaker_profile(profile_id, profile_name):
     usage_count = usage_map.get(profile_name, 0)
 
     if usage_count > 0:
-        st.error(f"❌ **Cannot delete this speaker profile!**")
+        st.error("❌ **Cannot delete this speaker profile!**")
         st.write(
             f"This speaker profile is currently used by **{usage_count} episode profile(s)**."
         )

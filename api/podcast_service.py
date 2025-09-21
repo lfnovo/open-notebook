@@ -97,6 +97,8 @@ class PodcastService:
 
             # Convert RecordID to string if needed
             job_id_str = str(job_id) if job_id else None
+            if job_id_str is None:
+                raise RuntimeError("Command submission did not return an identifier")
             logger.info(
                 f"Submitted podcast generation job: {job_id_str} for episode '{episode_name}'"
             )

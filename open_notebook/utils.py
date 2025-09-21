@@ -4,7 +4,7 @@ from importlib.metadata import PackageNotFoundError, version
 from typing import Tuple
 from urllib.parse import urlparse
 
-import requests
+import requests  # type: ignore[import-untyped]
 import tomli
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from packaging.version import parse as parse_version

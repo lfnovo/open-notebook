@@ -23,7 +23,6 @@ from api.routers import (
 try:
     from loguru import logger
 
-    import commands.podcast_commands
 
     logger.info("Commands imported in API process")
 except Exception as e:

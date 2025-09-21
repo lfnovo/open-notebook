@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -27,17 +27,23 @@ async def get_notes(
             # Get all notes
             notes = await Note.get_all(order_by="updated desc")
         
-        return [
-            NoteResponse(
-                id=note.id,
-                title=note.title,
-                content=note.content,
-                note_type=note.note_type,
-                created=str(note.created),
-                updated=str(note.updated),
+        responses: List[NoteResponse] = []
+        for note in notes:
+            if note.id is None:
+                logger.warning("Skipping note without id")
+                continue
+            responses.append(
+                NoteResponse(
+                    id=note.id,
+                    title=note.title,
+                    content=note.content,
+                    note_type=note.note_type,
+                    created=str(note.created),
+                    updated=str(note.updated),
+                )
             )
-            for note in notes
-        ]
+
+        return responses
     except HTTPException:
         raise
     except Exception as e:
@@ -54,10 +60,9 @@ async def create_note(note_data: NoteCreate):
         if not title and note_data.note_type == "ai" and note_data.content:
             from open_notebook.graphs.prompt import graph as prompt_graph
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
-            result = await prompt_graph.ainvoke({
-                "input_text": note_data.content,
-                "prompt": prompt
-            })
+            result = await prompt_graph.ainvoke(
+                cast(Any, {"input_text": note_data.content, "prompt": prompt})
+            )
             title = result.get("output", "Untitled Note")
         
         new_note = Note(
@@ -75,6 +80,11 @@ async def create_note(note_data: NoteCreate):
                 raise HTTPException(status_code=404, detail="Notebook not found")
             await new_note.add_to_notebook(note_data.notebook_id)
         
+        if new_note.id is None:
+            raise HTTPException(
+                status_code=500, detail="Created note is missing an identifier"
+            )
+
         return NoteResponse(
             id=new_note.id,
             title=new_note.title,
@@ -100,6 +110,11 @@ async def get_note(note_id: str):
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
         
+        if note.id is None:
+            raise HTTPException(
+                status_code=500, detail="Note record is missing an identifier"
+            )
+
         return NoteResponse(
             id=note.id,
             title=note.title,
@@ -132,7 +147,12 @@ async def update_note(note_id: str, note_update: NoteUpdate):
             note.note_type = note_update.note_type
         
         await note.save()
-        
+
+        if note.id is None:
+            raise HTTPException(
+                status_code=500, detail="Note record is missing an identifier"
+            )
+
         return NoteResponse(
             id=note.id,
             title=note.title,

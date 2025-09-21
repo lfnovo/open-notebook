@@ -2,7 +2,7 @@
 Notes service layer using API.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -72,6 +72,9 @@ class NotesService:
     
     def update_note(self, note: Note) -> Note:
         """Update a note."""
+        if note.id is None:
+            raise ValueError("Cannot update a note without an id")
+
         updates = {
             "title": note.title,
             "content": note.content,

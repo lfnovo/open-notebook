@@ -3,9 +3,9 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import ErrorResponse, NotebookCreate, NotebookResponse, NotebookUpdate
+from api.models import NotebookCreate, NotebookResponse, NotebookUpdate
 from open_notebook.domain.notebook import Notebook
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -23,17 +23,23 @@ async def get_notebooks(
         if archived is not None:
             notebooks = [nb for nb in notebooks if nb.archived == archived]
         
-        return [
-            NotebookResponse(
-                id=nb.id,
-                name=nb.name,
-                description=nb.description,
-                archived=nb.archived or False,
-                created=str(nb.created),
-                updated=str(nb.updated),
+        responses: List[NotebookResponse] = []
+        for nb in notebooks:
+            if nb.id is None:
+                logger.warning("Skipping notebook without id")
+                continue
+            responses.append(
+                NotebookResponse(
+                    id=nb.id,
+                    name=nb.name,
+                    description=nb.description,
+                    archived=nb.archived or False,
+                    created=str(nb.created),
+                    updated=str(nb.updated),
+                )
             )
-            for nb in notebooks
-        ]
+
+        return responses
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching notebooks: {str(e)}")
@@ -49,6 +55,11 @@ async def create_notebook(notebook: NotebookCreate):
         )
         await new_notebook.save()
         
+        if new_notebook.id is None:
+            raise HTTPException(
+                status_code=500, detail="Created notebook is missing an identifier"
+            )
+
         return NotebookResponse(
             id=new_notebook.id,
             name=new_notebook.name,
@@ -72,6 +83,11 @@ async def get_notebook(notebook_id: str):
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         
+        if notebook.id is None:
+            raise HTTPException(
+                status_code=500, detail="Notebook record is missing an identifier"
+            )
+
         return NotebookResponse(
             id=notebook.id,
             name=notebook.name,
@@ -104,7 +120,12 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
             notebook.archived = notebook_update.archived
         
         await notebook.save()
-        
+
+        if notebook.id is None:
+            raise HTTPException(
+                status_code=500, detail="Notebook record is missing an identifier"
+            )
+
         return NotebookResponse(
             id=notebook.id,
             name=notebook.name,

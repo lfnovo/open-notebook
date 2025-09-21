@@ -1,5 +1,4 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
 
 from loguru import logger
@@ -113,6 +112,7 @@ class SourceInsight(ObjectModel):
     table_name: ClassVar[str] = "source_insight"
     insight_type: str
     content: str
+    source_id: Optional[str] = Field(default=None, alias="source")
 
     async def get_source(self) -> "Source":
         try:
@@ -128,7 +128,7 @@ class SourceInsight(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def save_as_note(self, notebook_id: str = None) -> Any:
+    async def save_as_note(self, notebook_id: Optional[str] = None) -> Any:
         source = await self.get_source()
         note = Note(
             title=f"{self.insight_type} from source {source.title}",
@@ -199,7 +199,10 @@ class Source(ObjectModel):
 
     async def vectorize(self) -> None:
         logger.info(f"Starting vectorization for source {self.id}")
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
+        embedding_model = await model_manager.get_embedding_model()
+        if embedding_model is None:
+            logger.warning("No embedding model configured; skipping vectorization")
+            return
 
         try:
             if not self.full_text:
@@ -224,7 +227,7 @@ class Source(ObjectModel):
             ) -> Tuple[int, List[float], str]:
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
-                    embedding = (await EMBEDDING_MODEL.aembed([chunk]))[0]
+                    embedding = (await embedding_model.aembed([chunk]))[0]
                     cleaned_content = chunk
                     logger.debug(f"Successfully processed chunk {idx}")
                     return (idx, embedding, cleaned_content)
@@ -265,15 +268,17 @@ class Source(ObjectModel):
             raise DatabaseOperationError(e)
 
     async def add_insight(self, insight_type: str, content: str) -> Any:
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        if not EMBEDDING_MODEL:
+        embedding_model = await model_manager.get_embedding_model()
+        if embedding_model is None:
             logger.warning("No embedding model found. Insight will not be searchable.")
 
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
             embedding = (
-                (await EMBEDDING_MODEL.aembed([content]))[0] if EMBEDDING_MODEL else []
+                (await embedding_model.aembed([content]))[0]
+                if embedding_model
+                else []
             )
             return await repo_query(
                 """
@@ -343,19 +348,24 @@ class ChatSession(ObjectModel):
 
 
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
-):
+    keyword: str, limit: int, source: bool = True, note: bool = True
+) -> List[Dict[str, Any]]:
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        results = await repo_query(
+        search_results = await repo_query(
             """
             select *
             from fn::text_search($keyword, $results, $source, $note)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {
+                "keyword": keyword,
+                "results": limit,
+                "source": source,
+                "note": note,
+            },
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)
@@ -364,29 +374,34 @@ async def text_search(
 
 async def vector_search(
     keyword: str,
-    results: int,
+    limit: int,
     source: bool = True,
     note: bool = True,
-    minimum_score=0.2,
-):
+    minimum_score: float = 0.2,
+) -> List[Dict[str, Any]]:
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
-        results = await repo_query(
+        embedding_model = await model_manager.get_embedding_model()
+        if embedding_model is None:
+            raise InvalidInputError(
+                "Vector search requires an embedding model to be configured."
+            )
+
+        embed = (await embedding_model.aembed([keyword]))[0]
+        search_results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
             """,
             {
                 "embed": embed,
-                "results": results,
+                "results": limit,
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
             },
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)

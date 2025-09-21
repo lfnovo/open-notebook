@@ -1,8 +1,8 @@
 import os
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -13,7 +13,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
     Only active when OPEN_NOTEBOOK_PASSWORD environment variable is set.
     """
     
-    def __init__(self, app, excluded_paths: Optional[list] = None):
+    def __init__(self, app, excluded_paths: Optional[List[str]] = None):
         super().__init__(app)
         self.password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
         self.excluded_paths = excluded_paths or ["/", "/health", "/docs", "/openapi.json", "/redoc"]
@@ -66,7 +66,9 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
 security = HTTPBearer(auto_error=False)
 
 
-def check_api_password(credentials: HTTPAuthorizationCredentials = None) -> bool:
+def check_api_password(
+    credentials: Optional[HTTPAuthorizationCredentials] = None,
+) -> bool:
     """
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.

@@ -42,8 +42,7 @@ class InsightsService:
         insight.id = insight_data["id"]
         insight.created = insight_data["created"]
         insight.updated = insight_data["updated"]
-        # Store source_id as an attribute for easy access
-        insight._source_id = insight_data["source_id"]
+        insight.source_id = insight_data.get("source_id")
         return insight
     
     def delete_insight(self, insight_id: str) -> bool:
@@ -74,7 +73,7 @@ class InsightsService:
         insight.id = insight_data["id"]
         insight.created = insight_data["created"]
         insight.updated = insight_data["updated"]
-        insight._source_id = insight_data["source_id"]
+        insight.source_id = insight_data.get("source_id")
         return insight
 
 

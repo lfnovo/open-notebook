@@ -3,7 +3,7 @@ Podcast service layer using API client.
 This replaces direct httpx calls in the Streamlit pages.
 """
 
-from typing import Dict, List
+from typing import Any, Dict, List, cast
 
 from loguru import logger
 
@@ -17,9 +17,12 @@ class PodcastAPIService:
         logger.info("Using API client for podcast operations")
 
     # Episode methods
-    def get_episodes(self) -> List[Dict]:
+    def get_episodes(self) -> List[Dict[str, Any]]:
         """Get all podcast episodes."""
-        return api_client._make_request("GET", "/api/podcasts/episodes")
+        response = api_client._make_request("GET", "/api/podcasts/episodes")
+        if not isinstance(response, list):
+            raise TypeError("Expected list response for episodes")
+        return cast(List[Dict[str, Any]], response)
 
     def delete_episode(self, episode_id: str) -> bool:
         """Delete a podcast episode."""
@@ -31,9 +34,9 @@ class PodcastAPIService:
             return False
 
     # Episode Profile methods
-    def get_episode_profiles(self) -> List[Dict]:
+    def get_episode_profiles(self) -> List[Dict[str, Any]]:
         """Get all episode profiles."""
-        return api_client.get_episode_profiles()
+        return cast(List[Dict[str, Any]], api_client.get_episode_profiles())
 
     def create_episode_profile(self, profile_data: Dict) -> bool:
         """Create a new episode profile."""
@@ -74,9 +77,12 @@ class PodcastAPIService:
             return False
 
     # Speaker Profile methods
-    def get_speaker_profiles(self) -> List[Dict]:
+    def get_speaker_profiles(self) -> List[Dict[str, Any]]:
         """Get all speaker profiles."""
-        return api_client._make_request("GET", "/api/speaker-profiles")
+        response = api_client._make_request("GET", "/api/speaker-profiles")
+        if not isinstance(response, list):
+            raise TypeError("Expected list response for speaker profiles")
+        return cast(List[Dict[str, Any]], response)
 
     def create_speaker_profile(self, profile_data: Dict) -> bool:
         """Create a new speaker profile."""

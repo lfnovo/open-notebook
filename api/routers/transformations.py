@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List, cast
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -12,7 +12,7 @@ from api.models import (
 )
 from open_notebook.domain.models import Model
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.transformation import graph as transformation_graph
 
 router = APIRouter()
@@ -24,19 +24,25 @@ async def get_transformations():
     try:
         transformations = await Transformation.get_all(order_by="name asc")
 
-        return [
-            TransformationResponse(
-                id=transformation.id,
-                name=transformation.name,
-                title=transformation.title,
-                description=transformation.description,
-                prompt=transformation.prompt,
-                apply_default=transformation.apply_default,
-                created=str(transformation.created),
-                updated=str(transformation.updated),
+        responses: List[TransformationResponse] = []
+        for transformation in transformations:
+            if transformation.id is None:
+                logger.warning("Skipping transformation without id")
+                continue
+            responses.append(
+                TransformationResponse(
+                    id=transformation.id,
+                    name=transformation.name,
+                    title=transformation.title,
+                    description=transformation.description,
+                    prompt=transformation.prompt,
+                    apply_default=transformation.apply_default,
+                    created=str(transformation.created),
+                    updated=str(transformation.updated),
+                )
             )
-            for transformation in transformations
-        ]
+
+        return responses
     except Exception as e:
         logger.error(f"Error fetching transformations: {str(e)}")
         raise HTTPException(
@@ -56,6 +62,12 @@ async def create_transformation(transformation_data: TransformationCreate):
             apply_default=transformation_data.apply_default,
         )
         await new_transformation.save()
+
+        if new_transformation.id is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Created transformation is missing an identifier",
+            )
 
         return TransformationResponse(
             id=new_transformation.id,
@@ -85,6 +97,12 @@ async def get_transformation(transformation_id: str):
         transformation = await Transformation.get(transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
+
+        if transformation.id is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Transformation record is missing an identifier",
+            )
 
         return TransformationResponse(
             id=transformation.id,
@@ -130,6 +148,12 @@ async def update_transformation(
             transformation.apply_default = transformation_update.apply_default
 
         await transformation.save()
+
+        if transformation.id is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Transformation record is missing an identifier",
+            )
 
         return TransformationResponse(
             id=transformation.id,
@@ -188,9 +212,12 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
 
         # Execute the transformation
         result = await transformation_graph.ainvoke(
-            dict(
-                input_text=execute_request.input_text,
-                transformation=transformation,
+            cast(
+                Any,
+                dict(
+                    input_text=execute_request.input_text,
+                    transformation=transformation,
+                ),
             ),
             config=dict(configurable={"model_id": execute_request.model_id}),
         )

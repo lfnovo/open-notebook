@@ -52,7 +52,10 @@ async def embed_content(embed_request: EmbedRequest):
             if not note_item:
                 raise HTTPException(status_code=404, detail="Note not found")
 
-            await note_item.vectorize()
+            raise HTTPException(
+                status_code=400,
+                detail="Embedding notes is not supported through this endpoint",
+            )
 
         return EmbedResponse(
             success=True, message=message, item_id=item_id, item_type=item_type

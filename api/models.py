@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # Notebook models
@@ -125,21 +126,27 @@ class TransformationExecuteResponse(BaseModel):
 class NoteCreate(BaseModel):
     title: Optional[str] = Field(None, description="Note title")
     content: str = Field(..., description="Note content")
-    note_type: Optional[str] = Field("human", description="Type of note (human, ai)")
-    notebook_id: Optional[str] = Field(None, description="Notebook ID to add the note to")
+    note_type: Optional[Literal["human", "ai"]] = Field(
+        "human", description="Type of note (human, ai)"
+    )
+    notebook_id: Optional[str] = Field(
+        None, description="Notebook ID to add the note to"
+    )
 
 
 class NoteUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Note title")
     content: Optional[str] = Field(None, description="Note content")
-    note_type: Optional[str] = Field(None, description="Type of note (human, ai)")
+    note_type: Optional[Literal["human", "ai"]] = Field(
+        None, description="Type of note (human, ai)"
+    )
 
 
 class NoteResponse(BaseModel):
     id: str
     title: Optional[str]
     content: Optional[str]
-    note_type: Optional[str]
+    note_type: Optional[Literal["human", "ai"]]
     created: str
     updated: str
 
@@ -159,18 +166,26 @@ class EmbedResponse(BaseModel):
 
 # Settings API models
 class SettingsResponse(BaseModel):
-    default_content_processing_engine_doc: Optional[str] = None
-    default_content_processing_engine_url: Optional[str] = None
-    default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
+    default_content_processing_engine_doc: Optional[
+        Literal["auto", "docling", "simple"]
+    ] = None
+    default_content_processing_engine_url: Optional[
+        Literal["auto", "firecrawl", "jina", "simple"]
+    ] = None
+    default_embedding_option: Optional[Literal["ask", "always", "never"]] = None
+    auto_delete_files: Optional[Literal["yes", "no"]] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
 class SettingsUpdate(BaseModel):
-    default_content_processing_engine_doc: Optional[str] = None
-    default_content_processing_engine_url: Optional[str] = None
-    default_embedding_option: Optional[str] = None
-    auto_delete_files: Optional[str] = None
+    default_content_processing_engine_doc: Optional[
+        Literal["auto", "docling", "simple"]
+    ] = None
+    default_content_processing_engine_url: Optional[
+        Literal["auto", "firecrawl", "jina", "simple"]
+    ] = None
+    default_embedding_option: Optional[Literal["ask", "always", "never"]] = None
+    auto_delete_files: Optional[Literal["yes", "no"]] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 

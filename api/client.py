@@ -4,11 +4,14 @@ This module provides a client interface to interact with the Open Notebook API.
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union, cast
 
 import httpx
 from loguru import logger
 
+JSONDict = Dict[str, Any]
+JSONList = List[JSONDict]
+JSONData = Union[JSONDict, JSONList]
 
 class APIClient:
     """Client for Open Notebook API."""
@@ -24,7 +27,7 @@ class APIClient:
 
     def _make_request(
         self, method: str, endpoint: str, timeout: Optional[float] = None, **kwargs
-    ) -> Dict:
+    ) -> JSONData:
         """Make HTTP request to the API."""
         url = f"{self.base_url}{endpoint}"
         request_timeout = timeout if timeout is not None else self.timeout
@@ -56,30 +59,30 @@ class APIClient:
     # Notebooks API methods
     def get_notebooks(
         self, archived: Optional[bool] = None, order_by: str = "updated desc"
-    ) -> List[Dict]:
+    ) -> JSONList:
         """Get all notebooks."""
-        params = {"order_by": order_by}
+        params: Dict[str, Any] = {"order_by": order_by}
         if archived is not None:
             params["archived"] = archived
 
-        return self._make_request("GET", "/api/notebooks", params=params)
+        return cast(JSONList, self._make_request("GET", "/api/notebooks", params=params))
 
-    def create_notebook(self, name: str, description: str = "") -> Dict:
+    def create_notebook(self, name: str, description: str = "") -> JSONDict:
         """Create a new notebook."""
         data = {"name": name, "description": description}
-        return self._make_request("POST", "/api/notebooks", json=data)
+        return cast(JSONDict, self._make_request("POST", "/api/notebooks", json=data))
 
-    def get_notebook(self, notebook_id: str) -> Dict:
+    def get_notebook(self, notebook_id: str) -> JSONDict:
         """Get a specific notebook."""
-        return self._make_request("GET", f"/api/notebooks/{notebook_id}")
+        return cast(JSONDict, self._make_request("GET", f"/api/notebooks/{notebook_id}"))
 
-    def update_notebook(self, notebook_id: str, **updates) -> Dict:
+    def update_notebook(self, notebook_id: str, **updates) -> JSONDict:
         """Update a notebook."""
-        return self._make_request("PUT", f"/api/notebooks/{notebook_id}", json=updates)
+        return cast(JSONDict, self._make_request("PUT", f"/api/notebooks/{notebook_id}", json=updates))
 
-    def delete_notebook(self, notebook_id: str) -> Dict:
+    def delete_notebook(self, notebook_id: str) -> JSONDict:
         """Delete a notebook."""
-        return self._make_request("DELETE", f"/api/notebooks/{notebook_id}")
+        return cast(JSONDict, self._make_request("DELETE", f"/api/notebooks/{notebook_id}"))
 
     # Search API methods
     def search(
@@ -90,7 +93,7 @@ class APIClient:
         search_sources: bool = True,
         search_notes: bool = True,
         minimum_score: float = 0.2,
-    ) -> Dict:
+    ) -> JSONDict:
         """Search the knowledge base."""
         data = {
             "query": query,
@@ -100,7 +103,7 @@ class APIClient:
             "search_notes": search_notes,
             "minimum_score": minimum_score,
         }
-        return self._make_request("POST", "/api/search", json=data)
+        return cast(JSONDict, self._make_request("POST", "/api/search", json=data))
 
     def ask_simple(
         self,
@@ -108,7 +111,7 @@ class APIClient:
         strategy_model: str,
         answer_model: str,
         final_answer_model: str,
-    ) -> Dict:
+    ) -> JSONDict:
         """Ask the knowledge base a question (simple, non-streaming)."""
         data = {
             "question": question,
@@ -117,43 +120,50 @@ class APIClient:
             "final_answer_model": final_answer_model,
         }
         # Use 5 minute timeout for long-running ask operations
-        return self._make_request(
-            "POST", "/api/search/ask/simple", json=data, timeout=300.0
+        return cast(
+            JSONDict,
+            self._make_request(
+                "POST", "/api/search/ask/simple", json=data, timeout=300.0
+            ),
         )
 
     # Models API methods
-    def get_models(self, model_type: Optional[str] = None) -> List[Dict]:
+    def get_models(self, model_type: Optional[str] = None) -> JSONList:
         """Get all models with optional type filtering."""
-        params = {}
+        params: Dict[str, Any] = {}
         if model_type:
             params["type"] = model_type
-        return self._make_request("GET", "/api/models", params=params)
+        return cast(
+            JSONList, self._make_request("GET", "/api/models", params=params)
+        )
 
-    def create_model(self, name: str, provider: str, model_type: str) -> Dict:
+    def create_model(self, name: str, provider: str, model_type: str) -> JSONDict:
         """Create a new model."""
         data = {
             "name": name,
             "provider": provider,
             "type": model_type,
         }
-        return self._make_request("POST", "/api/models", json=data)
+        return cast(JSONDict, self._make_request("POST", "/api/models", json=data))
 
-    def delete_model(self, model_id: str) -> Dict:
+    def delete_model(self, model_id: str) -> JSONDict:
         """Delete a model."""
-        return self._make_request("DELETE", f"/api/models/{model_id}")
+        return cast(JSONDict, self._make_request("DELETE", f"/api/models/{model_id}"))
 
-    def get_default_models(self) -> Dict:
+    def get_default_models(self) -> JSONDict:
         """Get default model assignments."""
-        return self._make_request("GET", "/api/models/defaults")
+        return cast(JSONDict, self._make_request("GET", "/api/models/defaults"))
 
-    def update_default_models(self, **defaults) -> Dict:
+    def update_default_models(self, **defaults) -> JSONDict:
         """Update default model assignments."""
-        return self._make_request("PUT", "/api/models/defaults", json=defaults)
+        return cast(
+            JSONDict, self._make_request("PUT", "/api/models/defaults", json=defaults)
+        )
 
     # Transformations API methods
-    def get_transformations(self) -> List[Dict]:
+    def get_transformations(self) -> JSONList:
         """Get all transformations."""
-        return self._make_request("GET", "/api/transformations")
+        return cast(JSONList, self._make_request("GET", "/api/transformations"))
 
     def create_transformation(
         self,
@@ -162,7 +172,7 @@ class APIClient:
         description: str,
         prompt: str,
         apply_default: bool = False,
-    ) -> Dict:
+    ) -> JSONDict:
         """Create a new transformation."""
         data = {
             "name": name,
@@ -171,25 +181,36 @@ class APIClient:
             "prompt": prompt,
             "apply_default": apply_default,
         }
-        return self._make_request("POST", "/api/transformations", json=data)
-
-    def get_transformation(self, transformation_id: str) -> Dict:
-        """Get a specific transformation."""
-        return self._make_request("GET", f"/api/transformations/{transformation_id}")
-
-    def update_transformation(self, transformation_id: str, **updates) -> Dict:
-        """Update a transformation."""
-        return self._make_request(
-            "PUT", f"/api/transformations/{transformation_id}", json=updates
+        return cast(
+            JSONDict, self._make_request("POST", "/api/transformations", json=data)
         )
 
-    def delete_transformation(self, transformation_id: str) -> Dict:
+    def get_transformation(self, transformation_id: str) -> JSONDict:
+        """Get a specific transformation."""
+        return cast(
+            JSONDict,
+            self._make_request("GET", f"/api/transformations/{transformation_id}"),
+        )
+
+    def update_transformation(self, transformation_id: str, **updates) -> JSONDict:
+        """Update a transformation."""
+        return cast(
+            JSONDict,
+            self._make_request(
+                "PUT", f"/api/transformations/{transformation_id}", json=updates
+            ),
+        )
+
+    def delete_transformation(self, transformation_id: str) -> JSONDict:
         """Delete a transformation."""
-        return self._make_request("DELETE", f"/api/transformations/{transformation_id}")
+        return cast(
+            JSONDict,
+            self._make_request("DELETE", f"/api/transformations/{transformation_id}"),
+        )
 
     def execute_transformation(
         self, transformation_id: str, input_text: str, model_id: str
-    ) -> Dict:
+    ) -> JSONDict:
         """Execute a transformation on input text."""
         data = {
             "transformation_id": transformation_id,
@@ -197,17 +218,20 @@ class APIClient:
             "model_id": model_id,
         }
         # Use extended timeout for transformation operations
-        return self._make_request(
-            "POST", "/api/transformations/execute", json=data, timeout=120.0
+        return cast(
+            JSONDict,
+            self._make_request(
+                "POST", "/api/transformations/execute", json=data, timeout=120.0
+            ),
         )
 
     # Notes API methods
-    def get_notes(self, notebook_id: Optional[str] = None) -> List[Dict]:
+    def get_notes(self, notebook_id: Optional[str] = None) -> JSONList:
         """Get all notes with optional notebook filtering."""
-        params = {}
+        params: Dict[str, Any] = {}
         if notebook_id:
             params["notebook_id"] = notebook_id
-        return self._make_request("GET", "/api/notes", params=params)
+        return cast(JSONList, self._make_request("GET", "/api/notes", params=params))
 
     def create_note(
         self,
@@ -215,7 +239,7 @@ class APIClient:
         title: Optional[str] = None,
         note_type: str = "human",
         notebook_id: Optional[str] = None,
-    ) -> Dict:
+    ) -> JSONDict:
         """Create a new note."""
         data = {
             "content": content,
@@ -225,58 +249,67 @@ class APIClient:
             data["title"] = title
         if notebook_id:
             data["notebook_id"] = notebook_id
-        return self._make_request("POST", "/api/notes", json=data)
+        return cast(JSONDict, self._make_request("POST", "/api/notes", json=data))
 
-    def get_note(self, note_id: str) -> Dict:
+    def get_note(self, note_id: str) -> JSONDict:
         """Get a specific note."""
-        return self._make_request("GET", f"/api/notes/{note_id}")
+        return cast(JSONDict, self._make_request("GET", f"/api/notes/{note_id}"))
 
-    def update_note(self, note_id: str, **updates) -> Dict:
+    def update_note(self, note_id: str, **updates) -> JSONDict:
         """Update a note."""
-        return self._make_request("PUT", f"/api/notes/{note_id}", json=updates)
+        return cast(JSONDict, self._make_request("PUT", f"/api/notes/{note_id}", json=updates))
 
-    def delete_note(self, note_id: str) -> Dict:
+    def delete_note(self, note_id: str) -> JSONDict:
         """Delete a note."""
-        return self._make_request("DELETE", f"/api/notes/{note_id}")
+        return cast(JSONDict, self._make_request("DELETE", f"/api/notes/{note_id}"))
 
     # Embedding API methods
-    def embed_content(self, item_id: str, item_type: str) -> Dict:
+    def embed_content(self, item_id: str, item_type: str) -> JSONDict:
         """Embed content for vector search."""
         data = {
             "item_id": item_id,
             "item_type": item_type,
         }
         # Use extended timeout for embedding operations
-        return self._make_request("POST", "/api/embed", json=data, timeout=120.0)
+        return cast(
+            JSONDict, self._make_request("POST", "/api/embed", json=data, timeout=120.0)
+        )
 
     # Settings API methods
-    def get_settings(self) -> Dict:
+    def get_settings(self) -> JSONDict:
         """Get all application settings."""
-        return self._make_request("GET", "/api/settings")
+        return cast(JSONDict, self._make_request("GET", "/api/settings"))
 
-    def update_settings(self, **settings) -> Dict:
+    def update_settings(self, **settings) -> JSONDict:
         """Update application settings."""
-        return self._make_request("PUT", "/api/settings", json=settings)
+        return cast(
+            JSONDict, self._make_request("PUT", "/api/settings", json=settings)
+        )
 
     # Context API methods
     def get_notebook_context(
         self, notebook_id: str, context_config: Optional[Dict] = None
-    ) -> Dict:
+    ) -> JSONDict:
         """Get context for a notebook."""
-        data = {"notebook_id": notebook_id}
+        data: Dict[str, Any] = {"notebook_id": notebook_id}
         if context_config:
             data["context_config"] = context_config
-        return self._make_request(
-            "POST", f"/api/notebooks/{notebook_id}/context", json=data
+        return cast(
+            JSONDict,
+            self._make_request(
+                "POST", f"/api/notebooks/{notebook_id}/context", json=data
+            ),
         )
 
     # Sources API methods
-    def get_sources(self, notebook_id: Optional[str] = None) -> List[Dict]:
+    def get_sources(self, notebook_id: Optional[str] = None) -> JSONList:
         """Get all sources with optional notebook filtering."""
-        params = {}
+        params: Dict[str, Any] = {}
         if notebook_id:
             params["notebook_id"] = notebook_id
-        return self._make_request("GET", "/api/sources", params=params)
+        return cast(
+            JSONList, self._make_request("GET", "/api/sources", params=params)
+        )
 
     def create_source(
         self,
@@ -289,7 +322,7 @@ class APIClient:
         transformations: Optional[List[str]] = None,
         embed: bool = False,
         delete_source: bool = False,
-    ) -> Dict:
+    ) -> JSONDict:
         """Create a new source."""
         data = {
             "notebook_id": notebook_id,
@@ -308,63 +341,79 @@ class APIClient:
         if transformations:
             data["transformations"] = transformations
 
-        return self._make_request("POST", "/api/sources", json=data)
+        return cast(JSONDict, self._make_request("POST", "/api/sources", json=data))
 
-    def get_source(self, source_id: str) -> Dict:
+    def get_source(self, source_id: str) -> JSONDict:
         """Get a specific source."""
-        return self._make_request("GET", f"/api/sources/{source_id}")
+        return cast(JSONDict, self._make_request("GET", f"/api/sources/{source_id}"))
 
-    def update_source(self, source_id: str, **updates) -> Dict:
+    def update_source(self, source_id: str, **updates) -> JSONDict:
         """Update a source."""
-        return self._make_request("PUT", f"/api/sources/{source_id}", json=updates)
+        return cast(
+            JSONDict, self._make_request("PUT", f"/api/sources/{source_id}", json=updates)
+        )
 
-    def delete_source(self, source_id: str) -> Dict:
+    def delete_source(self, source_id: str) -> JSONDict:
         """Delete a source."""
-        return self._make_request("DELETE", f"/api/sources/{source_id}")
+        return cast(JSONDict, self._make_request("DELETE", f"/api/sources/{source_id}"))
 
     # Insights API methods
-    def get_source_insights(self, source_id: str) -> List[Dict]:
+    def get_source_insights(self, source_id: str) -> JSONList:
         """Get all insights for a specific source."""
-        return self._make_request("GET", f"/api/sources/{source_id}/insights")
+        return cast(
+            JSONList,
+            self._make_request("GET", f"/api/sources/{source_id}/insights"),
+        )
 
-    def get_insight(self, insight_id: str) -> Dict:
+    def get_insight(self, insight_id: str) -> JSONDict:
         """Get a specific insight."""
-        return self._make_request("GET", f"/api/insights/{insight_id}")
+        return cast(JSONDict, self._make_request("GET", f"/api/insights/{insight_id}"))
 
-    def delete_insight(self, insight_id: str) -> Dict:
+    def delete_insight(self, insight_id: str) -> JSONDict:
         """Delete a specific insight."""
-        return self._make_request("DELETE", f"/api/insights/{insight_id}")
+        return cast(JSONDict, self._make_request("DELETE", f"/api/insights/{insight_id}"))
 
     def save_insight_as_note(
         self, insight_id: str, notebook_id: Optional[str] = None
-    ) -> Dict:
+    ) -> JSONDict:
         """Convert an insight to a note."""
         data = {}
         if notebook_id:
             data["notebook_id"] = notebook_id
-        return self._make_request(
-            "POST", f"/api/insights/{insight_id}/save-as-note", json=data
+        return cast(
+            JSONDict,
+            self._make_request(
+                "POST", f"/api/insights/{insight_id}/save-as-note", json=data
+            ),
         )
 
     def create_source_insight(
         self, source_id: str, transformation_id: str, model_id: Optional[str] = None
-    ) -> Dict:
+    ) -> JSONDict:
         """Create a new insight for a source by running a transformation."""
         data = {"transformation_id": transformation_id}
         if model_id:
             data["model_id"] = model_id
-        return self._make_request(
-            "POST", f"/api/sources/{source_id}/insights", json=data
+        return cast(
+            JSONDict,
+            self._make_request(
+                "POST", f"/api/sources/{source_id}/insights", json=data
+            ),
         )
 
     # Episode Profiles API methods
-    def get_episode_profiles(self) -> List[Dict]:
+    def get_episode_profiles(self) -> JSONList:
         """Get all episode profiles."""
-        return self._make_request("GET", "/api/episode-profiles")
+        return cast(
+            JSONList, self._make_request("GET", "/api/episode-profiles")
+        )
 
-    def get_episode_profile(self, profile_name: str) -> Dict:
+    def get_episode_profile(self, profile_name: str) -> JSONDict:
         """Get a specific episode profile by name."""
-        return self._make_request("GET", f"/api/episode-profiles/{profile_name}")
+        return cast(
+            JSONDict,
+            self._make_request("GET", f"/api/episode-profiles/{profile_name}"),
+        )
 
     def create_episode_profile(
         self,
@@ -377,7 +426,7 @@ class APIClient:
         transcript_model: str = "",
         default_briefing: str = "",
         num_segments: int = 5,
-    ) -> Dict:
+    ) -> JSONDict:
         """Create a new episode profile."""
         data = {
             "name": name,
@@ -390,15 +439,25 @@ class APIClient:
             "default_briefing": default_briefing,
             "num_segments": num_segments,
         }
-        return self._make_request("POST", "/api/episode-profiles", json=data)
+        return cast(
+            JSONDict, self._make_request("POST", "/api/episode-profiles", json=data)
+        )
 
-    def update_episode_profile(self, profile_id: str, **updates) -> Dict:
+    def update_episode_profile(self, profile_id: str, **updates) -> JSONDict:
         """Update an episode profile."""
-        return self._make_request("PUT", f"/api/episode-profiles/{profile_id}", json=updates)
+        return cast(
+            JSONDict,
+            self._make_request(
+                "PUT", f"/api/episode-profiles/{profile_id}", json=updates
+            ),
+        )
 
-    def delete_episode_profile(self, profile_id: str) -> Dict:
+    def delete_episode_profile(self, profile_id: str) -> JSONDict:
         """Delete an episode profile."""
-        return self._make_request("DELETE", f"/api/episode-profiles/{profile_id}")
+        return cast(
+            JSONDict,
+            self._make_request("DELETE", f"/api/episode-profiles/{profile_id}"),
+        )
 
 
 # Global client instance

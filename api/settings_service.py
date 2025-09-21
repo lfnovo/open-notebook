@@ -2,7 +2,6 @@
 Settings service layer using API.
 """
 
-from typing import Dict
 
 from loguru import logger
 

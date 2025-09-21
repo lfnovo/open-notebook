@@ -1,5 +1,5 @@
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -10,7 +10,6 @@ from api.podcast_service import (
     PodcastGenerationResponse,
     PodcastService,
 )
-from open_notebook.domain.podcast import PodcastEpisode
 
 router = APIRouter()
 
@@ -90,7 +89,7 @@ async def list_podcast_episodes():
             if episode.command:
                 try:
                     job_status = await episode.get_job_status()
-                except:
+                except Exception:
                     job_status = "unknown"
             else:
                 # No command but has audio file = completed import
@@ -131,7 +130,7 @@ async def get_podcast_episode(episode_id: str):
         if episode.command:
             try:
                 job_status = await episode.get_job_status()
-            except:
+            except Exception:
                 job_status = "unknown"
         else:
             # No command but has audio file = completed import

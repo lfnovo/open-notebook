@@ -61,6 +61,9 @@ class NotebookService:
     
     def update_notebook(self, notebook: Notebook) -> Notebook:
         """Update a notebook."""
+        if notebook.id is None:
+            raise ValueError("Cannot update a notebook without an id")
+
         updates = {
             "name": notebook.name,
             "description": notebook.description,
@@ -76,6 +79,8 @@ class NotebookService:
     
     def delete_notebook(self, notebook: Notebook) -> bool:
         """Delete a notebook."""
+        if notebook.id is None:
+            raise ValueError("Cannot delete a notebook without an id")
         api_client.delete_notebook(notebook.id)
         return True
 

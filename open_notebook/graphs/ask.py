@@ -17,7 +17,6 @@ from open_notebook.utils import clean_thinking_content
 class SubGraphState(TypedDict):
     question: str
     term: str
-    # type: Literal["text", "vector"]
     instructions: str
     results: dict
     answer: str
@@ -25,9 +24,6 @@ class SubGraphState(TypedDict):
 
 class Search(BaseModel):
     term: str
-    # type: Literal["text", "vector"] = Field(
-    #     description="The type of search. Use 'text' for keyword search and 'vector' for semantic search. If you are using text, search always for a single word"
-    # )
     instructions: str = Field(
         description="Tell the answeting LLM what information you need extracted from this search"
     )

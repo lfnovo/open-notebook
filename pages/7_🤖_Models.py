@@ -1,15 +1,14 @@
 import os
 
 import nest_asyncio
-
-nest_asyncio.apply()
-
 import streamlit as st
 from esperanto import AIFactory
 
 from api.models_service import models_service
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
+
+nest_asyncio.apply()
 
 setup_page(
     "🤖 Models",

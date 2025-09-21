@@ -7,7 +7,6 @@ import nest_asyncio
 import streamlit as st
 from loguru import logger
 
-nest_asyncio.apply()
 from api.models_service import models_service
 from open_notebook.database.migrate import MigrationManager
 from open_notebook.domain.notebook import ChatSession, Notebook
@@ -17,6 +16,8 @@ from open_notebook.utils import (
     get_installed_version,
     get_version_from_github,
 )
+
+nest_asyncio.apply()
 
 
 def version_sidebar():

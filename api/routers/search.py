@@ -1,5 +1,4 @@
-import asyncio
-from typing import AsyncGenerator, Dict
+from typing import Any, AsyncGenerator, cast
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
@@ -28,7 +27,7 @@ async def search_knowledge_base(search_request: SearchRequest):
 
             results = await vector_search(
                 keyword=search_request.query,
-                results=search_request.limit,
+                limit=search_request.limit,
                 source=search_request.search_sources,
                 note=search_request.search_notes,
                 minimum_score=search_request.minimum_score,
@@ -37,7 +36,7 @@ async def search_knowledge_base(search_request: SearchRequest):
             # Text search
             results = await text_search(
                 keyword=search_request.query,
-                results=search_request.limit,
+                limit=search_request.limit,
                 source=search_request.search_sources,
                 note=search_request.search_notes,
             )
@@ -66,7 +65,7 @@ async def stream_ask_response(
         final_answer = None
 
         async for chunk in ask_graph.astream(
-            input=dict(question=question),
+            input=cast(Any, dict(question=question)),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -131,6 +130,19 @@ async def ask_knowledge_base(ask_request: AskRequest):
                 detail=f"Final answer model {ask_request.final_answer_model} not found",
             )
 
+        if strategy_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Strategy model record missing identifier"
+            )
+        if answer_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Answer model record missing identifier"
+            )
+        if final_answer_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Final answer model record missing identifier"
+            )
+
         # Check if embedding model is available
         if not await model_manager.get_embedding_model():
             raise HTTPException(
@@ -140,7 +152,7 @@ async def ask_knowledge_base(ask_request: AskRequest):
 
         # For streaming response
         return StreamingResponse(
-            await stream_ask_response(
+            stream_ask_response(
                 ask_request.question, strategy_model, answer_model, final_answer_model
             ),
             media_type="text/plain",
@@ -178,6 +190,19 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
                 detail=f"Final answer model {ask_request.final_answer_model} not found",
             )
 
+        if strategy_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Strategy model record missing identifier"
+            )
+        if answer_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Answer model record missing identifier"
+            )
+        if final_answer_model.id is None:
+            raise HTTPException(
+                status_code=500, detail="Final answer model record missing identifier"
+            )
+
         # Check if embedding model is available
         if not await model_manager.get_embedding_model():
             raise HTTPException(
@@ -188,7 +213,7 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         # Run the ask graph and get final result
         final_answer = None
         async for chunk in ask_graph.astream(
-            input=dict(question=ask_request.question),
+            input=cast(Any, dict(question=ask_request.question)),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,

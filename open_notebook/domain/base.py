@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union, cast
 
 from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
@@ -20,6 +20,7 @@ from open_notebook.exceptions import (
 )
 
 T = TypeVar("T", bound="ObjectModel")
+RM = TypeVar("RM", bound="RecordModel")
 
 
 class ObjectModel(BaseModel):
@@ -120,17 +121,18 @@ class ObjectModel(BaseModel):
             if self.needs_embedding():
                 embedding_content = self.get_embedding_content()
                 if embedding_content:
-                    EMBEDDING_MODEL = await model_manager.get_embedding_model()
-                    if not EMBEDDING_MODEL:
+                    embedding_model = await model_manager.get_embedding_model()
+                    if embedding_model is None:
                         logger.warning(
                             "No embedding model found. Content will not be searchable."
                         )
-                    data["embedding"] = (
-                        (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
-                        if EMBEDDING_MODEL
-                        else []
-                    )
+                        data["embedding"] = []
+                    else:
+                        data["embedding"] = (
+                            await embedding_model.aembed([embedding_content])
+                        )[0]
 
+            repo_result: Union[Dict[str, Any], List[Dict[str, Any]]]
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 repo_result = await repo_create(self.__class__.table_name, data)
@@ -145,7 +147,13 @@ class ObjectModel(BaseModel):
                     self.__class__.table_name, self.id, data
                 )
             # Update the current instance with the result
-            for key, value in repo_result[0].items():
+            if isinstance(repo_result, list):
+                if not repo_result:
+                    return
+                result_items = repo_result[0]
+            else:
+                result_items = repo_result
+            for key, value in result_items.items():
                 if hasattr(self, key):
                     if isinstance(getattr(self, key), BaseModel):
                         setattr(self, key, type(getattr(self, key))(**value))
@@ -178,13 +186,17 @@ class ObjectModel(BaseModel):
             )
 
     async def relate(
-        self, relationship: str, target_id: str, data: Optional[Dict] = {}
+        self,
+        relationship: str,
+        target_id: str,
+        data: Optional[Dict[str, Any]] = None,
     ) -> Any:
         if not relationship or not target_id or not self.id:
             raise InvalidInputError("Relationship and target ID must be provided")
         try:
+            payload = data or {}
             return await repo_relate(
-                source=self.id, relationship=relationship, target=target_id, data=data
+                source=self.id, relationship=relationship, target=target_id, data=payload
             )
         except Exception as e:
             logger.error(f"Error creating relationship: {str(e)}")
@@ -267,7 +279,7 @@ class RecordModel(BaseModel):
             object.__setattr__(self, "_db_loaded", True)
 
     @classmethod
-    async def get_instance(cls) -> "RecordModel":
+    async def get_instance(cls: Type[RM]) -> RM:
         """Get or create the singleton instance and load from DB"""
         instance = cls()
         await instance._load_from_db()

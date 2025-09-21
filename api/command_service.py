@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from surreal_commands import get_command_status, submit_command
 
-from api.models import ErrorResponse
-
 
 class CommandService:
     """Generic service layer for command operations"""
@@ -34,6 +32,8 @@ class CommandService:
             )
             # Convert RecordID to string if needed
             cmd_id_str = str(cmd_id) if cmd_id else None
+            if cmd_id_str is None:
+                raise RuntimeError("Command submission did not return an identifier")
             logger.info(
                 f"Submitted command job: {cmd_id_str} for {module_name}.{command_name}"
             )

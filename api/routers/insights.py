@@ -1,11 +1,10 @@
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
-from open_notebook.domain.notebook import Note, SourceInsight
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.domain.notebook import SourceInsight
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -21,6 +20,15 @@ async def get_insight(insight_id: str):
         # Get source ID from the insight relationship
         source = await insight.get_source()
         
+        if insight.id is None:
+            raise HTTPException(
+                status_code=500, detail="Insight record is missing an identifier"
+            )
+        if source.id is None:
+            raise HTTPException(
+                status_code=500, detail="Source record is missing an identifier"
+            )
+
         return SourceInsightResponse(
             id=insight.id,
             source_id=source.id,
@@ -65,6 +73,11 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         # Use the existing save_as_note method from the domain model
         note = await insight.save_as_note(request.notebook_id)
         
+        if note.id is None:
+            raise HTTPException(
+                status_code=500, detail="Note record is missing an identifier"
+            )
+
         return NoteResponse(
             id=note.id,
             title=note.title,

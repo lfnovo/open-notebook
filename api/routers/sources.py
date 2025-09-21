@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -37,9 +37,12 @@ async def get_sources(
             sources = await Source.get_all(order_by="updated desc")
 
         # Create response list with async insights count
-        response_list = []
+        response_list: List[SourceListResponse] = []
         for source in sources:
             insights = await source.get_insights()
+            if source.id is None:
+                logger.warning("Skipping source without id")
+                continue
             response_list.append(
                 SourceListResponse(
                     id=source.id,
@@ -76,7 +79,7 @@ async def create_source(source_data: SourceCreate):
             raise HTTPException(status_code=404, detail="Notebook not found")
 
         # Prepare content_state for source_graph
-        content_state = {}
+        content_state: Dict[str, Any] = {}
 
         if source_data.type == "link":
             if not source_data.url:
@@ -104,7 +107,7 @@ async def create_source(source_data: SourceCreate):
             )
 
         # Get transformations to apply
-        transformations = []
+        transformations: List[Transformation] = []
         if source_data.transformations:
             for trans_id in source_data.transformations:
                 transformation = await Transformation.get(trans_id)
@@ -116,30 +119,42 @@ async def create_source(source_data: SourceCreate):
 
         # Process source using the source_graph
         result = await source_graph.ainvoke(
-            {
-                "content_state": content_state,
-                "notebook_id": source_data.notebook_id,
-                "apply_transformations": transformations,
-                "embed": source_data.embed,
-            }
+            cast(
+                Any,
+                {
+                    "content_state": content_state,
+                    "notebook_id": source_data.notebook_id,
+                    "apply_transformations": transformations,
+                    "embed": source_data.embed,
+                },
+            )
         )
 
-        source = result["source"]
+        source_obj = result.get("source")
+        if not isinstance(source_obj, Source):
+            raise HTTPException(
+                status_code=500, detail="Source graph did not return a Source instance"
+            )
+        if source_obj.id is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Created source is missing an identifier",
+            )
 
         return SourceResponse(
-            id=source.id,
-            title=source.title,
-            topics=source.topics or [],
+            id=source_obj.id,
+            title=source_obj.title,
+            topics=source_obj.topics or [],
             asset=AssetModel(
-                file_path=source.asset.file_path if source.asset else None,
-                url=source.asset.url if source.asset else None,
+                file_path=source_obj.asset.file_path if source_obj.asset else None,
+                url=source_obj.asset.url if source_obj.asset else None,
             )
-            if source.asset
+            if source_obj.asset
             else None,
-            full_text=source.full_text,
-            embedded_chunks=await source.get_embedded_chunks(),
-            created=str(source.created),
-            updated=str(source.updated),
+            full_text=source_obj.full_text,
+            embedded_chunks=await source_obj.get_embedded_chunks(),
+            created=str(source_obj.created),
+            updated=str(source_obj.updated),
         )
     except HTTPException:
         raise
@@ -157,6 +172,11 @@ async def get_source(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        if source.id is None:
+            raise HTTPException(
+                status_code=500, detail="Source record is missing an identifier"
+            )
 
         return SourceResponse(
             id=source.id,
@@ -195,6 +215,11 @@ async def update_source(source_id: str, source_update: SourceUpdate):
             source.topics = source_update.topics
 
         await source.save()
+
+        if source.id is None:
+            raise HTTPException(
+                status_code=500, detail="Source record is missing an identifier"
+            )
 
         return SourceResponse(
             id=source.id,
@@ -247,17 +272,22 @@ async def get_source_insights(source_id: str):
             raise HTTPException(status_code=404, detail="Source not found")
         
         insights = await source.get_insights()
-        return [
-            SourceInsightResponse(
-                id=insight.id,
-                source_id=source_id,
-                insight_type=insight.insight_type,
-                content=insight.content,
-                created=str(insight.created),
-                updated=str(insight.updated)
+        responses: List[SourceInsightResponse] = []
+        for insight in insights:
+            if insight.id is None:
+                logger.warning("Skipping insight without id")
+                continue
+            responses.append(
+                SourceInsightResponse(
+                    id=insight.id,
+                    source_id=source_id,
+                    insight_type=insight.insight_type,
+                    content=insight.content,
+                    created=str(insight.created),
+                    updated=str(insight.updated),
+                )
             )
-            for insight in insights
-        ]
+        return responses
     except HTTPException:
         raise
     except Exception as e:
@@ -285,20 +315,25 @@ async def create_source_insight(
         # Run transformation graph
         from open_notebook.graphs.transformation import graph as transform_graph
         await transform_graph.ainvoke(
-            input=dict(source=source, transformation=transformation)
+            cast(Any, dict(source=source, transformation=transformation))
         )
         
         # Get the newly created insight (last one)
         insights = await source.get_insights()
         if insights:
             newest = insights[-1]
+            if newest.id is None:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Created insight is missing an identifier",
+                )
             return SourceInsightResponse(
                 id=newest.id,
                 source_id=source_id,
                 insight_type=newest.insight_type,
                 content=newest.content,
                 created=str(newest.created),
-                updated=str(newest.updated)
+                updated=str(newest.updated),
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create insight")

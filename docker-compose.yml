@@ -8,6 +8,8 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
+    ports:
+      - "8000:8000"
     restart: always
   open_notebook:
     image: lfnovo/open_notebook:latest

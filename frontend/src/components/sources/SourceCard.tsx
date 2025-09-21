@@ -12,32 +12,30 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator 
 } from '@/components/ui/dropdown-menu'
-import { 
-  FileText, 
-  ExternalLink, 
-  Upload, 
-  MoreVertical, 
-  Eye, 
-  Edit3, 
-  Trash2, 
-  RefreshCw, 
-  Clock, 
-  CheckCircle, 
-  AlertTriangle, 
+import {
+  FileText,
+  ExternalLink,
+  Upload,
+  MoreVertical,
+  Trash2,
+  RefreshCw,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
   Loader2,
-  MessageSquare 
+  Unlink
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { cn } from '@/lib/utils'
 
 interface SourceCardProps {
   source: SourceListResponse
-  onEdit?: (source: SourceListResponse) => void
   onDelete?: (sourceId: string) => void
   onRetry?: (sourceId: string) => void
-  onView?: (sourceId: string) => void
-  onChat?: (sourceId: string) => void
+  onRemoveFromNotebook?: (sourceId: string) => void
+  onClick?: (sourceId: string) => void
   className?: string
+  showRemoveFromNotebook?: boolean
 }
 
 const SOURCE_TYPE_ICONS = {
@@ -90,14 +88,14 @@ function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
   return 'text'
 }
 
-export function SourceCard({ 
-  source, 
-  onEdit, 
-  onDelete, 
-  onRetry, 
-  onView, 
-  onChat,
-  className 
+export function SourceCard({
+  source,
+  onDelete,
+  onRetry,
+  onRemoveFromNotebook,
+  onClick,
+  className,
+  showRemoveFromNotebook = false
 }: SourceCardProps) {
   const [showFullTitle, setShowFullTitle] = useState(false)
   
@@ -133,27 +131,21 @@ export function SourceCard({
     }
   }
 
-  const handleView = () => {
-    if (onView) {
-      onView(source.id)
-    }
-  }
-
-  const handleEdit = () => {
-    if (onEdit) {
-      onEdit(source)
-    }
-  }
-
   const handleDelete = () => {
     if (onDelete) {
       onDelete(source.id)
     }
   }
 
-  const handleChat = () => {
-    if (onChat) {
-      onChat(source.id)
+  const handleRemoveFromNotebook = () => {
+    if (onRemoveFromNotebook) {
+      onRemoveFromNotebook(source.id)
+    }
+  }
+
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(source.id)
     }
   }
 
@@ -162,12 +154,15 @@ export function SourceCard({
   const isCompleted = currentStatus === 'completed'
 
   return (
-    <Card className={cn(
-      'transition-all duration-200 hover:shadow-md group relative',
-      statusConfig.borderColor,
-      'border-l-4',
-      className
-    )}>
+    <Card
+      className={cn(
+        'transition-all duration-200 hover:shadow-md group relative cursor-pointer',
+        statusConfig.borderColor,
+        'border-l-4',
+        className
+      )}
+      onClick={handleCardClick}
+    >
       <CardContent className="p-4">
         {/* Header with status indicator */}
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -259,46 +254,54 @@ export function SourceCard({
                 variant="ghost"
                 size="sm"
                 className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => e.stopPropagation()}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={handleView} disabled={!onView}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              
-              {isCompleted && (
-                <DropdownMenuItem onClick={handleChat} disabled={!onChat}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Chat with Source
-                </DropdownMenuItem>
+              {showRemoveFromNotebook && (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemoveFromNotebook()
+                    }}
+                    disabled={!onRemoveFromNotebook}
+                  >
+                    <Unlink className="h-4 w-4 mr-2" />
+                    Remove from Notebook
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
               )}
-              
-              <DropdownMenuItem onClick={handleEdit} disabled={!onEdit}>
-                <Edit3 className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              
+
               {isFailed && (
                 <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleRetry} disabled={!onRetry}>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRetry()
+                    }}
+                    disabled={!onRetry}
+                  >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Retry Processing
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                 </>
               )}
-              
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleDelete} 
+
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDelete()
+                }}
                 disabled={!onDelete}
                 className="text-red-600 focus:text-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete
+                Delete Source
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -59,6 +59,7 @@ import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 import { useSourceChat } from '@/lib/hooks/useSourceChat'
 import { ChatPanel } from '@/components/source/ChatPanel'
+import { useNavigation } from '@/lib/hooks/use-navigation'
 
 export default function SourceDetailPage() {
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
@@ -75,6 +76,7 @@ export default function SourceDetailPage() {
   const router = useRouter()
   const params = useParams()
   const sourceId = decodeURIComponent(params.id as string)
+  const navigation = useNavigation()
 
   // Initialize source chat
   const chat = useSourceChat(sourceId)
@@ -91,13 +93,19 @@ export default function SourceDetailPage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        router.push('/sources')
+        handleBack()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [router])
+
+  const handleBack = () => {
+    const returnPath = navigation.getReturnPath()
+    router.push(returnPath)
+    navigation.clearReturnTo()
+  }
 
   const fetchSource = async () => {
     try {
@@ -265,8 +273,8 @@ export default function SourceDetailPage() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-4">
         <p className="text-red-500">{error || 'Source not found'}</p>
-        <Button onClick={() => router.push('/sources')}>
-          Back to Sources
+        <Button onClick={handleBack}>
+          {navigation.getReturnLabel()}
         </Button>
       </div>
     )
@@ -278,11 +286,11 @@ export default function SourceDetailPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push('/sources')}
+          onClick={handleBack}
           className="mb-4"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Sources
+          {navigation.getReturnLabel()}
         </Button>
         
         <div className="flex items-start justify-between">
@@ -335,7 +343,9 @@ export default function SourceDetailPage() {
                       try {
                         await sourcesApi.delete(source.id)
                         toast.success('Source deleted successfully')
-                        router.push('/sources')
+                        const returnPath = navigation.getReturnPath()
+                        router.push(returnPath)
+                        navigation.clearReturnTo()
                       } catch (err) {
                         toast.error('Failed to delete source')
                       }

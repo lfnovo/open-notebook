@@ -6,7 +6,9 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
 from api.episode_profiles_service import episode_profiles_service
+from api.notes_service import notes_service
 from api.podcast_service import PodcastService
+from api.search_service import search_service
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import graph as chat_graph
 
@@ -71,9 +73,16 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
     tokens = token_count(
         str(context) + str(st.session_state[current_session.id]["messages"])
     )
-    chat_tab, podcast_tab = st.tabs(["Chat", "Podcast"])
+    chat_tab, research_tab, podcast_tab = st.tabs(["Chat", "Research", "Podcast"])
     with st.expander(f"Context ({tokens} tokens), {len(str(context))} chars"):
         st.json(context)
+    notebook_state = st.session_state.setdefault(current_notebook.id, {})
+    research_state = notebook_state.setdefault("research", {})
+
+    question_key = f"research_question_{current_notebook.id}"
+    if question_key not in st.session_state:
+        st.session_state[question_key] = research_state.get("question", "")
+
     with podcast_tab:
         with st.container(border=True):
             # Fetch available episode profiles
@@ -256,3 +265,90 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                     else:
                         # Human messages - display normally
                         st.markdown(convert_source_references(msg.content))
+
+    with research_tab:
+        st.subheader("Research Synthesis", anchor=False)
+        st.caption(
+            "Runs the deep research workflow against the current notebook's uploaded sources and notes."
+        )
+
+        question = st.text_area(
+            "What would you like to investigate?",
+            key=question_key,
+            height=180,
+            placeholder="Describe the topic or decision you need synthesized...",
+        )
+
+        col_run, col_clear = st.columns([1, 1])
+        if col_run.button(
+            "Run Research",
+            type="primary",
+            key=f"run_research_{current_notebook.id}",
+        ):
+            if not question or not question.strip():
+                st.error("Please enter a research question before running the workflow.")
+            else:
+                try:
+                    with st.spinner("Synthesizing research findings..."):
+                        response = search_service.run_research(
+                            question=question.strip(),
+                            notebook_id=str(current_notebook.id),
+                        )
+                    research_state["question"] = question.strip()
+                    research_state["result"] = response
+                    st.success("Research synthesis completed.")
+                except Exception as exc:
+                    st.error(f"Failed to run research: {exc}")
+
+        if col_clear.button(
+            "Clear Output", key=f"clear_research_{current_notebook.id}"
+        ):
+            research_state.clear()
+            st.session_state.pop(question_key, None)
+            st.rerun()
+
+        result = research_state.get("result")
+        if result:
+            st.markdown("### Final Report")
+            final_report = str(result.get("final_report", "")).strip()
+            if final_report:
+                st.markdown(final_report)
+            else:
+                st.info("No final report was returned.")
+
+            research_brief = result.get("research_brief")
+            if research_brief:
+                with st.expander("Research Brief", expanded=False):
+                    st.markdown(str(research_brief))
+
+            notes = result.get("notes") or []
+            if notes:
+                st.markdown("### Supporting Notes")
+                for idx, note_content in enumerate(notes, start=1):
+                    with st.expander(f"Note {idx}", expanded=False):
+                        st.markdown(str(note_content))
+
+            if final_report:
+                default_title_source = result.get("research_brief") or research_state.get(
+                    "question", ""
+                )
+                default_title_source = (default_title_source or "Research synthesis").strip()
+                if len(default_title_source) > 60:
+                    default_title = f"Research synthesis: {default_title_source[:57]}..."
+                else:
+                    default_title = f"Research synthesis: {default_title_source}"
+
+                if st.button(
+                    "Save report to notebook notes",
+                    key=f"save_research_note_{current_notebook.id}"
+                ):
+                    try:
+                        notes_service.create_note(
+                            content=final_report,
+                            title=default_title,
+                            note_type="ai",
+                            notebook_id=str(current_notebook.id),
+                        )
+                        st.success("Research report saved as a note.")
+                    except Exception as exc:
+                        st.error(f"Failed to save report: {exc}")

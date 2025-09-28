@@ -5,11 +5,20 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
-from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
+from api.models import (
+    AskRequest,
+    AskResponse,
+    ResearchRequest,
+    ResearchResponse,
+    SearchRequest,
+    SearchResponse,
+)
+from langchain_core.messages import HumanMessage
 from open_notebook.domain.models import Model, model_manager
 from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.graphs.ask import graph as ask_graph
+from open_notebook.graphs.research import build_runnable_config, graph as research_graph
 
 router = APIRouter()
 
@@ -151,6 +160,43 @@ async def ask_knowledge_base(ask_request: AskRequest):
     except Exception as e:
         logger.error(f"Error in ask endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ask operation failed: {str(e)}")
+
+
+@router.post("/search/research", response_model=ResearchResponse)
+async def run_research_synthesis(research_request: ResearchRequest):
+    """Run the deep research agent against notebook content."""
+
+    if not research_request.question.strip():
+        raise HTTPException(status_code=400, detail="Research question cannot be empty")
+
+    try:
+        config = build_runnable_config(
+            research_request.notebook_id, research_request.config_overrides
+        )
+
+        result = await research_graph.ainvoke(
+            input={"messages": [HumanMessage(content=research_request.question.strip())]},
+            config=config,
+        )
+
+        if not result or "final_report" not in result:
+            raise ValueError("Deep research agent did not produce a final report")
+
+        notes = result.get("notes") or result.get("raw_notes") or []
+        if isinstance(notes, str):
+            notes = [notes]
+
+        return ResearchResponse(
+            final_report=str(result.get("final_report", "")),
+            notes=[str(item) for item in notes],
+            research_brief=result.get("research_brief"),
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error running research synthesis: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Research synthesis failed: {str(e)}")
 
 
 @router.post("/search/ask/simple", response_model=AskResponse)

@@ -51,6 +51,28 @@ class AskResponse(BaseModel):
     question: str = Field(..., description="Original question")
 
 
+class ResearchRequest(BaseModel):
+    question: str = Field(..., description="Research objective or question")
+    notebook_id: Optional[str] = Field(
+        None, description="Limit research to the specified notebook"
+    )
+    config_overrides: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Optional configuration overrides for the research agent",
+    )
+
+
+class ResearchResponse(BaseModel):
+    final_report: str = Field(..., description="Comprehensive research synthesis")
+    notes: List[str] = Field(
+        default_factory=list,
+        description="Raw research notes and excerpts used for synthesis",
+    )
+    research_brief: Optional[str] = Field(
+        None, description="Structured research brief generated for the task"
+    )
+
+
 # Models API models
 class ModelCreate(BaseModel):
     name: str = Field(..., description="Model name (e.g., gpt-4o-mini, claude, gemini)")

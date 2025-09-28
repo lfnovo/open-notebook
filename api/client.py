@@ -121,6 +121,24 @@ class APIClient:
             "POST", "/api/search/ask/simple", json=data, timeout=300.0
         )
 
+    def run_research(
+        self,
+        question: str,
+        notebook_id: Optional[str] = None,
+        config_overrides: Optional[Dict[str, object]] = None,
+    ) -> Dict:
+        """Execute the deep research workflow."""
+        data: Dict[str, object] = {"question": question}
+        if notebook_id:
+            data["notebook_id"] = notebook_id
+        if config_overrides:
+            data["config_overrides"] = config_overrides
+
+        # Research synthesis can take several minutes depending on context size
+        return self._make_request(
+            "POST", "/api/search/research", json=data, timeout=600.0
+        )
+
     # Models API methods
     def get_models(self, model_type: Optional[str] = None) -> List[Dict]:
         """Get all models with optional type filtering."""

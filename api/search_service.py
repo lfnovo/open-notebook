@@ -2,7 +2,7 @@
 Search service layer using API.
 """
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List, Optional
 
 from loguru import logger
 
@@ -50,6 +50,19 @@ class SearchService:
             final_answer_model=final_answer_model
         )
         return response
+
+    def run_research(
+        self,
+        question: str,
+        notebook_id: Optional[str] = None,
+        config_overrides: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Execute the deep research workflow and return the synthesis."""
+        return api_client.run_research(
+            question=question,
+            notebook_id=notebook_id,
+            config_overrides=config_overrides or {},
+        )
 
 
 # Global service instance

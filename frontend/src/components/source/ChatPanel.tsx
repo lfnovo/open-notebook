@@ -49,11 +49,14 @@ interface ChatPanelProps {
   onUpdateSession?: (sessionId: string, title: string) => void
   onDeleteSession?: (sessionId: string) => void
   loadingSessions?: boolean
+  // Generic props for reusability
+  title?: string
+  contextType?: 'source' | 'notebook'
 }
 
-export function ChatPanel({ 
-  messages, 
-  isStreaming, 
+export function ChatPanel({
+  messages,
+  isStreaming,
   contextIndicators,
   onSendMessage,
   modelOverride,
@@ -64,7 +67,9 @@ export function ChatPanel({
   onSelectSession,
   onUpdateSession,
   onDeleteSession,
-  loadingSessions = false
+  loadingSessions = false,
+  title = 'Chat with Source',
+  contextType = 'source'
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [showNewSessionDialog, setShowNewSessionDialog] = useState(false)
@@ -126,7 +131,7 @@ export function ChatPanel({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            Chat with Source
+            {title}
           </CardTitle>
           <div className="flex items-center gap-2">
             {/* Session selector */}
@@ -184,7 +189,9 @@ export function ChatPanel({
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">Start a conversation about this source</p>
+                <p className="text-sm">
+                  Start a conversation about this {contextType}
+                </p>
                 <p className="text-xs mt-2">Ask questions to understand the content better</p>
               </div>
             ) : (
@@ -303,7 +310,7 @@ export function ChatPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Ask a question about this source... (${keyHint} to send)`}
+              placeholder={`Ask a question about this ${contextType}... (${keyHint} to send)`}
               disabled={isStreaming}
               className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3"
               rows={1}

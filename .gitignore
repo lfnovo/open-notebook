@@ -1,6 +1,6 @@
 .env
 prompts/patterns/user/
-notebooks/
+/notebooks/
 data/
 .uploads/
 sqlite-db/

@@ -252,13 +252,8 @@ export function AddSourceDialog({
 
       await createSource.mutateAsync(createRequest)
 
-      setProcessingStatus({
-        message: 'Source submitted for async processing. You can monitor progress in the sources list.',
-        progress: 100
-      })
-      timeoutRef.current = setTimeout(() => {
-        handleClose()
-      }, 3000)
+      // Close immediately - the toast will show the success message
+      handleClose()
     } catch (error) {
       console.error('Error creating source:', error)
       setProcessingStatus({ 

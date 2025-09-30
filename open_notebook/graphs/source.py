@@ -64,13 +64,8 @@ async def save_source(state: SourceState) -> dict:
     
     await source.save()
 
-    # Handle multiple notebook associations
-    notebook_ids = state.get("notebook_ids", [])
-    if notebook_ids:
-        for notebook_id in notebook_ids:
-            if notebook_id:  # Skip empty/None notebook IDs
-                logger.debug(f"Adding source to notebook {notebook_id}")
-                await source.add_to_notebook(notebook_id)
+    # NOTE: Notebook associations are created by the API immediately for UI responsiveness
+    # No need to create them here to avoid duplicate edges
 
     if state["embed"]:
         logger.debug("Embedding content for vector search")

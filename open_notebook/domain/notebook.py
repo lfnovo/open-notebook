@@ -197,12 +197,16 @@ class Source(ObjectModel):
             if not status_result:
                 return None
 
+            # Extract execution metadata if available
+            result = getattr(status_result, "result", None)
+            execution_metadata = result.get("execution_metadata", {}) if isinstance(result, dict) else {}
+
             return {
                 "status": status_result.status,
-                "started_at": status_result.started_at,
-                "completed_at": getattr(status_result, "completed_at", None),
-                "error": getattr(status_result, "error", None),
-                "result": getattr(status_result, "result", None),
+                "started_at": execution_metadata.get("started_at"),
+                "completed_at": execution_metadata.get("completed_at"),
+                "error": getattr(status_result, "error_message", None),
+                "result": result,
             }
         except Exception as e:
             logger.warning(f"Failed to get command progress for {self.command}: {e}")

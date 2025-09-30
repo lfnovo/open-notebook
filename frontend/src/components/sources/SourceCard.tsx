@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -34,6 +34,7 @@ interface SourceCardProps {
   onRetry?: (sourceId: string) => void
   onRemoveFromNotebook?: (sourceId: string) => void
   onClick?: (sourceId: string) => void
+  onRefresh?: () => void
   className?: string
   showRemoveFromNotebook?: boolean
 }
@@ -45,6 +46,14 @@ const SOURCE_TYPE_ICONS = {
 } as const
 
 const STATUS_CONFIG = {
+  new: {
+    icon: Clock,
+    color: 'text-blue-600',
+    bgColor: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    label: 'Processing',
+    description: 'Preparing to process'
+  },
   queued: {
     icon: Clock,
     color: 'text-blue-600',
@@ -56,7 +65,7 @@ const STATUS_CONFIG = {
   running: {
     icon: Loader2,
     color: 'text-blue-600',
-    bgColor: 'bg-blue-50', 
+    bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
     label: 'Processing',
     description: 'Being processed'
@@ -94,28 +103,68 @@ export function SourceCard({
   onRetry,
   onRemoveFromNotebook,
   onClick,
+  onRefresh,
   className,
   showRemoveFromNotebook = false
 }: SourceCardProps) {
-  const [showFullTitle, setShowFullTitle] = useState(false)
   
   // Only fetch status for sources that might have async processing
   const sourceWithStatus = source as SourceListResponse & { command_id?: string; status?: string }
-  const shouldFetchStatus = !!sourceWithStatus.command_id || 
-    sourceWithStatus.status === 'queued' || 
-    sourceWithStatus.status === 'running'
-    
+
+  // Track processing state to continue polling until we detect completion
+  const [wasProcessing, setWasProcessing] = useState(false)
+
+  const shouldFetchStatus = !!sourceWithStatus.command_id ||
+    sourceWithStatus.status === 'new' ||
+    sourceWithStatus.status === 'queued' ||
+    sourceWithStatus.status === 'running' ||
+    wasProcessing // Keep polling if we were processing to catch the completion
+
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
-    source.id, 
+    source.id,
     shouldFetchStatus
   )
 
   // Determine current status
+  // If source has a command_id but no status, treat as "new" (just created)
   const currentStatus: SourceStatus = (
-    statusData?.status || 
-    sourceWithStatus.status || 
-    'completed'
+    statusData?.status ||
+    sourceWithStatus.status ||
+    (sourceWithStatus.command_id ? 'new' : 'completed')
   ) as SourceStatus
+
+  // Debug logging
+  useEffect(() => {
+    console.log(`📊 Source ${source.id}:`, {
+      sourceStatus: sourceWithStatus.status,
+      statusData: statusData?.status,
+      commandId: sourceWithStatus.command_id,
+      shouldFetch: shouldFetchStatus,
+      wasProcessing,
+      currentStatus
+    })
+  }, [statusData, shouldFetchStatus, wasProcessing, source.id, sourceWithStatus.status, sourceWithStatus.command_id, currentStatus])
+
+  // Track processing state and detect completion
+  useEffect(() => {
+    const currentStatusFromData = statusData?.status || sourceWithStatus.status
+
+    // If we're currently processing, mark that we were processing
+    if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
+      setWasProcessing(true)
+    }
+
+    // If we were processing and now completed/failed, trigger refresh and stop polling
+    if (wasProcessing &&
+        (currentStatusFromData === 'completed' || currentStatusFromData === 'failed')) {
+      console.log(`🔄 Source ${source.id} processing completed, triggering refresh`)
+      setWasProcessing(false) // Stop polling
+
+      if (onRefresh) {
+        setTimeout(() => onRefresh(), 500) // Small delay to ensure API is updated
+      }
+    }
+  }, [statusData, sourceWithStatus.status, wasProcessing, onRefresh, source.id])
   
   const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.completed
   const StatusIcon = statusConfig.icon
@@ -123,7 +172,6 @@ export function SourceCard({
   const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
   
   const title = source.title || 'Untitled Source'
-  const isLongTitle = title.length > 50
 
   const handleRetry = () => {
     if (onRetry) {
@@ -149,7 +197,7 @@ export function SourceCard({
     }
   }
 
-  const isProcessing = currentStatus === 'running' || currentStatus === 'queued'
+  const isProcessing = currentStatus === 'new' || currentStatus === 'running' || currentStatus === 'queued'
   const isFailed = currentStatus === 'failed'
   const isCompleted = currentStatus === 'completed'
 
@@ -163,52 +211,41 @@ export function SourceCard({
       )}
       onClick={handleCardClick}
     >
-      <CardContent className="p-4">
+      <CardContent className="px-3 py-1">
         {/* Header with status indicator */}
-        <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-start justify-between gap-3 mb-1">
           <div className="flex-1 min-w-0">
-            {/* Status badge */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className={cn(
-                'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
-                statusConfig.bgColor,
-                statusConfig.color
-              )}>
-                <StatusIcon className={cn(
-                  'h-3 w-3',
-                  isProcessing && 'animate-spin'
-                )} />
-                {statusLoading && shouldFetchStatus ? 'Checking...' : statusConfig.label}
+            {/* Status badge - only show if not completed */}
+            {!isCompleted && (
+              <div className="flex items-center gap-2 mb-2">
+                <div className={cn(
+                  'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+                  statusConfig.bgColor,
+                  statusConfig.color
+                )}>
+                  <StatusIcon className={cn(
+                    'h-3 w-3',
+                    isProcessing && 'animate-spin'
+                  )} />
+                  {statusLoading && shouldFetchStatus ? 'Checking...' : statusConfig.label}
+                </div>
+
+                {/* Source type indicator */}
+                <div className="flex items-center gap-1 text-gray-500">
+                  <SourceTypeIcon className="h-3 w-3" />
+                  <span className="text-xs capitalize">{sourceType}</span>
+                </div>
               </div>
-              
-              {/* Source type indicator */}
-              <div className="flex items-center gap-1 text-gray-500">
-                <SourceTypeIcon className="h-3 w-3" />
-                <span className="text-xs capitalize">{sourceType}</span>
-              </div>
-            </div>
+            )}
 
             {/* Title */}
-            <div className="mb-2">
-              <h4 
-                className={cn(
-                  'text-sm font-medium leading-tight',
-                  isLongTitle && !showFullTitle && 'line-clamp-2'
-                )}
+            <div className={cn('mb-1.5', !isCompleted && 'mb-1')}>
+              <h4
+                className="text-sm font-medium leading-tight line-clamp-2"
                 title={title}
               >
                 {title}
               </h4>
-              {isLongTitle && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto p-0 text-xs text-blue-600 hover:text-blue-800"
-                  onClick={() => setShowFullTitle(!showFullTitle)}
-                >
-                  {showFullTitle ? 'Show less' : 'Show more'}
-                </Button>
-              )}
             </div>
 
             {/* Processing message for active statuses */}
@@ -220,17 +257,18 @@ export function SourceCard({
 
             {/* Metadata badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              {isCompleted && source.embedded_chunks > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {source.embedded_chunks} chunks
-                </Badge>
-              )}
+              {/* Source type badge */}
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <SourceTypeIcon className="h-3 w-3" />
+                {sourceType}
+              </Badge>
+
               {isCompleted && source.insights_count > 0 && (
                 <Badge variant="outline" className="text-xs">
                   {source.insights_count} insights
                 </Badge>
               )}
-              {source.topics.length > 0 && isCompleted && (
+              {source.topics && source.topics.length > 0 && isCompleted && (
                 <>
                   {source.topics.slice(0, 2).map((topic, index) => (
                     <Badge key={index} variant="outline" className="text-xs">

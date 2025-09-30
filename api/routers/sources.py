@@ -245,10 +245,13 @@ async def get_sources(
                 status_obj = command_statuses[command_id]
                 if status_obj:
                     status = status_obj.status
+                    # Extract execution metadata from nested result structure
+                    result = getattr(status_obj, "result", None)
+                    execution_metadata = result.get("execution_metadata", {}) if isinstance(result, dict) else {}
                     processing_info = {
-                        "started_at": getattr(status_obj, "started_at", None),
-                        "completed_at": getattr(status_obj, "completed_at", None),
-                        "error": getattr(status_obj, "error", None),
+                        "started_at": execution_metadata.get("started_at"),
+                        "completed_at": execution_metadata.get("completed_at"),
+                        "error": getattr(status_obj, "error_message", None),
                     }
             elif command_id:
                 # Command exists but status couldn't be fetched
@@ -368,7 +371,8 @@ async def create_source(
             )
             await source.save()
 
-            # Add source to all specified notebooks
+            # Add source to notebooks immediately so it appears in the UI
+            # The source_graph will skip adding duplicates
             for notebook_id in source_data.notebooks:
                 await source.add_to_notebook(notebook_id)
 
@@ -392,6 +396,11 @@ async def create_source(
                 )
 
                 logger.info(f"Submitted async processing command: {command_id}")
+
+                # Update source with command reference immediately
+                # command_id already includes 'command:' prefix
+                source.command = ensure_record_id(command_id)
+                await source.save()
 
                 # Return source with command info
                 return SourceResponse(
@@ -441,7 +450,8 @@ async def create_source(
                 )
                 await source.save()
 
-                # Add source to all specified notebooks
+                # Add source to notebooks immediately so it appears in the UI
+                # The source_graph will skip adding duplicates
                 for notebook_id in source_data.notebooks:
                     await source.add_to_notebook(notebook_id)
 

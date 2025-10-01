@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Select,
   SelectContent,
@@ -20,7 +20,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Settings2, Sparkles } from 'lucide-react'
-import { useModels } from '@/lib/hooks/use-models'
+import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 interface ModelSelectorProps {
@@ -37,9 +37,29 @@ export function ModelSelector({
   const [open, setOpen] = useState(false)
   const [selectedModel, setSelectedModel] = useState(currentModel || 'default')
   const { data: models, isLoading } = useModels()
+  const { data: defaults } = useModelDefaults()
+
+  useEffect(() => {
+    setSelectedModel(currentModel || 'default')
+  }, [currentModel])
 
   // Filter for language models only and sort by name
   const languageModels = models?.filter(model => model.type === 'language').sort((a, b) => a.name.localeCompare(b.name)) || []
+
+  const defaultModel = useMemo(() => {
+    if (!defaults?.default_chat_model) return undefined
+    return languageModels.find(model => model.id === defaults.default_chat_model)
+  }, [defaults?.default_chat_model, languageModels])
+
+  const currentModelName = useMemo(() => {
+    if (currentModel) {
+      return languageModels.find(model => model.id === currentModel)?.name || currentModel
+    }
+    if (defaultModel) {
+      return defaultModel.name
+    }
+    return 'Default Model'
+  }, [currentModel, languageModels, defaultModel])
 
   const handleSave = () => {
     onModelChange(selectedModel === 'default' ? undefined : selectedModel)
@@ -62,13 +82,9 @@ export function ModelSelector({
           className="gap-2"
         >
           <Settings2 className="h-4 w-4" />
-          {currentModel ? (
-            <span className="text-xs">
-              {languageModels.find(m => m.id === currentModel)?.name || currentModel}
-            </span>
-          ) : (
-            'Default Model'
-          )}
+          <span className="text-xs">
+            {currentModelName}
+          </span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
@@ -89,7 +105,18 @@ export function ModelSelector({
                 <SelectValue placeholder="Select a model (or use default)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="default">System Default</SelectItem>
+                <SelectItem value="default">
+                  <div className="flex items-center justify-between w-full">
+                    <span>
+                      {defaultModel ? `Default (${defaultModel.name})` : 'System Default'}
+                    </span>
+                    {defaultModel?.provider && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {defaultModel.provider}
+                      </span>
+                    )}
+                  </div>
+                </SelectItem>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-2">
                     <LoadingSpinner size="sm" />

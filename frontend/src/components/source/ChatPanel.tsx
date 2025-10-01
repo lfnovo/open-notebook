@@ -136,8 +136,8 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full">
-      <CardHeader className="pb-3">
+    <Card className="flex flex-col h-full flex-1 overflow-hidden">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
@@ -194,7 +194,7 @@ export function ChatPanel({
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 px-4" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
           <div className="space-y-4 py-4">
             {messages.length === 0 ? (
               <div className="text-center text-muted-foreground py-8">
@@ -311,7 +311,7 @@ export function ChatPanel({
         )}
 
         {/* Input Area */}
-        <div className="p-4 space-y-3">
+        <div className="flex-shrink-0 p-4 space-y-3 border-t">
           {/* Model selector */}
           {onModelChange && (
             <div className="flex items-center justify-between">

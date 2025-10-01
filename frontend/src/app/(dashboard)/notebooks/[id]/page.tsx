@@ -100,33 +100,43 @@ export default function NotebookPage() {
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6">
-        <NotebookHeader notebook={notebook} />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <SourcesColumn
-              sources={sources}
-              isLoading={sourcesLoading}
-              notebookId={notebookId}
-              notebookName={notebook?.name}
-              onRefresh={refetchSources}
-              contextSelections={contextSelections.sources}
-              onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
-            />
-            <NotesColumn
-              notes={notes}
-              isLoading={notesLoading}
-              notebookId={notebookId}
-              contextSelections={contextSelections.notes}
-              onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
-            />
-          </div>
+      <div className="h-full flex flex-col min-h-0 flex-1">
+        <div className="flex-shrink-0 p-6 pb-0">
+          <NotebookHeader notebook={notebook} />
+        </div>
 
-          <ChatColumn
-            notebookId={notebookId}
-            contextSelections={contextSelections}
-          />
+        <div className="flex-1 p-6 pt-6 overflow-hidden min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-0">
+              <div className="h-full overflow-hidden min-h-0 flex flex-col">
+                <SourcesColumn
+                  sources={sources}
+                  isLoading={sourcesLoading}
+                  notebookId={notebookId}
+                  notebookName={notebook?.name}
+                  onRefresh={refetchSources}
+                  contextSelections={contextSelections.sources}
+                  onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                />
+              </div>
+              <div className="h-full overflow-hidden min-h-0 flex flex-col">
+                <NotesColumn
+                  notes={notes}
+                  isLoading={notesLoading}
+                  notebookId={notebookId}
+                  contextSelections={contextSelections.notes}
+                  onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                />
+              </div>
+            </div>
+
+            <div className="h-full overflow-hidden min-h-0 flex flex-col">
+              <ChatColumn
+                notebookId={notebookId}
+                contextSelections={contextSelections}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </AppShell>

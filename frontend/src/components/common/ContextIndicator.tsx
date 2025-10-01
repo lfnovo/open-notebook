@@ -22,14 +22,14 @@ export function ContextIndicator({
 
   if (!hasContext) {
     return (
-      <div className={cn('text-xs text-muted-foreground py-2 px-3 border-t', className)}>
+      <div className={cn('flex-shrink-0 text-xs text-muted-foreground py-2 px-3 border-t', className)}>
         No sources or notes included in context. Toggle icons on cards to include them.
       </div>
     )
   }
 
   return (
-    <div className={cn('flex items-center gap-2 py-2 px-3 border-t bg-muted/30', className)}>
+    <div className={cn('flex-shrink-0 flex items-center gap-2 py-2 px-3 border-t bg-muted/30', className)}>
       <span className="text-xs font-medium text-muted-foreground">Context:</span>
 
       {totalSources > 0 && (

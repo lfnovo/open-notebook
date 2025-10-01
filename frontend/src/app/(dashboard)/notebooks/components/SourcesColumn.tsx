@@ -105,8 +105,8 @@ export function SourcesColumn({
     router.push(`/sources/${sourceId}`)
   }
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="h-full flex flex-col flex-1 overflow-hidden">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Sources</CardTitle>
           <Button size="sm" onClick={() => setAddDialogOpen(true)}>
@@ -115,8 +115,8 @@ export function SourcesColumn({
           </Button>
         </div>
       </CardHeader>
-      
-      <CardContent className="flex-1 overflow-auto">
+
+      <CardContent className="flex-1 overflow-y-auto min-h-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
             <LoadingSpinner />

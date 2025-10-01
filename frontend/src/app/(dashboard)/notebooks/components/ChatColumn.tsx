@@ -88,14 +88,18 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
       messages={chat.messages}
       isStreaming={chat.isSending}
       contextIndicators={null}
-      onSendMessage={(message) => chat.sendMessage(message)}
-      modelOverride={undefined}
-      onModelChange={undefined}
+      onSendMessage={(message, modelOverride) => chat.sendMessage(message, modelOverride)}
+      modelOverride={chat.currentSession?.model_override ?? undefined}
+      onModelChange={(model) => {
+        if (chat.currentSessionId) {
+          chat.updateSession(chat.currentSessionId, { model_override: model ?? null })
+        }
+      }}
       sessions={chat.sessions}
       currentSessionId={chat.currentSessionId}
       onCreateSession={(title) => chat.createSession(title)}
       onSelectSession={chat.switchSession}
-      onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, title)}
+      onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
       onDeleteSession={chat.deleteSession}
       loadingSessions={chat.loadingSessions}
       notebookContextStats={contextStats}

@@ -147,7 +147,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   }, [sources, notes, contextSelections])
 
   // Send message (synchronous, no streaming)
-  const sendMessage = useCallback(async (message: string) => {
+  const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
     let sessionId = currentSessionId
 
     // Auto-create session if none exists
@@ -187,7 +187,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       const response = await chatApi.sendMessage({
         session_id: sessionId,
         message,
-        context
+        context,
+        model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       })
 
       // Update messages with API response
@@ -203,7 +204,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     } finally {
       setIsSending(false)
     }
-  }, [notebookId, currentSessionId, buildContext, refetchCurrentSession, queryClient])
+  }, [
+    notebookId,
+    currentSessionId,
+    currentSession,
+    buildContext,
+    refetchCurrentSession,
+    queryClient
+  ])
 
   // Switch session
   const switchSession = useCallback((sessionId: string) => {
@@ -219,10 +227,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   }, [createSessionMutation, notebookId])
 
   // Update session
-  const updateSession = useCallback((sessionId: string, title: string) => {
+  const updateSession = useCallback((sessionId: string, data: UpdateNotebookChatSessionRequest) => {
     return updateSessionMutation.mutate({
       sessionId,
-      data: { title }
+      data
     })
   }, [updateSessionMutation])
 
@@ -234,7 +242,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   return {
     // State
     sessions,
-    currentSession: sessions.find(s => s.id === currentSessionId),
+    currentSession: currentSession || sessions.find(s => s.id === currentSessionId),
     currentSessionId,
     messages,
     isSending,

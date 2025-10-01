@@ -20,11 +20,16 @@ class ThreadState(TypedDict):
     notebook: Optional[Notebook]
     context: Optional[str]
     context_config: Optional[dict]
+    model_override: Optional[str]
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+    model_id = (
+        config.get("configurable", {}).get("model_id")
+        or state.get("model_override")
+    )
     
     # Handle async model provisioning from sync context
     def run_in_new_loop():
@@ -35,7 +40,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
             return new_loop.run_until_complete(
                 provision_langchain_model(
                     str(payload),
-                    config.get("configurable", {}).get("model_id"),
+                    model_id,
                     "chat",
                     max_tokens=10000,
                 )
@@ -57,7 +62,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
         model = asyncio.run(
             provision_langchain_model(
                 str(payload),
-                config.get("configurable", {}).get("model_id"),
+                model_id,
                 "chat",
                 max_tokens=10000,
             )

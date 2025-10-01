@@ -22,10 +22,16 @@ router = APIRouter()
 class CreateSessionRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to create session for")
     title: Optional[str] = Field(None, description="Optional session title")
+    model_override: Optional[str] = Field(
+        None, description="Optional model override for this session"
+    )
 
 
 class UpdateSessionRequest(BaseModel):
-    title: str = Field(..., description="New session title")
+    title: Optional[str] = Field(None, description="New session title")
+    model_override: Optional[str] = Field(
+        None, description="Model override for this session"
+    )
 
 
 class ChatMessage(BaseModel):
@@ -44,6 +50,9 @@ class ChatSessionResponse(BaseModel):
     message_count: Optional[int] = Field(
         None, description="Number of messages in session"
     )
+    model_override: Optional[str] = Field(
+        None, description="Model override for this session"
+    )
 
 
 class ChatSessionWithMessagesResponse(ChatSessionResponse):
@@ -57,6 +66,9 @@ class ExecuteChatRequest(BaseModel):
     message: str = Field(..., description="User message content")
     context: Dict[str, Any] = Field(
         ..., description="Chat context with sources and notes"
+    )
+    model_override: Optional[str] = Field(
+        None, description="Optional model override for this message"
     )
 
 
@@ -101,6 +113,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
                 created=str(session.created),
                 updated=str(session.updated),
                 message_count=0,  # TODO: Add message count if needed
+                model_override=getattr(session, "model_override", None),
             )
             for session in sessions
         ]
@@ -124,7 +137,8 @@ async def create_session(request: CreateSessionRequest):
 
         # Create new session
         session = ChatSession(
-            title=request.title or f"Chat Session {asyncio.get_event_loop().time():.0f}"
+            title=request.title or f"Chat Session {asyncio.get_event_loop().time():.0f}",
+            model_override=request.model_override,
         )
         await session.save()
 
@@ -138,6 +152,7 @@ async def create_session(request: CreateSessionRequest):
             created=str(session.created),
             updated=str(session.updated),
             message_count=0,
+            model_override=session.model_override,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
@@ -212,6 +227,7 @@ async def get_session(session_id: str):
             updated=str(session.updated),
             message_count=len(messages),
             messages=messages,
+            model_override=getattr(session, "model_override", None),
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -234,7 +250,14 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
-        session.title = request.title
+        update_data = request.model_dump(exclude_unset=True)
+
+        if "title" in update_data:
+            session.title = update_data["title"]
+
+        if "model_override" in update_data:
+            session.model_override = update_data["model_override"]
+
         await session.save()
 
         # Find notebook_id
@@ -257,6 +280,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
             created=str(session.created),
             updated=str(session.updated),
             message_count=0,
+            model_override=session.model_override,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -304,15 +328,25 @@ async def execute_chat(request: ExecuteChatRequest):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
+        # Determine model override (per-request override takes precedence over session-level)
+        model_override = (
+            request.model_override
+            if request.model_override is not None
+            else getattr(session, "model_override", None)
+        )
+
         # Get current state
         current_state = chat_graph.get_state(
-            config=RunnableConfig(configurable={"thread_id": request.session_id})
+            config=RunnableConfig(
+                configurable={"thread_id": request.session_id}
+            )
         )
 
         # Prepare state for execution
         state_values = current_state.values if current_state else {}
         state_values["messages"] = state_values.get("messages", [])
         state_values["context"] = request.context
+        state_values["model_override"] = model_override
 
         # Add user message to state
         from langchain_core.messages import HumanMessage
@@ -323,7 +357,12 @@ async def execute_chat(request: ExecuteChatRequest):
         # Execute chat graph
         result = chat_graph.invoke(
             input=state_values,
-            config=RunnableConfig(configurable={"thread_id": request.session_id}),
+            config=RunnableConfig(
+                configurable={
+                    "thread_id": request.session_id,
+                    "model_id": model_override,
+                }
+            ),
         )
 
         # Update session timestamp

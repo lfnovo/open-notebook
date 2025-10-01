@@ -35,12 +35,19 @@ class ChatService:
             logger.error(f"Error fetching chat sessions: {str(e)}")
             raise
     
-    async def create_session(self, notebook_id: str, title: Optional[str] = None) -> Dict[str, Any]:
+    async def create_session(
+        self,
+        notebook_id: str,
+        title: Optional[str] = None,
+        model_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Create a new chat session"""
         try:
-            data = {"notebook_id": notebook_id}
-            if title:
+            data: Dict[str, Any] = {"notebook_id": notebook_id}
+            if title is not None:
                 data["title"] = title
+            if model_override is not None:
+                data["model_override"] = model_override
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -68,13 +75,27 @@ class ChatService:
             logger.error(f"Error fetching session: {str(e)}")
             raise
     
-    async def update_session(self, session_id: str, title: str) -> Dict[str, Any]:
-        """Update session title"""
+    async def update_session(
+        self,
+        session_id: str,
+        title: Optional[str] = None,
+        model_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update session properties"""
         try:
+            data: Dict[str, Any] = {}
+            if title is not None:
+                data["title"] = title
+            if model_override is not None:
+                data["model_override"] = model_override
+
+            if not data:
+                raise ValueError("At least one field must be provided to update a session")
+
             async with httpx.AsyncClient() as client:
                 response = await client.put(
                     f"{self.base_url}/api/chat/sessions/{session_id}",
-                    json={"title": title},
+                    json=data,
                     headers=self.headers
                 )
                 response.raise_for_status()
@@ -97,7 +118,13 @@ class ChatService:
             logger.error(f"Error deleting session: {str(e)}")
             raise
     
-    async def execute_chat(self, session_id: str, message: str, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def execute_chat(
+        self,
+        session_id: str,
+        message: str,
+        context: Dict[str, Any],
+        model_override: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """Execute a chat request"""
         try:
             data = {
@@ -105,6 +132,8 @@ class ChatService:
                 "message": message, 
                 "context": context
             }
+            if model_override is not None:
+                data["model_override"] = model_override
             
             async with httpx.AsyncClient(timeout=120.0) as client:  # Longer timeout for chat
                 response = await client.post(

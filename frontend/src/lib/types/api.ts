@@ -173,6 +173,7 @@ export interface NotebookChatSession {
   created: string
   updated: string
   message_count?: number
+  model_override?: string | null
 }
 
 export interface NotebookChatMessage {
@@ -189,10 +190,12 @@ export interface NotebookChatSessionWithMessages extends NotebookChatSession {
 export interface CreateNotebookChatSessionRequest {
   notebook_id: string
   title?: string
+  model_override?: string
 }
 
 export interface UpdateNotebookChatSessionRequest {
   title?: string
+  model_override?: string | null
 }
 
 export interface SendNotebookChatMessageRequest {
@@ -202,4 +205,5 @@ export interface SendNotebookChatMessageRequest {
     sources: Array<{ id: string; content: string }>
     notes: Array<{ id: string; content: string }>
   }
+  model_override?: string
 }

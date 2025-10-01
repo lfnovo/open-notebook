@@ -8,7 +8,7 @@ interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const { theme, setTheme, getSystemTheme, getEffectiveTheme } = useThemeStore()
+  const { theme, getSystemTheme, getEffectiveTheme } = useThemeStore()
 
   useEffect(() => {
     // Initialize theme on mount

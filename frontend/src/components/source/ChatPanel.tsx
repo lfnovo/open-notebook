@@ -2,12 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, Plus, Trash2, Edit2, Check, X } from 'lucide-react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { 
   SourceChatMessage, 
@@ -15,25 +15,8 @@ import {
   SourceChatSession
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { formatDistanceToNow } from 'date-fns'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
+import { SessionManager } from '@/components/source/SessionManager'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -53,8 +36,8 @@ interface ChatPanelProps {
   currentSessionId?: string | null
   onCreateSession?: (title: string) => void
   onSelectSession?: (sessionId: string) => void
-  onUpdateSession?: (sessionId: string, title: string) => void
   onDeleteSession?: (sessionId: string) => void
+  onUpdateSession?: (sessionId: string, title: string) => void
   loadingSessions?: boolean
   // Generic props for reusability
   title?: string
@@ -74,19 +57,15 @@ export function ChatPanel({
   currentSessionId,
   onCreateSession,
   onSelectSession,
-  onUpdateSession,
   onDeleteSession,
+  onUpdateSession,
   loadingSessions = false,
   title = 'Chat with Source',
   contextType = 'source',
   notebookContextStats
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
-  const [showNewSessionDialog, setShowNewSessionDialog] = useState(false)
-  const [newSessionTitle, setNewSessionTitle] = useState('')
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
-  const [editingSessionId, setEditingSessionId] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState('')
+  const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -113,23 +92,6 @@ export function ChatPanel({
     }
   }
 
-  const handleCreateSession = () => {
-    if (newSessionTitle.trim() && onCreateSession) {
-      onCreateSession(newSessionTitle.trim())
-      setNewSessionTitle('')
-      setShowNewSessionDialog(false)
-    }
-  }
-
-  const handleDeleteConfirm = () => {
-    if (deleteConfirmId && onDeleteSession) {
-      onDeleteSession(deleteConfirmId)
-      setDeleteConfirmId(null)
-    }
-  }
-
-  const currentSession = sessions.find(s => s.id === currentSessionId)
-
   // Detect platform for placeholder text
   const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
   const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
@@ -143,54 +105,34 @@ export function ChatPanel({
             <Bot className="h-5 w-5" />
             {title}
           </CardTitle>
-          <div className="flex items-center gap-2">
-            {/* Session selector */}
-            {onSelectSession && sessions.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <Clock className="h-4 w-4" />
-                    {currentSession ? (
-                      <span className="text-xs max-w-[100px] truncate">
-                        {currentSession.title}
-                      </span>
-                    ) : (
-                      <span className="text-xs">Sessions</span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-[250px]">
-                  {sessions.map((session) => (
-                    <DropdownMenuItem
-                      key={session.id}
-                      onClick={() => onSelectSession(session.id)}
-                      className={currentSessionId === session.id ? 'bg-accent' : ''}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium text-sm truncate">
-                          {session.title}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(session.created), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            
-            {/* New session button */}
-            {onCreateSession && (
+          {onSelectSession && onCreateSession && onDeleteSession && (
+            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setShowNewSessionDialog(true)}
+                className="gap-2"
+                onClick={() => setSessionManagerOpen(true)}
+                disabled={loadingSessions}
               >
-                <Plus className="h-4 w-4" />
+                <Clock className="h-4 w-4" />
+                <span className="text-xs">Sessions</span>
               </Button>
-            )}
-          </div>
+              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+                <SessionManager
+                  sessions={sessions}
+                  currentSessionId={currentSessionId ?? null}
+                  onCreateSession={(title) => onCreateSession?.(title)}
+                  onSelectSession={(sessionId) => {
+                    onSelectSession(sessionId)
+                    setSessionManagerOpen(false)
+                  }}
+                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+                  loadingSessions={loadingSessions}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 p-0">
@@ -351,54 +293,6 @@ export function ChatPanel({
       </CardContent>
     </Card>
 
-    {/* New Session Dialog */}
-    <AlertDialog open={showNewSessionDialog} onOpenChange={setShowNewSessionDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Create New Chat Session</AlertDialogTitle>
-          <AlertDialogDescription>
-            Start a new conversation about this source. Give it a memorable title.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <div className="py-4">
-          <Input
-            value={newSessionTitle}
-            onChange={(e) => setNewSessionTitle(e.target.value)}
-            placeholder="Session title..."
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleCreateSession()
-              }
-            }}
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleCreateSession}>
-            Create Session
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-
-    {/* Delete Confirmation Dialog */}
-    <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Chat Session?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This action cannot be undone. All messages in this session will be permanently deleted.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDeleteConfirm}>
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
     </>
   )
 }

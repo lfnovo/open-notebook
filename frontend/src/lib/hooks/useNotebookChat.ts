@@ -165,7 +165,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
         })
-      } catch (error) {
+      } catch {
         toast.error('Failed to create chat session')
         return
       }

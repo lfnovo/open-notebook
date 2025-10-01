@@ -1,7 +1,9 @@
+import type { ComponentType, SVGProps } from 'react'
+
 export interface NavItem {
   name: string
   href: string
-  icon: any
+  icon: ComponentType<SVGProps<SVGSVGElement>>
 }
 
 export interface PageProps {

@@ -26,10 +26,6 @@ export function ModelSelector({
   
   // Filter models by type
   const filteredModels = models?.filter(model => model.type === modelType) || []
-  
-  // Find the selected model to display its name
-  const selectedModel = filteredModels.find(model => model.id === value)
-
   return (
     <div className="space-y-2">
       {label && <Label>{label}</Label>}

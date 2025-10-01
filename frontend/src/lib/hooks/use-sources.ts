@@ -159,8 +159,6 @@ export function useFileUpload() {
 }
 
 export function useSourceStatus(sourceId: string, enabled = true) {
-  const queryClient = useQueryClient()
-
   return useQuery({
     queryKey: ['sources', sourceId, 'status'],
     queryFn: () => sourcesApi.status(sourceId),

@@ -1,12 +1,10 @@
 import apiClient from './client'
-import { 
+import {
   SourceChatSession,
   SourceChatSessionWithMessages,
   CreateSourceChatSessionRequest,
   UpdateSourceChatSessionRequest,
-  SendMessageRequest,
-  SourceChatMessage,
-  SourceChatContextIndicator
+  SendMessageRequest
 } from '@/lib/types/api'
 
 export const sourceChatApi = {

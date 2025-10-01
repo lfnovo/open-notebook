@@ -44,7 +44,14 @@ export function ModelSelector({
   }, [currentModel])
 
   // Filter for language models only and sort by name
-  const languageModels = models?.filter(model => model.type === 'language').sort((a, b) => a.name.localeCompare(b.name)) || []
+  const languageModels = useMemo(() => {
+    if (!models) {
+      return []
+    }
+    return [...models]
+      .filter((model) => model.type === 'language')
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [models])
 
   const defaultModel = useMemo(() => {
     if (!defaults?.default_chat_model) return undefined

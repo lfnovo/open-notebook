@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
 
 interface InlineEditProps {
@@ -48,7 +48,7 @@ export function InlineEdit({
     try {
       await onSave(editValue.trim())
       setIsEditing(false)
-    } catch (error) {
+    } catch {
       // Reset on error
       setEditValue(value)
     } finally {
@@ -90,16 +90,38 @@ export function InlineEdit({
     )
   }
 
-  const InputComponent = multiline ? 'textarea' : 'input'
+  if (multiline) {
+    return (
+      <textarea
+        ref={inputRef as RefObject<HTMLTextAreaElement>}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onBlur={() => {
+          if (!isSaving && editValue.trim() !== value.trim()) {
+            handleSave()
+          } else if (editValue.trim() === value.trim()) {
+            setIsEditing(false)
+          }
+        }}
+        className={cn(
+          "px-2 py-1 bg-background border rounded focus:outline-none focus:ring-2 focus:ring-primary w-full",
+          "min-h-[60px] resize-none",
+          inputClassName
+        )}
+        placeholder={placeholder}
+        disabled={isSaving}
+      />
+    )
+  }
 
   return (
-    <InputComponent
-      ref={inputRef as any}
+    <input
+      ref={inputRef as RefObject<HTMLInputElement>}
       value={editValue}
       onChange={(e) => setEditValue(e.target.value)}
       onKeyDown={handleKeyDown}
       onBlur={() => {
-        // Auto-save on blur (when clicking outside)
         if (!isSaving && editValue.trim() !== value.trim()) {
           handleSave()
         } else if (editValue.trim() === value.trim()) {
@@ -108,7 +130,6 @@ export function InlineEdit({
       }}
       className={cn(
         "px-2 py-1 bg-background border rounded focus:outline-none focus:ring-2 focus:ring-primary w-full",
-        multiline && "min-h-[60px] resize-none",
         inputClassName
       )}
       placeholder={placeholder}

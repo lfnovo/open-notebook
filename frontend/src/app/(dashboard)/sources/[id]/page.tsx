@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,14 +35,12 @@ import {
   Link as LinkIcon, 
   Upload, 
   AlignLeft,
-  Clock,
   Hash,
   ExternalLink,
   Download,
   Copy,
   CheckCircle,
   Youtube,
-  Bot,
   MoreVertical,
   Trash2,
   Sparkles,
@@ -81,13 +78,53 @@ export default function SourceDetailPage() {
   // Initialize source chat
   const chat = useSourceChat(sourceId)
 
-  useEffect(() => {
-    if (sourceId) {
-      fetchSource()
-      fetchInsights()
-      fetchTransformations()
+  const handleBack = useCallback(() => {
+    const returnPath = navigation.getReturnPath()
+    router.push(returnPath)
+    navigation.clearReturnTo()
+  }, [navigation, router])
+
+  const fetchSource = useCallback(async () => {
+    try {
+      setLoading(true)
+      const data = await sourcesApi.get(sourceId)
+      setSource(data)
+    } catch (err) {
+      console.error('Failed to fetch source:', err)
+      setError('Failed to load source details')
+    } finally {
+      setLoading(false)
     }
   }, [sourceId])
+
+  const fetchInsights = useCallback(async () => {
+    try {
+      setLoadingInsights(true)
+      const data = await insightsApi.listForSource(sourceId)
+      setInsights(data)
+    } catch (err) {
+      console.error('Failed to fetch insights:', err)
+    } finally {
+      setLoadingInsights(false)
+    }
+  }, [sourceId])
+
+  const fetchTransformations = useCallback(async () => {
+    try {
+      const data = await transformationsApi.list()
+      setTransformations(data)
+    } catch (err) {
+      console.error('Failed to fetch transformations:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (sourceId) {
+      void fetchSource()
+      void fetchInsights()
+      void fetchTransformations()
+    }
+  }, [fetchInsights, fetchSource, fetchTransformations, sourceId])
 
   // ESC key handler
   useEffect(() => {
@@ -99,47 +136,7 @@ export default function SourceDetailPage() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [router])
-
-  const handleBack = () => {
-    const returnPath = navigation.getReturnPath()
-    router.push(returnPath)
-    navigation.clearReturnTo()
-  }
-
-  const fetchSource = async () => {
-    try {
-      setLoading(true)
-      const data = await sourcesApi.get(sourceId)
-      setSource(data)
-    } catch (err) {
-      console.error('Failed to fetch source:', err)
-      setError('Failed to load source details')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const fetchInsights = async () => {
-    try {
-      setLoadingInsights(true)
-      const data = await insightsApi.listForSource(sourceId)
-      setInsights(data)
-    } catch (err) {
-      console.error('Failed to fetch insights:', err)
-    } finally {
-      setLoadingInsights(false)
-    }
-  }
-
-  const fetchTransformations = async () => {
-    try {
-      const data = await transformationsApi.list()
-      setTransformations(data)
-    } catch (err) {
-      console.error('Failed to fetch transformations:', err)
-    }
-  }
+  }, [handleBack])
 
   const createInsight = async () => {
     if (!selectedTransformation) {
@@ -346,7 +343,8 @@ export default function SourceDetailPage() {
                         const returnPath = navigation.getReturnPath()
                         router.push(returnPath)
                         navigation.clearReturnTo()
-                      } catch (err) {
+                      } catch (error) {
+                        console.error('Failed to delete source:', error)
                         toast.error('Failed to delete source')
                       }
                     }
@@ -596,7 +594,7 @@ export default function SourceDetailPage() {
                         Content Not Embedded
                       </AlertTitle>
                       <AlertDescription>
-                        This content hasn't been embedded for vector search. Embedding enables advanced search capabilities and better content discovery.
+                        This content hasn&apos;t been embedded for vector search. Embedding enables advanced search capabilities and better content discovery.
                         <div className="mt-3">
                           <Button
                             onClick={handleEmbedContent}

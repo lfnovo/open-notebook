@@ -32,22 +32,19 @@ export interface SourceListResponse {
   // ADD: Async processing fields from Python API
   command_id?: string
   status?: string
-  processing_info?: Record<string, any>
+  processing_info?: Record<string, unknown>
 }
 
 export interface SourceDetailResponse extends SourceListResponse {
   full_text: string
 }
 
-export interface SourceResponse extends SourceDetailResponse {
-  // SourceResponse now inherits all fields from SourceListResponse via SourceDetailResponse
-  // All async processing fields are already included in SourceListResponse
-}
+export type SourceResponse = SourceDetailResponse
 
 export interface SourceStatusResponse {
   status?: string
   message: string
-  processing_info?: Record<string, any>
+  processing_info?: Record<string, unknown>
   command_id?: string
 }
 
@@ -160,7 +157,7 @@ export interface SendMessageRequest {
 export interface SourceChatStreamEvent {
   type: 'user_message' | 'ai_message' | 'context_indicators' | 'complete' | 'error'
   content?: string
-  data?: any
+  data?: unknown
   message?: string
   timestamp?: string
 }

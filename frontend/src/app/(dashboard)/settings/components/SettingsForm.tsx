@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
@@ -23,7 +24,7 @@ const settingsSchema = z.object({
 type SettingsFormData = z.infer<typeof settingsSchema>
 
 export function SettingsForm() {
-  const { data: settings, isLoading, error, isFetching } = useSettings()
+  const { data: settings, isLoading, error } = useSettings()
   const updateSettings = useUpdateSettings()
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
   const [hasResetForm, setHasResetForm] = useState(false)
@@ -33,7 +34,6 @@ export function SettingsForm() {
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { isDirty }
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -61,8 +61,7 @@ export function SettingsForm() {
       reset(formData)
       setHasResetForm(true)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings, hasResetForm])
+  }, [hasResetForm, reset, settings])
 
   const onSubmit = async (data: SettingsFormData) => {
     await updateSettings.mutateAsync(data)
@@ -73,6 +72,17 @@ export function SettingsForm() {
       <div className="flex items-center justify-center py-12">
         <LoadingSpinner size="lg" />
       </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertTitle>Failed to load settings</AlertTitle>
+        <AlertDescription>
+          {error instanceof Error ? error.message : 'An unexpected error occurred.'}
+        </AlertDescription>
+      </Alert>
     )
   }
 
@@ -118,7 +128,7 @@ export function SettingsForm() {
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
                 <p>• <strong>Docling</strong> is a little slower but more accurate, specially if the documents contain tables and images.</p>
-                <p>• <strong>Simple</strong> will extract any content from the document without formatting it. It's ok for simple documents, but will lose quality in complex ones.</p>
+                <p>• <strong>Simple</strong> will extract any content from the document without formatting it. It&apos;s ok for simple documents, but will lose quality in complex ones.</p>
                 <p>• <strong>Auto (recommended)</strong> will try to process through docling and default to simple.</p>
               </CollapsibleContent>
             </Collapsible>
@@ -205,11 +215,11 @@ export function SettingsForm() {
                 Help me choose
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>Embedding the content will make it easier to find by you and by your AI agents. If you are running a local embedding model (Ollama, for example), you shouldn't worry about cost and just embed everything. For online providers, you might want to be careful only if you process a lot of content (like 100s of documents at a day).</p>
+                <p>Embedding the content will make it easier to find by you and by your AI agents. If you are running a local embedding model (Ollama, for example), you shouldn&apos;t worry about cost and just embed everything. For online providers, you might want to be careful only if you process a lot of content (like 100s of documents at a day).</p>
                 <p>• Choose <strong>always</strong> if you are running a local embedding model or if your content volume is not that big</p>
                 <p>• Choose <strong>ask</strong> if you want to decide every time</p>
-                <p>• Choose <strong>never</strong> if you don't care about vector search or do not have an embedding provider.</p>
-                <p>As a reference, OpenAI's text-embedding-3-small costs about 0.02 for 1 million tokens -- which is about 30 times the Wikipedia page for Earth. With Gemini API, Text Embedding 004 is free with a rate limit of 1500 requests per minute.</p>
+                <p>• Choose <strong>never</strong> if you don&apos;t care about vector search or do not have an embedding provider.</p>
+                <p>As a reference, OpenAI&apos;s text-embedding-3-small costs about 0.02 for 1 million tokens -- which is about 30 times the Wikipedia page for Earth. With Gemini API, Text Embedding 004 is free with a rate limit of 1500 requests per minute.</p>
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -254,7 +264,7 @@ export function SettingsForm() {
                 Help me choose
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>Once your files are uploaded and processed, they are not required anymore. Most users should allow Open Notebook to delete uploaded files from the upload folder automatically. Choose <strong>no</strong>, ONLY if you are using Notebook as the primary storage location for those files (which you shouldn't be at all). This option will soon be deprecated in favor of always downloading the files.</p>
+                <p>Once your files are uploaded and processed, they are not required anymore. Most users should allow Open Notebook to delete uploaded files from the upload folder automatically. Choose <strong>no</strong>, ONLY if you are using Notebook as the primary storage location for those files (which you shouldn&apos;t be at all). This option will soon be deprecated in favor of always downloading the files.</p>
                 <p>• Choose <strong>yes</strong> (recommended) to automatically delete uploaded files after processing</p>
                 <p>• Choose <strong>no</strong> only if you need to keep the original files in the upload folder</p>
               </CollapsibleContent>

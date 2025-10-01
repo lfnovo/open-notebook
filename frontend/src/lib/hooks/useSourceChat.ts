@@ -4,13 +4,12 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { sourceChatApi } from '@/lib/api/source-chat'
-import { 
+import {
   SourceChatSession,
   SourceChatMessage,
   SourceChatContextIndicator,
   CreateSourceChatSessionRequest,
-  UpdateSourceChatSessionRequest,
-  SendMessageRequest
+  UpdateSourceChatSessionRequest
 } from '@/lib/types/api'
 
 export function useSourceChat(sourceId: string) {
@@ -22,7 +21,7 @@ export function useSourceChat(sourceId: string) {
   const abortControllerRef = useRef<AbortController | null>(null)
 
   // Fetch sessions
-  const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery({
+  const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery<SourceChatSession[]>({
     queryKey: ['sourceChatSessions', sourceId],
     queryFn: () => sourceChatApi.listSessions(sourceId),
     enabled: !!sourceId
@@ -109,6 +108,7 @@ export function useSourceChat(sourceId: string) {
         setCurrentSessionId(sessionId)
         queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       } catch (error) {
+        console.error('Failed to create chat session:', error)
         toast.error('Failed to create chat session')
         return
       }

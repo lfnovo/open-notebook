@@ -1,7 +1,9 @@
 from typing import List, Optional
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from loguru import logger
 from pydantic import BaseModel
 
@@ -22,10 +24,18 @@ class PodcastEpisodeResponse(BaseModel):
     speaker_profile: dict
     briefing: str
     audio_file: Optional[str] = None
+    audio_url: Optional[str] = None
     transcript: Optional[dict] = None
     outline: Optional[dict] = None
     created: Optional[str] = None
     job_status: Optional[str] = None
+
+
+def _resolve_audio_path(audio_file: str) -> Path:
+    if audio_file.startswith("file://"):
+        parsed = urlparse(audio_file)
+        return Path(unquote(parsed.path))
+    return Path(audio_file)
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -96,6 +106,12 @@ async def list_podcast_episodes():
                 # No command but has audio file = completed import
                 job_status = "completed"
 
+            audio_url = None
+            if episode.audio_file:
+                audio_path = _resolve_audio_path(episode.audio_file)
+                if audio_path.exists():
+                    audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+
             response_episodes.append(
                 PodcastEpisodeResponse(
                     id=str(episode.id),
@@ -104,6 +120,7 @@ async def list_podcast_episodes():
                     speaker_profile=episode.speaker_profile,
                     briefing=episode.briefing,
                     audio_file=episode.audio_file,
+                    audio_url=audio_url,
                     transcript=episode.transcript,
                     outline=episode.outline,
                     created=str(episode.created) if episode.created else None,
@@ -137,6 +154,12 @@ async def get_podcast_episode(episode_id: str):
             # No command but has audio file = completed import
             job_status = "completed" if episode.audio_file else "unknown"
 
+        audio_url = None
+        if episode.audio_file:
+            audio_path = _resolve_audio_path(episode.audio_file)
+            if audio_path.exists():
+                audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+
         return PodcastEpisodeResponse(
             id=str(episode.id),
             name=episode.name,
@@ -144,6 +167,7 @@ async def get_podcast_episode(episode_id: str):
             speaker_profile=episode.speaker_profile,
             briefing=episode.briefing,
             audio_file=episode.audio_file,
+            audio_url=audio_url,
             transcript=episode.transcript,
             outline=episode.outline,
             created=str(episode.created) if episode.created else None,
@@ -155,6 +179,31 @@ async def get_podcast_episode(episode_id: str):
         raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
 
 
+@router.get("/podcasts/episodes/{episode_id}/audio")
+async def stream_podcast_episode_audio(episode_id: str):
+    """Stream the audio file associated with a podcast episode"""
+    try:
+        episode = await PodcastService.get_episode(episode_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching podcast episode for audio: {str(e)}")
+        raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
+
+    if not episode.audio_file:
+        raise HTTPException(status_code=404, detail="Episode has no audio file")
+
+    audio_path = _resolve_audio_path(episode.audio_file)
+    if not audio_path.exists():
+        raise HTTPException(status_code=404, detail="Audio file not found on disk")
+
+    return FileResponse(
+        audio_path,
+        media_type="audio/mpeg",
+        filename=audio_path.name,
+    )
+
+
 @router.delete("/podcasts/episodes/{episode_id}")
 async def delete_podcast_episode(episode_id: str):
     """Delete a podcast episode and its associated audio file"""
@@ -164,7 +213,7 @@ async def delete_podcast_episode(episode_id: str):
         
         # Delete the physical audio file if it exists
         if episode.audio_file:
-            audio_path = Path(episode.audio_file)
+            audio_path = _resolve_audio_path(episode.audio_file)
             if audio_path.exists():
                 try:
                     audio_path.unlink()

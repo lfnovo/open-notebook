@@ -5,12 +5,12 @@ import { SourceListResponse } from '@/lib/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator 
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import {
   FileText,
@@ -27,6 +27,8 @@ import {
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { cn } from '@/lib/utils'
+import { ContextToggle } from '@/components/common/ContextToggle'
+import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -37,6 +39,8 @@ interface SourceCardProps {
   onRefresh?: () => void
   className?: string
   showRemoveFromNotebook?: boolean
+  contextMode?: ContextMode
+  onContextModeChange?: (mode: ContextMode) => void
 }
 
 const SOURCE_TYPE_ICONS = {
@@ -105,7 +109,9 @@ export function SourceCard({
   onClick,
   onRefresh,
   className,
-  showRemoveFromNotebook = false
+  showRemoveFromNotebook = false,
+  contextMode,
+  onContextModeChange
 }: SourceCardProps) {
   
   // Only fetch status for sources that might have async processing
@@ -285,18 +291,29 @@ export function SourceCard({
             </div>
           </div>
 
-          {/* Actions dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+          {/* Context toggle and actions */}
+          <div className="flex items-center gap-1">
+            {/* Context toggle - only show if handler provided */}
+            {onContextModeChange && contextMode && (
+              <ContextToggle
+                mode={contextMode}
+                hasInsights={source.insights_count > 0}
+                onChange={onContextModeChange}
+              />
+            )}
+
+            {/* Actions dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {showRemoveFromNotebook && (
                 <>
@@ -343,6 +360,7 @@ export function SourceCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
 
         {/* Quick action buttons for failed state */}

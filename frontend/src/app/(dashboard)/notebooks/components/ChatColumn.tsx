@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
 import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
@@ -7,12 +8,14 @@ import { ChatPanel } from '@/components/source/ChatPanel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
+import { ContextSelections } from '../[id]/page'
 
 interface ChatColumnProps {
   notebookId: string
+  contextSelections: ContextSelections
 }
 
-export function ChatColumn({ notebookId }: ChatColumnProps) {
+export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
   // Fetch sources and notes for this notebook
   const { data: sources = [], isLoading: sourcesLoading } = useSources(notebookId)
   const { data: notes = [], isLoading: notesLoading } = useNotes(notebookId)
@@ -21,8 +24,36 @@ export function ChatColumn({ notebookId }: ChatColumnProps) {
   const chat = useNotebookChat({
     notebookId,
     sources,
-    notes
+    notes,
+    contextSelections
   })
+
+  // Calculate context stats for indicator
+  const contextStats = useMemo(() => {
+    let sourcesInsights = 0
+    let sourcesFull = 0
+    let notesCount = 0
+
+    // Count sources by mode
+    sources.forEach(source => {
+      const mode = contextSelections.sources[source.id]
+      if (mode === 'insights') {
+        sourcesInsights++
+      } else if (mode === 'full') {
+        sourcesFull++
+      }
+    })
+
+    // Count notes that are included (not 'off')
+    notes.forEach(note => {
+      const mode = contextSelections.notes[note.id]
+      if (mode === 'full') {
+        notesCount++
+      }
+    })
+
+    return { sourcesInsights, sourcesFull, notesCount }
+  }, [sources, notes, contextSelections])
 
   // Show loading state while sources/notes are being fetched
   if (sourcesLoading || notesLoading) {
@@ -67,6 +98,7 @@ export function ChatColumn({ notebookId }: ChatColumnProps) {
       onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, title)}
       onDeleteSession={chat.deleteSession}
       loadingSessions={chat.loadingSessions}
+      notebookContextStats={contextStats}
     />
   )
 }

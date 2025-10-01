@@ -13,6 +13,7 @@ import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useNavigation } from '@/lib/hooks/use-navigation'
+import { ContextMode } from '../[id]/page'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -20,9 +21,19 @@ interface SourcesColumnProps {
   notebookId: string
   notebookName?: string
   onRefresh?: () => void
+  contextSelections?: Record<string, ContextMode>
+  onContextModeChange?: (sourceId: string, mode: ContextMode) => void
 }
 
-export function SourcesColumn({ sources, isLoading, notebookId, notebookName, onRefresh }: SourcesColumnProps) {
+export function SourcesColumn({
+  sources,
+  isLoading,
+  notebookId,
+  notebookName,
+  onRefresh,
+  contextSelections,
+  onContextModeChange
+}: SourcesColumnProps) {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
@@ -128,6 +139,11 @@ export function SourcesColumn({ sources, isLoading, notebookId, notebookName, on
                 onRemoveFromNotebook={handleRemoveFromNotebook}
                 onRefresh={onRefresh}
                 showRemoveFromNotebook={true}
+                contextMode={contextSelections?.[source.id]}
+                onContextModeChange={onContextModeChange
+                  ? (mode) => onContextModeChange(source.id, mode)
+                  : undefined
+                }
               />
             ))}
           </div>

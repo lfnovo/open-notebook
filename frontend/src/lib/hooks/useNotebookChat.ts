@@ -12,14 +12,16 @@ import {
   SourceListResponse,
   NoteResponse
 } from '@/lib/types/api'
+import { ContextSelections } from '@/app/(dashboard)/notebooks/[id]/page'
 
 interface UseNotebookChatParams {
   notebookId: string
   sources: SourceListResponse[]
   notes: NoteResponse[]
+  contextSelections: ContextSelections
 }
 
-export function useNotebookChat({ notebookId, sources, notes }: UseNotebookChatParams) {
+export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
   const queryClient = useQueryClient()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
@@ -117,19 +119,32 @@ export function useNotebookChat({ notebookId, sources, notes }: UseNotebookChatP
     }
   })
 
-  // Build context from sources and notes
+  // Build context from sources and notes based on user selections
   const buildContext = useCallback(() => {
     return {
-      sources: sources.map(source => ({
-        id: source.id,
-        content: 'full content' // All sources with full content
-      })),
-      notes: notes.map(note => ({
-        id: note.id,
-        content: 'full content' // All notes with full content
-      }))
+      sources: sources
+        .filter(source => {
+          const mode = contextSelections.sources[source.id]
+          return mode && mode !== 'off' // Include if mode is 'insights' or 'full'
+        })
+        .map(source => {
+          const mode = contextSelections.sources[source.id]
+          return {
+            id: source.id,
+            content: mode === 'insights' ? 'insights' : 'full content'
+          }
+        }),
+      notes: notes
+        .filter(note => {
+          const mode = contextSelections.notes[note.id]
+          return mode && mode !== 'off' // Include if mode is 'full' (notes only have off/full)
+        })
+        .map(note => ({
+          id: note.id,
+          content: 'full content' // Notes always use full content when included
+        }))
     }
-  }, [sources, notes])
+  }, [sources, notes, contextSelections])
 
   // Send message (synchronous, no streaming)
   const sendMessage = useCallback(async (message: string) => {

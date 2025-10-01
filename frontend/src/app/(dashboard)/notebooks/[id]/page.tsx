@@ -1,6 +1,7 @@
 'use client'
 
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
@@ -11,16 +12,72 @@ import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
+export type ContextMode = 'off' | 'insights' | 'full'
+
+export interface ContextSelections {
+  sources: Record<string, ContextMode>
+  notes: Record<string, ContextMode>
+}
+
 export default function NotebookPage() {
   const params = useParams()
-  const router = useRouter()
-  
+
   // Ensure the notebook ID is properly decoded from URL
   const notebookId = decodeURIComponent(params.id as string)
 
-  const { data: notebook, isLoading: notebookLoading, refetch } = useNotebook(notebookId)
+  const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
   const { data: sources, isLoading: sourcesLoading, refetch: refetchSources } = useSources(notebookId)
   const { data: notes, isLoading: notesLoading } = useNotes(notebookId)
+
+  // Context selection state
+  const [contextSelections, setContextSelections] = useState<ContextSelections>({
+    sources: {},
+    notes: {}
+  })
+
+  // Initialize default selections when sources/notes load
+  useEffect(() => {
+    if (sources && sources.length > 0) {
+      setContextSelections(prev => {
+        const newSourceSelections = { ...prev.sources }
+        sources.forEach(source => {
+          // Only set default if not already set
+          if (!(source.id in newSourceSelections)) {
+            // Default to 'insights' if has insights, otherwise 'full'
+            newSourceSelections[source.id] = source.insights_count > 0 ? 'insights' : 'full'
+          }
+        })
+        return { ...prev, sources: newSourceSelections }
+      })
+    }
+  }, [sources])
+
+  useEffect(() => {
+    if (notes && notes.length > 0) {
+      setContextSelections(prev => {
+        const newNoteSelections = { ...prev.notes }
+        notes.forEach(note => {
+          // Only set default if not already set
+          if (!(note.id in newNoteSelections)) {
+            // Notes default to 'full'
+            newNoteSelections[note.id] = 'full'
+          }
+        })
+        return { ...prev, notes: newNoteSelections }
+      })
+    }
+  }, [notes])
+
+  // Handler to update context selection
+  const handleContextModeChange = (itemId: string, mode: ContextMode, type: 'source' | 'note') => {
+    setContextSelections(prev => ({
+      ...prev,
+      [type === 'source' ? 'sources' : 'notes']: {
+        ...(type === 'source' ? prev.sources : prev.notes),
+        [itemId]: mode
+      }
+    }))
+  }
 
   if (notebookLoading) {
     return (
@@ -54,15 +111,22 @@ export default function NotebookPage() {
               notebookId={notebookId}
               notebookName={notebook?.name}
               onRefresh={refetchSources}
+              contextSelections={contextSelections.sources}
+              onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
             />
-            <NotesColumn 
-              notes={notes} 
+            <NotesColumn
+              notes={notes}
               isLoading={notesLoading}
               notebookId={notebookId}
+              contextSelections={contextSelections.notes}
+              onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
             />
           </div>
-          
-          <ChatColumn notebookId={notebookId} />
+
+          <ChatColumn
+            notebookId={notebookId}
+            contextSelections={contextSelections}
+          />
         </div>
       </div>
     </AppShell>

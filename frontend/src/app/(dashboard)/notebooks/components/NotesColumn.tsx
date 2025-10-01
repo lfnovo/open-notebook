@@ -10,14 +10,24 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { AddNoteDialog } from './AddNoteDialog'
 import { formatDistanceToNow } from 'date-fns'
+import { ContextToggle } from '@/components/common/ContextToggle'
+import { ContextMode } from '../[id]/page'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
   isLoading: boolean
   notebookId: string
+  contextSelections?: Record<string, ContextMode>
+  onContextModeChange?: (noteId: string, mode: ContextMode) => void
 }
 
-export function NotesColumn({ notes, isLoading, notebookId }: NotesColumnProps) {
+export function NotesColumn({
+  notes,
+  isLoading,
+  notebookId,
+  contextSelections,
+  onContextModeChange
+}: NotesColumnProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
 
   return (
@@ -50,7 +60,7 @@ export function NotesColumn({ notes, isLoading, notebookId }: NotesColumnProps) 
           ) : (
             <div className="space-y-3">
               {notes.map((note) => (
-                <div key={note.id} className="p-3 border rounded-lg card-hover">
+                <div key={note.id} className="p-3 border rounded-lg card-hover group relative">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {note.note_type === 'ai' ? (
@@ -62,9 +72,21 @@ export function NotesColumn({ notes, isLoading, notebookId }: NotesColumnProps) 
                         {note.note_type === 'ai' ? 'AI Generated' : 'Human'}
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(note.updated), { addSuffix: true })}
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(note.updated), { addSuffix: true })}
+                      </span>
+
+                      {/* Context toggle - only show if handler provided */}
+                      {onContextModeChange && contextSelections?.[note.id] && (
+                        <ContextToggle
+                          mode={contextSelections[note.id]}
+                          hasInsights={false}
+                          onChange={(mode) => onContextModeChange(note.id, mode)}
+                        />
+                      )}
+                    </div>
                   </div>
                   
                   {note.title && (

@@ -33,6 +33,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { formatDistanceToNow } from 'date-fns'
+import { ContextIndicator } from '@/components/common/ContextIndicator'
+
+interface NotebookContextStats {
+  sourcesInsights: number
+  sourcesFull: number
+  notesCount: number
+}
 
 interface ChatPanelProps {
   messages: SourceChatMessage[]
@@ -52,6 +59,8 @@ interface ChatPanelProps {
   // Generic props for reusability
   title?: string
   contextType?: 'source' | 'notebook'
+  // Notebook context stats (for notebook chat)
+  notebookContextStats?: NotebookContextStats
 }
 
 export function ChatPanel({
@@ -69,7 +78,8 @@ export function ChatPanel({
   onDeleteSession,
   loadingSessions = false,
   title = 'Chat with Source',
-  contextType = 'source'
+  contextType = 'source',
+  notebookContextStats
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [showNewSessionDialog, setShowNewSessionDialog] = useState(false)
@@ -291,8 +301,17 @@ export function ChatPanel({
           </div>
         )}
 
+        {/* Notebook Context Indicator */}
+        {notebookContextStats && (
+          <ContextIndicator
+            sourcesInsights={notebookContextStats.sourcesInsights}
+            sourcesFull={notebookContextStats.sourcesFull}
+            notesCount={notebookContextStats.notesCount}
+          />
+        )}
+
         {/* Input Area */}
-        <div className="border-t p-4 space-y-3">
+        <div className="p-4 space-y-3">
           {/* Model selector */}
           {onModelChange && (
             <div className="flex items-center justify-between">
@@ -304,7 +323,7 @@ export function ChatPanel({
               />
             </div>
           )}
-          
+
           <div className="flex gap-2 items-end">
             <Textarea
               value={input}

@@ -1,3 +1,4 @@
+import os
 import re
 import unicodedata
 from importlib.metadata import PackageNotFoundError, version
@@ -5,14 +6,29 @@ from typing import Tuple
 from urllib.parse import urlparse
 
 import requests
+import streamlit as st
 import tomli
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from loguru import logger
 from packaging.version import parse as parse_version
+
+TIKTOKEN_CACHE_DIR = r".\open_notebook\tiktoken_cache"
+
+
+def setup_local_cache_dir():
+    """"
+    use a set tiktoken cache dir in order to get local encoder for offline work
+    add all the tiktoken data in that folder
+    """
+    os.environ["TIKTOKEN_CACHE_DIR"] = TIKTOKEN_CACHE_DIR
+    st.session_state.tiktoker_offline_cache = True
+    logger.debug("using local dir for tiktoken cache")
 
 
 def token_count(input_string) -> int:
     """
-    Count the number of tokens in the input string using the 'o200k_base' encoding.
+    Count the number of tokens in the input string using the 'o200k_base' encoding as default.
+    can be changed through the use of environment variable : tiktoken_encoder.
 
     Args:
         input_string (str): The input string to count tokens for.
@@ -21,11 +37,15 @@ def token_count(input_string) -> int:
         int: The number of tokens in the input string.
     """
     import tiktoken
-
-    encoding = tiktoken.get_encoding("o200k_base")
-    tokens = encoding.encode(input_string)
-    token_count = len(tokens)
-    return token_count
+    encoder = os.getenv("TOKEN_COUNTER_ENCODER","o200k_base")
+    try:
+        encoding = tiktoken.get_encoding(encoder)
+        tokens = encoding.encode(input_string)
+        token_amount = len(tokens)
+        return token_amount
+    except ValueError as e:
+        logger.error("Token encoding error: {}".format(e))
+        raise ValueError from e
 
 
 def token_cost(token_count, cost_per_million=0.150) -> float:
@@ -48,10 +68,9 @@ def split_text(txt: str, chunk_size=500):
 
     Args:
         txt (str): The input text to be split.
-        chunk (int): The size of each chunk. Default is 1000.
+        chunk_size (int): The size of each chunk. Default is 1000.
         overlap (int): The number of characters to overlap between chunks. Default is 0.
         separator (str): The separator to use when splitting the text. Default is " ".
-
     Returns:
         list: A list of text chunks.
     """
@@ -98,8 +117,6 @@ def remove_non_printable(text) -> str:
 
     # Keep letters (including accented ones), numbers, spaces, newlines, tabs, and basic punctuation
     return re.sub(r"[^\w\s.,!?\-\n\t]", "", text, flags=re.UNICODE)
-
-
 
 
 def get_version_from_github(repo_url: str, branch: str = "main") -> str:
@@ -206,62 +223,62 @@ THINK_PATTERN = re.compile(r'<think>(.*?)</think>', re.DOTALL)
 def parse_thinking_content(content: str) -> Tuple[str, str]:
     """
     Parse message content to extract thinking content from <think> tags.
-    
+
     Args:
         content (str): The original message content
-        
+
     Returns:
         Tuple[str, str]: (thinking_content, cleaned_content)
             - thinking_content: Content from within <think> tags
             - cleaned_content: Original content with <think> blocks removed
-    
+
     Example:
         >>> content = "<think>Let me analyze this</think>Here's my answer"
         >>> thinking, cleaned = parse_thinking_content(content)
         >>> print(thinking)
         "Let me analyze this"
-        >>> print(cleaned) 
+        >>> print(cleaned)
         "Here's my answer"
     """
     # Input validation
     if not isinstance(content, str):
         return "", str(content) if content is not None else ""
-    
+
     # Limit processing for very large content (100KB limit)
     if len(content) > 100000:
         return "", content
-    
+
     # Find all thinking blocks
     thinking_matches = THINK_PATTERN.findall(content)
-    
+
     if not thinking_matches:
         return "", content
-    
+
     # Join all thinking content with double newlines
     thinking_content = "\n\n".join(match.strip() for match in thinking_matches)
-    
+
     # Remove all <think>...</think> blocks from the original content
     cleaned_content = THINK_PATTERN.sub("", content)
-    
+
     # Clean up extra whitespace
     cleaned_content = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_content).strip()
-    
+
     return thinking_content, cleaned_content
 
 
 def clean_thinking_content(content: str) -> str:
     """
     Remove thinking content from AI responses, returning only the cleaned content.
-    
+
     This is a convenience function for cases where you only need the cleaned
     content and don't need access to the thinking process.
-    
+
     Args:
         content (str): The original message content with potential <think> tags
-        
+
     Returns:
         str: Content with <think> blocks removed and whitespace cleaned
-        
+
     Example:
         >>> content = "<think>Let me think...</think>Here's the answer"
         >>> clean_thinking_content(content)
@@ -269,3 +286,7 @@ def clean_thinking_content(content: str) -> str:
     """
     _, cleaned_content = parse_thinking_content(content)
     return cleaned_content
+
+
+if os.getenv("offline") and "tiktoker_offline_cache" not in st.session_state:
+    setup_local_cache_dir()

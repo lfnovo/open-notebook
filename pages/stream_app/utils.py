@@ -1,4 +1,5 @@
 import asyncio
+import os
 import re
 from datetime import datetime
 from typing import List, Union
@@ -54,7 +55,8 @@ def version_sidebar():
             # Cache the fact that version check failed to avoid repeated attempts
             st.session_state.version_check_failed = True
             # Optionally show a subtle message about failed update check
-            st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
+            if not os.getenv("offline"):
+                st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
 
 
 def create_session_for_notebook(notebook_id: str, session_name: str = None):

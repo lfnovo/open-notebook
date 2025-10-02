@@ -5,7 +5,7 @@ from loguru import logger
 
 from api.models import DefaultModelsResponse, ModelCreate, ModelResponse
 from open_notebook.domain.models import DefaultModels, Model
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 

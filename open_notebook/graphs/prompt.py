@@ -4,7 +4,6 @@ from ai_prompter import Prompter
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
-from loguru import logger
 from typing_extensions import TypedDict
 
 from open_notebook.graphs.utils import provision_langchain_model

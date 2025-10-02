@@ -2,7 +2,7 @@
 Search service layer using API.
 """
 
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from loguru import logger
 

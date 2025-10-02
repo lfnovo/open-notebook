@@ -3,9 +3,9 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import ErrorResponse, NotebookCreate, NotebookResponse, NotebookUpdate
+from api.models import NotebookCreate, NotebookResponse, NotebookUpdate
 from open_notebook.domain.notebook import Notebook
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 

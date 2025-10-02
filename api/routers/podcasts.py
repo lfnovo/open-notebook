@@ -1,5 +1,5 @@
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
@@ -10,7 +10,6 @@ from api.podcast_service import (
     PodcastGenerationResponse,
     PodcastService,
 )
-from open_notebook.domain.podcast import PodcastEpisode
 
 router = APIRouter()
 

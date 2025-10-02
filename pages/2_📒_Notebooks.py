@@ -111,7 +111,9 @@ if "current_notebook_id" not in st.session_state:
 
 # todo: get the notebook, check if it exists and if it's archived
 if st.session_state["current_notebook_id"]:
-    current_notebook: Notebook = notebook_service.get_notebook(st.session_state["current_notebook_id"])
+    current_notebook: Notebook = notebook_service.get_notebook(
+        st.session_state["current_notebook_id"]
+    )
     if not current_notebook:
         st.error("Notebook not found")
         st.stop()

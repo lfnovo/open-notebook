@@ -16,7 +16,7 @@ TIKTOKEN_CACHE_DIR = r".\open_notebook\tiktoken_cache"
 
 
 def setup_local_cache_dir():
-    """"
+    """ "
     use a set tiktoken cache dir in order to get local encoder for offline work
     add all the tiktoken data in that folder
     """
@@ -37,7 +37,8 @@ def token_count(input_string) -> int:
         int: The number of tokens in the input string.
     """
     import tiktoken
-    encoder = os.getenv("TOKEN_COUNTER_ENCODER","o200k_base")
+
+    encoder = os.getenv("TOKEN_COUNTER_ENCODER", "o200k_base")
     try:
         encoding = tiktoken.get_encoding(encoder)
         tokens = encoding.encode(input_string)
@@ -217,7 +218,7 @@ def compare_versions(version1: str, version2: str) -> int:
 
 
 # Compile regex pattern once for better performance
-THINK_PATTERN = re.compile(r'<think>(.*?)</think>', re.DOTALL)
+THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL)
 
 
 def parse_thinking_content(content: str) -> Tuple[str, str]:
@@ -261,7 +262,7 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
     cleaned_content = THINK_PATTERN.sub("", content)
 
     # Clean up extra whitespace
-    cleaned_content = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_content).strip()
+    cleaned_content = re.sub(r"\n\s*\n\s*\n", "\n\n", cleaned_content).strip()
 
     return thinking_content, cleaned_content
 

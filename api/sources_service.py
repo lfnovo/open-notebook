@@ -14,38 +14,39 @@ from open_notebook.domain.notebook import Asset, Source
 @dataclass
 class SourceWithMetadata:
     """Source object with additional metadata from API."""
+
     source: Source
     embedded_chunks: int
-    
+
     # Expose common source properties for easy access
     @property
     def id(self):
         return self.source.id
-    
-    @property  
+
+    @property
     def title(self):
         return self.source.title
-        
+
     @title.setter
     def title(self, value):
         self.source.title = value
-    
+
     @property
     def topics(self):
         return self.source.topics
-    
+
     @property
     def asset(self):
         return self.source.asset
-    
+
     @property
     def full_text(self):
         return self.source.full_text
-    
+
     @property
     def created(self):
         return self.source.created
-    
+
     @property
     def updated(self):
         return self.source.updated
@@ -57,7 +58,9 @@ class SourcesService:
     def __init__(self):
         logger.info("Using API for sources operations")
 
-    def get_all_sources(self, notebook_id: Optional[str] = None) -> List[SourceWithMetadata]:
+    def get_all_sources(
+        self, notebook_id: Optional[str] = None
+    ) -> List[SourceWithMetadata]:
         """Get all sources with optional notebook filtering."""
         sources_data = api_client.get_sources(notebook_id=notebook_id)
         # Convert API response to SourceWithMetadata objects
@@ -78,11 +81,10 @@ class SourcesService:
             source.id = source_data["id"]
             source.created = source_data["created"]
             source.updated = source_data["updated"]
-            
+
             # Wrap in SourceWithMetadata
             source_with_metadata = SourceWithMetadata(
-                source=source,
-                embedded_chunks=source_data.get("embedded_chunks", 0)
+                source=source, embedded_chunks=source_data.get("embedded_chunks", 0)
             )
             sources.append(source_with_metadata)
         return sources
@@ -106,10 +108,9 @@ class SourcesService:
         source.id = source_data["id"]
         source.created = source_data["created"]
         source.updated = source_data["updated"]
-        
+
         return SourceWithMetadata(
-            source=source,
-            embedded_chunks=source_data.get("embedded_chunks", 0)
+            source=source, embedded_chunks=source_data.get("embedded_chunks", 0)
         )
 
     def create_source(
@@ -159,7 +160,7 @@ class SourcesService:
         """Update a source."""
         if not source.id:
             raise ValueError("Source ID is required for update")
-            
+
         updates = {
             "title": source.title,
             "topics": source.topics,

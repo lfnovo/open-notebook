@@ -245,7 +245,7 @@ async def get_source_insights(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         insights = await source.get_insights()
         return [
             SourceInsightResponse(
@@ -254,7 +254,7 @@ async def get_source_insights(source_id: str):
                 insight_type=insight.insight_type,
                 content=insight.content,
                 created=str(insight.created),
-                updated=str(insight.updated)
+                updated=str(insight.updated),
             )
             for insight in insights
         ]
@@ -262,32 +262,32 @@ async def get_source_insights(source_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching insights for source {source_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching insights: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching insights: {str(e)}"
+        )
 
 
 @router.post("/sources/{source_id}/insights", response_model=SourceInsightResponse)
-async def create_source_insight(
-    source_id: str,
-    request: CreateSourceInsightRequest
-):
+async def create_source_insight(source_id: str, request: CreateSourceInsightRequest):
     """Create a new insight for a source by running a transformation."""
     try:
         # Get source
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        
+
         # Get transformation
         transformation = await Transformation.get(request.transformation_id)
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
-        
+
         # Run transformation graph
         from open_notebook.graphs.transformation import graph as transform_graph
+
         await transform_graph.ainvoke(
             input=dict(source=source, transformation=transformation)
         )
-        
+
         # Get the newly created insight (last one)
         insights = await source.get_insights()
         if insights:
@@ -298,11 +298,11 @@ async def create_source_insight(
                 insight_type=newest.insight_type,
                 content=newest.content,
                 created=str(newest.created),
-                updated=str(newest.updated)
+                updated=str(newest.updated),
             )
         else:
             raise HTTPException(status_code=500, detail="Failed to create insight")
-    
+
     except HTTPException:
         raise
     except Exception as e:

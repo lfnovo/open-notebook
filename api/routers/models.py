@@ -12,7 +12,7 @@ router = APIRouter()
 
 @router.get("/models", response_model=List[ModelResponse])
 async def get_models(
-    type: Optional[str] = Query(None, description="Filter by model type")
+    type: Optional[str] = Query(None, description="Filter by model type"),
 ):
     """Get all configured models with optional type filtering."""
     try:
@@ -20,7 +20,7 @@ async def get_models(
             models = await Model.get_models_by_type(type)
         else:
             models = await Model.get_all()
-        
+
         return [
             ModelResponse(
                 id=model.id,
@@ -45,17 +45,17 @@ async def create_model(model_data: ModelCreate):
         valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
         if model_data.type not in valid_types:
             raise HTTPException(
-                status_code=400, 
-                detail=f"Invalid model type. Must be one of: {valid_types}"
+                status_code=400,
+                detail=f"Invalid model type. Must be one of: {valid_types}",
             )
-        
+
         new_model = Model(
             name=model_data.name,
             provider=model_data.provider,
             type=model_data.type,
         )
         await new_model.save()
-        
+
         return ModelResponse(
             id=new_model.id,
             name=new_model.name,
@@ -78,9 +78,9 @@ async def delete_model(model_id: str):
         model = await Model.get(model_id)
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
-        
+
         await model.delete()
-        
+
         return {"message": "Model deleted successfully"}
     except HTTPException:
         raise
@@ -94,7 +94,7 @@ async def get_default_models():
     """Get default model assignments."""
     try:
         defaults = await DefaultModels.get_instance()
-        
+
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,
             default_transformation_model=defaults.default_transformation_model,
@@ -106,7 +106,9 @@ async def get_default_models():
         )
     except Exception as e:
         logger.error(f"Error fetching default models: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching default models: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching default models: {str(e)}"
+        )
 
 
 @router.put("/models/defaults", response_model=DefaultModelsResponse)
@@ -114,29 +116,36 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
     """Update default model assignments."""
     try:
         defaults = await DefaultModels.get_instance()
-        
+
         # Update only provided fields
         if defaults_data.default_chat_model is not None:
             defaults.default_chat_model = defaults_data.default_chat_model
         if defaults_data.default_transformation_model is not None:
-            defaults.default_transformation_model = defaults_data.default_transformation_model
+            defaults.default_transformation_model = (
+                defaults_data.default_transformation_model
+            )
         if defaults_data.large_context_model is not None:
             defaults.large_context_model = defaults_data.large_context_model
         if defaults_data.default_text_to_speech_model is not None:
-            defaults.default_text_to_speech_model = defaults_data.default_text_to_speech_model
+            defaults.default_text_to_speech_model = (
+                defaults_data.default_text_to_speech_model
+            )
         if defaults_data.default_speech_to_text_model is not None:
-            defaults.default_speech_to_text_model = defaults_data.default_speech_to_text_model
+            defaults.default_speech_to_text_model = (
+                defaults_data.default_speech_to_text_model
+            )
         if defaults_data.default_embedding_model is not None:
             defaults.default_embedding_model = defaults_data.default_embedding_model
         if defaults_data.default_tools_model is not None:
             defaults.default_tools_model = defaults_data.default_tools_model
-        
+
         await defaults.update()
-        
+
         # Refresh the model manager cache
         from open_notebook.domain.models import model_manager
+
         await model_manager.refresh_defaults()
-        
+
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,
             default_transformation_model=defaults.default_transformation_model,
@@ -150,4 +159,6 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
         raise
     except Exception as e:
         logger.error(f"Error updating default models: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error updating default models: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating default models: {str(e)}"
+        )

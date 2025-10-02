@@ -28,7 +28,7 @@ class APIClient:
         """Make HTTP request to the API."""
         url = f"{self.base_url}{endpoint}"
         request_timeout = timeout if timeout is not None else self.timeout
-        
+
         # Merge headers
         headers = kwargs.get("headers", {})
         headers.update(self.headers)
@@ -394,7 +394,9 @@ class APIClient:
 
     def update_episode_profile(self, profile_id: str, **updates) -> Dict:
         """Update an episode profile."""
-        return self._make_request("PUT", f"/api/episode-profiles/{profile_id}", json=updates)
+        return self._make_request(
+            "PUT", f"/api/episode-profiles/{profile_id}", json=updates
+        )
 
     def delete_episode_profile(self, profile_id: str) -> Dict:
         """Delete an episode profile."""

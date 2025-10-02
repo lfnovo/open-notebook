@@ -12,7 +12,9 @@ class NotebookCreate(BaseModel):
 class NotebookUpdate(BaseModel):
     name: Optional[str] = Field(None, description="Name of the notebook")
     description: Optional[str] = Field(None, description="Description of the notebook")
-    archived: Optional[bool] = Field(None, description="Whether the notebook is archived")
+    archived: Optional[bool] = Field(
+        None, description="Whether the notebook is archived"
+    )
 
 
 class NotebookResponse(BaseModel):
@@ -31,7 +33,9 @@ class SearchRequest(BaseModel):
     limit: int = Field(100, description="Maximum number of results", le=1000)
     search_sources: bool = Field(True, description="Include sources in search")
     search_notes: bool = Field(True, description="Include notes in search")
-    minimum_score: float = Field(0.2, description="Minimum score for vector search", ge=0, le=1)
+    minimum_score: float = Field(
+        0.2, description="Minimum score for vector search", ge=0, le=1
+    )
 
 
 class SearchResponse(BaseModel):
@@ -55,8 +59,13 @@ class AskResponse(BaseModel):
 # Models API models
 class ModelCreate(BaseModel):
     name: str = Field(..., description="Model name (e.g., gpt-4o-mini, claude, gemini)")
-    provider: str = Field(..., description="Provider name (e.g., openai, anthropic, gemini)")
-    type: str = Field(..., description="Model type (language, embedding, text_to_speech, speech_to_text)")
+    provider: str = Field(
+        ..., description="Provider name (e.g., openai, anthropic, gemini)"
+    )
+    type: str = Field(
+        ...,
+        description="Model type (language, embedding, text_to_speech, speech_to_text)",
+    )
 
 
 class ModelResponse(BaseModel):
@@ -82,17 +91,27 @@ class DefaultModelsResponse(BaseModel):
 class TransformationCreate(BaseModel):
     name: str = Field(..., description="Transformation name")
     title: str = Field(..., description="Display title for the transformation")
-    description: str = Field(..., description="Description of what this transformation does")
+    description: str = Field(
+        ..., description="Description of what this transformation does"
+    )
     prompt: str = Field(..., description="The transformation prompt")
-    apply_default: bool = Field(False, description="Whether to apply this transformation by default")
+    apply_default: bool = Field(
+        False, description="Whether to apply this transformation by default"
+    )
 
 
 class TransformationUpdate(BaseModel):
     name: Optional[str] = Field(None, description="Transformation name")
-    title: Optional[str] = Field(None, description="Display title for the transformation")
-    description: Optional[str] = Field(None, description="Description of what this transformation does")
+    title: Optional[str] = Field(
+        None, description="Display title for the transformation"
+    )
+    description: Optional[str] = Field(
+        None, description="Description of what this transformation does"
+    )
     prompt: Optional[str] = Field(None, description="The transformation prompt")
-    apply_default: Optional[bool] = Field(None, description="Whether to apply this transformation by default")
+    apply_default: Optional[bool] = Field(
+        None, description="Whether to apply this transformation by default"
+    )
 
 
 class TransformationResponse(BaseModel):
@@ -108,15 +127,17 @@ class TransformationResponse(BaseModel):
 
 class TransformationExecuteRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
-    
-    transformation_id: str = Field(..., description="ID of the transformation to execute")
+
+    transformation_id: str = Field(
+        ..., description="ID of the transformation to execute"
+    )
     input_text: str = Field(..., description="Text to transform")
     model_id: str = Field(..., description="Model ID to use for the transformation")
 
 
 class TransformationExecuteResponse(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
-    
+
     output: str = Field(..., description="Transformed text")
     transformation_id: str = Field(..., description="ID of the transformation used")
     model_id: str = Field(..., description="Model ID used")
@@ -127,7 +148,9 @@ class NoteCreate(BaseModel):
     title: Optional[str] = Field(None, description="Note title")
     content: str = Field(..., description="Note content")
     note_type: Optional[str] = Field("human", description="Type of note (human, ai)")
-    notebook_id: Optional[str] = Field(None, description="Notebook ID to add the note to")
+    notebook_id: Optional[str] = Field(
+        None, description="Notebook ID to add the note to"
+    )
 
 
 class NoteUpdate(BaseModel):
@@ -188,9 +211,13 @@ class SourceCreate(BaseModel):
     file_path: Optional[str] = Field(None, description="File path for upload type")
     content: Optional[str] = Field(None, description="Text content for text type")
     title: Optional[str] = Field(None, description="Source title")
-    transformations: Optional[List[str]] = Field(default_factory=list, description="Transformation IDs to apply")
+    transformations: Optional[List[str]] = Field(
+        default_factory=list, description="Transformation IDs to apply"
+    )
     embed: bool = Field(False, description="Whether to embed content for vector search")
-    delete_source: bool = Field(False, description="Whether to delete uploaded file after processing")
+    delete_source: bool = Field(
+        False, description="Whether to delete uploaded file after processing"
+    )
 
 
 class SourceUpdate(BaseModel):
@@ -222,13 +249,19 @@ class SourceListResponse(BaseModel):
 
 # Context API models
 class ContextConfig(BaseModel):
-    sources: Dict[str, str] = Field(default_factory=dict, description="Source inclusion config {source_id: level}")
-    notes: Dict[str, str] = Field(default_factory=dict, description="Note inclusion config {note_id: level}")
+    sources: Dict[str, str] = Field(
+        default_factory=dict, description="Source inclusion config {source_id: level}"
+    )
+    notes: Dict[str, str] = Field(
+        default_factory=dict, description="Note inclusion config {note_id: level}"
+    )
 
 
 class ContextRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to get context for")
-    context_config: Optional[ContextConfig] = Field(None, description="Context configuration")
+    context_config: Optional[ContextConfig] = Field(
+        None, description="Context configuration"
+    )
 
 
 class ContextResponse(BaseModel):
@@ -254,9 +287,11 @@ class SaveAsNoteRequest(BaseModel):
 
 class CreateSourceInsightRequest(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
-    
+
     transformation_id: str = Field(..., description="ID of transformation to apply")
-    model_id: Optional[str] = Field(None, description="Model ID (uses default if not provided)")
+    model_id: Optional[str] = Field(
+        None, description="Model ID (uses default if not provided)"
+    )
 
 
 # Error response

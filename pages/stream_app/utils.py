@@ -38,7 +38,10 @@ def version_sidebar():
         # Try to get latest version, but don't fail if unavailable
         try:
             # Use session state cache to avoid repeated checks
-            if 'latest_version' not in st.session_state or 'version_check_failed' not in st.session_state:
+            if (
+                "latest_version" not in st.session_state
+                or "version_check_failed" not in st.session_state
+            ):
                 latest_version = get_version_from_github(
                     "https://www.github.com/lfnovo/open-notebook", "main"
                 )
@@ -47,7 +50,10 @@ def version_sidebar():
             else:
                 latest_version = st.session_state.latest_version
 
-            if not st.session_state.version_check_failed and compare_versions(current_version, latest_version) < 0:
+            if (
+                not st.session_state.version_check_failed
+                and compare_versions(current_version, latest_version) < 0
+            ):
                 st.warning(
                     f"New version {latest_version} available. [Click here for upgrade instructions](https://github.com/lfnovo/open-notebook/blob/main/docs/SETUP.md#upgrading-open-notebook)"
                 )
@@ -56,7 +62,9 @@ def version_sidebar():
             st.session_state.version_check_failed = True
             # Optionally show a subtle message about failed update check
             if not os.getenv("offline"):
-                st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
+                st.caption(
+                    "⚠️ Could not check for updates (offline or GitHub unavailable)"
+                )
 
 
 def create_session_for_notebook(notebook_id: str, session_name: str = None):
@@ -187,19 +195,21 @@ def setup_page(
     st.set_page_config(
         page_title=title, layout=layout, initial_sidebar_state=sidebar_state
     )
-    
+
     # Check authentication first
     from pages.stream_app.auth import check_password
+
     check_password()
-    
+
     check_migration()
-    
+
     # Skip model check if requested (e.g., on Models page)
     if not skip_model_check:
         check_models(
-            only_mandatory=only_check_mandatory_models, stop_on_error=stop_on_model_error
+            only_mandatory=only_check_mandatory_models,
+            stop_on_error=stop_on_model_error,
         )
-    
+
     version_sidebar()
 
 

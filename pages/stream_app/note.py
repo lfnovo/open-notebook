@@ -25,7 +25,7 @@ def add_note(notebook_id):
             content=note_content,
             title=note_title,
             note_type="human",
-            notebook_id=notebook_id
+            notebook_id=notebook_id,
         )
         st.rerun()
 
@@ -41,7 +41,7 @@ def make_note_from_chat(content, notebook_id=None):
         content=content,
         title=None,  # Let API generate it
         note_type="ai",
-        notebook_id=notebook_id
+        notebook_id=notebook_id,
     )
 
     st.rerun()

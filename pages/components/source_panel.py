@@ -20,7 +20,9 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
         raise ValueError(f"Source not found: {source_id}")
 
     # Now we can access both the source and embedded_chunks directly
-    current_title = source_with_metadata.title if source_with_metadata.title else "No Title"
+    current_title = (
+        source_with_metadata.title if source_with_metadata.title else "No Title"
+    )
     source_with_metadata.title = st.text_input("Title", value=current_title)
     if source_with_metadata.title != current_title:
         sources_service.update_source(source_with_metadata.source)
@@ -39,8 +41,12 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                 from_src = f"from file: {source_with_metadata.asset.file_path}"
             else:
                 from_src = "from text"
-            st.caption(f"Created {naturaltime(source_with_metadata.created)}, {from_src}")
-            for insight in insights_service.get_source_insights(source_with_metadata.id):
+            st.caption(
+                f"Created {naturaltime(source_with_metadata.created)}, {from_src}"
+            )
+            for insight in insights_service.get_source_insights(
+                source_with_metadata.id
+            ):
                 with st.expander(f"**{insight.insight_type}**"):
                     st.markdown(insight.content)
                     x1, x2 = st.columns(2)
@@ -54,7 +60,9 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                         if x2.button(
                             "Save as Note", icon="📝", key=f"save_note_{insight.id}"
                         ):
-                            insights_service.save_insight_as_note(insight.id, notebook_id)
+                            insights_service.save_insight_as_note(
+                                insight.id, notebook_id
+                            )
                             st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:
@@ -71,7 +79,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     if st.button("Run"):
                         insights_service.create_source_insight(
                             source_id=source_with_metadata.id,
-                            transformation_id=transformation.id
+                            transformation_id=transformation.id,
                         )
                         st.rerun(scope="fragment" if modal else "app")
             else:
@@ -96,7 +104,9 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
             ):
                 from api.embedding_service import embedding_service
 
-                result = embedding_service.embed_content(source_with_metadata.id, "source")
+                result = embedding_service.embed_content(
+                    source_with_metadata.id, "source"
+                )
                 st.success(result.get("message", "Embedding complete"))
 
             with st.container(border=True):
@@ -104,7 +114,9 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     "Deleting the source will also delete all its insights and embeddings"
                 )
                 if st.button(
-                    "Delete", type="primary", key=f"bt_delete_source_{source_with_metadata.id}"
+                    "Delete",
+                    type="primary",
+                    key=f"bt_delete_source_{source_with_metadata.id}",
                 ):
                     sources_service.delete_source(source_with_metadata.id)
                     st.rerun()

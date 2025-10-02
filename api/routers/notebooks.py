@@ -18,11 +18,11 @@ async def get_notebooks(
     """Get all notebooks with optional filtering and ordering."""
     try:
         notebooks = await Notebook.get_all(order_by=order_by)
-        
+
         # Filter by archived status if specified
         if archived is not None:
             notebooks = [nb for nb in notebooks if nb.archived == archived]
-        
+
         return [
             NotebookResponse(
                 id=nb.id,
@@ -36,7 +36,9 @@ async def get_notebooks(
         ]
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching notebooks: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching notebooks: {str(e)}"
+        )
 
 
 @router.post("/notebooks", response_model=NotebookResponse)
@@ -48,7 +50,7 @@ async def create_notebook(notebook: NotebookCreate):
             description=notebook.description,
         )
         await new_notebook.save()
-        
+
         return NotebookResponse(
             id=new_notebook.id,
             name=new_notebook.name,
@@ -61,7 +63,9 @@ async def create_notebook(notebook: NotebookCreate):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating notebook: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error creating notebook: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating notebook: {str(e)}"
+        )
 
 
 @router.get("/notebooks/{notebook_id}", response_model=NotebookResponse)
@@ -71,7 +75,7 @@ async def get_notebook(notebook_id: str):
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         return NotebookResponse(
             id=notebook.id,
             name=notebook.name,
@@ -84,7 +88,9 @@ async def get_notebook(notebook_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching notebook {notebook_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching notebook: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching notebook: {str(e)}"
+        )
 
 
 @router.put("/notebooks/{notebook_id}", response_model=NotebookResponse)
@@ -94,7 +100,7 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         # Update only provided fields
         if notebook_update.name is not None:
             notebook.name = notebook_update.name
@@ -102,9 +108,9 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
             notebook.description = notebook_update.description
         if notebook_update.archived is not None:
             notebook.archived = notebook_update.archived
-        
+
         await notebook.save()
-        
+
         return NotebookResponse(
             id=notebook.id,
             name=notebook.name,
@@ -119,7 +125,9 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating notebook {notebook_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error updating notebook: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating notebook: {str(e)}"
+        )
 
 
 @router.delete("/notebooks/{notebook_id}")
@@ -129,12 +137,14 @@ async def delete_notebook(notebook_id: str):
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
-        
+
         await notebook.delete()
-        
+
         return {"message": "Notebook deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting notebook {notebook_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting notebook: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting notebook: {str(e)}"
+        )

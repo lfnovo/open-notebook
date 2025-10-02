@@ -113,7 +113,9 @@ with transformations_tab:
                         if st.button(
                             "Delete", icon="❌", key=f"{transformation.id}_delete"
                         ):
-                            transformations_service.delete_transformation(transformation.id)
+                            transformations_service.delete_transformation(
+                                transformation.id
+                            )
                             st.session_state.transformations.remove(transformation)
                             st.toast(f"Transformation '{name}' deleted successfully!")
                             st.rerun()
@@ -141,7 +143,7 @@ with playground_tab:
             result = transformations_service.execute_transformation(
                 transformation_id=transformation.id,
                 input_text=input_text,
-                model_id=model.id
+                model_id=model.id,
             )
             st.markdown(result["output"])
         else:

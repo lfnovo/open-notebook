@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Search, ChevronDown, AlertCircle, Settings, Save } from 'lucide-react'
+import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion } from 'lucide-react'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
@@ -99,11 +99,20 @@ export default function SearchPage() {
       <div className="p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Ask and Search</h1>
 
-        <Tabs defaultValue="ask" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="ask" className="text-sm sm:text-base">Ask (beta)</TabsTrigger>
-            <TabsTrigger value="search" className="text-sm sm:text-base">Search</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="ask" className="w-full space-y-6">
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a mode</p>
+            <TabsList aria-label="Ask or search your knowledge base" className="w-full max-w-xl">
+              <TabsTrigger value="ask">
+                <MessageCircleQuestion className="h-4 w-4" />
+                Ask (beta)
+              </TabsTrigger>
+              <TabsTrigger value="search">
+                <Search className="h-4 w-4" />
+                Search
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="ask" className="mt-6">
             <Card>

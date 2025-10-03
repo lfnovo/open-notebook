@@ -40,16 +40,19 @@ export default function TransformationsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="transformations" className="flex items-center gap-2">
-              <Wand2 className="h-4 w-4" />
-              Transformations
-            </TabsTrigger>
-            <TabsTrigger value="playground" className="flex items-center gap-2">
-              <Play className="h-4 w-4" />
-              Playground
-            </TabsTrigger>
-          </TabsList>
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a workspace</p>
+            <TabsList aria-label="Transformation views" className="w-full max-w-xl">
+              <TabsTrigger value="transformations" className="flex items-center gap-2">
+                <Wand2 className="h-4 w-4" />
+                Transformations
+              </TabsTrigger>
+              <TabsTrigger value="playground" className="flex items-center gap-2">
+                <Play className="h-4 w-4" />
+                Playground
+              </TabsTrigger>
+            </TabsList>
+          </div>
           
           <TabsContent value="transformations" className="space-y-6">
             <DefaultPromptEditor />

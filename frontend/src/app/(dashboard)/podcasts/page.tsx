@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EpisodesTab } from '@/components/podcasts/EpisodesTab'
 import { TemplatesTab } from '@/components/podcasts/TemplatesTab'
+import { Mic, LayoutTemplate } from 'lucide-react'
 
 export default function PodcastsPage() {
   const [activeTab, setActiveTab] = useState<'episodes' | 'templates'>('episodes')
@@ -26,10 +27,19 @@ export default function PodcastsPage() {
             onValueChange={(value) => setActiveTab(value as 'episodes' | 'templates')}
             className="space-y-6"
           >
-            <TabsList className="w-fit">
-              <TabsTrigger value="episodes">Episodes</TabsTrigger>
-              <TabsTrigger value="templates">Templates</TabsTrigger>
-            </TabsList>
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a view</p>
+              <TabsList aria-label="Podcast views" className="w-full max-w-md">
+                <TabsTrigger value="episodes">
+                  <Mic className="h-4 w-4" />
+                  Episodes
+                </TabsTrigger>
+                <TabsTrigger value="templates">
+                  <LayoutTemplate className="h-4 w-4" />
+                  Templates
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="episodes">
               <EpisodesTab />

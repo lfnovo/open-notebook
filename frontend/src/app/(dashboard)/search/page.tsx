@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Search, ChevronDown, AlertCircle, Settings, Save } from 'lucide-react'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
-import { useModelDefaults } from '@/lib/hooks/use-models'
+import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
@@ -47,6 +47,19 @@ export default function SearchPage() {
   const searchMutation = useSearch()
   const ask = useAsk()
   const { data: modelDefaults, isLoading: modelsLoading } = useModelDefaults()
+  const { data: availableModels } = useModels()
+
+  const modelNameById = useMemo(() => {
+    if (!availableModels) {
+      return new Map<string, string>()
+    }
+    return new Map(availableModels.map((model) => [model.id, model.name]))
+  }, [availableModels])
+
+  const resolveModelName = (id?: string | null) => {
+    if (!id) return 'Not set'
+    return modelNameById.get(id) ?? id
+  }
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model
 
@@ -149,13 +162,13 @@ export default function SearchPage() {
                       </div>
                       <div className="flex gap-2 text-xs flex-wrap">
                         <Badge variant="secondary">
-                          Strategy: {customModels?.strategy || modelDefaults?.default_chat_model || 'Not set'}
+                          Strategy: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
                         </Badge>
                         <Badge variant="secondary">
-                          Answer: {customModels?.answer || modelDefaults?.default_chat_model || 'Not set'}
+                          Answer: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
                         </Badge>
                         <Badge variant="secondary">
-                          Final: {customModels?.finalAnswer || modelDefaults?.default_chat_model || 'Not set'}
+                          Final: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
                         </Badge>
                       </div>
                     </div>

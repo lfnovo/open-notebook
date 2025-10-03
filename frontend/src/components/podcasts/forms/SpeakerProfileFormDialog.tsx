@@ -133,7 +133,7 @@ export function SpeakerProfileFormDialog({
   )
 
   const speakersArrayError = (
-    (errors.speakers as FieldErrorsImpl<{ root?: { message?: string } }>) | undefined
+    errors.speakers as FieldErrorsImpl<{ root?: { message?: string } }> | undefined
   )?.root?.message
 
   useEffect(() => {

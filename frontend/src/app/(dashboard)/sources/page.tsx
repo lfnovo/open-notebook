@@ -146,7 +146,7 @@ export default function SourcesPage() {
     return (
       <AppShell>
         <EmptyState
-          icon={<FileText className="h-12 w-12" />}
+          icon={FileText}
           title="No sources yet"
           description="Sources from all notebooks will appear here"
         />

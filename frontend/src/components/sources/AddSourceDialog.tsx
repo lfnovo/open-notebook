@@ -24,9 +24,7 @@ import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 
 const createSourceSchema = z.object({
-  type: z.enum(['link', 'upload', 'text'], {
-    required_error: 'Please select a source type',
-  }),
+  type: z.enum(['link', 'upload', 'text']),
   title: z.string().optional(),
   url: z.string().optional(),
   content: z.string().optional(),
@@ -348,8 +346,10 @@ export function AddSourceDialog({
           >
             {currentStep === 1 && (
               <SourceTypeStep
+                // @ts-expect-error - Type inference issue with zod schema
                 control={control}
                 register={register}
+                // @ts-expect-error - Type inference issue with zod schema
                 errors={errors}
               />
             )}
@@ -365,6 +365,7 @@ export function AddSourceDialog({
             
             {currentStep === 3 && (
               <ProcessingStep
+                // @ts-expect-error - Type inference issue with zod schema
                 control={control}
                 transformations={transformations}
                 selectedTransformations={selectedTransformations}

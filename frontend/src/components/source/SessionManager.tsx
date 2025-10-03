@@ -26,10 +26,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { SourceChatSession } from '@/lib/types/api'
+import { BaseChatSession } from '@/lib/types/api'
 
 interface SessionManagerProps {
-  sessions: SourceChatSession[]
+  sessions: BaseChatSession[]
   currentSessionId: string | null
   onCreateSession: (title: string) => void
   onSelectSession: (sessionId: string) => void
@@ -61,7 +61,7 @@ export function SessionManager({
     }
   }
 
-  const handleStartEdit = (session: SourceChatSession) => {
+  const handleStartEdit = (session: BaseChatSession) => {
     setEditingId(session.id)
     setEditTitle(session.title)
   }

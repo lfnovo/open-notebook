@@ -164,7 +164,7 @@ export function SourcesColumn({
         confirmText="Delete"
         onConfirm={handleDeleteConfirm}
         isLoading={deleteSource.isPending}
-        variant="destructive"
+        confirmVariant="destructive"
       />
 
       <ConfirmDialog
@@ -175,7 +175,7 @@ export function SourcesColumn({
         confirmText="Remove"
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
-        variant="default"
+        confirmVariant="default"
       />
     </Card>
   )

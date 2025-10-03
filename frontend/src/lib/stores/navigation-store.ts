@@ -70,28 +70,30 @@ export const useNavigationStore = create<NavigationState>()(
     {
       name: 'navigation-storage',
       storage: {
-        getItem: (name) => {
+        getItem: (name: string) => {
           try {
-            return sessionStorage.getItem(name)
+            const value = sessionStorage.getItem(name)
+            return value
           } catch {
             return null
           }
         },
-        setItem: (name, value) => {
+        setItem: (name: string, value: string) => {
           try {
             sessionStorage.setItem(name, value)
           } catch {
             // Silently fail if sessionStorage is not available
           }
         },
-        removeItem: (name) => {
+        removeItem: (name: string) => {
           try {
             sessionStorage.removeItem(name)
           } catch {
             // Silently fail if sessionStorage is not available
           }
         }
-      }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
     }
   )
 )

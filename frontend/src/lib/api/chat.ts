@@ -5,7 +5,9 @@ import {
   CreateNotebookChatSessionRequest,
   UpdateNotebookChatSessionRequest,
   SendNotebookChatMessageRequest,
-  NotebookChatMessage
+  NotebookChatMessage,
+  BuildContextRequest,
+  BuildContextResponse,
 } from '@/lib/types/api'
 
 export const chatApi = {
@@ -55,7 +57,15 @@ export const chatApi = {
       data
     )
     return response.data
-  }
+  },
+
+  buildContext: async (data: BuildContextRequest) => {
+    const response = await apiClient.post<BuildContextResponse>(
+      `/chat/context`,
+      data
+    )
+    return response.data
+  },
 }
 
 export default chatApi

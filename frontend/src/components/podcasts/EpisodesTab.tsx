@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react'
 
 import { useDeletePodcastEpisode, usePodcastEpisodes } from '@/lib/hooks/use-podcasts'
@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
 
 const STATUS_ORDER: Array<{
   key: 'running' | 'completed' | 'failed' | 'pending'
@@ -21,6 +22,11 @@ const STATUS_ORDER: Array<{
     description: 'Episodes that are actively generating assets.',
   },
   {
+    key: 'pending',
+    title: 'Queued / Pending',
+    description: 'Submitted episodes waiting to start processing.',
+  },
+  {
     key: 'completed',
     title: 'Completed Episodes',
     description: 'Ready to review, download, or publish.',
@@ -29,11 +35,6 @@ const STATUS_ORDER: Array<{
     key: 'failed',
     title: 'Failed Episodes',
     description: 'Episodes that encountered issues during generation.',
-  },
-  {
-    key: 'pending',
-    title: 'Queued / Pending',
-    description: 'Submitted episodes waiting to start processing.',
   },
 ]
 
@@ -47,6 +48,7 @@ function SummaryBadge({ label, value }: { label: string; value: number }) {
 }
 
 export function EpisodesTab() {
+  const [showGenerateDialog, setShowGenerateDialog] = useState(false)
   const {
     episodes,
     statusGroups,
@@ -78,19 +80,24 @@ export function EpisodesTab() {
             Monitor podcast generation jobs and review the final artefacts.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isFetching}
-        >
-          {isFetching ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCcw className="mr-2 h-4 w-4" />
-          )}
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setShowGenerateDialog(true)}>
+            Generate Podcast
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isFetching}
+          >
+            {isFetching ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCcw className="mr-2 h-4 w-4" />
+            )}
+            Refresh
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -155,6 +162,11 @@ export function EpisodesTab() {
           </section>
         )
       })}
+
+      <GeneratePodcastDialog
+        open={showGenerateDialog}
+        onOpenChange={setShowGenerateDialog}
+      />
     </div>
   )
 }

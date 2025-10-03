@@ -1,4 +1,5 @@
 import asyncio
+import json
 from typing import AsyncGenerator, Dict
 
 from fastapi import APIRouter, HTTPException
@@ -85,25 +86,26 @@ async def stream_ask_response(
                         for search in chunk["agent"]["strategy"].searches
                     ],
                 }
-                yield f"data: {strategy_data}\n\n"
+                yield f"data: {json.dumps(strategy_data)}\n\n"
 
             elif "provide_answer" in chunk:
                 for answer in chunk["provide_answer"]["answers"]:
                     answer_data = {"type": "answer", "content": answer}
-                    yield f"data: {answer_data}\n\n"
+                    yield f"data: {json.dumps(answer_data)}\n\n"
 
             elif "write_final_answer" in chunk:
                 final_answer = chunk["write_final_answer"]["final_answer"]
                 final_data = {"type": "final_answer", "content": final_answer}
-                yield f"data: {final_data}\n\n"
+                yield f"data: {json.dumps(final_data)}\n\n"
 
         # Send completion signal
-        yield f"data: {{'type': 'complete', 'final_answer': '{final_answer}'}}\n\n"
+        completion_data = {"type": "complete", "final_answer": final_answer}
+        yield f"data: {json.dumps(completion_data)}\n\n"
 
     except Exception as e:
         logger.error(f"Error in ask streaming: {str(e)}")
         error_data = {"type": "error", "message": str(e)}
-        yield f"data: {error_data}\n\n"
+        yield f"data: {json.dumps(error_data)}\n\n"
 
 
 @router.post("/search/ask")
@@ -140,7 +142,7 @@ async def ask_knowledge_base(ask_request: AskRequest):
 
         # For streaming response
         return StreamingResponse(
-            await stream_ask_response(
+            stream_ask_response(
                 ask_request.question, strategy_model, answer_model, final_answer_model
             ),
             media_type="text/plain",

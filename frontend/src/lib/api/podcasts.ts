@@ -3,6 +3,8 @@ import {
   PodcastEpisode,
   EpisodeProfile,
   SpeakerProfile,
+  PodcastGenerationRequest,
+  PodcastGenerationResponse,
 } from '@/lib/types/podcasts'
 
 export type EpisodeProfileInput = Omit<EpisodeProfile, 'id'>
@@ -98,6 +100,14 @@ export const podcastsApi = {
   duplicateSpeakerProfile: async (profileId: string) => {
     const response = await apiClient.post<SpeakerProfile>(
       `/speaker-profiles/${profileId}/duplicate`
+    )
+    return response.data
+  },
+
+  generatePodcast: async (payload: PodcastGenerationRequest) => {
+    const response = await apiClient.post<PodcastGenerationResponse>(
+      '/podcasts/generate',
+      payload
     )
     return response.data
   },

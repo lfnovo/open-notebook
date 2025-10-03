@@ -403,17 +403,19 @@ export default function SourceDetailPage() {
                           allowFullScreen
                         />
                       </div>
-                      <div className="mt-2">
-                        <a 
-                          href={source.asset.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          Open on YouTube
-                        </a>
-                      </div>
+                      {source.asset?.url && (
+                        <div className="mt-2">
+                          <a
+                            href={source.asset.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
+                          >
+                            <ExternalLink className="h-3 w-3" />
+                            Open on YouTube
+                          </a>
+                        </div>
+                      )}
                     </div>
                   )}
                   <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">

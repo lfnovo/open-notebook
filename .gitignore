@@ -125,3 +125,6 @@ desktop.ini
 claude-logs/
 .claude/sessions
 **/claude-logs
+
+
+docs/custom_gpt

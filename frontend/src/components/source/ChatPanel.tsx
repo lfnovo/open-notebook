@@ -9,10 +9,10 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
-import { 
-  SourceChatMessage, 
+import {
+  SourceChatMessage,
   SourceChatContextIndicator,
-  SourceChatSession
+  BaseChatSession
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
@@ -32,7 +32,7 @@ interface ChatPanelProps {
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
-  sessions?: SourceChatSession[]
+  sessions?: BaseChatSession[]
   currentSessionId?: string | null
   onCreateSession?: (title: string) => void
   onSelectSession?: (sessionId: string) => void

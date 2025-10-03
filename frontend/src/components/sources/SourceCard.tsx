@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -94,6 +94,10 @@ const STATUS_CONFIG = {
 
 type SourceStatus = keyof typeof STATUS_CONFIG
 
+function isSourceStatus(status: unknown): status is SourceStatus {
+  return typeof status === 'string' && status in STATUS_CONFIG
+}
+
 function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
   // Determine type based on asset information
   if (source.asset?.url) return 'link'
@@ -133,11 +137,10 @@ export function SourceCard({
 
   // Determine current status
   // If source has a command_id but no status, treat as "new" (just created)
-  const currentStatus: SourceStatus = (
-    statusData?.status ||
-    sourceWithStatus.status ||
-    (sourceWithStatus.command_id ? 'new' : 'completed')
-  ) as SourceStatus
+  const rawStatus = statusData?.status || sourceWithStatus.status
+  const currentStatus: SourceStatus = isSourceStatus(rawStatus)
+    ? rawStatus
+    : (sourceWithStatus.command_id ? 'new' : 'completed')
 
   // Debug logging
   useEffect(() => {
@@ -203,9 +206,9 @@ export function SourceCard({
     }
   }
 
-  const isProcessing = currentStatus === 'new' || currentStatus === 'running' || currentStatus === 'queued'
-  const isFailed = currentStatus === 'failed'
-  const isCompleted = currentStatus === 'completed'
+  const isProcessing: boolean = currentStatus === 'new' || currentStatus === 'running' || currentStatus === 'queued'
+  const isFailed: boolean = currentStatus === 'failed'
+  const isCompleted: boolean = currentStatus === 'completed'
 
   return (
     <Card
@@ -362,12 +365,11 @@ export function SourceCard({
           </DropdownMenu>
           </div>
         </div>
-
-        {/* Quick action buttons for failed state */}
-        {isFailed && (
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        {(isFailed as any) && (
           <div className="flex gap-2 pt-2 border-t">
             <Button
-              variant="outline" 
+              variant="outline"
               size="sm"
               onClick={handleRetry}
               disabled={!onRetry}
@@ -385,13 +387,13 @@ export function SourceCard({
             <div className="flex justify-between items-center mb-1">
               <span className="text-xs text-gray-600">Progress</span>
               <span className="text-xs text-gray-600">
-                {Math.round(statusData.processing_info.progress)}%
+                {Math.round(statusData.processing_info.progress as number)}%
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
-              <div 
-                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
-                style={{ width: `${statusData.processing_info.progress}%` }}
+              <div
+                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                style={{ width: `${statusData.processing_info.progress as number}%` }}
               />
             </div>
           </div>

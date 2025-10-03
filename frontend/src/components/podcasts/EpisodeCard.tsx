@@ -2,14 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { ChevronDown, Trash2 } from 'lucide-react'
+import { InfoIcon, Trash2 } from 'lucide-react'
 
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
-import {
-  EpisodeStatus,
-  PodcastEpisode,
-  SpeakerVoiceConfig,
-} from '@/lib/types/podcasts'
+import { EpisodeStatus, PodcastEpisode } from '@/lib/types/podcasts'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -24,20 +20,17 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface EpisodeCardProps {
   episode: PodcastEpisode
@@ -88,62 +81,50 @@ function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
   return (
     <Badge
       variant="outline"
-      className={cn('uppercase tracking-wide', meta.className)}
+      className={cn('uppercase tracking-wide text-xs', meta.className)}
     >
       {meta.label}
     </Badge>
   )
 }
 
-function SectionToggle({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string
-  defaultOpen?: boolean
-  children: React.ReactNode
-}) {
-  const [open, setOpen] = useState(defaultOpen)
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <CollapsibleTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 transition-transform"
-          >
-            <ChevronDown
-              className={cn('h-4 w-4', open ? 'rotate-180' : 'rotate-0')}
-            />
-          </Button>
-        </CollapsibleTrigger>
-      </div>
-      <CollapsibleContent className="pt-3 text-sm text-muted-foreground">
-        {children}
-      </CollapsibleContent>
-    </Collapsible>
-  )
+type OutlineSegment = {
+  name?: string
+  description?: string
+  size?: string
 }
 
-function renderSpeaker(speaker: SpeakerVoiceConfig, index: number) {
-  return (
-    <div key={speaker.name + index} className="rounded-md border bg-muted/30 p-3">
-      <p className="text-sm font-medium text-foreground">{speaker.name}</p>
-      <p className="text-xs text-muted-foreground">Voice ID: {speaker.voice_id}</p>
-      <Separator className="my-3" />
-      <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-        <span className="font-semibold">Backstory:</span> {speaker.backstory}
-      </p>
-      <Separator className="my-3" />
-      <p className="text-xs text-muted-foreground whitespace-pre-wrap">
-        <span className="font-semibold">Personality:</span> {speaker.personality}
-      </p>
-    </div>
-  )
+type OutlineData = {
+  segments?: OutlineSegment[]
+}
+
+type TranscriptEntry = {
+  speaker?: string
+  dialogue?: string
+}
+
+type TranscriptData = {
+  transcript?: TranscriptEntry[]
+}
+
+function extractOutlineSegments(outline: unknown): OutlineSegment[] {
+  if (outline && typeof outline === 'object' && 'segments' in outline) {
+    const data = outline as OutlineData
+    if (Array.isArray(data.segments)) {
+      return data.segments
+    }
+  }
+  return []
+}
+
+function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
+  if (transcript && typeof transcript === 'object' && 'transcript' in transcript) {
+    const data = transcript as TranscriptData
+    if (Array.isArray(data.transcript)) {
+      return data.transcript
+    }
+  }
+  return []
 }
 
 export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
@@ -154,6 +135,10 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
 
   const [audioSrc, setAudioSrc] = useState<string | undefined>(directAudioUrl)
   const [audioError, setAudioError] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+
+  const outlineSegments = useMemo(() => extractOutlineSegments(episode.outline), [episode.outline])
+  const transcriptEntries = useMemo(() => extractTranscriptEntries(episode.transcript), [episode.transcript])
 
   useEffect(() => {
     let revokeUrl: string | undefined
@@ -221,121 +206,187 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
 
   return (
     <Card className="shadow-sm">
-      <CardHeader className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1">
-          <CardTitle className="text-lg font-semibold">{episode.name}</CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Profile: {episode.episode_profile?.name ?? 'Unknown'}
-          </CardDescription>
-          {createdLabel && (
-            <p className="text-xs text-muted-foreground">Created {createdLabel}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <StatusBadge status={episode.job_status} />
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete episode?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will remove “{episode.name}” and its audio file permanently.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDelete} disabled={deleting}>
-                  {deleting ? 'Deleting…' : 'Delete'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {audioSrc ? (
-          <div>
-            <p className="text-sm font-medium text-foreground mb-2">Audio Preview</p>
-            <audio controls preload="none" src={audioSrc} className="w-full" />
+      <CardContent className="space-y-4 p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-base font-semibold text-foreground">
+                {episode.name}
+              </h3>
+              <StatusBadge status={episode.job_status} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Profile: {episode.episode_profile?.name ?? 'Unknown'}
+              {createdLabel ? ` • Created ${createdLabel}` : ''}
+            </p>
           </div>
+          <div className="flex items-center gap-2">
+            <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <InfoIcon className="mr-2 h-4 w-4" /> Details
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[min(90vw,720px)] max-h-[85vh] overflow-hidden">
+                <DialogHeader>
+                  <DialogTitle>{episode.name}</DialogTitle>
+                  <DialogDescription>
+                    {episode.episode_profile?.name ?? 'Unknown profile'}
+                    {createdLabel ? ` • Created ${createdLabel}` : ''}
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 overflow-hidden">
+                  {audioSrc ? (
+                    <audio controls preload="none" src={audioSrc} className="w-full" />
+                  ) : audioError ? (
+                    <p className="text-sm text-destructive">{audioError}</p>
+                  ) : null}
+
+                  <Tabs defaultValue="summary" className="h-[60vh] flex flex-col">
+                    <TabsList className="grid w-full grid-cols-3">
+                      <TabsTrigger value="summary">Summary</TabsTrigger>
+                      <TabsTrigger value="outline">Outline</TabsTrigger>
+                      <TabsTrigger value="transcript">Transcript</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="summary" className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full pr-4">
+                        <div className="space-y-6">
+                          <section className="space-y-2">
+                            <h4 className="text-sm font-semibold text-foreground">Episode Profile</h4>
+                            <div className="grid gap-2 text-sm md:grid-cols-2">
+                              <div>
+                                <p className="text-muted-foreground">Outline Model</p>
+                                <p>
+                                  {episode.episode_profile?.outline_provider ?? '—'} /
+                                  {' '}
+                                  {episode.episode_profile?.outline_model ?? '—'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Transcript Model</p>
+                                <p>
+                                  {episode.episode_profile?.transcript_provider ?? '—'} /
+                                  {' '}
+                                  {episode.episode_profile?.transcript_model ?? '—'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Segments</p>
+                                <p>{episode.episode_profile?.num_segments ?? '—'}</p>
+                              </div>
+                            </div>
+                            {episode.episode_profile?.default_briefing ? (
+                              <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                                {episode.episode_profile.default_briefing}
+                              </div>
+                            ) : null}
+                          </section>
+
+                          <section className="space-y-2">
+                            <h4 className="text-sm font-semibold text-foreground">Speaker Profile</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {episode.speaker_profile?.tts_provider ?? '—'} /{' '}
+                              {episode.speaker_profile?.tts_model ?? '—'}
+                            </p>
+                            {episode.speaker_profile?.speakers?.map((speaker, index) => (
+                              <div
+                                key={`${speaker.name}-${index}`}
+                                className="rounded-md border bg-muted/20 p-3 text-xs"
+                              >
+                                <p className="font-semibold text-foreground">{speaker.name}</p>
+                                <p className="text-muted-foreground">Voice ID: {speaker.voice_id}</p>
+                                <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                                  <span className="font-semibold">Backstory:</span> {speaker.backstory}
+                                </p>
+                                <p className="mt-2 whitespace-pre-wrap text-muted-foreground">
+                                  <span className="font-semibold">Personality:</span> {speaker.personality}
+                                </p>
+                              </div>
+                            ))}
+                          </section>
+
+                          {episode.briefing ? (
+                            <section className="space-y-2">
+                              <h4 className="text-sm font-semibold text-foreground">Briefing</h4>
+                              <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">
+                                {episode.briefing}
+                              </div>
+                            </section>
+                          ) : null}
+                        </div>
+                      </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="outline" className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full pr-4">
+                        {outlineSegments.length > 0 ? (
+                          <div className="space-y-3">
+                            {outlineSegments.map((segment, index) => (
+                              <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="font-semibold text-foreground">{segment.name ?? `Segment ${index + 1}`}</p>
+                                  {segment.size ? (
+                                    <Badge variant="outline" className="text-[10px] uppercase tracking-wide">{segment.size}</Badge>
+                                  ) : null}
+                                </div>
+                                <p className="text-muted-foreground whitespace-pre-wrap">{segment.description ?? 'No description provided.'}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No outline available.</p>
+                        )}
+                      </ScrollArea>
+                    </TabsContent>
+
+                    <TabsContent value="transcript" className="flex-1 overflow-hidden">
+                      <ScrollArea className="h-full pr-4 space-y-3">
+                        {transcriptEntries.length > 0 ? (
+                          transcriptEntries.map((entry, index) => (
+                            <div key={index} className="rounded border bg-muted/20 p-3 text-xs space-y-1">
+                              <p className="font-semibold text-foreground">{entry.speaker ?? 'Speaker'}</p>
+                              <p className="text-muted-foreground whitespace-pre-wrap">{entry.dialogue ?? ''}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-xs text-muted-foreground">No transcript available.</p>
+                        )}
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="ghost" size="sm" className="text-destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete episode?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will remove “{episode.name}” and its audio file permanently.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+                    {deleting ? 'Deleting…' : 'Delete'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {audioSrc ? (
+          <audio controls preload="none" src={audioSrc} className="w-full" />
         ) : audioError ? (
           <p className="text-sm text-destructive">{audioError}</p>
-        ) : null}
-
-        <SectionToggle title="Episode Profile">
-          <dl className="grid gap-2 text-sm leading-relaxed md:grid-cols-2">
-            <div>
-              <dt className="font-medium text-foreground">Outline Model</dt>
-              <dd>
-                {episode.episode_profile?.outline_provider ?? '—'} /
-                {' '}
-                {episode.episode_profile?.outline_model ?? '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">Transcript Model</dt>
-              <dd>
-                {episode.episode_profile?.transcript_provider ?? '—'} /
-                {' '}
-                {episode.episode_profile?.transcript_model ?? '—'}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-foreground">Segments</dt>
-              <dd>{episode.episode_profile?.num_segments ?? '—'}</dd>
-            </div>
-            <div className="md:col-span-2">
-              <dt className="font-medium text-foreground">Briefing Template</dt>
-              <dd className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {episode.episode_profile?.default_briefing ?? '—'}
-              </dd>
-            </div>
-          </dl>
-        </SectionToggle>
-
-        <SectionToggle title="Speaker Profile">
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Provider: {episode.speaker_profile?.tts_provider ?? '—'} /{' '}
-              {episode.speaker_profile?.tts_model ?? '—'}
-            </p>
-            <div className="grid gap-3 md:grid-cols-2">
-              {episode.speaker_profile?.speakers?.map(renderSpeaker) ?? null}
-            </div>
-          </div>
-        </SectionToggle>
-
-        {episode.briefing ? (
-          <SectionToggle title="Briefing Used" defaultOpen>
-            <pre className="whitespace-pre-wrap rounded-md border bg-muted/30 p-4 text-xs leading-relaxed text-muted-foreground">
-              {episode.briefing}
-            </pre>
-          </SectionToggle>
-        ) : null}
-
-        {episode.transcript && Object.keys(episode.transcript).length > 0 ? (
-          <SectionToggle title="Transcript JSON">
-            <ScrollArea className="max-h-64 rounded-md border bg-muted/10">
-              <pre className="whitespace-pre text-xs leading-relaxed p-4">
-                {JSON.stringify(episode.transcript, null, 2)}
-              </pre>
-            </ScrollArea>
-          </SectionToggle>
-        ) : null}
-
-        {episode.outline && Object.keys(episode.outline).length > 0 ? (
-          <SectionToggle title="Outline JSON">
-            <ScrollArea className="max-h-64 rounded-md border bg-muted/10">
-              <pre className="whitespace-pre text-xs leading-relaxed p-4">
-                {JSON.stringify(episode.outline, null, 2)}
-              </pre>
-            </ScrollArea>
-          </SectionToggle>
         ) : null}
       </CardContent>
     </Card>

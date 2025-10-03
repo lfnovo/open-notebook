@@ -110,14 +110,19 @@ export interface APIError {
 }
 
 // Source Chat Types
-export interface SourceChatSession {
+// Base session interface with common fields
+export interface BaseChatSession {
   id: string
   title: string
-  source_id: string
-  model_override?: string
   created: string
   updated: string
   message_count?: number
+  model_override?: string | null
+}
+
+export interface SourceChatSession extends BaseChatSession {
+  source_id: string
+  model_override?: string
 }
 
 export interface SourceChatMessage {
@@ -163,14 +168,8 @@ export interface SourceChatStreamEvent {
 }
 
 // Notebook Chat Types
-export interface NotebookChatSession {
-  id: string
-  title: string
+export interface NotebookChatSession extends BaseChatSession {
   notebook_id: string
-  created: string
-  updated: string
-  message_count?: number
-  model_override?: string | null
 }
 
 export interface NotebookChatMessage {
@@ -203,4 +202,21 @@ export interface SendNotebookChatMessageRequest {
     notes: Array<{ id: string; content: string }>
   }
   model_override?: string
+}
+
+export interface BuildContextRequest {
+  notebook_id: string
+  context_config: {
+    sources: Record<string, string>
+    notes: Record<string, string>
+  }
+}
+
+export interface BuildContextResponse {
+  context: {
+    sources: Array<Record<string, unknown>>
+    notes: Array<Record<string, unknown>>
+  }
+  token_count: number
+  char_count: number
 }

@@ -9,6 +9,7 @@ import {
   EpisodeProfile,
   EpisodeStatusGroups,
   PodcastEpisode,
+  PodcastGenerationRequest,
   groupEpisodesByStatus,
   speakerUsageMap,
 } from '@/lib/types/podcasts'
@@ -336,6 +337,30 @@ export function useDuplicateSpeakerProfile() {
       toast({
         title: 'Failed to duplicate speaker profile',
         description: 'Please try again later.',
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useGeneratePodcast() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: (payload: PodcastGenerationRequest) =>
+      podcastsApi.generatePodcast(payload),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+      toast({
+        title: 'Podcast generation started',
+        description: `Episode "${response.episode_name}" is being created.`,
+      })
+    },
+    onError: () => {
+      toast({
+        title: 'Failed to start podcast generation',
+        description: 'Please try again in a moment.',
         variant: 'destructive',
       })
     },

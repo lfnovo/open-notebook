@@ -40,9 +40,7 @@ const episodeProfileSchema = z.object({
   transcript_provider: z.string().min(1, 'Transcript provider is required'),
   transcript_model: z.string().min(1, 'Transcript model is required'),
   default_briefing: z.string().min(1, 'Default briefing is required'),
-  num_segments: z
-    .coerce
-    .number({ invalid_type_error: 'Number of segments is required' })
+  num_segments: z.number()
     .int('Must be an integer')
     .min(3, 'At least 3 segments')
     .max(20, 'Maximum 20 segments'),

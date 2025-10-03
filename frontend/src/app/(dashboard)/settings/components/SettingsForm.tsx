@@ -102,12 +102,10 @@ export function SettingsForm() {
               name="default_content_processing_engine_doc"
               control={control}
               render={({ field }) => (
-                <Select 
+                <Select
                   key={field.value}
                   value={field.value || ''}
                   onValueChange={field.onChange}
-                  name={field.name}
-                  onBlur={field.onBlur}
                   disabled={field.disabled || isLoading}
                 >
                     <SelectTrigger className="w-full">
@@ -140,12 +138,10 @@ export function SettingsForm() {
               name="default_content_processing_engine_url"
               control={control}
               render={({ field }) => (
-                <Select 
+                <Select
                   key={field.value}
                   value={field.value || ''}
                   onValueChange={field.onChange}
-                  name={field.name}
-                  onBlur={field.onBlur}
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger className="w-full">
@@ -190,12 +186,10 @@ export function SettingsForm() {
               name="default_embedding_option"
               control={control}
               render={({ field }) => (
-                <Select 
+                <Select
                   key={field.value}
                   value={field.value || ''}
                   onValueChange={field.onChange}
-                  name={field.name}
-                  onBlur={field.onBlur}
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger className="w-full">
@@ -240,12 +234,10 @@ export function SettingsForm() {
               name="auto_delete_files"
               control={control}
               render={({ field }) => (
-                <Select 
+                <Select
                   key={field.value}
                   value={field.value || ''}
                   onValueChange={field.onChange}
-                  name={field.name}
-                  onBlur={field.onBlur}
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger className="w-full">

@@ -24,7 +24,7 @@ export function FormSection({
           {title}
         </Label>
         {description && (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-muted-foreground">
             {description}
           </p>
         )}

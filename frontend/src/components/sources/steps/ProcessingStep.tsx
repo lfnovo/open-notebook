@@ -67,7 +67,7 @@ export function ProcessingStep({
               control={control}
               name="embed"
               render={({ field }) => (
-                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-gray-50">
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-muted">
                   <Checkbox
                     checked={field.value}
                     onCheckedChange={field.onChange}
@@ -75,7 +75,7 @@ export function ProcessingStep({
                   />
                   <div className="flex-1">
                     <span className="text-sm font-medium block">Enable embedding for search</span>
-                    <p className="text-xs text-gray-600 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Allows this source to be found in vector searches and AI queries
                     </p>
                   </div>
@@ -85,12 +85,12 @@ export function ProcessingStep({
           )}
 
           {settings?.default_embedding_option === 'always' && (
-            <div className="p-3 rounded-md bg-blue-50 border border-blue-200">
+            <div className="p-3 rounded-md bg-primary/10 border border-primary/30">
               <div className="flex items-start gap-3">
-                <div className="w-4 h-4 bg-blue-500 rounded-full mt-0.5 flex-shrink-0"></div>
+                <div className="w-4 h-4 bg-primary rounded-full mt-0.5 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium block text-blue-900">Embedding enabled automatically</span>
-                  <p className="text-xs text-blue-700 mt-1">
+                  <span className="text-sm font-medium block text-primary">Embedding enabled automatically</span>
+                  <p className="text-xs text-primary mt-1">
                     Your settings are configured to always embed content for vector search.
                     You can change this in <span className="font-medium">Settings</span>.
                   </p>
@@ -100,12 +100,12 @@ export function ProcessingStep({
           )}
 
           {settings?.default_embedding_option === 'never' && (
-            <div className="p-3 rounded-md bg-gray-50 border border-gray-200">
+            <div className="p-3 rounded-md bg-muted border border-border">
               <div className="flex items-start gap-3">
-                <div className="w-4 h-4 bg-gray-400 rounded-full mt-0.5 flex-shrink-0"></div>
+                <div className="w-4 h-4 bg-muted-foreground rounded-full mt-0.5 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium block text-gray-900">Embedding disabled</span>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <span className="text-sm font-medium block text-foreground">Embedding disabled</span>
+                  <p className="text-xs text-muted-foreground mt-1">
                     Your settings are configured to skip embedding. Vector search won&apos;t be available for this source.
                     You can change this in <span className="font-medium">Settings</span>.
                   </p>

@@ -23,7 +23,7 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
   onStepClick?: (step: number) => void
 }) {
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b bg-gray-50">
+    <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted">
       {steps.map((step, index) => {
         const isCompleted = currentStep > step.number
         const isCurrent = currentStep === step.number
@@ -32,31 +32,31 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
         return (
           <div key={step.number} className="flex items-center flex-1">
             <div 
-              className={`flex items-center ${isClickable ? 'cursor-pointer' : ''}`}
+              className={cn('flex items-center', isClickable && 'cursor-pointer')}
               onClick={isClickable ? () => onStepClick(step.number) : undefined}
             >
               <div
                 className={cn(
-                  "flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-colors",
+                  'flex items-center justify-center w-8 h-8 rounded-full border-2 text-sm font-medium transition-colors',
                   isCompleted 
-                    ? "bg-blue-600 border-blue-600 text-white" 
+                    ? 'bg-primary border-primary text-primary-foreground' 
                     : isCurrent 
-                      ? "border-blue-600 text-blue-600 bg-blue-50"
-                      : "border-gray-300 text-gray-400 bg-white"
+                      ? 'border-primary text-primary bg-primary/10'
+                      : 'border-border text-muted-foreground bg-card'
                 )}
               >
                 {isCompleted ? "✓" : step.number}
               </div>
               <div className="ml-3 min-w-0">
                 <p className={cn(
-                  "text-sm font-medium",
-                  isCurrent ? "text-gray-900" : "text-gray-500"
+                  'text-sm font-medium',
+                  isCurrent ? 'text-foreground' : 'text-muted-foreground'
                 )}>
                   {step.title}
                 </p>
                 <p className={cn(
-                  "text-xs",
-                  isCurrent ? "text-gray-600" : "text-gray-400"
+                  'text-xs',
+                  isCurrent ? 'text-muted-foreground' : 'text-muted-foreground/80'
                 )}>
                   {step.description}
                 </p>
@@ -65,8 +65,8 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
             {index < steps.length - 1 && (
               <div 
                 className={cn(
-                  "flex-1 border-t-2 mx-4 transition-colors",
-                  isCompleted ? "border-blue-600" : "border-gray-300"
+                  'flex-1 border-t-2 mx-4 transition-colors',
+                  isCompleted ? 'border-primary' : 'border-border/60'
                 )} 
               />
             )}
@@ -85,7 +85,7 @@ export function WizardContainer({
   className
 }: WizardContainerProps) {
   return (
-    <div className={cn("flex flex-col h-[500px] bg-white rounded-lg border", className)}>
+    <div className={cn('flex flex-col h-[500px] bg-card rounded-lg border border-border', className)}>
       <StepIndicator 
         currentStep={currentStep}
         steps={steps}

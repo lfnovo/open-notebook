@@ -305,16 +305,16 @@ export function AddSourceDialog({
           
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3">
-              <LoaderIcon className="h-5 w-5 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-600">
+              <LoaderIcon className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm text-muted-foreground">
                 {processingStatus?.message || 'Processing...'}
               </span>
             </div>
             
             {processingStatus?.progress && (
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                  className="bg-primary h-2 rounded-full transition-all duration-300" 
                   style={{ width: `${processingStatus.progress}%` }}
                 />
               </div>
@@ -377,7 +377,7 @@ export function AddSourceDialog({
           </WizardContainer>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center px-6 py-4 border-t bg-gray-50">
+          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted">
             <Button 
               type="button" 
               variant="outline" 

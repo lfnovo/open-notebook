@@ -80,7 +80,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
               
               {SOURCE_TYPES.map((type) => (
                 <TabsContent key={type.value} value={type.value} className="mt-4">
-                  <p className="text-sm text-gray-600 mb-4">{type.description}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
                   
                   {/* Type-specific fields */}
                   {type.value === 'link' && (
@@ -93,7 +93,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
                         type="url"
                       />
                       {errors.url && (
-                        <p className="text-sm text-red-600 mt-1">{errors.url.message}</p>
+                        <p className="text-sm text-destructive mt-1">{errors.url.message}</p>
                       )}
                     </div>
                   )}
@@ -107,11 +107,11 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
                         {...register('file')}
                         accept=".pdf,.doc,.docx,.txt,.md,.epub"
                       />
-                      <p className="text-xs text-gray-500 mt-1">
+                      <p className="text-xs text-muted-foreground mt-1">
                         Supported formats: PDF, DOC, DOCX, TXT, MD, EPUB
                       </p>
                       {errors.file && (
-                        <p className="text-sm text-red-600 mt-1">{errors.file.message}</p>
+                        <p className="text-sm text-destructive mt-1">{errors.file.message}</p>
                       )}
                     </div>
                   )}
@@ -126,7 +126,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
                         rows={6}
                       />
                       {errors.content && (
-                        <p className="text-sm text-red-600 mt-1">{errors.content.message}</p>
+                        <p className="text-sm text-destructive mt-1">{errors.content.message}</p>
                       )}
                     </div>
                   )}
@@ -136,7 +136,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
           )}
         />
         {errors.type && (
-          <p className="text-sm text-red-600 mt-1">{errors.type.message}</p>
+          <p className="text-sm text-destructive mt-1">{errors.type.message}</p>
         )}
       </FormSection>
 
@@ -153,7 +153,7 @@ export function SourceTypeStep({ control, register, errors }: SourceTypeStepProp
           placeholder="Give your source a descriptive title"
         />
         {errors.title && (
-          <p className="text-sm text-red-600 mt-1">{errors.title.message}</p>
+          <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
         )}
       </FormSection>
     </div>

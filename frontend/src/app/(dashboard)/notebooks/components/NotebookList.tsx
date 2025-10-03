@@ -13,13 +13,17 @@ interface NotebookListProps {
   isLoading: boolean
   title: string
   collapsible?: boolean
+  emptyTitle?: string
+  emptyDescription?: string
 }
 
 export function NotebookList({ 
   notebooks, 
   isLoading, 
   title, 
-  collapsible = false 
+  collapsible = false,
+  emptyTitle,
+  emptyDescription,
 }: NotebookListProps) {
   const [isExpanded, setIsExpanded] = useState(!collapsible)
 
@@ -35,8 +39,8 @@ export function NotebookList({
     return (
       <EmptyState
         icon={Book}
-        title={`No ${title.toLowerCase()}`}
-        description="Start by creating your first notebook to organize your research."
+        title={emptyTitle ?? `No ${title.toLowerCase()}`}
+        description={emptyDescription ?? 'Start by creating your first notebook to organize your research.'}
       />
     )
   }
@@ -58,7 +62,7 @@ export function NotebookList({
           </Button>
         )}
         <h2 className="text-lg font-semibold">{title}</h2>
-        <span className="text-sm text-gray-500">({notebooks.length})</span>
+        <span className="text-sm text-muted-foreground">({notebooks.length})</span>
       </div>
 
       {isExpanded && (

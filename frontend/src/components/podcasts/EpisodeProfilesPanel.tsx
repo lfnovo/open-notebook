@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, Edit3, Trash2, Users } from 'lucide-react'
+import { Copy, Edit3, MoreVertical, Trash2, Users } from 'lucide-react'
 
 import { EpisodeProfile, SpeakerProfile } from '@/lib/types/podcasts'
 import {
@@ -29,6 +29,13 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 interface EpisodeProfilesPanelProps {
   episodeProfiles: EpisodeProfile[]
@@ -105,7 +112,7 @@ export function EpisodeProfilesPanel({
                       {profile.description || 'No description provided.'}
                     </CardDescription>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -113,24 +120,39 @@ export function EpisodeProfilesPanel({
                     >
                       <Edit3 className="mr-2 h-4 w-4" /> Edit
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => duplicateProfile.mutate(profile.id)}
-                      disabled={duplicateProfile.isPending}
-                    >
-                      <Copy className="mr-2 h-4 w-4" /> Duplicate
-                    </Button>
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive"
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                          align="end"
+                          className="w-44"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </Button>
-                      </AlertDialogTrigger>
+                          <DropdownMenuItem
+                            onClick={() => duplicateProfile.mutate(profile.id)}
+                            disabled={duplicateProfile.isPending}
+                          >
+                            <Copy className="h-4 w-4 mr-2" />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete profile?</AlertDialogTitle>

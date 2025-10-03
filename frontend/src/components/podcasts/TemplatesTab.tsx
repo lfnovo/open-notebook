@@ -133,16 +133,16 @@ export function TemplatesTab() {
           Loading templates…
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-          <EpisodeProfilesPanel
-            episodeProfiles={episodeProfiles}
-            speakerProfiles={speakerProfiles}
-            modelOptions={languageModelOptions}
-          />
+        <div className="grid gap-6 lg:grid-cols-2">
           <SpeakerProfilesPanel
             speakerProfiles={speakerProfiles}
             usage={usage}
             modelOptions={ttsModelOptions}
+          />
+          <EpisodeProfilesPanel
+            episodeProfiles={episodeProfiles}
+            speakerProfiles={speakerProfiles}
+            modelOptions={languageModelOptions}
           />
         </div>
       )}

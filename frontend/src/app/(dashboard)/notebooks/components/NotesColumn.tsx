@@ -8,7 +8,7 @@ import { Plus, StickyNote, Bot, User } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
-import { AddNoteDialog } from './AddNoteDialog'
+import { NoteEditorDialog } from './NoteEditorDialog'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '../[id]/page'
@@ -29,6 +29,7 @@ export function NotesColumn({
   onContextModeChange
 }: NotesColumnProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
+  const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
 
   return (
     <>
@@ -38,7 +39,10 @@ export function NotesColumn({
             <CardTitle className="text-lg">Notes</CardTitle>
             <Button
               size="sm"
-              onClick={() => setShowAddDialog(true)}
+              onClick={() => {
+                setEditingNote(null)
+                setShowAddDialog(true)
+              }}
             >
               <Plus className="h-4 w-4 mr-2" />
               Write Note
@@ -60,7 +64,11 @@ export function NotesColumn({
           ) : (
             <div className="space-y-3">
               {notes.map((note) => (
-                <div key={note.id} className="p-3 border rounded-lg card-hover group relative">
+                <div
+                  key={note.id}
+                  className="p-3 border rounded-lg card-hover group relative cursor-pointer"
+                  onClick={() => setEditingNote(note)}
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
                       {note.note_type === 'ai' ? (
@@ -80,11 +88,13 @@ export function NotesColumn({
 
                       {/* Context toggle - only show if handler provided */}
                       {onContextModeChange && contextSelections?.[note.id] && (
-                        <ContextToggle
-                          mode={contextSelections[note.id]}
-                          hasInsights={false}
-                          onChange={(mode) => onContextModeChange(note.id, mode)}
-                        />
+                        <div onClick={(event) => event.stopPropagation()}>
+                          <ContextToggle
+                            mode={contextSelections[note.id]}
+                            hasInsights={false}
+                            onChange={(mode) => onContextModeChange(note.id, mode)}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
@@ -105,10 +115,18 @@ export function NotesColumn({
         </CardContent>
       </Card>
 
-      <AddNoteDialog
-        open={showAddDialog}
-        onOpenChange={setShowAddDialog}
+      <NoteEditorDialog
+        open={showAddDialog || Boolean(editingNote)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAddDialog(false)
+            setEditingNote(null)
+          } else {
+            setShowAddDialog(true)
+          }
+        }}
         notebookId={notebookId}
+        note={editingNote ?? undefined}
       />
     </>
   )

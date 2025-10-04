@@ -12,11 +12,12 @@ export function useNotes(notebookId?: string) {
   })
 }
 
-export function useNote(id: string) {
+export function useNote(id?: string, options?: { enabled?: boolean }) {
+  const noteId = id ?? ''
   return useQuery({
-    queryKey: QUERY_KEYS.note(id),
-    queryFn: () => notesApi.get(id),
-    enabled: !!id,
+    queryKey: QUERY_KEYS.note(noteId),
+    queryFn: () => notesApi.get(noteId),
+    enabled: !!noteId && (options?.enabled ?? true),
   })
 }
 

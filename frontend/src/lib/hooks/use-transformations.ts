@@ -21,11 +21,12 @@ export function useTransformations() {
   })
 }
 
-export function useTransformation(id: string) {
+export function useTransformation(id?: string, options?: { enabled?: boolean }) {
+  const transformationId = id ?? ''
   return useQuery({
-    queryKey: TRANSFORMATION_QUERY_KEYS.transformation(id),
-    queryFn: () => transformationsApi.get(id),
-    enabled: !!id,
+    queryKey: TRANSFORMATION_QUERY_KEYS.transformation(transformationId),
+    queryFn: () => transformationsApi.get(transformationId),
+    enabled: !!transformationId && (options?.enabled ?? true),
   })
 }
 

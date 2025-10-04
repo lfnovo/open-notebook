@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/common/EmptyState'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Wand2 } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
-import { useCreateTransformation } from '@/lib/hooks/use-transformations'
+import { TransformationEditorDialog } from './TransformationEditorDialog'
 
 interface TransformationsListProps {
   transformations: Transformation[] | undefined
@@ -17,18 +17,12 @@ interface TransformationsListProps {
 }
 
 export function TransformationsList({ transformations, isLoading, onPlayground }: TransformationsListProps) {
-  const [newTransformationId, setNewTransformationId] = useState<string | null>(null)
-  const createTransformation = useCreateTransformation()
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editingTransformation, setEditingTransformation] = useState<Transformation | undefined>()
 
-  const handleCreateTransformation = async () => {
-    const result = await createTransformation.mutateAsync({
-      name: 'New Transformation',
-      title: 'New Transformation Title',
-      description: 'New Transformation Description',
-      prompt: 'New Transformation Prompt',
-      apply_default: false
-    })
-    setNewTransformationId(result.id)
+  const handleOpenEditor = (trans?: Transformation) => {
+    setEditingTransformation(trans)
+    setEditorOpen(true)
   }
 
   if (isLoading) {
@@ -46,7 +40,7 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
         title="No transformations yet"
         description="Create your first transformation to process and extract insights from your content."
         action={
-          <Button onClick={handleCreateTransformation} disabled={createTransformation.isPending}>
+          <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
             Create New Transformation
           </Button>
@@ -56,25 +50,38 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-lg font-semibold">Your Transformations</h2>
-        <Button onClick={handleCreateTransformation} disabled={createTransformation.isPending}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create New Transformation
-        </Button>
+    <>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Your Transformations</h2>
+          <Button onClick={() => handleOpenEditor()}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create New Transformation
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {transformations.map((transformation) => (
+            <TransformationCard
+              key={transformation.id}
+              transformation={transformation}
+              onPlayground={onPlayground ? () => onPlayground(transformation) : undefined}
+              onEdit={() => handleOpenEditor(transformation)}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="space-y-4">
-        {transformations.map((transformation) => (
-          <TransformationCard
-            key={transformation.id}
-            transformation={transformation}
-            isExpanded={transformation.id === newTransformationId}
-            onPlayground={onPlayground ? () => onPlayground(transformation) : undefined}
-          />
-        ))}
-      </div>
-    </div>
+      <TransformationEditorDialog
+        open={editorOpen}
+        onOpenChange={(open) => {
+          setEditorOpen(open)
+          if (!open) {
+            setEditingTransformation(undefined)
+          }
+        }}
+        transformation={editingTransformation}
+      />
+    </>
   )
 }

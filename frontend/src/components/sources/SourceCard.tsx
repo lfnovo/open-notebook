@@ -213,9 +213,7 @@ export function SourceCard({
   return (
     <Card
       className={cn(
-        'transition-all duration-200 hover:shadow-md group relative cursor-pointer',
-        statusConfig.borderColor,
-        'border-l-4',
+        'transition-all duration-200 hover:shadow-md group relative cursor-pointer border border-border/60 dark:border-border/40',
         className
       )}
       onClick={handleCardClick}

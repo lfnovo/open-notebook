@@ -97,6 +97,8 @@ async def create_source(source_data: SourceCreate):
                     status_code=400, detail="Content is required for text type"
                 )
             content_state["content"] = source_data.content
+            if source_data.title:
+                content_state["title"] = source_data.title
         else:
             raise HTTPException(
                 status_code=400,

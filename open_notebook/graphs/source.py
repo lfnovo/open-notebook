@@ -33,6 +33,9 @@ async def content_process(state: SourceState) -> dict:
     content_settings = ContentSettings()
     content_state: Dict[str, Any] = state["content_state"]
 
+    # Preserve the original title if provided
+    user_title = content_state.pop("title", None)
+
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
     )
@@ -42,6 +45,10 @@ async def content_process(state: SourceState) -> dict:
     content_state["output_format"] = "markdown"
 
     processed_state = await extract_content(content_state)
+
+    # User-provided titles always take precedence over automatically extracted ones
+    processed_state.title = user_title or getattr(processed_state, 'title', None)
+
     return {"content_state": processed_state}
 
 

@@ -100,15 +100,15 @@ export default function NotebookPage() {
 
   return (
     <AppShell>
-      <div className="h-full flex flex-col min-h-0 flex-1">
+      <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 p-6 pb-0">
           <NotebookHeader notebook={notebook} />
         </div>
 
-        <div className="flex-1 p-6 pt-6 overflow-hidden min-h-0">
+        <div className="flex-1 p-6 pt-6 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-0">
-              <div className="h-full overflow-hidden min-h-0 flex flex-col">
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
                 <SourcesColumn
                   sources={sources}
                   isLoading={sourcesLoading}
@@ -119,7 +119,7 @@ export default function NotebookPage() {
                   onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
                 />
               </div>
-              <div className="h-full overflow-hidden min-h-0 flex flex-col">
+              <div className="flex flex-col h-full min-h-0 overflow-hidden">
                 <NotesColumn
                   notes={notes}
                   isLoading={notesLoading}
@@ -130,7 +130,7 @@ export default function NotebookPage() {
               </div>
             </div>
 
-            <div className="h-full overflow-hidden min-h-0 flex flex-col">
+            <div className="flex flex-col h-full min-h-0 overflow-hidden">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}

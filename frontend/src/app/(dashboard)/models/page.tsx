@@ -44,17 +44,18 @@ export default function ModelsPage() {
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Model Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Configure AI models for different purposes across Open Notebook
-            </p>
-          </div>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Model Management</h1>
+              <p className="text-muted-foreground mt-1">
+                Configure AI models for different purposes across Open Notebook
+              </p>
+            </div>
+            <Button variant="outline" size="sm" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
         </div>
 
         <div className="grid gap-6">
@@ -91,6 +92,7 @@ export default function ModelsPage() {
               isLoading={modelsLoading}
             />
           </div>
+        </div>
         </div>
       </div>
     </AppShell>

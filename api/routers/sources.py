@@ -2,7 +2,16 @@ import os
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+)
+from fastapi.responses import FileResponse, Response
 from loguru import logger
 from surreal_commands import execute_command_sync
 
@@ -564,6 +573,45 @@ async def create_source_json(source_data: SourceCreate):
     return await create_source(form_data)
 
 
+async def _resolve_source_file(source_id: str) -> tuple[str, str]:
+    source = await Source.get(source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source not found")
+
+    file_path = source.asset.file_path if source.asset else None
+    if not file_path:
+        raise HTTPException(status_code=404, detail="Source has no file to download")
+
+    safe_root = os.path.realpath(UPLOADS_FOLDER)
+    resolved_path = os.path.realpath(file_path)
+
+    if not resolved_path.startswith(safe_root):
+        logger.warning(
+            f"Blocked download outside uploads directory for source {source_id}: {resolved_path}"
+        )
+        raise HTTPException(status_code=403, detail="Access to file denied")
+
+    if not os.path.exists(resolved_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+
+    filename = os.path.basename(resolved_path)
+    return resolved_path, filename
+
+
+def _is_source_file_available(source: Source) -> Optional[bool]:
+    if not source or not source.asset or not source.asset.file_path:
+        return None
+
+    file_path = source.asset.file_path
+    safe_root = os.path.realpath(UPLOADS_FOLDER)
+    resolved_path = os.path.realpath(file_path)
+
+    if not resolved_path.startswith(safe_root):
+        return False
+
+    return os.path.exists(resolved_path)
+
+
 @router.get("/sources/{source_id}", response_model=SourceResponse)
 async def get_source(source_id: str):
     """Get a specific source by ID."""
@@ -597,6 +645,7 @@ async def get_source(source_id: str):
             full_text=source.full_text,
             embedded=embedded_chunks > 0,
             embedded_chunks=embedded_chunks,
+            file_available=_is_source_file_available(source),
             created=str(source.created),
             updated=str(source.updated),
             # Status fields
@@ -609,6 +658,36 @@ async def get_source(source_id: str):
     except Exception as e:
         logger.error(f"Error fetching source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching source: {str(e)}")
+
+
+@router.head("/sources/{source_id}/download")
+async def check_source_file(source_id: str):
+    """Check if a source has a downloadable file."""
+    try:
+        await _resolve_source_file(source_id)
+        return Response(status_code=200)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error checking file for source {source_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to verify file")
+
+
+@router.get("/sources/{source_id}/download")
+async def download_source_file(source_id: str):
+    """Download the original file associated with an uploaded source."""
+    try:
+        resolved_path, filename = await _resolve_source_file(source_id)
+        return FileResponse(
+            path=resolved_path,
+            filename=filename,
+            media_type="application/octet-stream",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error downloading file for source {source_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to download source file")
 
 
 @router.get("/sources/{source_id}/status", response_model=SourceStatusResponse)

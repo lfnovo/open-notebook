@@ -29,6 +29,7 @@ export interface SourceListResponse {
   insights_count: number
   created: string
   updated: string
+  file_available?: boolean
   // ADD: Async processing fields from Python API
   command_id?: string
   status?: string

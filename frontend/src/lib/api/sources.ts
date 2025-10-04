@@ -1,3 +1,5 @@
+import type { AxiosResponse } from 'axios'
+
 import apiClient from './client'
 import { 
   SourceListResponse, 
@@ -90,5 +92,11 @@ export const sourcesApi = {
   retry: async (id: string) => {
     const response = await apiClient.post<SourceResponse>(`/sources/${id}/retry`)
     return response.data
-  }
+  },
+
+  downloadFile: async (id: string): Promise<AxiosResponse<Blob>> => {
+    return apiClient.get(`/sources/${id}/download`, {
+      responseType: 'blob',
+    })
+  },
 }

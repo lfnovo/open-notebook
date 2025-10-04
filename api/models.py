@@ -243,6 +243,7 @@ class SourceResponse(BaseModel):
     full_text: Optional[str]
     embedded: bool
     embedded_chunks: int
+    file_available: Optional[bool] = None
     created: str
     updated: str
     # New fields for async processing
@@ -261,6 +262,7 @@ class SourceListResponse(BaseModel):
     insights_count: int
     created: str
     updated: str
+    file_available: Optional[bool] = None
     # Status fields for async processing
     command_id: Optional[str] = None
     status: Optional[str] = None

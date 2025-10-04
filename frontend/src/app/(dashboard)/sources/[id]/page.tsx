@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { isAxiosError } from 'axios'
 import { useRouter, useParams } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
@@ -69,6 +70,8 @@ export default function SourceDetailPage() {
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isEmbedding, setIsEmbedding] = useState(false)
+  const [isDownloadingFile, setIsDownloadingFile] = useState(false)
+  const [fileAvailable, setFileAvailable] = useState<boolean | null>(null)
   const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
   const router = useRouter()
   const params = useParams()
@@ -89,6 +92,13 @@ export default function SourceDetailPage() {
       setLoading(true)
       const data = await sourcesApi.get(sourceId)
       setSource(data)
+      if (typeof data.file_available === 'boolean') {
+        setFileAvailable(data.file_available)
+      } else if (!data.asset?.file_path) {
+        setFileAvailable(null)
+      } else {
+        setFileAvailable(null)
+      }
     } catch (err) {
       console.error('Failed to fetch source:', err)
       setError('Failed to load source details')
@@ -190,6 +200,66 @@ export default function SourceDetailPage() {
       toast.error('Failed to embed content')
     } finally {
       setIsEmbedding(false)
+    }
+  }
+
+  const extractFilename = (pathOrUrl: string | undefined, fallback: string) => {
+    if (!pathOrUrl) {
+      return fallback
+    }
+    const segments = pathOrUrl.split(/[/\\]/)
+    return segments.pop() || fallback
+  }
+
+  const parseContentDisposition = (header?: string | null) => {
+    if (!header) {
+      return null
+    }
+    const match = header.match(/filename\*?=([^;]+)/i)
+    if (!match) {
+      return null
+    }
+    const value = match[1].trim()
+    if (value.toLowerCase().startsWith("utf-8''")) {
+      return decodeURIComponent(value.slice(7))
+    }
+    return value.replace(/^["']|["']$/g, '')
+  }
+
+  const handleDownloadFile = async () => {
+    if (!source?.asset?.file_path || isDownloadingFile || fileAvailable === false) {
+      return
+    }
+
+    try {
+      setIsDownloadingFile(true)
+      const response = await sourcesApi.downloadFile(source.id)
+      const filenameFromHeader = parseContentDisposition(
+        response.headers?.['content-disposition'] as string | undefined
+      )
+      const fallbackName = extractFilename(source.asset.file_path, `source-${source.id}`)
+      const filename = filenameFromHeader || fallbackName
+
+      const blobUrl = window.URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
+      setFileAvailable(true)
+      toast.success('Download started')
+    } catch (err) {
+      console.error('Failed to download file:', err)
+      if (isAxiosError(err) && err.response?.status === 404) {
+        setFileAvailable(false)
+        toast.error('Original file is no longer available on the server')
+      } else {
+        toast.error('Failed to download file')
+      }
+    } finally {
+      setIsDownloadingFile(false)
     }
   }
 
@@ -318,9 +388,16 @@ export default function SourceDetailPage() {
               <DropdownMenuContent align="end">
                 {source.asset?.file_path && (
                   <>
-                    <DropdownMenuItem disabled>
+                    <DropdownMenuItem
+                      onClick={handleDownloadFile}
+                      disabled={isDownloadingFile || fileAvailable === false}
+                    >
                       <Download className="mr-2 h-4 w-4" />
-                      Download File
+                      {fileAvailable === false
+                        ? 'File unavailable'
+                        : isDownloadingFile
+                          ? 'Preparing download…'
+                          : 'Download File'}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
@@ -643,11 +720,32 @@ export default function SourceDetailPage() {
                     )}
                     
                     {source.asset?.file_path && (
-                      <div>
-                        <h3 className="mb-2 text-sm font-semibold">File Path</h3>
-                        <code className="rounded bg-muted px-2 py-1 text-sm">
-                          {source.asset.file_path}
-                        </code>
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-semibold">Uploaded File</h3>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <code className="rounded bg-muted px-2 py-1 text-sm">
+                            {source.asset.file_path}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleDownloadFile}
+                            disabled={isDownloadingFile || fileAvailable === false}
+                          >
+                            <Download className="mr-2 h-4 w-4" />
+                            {fileAvailable === false
+                              ? 'Unavailable'
+                              : isDownloadingFile
+                                ? 'Preparing…'
+                                : 'Download'}
+                          </Button>
+                        </div>
+                        {fileAvailable === false ? (
+                          <p className="text-xs text-muted-foreground">
+                            Original file is no longer available on the server (likely removed after
+                            processing). Upload it again if you need a fresh copy.
+                          </p>
+                        ) : null}
                       </div>
                     )}
                     

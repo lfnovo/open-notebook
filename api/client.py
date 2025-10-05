@@ -240,14 +240,36 @@ class APIClient:
         return self._make_request("DELETE", f"/api/notes/{note_id}")
 
     # Embedding API methods
-    def embed_content(self, item_id: str, item_type: str) -> Dict:
+    def embed_content(self, item_id: str, item_type: str, async_processing: bool = False) -> Dict:
         """Embed content for vector search."""
         data = {
             "item_id": item_id,
             "item_type": item_type,
+            "async_processing": async_processing,
         }
         # Use extended timeout for embedding operations
         return self._make_request("POST", "/api/embed", json=data, timeout=120.0)
+
+    def rebuild_embeddings(
+        self,
+        mode: str = "existing",
+        include_sources: bool = True,
+        include_notes: bool = True,
+        include_insights: bool = True
+    ) -> Dict:
+        """Rebuild embeddings in bulk."""
+        data = {
+            "mode": mode,
+            "include_sources": include_sources,
+            "include_notes": include_notes,
+            "include_insights": include_insights,
+        }
+        # Use extended timeout for rebuild operations (up to 10 minutes)
+        return self._make_request("POST", "/api/embeddings/rebuild", json=data, timeout=600.0)
+
+    def get_rebuild_status(self, command_id: str) -> Dict:
+        """Get status of a rebuild operation."""
+        return self._make_request("GET", f"/api/embeddings/rebuild/{command_id}/status")
 
     # Settings API methods
     def get_settings(self) -> Dict:

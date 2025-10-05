@@ -36,6 +36,7 @@ import {
   Menu,
   FileText,
   Plus,
+  Wrench,
 } from 'lucide-react'
 
 const navigation = [
@@ -64,6 +65,7 @@ const navigation = [
       { name: 'Models', href: '/models', icon: Bot },
       { name: 'Transformations', href: '/transformations', icon: Shuffle },
       { name: 'Settings', href: '/settings', icon: Settings },
+      { name: 'Advanced', href: '/advanced', icon: Wrench },
     ],
   },
 ] as const

@@ -7,6 +7,7 @@ from api.routers import (
     chat,
     context,
     embedding,
+    embedding_rebuild,
     episode_profiles,
     insights,
     models,
@@ -25,6 +26,7 @@ from api.routers import (
 try:
     from loguru import logger
 
+    import commands.embedding_commands
     import commands.podcast_commands
 
     logger.info("Commands imported in API process")
@@ -58,6 +60,7 @@ app.include_router(models.router, prefix="/api", tags=["models"])
 app.include_router(transformations.router, prefix="/api", tags=["transformations"])
 app.include_router(notes.router, prefix="/api", tags=["notes"])
 app.include_router(embedding.router, prefix="/api", tags=["embedding"])
+app.include_router(embedding_rebuild.router, prefix="/api/embeddings", tags=["embeddings"])
 app.include_router(settings.router, prefix="/api", tags=["settings"])
 app.include_router(context.router, prefix="/api", tags=["context"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ModelDefaults, Model } from '@/lib/types/models'
 import { useUpdateModelDefaults } from '@/lib/hooks/use-models'
 import { AlertCircle, X } from 'lucide-react'
+import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
 
 interface DefaultModelsSectionProps {
   models: Model[]
@@ -78,6 +79,15 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
     defaultValues: defaults
   })
 
+  // State for embedding model change dialog
+  const [showEmbeddingDialog, setShowEmbeddingDialog] = useState(false)
+  const [pendingEmbeddingChange, setPendingEmbeddingChange] = useState<{
+    key: keyof ModelDefaults
+    value: string
+    oldModelId?: string
+    newModelId?: string
+  } | null>(null)
+
   // Update form when defaults change
   useEffect(() => {
     if (defaults) {
@@ -88,8 +98,41 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
   }, [defaults, setValue])
 
   const handleChange = (key: keyof ModelDefaults, value: string) => {
+    // Special handling for embedding model changes
+    if (key === 'default_embedding_model') {
+      const currentEmbeddingModel = defaults[key]
+
+      // Only show dialog if there's an existing embedding model and it's changing
+      if (currentEmbeddingModel && currentEmbeddingModel !== value) {
+        setPendingEmbeddingChange({
+          key,
+          value,
+          oldModelId: currentEmbeddingModel,
+          newModelId: value
+        })
+        setShowEmbeddingDialog(true)
+        return
+      }
+    }
+
+    // For all other changes or new embedding model assignment
     const newDefaults = { [key]: value || null }
     updateDefaults.mutate(newDefaults)
+  }
+
+  const handleConfirmEmbeddingChange = () => {
+    if (pendingEmbeddingChange) {
+      const newDefaults = {
+        [pendingEmbeddingChange.key]: pendingEmbeddingChange.value || null
+      }
+      updateDefaults.mutate(newDefaults)
+      setPendingEmbeddingChange(null)
+    }
+  }
+
+  const handleCancelEmbeddingChange = () => {
+    setPendingEmbeddingChange(null)
+    setShowEmbeddingDialog(false)
   }
 
   const getModelsForType = (type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text') => {
@@ -187,9 +230,9 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
         </div>
 
         <div className="pt-4 border-t">
-          <a 
-            href="https://github.com/lfnovo/open-notebook/blob/main/docs/models.md" 
-            target="_blank" 
+          <a
+            href="https://github.com/lfnovo/open-notebook/blob/main/docs/models.md"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
           >
@@ -197,6 +240,27 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
           </a>
         </div>
       </CardContent>
+
+      {/* Embedding Model Change Dialog */}
+      <EmbeddingModelChangeDialog
+        open={showEmbeddingDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCancelEmbeddingChange()
+          }
+        }}
+        onConfirm={handleConfirmEmbeddingChange}
+        oldModelName={
+          pendingEmbeddingChange?.oldModelId
+            ? models.find(m => m.id === pendingEmbeddingChange.oldModelId)?.name
+            : undefined
+        }
+        newModelName={
+          pendingEmbeddingChange?.newModelId
+            ? models.find(m => m.id === pendingEmbeddingChange.newModelId)?.name
+            : undefined
+        }
+      />
     </Card>
   )
 }

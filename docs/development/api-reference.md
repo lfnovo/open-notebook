@@ -1130,33 +1130,231 @@ Cancel/delete a command.
 
 ## 🏷️ Embedding API
 
-Manage vector embeddings for content.
+Manage vector embeddings for content. The embedding system supports both synchronous and asynchronous processing, as well as bulk rebuild operations for upgrading embeddings when switching models.
 
 ### POST /api/embed
 
-Generate embeddings for an item.
+Generate embeddings for an item (source, note, or insight).
 
 **Request Body**:
 ```json
 {
   "item_id": "source:uuid",
-  "item_type": "source"
+  "item_type": "source",
+  "async_processing": false
 }
 ```
 
-**Item Types**:
-- `source`: Source content
-- `note`: Note content
+**Parameters**:
+- `item_id` (string, required): ID of the item to embed
+- `item_type` (string, required): Type of item - `source`, `note`, or `insight`
+- `async_processing` (boolean, optional): Process in background (default: false)
 
-**Response**:
+**Behavior**:
+- Embedding operations are **idempotent** - calling multiple times safely replaces existing embeddings
+- For sources: Deletes existing chunks and creates new embeddings
+- For notes: Updates the note's embedding vector
+- For insights: Regenerates the insight's embedding vector
+
+**Response (Synchronous)**:
 ```json
 {
   "success": true,
-  "message": "Embedding generated successfully",
+  "message": "Source embedded successfully",
   "item_id": "source:uuid",
   "item_type": "source"
 }
 ```
+
+**Response (Asynchronous)**:
+```json
+{
+  "success": true,
+  "message": "Embedding queued for background processing",
+  "item_id": "source:uuid",
+  "item_type": "source",
+  "command_id": "command:uuid"
+}
+```
+
+**Example (Synchronous)**:
+```bash
+curl -X POST http://localhost:5055/api/embed \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "item_id": "source:abc123",
+    "item_type": "source",
+    "async_processing": false
+  }'
+```
+
+**Example (Asynchronous)**:
+```bash
+# Submit for background processing
+COMMAND_ID=$(curl -X POST http://localhost:5055/api/embed \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "item_id": "source:abc123",
+    "item_type": "source",
+    "async_processing": true
+  }' | jq -r '.command_id')
+
+# Check status
+curl -X GET http://localhost:5055/api/commands/$COMMAND_ID
+```
+
+### POST /api/embeddings/rebuild
+
+Rebuild embeddings for multiple items in bulk. Useful when switching embedding models or fixing corrupted embeddings.
+
+**Request Body**:
+```json
+{
+  "mode": "existing",
+  "include_sources": true,
+  "include_notes": true,
+  "include_insights": true
+}
+```
+
+**Parameters**:
+- `mode` (string, required): Rebuild mode
+  - `"existing"`: Re-embed only items that already have embeddings
+  - `"all"`: Re-embed existing items + create embeddings for items without any
+- `include_sources` (boolean, optional): Include sources in rebuild (default: true)
+- `include_notes` (boolean, optional): Include notes in rebuild (default: true)
+- `include_insights` (boolean, optional): Include insights in rebuild (default: true)
+
+**Response**:
+```json
+{
+  "command_id": "command:uuid",
+  "message": "Rebuild started successfully",
+  "estimated_items": 165
+}
+```
+
+**Example**:
+```bash
+# Rebuild all existing embeddings
+curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "mode": "existing",
+    "include_sources": true,
+    "include_notes": true,
+    "include_insights": true
+  }'
+
+# Rebuild and create new embeddings for everything
+curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "mode": "all",
+    "include_sources": true,
+    "include_notes": false,
+    "include_insights": false
+  }'
+```
+
+### GET /api/embeddings/rebuild/{command_id}/status
+
+Get the status and progress of a rebuild operation.
+
+**Path Parameters**:
+- `command_id` (string): Command ID returned from rebuild endpoint
+
+**Response (Running)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "running",
+  "progress": null,
+  "stats": null,
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": null,
+  "error_message": null
+}
+```
+
+**Response (Completed)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "completed",
+  "progress": {
+    "total_items": 165,
+    "processed_items": 165,
+    "failed_items": 0
+  },
+  "stats": {
+    "sources_processed": 115,
+    "notes_processed": 25,
+    "insights_processed": 25,
+    "processing_time": 125.5
+  },
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": "2024-01-01T12:02:05Z",
+  "error_message": null
+}
+```
+
+**Response (Failed)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "failed",
+  "progress": {
+    "total_items": 165,
+    "processed_items": 50,
+    "failed_items": 1
+  },
+  "stats": null,
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": "2024-01-01T12:01:00Z",
+  "error_message": "No embedding model configured"
+}
+```
+
+**Example**:
+```bash
+# Start rebuild
+COMMAND_ID=$(curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{"mode": "existing", "include_sources": true}' \
+  | jq -r '.command_id')
+
+# Poll for status
+while true; do
+  STATUS=$(curl -s -X GET \
+    "http://localhost:5055/api/embeddings/rebuild/$COMMAND_ID/status" \
+    -H "Authorization: Bearer YOUR_PASSWORD" \
+    | jq -r '.status')
+
+  echo "Status: $STATUS"
+
+  if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+    break
+  fi
+
+  sleep 5
+done
+
+# Get final results
+curl -X GET "http://localhost:5055/api/embeddings/rebuild/$COMMAND_ID/status" \
+  -H "Authorization: Bearer YOUR_PASSWORD" | jq .
+```
+
+**Status Values**:
+- `queued`: Rebuild job queued for processing
+- `running`: Rebuild in progress
+- `completed`: Rebuild finished successfully
+- `failed`: Rebuild failed with error
 
 ## 🚨 Error Responses
 

@@ -267,6 +267,17 @@ class Source(ObjectModel):
         EMBEDDING_MODEL = await model_manager.get_embedding_model()
 
         try:
+            # DELETE EXISTING EMBEDDINGS FIRST - Makes vectorize() idempotent
+            delete_result = await repo_query(
+                "DELETE source_embedding WHERE source = $source_id",
+                {"source_id": ensure_record_id(self.id)}
+            )
+            deleted_count = len(delete_result) if delete_result else 0
+            if deleted_count > 0:
+                logger.info(f"Deleted {deleted_count} existing embeddings for source {self.id}")
+            else:
+                logger.debug(f"No existing embeddings found for source {self.id}")
+
             if not self.full_text:
                 logger.warning(f"No text to vectorize for source {self.id}")
                 return

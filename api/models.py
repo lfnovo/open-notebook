@@ -163,6 +163,7 @@ class NoteResponse(BaseModel):
 class EmbedRequest(BaseModel):
     item_id: str = Field(..., description="ID of the item to embed")
     item_type: str = Field(..., description="Type of item (source, note)")
+    async_processing: bool = Field(False, description="Process asynchronously in background")
 
 
 class EmbedResponse(BaseModel):
@@ -170,6 +171,44 @@ class EmbedResponse(BaseModel):
     message: str = Field(..., description="Result message")
     item_id: str = Field(..., description="ID of the item that was embedded")
     item_type: str = Field(..., description="Type of item that was embedded")
+    command_id: Optional[str] = Field(None, description="Command ID for async processing")
+
+
+# Rebuild request/response models
+class RebuildRequest(BaseModel):
+    mode: Literal["existing", "all"] = Field(..., description="Rebuild mode: 'existing' only re-embeds items with embeddings, 'all' embeds everything")
+    include_sources: bool = Field(True, description="Include sources in rebuild")
+    include_notes: bool = Field(True, description="Include notes in rebuild")
+    include_insights: bool = Field(True, description="Include insights in rebuild")
+
+
+class RebuildResponse(BaseModel):
+    command_id: str = Field(..., description="Command ID to track progress")
+    total_items: int = Field(..., description="Estimated number of items to process")
+    message: str = Field(..., description="Status message")
+
+
+class RebuildProgress(BaseModel):
+    processed: int = Field(..., description="Number of items processed")
+    total: int = Field(..., description="Total items to process")
+    percentage: float = Field(..., description="Progress percentage")
+
+
+class RebuildStats(BaseModel):
+    sources: int = Field(0, description="Sources processed")
+    notes: int = Field(0, description="Notes processed")
+    insights: int = Field(0, description="Insights processed")
+    failed: int = Field(0, description="Failed items")
+
+
+class RebuildStatusResponse(BaseModel):
+    command_id: str = Field(..., description="Command ID")
+    status: str = Field(..., description="Status: queued, running, completed, failed")
+    progress: Optional[RebuildProgress] = None
+    stats: Optional[RebuildStats] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    error_message: Optional[str] = None
 
 
 # Settings API models

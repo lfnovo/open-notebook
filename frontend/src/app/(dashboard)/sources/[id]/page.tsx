@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { isAxiosError } from 'axios'
+import ReactMarkdown from 'react-markdown'
 import { useRouter, useParams } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
@@ -30,11 +31,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { 
-  ArrowLeft, 
-  FileText, 
-  Link as LinkIcon, 
-  Upload, 
+import {
+  ArrowLeft,
+  FileText,
+  Link as LinkIcon,
+  Upload,
   AlignLeft,
   Hash,
   ExternalLink,
@@ -47,17 +48,15 @@ import {
   Sparkles,
   Plus,
   Lightbulb,
-  ChevronDown,
-  ChevronRight,
   Database,
   AlertCircle,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
-import ReactMarkdown from 'react-markdown'
 import { useSourceChat } from '@/lib/hooks/useSourceChat'
 import { ChatPanel } from '@/components/source/ChatPanel'
 import { useNavigation } from '@/lib/hooks/use-navigation'
+import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
 
 export default function SourceDetailPage() {
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
@@ -72,7 +71,7 @@ export default function SourceDetailPage() {
   const [isEmbedding, setIsEmbedding] = useState(false)
   const [isDownloadingFile, setIsDownloadingFile] = useState(false)
   const [fileAvailable, setFileAvailable] = useState<boolean | null>(null)
-  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set())
+  const [selectedInsight, setSelectedInsight] = useState<SourceInsightResponse | null>(null)
   const router = useRouter()
   const params = useParams()
   const sourceId = decodeURIComponent(params.id as string)
@@ -315,18 +314,6 @@ export default function SourceDetailPage() {
     if (!source?.asset?.url) return null
     return getYouTubeVideoId(source.asset.url)
   }, [source?.asset?.url])
-
-  const toggleInsight = useCallback((insightId: string) => {
-    setExpandedInsights(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(insightId)) {
-        newSet.delete(insightId)
-      } else {
-        newSet.add(insightId)
-      }
-      return newSet
-    })
-  }, [])
 
   if (loading) {
     return (
@@ -585,74 +572,40 @@ export default function SourceDetailPage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {insights.map((insight) => {
-                        const isExpanded = expandedInsights.has(insight.id)
-                        const previewText = insight.content.slice(0, 150) + (insight.content.length > 150 ? '...' : '')
-                        
-                        return (
-                          <div
-                            key={insight.id}
-                            className="rounded-lg border bg-background"
-                          >
-                            <div 
-                              className="p-4 cursor-pointer hover:bg-muted/50 transition-colors"
-                              onClick={() => toggleInsight(insight.id)}
-                            >
-                              <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2">
-                                  {isExpanded ? (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                  <Badge variant="outline" className="text-xs">
-                                    {insight.insight_type}
-                                  </Badge>
-                                </div>
-                                {insight.created && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {(() => {
-                                      try {
-                                        const date = new Date(insight.created)
-                                        if (isNaN(date.getTime())) {
-                                          return 'Unknown date'
-                                        }
-                                        return formatDistanceToNow(date, { addSuffix: true })
-                                      } catch {
-                                        return 'Unknown date'
-                                      }
-                                    })()}
-                                  </span>
-                                )}
-                              </div>
-                              {!isExpanded && (
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                  {previewText}
-                                </p>
-                              )}
+                      {insights.map((insight) => (
+                        <div key={insight.id} className="rounded-lg border bg-background p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-xs uppercase">
+                                {insight.insight_type}
+                              </Badge>
                             </div>
-                            {isExpanded && (
-                              <div className="px-4 pb-4 border-t">
-                                <div className="mt-4 prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
-                                  <ReactMarkdown
-                                    components={{
-                                      p: ({ children }) => <p className="mb-4">{children}</p>,
-                                      h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
-                                      h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>,
-                                      h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
-                                      ul: ({ children }) => <ul className="mb-4 list-disc pl-6">{children}</ul>,
-                                      ol: ({ children }) => <ol className="mb-4 list-decimal pl-6">{children}</ol>,
-                                      li: ({ children }) => <li className="mb-1">{children}</li>,
-                                    }}
-                                  >
-                                    {insight.content}
-                                  </ReactMarkdown>
-                                </div>
-                              </div>
+                            {insight.created && (
+                              <span className="text-xs text-muted-foreground">
+                                {(() => {
+                                  try {
+                                    const date = new Date(insight.created)
+                                    if (isNaN(date.getTime())) {
+                                      return 'Unknown date'
+                                    }
+                                    return formatDistanceToNow(date, { addSuffix: true })
+                                  } catch {
+                                    return 'Unknown date'
+                                  }
+                                })()}
+                              </span>
                             )}
                           </div>
-                        )
-                      })}
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
+                          </p>
+                          <div className="mt-3 flex justify-end">
+                            <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>
+                              View Insight
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -839,6 +792,16 @@ export default function SourceDetailPage() {
           />
         </div>
       </div>
+
+      <SourceInsightDialog
+        open={Boolean(selectedInsight)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedInsight(null)
+          }
+        }}
+        insight={selectedInsight ?? undefined}
+      />
     </div>
   )
 }

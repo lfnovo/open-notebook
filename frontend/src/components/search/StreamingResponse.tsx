@@ -7,7 +7,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { CheckCircle, Sparkles, Lightbulb, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
-import Link from 'next/link'
+import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 
 interface StrategyData {
   reasoning: string
@@ -29,6 +30,12 @@ export function StreamingResponse({
 }: StreamingResponseProps) {
   const [strategyOpen, setStrategyOpen] = useState(false)
   const [answersOpen, setAnswersOpen] = useState(false)
+  const { openModal } = useModalManager()
+
+  const handleReferenceClick = (type: string, id: string) => {
+    const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
+    openModal(modalType, id)
+  }
 
   if (!strategy && !answers.length && !finalAnswer && !isStreaming) {
     return null
@@ -119,30 +126,10 @@ export function StreamingResponse({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
-              <ReactMarkdown
-                components={{
-                  a: ({ href, children, ...props }) => {
-                    // Check if it's a source reference link
-                    if (href?.startsWith('/?object_id=')) {
-                      return (
-                        <Link href={href} className="text-primary hover:underline">
-                          {children}
-                        </Link>
-                      )
-                    }
-                    // Regular external link
-                    return (
-                      <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                        {children}
-                      </a>
-                    )
-                  }
-                }}
-              >
-                {finalAnswer}
-              </ReactMarkdown>
-            </div>
+            <FinalAnswerContent
+              content={finalAnswer}
+              onReferenceClick={handleReferenceClick}
+            />
           </CardContent>
         </Card>
       )}
@@ -154,6 +141,33 @@ export function StreamingResponse({
           <span>Processing your question...</span>
         </div>
       )}
+    </div>
+  )
+}
+
+// Helper component to render final answer with clickable references
+function FinalAnswerContent({
+  content,
+  onReferenceClick
+}: {
+  content: string
+  onReferenceClick: (type: string, id: string) => void
+}) {
+  // Convert references to markdown links
+  const markdownWithLinks = convertReferencesToMarkdownLinks(content)
+
+  // Create custom link component
+  const LinkComponent = createReferenceLinkComponent(onReferenceClick)
+
+  return (
+    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
+      <ReactMarkdown
+        components={{
+          a: LinkComponent
+        }}
+      >
+        {markdownWithLinks}
+      </ReactMarkdown>
     </div>
   )
 }

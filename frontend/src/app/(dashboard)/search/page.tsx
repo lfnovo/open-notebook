@@ -16,11 +16,11 @@ import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
-import Link from 'next/link'
 
 export default function SearchPage() {
   // Search state
@@ -48,6 +48,7 @@ export default function SearchPage() {
   const ask = useAsk()
   const { data: modelDefaults, isLoading: modelsLoading } = useModelDefaults()
   const { data: availableModels } = useModels()
+  const { openModal } = useModalManager()
 
   const modelNameById = useMemo(() => {
     if (!availableModels) {
@@ -370,17 +371,22 @@ export default function SearchPage() {
                       </Card>
                     ) : (
                       <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                        {searchMutation.data.results.map((result, index) => (
+                        {searchMutation.data.results.map((result, index) => {
+                          // Parse type from parent_id (format: "source:id" or "note:id" or "source_insight:id")
+                          const [type, id] = result.parent_id.split(':')
+                          const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
+
+                          return (
                           <Card key={index}>
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
-                                  <Link
-                                    href={`/?object_id=${result.parent_id}`}
+                                  <button
+                                    onClick={() => openModal(modalType, id)}
                                     className="text-primary hover:underline font-medium"
                                   >
                                     {result.title}
-                                  </Link>
+                                  </button>
                                   <Badge variant="secondary" className="ml-2">
                                     {result.final_score.toFixed(2)}
                                   </Badge>
@@ -404,7 +410,7 @@ export default function SearchPage() {
                               )}
                             </CardContent>
                           </Card>
-                        ))}
+                        )})}
                       </div>
                     )}
                   </div>

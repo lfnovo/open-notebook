@@ -19,6 +19,11 @@ export const insightsApi = {
     return response.data
   },
 
+  get: async (insightId: string) => {
+    const response = await apiClient.get<SourceInsightResponse>(`/insights/${insightId}`)
+    return response.data
+  },
+
   create: async (sourceId: string, data: CreateSourceInsightRequest) => {
     const response = await apiClient.post<SourceInsightResponse>(
       `/sources/${sourceId}/insights`,

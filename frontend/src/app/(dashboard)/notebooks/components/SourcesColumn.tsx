@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +11,7 @@ import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useNavigation } from '@/lib/hooks/use-navigation'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
 
 interface SourcesColumnProps {
@@ -40,8 +39,7 @@ export function SourcesColumn({
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
 
-  const router = useRouter()
-  const navigation = useNavigation()
+  const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
@@ -94,15 +92,7 @@ export function SourcesColumn({
   }
 
   const handleSourceClick = (sourceId: string) => {
-    navigation.setReturnTo(
-      `/notebooks/${notebookId}`,
-      `Back to ${notebookName || 'Notebook'}`,
-      {
-        highlightItemId: sourceId,
-        scrollPosition: window.scrollY
-      }
-    )
-    router.push(`/sources/${sourceId}`)
+    openModal('source', sourceId)
   }
   return (
     <Card className="h-full flex flex-col flex-1 overflow-hidden">

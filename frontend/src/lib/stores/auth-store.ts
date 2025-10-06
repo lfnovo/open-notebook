@@ -8,6 +8,8 @@ interface AuthState {
   error: string | null
   lastAuthCheck: number | null
   isCheckingAuth: boolean
+  hasHydrated: boolean
+  setHasHydrated: (state: boolean) => void
   login: (password: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
@@ -22,7 +24,12 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       lastAuthCheck: null,
       isCheckingAuth: false,
-      
+      hasHydrated: false,
+
+      setHasHydrated: (state: boolean) => {
+        set({ hasHydrated: state })
+      },
+
       login: async (password: string) => {
         set({ isLoading: true, error: null })
         try {
@@ -160,10 +167,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         token: state.token,
-        isAuthenticated: state.isAuthenticated 
-      })
+        isAuthenticated: state.isAuthenticated
+      }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      }
     }
   )
 )

@@ -17,6 +17,8 @@ import {
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/source/SessionManager'
+import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -68,6 +70,12 @@ export function ChatPanel({
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { openModal } = useModalManager()
+
+  const handleReferenceClick = (type: string, id: string) => {
+    const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
+    openModal(modalType, id)
+  }
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -169,24 +177,10 @@ export function ChatPanel({
                     }`}
                   >
                     {message.type === 'ai' ? (
-                      <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
-                        <ReactMarkdown
-                          components={{
-                            p: ({ children }) => <p className="mb-4">{children}</p>,
-                            h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,
-                            h2: ({ children }) => <h2 className="mb-3 mt-5">{children}</h2>,
-                            h3: ({ children }) => <h3 className="mb-3 mt-4">{children}</h3>,
-                            h4: ({ children }) => <h4 className="mb-2 mt-4">{children}</h4>,
-                            h5: ({ children }) => <h5 className="mb-2 mt-3">{children}</h5>,
-                            h6: ({ children }) => <h6 className="mb-2 mt-3">{children}</h6>,
-                            li: ({ children }) => <li className="mb-1">{children}</li>,
-                            ul: ({ children }) => <ul className="mb-4 space-y-1">{children}</ul>,
-                            ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                      </div>
+                      <AIMessageContent
+                        content={message.content}
+                        onReferenceClick={handleReferenceClick}
+                      />
                     ) : (
                       <p className="text-sm">{message.content}</p>
                     )}
@@ -294,5 +288,42 @@ export function ChatPanel({
     </Card>
 
     </>
+  )
+}
+
+// Helper component to render AI messages with clickable references
+function AIMessageContent({
+  content,
+  onReferenceClick
+}: {
+  content: string
+  onReferenceClick: (type: string, id: string) => void
+}) {
+  // Convert references to markdown links
+  const markdownWithLinks = convertReferencesToMarkdownLinks(content)
+
+  // Create custom link component
+  const LinkComponent = createReferenceLinkComponent(onReferenceClick)
+
+  return (
+    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
+      <ReactMarkdown
+        components={{
+          a: LinkComponent,
+          p: ({ children }) => <p className="mb-4">{children}</p>,
+          h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,
+          h2: ({ children }) => <h2 className="mb-3 mt-5">{children}</h2>,
+          h3: ({ children }) => <h3 className="mb-3 mt-4">{children}</h3>,
+          h4: ({ children }) => <h4 className="mb-2 mt-4">{children}</h4>,
+          h5: ({ children }) => <h5 className="mb-2 mt-3">{children}</h5>,
+          h6: ({ children }) => <h6 className="mb-2 mt-3">{children}</h6>,
+          li: ({ children }) => <li className="mb-1">{children}</li>,
+          ul: ({ children }) => <ul className="mb-4 space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
+        }}
+      >
+        {markdownWithLinks}
+      </ReactMarkdown>
+    </div>
   )
 }

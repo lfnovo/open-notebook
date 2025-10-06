@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
+import { ModalProvider } from '@/components/providers/ModalProvider'
 
 export default function DashboardLayout({
   children,
@@ -19,9 +20,12 @@ export default function DashboardLayout({
     // Mark that we've completed the initial auth check
     if (!isLoading) {
       setHasCheckedAuth(true)
-      
+
       // Redirect to login if not authenticated
       if (!isAuthenticated) {
+        // Store the current path to redirect back after login
+        const currentPath = window.location.pathname + window.location.search
+        sessionStorage.setItem('redirectAfterLogin', currentPath)
         router.push('/login')
       }
     }
@@ -44,6 +48,7 @@ export default function DashboardLayout({
   return (
     <ErrorBoundary>
       {children}
+      <ModalProvider />
     </ErrorBoundary>
   )
 }

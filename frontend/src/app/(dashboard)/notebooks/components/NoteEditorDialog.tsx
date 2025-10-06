@@ -31,7 +31,13 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   const updateNote = useUpdateNote()
   const queryClient = useQueryClient()
   const isEditing = Boolean(note)
-  const { data: fetchedNote, isLoading: noteLoading } = useNote(note?.id ?? '', { enabled: open && !!note?.id })
+
+  // Ensure note ID has 'note:' prefix for API calls
+  const noteIdWithPrefix = note?.id
+    ? (note.id.includes(':') ? note.id : `note:${note.id}`)
+    : ''
+
+  const { data: fetchedNote, isLoading: noteLoading } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
   const isSaving = isEditing ? updateNote.isPending : createNote.isPending
   const {
     handleSubmit,
@@ -64,14 +70,22 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   const onSubmit = async (data: CreateNoteFormData) => {
     if (note) {
       await updateNote.mutateAsync({
-        id: note.id,
+        id: noteIdWithPrefix,
         data: {
           title: data.title || undefined,
           content: data.content,
         },
       })
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes(notebookId) })
+      // Only invalidate notebook-specific queries if we have a notebookId
+      if (notebookId) {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes(notebookId) })
+      }
     } else {
+      // Creating a note requires a notebookId
+      if (!notebookId) {
+        console.error('Cannot create note without notebook_id')
+        return
+      }
       await createNote.mutateAsync({
         title: data.title || undefined,
         content: data.content,

@@ -7,6 +7,7 @@
 [![MIT License][license-shield]][license-url]
 <!-- [![LinkedIn][linkedin-shield]][linkedin-url] -->
 
+**RUN OUR VERSION BY JUST DOING ** make start-all
 
 <!-- PROJECT LOGO -->
 <br />

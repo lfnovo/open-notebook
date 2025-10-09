@@ -13,23 +13,14 @@ Open Deep Research is a configurable, fully open-source deep research agent that
 - `LICENSE` - MIT license
 - `.env.example` - Environment variables template (not tracked)
 
-### Core Implementation (`src/open_deep_research/`)
+### Core Implementation (`open_deep_research/`)
 - `deep_researcher.py` - Main LangGraph implementation (entry point: `deep_researcher`)
 - `configuration.py` - Configuration management and settings
-- `state.py` - Graph state definitions and data structures  
+- `state.py` - Graph state definitions and data structures
 - `prompts.py` - System prompts and prompt templates
 - `utils.py` - Utility functions and helpers
-- `files/` - Research output and example files
 
-### Legacy Implementations (`src/legacy/`)
-Contains two earlier research implementations:
-- `graph.py` - Plan-and-execute workflow with human-in-the-loop
-- `multi_agent.py` - Supervisor-researcher multi-agent architecture
-- `legacy.md` - Documentation for legacy implementations
-- `CLAUDE.md` - Legacy-specific Claude instructions
-- `tests/` - Legacy-specific tests
-
-### Security (`src/security/`)
+### Security (`security/`)
 - `auth.py` - Authentication handler for LangGraph deployment
 
 ### Testing (`tests/`)

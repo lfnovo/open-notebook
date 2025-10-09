@@ -11,7 +11,7 @@ database:
 
 run:
 	@echo "⚠️  Warning: Starting UI only. For full functionality, use 'make start-all'"
-	PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py
+	PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py
 
 lint:
 	uv run python -m mypy .
@@ -85,7 +85,7 @@ full:
 
 
 api:
-	PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env run_api.py &
+	PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env run_api.py &
 
 # === Worker Management ===
 .PHONY: worker worker-start worker-stop worker-restart
@@ -94,7 +94,7 @@ worker: worker-start
 
 worker-start:
 	@echo "Starting surreal-commands worker..."
-	PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env surreal-commands-worker --import-modules commands
+	PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env surreal-commands-worker --import-modules commands
 
 worker-stop:
 	@echo "Stopping surreal-commands worker..."
@@ -111,17 +111,17 @@ start-all:
 	@docker compose up -d surrealdb
 	@sleep 3
 	@echo "🔧 Starting API backend..."
-	@PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env run_api.py &
+	@PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env run_api.py &
 	@sleep 3
 	@echo "⚙️ Starting background worker..."
-	@PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env surreal-commands-worker --import-modules commands &
+	@PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env surreal-commands-worker --import-modules commands &
 	@sleep 2
 	@echo "🌐 Starting Streamlit UI..."
 	@echo "✅ All services started!"
 	@echo "📱 UI: http://localhost:8502"
 	@echo "🔗 API: http://localhost:5055"
 	@echo "📚 API Docs: http://localhost:5055/docs"
-	PYTHONPATH=.:open_deep_research/src:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py
+	@PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py --server.port 8502
 
 stop-all:
 	@echo "🛑 Stopping all Open Notebook services..."

@@ -1,7 +1,7 @@
 {
     "dockerfile_lines": [],
     "graphs": {
-      "Deep Researcher": "./src/open_deep_research/deep_researcher.py:deep_researcher"
+      "Deep Researcher": "./deep_researcher.py:deep_researcher"
     },
     "python_version": "3.11",
     "env": "./.env",
@@ -9,6 +9,6 @@
       "."
     ],
     "auth": {
-      "path": "./src/security/auth.py:auth"
+      "path": "./security/auth.py:auth"
     }
 }

@@ -100,7 +100,6 @@ response = model.chat_complete(messages)
 - **Chat**: Context-aware conversations
 - **Ask**: Multi-step question answering
 - **Transformations**: Content summarization and analysis
-- **Podcast Generation**: Advanced multi-speaker content
 
 ### 4. Background Processing
 - Commands system for long-running tasks

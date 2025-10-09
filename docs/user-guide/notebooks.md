@@ -287,7 +287,6 @@ Each notebook maintains its own configuration:
 **Content Export:**
 - Individual source materials with annotations
 - Generated notes and AI insights
-- Podcast episodes and audio content
 - Search results and analysis summaries
 
 **Integration Export:**

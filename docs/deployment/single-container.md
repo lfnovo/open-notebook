@@ -7,7 +7,7 @@ For users who prefer an all-in-one container solution (e.g., PikaPods, Railway, 
 The single-container deployment packages everything you need:
 - **SurrealDB**: Database service
 - **FastAPI**: REST API backend  
-- **Background Worker**: For podcast generation and transformations
+- **Background Worker**: For background transformations and embeddings
 - **Streamlit**: Web UI interface
 
 All services are managed by supervisord with proper startup ordering, making it perfect for platforms that prefer single-container deployments.

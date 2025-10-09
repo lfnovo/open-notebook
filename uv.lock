@@ -2763,7 +2763,6 @@ dependencies = [
     { name = "nest-asyncio" },
     { name = "openai" },
     { name = "pandas" },
-    { name = "podcast-creator" },
     { name = "pydantic" },
     { name = "pymupdf" },
     { name = "pytest" },
@@ -2844,7 +2843,6 @@ requires-dist = [
     { name = "nest-asyncio", specifier = ">=1.6.0" },
     { name = "openai", specifier = ">=1.99.2" },
     { name = "pandas", specifier = ">=2.3.1" },
-    { name = "podcast-creator", specifier = ">=0.7.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pymupdf", specifier = ">=1.25.3" },
@@ -3177,30 +3175,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
-]
-
-[[package]]
-name = "podcast-creator"
-version = "0.7.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "ai-prompter" },
-    { name = "click" },
-    { name = "content-core" },
-    { name = "esperanto" },
-    { name = "langchain-openai" },
-    { name = "langgraph" },
-    { name = "loguru" },
-    { name = "moviepy" },
-    { name = "nest-asyncio" },
-    { name = "pydub" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "tiktoken" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/38/ea/8ac4ad9765f11af258e85abd37152cb655c3932e5bdce7e700c90251fcd7/podcast_creator-0.7.0.tar.gz", hash = "sha256:1bdb978bb22ec7b9d9e0fb1b2ee45128fe726f811d5018a58f8cbd25e4094a8b", size = 342934, upload-time = "2025-08-01T09:56:57.982Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/1b/3cacbb5545f6a7e18d3f081fa03679e009224d4eb7a54eab6a4b29fbe154/podcast_creator-0.7.0-py3-none-any.whl", hash = "sha256:b95b6942509c5a130464f416ebaeb51f62af4584a7b32303212362ac7b345c45", size = 116644, upload-time = "2025-08-01T09:56:56.795Z" },
 ]
 
 [[package]]

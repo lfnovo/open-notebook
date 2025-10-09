@@ -169,9 +169,8 @@ Congratulations! You've successfully created your first notebook and experienced
 ### Advanced Features to Try:
 
 1. **Custom Transformations**: Create your own analysis prompts for specific research needs
-2. **Podcast Generation**: Convert your research into audio summaries
-3. **Advanced Context Management**: Experiment with different context settings for optimal AI interactions
-4. **Source Organization**: Develop a system for categorizing and managing your sources
+2. **Advanced Context Management**: Experiment with different context settings for optimal AI interactions
+3. **Source Organization**: Develop a system for categorizing and managing your sources
 
 ### Best Practices to Develop:
 

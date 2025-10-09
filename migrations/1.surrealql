@@ -59,7 +59,6 @@ DEFINE TABLE IF NOT EXISTS artifact
 TYPE RELATION 
 FROM note TO notebook;
 
-DEFINE TABLE IF NOT EXISTS podcast_config SCHEMALESS;
 
 -- entender o analyzer
 DEFINE ANALYZER IF NOT EXISTS my_analyzer TOKENIZERS blank,class,camel,punct FILTERS snowball(english), lowercase;

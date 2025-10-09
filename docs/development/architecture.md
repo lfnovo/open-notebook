@@ -211,40 +211,12 @@ DEFINE FIELD prompt ON TABLE transformation TYPE string;
 DEFINE FIELD apply_default ON TABLE transformation TYPE bool DEFAULT false;
 ```
 
-#### `episode_profile` (Podcast Generation)
-```surrealql
-DEFINE TABLE episode_profile SCHEMAFULL;
-DEFINE FIELD name ON TABLE episode_profile TYPE string;
-DEFINE FIELD description ON TABLE episode_profile TYPE option<string>;
-DEFINE FIELD speaker_config ON TABLE episode_profile TYPE string;
-DEFINE FIELD outline_provider ON TABLE episode_profile TYPE string;
-DEFINE FIELD outline_model ON TABLE episode_profile TYPE string;
-DEFINE FIELD transcript_provider ON TABLE episode_profile TYPE string;
-DEFINE FIELD transcript_model ON TABLE episode_profile TYPE string;
-DEFINE FIELD default_briefing ON TABLE episode_profile TYPE string;
-DEFINE FIELD num_segments ON TABLE episode_profile TYPE int DEFAULT 5;
-```
-
-#### `speaker_profile` (Podcast Generation)
-```surrealql
-DEFINE TABLE speaker_profile SCHEMAFULL;
-DEFINE FIELD name ON TABLE speaker_profile TYPE string;
-DEFINE FIELD description ON TABLE speaker_profile TYPE option<string>;
-DEFINE FIELD tts_provider ON TABLE speaker_profile TYPE string;
-DEFINE FIELD tts_model ON TABLE speaker_profile TYPE string;
-DEFINE FIELD speakers ON TABLE speaker_profile TYPE array<object>;
-DEFINE FIELD speakers.*.name ON TABLE speaker_profile TYPE string;
-DEFINE FIELD speakers.*.voice_id ON TABLE speaker_profile TYPE option<string>;
-DEFINE FIELD speakers.*.backstory ON TABLE speaker_profile TYPE option<string>;
-DEFINE FIELD speakers.*.personality ON TABLE speaker_profile TYPE option<string>;
-```
 
 ### Relationships
 
 **Record Links** (SurrealDB native relationships):
 - `source.notebook_id` → `notebook` records
 - `note.notebook_id` → `notebook` records
-- `episode.command` → `command` records
 
 **Embedding Relationships**:
 - Sources and notes can have vector embeddings for semantic search
@@ -377,37 +349,6 @@ async def vector_search(
     # 2. Calculate similarity scores
     # 3. Filter by minimum score
     # 4. Rank and return results
-```
-
-## 🎙️ Podcast Generation Architecture
-
-### Multi-Speaker Podcast System
-
-The podcast generation feature uses a sophisticated multi-step process:
-
-**Episode Profiles**: Define the structure and style of podcasts
-- Speaker configuration
-- Content outline generation
-- Transcript creation
-- Audio synthesis
-
-**Speaker Profiles**: Define individual speaker characteristics
-- Voice selection (TTS models)
-- Personality traits
-- Background information
-- Speaking patterns
-
-### Podcast Generation Flow
-
-```mermaid
-graph TB
-    A[Content Input] --> B[Episode Profile Selection]
-    B --> C[Outline Generation]
-    C --> D[Transcript Creation]
-    D --> E[Speaker Assignment]
-    E --> F[Audio Synthesis]
-    F --> G[Audio Post-Processing]
-    G --> H[Final Podcast]
 ```
 
 ## 📊 Performance Considerations

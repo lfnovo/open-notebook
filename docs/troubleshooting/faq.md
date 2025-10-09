@@ -9,7 +9,6 @@ This document addresses common questions about Open Notebook usage, configuratio
 Open Notebook is an open-source, privacy-focused alternative to Google's Notebook LM. It allows you to:
 - Create and manage research notebooks
 - Chat with your documents using AI
-- Generate podcasts from your content
 - Search across all your sources with semantic search
 - Transform and analyze your content
 
@@ -327,7 +326,6 @@ tar -xzf backup-20240101.tar.gz
 **Current focus**:
 - Stability and performance improvements
 - Additional AI provider support
-- Enhanced podcast generation
 - Better mobile experience
 
 **Future plans**:

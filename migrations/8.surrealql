@@ -1,0 +1,11 @@
+-- Remove legacy podcast-related tables and indexes
+REMOVE INDEX IF EXISTS idx_episode_profile_name ON TABLE episode_profile;
+REMOVE INDEX IF EXISTS idx_speaker_profile_name ON TABLE speaker_profile;
+REMOVE INDEX IF EXISTS idx_episode_profile ON TABLE episode;
+REMOVE INDEX IF EXISTS idx_episode_command ON TABLE episode;
+
+REMOVE TABLE IF EXISTS episode_profile;
+REMOVE TABLE IF EXISTS speaker_profile;
+REMOVE TABLE IF EXISTS episode;
+REMOVE TABLE IF EXISTS podcast_episode;
+REMOVE TABLE IF EXISTS podcast_config;

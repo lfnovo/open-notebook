@@ -104,7 +104,7 @@ Open Notebook consists of four main services that work together:
 
 ### 3. **Background Worker**
 - **Purpose**: Processes long-running tasks asynchronously
-- **Tasks**: Podcast generation, content transformations, embeddings
+- **Tasks**: Content transformations, embeddings, other background jobs
 - **Technology**: Surreal Commands worker system
 
 ### 4. **Streamlit UI** (Port 8502)
@@ -470,7 +470,7 @@ After installation, configure your AI models for optimal performance:
 - `text-embedding-004` (Google) - Generous free tier
 - `mistral-embed` (Mistral) - European alternative
 
-#### Text-to-Speech (Podcast Generation)
+#### Text-to-Speech (Audio Narration)
 **High Quality:**
 - `eleven_turbo_v2_5` (ElevenLabs) - Best voice quality
 - `tts-1` (OpenAI) - Good quality, reliable
@@ -590,12 +590,6 @@ curl http://localhost:8502/healthz
 1. Select a source
 2. Click "Transform" → "Summarize"
 3. Verify transformation completes successfully
-
-#### Test Podcast Generation
-1. Add substantial content to your notebook
-2. Navigate to "Podcast" tab
-3. Click "Generate Podcast"
-4. Wait for background processing to complete
 
 ---
 

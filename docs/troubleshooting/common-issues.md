@@ -275,11 +275,10 @@ This document covers the most frequently encountered issues when installing, con
 
 ### Background Job Failures
 
-**Problem**: Background tasks (podcast generation, transformations) failing.
+**Problem**: Background tasks (transformations, embeddings) failing.
 
 **Symptoms**:
 - Jobs stuck in "processing" state
-- No podcast audio generated
 - Transformations not completing
 
 **Solutions**:

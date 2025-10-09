@@ -37,12 +37,6 @@ The chat interface provides AI interaction capabilities:
 - **Context Display**: Shows what content is available to the AI (token count and character count)
 - **Input Field**: Type questions and interact with your knowledge base
 
-#### Podcast Tab
-- **Episode Generation**: Create podcast episodes from your research materials
-- **Profile Selection**: Choose from pre-configured episode profiles
-- **Speaker Configuration**: Select and customize podcast speakers
-- **Generation Controls**: Start podcast creation with custom instructions
-
 ## Navigation Structure
 
 ### Main Navigation
@@ -50,7 +44,6 @@ Open Notebook uses a page-based navigation system accessible through the sidebar
 
 - **📒 Notebooks**: Main workspace for research projects
 - **🔍 Ask and Search**: Query your knowledge base across all notebooks
-- **🎙️ Podcasts**: Manage podcast profiles and view generated episodes
 - **🤖 Models**: Configure AI providers and model settings
 - **💱 Transformations**: Create and manage content transformation prompts
 - **⚙️ Settings**: Application configuration and preferences
@@ -201,7 +194,6 @@ The following screenshots illustrate key interface elements:
 - **Transformations**: ![Transformations](/assets/transformations.png) - Content transformation tools
 - **Human Note**: ![Human Note](/assets/human_note.png) - Manual note creation
 - **AI Note**: ![AI Note](/assets/ai_note.png) - AI-generated note saving
-- **Podcast Interface**: ![Podcast](/assets/podcast_listen.png) - Podcast generation interface
 - **Search**: ![Search](/assets/search.png) - Search and discovery interface
 
 ## Keyboard Shortcuts

@@ -107,13 +107,6 @@ This document proposes a complete restructuring of Open Notebook's documentation
   - Batch processing
   - Transformation management
 
-- **podcasts.md**
-  - Podcast generation overview
-  - Episode profiles and speakers
-  - Audio quality settings
-  - Background processing
-  - Sharing and export options
-
 - **citations.md**
   - Citation system overview
   - Asking questions with citations

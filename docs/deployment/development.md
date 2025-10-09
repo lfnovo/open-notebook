@@ -403,7 +403,7 @@ class Notebook(BaseModel):
 Follow conventional commits:
 
 ```
-feat: add new podcast generation feature
+feat: add new research synthesis feature
 fix: resolve database connection issue
 docs: update deployment guide
 refactor: improve source processing logic

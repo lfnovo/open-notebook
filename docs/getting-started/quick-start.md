@@ -109,7 +109,6 @@ Now that you have Open Notebook running:
 ### Essential Features to Explore
 - **📁 [Content Support](../content-support.md)** - Learn what file types you can add
 - **🔍 [Search](../search.md)** - Master full-text and vector search
-- **🎙️ [Podcast Generation](../features/podcasts.md)** - Create multi-speaker podcasts from your research
 - **⚙️ [Transformations](../features/transformations.md)** - Extract insights and summaries
 
 ### Advanced Setup

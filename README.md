@@ -7,6 +7,7 @@
 [![MIT License][license-shield]][license-url]
 <!-- [![LinkedIn][linkedin-shield]][linkedin-url] -->
 
+**RUN OUR VERSION BY JUST DOING ** make start-all
 
 <!-- PROJECT LOGO -->
 <br />
@@ -50,7 +51,6 @@ In a world dominated by Artificial Intelligence, having the ability to think �
 - 🔒 **Control your data** - Keep your research private and secure
 - 🤖 **Choose your AI models** - Support for 16+ providers including OpenAI, Anthropic, Ollama, LM Studio, and more
 - 📚 **Organize multi-modal content** - PDFs, videos, audio, web pages, and more
-- 🎙️ **Generate professional podcasts** - Advanced multi-speaker podcast generation
 - 🔍 **Search intelligently** - Full-text and vector search across all your content
 - 💬 **Chat with context** - AI conversations powered by your research
 
@@ -62,7 +62,6 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 |---------|---------------|--------------------|-----------|
 | **Privacy & Control** | Self-hosted, your data | Google cloud only | Complete data sovereignty |
 | **AI Provider Choice** | 16+ providers (OpenAI, Anthropic, Ollama, LM Studio, etc.) | Google models only | Flexibility and cost optimization |
-| **Podcast Speakers** | 1-4 speakers with custom profiles | 2 speakers only | Extreme flexibility |
 | **Context Control** | 3 granular levels | All-or-nothing | Privacy and performance tuning |
 | **Content Transformations** | Custom and built-in | Limited options | Unlimited processing power |
 | **API Access** | Full REST API | No API | Complete automation |
@@ -74,7 +73,6 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 **Why Choose Open Notebook?**
 - 🔒 **Privacy First**: Your sensitive research stays completely private
 - 💰 **Cost Control**: Choose cheaper AI providers or run locally with Ollama
-- 🎙️ **Better Podcasts**: Full script control and multi-speaker flexibility vs limited 2-speaker deep-dive format
 - 🔧 **Unlimited Customization**: Modify, extend, and integrate as needed
 - 🌐 **No Vendor Lock-in**: Switch providers, deploy anywhere, own your data
 
@@ -163,7 +161,6 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **🎯 Multi-Notebook Organization**: Manage multiple research projects seamlessly
 - **📚 Universal Content Support**: PDFs, videos, audio, web pages, Office docs, and more
 - **🤖 Multi-Model AI Support**: 16+ providers including OpenAI, Anthropic, Ollama, Google, LM Studio, and more
-- **🎙️ Professional Podcast Generation**: Advanced multi-speaker podcasts with Episode Profiles
 - **🔍 Intelligent Search**: Full-text and vector search across all your content
 - **💬 Context-Aware Chat**: AI conversations powered by your research materials
 - **📝 AI-Assisted Notes**: Generate insights or write notes manually
@@ -180,8 +177,6 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 1. **Sources**: Manage all your research materials
 2. **Notes**: Create manual or AI-generated notes
 3. **Chat**: Converse with AI using your content as context
-
-[![Check out our podcast sample](https://img.youtube.com/vi/D-760MlGwaI/0.jpg)](https://www.youtube.com/watch?v=D-760MlGwaI)
 
 ## 📚 Documentation
 
@@ -200,7 +195,6 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **[🔍 Search](docs/user-guide/search.md)** - Finding information
 
 ### Advanced Topics
-- **[🎙️ Podcast Generation](docs/features/podcasts.md)** - Create professional podcasts
 - **[🔧 Content Transformations](docs/features/transformations.md)** - Customize content processing
 - **[🤖 AI Models](docs/features/ai-models.md)** - AI model configuration
 - **[🔧 REST API Reference](docs/development/api-reference.md)** - Complete API documentation
@@ -221,7 +215,6 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 ### Recently Completed ✅
 - **Comprehensive REST API**: Full programmatic access to all functionality
 - **Multi-Model Support**: 16+ AI providers including OpenAI, Anthropic, Ollama, LM Studio
-- **Advanced Podcast Generator**: Professional multi-speaker podcasts with Episode Profiles
 - **Content Transformations**: Powerful customizable actions for content processing
 - **Enhanced Citations**: Improved layout and finer control for source citations
 - **Multiple Chat Sessions**: Manage different conversations within notebooks
@@ -270,7 +263,6 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 
 Open Notebook is built on the shoulders of amazing open-source projects:
 
-* **[Podcast Creator](https://github.com/lfnovo/podcast-creator)** - Advanced podcast generation capabilities
 * **[Surreal Commands](https://github.com/lfnovo/surreal-commands)** - Background job processing
 * **[Content Core](https://github.com/lfnovo/content-core)** - Content processing and management
 * **[Esperanto](https://github.com/lfnovo/esperanto)** - Multi-provider AI model abstraction

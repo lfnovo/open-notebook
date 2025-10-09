@@ -39,7 +39,6 @@ Deep dives into what makes Open Notebook special.
 - **[AI Models](features/ai-models.md)** - Multi-provider AI support
 - **[Context Management](features/context-management.md)** - Granular privacy control
 - **[Transformations](features/transformations.md)** - Custom content processing
-- **[Podcasts](features/podcasts.md)** - Multi-speaker podcast generation
 - **[Citations](features/citations.md)** - Research integrity support
 - **[REST API](development/api-reference.md)** - [![API Docs](https://img.shields.io/badge/API-Documentation-blue?style=flat-square)](http://localhost:5055/docs) Complete programmatic access
 
@@ -90,7 +89,7 @@ Common ways to use Open Notebook effectively:
 Sources → Transformations → Context Management → Citations → Notes
 
 ### 📝 **Content Creation**
-Sources → AI Models → Transformations → Podcasts → Export
+Sources → AI Models → Transformations → Export
 
 ### 🧠 **Learning & Study**
 Sources → Search → Notes → Chat → Transformations
@@ -107,7 +106,6 @@ Context Management → Citations → Transformations → Sharing
 | **Privacy** | Self-hosted | Cloud-only | Complete control |
 | **AI Providers** | 15+ providers | Google only | Flexibility |
 | **Context Control** | 3 granular levels | All-or-nothing | Privacy & performance |
-| **Podcasts** | 1-4 speakers | 2 speakers | Professional quality |
 | **Transformations** | Custom & built-in | Limited | Unlimited processing |
 | **Citations** | Comprehensive | Basic | Research integrity |
 

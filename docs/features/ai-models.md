@@ -45,9 +45,9 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 - **Usage**: Power the search functionality across your content
 
 ### 🎙️ Text-to-Speech (TTS)
-- **Purpose**: Generate podcasts and audio content
+- **Purpose**: Generate audio narration from your content
 - **Key Features**: Natural-sounding voice synthesis
-- **Usage**: Convert your notes and research into professional podcasts
+- **Usage**: Convert your notes and research into spoken summaries or learning aids
 
 ### 🎧 Speech-to-Text (STT)
 - **Purpose**: Transcribe audio and video files
@@ -593,7 +593,7 @@ export ELEVENLABS_API_KEY=your-key-here
 ```
 - Get your API key from [ElevenLabs](https://elevenlabs.io/)
 - Premium voice synthesis
-- Excellent for podcast generation
+- Excellent for high-quality audio narration
 
 ## Advanced Configuration
 

@@ -49,7 +49,7 @@ Step-by-step guide to creating your first notebook and experiencing core feature
 
 After completing this section, explore:
 - **[User Guide](../user-guide/index.md)** - Deep dive into all features
-- **[Features](../features/index.md)** - Advanced capabilities like podcasts and transformations
+- **[Features](../features/index.md)** - Advanced capabilities like transformations and citations
 - **[Deployment](../deployment/index.md)** - Production deployment options
 
 ## Need Help?

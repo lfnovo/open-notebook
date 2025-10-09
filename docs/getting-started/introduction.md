@@ -14,9 +14,6 @@ Unlike cloud-based alternatives, Open Notebook runs entirely on your infrastruct
 ### 🤖 Multi-Model AI Support
 Choose from industry-leading AI providers including OpenAI, Anthropic (Claude), Google (Gemini), Mistral, DeepSeek, Ollama (free/local), and many more. This flexibility ensures you're never locked into a single provider and can optimize for cost, performance, or specific capabilities.
 
-### 🎙️ Advanced Podcast Generation
-Transform your research into engaging podcasts with 1-4 customizable speakers—a significant improvement over Google Notebook LM's 2-speaker limitation. Create professional-quality audio content with Episode Profiles for consistent, branded output.
-
 ### 📚 Comprehensive Content Integration
 Process diverse content types including:
 - Web links and articles
@@ -49,7 +46,6 @@ Get accurate answers to questions about your documents with proper citations, en
 |---------|---------------|-------------------|
 | **Data Privacy** | Complete control, self-hosted | Data processed by Google |
 | **AI Model Choice** | 15+ providers, local options | Google's models only |
-| **Podcast Speakers** | 1-4 customizable speakers | 2 speakers only |
 | **Content Types** | 10+ formats including video | Limited format support |
 | **Search Capabilities** | Full-text + vector search | Basic search |
 | **Context Control** | Granular 3-level control | Limited control |
@@ -68,7 +64,7 @@ Get accurate answers to questions about your documents with proper citations, en
 
 **💰 For Cost Control**: Pay only for what you use, with transparent pricing from AI providers and the option to use free local models.
 
-**🚀 For Advanced Features**: Access professional podcast generation, comprehensive content support, and powerful search capabilities.
+**🚀 For Advanced Features**: Access comprehensive content support and powerful search capabilities.
 
 ## Use Cases & Target Audience
 
@@ -76,7 +72,7 @@ Get accurate answers to questions about your documents with proper citations, en
 - **Research Papers**: Analyze academic literature, generate summaries, and create citations
 - **Thesis Writing**: Organize sources, develop arguments, and maintain research notes
 - **Literature Reviews**: Synthesize multiple sources and identify themes
-- **Study Materials**: Transform research into podcasts for mobile learning
+- **Study Materials**: Transform research into accessible summaries for mobile learning
 
 ### 🔬 Researchers & Scientists
 - **Data Analysis**: Process reports, studies, and documentation
@@ -88,7 +84,7 @@ Get accurate answers to questions about your documents with proper citations, en
 - **Market Research**: Analyze industry reports, competitor information, and trends
 - **Content Creation**: Transform research into presentations, reports, and marketing materials
 - **Knowledge Management**: Organize and access organizational knowledge
-- **Training Materials**: Create podcasts and summaries for team education
+- **Training Materials**: Create summaries and briefings for team education
 
 ### 🔐 Privacy-Conscious Users
 - **Sensitive Documents**: Process confidential materials without cloud exposure

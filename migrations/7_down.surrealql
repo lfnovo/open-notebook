@@ -1,3 +1,1 @@
-REMOVE TABLE IF EXISTS episode_profile;
-REMOVE TABLE IF EXISTS speaker_profile;
-REMOVE TABLE IF EXISTS episode;
+-- Down migration for migration 7 is intentionally left blank.

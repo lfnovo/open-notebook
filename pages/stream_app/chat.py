@@ -5,14 +5,11 @@ import streamlit as st
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
-from api.episode_profiles_service import episode_profiles_service
 from api.notes_service import notes_service
-from api.podcast_service import PodcastService
 from api.search_service import search_service
 from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.graphs.chat import graph as chat_graph
 
-# from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import parse_thinking_content, token_count
 from pages.stream_app.utils import (
     convert_source_references,
@@ -73,7 +70,7 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
     tokens = token_count(
         str(context) + str(st.session_state[current_session.id]["messages"])
     )
-    chat_tab, research_tab, podcast_tab = st.tabs(["Chat", "Research", "Podcast"])
+    chat_tab, research_tab = st.tabs(["Chat", "Research"])
     with st.expander(f"Context ({tokens} tokens), {len(str(context))} chars"):
         st.json(context)
     notebook_state = st.session_state.setdefault(current_notebook.id, {})
@@ -83,94 +80,6 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
     if question_key not in st.session_state:
         st.session_state[question_key] = research_state.get("question", "")
 
-    with podcast_tab:
-        with st.container(border=True):
-            # Fetch available episode profiles
-            try:
-                episode_profiles = episode_profiles_service.get_all_episode_profiles()
-                episode_profile_names = [ep.name for ep in episode_profiles]
-            except Exception as e:
-                st.error(f"Failed to load episode profiles: {str(e)}")
-                episode_profiles = []
-                episode_profile_names = []
-
-            if len(episode_profiles) == 0:
-                st.warning(
-                    "No episode profiles found. Please create profiles in the Podcast Profiles tab first."
-                )
-                st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcast Profiles")
-            else:
-                # Episode Profile selection
-                selected_episode_profile = st.selectbox(
-                    "Episode Profile", episode_profile_names
-                )
-
-                # Get the selected episode profile object to access speaker_config
-                selected_profile_obj = next(
-                    (
-                        ep
-                        for ep in episode_profiles
-                        if ep.name == selected_episode_profile
-                    ),
-                    None,
-                )
-
-                # Episode details
-                episode_name = st.text_input(
-                    "Episode Name", placeholder="e.g., AI and the Future of Work"
-                )
-                instructions = st.text_area(
-                    "Additional Instructions (Optional)",
-                    placeholder="Any specific instructions beyond the episode profile's default briefing...",
-                    help="These instructions will be added to the episode profile's default briefing.",
-                )
-
-                # Check for context availability
-                if len(context.get("note", [])) + len(context.get("source", [])) == 0:
-                    st.warning(
-                        "No notes or sources found in context. You don't want a boring podcast, right? So, add some context first."
-                    )
-                else:
-                    # Generate button
-                    if st.button("🎙️ Generate Podcast", type="primary"):
-                        if not episode_name.strip():
-                            st.error("Please enter an episode name")
-                        else:
-                            try:
-                                with st.spinner("Starting podcast generation..."):
-                                    # Use podcast service to generate podcast
-                                    async def generate_podcast():
-                                        return await PodcastService.submit_generation_job(
-                                            episode_profile_name=selected_episode_profile,
-                                            speaker_profile_name=selected_profile_obj.speaker_config
-                                            if selected_profile_obj
-                                            else "",
-                                            episode_name=episode_name.strip(),
-                                            content=str(context),
-                                            briefing_suffix=instructions.strip()
-                                            if instructions.strip()
-                                            else None,
-                                            notebook_id=str(current_notebook.id),
-                                        )
-
-                                    job_id = asyncio.run(generate_podcast())
-
-                                    if job_id:
-                                        st.info(
-                                            "🎉 Podcast generation started successfully! Check the **Podcasts** page to monitor progress and download results."
-                                        )
-                                    else:
-                                        st.error(
-                                            "Failed to start podcast generation: No job ID returned"
-                                        )
-
-                            except Exception as e:
-                                logger.error(f"Error generating podcast: {str(e)}")
-                                st.error(f"Error generating podcast: {str(e)}")
-
-            # Navigation link
-            st.divider()
-            st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.expander(
             f"**Session:** {current_session.title} - {humanize.naturaltime(current_session.updated)}"

@@ -317,14 +317,14 @@ with st.container(border=True):
             "Default TTS Model",
             "default_text_to_speech_model",
             default_models.default_text_to_speech_model,
-            "Used for podcasts and audio generation",
+            "Used for text-to-speech generation",
             "text_to_speech",
-            "Can be overridden per podcast",
+            "Can be overridden by specific features",
         )
 
         # Show info if no default TTS model is selected
         if not default_models.default_text_to_speech_model:
-            st.info("ℹ️ Select a default TTS model to enable podcast generation.")
+            st.info("ℹ️ Select a default TTS model to enable text-to-speech features.")
 
     with col2:
         add_model_form("text_to_speech", "main", available_providers)

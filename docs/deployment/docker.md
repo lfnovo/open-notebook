@@ -10,7 +10,7 @@ Open Notebook is a powerful AI-powered research and note-taking tool that:
 - Helps you organize research across multiple notebooks
 - Lets you chat with your documents using AI
 - Supports 15+ AI providers (OpenAI, Anthropic, Google, Ollama, and more)
-- Creates AI-generated podcasts from your content
+- Creates AI-generated insights and summaries from your content
 - Works with PDFs, web links, videos, audio files, and more
 
 ## 🚀 Quick Start (5 Minutes)
@@ -44,7 +44,7 @@ Log out and log back in after installation.
 OpenAI provides everything you need to get started:
 - **Text generation** for chat and notes
 - **Embeddings** for search functionality  
-- **Text-to-speech** for podcast generation
+- **Text-to-speech** for audio narration
 - **Speech-to-text** for audio transcription
 
 1. Go to [platform.openai.com](https://platform.openai.com/)
@@ -114,7 +114,7 @@ Before creating your first notebook, configure your AI models:
 3. Configure these recommended models:
    - **Language Model**: `gpt-4o-mini` (cost-effective)
    - **Embedding Model**: `text-embedding-3-small` (required for search)
-   - **Text-to-Speech**: `tts-1` (for podcast generation)
+   - **Text-to-Speech**: `tts-1`
    - **Speech-to-Text**: `whisper-1` (for audio transcription)
 4. Click **"Save"** after configuring all models
 
@@ -420,7 +420,7 @@ docker compose -p 8503:8502 up -d
 After successful deployment:
 
 1. **Create your first notebook** - Start with a simple research project
-2. **Explore features** - Try podcasts, transformations, and search
+2. **Explore features** - Try transformations and search
 3. **Optimize models** - Experiment with different providers
 4. **Join the community** - Share your experience and get help
 

@@ -660,108 +660,6 @@ Save an insight as a note.
 }
 ```
 
-## 🎙️ Podcasts API
-
-Generate professional multi-speaker podcasts.
-
-### GET /api/episode-profiles
-
-Get all episode profiles.
-
-**Response**:
-```json
-[
-  {
-    "id": "episode_profile:uuid",
-    "name": "tech_discussion",
-    "description": "Technical discussion between 2 experts",
-    "speaker_config": "tech_experts",
-    "outline_provider": "openai",
-    "outline_model": "gpt-4o-mini",
-    "transcript_provider": "openai",
-    "transcript_model": "gpt-4o-mini",
-    "default_briefing": "Create an engaging technical discussion...",
-    "num_segments": 5,
-    "created": "2024-01-01T00:00:00Z",
-    "updated": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-### GET /api/speaker-profiles
-
-Get all speaker profiles.
-
-**Response**:
-```json
-[
-  {
-    "id": "speaker_profile:uuid",
-    "name": "tech_experts",
-    "description": "Two technical experts for tech discussions",
-    "tts_provider": "openai",
-    "tts_model": "tts-1",
-    "speakers": [
-      {
-        "name": "Dr. Alex Chen",
-        "voice_id": "nova",
-        "backstory": "Senior AI researcher...",
-        "personality": "Analytical, clear communicator..."
-      }
-    ],
-    "created": "2024-01-01T00:00:00Z",
-    "updated": "2024-01-01T00:00:00Z"
-  }
-]
-```
-
-### POST /api/podcasts
-
-Create a new podcast episode.
-
-**Request Body**:
-```json
-{
-  "name": "AI Discussion Episode",
-  "briefing": "Discuss the latest AI developments...",
-  "episode_profile_id": "episode_profile:uuid",
-  "source_ids": ["source:uuid1", "source:uuid2"],
-  "note_ids": ["note:uuid1"]
-}
-```
-
-**Response**:
-```json
-{
-  "id": "episode:uuid",
-  "name": "AI Discussion Episode",
-  "briefing": "Discuss the latest AI developments...",
-  "episode_profile": {...},
-  "speaker_profile": {...},
-  "command": "command:uuid",
-  "created": "2024-01-01T00:00:00Z",
-  "updated": "2024-01-01T00:00:00Z"
-}
-```
-
-### GET /api/podcasts/{episode_id}
-
-Get a specific podcast episode.
-
-**Path Parameters**:
-- `episode_id` (string): Episode ID
-
-**Response**: Same as POST response
-
-### GET /api/podcasts/{episode_id}/audio
-
-Download the generated audio file.
-
-**Path Parameters**:
-- `episode_id` (string): Episode ID
-
-**Response**: Audio file download (MP3 format)
-
 ## 🎛️ Settings API
 
 Manage application settings and configuration.
@@ -868,7 +766,7 @@ Get all commands (background jobs).
 [
   {
     "id": "command:uuid",
-    "name": "podcast_generation",
+    "name": "transformation_job",
     "status": "completed",
     "progress": 100,
     "result": {...},
@@ -1009,25 +907,6 @@ curl -X POST http://localhost:5055/api/search \
 curl -X POST http://localhost:5055/api/search/ask/simple \
   -H "Content-Type: application/json" \
   -d "{\"question\": \"What are the main AI applications?\", \"strategy_model\": \"$MODEL_ID\", \"answer_model\": \"$MODEL_ID\", \"final_answer_model\": \"$MODEL_ID\"}"
-```
-
-### Podcast Generation Example
-
-```bash
-# 1. Get episode profiles
-curl -X GET http://localhost:5055/api/episode-profiles
-
-# 2. Create a podcast
-EPISODE_ID=$(curl -X POST http://localhost:5055/api/podcasts \
-  -H "Content-Type: application/json" \
-  -d "{\"name\": \"AI Discussion\", \"briefing\": \"Discuss AI trends\", \"episode_profile_id\": \"episode_profile:tech_discussion\", \"source_ids\": [\"$SOURCE_ID\"]}" \
-  | jq -r '.id')
-
-# 3. Check command status
-curl -X GET http://localhost:5055/api/commands
-
-# 4. Download audio when ready
-curl -X GET http://localhost:5055/api/podcasts/$EPISODE_ID/audio -o podcast.mp3
 ```
 
 ## 📡 WebSocket Support

@@ -45,7 +45,6 @@ dependencies = [
     "langchain-google-vertexai>=2.0.28",
     "surrealdb>=1.0.4",
     "surreal-commands>=1.0.13",
-    "podcast-creator>=0.7.0",
     "langchain-mcp-adapters>=0.1.10",
     "langchain-tavily",
     "openai>=1.99.2",

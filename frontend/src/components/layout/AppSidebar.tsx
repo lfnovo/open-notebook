@@ -105,27 +105,44 @@ export function AppSidebar() {
       >
         <div
           className={cn(
-            'flex h-16 items-center',
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-6'
+            'flex h-16 items-center group',
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
           )}
         >
-          {!isCollapsed && (
-            <h1 className="text-lg font-semibold text-sidebar-foreground">
-              Open Notebook
-            </h1>
+          {isCollapsed ? (
+            <div className="relative flex items-center justify-center w-full">
+              <img
+                src="/logo.svg"
+                alt="Open Notebook"
+                className="h-8 w-8 transition-opacity group-hover:opacity-0"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleCollapse}
+                className="absolute text-sidebar-foreground hover:bg-sidebar-accent opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2">
+                <img src="/logo.svg" alt="Open Notebook" className="h-8 w-8" />
+                <span className="text-base font-medium text-sidebar-foreground">
+                  Open Notebook
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={toggleCollapse}
+                className="text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleCollapse}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            {isCollapsed ? (
-              <Menu className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </Button>
         </div>
 
         <nav

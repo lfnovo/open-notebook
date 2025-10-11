@@ -24,6 +24,7 @@ import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
+import { Separator } from '@/components/ui/separator'
 import {
   Book,
   Search,
@@ -129,7 +130,7 @@ export function AppSidebar() {
 
         <nav
           className={cn(
-            'flex-1 space-y-4 py-4',
+            'flex-1 space-y-1 py-4',
             isCollapsed ? 'px-2' : 'px-3'
           )}
         >
@@ -210,49 +211,54 @@ export function AppSidebar() {
             </DropdownMenu>
           </div>
 
-          {navigation.map((section) => (
-            <div key={section.title} className="space-y-1">
-              {!isCollapsed && (
-                <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
-                  {section.title}
-                </h3>
+          {navigation.map((section, index) => (
+            <div key={section.title}>
+              {index > 0 && (
+                <Separator className="my-3" />
               )}
+              <div className="space-y-1">
+                {!isCollapsed && (
+                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                    {section.title}
+                  </h3>
+                )}
 
-              {section.items.map((item) => {
-                const isActive = pathname.startsWith(item.href)
-                const button = (
-                  <Button
-                    variant={isActive ? 'secondary' : 'ghost'}
-                    className={cn(
-                      'w-full gap-3 text-sidebar-foreground',
-                      isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
-                      isCollapsed ? 'justify-center px-2' : 'justify-start'
-                    )}
-                  >
-                    <item.icon className="h-4 w-4" />
-                    {!isCollapsed && <span>{item.name}</span>}
-                  </Button>
-                )
-
-                if (isCollapsed) {
-                  return (
-                    <Tooltip key={item.name}>
-                      <TooltipTrigger asChild>
-                        <Link href={item.href}>
-                          {button}
-                        </Link>
-                      </TooltipTrigger>
-                      <TooltipContent side="right">{item.name}</TooltipContent>
-                    </Tooltip>
+                {section.items.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  const button = (
+                    <Button
+                      variant={isActive ? 'secondary' : 'ghost'}
+                      className={cn(
+                        'w-full gap-3 text-sidebar-foreground',
+                        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+                        isCollapsed ? 'justify-center px-2' : 'justify-start'
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      {!isCollapsed && <span>{item.name}</span>}
+                    </Button>
                   )
-                }
 
-                return (
-                  <Link key={item.name} href={item.href}>
-                    {button}
-                  </Link>
-                )
-              })}
+                  if (isCollapsed) {
+                    return (
+                      <Tooltip key={item.name}>
+                        <TooltipTrigger asChild>
+                          <Link href={item.href}>
+                            {button}
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">{item.name}</TooltipContent>
+                      </Tooltip>
+                    )
+                  }
+
+                  return (
+                    <Link key={item.name} href={item.href}>
+                      {button}
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
           ))}
         </nav>

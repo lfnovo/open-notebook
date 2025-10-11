@@ -17,6 +17,7 @@ import {
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/source/SessionManager'
+import { MessageActions } from '@/components/source/MessageActions'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 
@@ -48,6 +49,8 @@ interface ChatPanelProps {
   contextType?: 'source' | 'notebook'
   // Notebook context stats (for notebook chat)
   notebookContextStats?: NotebookContextStats
+  // Notebook ID for saving notes
+  notebookId?: string
 }
 
 export function ChatPanel({
@@ -66,7 +69,8 @@ export function ChatPanel({
   loadingSessions = false,
   title = 'Chat with Source',
   contextType = 'source',
-  notebookContextStats
+  notebookContextStats,
+  notebookId
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
@@ -171,20 +175,28 @@ export function ChatPanel({
                       </div>
                     </div>
                   )}
-                  <div
-                    className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                      message.type === 'human'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
-                  >
-                    {message.type === 'ai' ? (
-                      <AIMessageContent
+                  <div className="flex flex-col gap-2 max-w-[80%]">
+                    <div
+                      className={`rounded-lg px-4 py-2 ${
+                        message.type === 'human'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      {message.type === 'ai' ? (
+                        <AIMessageContent
+                          content={message.content}
+                          onReferenceClick={handleReferenceClick}
+                        />
+                      ) : (
+                        <p className="text-sm">{message.content}</p>
+                      )}
+                    </div>
+                    {message.type === 'ai' && (
+                      <MessageActions
                         content={message.content}
-                        onReferenceClick={handleReferenceClick}
+                        notebookId={notebookId}
                       />
-                    ) : (
-                      <p className="text-sm">{message.content}</p>
                     )}
                   </div>
                   {message.type === 'human' && (

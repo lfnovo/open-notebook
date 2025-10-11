@@ -31,11 +31,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  FileText,
   Link as LinkIcon,
   Upload,
   AlignLeft,
-  Hash,
   ExternalLink,
   Download,
   Copy,
@@ -694,32 +692,17 @@ export function SourceDetailContent({
                   )}
                 </div>
 
-                {/* Statistics */}
-                <div>
-                  <h3 className="mb-3 text-sm font-semibold">Statistics</h3>
-                  <div className="space-y-2 rounded-lg bg-muted/50 p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Embedded</span>
-                      </div>
-                      <Badge variant={source.embedded ? "default" : "secondary"}>
-                        {source.embedded ? "Yes" : "No"}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">Insights</span>
-                      </div>
-                      <span className="font-semibold">{source.insights_count || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
                 {/* Metadata */}
                 <div>
-                  <h3 className="mb-3 text-sm font-semibold">Metadata</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold">Metadata</h3>
+                    <div className="flex items-center gap-2">
+                      <Database className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
+                        {source.embedded ? "Embedded" : "Not Embedded"}
+                      </Badge>
+                    </div>
+                  </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
                       <p className="text-xs font-medium text-muted-foreground">Created</p>

@@ -2,6 +2,7 @@
 
 import { FileText, Lightbulb, StickyNote } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 interface ContextIndicatorProps {
@@ -32,8 +33,7 @@ export function ContextIndicator({
   charCount,
   className
 }: ContextIndicatorProps) {
-  const totalSources = sourcesInsights + sourcesFull
-  const hasContext = totalSources > 0 || notesCount > 0
+  const hasContext = (sourcesInsights + sourcesFull) > 0 || notesCount > 0
 
   if (!hasContext) {
     return (
@@ -48,38 +48,52 @@ export function ContextIndicator({
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium text-muted-foreground">Context:</span>
 
-        {totalSources > 0 && (
-          <div className="flex items-center gap-1.5">
-            <Badge variant="secondary" className="text-xs flex items-center gap-1 px-1.5 py-0.5">
-              <FileText className="h-3 w-3" />
-              <span>{totalSources}</span>
-            </Badge>
+        <div className="flex items-center gap-1.5">
+          {sourcesInsights > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-amber-600 border-amber-600/50 cursor-default">
+                  <Lightbulb className="h-3 w-3" />
+                  <span>{sourcesInsights}</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Insights for {sourcesInsights} source{sourcesInsights !== 1 ? 's' : ''}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
-            {sourcesInsights > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-amber-600 border-amber-600/50">
-                <Lightbulb className="h-3 w-3" />
-                <span>{sourcesInsights}</span>
-              </Badge>
-            )}
-
-            {sourcesFull > 0 && (
-              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
-                <FileText className="h-3 w-3" />
-                <span>{sourcesFull}</span>
-              </Badge>
-            )}
-          </div>
-        )}
+          {sourcesFull > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50 cursor-default">
+                  <FileText className="h-3 w-3" />
+                  <span>{sourcesFull}</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{sourcesFull} full source{sourcesFull !== 1 ? 's' : ''}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
 
         {notesCount > 0 && (
           <>
-            {totalSources > 0 && (
+            {(sourcesInsights > 0 || sourcesFull > 0) && (
               <span className="text-muted-foreground">•</span>
             )}
-            <Badge variant="secondary" className="text-xs flex items-center gap-1 px-1.5 py-0.5">
-              <StickyNote className="h-3 w-3" />
-              <span>{notesCount}</span>
-            </Badge>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50 cursor-default">
+                  <StickyNote className="h-3 w-3" />
+                  <span>{notesCount}</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{notesCount} full note{notesCount !== 1 ? 's' : ''}</p>
+              </TooltipContent>
+            </Tooltip>
           </>
         )}
       </div>

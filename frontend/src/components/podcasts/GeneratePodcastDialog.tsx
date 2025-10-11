@@ -43,6 +43,17 @@ interface NotebookSelection {
   notes: Record<string, SourceMode>
 }
 
+// Helper function to format large numbers with K/M suffixes
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`
+  }
+  return num.toString()
+}
+
 function hasSelections(selection?: NotebookSelection): boolean {
   if (!selection) {
     return false
@@ -72,6 +83,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const [instructions, setInstructions] = useState('')
 
   const [isBuildingContext, setIsBuildingContext] = useState(false)
+  const [tokenCount, setTokenCount] = useState<number>(0)
+  const [charCount, setCharCount] = useState<number>(0)
 
   const notebooksQuery = useNotebooks()
   const episodeProfilesQuery = useEpisodeProfiles()
@@ -177,6 +190,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     setEpisodeProfileId('')
     setEpisodeName('')
     setInstructions('')
+    setTokenCount(0)
+    setCharCount(0)
   }, [])
 
   useEffect(() => {
@@ -184,6 +199,74 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       resetState()
     }
   }, [open, resetState])
+
+  // Update token/char counts when selections change
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    const updateContextCounts = async () => {
+      // Check if there are any selections
+      const hasAnySelections = Object.values(selections).some((selection) =>
+        Object.values(selection.sources).some((mode) => mode !== 'off') ||
+        Object.values(selection.notes).some((mode) => mode !== 'off')
+      )
+
+      if (!hasAnySelections) {
+        setTokenCount(0)
+        setCharCount(0)
+        return
+      }
+
+      try {
+        let totalTokens = 0
+        let totalChars = 0
+
+        // Build context for each notebook and sum up counts
+        for (const [notebookId, selection] of Object.entries(selections)) {
+          const sourcesConfig = Object.entries(selection.sources)
+            .filter(([, mode]) => mode !== 'off')
+            .reduce<Record<string, string>>((acc, [sourceId, mode]) => {
+              const normalizedId = sourceId.replace(/^source:/, '')
+              acc[normalizedId] = mode === 'insights' ? 'insights' : 'full content'
+              return acc
+            }, {})
+
+          const notesConfig = Object.entries(selection.notes)
+            .filter(([, mode]) => mode !== 'off')
+            .reduce<Record<string, string>>((acc, [noteId]) => {
+              const normalizedId = noteId.replace(/^note:/, '')
+              acc[normalizedId] = 'full content'
+              return acc
+            }, {})
+
+          if (Object.keys(sourcesConfig).length === 0 && Object.keys(notesConfig).length === 0) {
+            continue
+          }
+
+          const response = await chatApi.buildContext({
+            notebook_id: notebookId,
+            context_config: {
+              sources: sourcesConfig,
+              notes: notesConfig,
+            },
+          })
+
+          totalTokens += response.token_count
+          totalChars += response.char_count
+        }
+
+        setTokenCount(totalTokens)
+        setCharCount(totalChars)
+      } catch (error) {
+        console.error('Error updating context counts:', error)
+        // Don't reset counts on error, keep previous values
+      }
+    }
+
+    updateContextCounts()
+  }, [open, selections])
 
   const selectedEpisodeProfile = useMemo(() => {
     if (!episodeProfileId) {
@@ -438,13 +521,22 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                   Pick notebooks, sources, and notes to include in this episode.
                 </p>
               </div>
-              <Badge variant="outline">
-                {selectedNotebookSummaries.reduce(
-                  (acc, summary) => acc + summary.sources + summary.notes,
-                  0
-                )}{' '}
-                items selected
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">
+                  {selectedNotebookSummaries.reduce(
+                    (acc, summary) => acc + summary.sources + summary.notes,
+                    0
+                  )}{' '}
+                  items selected
+                </Badge>
+                {(tokenCount > 0 || charCount > 0) && (
+                  <span className="text-xs text-muted-foreground">
+                    {tokenCount > 0 && `${formatNumber(tokenCount)} tokens`}
+                    {tokenCount > 0 && charCount > 0 && ' / '}
+                    {charCount > 0 && `${formatNumber(charCount)} chars`}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="rounded-lg border bg-muted/30">

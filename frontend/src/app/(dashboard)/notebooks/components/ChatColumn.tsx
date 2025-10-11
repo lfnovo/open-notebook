@@ -109,6 +109,7 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
       onDeleteSession={chat.deleteSession}
       loadingSessions={chat.loadingSessions}
       notebookContextStats={contextStats}
+      notebookId={notebookId}
     />
   )
 }

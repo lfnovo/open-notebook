@@ -99,10 +99,23 @@ export function RebuildEmbeddings() {
   const isAnyTypeSelected = includeSources || includeNotes || includeInsights
   const isRebuildActive = commandId && status && (status.status === 'queued' || status.status === 'running')
 
-  // Calculate progress percentage
-  const progressPercent = status?.progress
-    ? (status.progress.processed_items / status.progress.total_items) * 100
-    : 0
+  const progressData = status?.progress
+  const stats = status?.stats
+
+  const totalItems = progressData?.total_items ?? progressData?.total ?? 0
+  const processedItems = progressData?.processed_items ?? progressData?.processed ?? 0
+  const derivedProgressPercent = progressData?.percentage ?? (totalItems > 0 ? (processedItems / totalItems) * 100 : 0)
+  const progressPercent = Number.isFinite(derivedProgressPercent) ? derivedProgressPercent : 0
+
+  const sourcesProcessed = stats?.sources_processed ?? stats?.sources ?? 0
+  const notesProcessed = stats?.notes_processed ?? stats?.notes ?? 0
+  const insightsProcessed = stats?.insights_processed ?? stats?.insights ?? 0
+  const failedItems = stats?.failed_items ?? stats?.failed ?? 0
+
+  const computedDuration = status?.started_at && status?.completed_at
+    ? (new Date(status.completed_at).getTime() - new Date(status.started_at).getTime()) / 1000
+    : undefined
+  const processingTimeSeconds = stats?.processing_time ?? computedDuration
 
   return (
     <Card>
@@ -236,40 +249,42 @@ export function RebuildEmbeddings() {
               )}
             </div>
 
-            {status.progress && (
+            {progressData && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Progress</span>
                   <span className="font-medium">
-                    {status.progress.processed_items}/{status.progress.total_items} items ({progressPercent.toFixed(1)}%)
+                    {processedItems}/{totalItems} items ({progressPercent.toFixed(1)}%)
                   </span>
                 </div>
                 <Progress value={progressPercent} className="h-2" />
-                {status.progress.failed_items > 0 && (
+                {failedItems > 0 && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ {status.progress.failed_items} items failed to process
+                    ⚠️ {failedItems} items failed to process
                   </p>
                 )}
               </div>
             )}
 
-            {status.stats && (
+            {stats && (
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Sources</p>
-                  <p className="text-2xl font-bold">{status.stats.sources_processed}</p>
+                  <p className="text-2xl font-bold">{sourcesProcessed}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Notes</p>
-                  <p className="text-2xl font-bold">{status.stats.notes_processed}</p>
+                  <p className="text-2xl font-bold">{notesProcessed}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Insights</p>
-                  <p className="text-2xl font-bold">{status.stats.insights_processed}</p>
+                  <p className="text-2xl font-bold">{insightsProcessed}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Time</p>
-                  <p className="text-2xl font-bold">{status.stats.processing_time.toFixed(1)}s</p>
+                  <p className="text-2xl font-bold">
+                    {processingTimeSeconds !== undefined ? `${processingTimeSeconds.toFixed(1)}s` : '—'}
+                  </p>
                 </div>
               </div>
             )}

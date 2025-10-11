@@ -152,9 +152,22 @@ def parse_source_form_data(
 @router.get("/sources", response_model=List[SourceListResponse])
 async def get_sources(
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+    limit: int = Query(50, ge=1, le=100, description="Number of sources to return (1-100)"),
+    offset: int = Query(0, ge=0, description="Number of sources to skip"),
+    sort_by: str = Query("updated", description="Field to sort by (created or updated)"),
+    sort_order: str = Query("desc", description="Sort order (asc or desc)"),
 ):
-    """Get all sources with optional notebook filtering."""
+    """Get sources with pagination and sorting support."""
     try:
+        # Validate sort parameters
+        if sort_by not in ["created", "updated"]:
+            raise HTTPException(status_code=400, detail="sort_by must be 'created' or 'updated'")
+        if sort_order.lower() not in ["asc", "desc"]:
+            raise HTTPException(status_code=400, detail="sort_order must be 'asc' or 'desc'")
+
+        # Build ORDER BY clause
+        order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
+
         # Build the query
         if notebook_id:
             # Verify notebook exists first
@@ -163,28 +176,32 @@ async def get_sources(
                 raise HTTPException(status_code=404, detail="Notebook not found")
 
             # Query sources for specific notebook - include command field
-            query = """
+            query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
-                (SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS embedded_chunks,
-                ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
+                ((SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1)) != NONE AS embedded
                 FROM (select value in from reference where out=$notebook_id)
-                ORDER BY updated DESC
+                {order_clause}
+                LIMIT $limit START $offset
             """
             result = await repo_query(
-                query, {"notebook_id": ensure_record_id(notebook_id)}
+                query, {
+                    "notebook_id": ensure_record_id(notebook_id),
+                    "limit": limit,
+                    "offset": offset
+                }
             )
         else:
             # Query all sources - include command field
-            query = """
+            query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
-                    (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
-                    (SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS embedded_chunks,
-                    ((SELECT VALUE count() FROM source_embedding WHERE source = $parent.id GROUP ALL)[0].count OR 0) > 0 AS embedded
-                FROM source 
-                ORDER BY updated DESC
+                (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
+                ((SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1)) != NONE AS embedded
+                FROM source
+                {order_clause}
+                LIMIT $limit START $offset
             """
-            result = await repo_query(query)
+            result = await repo_query(query, {"limit": limit, "offset": offset})
 
         # Extract command IDs for batch status fetching
         command_ids = []
@@ -280,7 +297,7 @@ async def get_sources(
                     if row.get("asset")
                     else None,
                     embedded=row.get("embedded", False),
-                    embedded_chunks=row.get("embedded_chunks", 0),
+                    embedded_chunks=0,  # Removed from query - not needed in list view
                     insights_count=row.get("insights_count", 0),
                     created=str(row["created"]),
                     updated=str(row["updated"]),

@@ -350,8 +350,9 @@ export function useGeneratePodcast() {
   return useMutation({
     mutationFn: (payload: PodcastGenerationRequest) =>
       podcastsApi.generatePodcast(payload),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
+    onSuccess: async (response) => {
+      // Immediately refetch to show the new episode
+      await queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: 'Podcast generation started',
         description: `Episode "${response.episode_name}" is being created.`,

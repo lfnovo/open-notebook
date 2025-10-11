@@ -77,6 +77,11 @@ const STATUS_META: Record<
 }
 
 function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
+  // Don't show badge for completed episodes
+  if (status === 'completed') {
+    return null
+  }
+
   const meta = STATUS_META[status ?? 'unknown']
   return (
     <Badge

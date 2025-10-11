@@ -8,7 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2 } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,18 +18,76 @@ import { toast } from 'sonner'
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const [sortBy, setSortBy] = useState<'created' | 'updated'>('updated')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
     open: false,
     source: null
   })
   const router = useRouter()
   const tableRef = useRef<HTMLTableElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const offsetRef = useRef(0)
+  const loadingMoreRef = useRef(false)
+  const hasMoreRef = useRef(true)
+  const PAGE_SIZE = 30
 
+  const fetchSources = useCallback(async (reset = false) => {
+    try {
+      // Check flags before proceeding
+      if (!reset && (loadingMoreRef.current || !hasMoreRef.current)) {
+        return
+      }
+
+      if (reset) {
+        setLoading(true)
+        offsetRef.current = 0
+        setSources([])
+        setHasMore(true)
+        hasMoreRef.current = true
+      } else {
+        loadingMoreRef.current = true
+        setLoadingMore(true)
+      }
+
+      const data = await sourcesApi.list({
+        limit: PAGE_SIZE,
+        offset: offsetRef.current,
+        sort_by: sortBy,
+        sort_order: sortOrder,
+      })
+
+      if (reset) {
+        setSources(data)
+      } else {
+        setSources(prev => [...prev, ...data])
+      }
+
+      // Check if we have more data
+      const hasMoreData = data.length === PAGE_SIZE
+      setHasMore(hasMoreData)
+      hasMoreRef.current = hasMoreData
+      offsetRef.current += data.length
+    } catch (err) {
+      console.error('Failed to fetch sources:', err)
+      setError('Failed to load sources')
+      toast.error('Failed to load sources')
+    } finally {
+      setLoading(false)
+      setLoadingMore(false)
+      loadingMoreRef.current = false
+    }
+  }, [sortBy, sortOrder])
+
+  // Initial load and when sort changes
   useEffect(() => {
-    fetchSources()
-  }, [])
+    fetchSources(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, sortOrder])
 
   useEffect(() => {
     // Focus the table when component mounts or sources change
@@ -45,11 +103,21 @@ export default function SourcesPage() {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault()
-          setSelectedIndex((prev) => Math.min(prev + 1, sources.length - 1))
+          setSelectedIndex((prev) => {
+            const newIndex = Math.min(prev + 1, sources.length - 1)
+            // Scroll to keep selected row visible
+            setTimeout(() => scrollToSelectedRow(newIndex), 0)
+            return newIndex
+          })
           break
         case 'ArrowUp':
           e.preventDefault()
-          setSelectedIndex((prev) => Math.max(prev - 1, 0))
+          setSelectedIndex((prev) => {
+            const newIndex = Math.max(prev - 1, 0)
+            // Scroll to keep selected row visible
+            setTimeout(() => scrollToSelectedRow(newIndex), 0)
+            return newIndex
+          })
           break
         case 'Enter':
           e.preventDefault()
@@ -60,10 +128,13 @@ export default function SourcesPage() {
         case 'Home':
           e.preventDefault()
           setSelectedIndex(0)
+          setTimeout(() => scrollToSelectedRow(0), 0)
           break
         case 'End':
           e.preventDefault()
-          setSelectedIndex(sources.length - 1)
+          const lastIndex = sources.length - 1
+          setSelectedIndex(lastIndex)
+          setTimeout(() => scrollToSelectedRow(lastIndex), 0)
           break
       }
     }
@@ -72,16 +143,72 @@ export default function SourcesPage() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [sources, selectedIndex, router])
 
-  const fetchSources = async () => {
-    try {
-      setLoading(true)
-      const data = await sourcesApi.list()
-      setSources(data)
-    } catch (err) {
-      console.error('Failed to fetch sources:', err)
-      setError('Failed to load sources')
-    } finally {
-      setLoading(false)
+  const scrollToSelectedRow = (index: number) => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    // Find the selected row element
+    const rows = scrollContainer.querySelectorAll('tbody tr')
+    const selectedRow = rows[index] as HTMLElement
+    if (!selectedRow) return
+
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const rowRect = selectedRow.getBoundingClientRect()
+
+    // Check if row is above visible area
+    if (rowRect.top < containerRect.top) {
+      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    // Check if row is below visible area
+    else if (rowRect.bottom > containerRect.bottom) {
+      selectedRow.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    }
+  }
+
+  // Set up scroll listener after sources are loaded
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current
+    if (!scrollContainer) return
+
+    let scrollTimeout: NodeJS.Timeout | null = null
+
+    const handleScroll = () => {
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+
+      scrollTimeout = setTimeout(() => {
+        if (!scrollContainerRef.current) return
+
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current
+        const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+
+        // Load more when within 200px of the bottom
+        if (distanceFromBottom < 200 && !loadingMoreRef.current && hasMoreRef.current) {
+          fetchSources(false)
+        }
+      }, 100)
+    }
+
+    scrollContainer.addEventListener('scroll', handleScroll)
+    handleScroll() // Check on mount
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [fetchSources, sources.length])
+
+  const toggleSort = (field: 'created' | 'updated') => {
+    if (sortBy === field) {
+      // Toggle order if clicking the same field
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
+    } else {
+      // Switch to new field with default desc order
+      setSortBy(field)
+      setSortOrder('desc')
     }
   }
 
@@ -164,7 +291,7 @@ export default function SourcesPage() {
           </p>
         </div>
 
-        <div className="flex-1 rounded-md border overflow-auto">
+        <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
           <table
             ref={tableRef}
             tabIndex={0}
@@ -178,7 +305,7 @@ export default function SourcesPage() {
               <col className="w-[100px]" />
               <col className="w-[100px]" />
             </colgroup>
-            <thead>
+            <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b bg-muted/50">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   Type
@@ -187,7 +314,23 @@ export default function SourcesPage() {
                   Title
                 </th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
-                  Created
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => toggleSort('created')}
+                    className="h-8 px-2 hover:bg-muted"
+                  >
+                    Created
+                    <ArrowUpDown className={cn(
+                      "ml-2 h-3 w-3",
+                      sortBy === 'created' ? 'opacity-100' : 'opacity-30'
+                    )} />
+                    {sortBy === 'created' && (
+                      <span className="ml-1 text-xs">
+                        {sortOrder === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </Button>
                 </th>
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden md:table-cell">
                   Insights
@@ -208,8 +351,8 @@ export default function SourcesPage() {
                   onMouseEnter={() => setSelectedIndex(index)}
                   className={cn(
                     "border-b transition-colors cursor-pointer",
-                    selectedIndex === index 
-                      ? "bg-accent" 
+                    selectedIndex === index
+                      ? "bg-accent"
                       : "hover:bg-muted/50"
                   )}
                 >
@@ -256,6 +399,16 @@ export default function SourcesPage() {
                   </td>
                 </tr>
               ))}
+              {loadingMore && (
+                <tr>
+                  <td colSpan={6} className="h-16 text-center">
+                    <div className="flex items-center justify-center">
+                      <LoadingSpinner />
+                      <span className="ml-2 text-muted-foreground">Loading more sources...</span>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

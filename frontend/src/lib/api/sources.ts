@@ -11,7 +11,13 @@ import {
 } from '@/lib/types/api'
 
 export const sourcesApi = {
-  list: async (params?: { notebook_id?: string }) => {
+  list: async (params?: {
+    notebook_id?: string
+    limit?: number
+    offset?: number
+    sort_by?: 'created' | 'updated'
+    sort_order?: 'asc' | 'desc'
+  }) => {
     const response = await apiClient.get<SourceListResponse[]>('/sources', { params })
     return response.data
   },

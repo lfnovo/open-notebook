@@ -27,16 +27,24 @@ export interface RebuildEmbeddingsResponse {
 }
 
 export interface RebuildProgress {
-  total_items: number
-  processed_items: number
-  failed_items: number
+  total_items?: number
+  processed_items?: number
+  failed_items?: number
+  total?: number
+  processed?: number
+  percentage?: number
 }
 
 export interface RebuildStats {
-  sources_processed: number
-  notes_processed: number
-  insights_processed: number
-  processing_time: number
+  sources_processed?: number
+  notes_processed?: number
+  insights_processed?: number
+  sources?: number
+  notes?: number
+  insights?: number
+  failed?: number
+  failed_items?: number
+  processing_time?: number
 }
 
 export interface RebuildStatusResponse {

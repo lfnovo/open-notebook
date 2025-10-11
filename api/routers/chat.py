@@ -9,11 +9,8 @@ from pydantic import BaseModel, Field
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (
-    DatabaseOperationError,
-    InvalidInputError,
     NotFoundError,
 )
-from open_notebook.graphs.chat import ThreadState
 from open_notebook.graphs.chat import graph as chat_graph
 
 router = APIRouter()

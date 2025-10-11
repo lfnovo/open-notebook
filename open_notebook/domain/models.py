@@ -1,6 +1,5 @@
 from typing import ClassVar, Dict, Optional, Union
 
-from loguru import logger
 from esperanto import (
     AIFactory,
     EmbeddingModel,
@@ -8,6 +7,7 @@ from esperanto import (
     SpeechToTextModel,
     TextToSpeechModel,
 )
+from loguru import logger
 
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel

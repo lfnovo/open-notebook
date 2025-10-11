@@ -1,9 +1,11 @@
-from surreal_commands import command
-from pydantic import BaseModel
-from typing import Optional, List
-from loguru import logger
 import asyncio
 import time
+from typing import List, Optional
+
+from loguru import logger
+from pydantic import BaseModel
+from surreal_commands import command
+
 
 class TextProcessingInput(BaseModel):
     text: str

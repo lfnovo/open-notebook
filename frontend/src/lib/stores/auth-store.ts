@@ -9,7 +9,9 @@ interface AuthState {
   lastAuthCheck: number | null
   isCheckingAuth: boolean
   hasHydrated: boolean
+  authRequired: boolean | null
   setHasHydrated: (state: boolean) => void
+  checkAuthRequired: () => Promise<boolean>
   login: (password: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
@@ -25,9 +27,31 @@ export const useAuthStore = create<AuthState>()(
       lastAuthCheck: null,
       isCheckingAuth: false,
       hasHydrated: false,
+      authRequired: null,
 
       setHasHydrated: (state: boolean) => {
         set({ hasHydrated: state })
+      },
+
+      checkAuthRequired: async () => {
+        try {
+          const response = await fetch('/api/auth/status')
+          const data = await response.json()
+          const required = data.auth_enabled || false
+          set({ authRequired: required })
+
+          // If auth is not required, mark as authenticated
+          if (!required) {
+            set({ isAuthenticated: true, token: 'not-required' })
+          }
+
+          return required
+        } catch (error) {
+          console.error('Failed to check auth status:', error)
+          // Default to requiring auth if we can't check
+          set({ authRequired: true })
+          return true
+        }
       },
 
       login: async (password: string) => {

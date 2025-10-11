@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from loguru import logger
-from surreal_commands import execute_command_sync
 
 from api.command_service import CommandService
 from api.models import EmbedRequest, EmbedResponse
@@ -50,7 +49,7 @@ async def embed_content(embed_request: EmbedRequest):
 
                 return EmbedResponse(
                     success=True,
-                    message=f"Embedding queued for background processing",
+                    message="Embedding queued for background processing",
                     item_id=item_id,
                     item_type=item_type,
                     command_id=command_id,

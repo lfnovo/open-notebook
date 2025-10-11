@@ -5,17 +5,18 @@ These tests verify that the Source Chat Langgraph integrates correctly
 with the existing Open Notebook infrastructure.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from langchain_core.messages import HumanMessage, AIMessage
 
-from open_notebook.graphs.source_chat import (
-    source_chat_graph,
-    SourceChatState,
-    call_model_with_source_context,
-    _format_source_context
-)
+import pytest
+from langchain_core.messages import AIMessage, HumanMessage
+
 from open_notebook.domain.notebook import Source, SourceInsight
+from open_notebook.graphs.source_chat import (
+    SourceChatState,
+    _format_source_context,
+    call_model_with_source_context,
+    source_chat_graph,
+)
 
 
 @pytest.fixture

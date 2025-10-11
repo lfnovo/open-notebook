@@ -1,7 +1,6 @@
 import asyncio
-import concurrent.futures
 import sqlite3
-from typing import Annotated, Optional, List, Dict
+from typing import Annotated, Dict, List, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import SystemMessage

@@ -1,9 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock, patch
 
+import pytest
+from fastapi.testclient import TestClient
+
 from api.main import app
-from open_notebook.domain.notebook import Source, ChatSession
 
 client = TestClient(app)
 

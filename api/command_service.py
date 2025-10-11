@@ -3,8 +3,6 @@ from typing import Any, Dict, List, Optional
 from loguru import logger
 from surreal_commands import get_command_status, submit_command
 
-from api.models import ErrorResponse
-
 
 class CommandService:
     """Generic service layer for command operations"""

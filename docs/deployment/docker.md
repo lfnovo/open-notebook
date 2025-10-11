@@ -7,9 +7,10 @@ This guide covers everything you need to deploy Open Notebook using Docker, from
 ## 📋 What You'll Get
 
 Open Notebook is a powerful AI-powered research and note-taking tool that:
+- Modern Next.js/React interface for a smooth user experience
 - Helps you organize research across multiple notebooks
 - Lets you chat with your documents using AI
-- Supports 15+ AI providers (OpenAI, Anthropic, Google, Ollama, and more)
+- Supports 16+ AI providers (OpenAI, Anthropic, Google, Ollama, and more)
 - Creates AI-generated podcasts from your content
 - Works with PDFs, web links, videos, audio files, and more
 
@@ -102,7 +103,8 @@ OpenAI provides everything you need to get started:
    ```
 
 5. **Access the application**:
-   - Open your browser to: http://localhost:8502
+   - **Next.js UI**: http://localhost:8502 - Modern, responsive interface
+   - **API Documentation**: http://localhost:5055/docs - Full REST API access
    - You should see the Open Notebook interface!
 
 ### Step 4: Configure Your Models
@@ -145,8 +147,8 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8502:8502"
-      - "5055:5055"
+      - "8502:8502"  # Next.js Frontend
+      - "5055:5055"  # REST API
     env_file:
       - ./docker.env
     volumes:
@@ -480,8 +482,8 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:latest
     ports:
-      - "8502:8502"
-      - "5055:5055"
+      - "8502:8502"  # Next.js Frontend
+      - "5055:5055"  # REST API
     env_file:
       - ./docker.env
     volumes:
@@ -491,7 +493,7 @@ services:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8502/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
       interval: 30s
       timeout: 10s
       retries: 3

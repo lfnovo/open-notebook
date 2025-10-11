@@ -2,8 +2,10 @@
 """
 Debug script to test source creation and reproduce the 422 error
 """
-import requests
 import json
+
+import requests
+
 
 # Test data that mimics what the frontend sends
 def test_create_text_source():
@@ -89,7 +91,7 @@ def test_create_source_with_notebook():
                 'async_processing': 'true'
             }
             
-            print(f"\nTesting source creation with notebook...")
+            print("\nTesting source creation with notebook...")
             print(f"Sending form data: {form_data}")
             
             try:

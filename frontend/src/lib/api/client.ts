@@ -1,9 +1,12 @@
 import axios, { AxiosResponse } from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'
+// Use relative URL for API calls - Next.js rewrites handle the routing
+// In production (Docker), this will be proxied to the API container
+// In development, Next.js dev server will proxy to localhost:5055
+const API_BASE_URL = '/api'
 
 export const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field, ConfigDict, model_validator
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 # Notebook models

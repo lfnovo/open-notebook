@@ -5,11 +5,11 @@ This script demonstrates the new multi-notebook support and source update functi
 """
 
 import asyncio
-from typing import List
+
 from content_core.common import ProcessSourceState
+
+from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.graphs.source import SourceState, source_graph
-from open_notebook.domain.notebook import Source, Notebook
-from open_notebook.domain.transformation import Transformation
 
 
 async def test_source_graph_update():

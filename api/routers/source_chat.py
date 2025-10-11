@@ -1,17 +1,20 @@
 import asyncio
 import json
-from typing import Dict, List, Optional, Any, AsyncGenerator
-from fastapi import APIRouter, HTTPException, Query, Path
-from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
-from loguru import logger
-from langchain_core.runnables import RunnableConfig
-from langchain_core.messages import HumanMessage
+from typing import AsyncGenerator, List, Optional
 
+from fastapi import APIRouter, HTTPException, Path
+from fastapi.responses import StreamingResponse
+from langchain_core.messages import HumanMessage
+from langchain_core.runnables import RunnableConfig
+from loguru import logger
+from pydantic import BaseModel, Field
+
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Source
-from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph, SourceChatState
-from open_notebook.database.repository import repo_query, ensure_record_id
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError, NotFoundError
+from open_notebook.exceptions import (
+    NotFoundError,
+)
+from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
 
 router = APIRouter()
 

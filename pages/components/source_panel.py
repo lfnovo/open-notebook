@@ -2,9 +2,9 @@ import streamlit as st
 from humanize import naturaltime
 
 from api.insights_service import insights_service
+from api.models_service import ModelsService
 from api.sources_service import SourcesService
 from api.transformations_service import TransformationsService
-from api.models_service import ModelsService
 from pages.stream_app.utils import check_models
 
 # Initialize service instances

@@ -80,7 +80,7 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 ### Built With
 
-[![Python][Python]][Python-url] [![SurrealDB][SurrealDB]][SurrealDB-url] [![LangChain][LangChain]][LangChain-url] [![Streamlit][Streamlit]][Streamlit-url]
+[![Python][Python]][Python-url] [![Next.js][Next.js]][Next-url] [![React][React]][React-url] [![SurrealDB][SurrealDB]][SurrealDB-url] [![LangChain][LangChain]][LangChain-url]
 
 ## 🚀 Quick Start
 
@@ -110,7 +110,7 @@ open-notebook/
 ```
 
 **Access your installation:**
-- **🖥️ Main Interface**: http://localhost:8502 (Streamlit UI)
+- **🖥️ Main Interface**: http://localhost:8502 (Next.js UI)
 - **🔧 API Access**: http://localhost:5055 (REST API)
 - **📚 API Documentation**: http://localhost:5055/docs (Interactive Swagger UI)
 
@@ -212,13 +212,13 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 ## 🗺️ Roadmap
 
 ### Upcoming Features
-- **React Frontend**: Modern React-based frontend to replace Streamlit
 - **Live Front-End Updates**: Real-time UI updates for smoother experience
 - **Async Processing**: Faster UI through asynchronous content processing
 - **Cross-Notebook Sources**: Reuse research materials across projects
 - **Bookmark Integration**: Connect with your favorite bookmarking apps
 
 ### Recently Completed ✅
+- **Next.js Frontend**: Modern React-based frontend with improved performance
 - **Comprehensive REST API**: Full programmatic access to all functionality
 - **Multi-Model Support**: 16+ AI providers including OpenAI, Anthropic, Ollama, LM Studio
 - **Advanced Podcast Generator**: Professional multi-speaker podcasts with Episode Profiles
@@ -240,13 +240,13 @@ See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full
 
 ### Contributing
 We welcome contributions! We're especially looking for help with:
-- **Frontend Development**: Help build a modern React-based UI (planned replacement for current Streamlit interface)
+- **Frontend Development**: Help improve our modern Next.js/React UI
 - **Testing & Bug Fixes**: Make Open Notebook more robust
 - **Feature Development**: Build the coolest research tool together
 - **Documentation**: Improve guides and tutorials
 
-**Current Tech Stack**: Python, FastAPI, SurrealDB, Streamlit  
-**Future Roadmap**: React frontend, enhanced real-time updates
+**Current Tech Stack**: Python, FastAPI, Next.js, React, SurrealDB
+**Future Roadmap**: Real-time updates, enhanced async processing
 
 See our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started.
 
@@ -294,8 +294,10 @@ Open Notebook is built on the shoulders of amazing open-source projects:
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/lfnovo
 [product-screenshot]: images/screenshot.png
-[Streamlit]: https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white
-[Streamlit-url]: https://streamlit.io/
+[Next.js]: https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white
+[Next-url]: https://nextjs.org/
+[React]: https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black
+[React-url]: https://reactjs.org/
 [Python]: https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white
 [Python-url]: https://www.python.org/
 [LangChain]: https://img.shields.io/badge/LangChain-3A3A3A?style=for-the-badge&logo=chainlink&logoColor=white

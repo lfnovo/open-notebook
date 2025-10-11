@@ -1,16 +1,14 @@
 import asyncio
 import re
 from datetime import datetime
-from typing import List, Union
 
 import nest_asyncio
 import streamlit as st
 from loguru import logger
 
 nest_asyncio.apply()
-from api.models_service import models_service
 from api.chat_service import chat_service
-from open_notebook.database.migrate import MigrationManager
+from api.models_service import models_service
 from open_notebook.utils import (
     compare_versions,
     get_installed_version,
@@ -123,20 +121,18 @@ def setup_stream_state(current_notebook) -> dict:
 
 
 def check_migration():
+    """
+    DEPRECATED: This function is no longer used.
+    Database migrations now run automatically when the API starts up.
+    See api/main.py lifespan handler for the new migration logic.
+
+    This function is kept for backward compatibility but does nothing.
+    """
+    # Migrations are now handled automatically by the API on startup
+    # No user interaction needed
     if "migration_required" not in st.session_state:
-        logger.debug("Running migration check")
-        mm = MigrationManager()
-        if mm.needs_migration:
-            logger.critical("Migration required")
-            st.warning("The Open Notebook database needs a migration to run properly.")
-            if st.button("Run Migration"):
-                mm.run_migration_up()
-                st.success("Migration successful")
-                st.session_state["migration_required"] = False
-                st.rerun()
-            st.stop()
-        else:
-            st.session_state["migration_required"] = False
+        st.session_state["migration_required"] = False
+    pass
 
 
 def check_models(only_mandatory=True, stop_on_error=True):

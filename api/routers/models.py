@@ -1,13 +1,18 @@
 import os
 from typing import List, Optional
 
+from esperanto import AIFactory
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
-from esperanto import AIFactory
 
-from api.models import DefaultModelsResponse, ModelCreate, ModelResponse, ProviderAvailabilityResponse
+from api.models import (
+    DefaultModelsResponse,
+    ModelCreate,
+    ModelResponse,
+    ProviderAvailabilityResponse,
+)
 from open_notebook.domain.models import DefaultModels, Model
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 

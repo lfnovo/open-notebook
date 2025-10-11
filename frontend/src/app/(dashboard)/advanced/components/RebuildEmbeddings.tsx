@@ -317,7 +317,7 @@ export function RebuildEmbeddings() {
                 <li><strong>Switching embedding models:</strong> If you change from one embedding model to another, you need to rebuild all embeddings to ensure consistency.</li>
                 <li><strong>Upgrading model versions:</strong> When updating to a newer version of your embedding model, rebuild to take advantage of improvements.</li>
                 <li><strong>Fixing corrupted embeddings:</strong> If you suspect some embeddings are corrupted or missing, rebuilding can restore them.</li>
-                <li><strong>After bulk imports:</strong> If you imported content without embeddings, use "All" mode to embed everything.</li>
+                <li><strong>After bulk imports:</strong> If you imported content without embeddings, use &quot;All&quot; mode to embed everything.</li>
               </ul>
             </AccordionContent>
           </AccordionItem>
@@ -348,7 +348,7 @@ export function RebuildEmbeddings() {
               <p><strong>Yes, rebuilding is safe!</strong> The rebuild process:</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
                 <li>✅ <strong>Is idempotent:</strong> Running multiple times produces the same result</li>
-                <li>✅ <strong>Doesn't delete content:</strong> Only replaces embeddings</li>
+                <li>✅ <strong>Doesn&apos;t delete content:</strong> Only replaces embeddings</li>
                 <li>✅ <strong>Can be run anytime:</strong> No need to stop other operations</li>
                 <li>✅ <strong>Handles errors gracefully:</strong> Failed items are logged and skipped</li>
               </ul>

@@ -115,7 +115,7 @@ if "rebuild_command_id" in st.session_state:
 
             # Show status
             if status == "queued":
-                status_placeholder.info(f"⏳ **Status**: Queued (waiting to start)")
+                status_placeholder.info("⏳ **Status**: Queued (waiting to start)")
             elif status == "running":
                 status_placeholder.info(f"⚙️ **Status**: Running... (Elapsed: {elapsed_str})")
 
@@ -124,7 +124,7 @@ if "rebuild_command_id" in st.session_state:
                 st.rerun()
 
             elif status == "completed":
-                status_placeholder.success(f"✅ **Status**: Completed!")
+                status_placeholder.success("✅ **Status**: Completed!")
 
                 # Clear session state
                 if "rebuild_command_id" in st.session_state:
@@ -133,7 +133,7 @@ if "rebuild_command_id" in st.session_state:
                     del st.session_state["rebuild_start_time"]
 
             elif status == "failed":
-                status_placeholder.error(f"❌ **Status**: Failed")
+                status_placeholder.error("❌ **Status**: Failed")
                 if error_message:
                     st.error(f"Error: {error_message}")
 

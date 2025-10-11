@@ -32,7 +32,6 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
-from open_notebook.graphs.source import source_graph
 
 router = APIRouter()
 

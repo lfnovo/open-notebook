@@ -1,9 +1,12 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
 from api.auth import PasswordAuthMiddleware
-from api.routers import commands as commands_router
 from api.routers import (
+    auth,
     chat,
     context,
     embedding,
@@ -21,28 +24,63 @@ from api.routers import (
     speaker_profiles,
     transformations,
 )
+from api.routers import commands as commands_router
+from open_notebook.database.async_migrate import AsyncMigrationManager
 
 # Import commands to register them in the API process
 try:
-    from loguru import logger
-
-    import commands.embedding_commands
-    import commands.podcast_commands
 
     logger.info("Commands imported in API process")
 except Exception as e:
-    from loguru import logger
-
     logger.error(f"Failed to import commands in API process: {e}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan event handler for the FastAPI application.
+    Runs database migrations automatically on startup.
+    """
+    # Startup: Run database migrations
+    logger.info("Starting API initialization...")
+
+    try:
+        migration_manager = AsyncMigrationManager()
+        current_version = await migration_manager.get_current_version()
+        logger.info(f"Current database version: {current_version}")
+
+        if await migration_manager.needs_migration():
+            logger.warning("Database migrations are pending. Running migrations...")
+            await migration_manager.run_migration_up()
+            new_version = await migration_manager.get_current_version()
+            logger.success(f"Migrations completed successfully. Database is now at version {new_version}")
+        else:
+            logger.info("Database is already at the latest version. No migrations needed.")
+    except Exception as e:
+        logger.error(f"CRITICAL: Database migration failed: {str(e)}")
+        logger.exception(e)
+        # Fail fast - don't start the API with an outdated database schema
+        raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
+
+    logger.success("API initialization completed successfully")
+
+    # Yield control to the application
+    yield
+
+    # Shutdown: cleanup if needed
+    logger.info("API shutdown complete")
+
 
 app = FastAPI(
     title="Open Notebook API",
     description="API for Open Notebook - Research Assistant",
     version="0.2.2",
+    lifespan=lifespan,
 )
 
 # Add password authentication middleware first
-app.add_middleware(PasswordAuthMiddleware)
+# Exclude /api/auth/status from authentication
+app.add_middleware(PasswordAuthMiddleware, excluded_paths=["/", "/health", "/docs", "/openapi.json", "/redoc", "/api/auth/status"])
 
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
@@ -54,6 +92,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(models.router, prefix="/api", tags=["models"])

@@ -2,9 +2,9 @@
 Chat service for API operations.
 Provides async interface for chat functionality.
 """
-import asyncio
 import os
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
+
 import httpx
 from loguru import logger
 

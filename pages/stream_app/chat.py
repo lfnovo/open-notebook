@@ -4,9 +4,9 @@ import humanize
 import streamlit as st
 from loguru import logger
 
+from api.chat_service import chat_service
 from api.episode_profiles_service import episode_profiles_service
 from api.podcast_service import PodcastService
-from api.chat_service import chat_service
 
 # from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import parse_thinking_content, token_count

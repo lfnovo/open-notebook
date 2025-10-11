@@ -26,6 +26,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  const [tokenCount, setTokenCount] = useState<number>(0)
+  const [charCount, setCharCount] = useState<number>(0)
 
   // Fetch sessions for this notebook
   const {
@@ -120,31 +122,47 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   })
 
   // Build context from sources and notes based on user selections
-  const buildContext = useCallback(() => {
-    return {
-      sources: sources
-        .filter(source => {
-          const mode = contextSelections.sources[source.id]
-          return mode && mode !== 'off' // Include if mode is 'insights' or 'full'
-        })
-        .map(source => {
-          const mode = contextSelections.sources[source.id]
-          return {
-            id: source.id,
-            content: mode === 'insights' ? 'insights' : 'full content'
-          }
-        }),
-      notes: notes
-        .filter(note => {
-          const mode = contextSelections.notes[note.id]
-          return mode && mode !== 'off' // Include if mode is 'full' (notes only have off/full)
-        })
-        .map(note => ({
-          id: note.id,
-          content: 'full content' // Notes always use full content when included
-        }))
+  const buildContext = useCallback(async () => {
+    // Build context_config mapping IDs to selection modes
+    const context_config: { sources: Record<string, string>, notes: Record<string, string> } = {
+      sources: {},
+      notes: {}
     }
-  }, [sources, notes, contextSelections])
+
+    // Map source selections
+    sources.forEach(source => {
+      const mode = contextSelections.sources[source.id]
+      if (mode === 'insights') {
+        context_config.sources[source.id] = 'insights'
+      } else if (mode === 'full') {
+        context_config.sources[source.id] = 'full content'
+      } else {
+        context_config.sources[source.id] = 'not in'
+      }
+    })
+
+    // Map note selections
+    notes.forEach(note => {
+      const mode = contextSelections.notes[note.id]
+      if (mode === 'full') {
+        context_config.notes[note.id] = 'full content'
+      } else {
+        context_config.notes[note.id] = 'not in'
+      }
+    })
+
+    // Call API to build context with actual content
+    const response = await chatApi.buildContext({
+      notebook_id: notebookId,
+      context_config
+    })
+
+    // Store token and char counts
+    setTokenCount(response.token_count)
+    setCharCount(response.char_count)
+
+    return response.context
+  }, [notebookId, sources, notes, contextSelections])
 
   // Send message (synchronous, no streaming)
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
@@ -183,7 +201,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
     try {
       // Build context and send message
-      const context = buildContext()
+      const context = await buildContext()
       const response = await chatApi.sendMessage({
         session_id: sessionId,
         message,
@@ -239,6 +257,18 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return deleteSessionMutation.mutate(sessionId)
   }, [deleteSessionMutation])
 
+  // Update token/char counts when context selections change
+  useEffect(() => {
+    const updateContextCounts = async () => {
+      try {
+        await buildContext()
+      } catch (error) {
+        console.error('Error updating context counts:', error)
+      }
+    }
+    updateContextCounts()
+  }, [buildContext])
+
   return {
     // State
     sessions,
@@ -247,6 +277,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     messages,
     isSending,
     loadingSessions,
+    tokenCount,
+    charCount,
 
     // Actions
     createSession,

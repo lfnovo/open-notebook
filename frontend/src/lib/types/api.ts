@@ -199,8 +199,8 @@ export interface SendNotebookChatMessageRequest {
   session_id: string
   message: string
   context: {
-    sources: Array<{ id: string; content: string }>
-    notes: Array<{ id: string; content: string }>
+    sources: Array<Record<string, unknown>>
+    notes: Array<Record<string, unknown>>
   }
   model_override?: string
 }

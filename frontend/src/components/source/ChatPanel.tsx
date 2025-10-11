@@ -24,6 +24,8 @@ interface NotebookContextStats {
   sourcesInsights: number
   sourcesFull: number
   notesCount: number
+  tokenCount?: number
+  charCount?: number
 }
 
 interface ChatPanelProps {
@@ -243,6 +245,8 @@ export function ChatPanel({
             sourcesInsights={notebookContextStats.sourcesInsights}
             sourcesFull={notebookContextStats.sourcesFull}
             notesCount={notebookContextStats.notesCount}
+            tokenCount={notebookContextStats.tokenCount}
+            charCount={notebookContextStats.charCount}
           />
         )}
 

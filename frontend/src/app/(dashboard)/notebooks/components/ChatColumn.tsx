@@ -52,8 +52,14 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
       }
     })
 
-    return { sourcesInsights, sourcesFull, notesCount }
-  }, [sources, notes, contextSelections])
+    return {
+      sourcesInsights,
+      sourcesFull,
+      notesCount,
+      tokenCount: chat.tokenCount,
+      charCount: chat.charCount
+    }
+  }, [sources, notes, contextSelections, chat.tokenCount, chat.charCount])
 
   // Show loading state while sources/notes are being fetched
   if (sourcesLoading || notesLoading) {

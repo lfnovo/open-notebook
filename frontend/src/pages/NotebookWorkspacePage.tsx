@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, Save } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import AppShell from '@/components/layout/AppShell';
 import MilkdownEditor from '@/components/editor/MilkdownEditor';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
-import { formatDateTime } from '@/lib/utils';
+import { cn, formatDateTime } from '@/lib/utils';
 import CopilotPanel from '@/features/copilot/components/CopilotPanel';
 import SourcesPanel from '@/features/sources/components/SourcesPanel';
 import type { ContextResponse, Notebook, Note } from '@/types/api';
@@ -20,6 +20,7 @@ const NotebookWorkspacePage = () => {
 
   const [activeNoteId, setActiveNoteId] = useState<string | null>(() => searchParams.get('note'));
   const [draft, setDraft] = useState('');
+  const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
 
   const {
     data: notebook,
@@ -126,9 +127,35 @@ const NotebookWorkspacePage = () => {
           </div>
         )}
         <div className="flex min-h-0 flex-1 gap-4 px-6 py-4">
-          <aside className="flex w-72 flex-col border border-border/80 bg-card/50 p-4">
-            {notebookId && <SourcesPanel notebookId={notebookId} />}
-          </aside>
+          <div className="flex items-start gap-2">
+            <aside
+              id="sources-panel"
+              className={cn(
+                'flex h-full flex-col overflow-hidden border border-border/80 bg-card/50 transition-all duration-200 ease-in-out',
+                isSourcesCollapsed
+                  ? 'w-0 border-transparent bg-transparent p-0 opacity-0 pointer-events-none'
+                  : 'w-72 p-4 opacity-100'
+              )}
+            >
+              {!isSourcesCollapsed && notebookId && <SourcesPanel notebookId={notebookId} />}
+            </aside>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSourcesCollapsed((prev) => !prev)}
+              aria-expanded={!isSourcesCollapsed}
+              aria-controls="sources-panel"
+              aria-label={isSourcesCollapsed ? 'Expand sources panel' : 'Collapse sources panel'}
+              className="h-8 w-8 shrink-0 border border-border/70 bg-background/80 text-muted-foreground hover:bg-accent"
+            >
+              {isSourcesCollapsed ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <section className="flex min-w-0 flex-1 flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>

@@ -1,4 +1,5 @@
 import SettingsLauncher from '@/components/settings/SettingsLauncher';
+import ThemeToggle from '@/components/theme/ThemeToggle';
 
 interface AppHeaderProps {
   title?: string;
@@ -15,6 +16,7 @@ const AppHeader = ({ title = 'Open Notebook', subtitle, actions }: AppHeaderProp
       </div>
       <div className="flex items-center gap-2">
         {actions}
+        <ThemeToggle />
         <SettingsLauncher />
       </div>
     </header>

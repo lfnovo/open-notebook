@@ -13,7 +13,7 @@ from api.models import (
     SourceInsightResponse,
     SourceListResponse,
     SourceResponse,
-    SourceUpdate,
+    SourceUpdate, SourceUploadResponse,
 )
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.config import UPLOADS_FOLDER
@@ -26,7 +26,7 @@ router = APIRouter()
 
 
 
-@router.post("/sources/upload")
+@router.post("/sources/upload", response_model=SourceUploadResponse)
 async def upload_source_file(file: UploadFile = File(...)):
     """Upload a file to the server and return its stored path."""
     if not file.filename:
@@ -51,7 +51,7 @@ async def upload_source_file(file: UploadFile = File(...)):
         logger.error(f"Error saving uploaded file: {exc}")
         raise HTTPException(status_code=500, detail="Failed to store uploaded file")
 
-    return {"file_path": str(destination)}
+    return SourceUploadResponse(file_path=str(destination))
 
 @router.get("/sources", response_model=List[SourceListResponse])
 async def get_sources(

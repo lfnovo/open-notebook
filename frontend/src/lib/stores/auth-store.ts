@@ -168,12 +168,11 @@ export const useAuthStore = create<AuthState>()(
             })
             return true
           } else {
-            console.log('checkAuth failed:', response.status)
-            set({ 
-              isAuthenticated: false, 
+            set({
+              isAuthenticated: false,
               token: null,
               lastAuthCheck: null,
-              isCheckingAuth: false 
+              isCheckingAuth: false
             })
             return false
           }

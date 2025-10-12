@@ -74,10 +74,6 @@ export function useAsk() {
         const { done, value } = await reader.read()
 
         if (done) {
-          // Process any remaining buffer
-          if (buffer.trim()) {
-            console.warn('Incomplete data in buffer:', buffer)
-          }
           break
         }
 

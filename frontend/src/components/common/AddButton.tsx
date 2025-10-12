@@ -32,7 +32,6 @@ export function AddButton({
 
   const handleAddNotebook = () => {
     // TODO: Implement notebook creation when ready
-    console.log('Add notebook - coming soon!')
   }
 
   if (iconOnly) {

@@ -142,17 +142,6 @@ export function SourceCard({
     ? rawStatus
     : (sourceWithStatus.command_id ? 'new' : 'completed')
 
-  // Debug logging
-  useEffect(() => {
-    console.log(`📊 Source ${source.id}:`, {
-      sourceStatus: sourceWithStatus.status,
-      statusData: statusData?.status,
-      commandId: sourceWithStatus.command_id,
-      shouldFetch: shouldFetchStatus,
-      wasProcessing,
-      currentStatus
-    })
-  }, [statusData, shouldFetchStatus, wasProcessing, source.id, sourceWithStatus.status, sourceWithStatus.command_id, currentStatus])
 
   // Track processing state and detect completion
   useEffect(() => {
@@ -166,7 +155,6 @@ export function SourceCard({
     // If we were processing and now completed/failed, trigger refresh and stop polling
     if (wasProcessing &&
         (currentStatusFromData === 'completed' || currentStatusFromData === 'failed')) {
-      console.log(`🔄 Source ${source.id} processing completed, triggering refresh`)
       setWasProcessing(false) // Stop polling
 
       if (onRefresh) {

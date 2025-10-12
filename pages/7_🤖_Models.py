@@ -8,6 +8,7 @@ import streamlit as st
 from esperanto import AIFactory
 
 from api.models_service import models_service
+from open_notebook.domain.models import Model
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
@@ -155,7 +156,7 @@ def handle_default_selection(
 
 
 # Group models by type
-models_by_type = {
+models_by_type: dict[str, list[Model]] = {
     "language": [],
     "embedding": [],
     "text_to_speech": [],
@@ -189,8 +190,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_lang_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No language models configured")
 
@@ -268,8 +270,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_emb_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No embedding models configured")
 
@@ -308,8 +311,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_tts_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No text-to-speech models configured")
 
@@ -346,8 +350,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_stt_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No speech-to-text models configured")
 

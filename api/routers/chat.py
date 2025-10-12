@@ -104,7 +104,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 
         return [
             ChatSessionResponse(
-                id=session.id,
+                id=session.id or "",
                 title=session.title or "Untitled Session",
                 notebook_id=notebook_id,
                 created=str(session.created),
@@ -143,8 +143,8 @@ async def create_session(request: CreateSessionRequest):
         await session.relate_to_notebook(request.notebook_id)
 
         return ChatSessionResponse(
-            id=session.id,
-            title=session.title,
+            id=session.id or "",
+            title=session.title or "",
             notebook_id=request.notebook_id,
             created=str(session.created),
             updated=str(session.updated),
@@ -183,7 +183,7 @@ async def get_session(session_id: str):
         )
 
         # Extract messages from state
-        messages = []
+        messages: list[ChatMessage] = []
         if thread_state and thread_state.values and "messages" in thread_state.values:
             for msg in thread_state.values["messages"]:
                 messages.append(
@@ -217,7 +217,7 @@ async def get_session(session_id: str):
             )
 
         return ChatSessionWithMessagesResponse(
-            id=session.id,
+            id=session.id or "",
             title=session.title or "Untitled Session",
             notebook_id=notebook_id,
             created=str(session.created),
@@ -271,8 +271,8 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         notebook_id = notebook_query[0]["out"] if notebook_query else None
 
         return ChatSessionResponse(
-            id=session.id,
-            title=session.title,
+            id=session.id or "",
+            title=session.title or "",
             notebook_id=notebook_id,
             created=str(session.created),
             updated=str(session.updated),
@@ -353,7 +353,7 @@ async def execute_chat(request: ExecuteChatRequest):
 
         # Execute chat graph
         result = chat_graph.invoke(
-            input=state_values,
+            input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={
                     "thread_id": request.session_id,
@@ -366,7 +366,7 @@ async def execute_chat(request: ExecuteChatRequest):
         await session.save()
 
         # Convert messages to response format
-        messages = []
+        messages: list[ChatMessage] = []
         for msg in result.get("messages", []):
             messages.append(
                 ChatMessage(
@@ -394,7 +394,7 @@ async def build_context(request: BuildContextRequest):
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        context_data = {"sources": [], "notes": []}
+        context_data: dict[str, list[dict[str, str]]] = {"sources": [], "notes": []}
         total_content = ""
 
         # Process context configuration if provided

@@ -37,13 +37,13 @@ class ContextItem:
 @dataclass
 class ContextConfig:
     """Configuration for context building."""
-    
-    sources: Dict[str, str] = None  # {source_id: inclusion_level}
-    notes: Dict[str, str] = None    # {note_id: inclusion_level}
+
+    sources: Optional[Dict[str, str]] = None  # {source_id: inclusion_level}
+    notes: Optional[Dict[str, str]] = None    # {note_id: inclusion_level}
     include_insights: bool = True
     include_notes: bool = True
     max_tokens: Optional[int] = None
-    priority_weights: Dict[str, int] = None  # {type: weight}
+    priority_weights: Optional[Dict[str, int]] = None  # {type: weight}
     
     def __post_init__(self):
         """Initialize default values."""
@@ -64,7 +64,7 @@ class ContextBuilder:
     def __init__(self, **kwargs):
         """
         Initialize ContextBuilder with flexible parameters.
-        
+
         Supported parameters:
         - source_id: str - Include specific source
         - notebook_id: str - Include notebook content
@@ -76,26 +76,29 @@ class ContextBuilder:
         """
         # Store all parameters for flexibility
         self.params = kwargs
-        
+
         # Extract commonly used parameters
-        self.source_id = kwargs.get('source_id')
-        self.notebook_id = kwargs.get('notebook_id')
-        self.include_insights = kwargs.get('include_insights', True)
-        self.include_notes = kwargs.get('include_notes', True)
-        self.max_tokens = kwargs.get('max_tokens')
-        
+        self.source_id: Optional[str] = kwargs.get('source_id')
+        self.notebook_id: Optional[str] = kwargs.get('notebook_id')
+        self.include_insights: bool = kwargs.get('include_insights', True)
+        self.include_notes: bool = kwargs.get('include_notes', True)
+        self.max_tokens: Optional[int] = kwargs.get('max_tokens')
+
         # Context configuration
-        self.context_config = kwargs.get('context_config')
-        if self.context_config is None:
+        context_config_arg: Optional[ContextConfig] = kwargs.get('context_config')
+        self.context_config: ContextConfig
+        if context_config_arg is None:
             self.context_config = ContextConfig(
                 include_insights=self.include_insights,
                 include_notes=self.include_notes,
                 max_tokens=self.max_tokens
             )
-        
+        else:
+            self.context_config = context_config_arg
+
         # Items storage
         self.items: List[ContextItem] = []
-        
+
         logger.debug(f"ContextBuilder initialized with params: {list(kwargs.keys())}")
     
     async def build(self) -> Dict[str, Any]:
@@ -163,13 +166,13 @@ class ContextBuilder:
                 return
             
             # Determine context size based on inclusion level
-            context_size = "long" if "full content" in inclusion_level else "short"
+            context_size: Literal["short", "long"] = "long" if "full content" in inclusion_level else "short"
             source_context = await source.get_context(context_size=context_size)
-            
+
             # Add source item
-            priority = self.context_config.priority_weights.get("source", 100)
+            priority = (self.context_config.priority_weights or {}).get("source", 100)
             item = ContextItem(
-                id=source.id,
+                id=source.id or "",
                 type="source",
                 content=source_context,
                 priority=priority
@@ -180,9 +183,9 @@ class ContextBuilder:
             if self.include_insights and "insights" in inclusion_level:
                 insights = await source.get_insights()
                 for insight in insights:
-                    insight_priority = self.context_config.priority_weights.get("insight", 75)
+                    insight_priority = (self.context_config.priority_weights or {}).get("insight", 75)
                     insight_item = ContextItem(
-                        id=insight.id,
+                        id=insight.id or "",
                         type="insight",
                         content={
                             "id": insight.id,
@@ -215,26 +218,30 @@ class ContextBuilder:
                 raise NotFoundError(f"Notebook {notebook_id} not found")
             
             # Process sources from context config or get all
-            if self.context_config.sources:
-                for source_id, status in self.context_config.sources.items():
+            config_sources = self.context_config.sources
+            if config_sources:
+                for source_id, status in config_sources.items():
                     await self._add_source_context(source_id, status)
             else:
                 # Default: get all sources with insights
                 sources = await notebook.get_sources()
                 for source in sources:
-                    await self._add_source_context(source.id, "insights")
-            
+                    if source.id:
+                        await self._add_source_context(source.id, "insights")
+
             # Process notes from context config or get all
             if self.include_notes:
-                if self.context_config.notes:
-                    for note_id, status in self.context_config.notes.items():
+                config_notes = self.context_config.notes
+                if config_notes:
+                    for note_id, status in config_notes.items():
                         if "not in" not in status:
                             await self._add_note_context(note_id, status)
                 else:
                     # Default: get all notes with short content
                     notes = await notebook.get_notes()
                     for note in notes:
-                        await self._add_note_context(note.id, "full content")
+                        if note.id:
+                            await self._add_note_context(note.id, "full content")
             
             logger.debug(f"Added notebook context for {notebook_id}")
             
@@ -270,13 +277,13 @@ class ContextBuilder:
                 return
             
             # Get note context
-            context_size = "long" if "full content" in inclusion_level else "short"
+            context_size: Literal["short", "long"] = "long" if "full content" in inclusion_level else "short"
             note_context = note.get_context(context_size=context_size)
-            
+
             # Add note item
-            priority = self.context_config.priority_weights.get("note", 50)
+            priority = (self.context_config.priority_weights or {}).get("note", 50)
             item = ContextItem(
-                id=note.id,
+                id=note.id or "",
                 type="note",
                 content=note_context,
                 priority=priority

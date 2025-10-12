@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from typing import Any
 
 import streamlit as st
 
@@ -1088,7 +1089,7 @@ with episodes_tab:
         st.write(f"Found {len(episodes)} episode(s)")
 
         # Group episodes by status
-        status_groups = {"running": [], "completed": [], "failed": [], "pending": []}
+        status_groups: dict[str, list[dict[str, Any]]] = {"running": [], "completed": [], "failed": [], "pending": []}
 
         for episode in episodes:
             status = episode.get("job_status", "unknown")
@@ -1287,13 +1288,13 @@ text_to_speech_models = models_service.get_all_models(model_type="text_to_speech
 text_models = models_service.get_all_models(model_type="language")
 
 # Build provider-model mappings
-tts_provider_models = {}
+tts_provider_models: dict[str, list[str]] = {}
 for model in text_to_speech_models:
     if model.provider not in tts_provider_models:
         tts_provider_models[model.provider] = []
     tts_provider_models[model.provider].append(model.name)
 
-transcript_provider_models = {}
+transcript_provider_models: dict[str, list[str]] = {}
 for model in text_models:
     if model.provider not in transcript_provider_models:
         transcript_provider_models[model.provider] = []

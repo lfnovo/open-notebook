@@ -90,7 +90,7 @@ async def process_source_command(
 
         # Execute source_graph with all notebooks
         result = await source_graph.ainvoke(
-            {
+            {  # type: ignore[arg-type]
                 "content_state": input_data.content_state,
                 "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,

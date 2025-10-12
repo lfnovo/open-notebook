@@ -64,7 +64,7 @@ async def create_model(model_data: ModelCreate):
         await new_model.save()
         
         return ModelResponse(
-            id=new_model.id,
+            id=new_model.id or "",
             name=new_model.name,
             provider=new_model.provider,
             type=new_model.type,
@@ -101,15 +101,15 @@ async def get_default_models():
     """Get default model assignments."""
     try:
         defaults = await DefaultModels.get_instance()
-        
+
         return DefaultModelsResponse(
-            default_chat_model=defaults.default_chat_model,
-            default_transformation_model=defaults.default_transformation_model,
-            large_context_model=defaults.large_context_model,
-            default_text_to_speech_model=defaults.default_text_to_speech_model,
-            default_speech_to_text_model=defaults.default_speech_to_text_model,
-            default_embedding_model=defaults.default_embedding_model,
-            default_tools_model=defaults.default_tools_model,
+            default_chat_model=defaults.default_chat_model,  # type: ignore[attr-defined]
+            default_transformation_model=defaults.default_transformation_model,  # type: ignore[attr-defined]
+            large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
+            default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
+            default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
+            default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
     except Exception as e:
         logger.error(f"Error fetching default models: {str(e)}")
@@ -124,19 +124,19 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
         
         # Update only provided fields
         if defaults_data.default_chat_model is not None:
-            defaults.default_chat_model = defaults_data.default_chat_model
+            defaults.default_chat_model = defaults_data.default_chat_model  # type: ignore[attr-defined]
         if defaults_data.default_transformation_model is not None:
-            defaults.default_transformation_model = defaults_data.default_transformation_model
+            defaults.default_transformation_model = defaults_data.default_transformation_model  # type: ignore[attr-defined]
         if defaults_data.large_context_model is not None:
-            defaults.large_context_model = defaults_data.large_context_model
+            defaults.large_context_model = defaults_data.large_context_model  # type: ignore[attr-defined]
         if defaults_data.default_text_to_speech_model is not None:
-            defaults.default_text_to_speech_model = defaults_data.default_text_to_speech_model
+            defaults.default_text_to_speech_model = defaults_data.default_text_to_speech_model  # type: ignore[attr-defined]
         if defaults_data.default_speech_to_text_model is not None:
-            defaults.default_speech_to_text_model = defaults_data.default_speech_to_text_model
+            defaults.default_speech_to_text_model = defaults_data.default_speech_to_text_model  # type: ignore[attr-defined]
         if defaults_data.default_embedding_model is not None:
-            defaults.default_embedding_model = defaults_data.default_embedding_model
+            defaults.default_embedding_model = defaults_data.default_embedding_model  # type: ignore[attr-defined]
         if defaults_data.default_tools_model is not None:
-            defaults.default_tools_model = defaults_data.default_tools_model
+            defaults.default_tools_model = defaults_data.default_tools_model  # type: ignore[attr-defined]
         
         await defaults.update()
         
@@ -145,13 +145,13 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
         await model_manager.refresh_defaults()
         
         return DefaultModelsResponse(
-            default_chat_model=defaults.default_chat_model,
-            default_transformation_model=defaults.default_transformation_model,
-            large_context_model=defaults.large_context_model,
-            default_text_to_speech_model=defaults.default_text_to_speech_model,
-            default_speech_to_text_model=defaults.default_speech_to_text_model,
-            default_embedding_model=defaults.default_embedding_model,
-            default_tools_model=defaults.default_tools_model,
+            default_chat_model=defaults.default_chat_model,  # type: ignore[attr-defined]
+            default_transformation_model=defaults.default_transformation_model,  # type: ignore[attr-defined]
+            large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
+            default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
+            default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
+            default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
     except HTTPException:
         raise
@@ -201,7 +201,7 @@ async def get_provider_availability():
         esperanto_available = AIFactory.get_available_providers()
         
         # Build supported types mapping only for available providers
-        supported_types = {}
+        supported_types: dict[str, list[str]] = {}
         for provider in available_providers:
             supported_types[provider] = []
             for model_type, providers in esperanto_available.items():

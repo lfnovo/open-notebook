@@ -6,7 +6,7 @@ Handles version comparison, GitHub version fetching, and package version managem
 from importlib.metadata import PackageNotFoundError, version
 from urllib.parse import urlparse
 
-import requests
+import requests  # type: ignore
 import tomli
 from packaging.version import parse as parse_version
 

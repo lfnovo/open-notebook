@@ -196,7 +196,7 @@ class TestSourceChatIntegration:
         mock_provision_model.return_value = mock_model
         
         # Call the function
-        result = await call_model_with_source_context(sample_state, sample_config)
+        result = await call_model_with_source_context(sample_state, sample_config)  # type: ignore[misc]
         
         # Verify the result
         assert "messages" in result
@@ -242,7 +242,7 @@ class TestSourceChatIntegration:
         
         # This should raise an error due to missing source_id
         with pytest.raises(ValueError, match="source_id is required"):
-            await call_model_with_source_context(invalid_state, config)
+            await call_model_with_source_context(invalid_state, config)  # type: ignore[misc, arg-type]
 
 
 class TestSourceChatGraphExecution:

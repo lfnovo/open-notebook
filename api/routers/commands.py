@@ -136,7 +136,7 @@ async def debug_registry():
         
         # Get the basic command structure
         try:
-            commands_dict = {}
+            commands_dict: dict[str, list[str]] = {}
             for item in all_items:
                 if item.app_id not in commands_dict:
                     commands_dict[item.app_id] = []

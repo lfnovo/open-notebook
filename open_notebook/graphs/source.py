@@ -31,8 +31,14 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
-    content_settings = ContentSettings()
-    content_state: Dict[str, Any] = state["content_state"]
+    content_settings = ContentSettings(
+        default_content_processing_engine_doc="auto",
+        default_content_processing_engine_url="auto",
+        default_embedding_option="ask",
+        auto_delete_files="yes",
+        youtube_preferred_languages=["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja"]
+    )
+    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
@@ -102,7 +108,7 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
 
     logger.debug(f"Applying transformation {transformation.name}")
     result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)
+        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
     )
     await source.add_insight(transformation.title, result["output"])
     return {

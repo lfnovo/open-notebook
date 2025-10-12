@@ -65,8 +65,11 @@ with st.container(border=True):
                     include_insights=include_insights
                 )
 
-                command_id = result.get("command_id")
-                estimated_items = result.get("estimated_items", 0)
+                if isinstance(result, dict):
+                    command_id = result.get("command_id")
+                    estimated_items = result.get("estimated_items", 0)
+                else:
+                    raise ValueError("Invalid result from rebuild_embeddings")
 
                 # Store command ID in session state for status tracking
                 st.session_state["rebuild_command_id"] = command_id
@@ -99,12 +102,20 @@ if "rebuild_command_id" in st.session_state:
         try:
             status_result = api_client.get_rebuild_status(command_id)
 
-            status = status_result.get("status")
-            progress = status_result.get("progress")
-            stats = status_result.get("stats")
-            error_message = status_result.get("error_message")
-            started_at = status_result.get("started_at")
-            completed_at = status_result.get("completed_at")
+            if isinstance(status_result, dict):
+                status = status_result.get("status")
+                progress = status_result.get("progress")
+                stats = status_result.get("stats")
+                error_message = status_result.get("error_message")
+                started_at = status_result.get("started_at")
+                completed_at = status_result.get("completed_at")
+            else:
+                status = None
+                progress = None
+                stats = None
+                error_message = None
+                started_at = None
+                completed_at = None
 
             # Calculate elapsed time
             if "rebuild_start_time" in st.session_state:

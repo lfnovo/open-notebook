@@ -1,6 +1,7 @@
 import asyncio
 import re
 from datetime import datetime
+from typing import Optional
 
 import nest_asyncio
 import streamlit as st
@@ -54,7 +55,7 @@ def version_sidebar():
             st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
 
 
-def create_session_for_notebook(notebook_id: str, session_name: str = None):
+def create_session_for_notebook(notebook_id: str, session_name: Optional[str] = None):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     title = f"Chat Session {current_time}" if not session_name else session_name
     session_data = asyncio.run(chat_service.create_session(notebook_id, title))

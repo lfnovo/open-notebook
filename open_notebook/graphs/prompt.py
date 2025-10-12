@@ -35,7 +35,7 @@ async def call_model(state: dict, config: RunnableConfig) -> dict:
 
 
 agent_state = StateGraph(PatternChainState)
-agent_state.add_node("agent", call_model)
+agent_state.add_node("agent", call_model)  # type: ignore[type-var]
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 

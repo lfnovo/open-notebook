@@ -99,7 +99,8 @@ class SourcesService:
 
     def get_source(self, source_id: str) -> SourceWithMetadata:
         """Get a specific source."""
-        source_data = api_client.get_source(source_id)
+        response = api_client.get_source(source_id)
+        source_data = response if isinstance(response, dict) else response[0]
         source = Source(
             title=source_data["title"],
             topics=source_data["topics"],
@@ -116,7 +117,7 @@ class SourcesService:
         source.id = source_data["id"]
         source.created = source_data["created"]
         source.updated = source_data["updated"]
-        
+
         return SourceWithMetadata(
             source=source,
             embedded_chunks=source_data.get("embedded_chunks", 0)
@@ -171,34 +172,37 @@ class SourcesService:
         )
 
         # Create Source object from response
+        response_data = source_data if isinstance(source_data, dict) else source_data[0]
         source = Source(
-            title=source_data["title"],
-            topics=source_data.get("topics") or [],
-            full_text=source_data.get("full_text"),
+            title=response_data["title"],
+            topics=response_data.get("topics") or [],
+            full_text=response_data.get("full_text"),
             asset=Asset(
-                file_path=source_data["asset"]["file_path"]
-                if source_data.get("asset")
+                file_path=response_data["asset"]["file_path"]
+                if response_data.get("asset")
                 else None,
-                url=source_data["asset"]["url"] 
-                if source_data.get("asset")
+                url=response_data["asset"]["url"]
+                if response_data.get("asset")
                 else None,
             )
-            if source_data.get("asset")
+            if response_data.get("asset")
             else None,
         )
-        source.id = source_data["id"]
-        source.created = source_data["created"]
-        source.updated = source_data["updated"]
+        source.id = response_data["id"]
+        source.created = response_data["created"]
+        source.updated = response_data["updated"]
 
         # Check if this is an async processing response
-        if source_data.get("command_id") or source_data.get("status") or source_data.get("processing_info"):
+        if response_data.get("command_id") or response_data.get("status") or response_data.get("processing_info"):
+            # Ensure source_data is a dict for accessing attributes
+            source_data_dict = source_data if isinstance(source_data, dict) else source_data[0]
             # Return enhanced result for async processing
             return SourceProcessingResult(
                 source=source,
                 is_async=True,
-                command_id=source_data.get("command_id"),
-                status=source_data.get("status"),
-                processing_info=source_data.get("processing_info"),
+                command_id=source_data_dict.get("command_id"),
+                status=source_data_dict.get("status"),
+                processing_info=source_data_dict.get("processing_info"),
             )
         else:
             # Return simple Source for backward compatibility
@@ -206,7 +210,8 @@ class SourcesService:
 
     def get_source_status(self, source_id: str) -> Dict:
         """Get processing status for a source."""
-        return api_client.get_source_status(source_id)
+        response = api_client.get_source_status(source_id)
+        return response if isinstance(response, dict) else response[0]
 
     def create_source_async(
         self,
@@ -277,10 +282,13 @@ class SourcesService:
         }
         source_data = api_client.update_source(source.id, **updates)
 
+        # Ensure source_data is a dict
+        source_data_dict = source_data if isinstance(source_data, dict) else source_data[0]
+
         # Update the source object with the response
-        source.title = source_data["title"]
-        source.topics = source_data["topics"]
-        source.updated = source_data["updated"]
+        source.title = source_data_dict["title"]
+        source.topics = source_data_dict["topics"]
+        source.updated = source_data_dict["updated"]
 
         return source
 

@@ -92,8 +92,10 @@ async def embed_single_item_command(
             )
             if chunks_result and isinstance(chunks_result[0], dict):
                 chunks_created = chunks_result[0].get("count", 0)
+            elif chunks_result and isinstance(chunks_result[0], int):
+                chunks_created = chunks_result[0]
             else:
-                chunks_created = chunks_result[0] if chunks_result else 0
+                chunks_created = 0
 
             logger.info(f"Source vectorized: {chunks_created} chunks created")
 
@@ -169,7 +171,7 @@ async def collect_items_for_rebuild(
     Returns:
         Dict with keys: 'sources', 'notes', 'insights' containing lists of item IDs
     """
-    items = {"sources": [], "notes": [], "insights": []}
+    items: Dict[str, List[str]] = {"sources": [], "notes": [], "insights": []}
 
     if include_sources:
         if mode == "existing":

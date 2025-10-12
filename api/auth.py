@@ -70,7 +70,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
 security = HTTPBearer(auto_error=False)
 
 
-def check_api_password(credentials: HTTPAuthorizationCredentials = None) -> bool:
+def check_api_password(credentials: Optional[HTTPAuthorizationCredentials] = None) -> bool:
     """
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.

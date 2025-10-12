@@ -128,7 +128,7 @@ class SourceInsight(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def save_as_note(self, notebook_id: str = None) -> Any:
+    async def save_as_note(self, notebook_id: Optional[str] = None) -> Any:
         source = await self.get_source()
         note = Note(
             title=f"{self.insight_type} from source {source.title}",
@@ -300,6 +300,8 @@ class Source(ObjectModel):
             ) -> Tuple[int, List[float], str]:
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
+                    if EMBEDDING_MODEL is None:
+                        raise ValueError("EMBEDDING_MODEL is not configured")
                     embedding = (await EMBEDDING_MODEL.aembed([chunk]))[0]
                     cleaned_content = chunk
                     logger.debug(f"Successfully processed chunk {idx}")
@@ -440,14 +442,14 @@ async def text_search(
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        results = await repo_query(
+        search_results = await repo_query(
             """
             select *
             from fn::text_search($keyword, $results, $source, $note)
             """,
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)
@@ -465,8 +467,10 @@ async def vector_search(
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         EMBEDDING_MODEL = await model_manager.get_embedding_model()
+        if EMBEDDING_MODEL is None:
+            raise ValueError("EMBEDDING_MODEL is not configured")
         embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
-        results = await repo_query(
+        search_results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
             """,
@@ -478,7 +482,7 @@ async def vector_search(
                 "minimum_score": minimum_score,
             },
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)

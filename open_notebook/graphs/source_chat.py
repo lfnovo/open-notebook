@@ -73,7 +73,7 @@ def call_model_with_source_context(state: SourceChatState, config: RunnableConfi
     # Extract source and insights from context
     source = None
     insights = []
-    context_indicators = {"sources": [], "insights": [], "notes": []}
+    context_indicators: dict[str, list[str | None]] = {"sources": [], "insights": [], "notes": []}
     
     if context_data.get("sources"):
         source_info = context_data["sources"][0]  # First source

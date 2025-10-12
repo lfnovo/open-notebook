@@ -26,7 +26,7 @@ async def get_notebooks(
 
         return [
             NotebookResponse(
-                id=nb.id,
+                id=nb.id or "",
                 name=nb.name,
                 description=nb.description,
                 archived=nb.archived or False,
@@ -53,7 +53,7 @@ async def create_notebook(notebook: NotebookCreate):
         await new_notebook.save()
 
         return NotebookResponse(
-            id=new_notebook.id,
+            id=new_notebook.id or "",
             name=new_notebook.name,
             description=new_notebook.description,
             archived=new_notebook.archived or False,
@@ -78,7 +78,7 @@ async def get_notebook(notebook_id: str):
             raise HTTPException(status_code=404, detail="Notebook not found")
 
         return NotebookResponse(
-            id=notebook.id,
+            id=notebook.id or "",
             name=notebook.name,
             description=notebook.description,
             archived=notebook.archived or False,
@@ -113,7 +113,7 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         await notebook.save()
 
         return NotebookResponse(
-            id=notebook.id,
+            id=notebook.id or "",
             name=notebook.name,
             description=notebook.description,
             archived=notebook.archived or False,

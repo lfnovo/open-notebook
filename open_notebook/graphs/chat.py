@@ -24,7 +24,7 @@ class ThreadState(TypedDict):
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
-    system_prompt = Prompter(prompt_template="chat").render(data=state)
+    system_prompt = Prompter(prompt_template="chat").render(data=state)  # type: ignore[arg-type]
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
     model_id = (
         config.get("configurable", {}).get("model_id")

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from fastapi import (
     APIRouter,
@@ -135,6 +135,7 @@ def parse_source_form_data(
             url=url,
             content=content,
             title=title,
+            file_path=None,  # Will be set later if file is uploaded
             transformations=transformations_list,
             embed=embed_bool,
             delete_source=delete_source_bool,
@@ -271,8 +272,8 @@ async def get_sources(
                 if status_obj:
                     status = status_obj.status
                     # Extract execution metadata from nested result structure
-                    result = getattr(status_obj, "result", None)
-                    execution_metadata = result.get("execution_metadata", {}) if isinstance(result, dict) else {}
+                    result_data: dict[str, Any] | None = getattr(status_obj, "result", None)
+                    execution_metadata: dict[str, Any] = result_data.get("execution_metadata", {}) if isinstance(result_data, dict) else {}
                     processing_info = {
                         "started_at": execution_metadata.get("started_at"),
                         "completed_at": execution_metadata.get("completed_at"),
@@ -326,7 +327,7 @@ async def create_source(
 
     try:
         # Verify all specified notebooks exist (backward compatibility support)
-        for notebook_id in source_data.notebooks:
+        for notebook_id in (source_data.notebooks or []):
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(
@@ -345,7 +346,7 @@ async def create_source(
                 )
 
         # Prepare content_state for processing
-        content_state = {}
+        content_state: dict[str, Any] = {}
 
         if source_data.type == "link":
             if not source_data.url:
@@ -398,7 +399,7 @@ async def create_source(
 
             # Add source to notebooks immediately so it appears in the UI
             # The source_graph will skip adding duplicates
-            for notebook_id in source_data.notebooks:
+            for notebook_id in (source_data.notebooks or []):
                 await source.add_to_notebook(notebook_id)
 
             try:
@@ -429,7 +430,7 @@ async def create_source(
 
                 # Return source with command info
                 return SourceResponse(
-                    id=source.id,
+                    id=source.id or "",
                     title=source.title,
                     topics=source.topics or [],
                     asset=None,  # Will be populated after processing
@@ -477,7 +478,7 @@ async def create_source(
 
                 # Add source to notebooks immediately so it appears in the UI
                 # The source_graph will skip adding duplicates
-                for notebook_id in source_data.notebooks:
+                for notebook_id in (source_data.notebooks or []):
                     await source.add_to_notebook(notebook_id)
 
                 # Execute command synchronously
@@ -515,6 +516,10 @@ async def create_source(
                     )
 
                 # Get the processed source
+                if not source.id:
+                    raise HTTPException(
+                        status_code=500, detail="Source ID is missing"
+                    )
                 processed_source = await Source.get(source.id)
                 if not processed_source:
                     raise HTTPException(
@@ -523,7 +528,7 @@ async def create_source(
 
                 embedded_chunks = await processed_source.get_embedded_chunks()
                 return SourceResponse(
-                    id=processed_source.id,
+                    id=processed_source.id or "",
                     title=processed_source.title,
                     topics=processed_source.topics or [],
                     asset=AssetModel(
@@ -649,7 +654,7 @@ async def get_source(source_id: str):
 
         embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
-            id=source.id,
+            id=source.id or "",
             title=source.title,
             topics=source.topics or [],
             asset=AssetModel(
@@ -786,7 +791,7 @@ async def update_source(source_id: str, source_update: SourceUpdate):
 
         embedded_chunks = await source.get_embedded_chunks()
         return SourceResponse(
-            id=source.id,
+            id=source.id or "",
             title=source.title,
             topics=source.topics or [],
             asset=AssetModel(
@@ -899,7 +904,7 @@ async def retry_source_processing(source_id: str):
 
             # Return updated source response
             return SourceResponse(
-                id=source.id,
+                id=source.id or "",
                 title=source.title,
                 topics=source.topics or [],
                 asset=AssetModel(
@@ -964,7 +969,7 @@ async def get_source_insights(source_id: str):
         insights = await source.get_insights()
         return [
             SourceInsightResponse(
-                id=insight.id,
+                id=insight.id or "",
                 source_id=source_id,
                 insight_type=insight.insight_type,
                 content=insight.content,
@@ -1000,7 +1005,7 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         from open_notebook.graphs.transformation import graph as transform_graph
 
         await transform_graph.ainvoke(
-            input=dict(source=source, transformation=transformation)
+            input=dict(source=source, transformation=transformation)  # type: ignore[arg-type]
         )
 
         # Get the newly created insight (last one)
@@ -1008,7 +1013,7 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         if insights:
             newest = insights[-1]
             return SourceInsightResponse(
-                id=newest.id,
+                id=newest.id or "",
                 source_id=source_id,
                 insight_type=newest.insight_type,
                 content=newest.content,

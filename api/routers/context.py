@@ -19,7 +19,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        context_data = {"note": [], "source": []}
+        context_data: dict[str, list[dict[str, str]]] = {"note": [], "source": []}
         total_content = ""
 
         # Process context configuration if provided

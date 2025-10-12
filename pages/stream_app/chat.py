@@ -21,7 +21,7 @@ from .note import make_note_from_chat
 # todo: build a smarter, more robust context manager function
 async def build_context(notebook_id):
     # Convert context_config format for API
-    context_config = {"sources": {}, "notes": {}}
+    context_config: dict[str, dict[str, str]] = {"sources": {}, "notes": {}}
 
     for id, status in st.session_state[notebook_id]["context_config"].items():
         if not id:

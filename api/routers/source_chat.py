@@ -85,8 +85,8 @@ async def create_source_chat_session(
         await session.relate("refers_to", full_source_id)
         
         return SourceChatSessionResponse(
-            id=session.id,
-            title=session.title,
+            id=session.id or "",
+            title=session.title or "Untitled Session",
             source_id=source_id,
             model_override=session.model_override,
             created=str(session.created),
@@ -122,11 +122,11 @@ async def get_source_chat_sessions(
         for relation in relations:
             session_id = relation.get("in")
             if session_id:
-                session_data = await repo_query(f"SELECT * FROM {session_id}")
-                if session_data and len(session_data) > 0:
-                    session_data = session_data[0]
+                session_result = await repo_query(f"SELECT * FROM {session_id}")
+                if session_result and len(session_result) > 0:
+                    session_data = session_result[0]
                     sessions.append(SourceChatSessionResponse(
-                        id=session_data.get("id"),
+                        id=session_data.get("id") or "",
                         title=session_data.get("title") or "Untitled Session",
                         source_id=source_id,
                         model_override=session_data.get("model_override"),
@@ -179,7 +179,7 @@ async def get_source_chat_session(
         )
         
         # Extract messages from state
-        messages = []
+        messages: list[ChatMessage] = []
         context_indicators = None
         
         if thread_state and thread_state.values:
@@ -203,7 +203,7 @@ async def get_source_chat_session(
                 )
         
         return SourceChatSessionWithMessagesResponse(
-            id=session.id,
+            id=session.id or "",
             title=session.title or "Untitled Session",
             source_id=source_id,
             model_override=getattr(session, 'model_override', None),
@@ -258,8 +258,8 @@ async def update_source_chat_session(
         await session.save()
         
         return SourceChatSessionResponse(
-            id=session.id,
-            title=session.title,
+            id=session.id or "",
+            title=session.title or "Untitled Session",
             source_id=source_id,
             model_override=getattr(session, 'model_override', None),
             created=str(session.created),
@@ -347,7 +347,7 @@ async def stream_source_chat_response(
         
         # Execute source chat graph synchronously (like notebook chat does)
         result = source_chat_graph.invoke(
-            input=state_values,
+            input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={
                     "thread_id": session_id,

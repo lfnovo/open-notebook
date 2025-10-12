@@ -211,8 +211,8 @@ class TestSourceChatAPI:
         """Test that all expected endpoints are properly structured."""
         # Test endpoint paths are correctly formed
         from api.routers.source_chat import router
-        
-        routes = [route.path for route in router.routes]
+
+        routes = [route.path for route in router.routes]  # type: ignore[attr-defined]
         expected_routes = [
             "/sources/{source_id}/chat/sessions",
             "/sources/{source_id}/chat/sessions/{session_id}",

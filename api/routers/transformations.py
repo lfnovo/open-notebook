@@ -28,7 +28,7 @@ async def get_transformations():
 
         return [
             TransformationResponse(
-                id=transformation.id,
+                id=transformation.id or "",
                 name=transformation.name,
                 title=transformation.title,
                 description=transformation.description,
@@ -60,7 +60,7 @@ async def create_transformation(transformation_data: TransformationCreate):
         await new_transformation.save()
 
         return TransformationResponse(
-            id=new_transformation.id,
+            id=new_transformation.id or "",
             name=new_transformation.name,
             title=new_transformation.title,
             description=new_transformation.description,
@@ -89,7 +89,7 @@ async def get_transformation(transformation_id: str):
             raise HTTPException(status_code=404, detail="Transformation not found")
 
         return TransformationResponse(
-            id=transformation.id,
+            id=transformation.id or "",
             name=transformation.name,
             title=transformation.title,
             description=transformation.description,
@@ -134,7 +134,7 @@ async def update_transformation(
         await transformation.save()
 
         return TransformationResponse(
-            id=transformation.id,
+            id=transformation.id or "",
             name=transformation.name,
             title=transformation.title,
             description=transformation.description,
@@ -190,7 +190,7 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
 
         # Execute the transformation
         result = await transformation_graph.ainvoke(
-            dict(
+            dict(  # type: ignore[arg-type]
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),
@@ -216,9 +216,8 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
 async def get_default_prompt():
     """Get the default transformation prompt."""
     try:
-        default_prompts = DefaultPrompts()
-        await default_prompts.refresh()
-        
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
         return DefaultPromptResponse(
             transformation_instructions=default_prompts.transformation_instructions or ""
         )
@@ -233,12 +232,11 @@ async def get_default_prompt():
 async def update_default_prompt(prompt_update: DefaultPromptUpdate):
     """Update the default transformation prompt."""
     try:
-        default_prompts = DefaultPrompts()
-        await default_prompts.refresh()
-        
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
         default_prompts.transformation_instructions = prompt_update.transformation_instructions
         await default_prompts.update()
-        
+
         return DefaultPromptResponse(
             transformation_instructions=default_prompts.transformation_instructions
         )

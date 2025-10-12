@@ -69,6 +69,7 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pre-commit>=4.1.0",
+    "types-requests>=2.32.4.20250913",
     "watchdog>=6.0.0",
 ]
 
@@ -87,3 +88,9 @@ ignore = ["E501"]
 # Streamlit files need nest_asyncio.apply() before imports
 "app_home.py" = ["E402"]
 "pages/**/*.py" = ["E402"]
+
+[tool.mypy]
+# Exclude Streamlit UI pages from type checking
+[[tool.mypy.overrides]]
+module = "pages.*"
+ignore_errors = true

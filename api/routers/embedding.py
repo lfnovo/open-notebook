@@ -84,7 +84,7 @@ async def embed_content(embed_request: EmbedRequest):
                 message = "Note embedded successfully"
 
             return EmbedResponse(
-                success=True, message=message, item_id=item_id, item_type=item_type
+                success=True, message=message, item_id=item_id, item_type=item_type, command_id=None
             )
 
     except HTTPException:

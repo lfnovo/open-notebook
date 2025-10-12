@@ -283,7 +283,7 @@ const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourc
               {transformationsQuery.isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
             </div>
             <ScrollArea className="max-h-48 rounded-md border border-border/70 p-3">
-              <div className="flex flex-col gap-2 pr-2">
+              <div className="flex flex-col gap-2 pr-2 m-2">
                 {transformations.length === 0 && (
                   <p className="text-xs text-muted-foreground">No transformations configured.</p>
                 )}

@@ -99,7 +99,7 @@ async def list_podcast_episodes():
             if episode.command:
                 try:
                     job_status = await episode.get_job_status()
-                except:
+                except Exception:
                     job_status = "unknown"
             else:
                 # No command but has audio file = completed import
@@ -147,7 +147,7 @@ async def get_podcast_episode(episode_id: str):
         if episode.command:
             try:
                 job_status = await episode.get_job_status()
-            except:
+            except Exception:
                 job_status = "unknown"
         else:
             # No command but has audio file = completed import

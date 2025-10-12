@@ -448,13 +448,13 @@ async def create_source(
                 # Clean up source record on command submission failure
                 try:
                     await source.delete()
-                except:
+                except Exception:
                     pass
                 # Clean up uploaded file if we created it
                 if file_path and upload_file:
                     try:
                         os.unlink(file_path)
-                    except:
+                    except Exception:
                         pass
                 raise HTTPException(
                     status_code=500, detail=f"Failed to queue processing: {str(e)}"
@@ -501,13 +501,13 @@ async def create_source(
                     # Clean up source record
                     try:
                         await source.delete()
-                    except:
+                    except Exception:
                         pass
                     # Clean up uploaded file if we created it
                     if file_path and upload_file:
                         try:
                             os.unlink(file_path)
-                        except:
+                        except Exception:
                             pass
                     raise HTTPException(
                         status_code=500,
@@ -550,7 +550,7 @@ async def create_source(
                 if file_path and upload_file:
                     try:
                         os.unlink(file_path)
-                    except:
+                    except Exception:
                         pass
                 raise
 
@@ -559,7 +559,7 @@ async def create_source(
         if file_path and upload_file:
             try:
                 os.unlink(file_path)
-            except:
+            except Exception:
                 pass
         raise
     except InvalidInputError as e:
@@ -567,7 +567,7 @@ async def create_source(
         if file_path and upload_file:
             try:
                 os.unlink(file_path)
-            except:
+            except Exception:
                 pass
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -576,7 +576,7 @@ async def create_source(
         if file_path and upload_file:
             try:
                 os.unlink(file_path)
-            except:
+            except Exception:
                 pass
         raise HTTPException(status_code=500, detail=f"Error creating source: {str(e)}")
 

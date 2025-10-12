@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -64,19 +64,19 @@ export function RebuildEmbeddings() {
   }
 
   // Stop polling
-  const stopPolling = () => {
+  const stopPolling = useCallback(() => {
     if (pollingInterval) {
       clearInterval(pollingInterval)
       setPollingInterval(null)
     }
-  }
+  }, [pollingInterval])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       stopPolling()
     }
-  }, [])
+  }, [stopPolling])
 
   const handleStartRebuild = () => {
     const request: RebuildEmbeddingsRequest = {

@@ -60,7 +60,7 @@ def call_model_with_source_context(state: SourceChatState, config: RunnableConfi
     # Get the built context
     try:
         # Try to get the current event loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         # If we're in an event loop, run in a thread with a new loop
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -121,7 +121,7 @@ def call_model_with_source_context(state: SourceChatState, config: RunnableConfi
     
     try:
         # Try to get the current event loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         # If we're in an event loop, run in a thread with a new loop
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as executor:

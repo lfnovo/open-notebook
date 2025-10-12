@@ -62,11 +62,11 @@ export const sourceChatApi = {
         }
       }
     }
-    
-    // Use apiClient's baseURL configuration
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'
-    const url = `${API_BASE_URL}/api/sources/${sourceId}/chat/sessions/${sessionId}/messages`
-    
+
+    // Use relative URL to leverage Next.js rewrites
+    // This works both in dev (Next.js proxy) and production (Docker network)
+    const url = `/api/sources/${sourceId}/chat/sessions/${sessionId}/messages`
+
     // Use fetch with ReadableStream for SSE
     return fetch(url, {
       method: 'POST',

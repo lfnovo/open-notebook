@@ -8,7 +8,7 @@ export const searchApi = {
     return response.data
   },
 
-  // Ask with streaming (follow sourceChatApi.sendMessage pattern)
+  // Ask with streaming (uses relative URL for Docker compatibility)
   askKnowledgeBase: async (params: AskRequest) => {
     // Get auth token using the same logic as apiClient interceptor
     let token = null
@@ -26,9 +26,9 @@ export const searchApi = {
       }
     }
 
-    // Use apiClient's baseURL configuration
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'
-    const url = `${API_BASE_URL}/api/search/ask`
+    // Use relative URL to leverage Next.js rewrites
+    // This works both in dev (Next.js proxy) and production (Docker network)
+    const url = '/api/search/ask'
 
     // Use fetch with ReadableStream for SSE
     const response = await fetch(url, {

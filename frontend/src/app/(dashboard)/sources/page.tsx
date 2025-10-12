@@ -21,7 +21,6 @@ export default function SourcesPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [hasMore, setHasMore] = useState(true)
   const [sortBy, setSortBy] = useState<'created' | 'updated'>('updated')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
@@ -47,7 +46,6 @@ export default function SourcesPage() {
         setLoading(true)
         offsetRef.current = 0
         setSources([])
-        setHasMore(true)
         hasMoreRef.current = true
       } else {
         loadingMoreRef.current = true
@@ -69,7 +67,6 @@ export default function SourcesPage() {
 
       // Check if we have more data
       const hasMoreData = data.length === PAGE_SIZE
-      setHasMore(hasMoreData)
       hasMoreRef.current = hasMoreData
       offsetRef.current += data.length
     } catch (err) {

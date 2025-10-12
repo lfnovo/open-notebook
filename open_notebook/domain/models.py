@@ -208,9 +208,5 @@ class ModelManager:
 
         return await self.get_model(model_id, **kwargs)
 
-    def clear_cache(self):
-        """Clear the model cache"""
-        self._model_cache.clear()
-
 
 model_manager = ModelManager()

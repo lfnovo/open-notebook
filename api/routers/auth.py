@@ -4,6 +4,7 @@ Provides endpoints to check authentication status.
 """
 
 import os
+
 from fastapi import APIRouter
 
 router = APIRouter(prefix="/auth", tags=["auth"])

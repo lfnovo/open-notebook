@@ -82,3 +82,8 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Streamlit files need nest_asyncio.apply() before imports
+"app_home.py" = ["E402"]
+"pages/**/*.py" = ["E402"]

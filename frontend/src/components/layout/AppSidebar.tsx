@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/lib/utils'
@@ -111,10 +112,12 @@ export function AppSidebar() {
         >
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
-              <img
+              <Image
                 src="/logo.svg"
                 alt="Open Notebook"
-                className="h-8 w-8 transition-opacity group-hover:opacity-0"
+                width={32}
+                height={32}
+                className="transition-opacity group-hover:opacity-0"
               />
               <Button
                 variant="ghost"
@@ -128,7 +131,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <img src="/logo.svg" alt="Open Notebook" className="h-8 w-8" />
+                <Image src="/logo.svg" alt="Open Notebook" width={32} height={32} />
                 <span className="text-base font-medium text-sidebar-foreground">
                   Open Notebook
                 </span>

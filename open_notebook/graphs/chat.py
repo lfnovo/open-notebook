@@ -51,7 +51,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
     
     try:
         # Try to get the current event loop
-        loop = asyncio.get_running_loop()
+        asyncio.get_running_loop()
         # If we're in an event loop, run in a thread with a new loop
         import concurrent.futures
         with concurrent.futures.ThreadPoolExecutor() as executor:

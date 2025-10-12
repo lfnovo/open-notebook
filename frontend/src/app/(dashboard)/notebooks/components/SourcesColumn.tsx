@@ -28,7 +28,6 @@ export function SourcesColumn({
   sources,
   isLoading,
   notebookId,
-  notebookName,
   onRefresh,
   contextSelections,
   onContextModeChange

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, ChevronRight, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Save } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import AppShell from '@/components/layout/AppShell';
@@ -114,10 +114,15 @@ const NotebookWorkspacePage = () => {
       title={notebook?.name ?? 'Notebook'}
       subtitle={notebook ? `Updated ${formatDateTime(notebook.updated)}` : undefined}
       headerActions={
-        <Button onClick={handleSave} disabled={!activeNote || !isDirty || updateNoteMutation.isPending}>
-          {updateNoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          <Save className="mr-2 h-4 w-4" /> Save draft
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to notebooks
+          </Button>
+          <Button onClick={handleSave} disabled={!activeNote || !isDirty || updateNoteMutation.isPending}>
+            {updateNoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Save className="mr-2 h-4 w-4" /> Save draft
+          </Button>
+        </div>
       }
     >
       <div className="flex h-[calc(100vh-72px)] flex-col divide-y">

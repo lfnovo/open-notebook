@@ -140,6 +140,10 @@ class APIClient:
         )
 
     # Models API methods
+    def get_model_providers(self) -> Dict:
+        """Get provider availability and mappings"""
+        return self._make_request("GET", "/api/models/providers")
+
     def get_models(self, model_type: Optional[str] = None) -> List[Dict]:
         """Get all models with optional type filtering."""
         params = {}
@@ -295,6 +299,14 @@ class APIClient:
         if notebook_id:
             params["notebook_id"] = notebook_id
         return self._make_request("GET", "/api/sources", params=params)
+
+    def upload_source_file(self, file_path: str) -> Dict:
+        """Upload a source file and return its stored path."""
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f'File not found: {file_path}')
+        with open(file_path, 'rb') as handle:
+            files = {'file': (os.path.basename(file_path), handle)}
+            return self._make_request('POST', '/api/sources/upload', files=files)
 
     def create_source(
         self,

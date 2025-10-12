@@ -197,6 +197,16 @@ class SettingsUpdate(BaseModel):
 
 
 # Sources API models
+class SourceUploadResponse(BaseModel):
+    file_path: str
+
+
+class ModelProvidersResponse(BaseModel):
+    available: List[str] = Field(default_factory=list)
+    unavailable: List[str] = Field(default_factory=list)
+    providers_by_type: Dict[str, List[str]] = Field(default_factory=dict)
+
+
 class AssetModel(BaseModel):
     file_path: Optional[str] = None
     url: Optional[str] = None

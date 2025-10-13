@@ -47,7 +47,7 @@ const SourcesPanel = ({ notebookId }: SourcesPanelProps) => {
           Failed to load sources. Verify that the API is reachable.
         </div>
       )}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1  max-w-full">
         <div className="flex flex-col gap-3 pr-2">
           {sources.length === 0 && !isLoading && (
             <div className="rounded-md border border-dashed p-4 text-xs text-muted-foreground">
@@ -56,11 +56,11 @@ const SourcesPanel = ({ notebookId }: SourcesPanelProps) => {
           )}
           {sources.map((source) => (
             <div key={source.id} className="rounded-md border border-border/70 bg-background p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="text-sm font-medium leading-tight">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0 break-all text-sm font-medium leading-tight">
                   {source.title || 'Untitled source'}
                 </div>
-                <Badge variant="outline">{source.topics.length > 0 ? `${source.topics.length} topics` : 'No tags'}</Badge>
+                <Badge variant="outline" className="max-w-[45%] truncate">{source.topics.length > 0 ? `${source.topics.length} topics` : 'No tags'}</Badge>
               </div>
               <div className="mt-2 space-y-1 text-xs text-muted-foreground">
                 <div>Updated {formatDateTime(source.updated)}</div>

@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Loader2, PlusCircle } from "lucide-react";
+import { ArrowRight, Loader2, PlusCircle, Trash2 } from "lucide-react";
 
 import AppShell from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Card,
   CardContent,
@@ -21,6 +29,32 @@ const NotebookListPage = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deletingNotebookId, setDeletingNotebookId] = useState<string | null>(
+    null
+  );
+  const [notebookToDelete, setNotebookToDelete] = useState<Notebook | null>(
+    null
+  );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const deleteNotebookMutation = useMutation({
+    mutationFn: (notebookId: string) => apiClient.deleteNotebook(notebookId),
+    onMutate: (notebookId: string) => {
+      setDeletingNotebookId(notebookId);
+      setDeleteError(null);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notebooks"] });
+      setNotebookToDelete(null);
+    },
+    onError: (error) => {
+      console.error("Failed to delete notebook", error);
+      setDeleteError("Failed to delete the notebook. Please try again.");
+    },
+    onSettled: () => {
+      setDeletingNotebookId(null);
+    },
+  });
 
   const { data, isLoading, isError } = useQuery<Notebook[]>({
     queryKey: ["notebooks"],
@@ -75,8 +109,28 @@ const NotebookListPage = () => {
           {notebooks.map((notebook) => (
             <Card
               key={notebook.id}
-              className="flex h-full flex-col justify-between border-muted"
+              className="relative flex h-full flex-col justify-between border-muted"
             >
+              <button
+                type="button"
+                aria-label="Delete notebook"
+                className="absolute right-3 top-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white transition hover:bg-black/60 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setNotebookToDelete(notebook);
+                }}
+                disabled={
+                  deleteNotebookMutation.isPending &&
+                  deletingNotebookId === notebook.id
+                }
+              >
+                {deleteNotebookMutation.isPending &&
+                deletingNotebookId === notebook.id ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+              </button>
               <CardHeader>
                 <CardTitle className="text-lg">{notebook.name}</CardTitle>
                 {notebook.description && (
@@ -102,6 +156,70 @@ const NotebookListPage = () => {
           ))}
         </div>
       </div>
+      <Dialog
+        open={Boolean(notebookToDelete)}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (deleteNotebookMutation.isPending) {
+              return;
+            }
+            setNotebookToDelete(null);
+            setDeleteError(null);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete notebook</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete "{notebookToDelete?.name}"? This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteError && (
+            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {deleteError}
+            </p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (deleteNotebookMutation.isPending) {
+                  return;
+                }
+                setNotebookToDelete(null);
+                setDeleteError(null);
+              }}
+              disabled={deleteNotebookMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (!notebookToDelete) {
+                  return;
+                }
+                deleteNotebookMutation.mutate(notebookToDelete.id);
+              }}
+              disabled={
+                !notebookToDelete || deleteNotebookMutation.isPending
+              }
+            >
+              {deleteNotebookMutation.isPending &&
+              deletingNotebookId === notebookToDelete?.id ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <CreateNotebookDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}

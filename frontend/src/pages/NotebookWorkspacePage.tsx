@@ -238,7 +238,6 @@ const NotebookWorkspacePage = () => {
           <section className="flex min-w-0 flex-1 flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Draft</h2>
                 {activeNote && (
                   <p className="text-sm text-muted-foreground">
                     Last updated {formatDateTime(activeNote.updated)}

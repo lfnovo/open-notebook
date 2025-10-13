@@ -5,11 +5,11 @@ from typing import Any, Dict, Optional
 from langchain_core.runnables import RunnableConfig
 
 from open_deep_research.configuration import SearchAPI
-from open_deep_research.deep_researcher import deep_researcher_builder
+from open_deep_research.deep_researcher import deep_researcher
 
 
 # Compile the deep research graph without persistent checkpointing for now.
-graph = deep_researcher_builder.compile()
+graph = deep_researcher
 
 
 def build_runnable_config(

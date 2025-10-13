@@ -121,7 +121,9 @@ start-all:
 	@echo "📱 UI: http://localhost:8502"
 	@echo "🔗 API: http://localhost:5055"
 	@echo "📚 API Docs: http://localhost:5055/docs"
-	@PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py --server.port 8502
+	# @PYTHONPATH=.:open_deep_research:$$PYTHONPATH uv run --env-file .env streamlit run app_home.py --server.port 8502
+	npm run dev --prefix frontend
+
 
 stop-all:
 	@echo "🛑 Stopping all Open Notebook services..."
@@ -129,6 +131,7 @@ stop-all:
 	@pkill -f "surreal-commands-worker" || true
 	@pkill -f "run_api.py" || true
 	@pkill -f "uvicorn api.main:app" || true
+	@pkill -f "vite" || true
 	@docker compose down
 	@echo "✅ All services stopped!"
 

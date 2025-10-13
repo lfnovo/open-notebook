@@ -117,6 +117,18 @@ open-notebook/
 > 2. **Volume persistence**: The volumes (`-v ./notebook_data:/app/data` and `-v ./surreal_data:/mydata`) are essential to persist your data between container restarts. Without them, you'll lose all your notebooks and research when the container stops.
 
 ### 🛠️ Full Installation
+
+### 🖥️ React Web UI (Preview)
+A new React + Vite workspace lives under `frontend` and mirrors the Streamlit app functionality with a three-pane layout, Milkdown editor, and AI copilot.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Set `VITE_API_BASE_URL` if your API runs somewhere other than `http://127.0.0.1:5055/api`.
+
 For development or customization:
 ```bash
 git clone https://github.com/lfnovo/open-notebook

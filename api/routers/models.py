@@ -1,13 +1,54 @@
+import os
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import DefaultModelsResponse, ModelCreate, ModelResponse
+from api.models import DefaultModelsResponse, ModelCreate, ModelProvidersResponse, ModelResponse
+from esperanto import AIFactory
 from open_notebook.domain.models import DefaultModels, Model
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
 router = APIRouter()
+
+
+
+
+
+def _check_available_providers():
+    provider_status = {}
+    env = os.environ
+    provider_status['ollama'] = env.get('OLLAMA_API_BASE') is not None
+    provider_status['openai'] = env.get('OPENAI_API_KEY') is not None
+    provider_status['groq'] = env.get('GROQ_API_KEY') is not None
+    provider_status['xai'] = env.get('XAI_API_KEY') is not None
+    provider_status['vertex'] = all(env.get(key) is not None for key in ['VERTEX_PROJECT', 'VERTEX_LOCATION', 'GOOGLE_APPLICATION_CREDENTIALS'])
+    provider_status['google'] = any(env.get(key) is not None for key in ['GOOGLE_API_KEY', 'GEMINI_API_KEY'])
+    provider_status['openrouter'] = env.get('OPENROUTER_API_KEY') is not None
+    provider_status['anthropic'] = env.get('ANTHROPIC_API_KEY') is not None
+    provider_status['elevenlabs'] = env.get('ELEVENLABS_API_KEY') is not None
+    provider_status['voyage'] = env.get('VOYAGE_API_KEY') is not None
+    provider_status['azure'] = all(env.get(key) is not None for key in ['AZURE_OPENAI_API_KEY', 'AZURE_OPENAI_ENDPOINT', 'AZURE_OPENAI_DEPLOYMENT_NAME', 'AZURE_OPENAI_API_VERSION'])
+    provider_status['mistral'] = env.get('MISTRAL_API_KEY') is not None
+    provider_status['deepseek'] = env.get('DEEPSEEK_API_KEY') is not None
+    provider_status['openai-compatible'] = env.get('OPENAI_COMPATIBLE_BASE_URL') is not None
+    available = [provider for provider, status in provider_status.items() if status]
+    unavailable = [provider for provider, status in provider_status.items() if not status]
+    return available, unavailable
+
+@router.get("/models/providers", response_model=ModelProvidersResponse)
+async def get_model_providers():
+    try:
+        available, unavailable = _check_available_providers()
+        providers_by_type = AIFactory.get_available_providers()
+        return ModelProvidersResponse(
+            available=available,
+            unavailable=unavailable,
+            providers_by_type={key: list(value) for key, value in providers_by_type.items()},
+        )
+    except Exception as e:
+        logger.error(f"Error fetching model providers: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching model providers: {str(e)}")
 
 
 @router.get("/models", response_model=List[ModelResponse])

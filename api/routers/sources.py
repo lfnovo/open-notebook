@@ -1,6 +1,9 @@
+import os
+from pathlib import Path
+import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, UploadFile, File
 from loguru import logger
 
 from api.models import (
@@ -10,15 +13,45 @@ from api.models import (
     SourceInsightResponse,
     SourceListResponse,
     SourceResponse,
-    SourceUpdate,
+    SourceUpdate, SourceUploadResponse,
 )
 from open_notebook.domain.notebook import Notebook, Source
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.source import source_graph
 
 router = APIRouter()
 
+
+
+
+@router.post("/sources/upload", response_model=SourceUploadResponse)
+async def upload_source_file(file: UploadFile = File(...)):
+    """Upload a file to the server and return its stored path."""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Filename is required")
+
+    os.makedirs(UPLOADS_FOLDER, exist_ok=True)
+    original_name = Path(file.filename).stem
+    extension = Path(file.filename).suffix
+    safe_name = f"{original_name}_{uuid.uuid4().hex}{extension}"
+    destination = Path(UPLOADS_FOLDER) / safe_name
+
+    try:
+        with destination.open('wb') as buffer:
+            while True:
+                chunk = await file.read(1024 * 1024)
+                if not chunk:
+                    break
+                buffer.write(chunk)
+    except Exception as exc:
+        if destination.exists():
+            destination.unlink(missing_ok=True)
+        logger.error(f"Error saving uploaded file: {exc}")
+        raise HTTPException(status_code=500, detail="Failed to store uploaded file")
+
+    return SourceUploadResponse(file_path=str(destination))
 
 @router.get("/sources", response_model=List[SourceListResponse])
 async def get_sources(

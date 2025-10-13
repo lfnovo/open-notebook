@@ -8,8 +8,8 @@ import MilkdownEditor from '@/components/editor/MilkdownEditor';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
 import { cn, formatDateTime } from '@/lib/utils';
-import CopilotPanel from '@/features/copilot/components/CopilotPanel';
-import SourcesPanel from '@/features/sources/components/SourcesPanel';
+import CopilotPanel from '@/components/copilot/CopilotPanel';
+import SourcesPanel from '@/components/notebook/sources/SourcesPanel';
 import type { ContextResponse, Notebook, Note } from '@/types/api';
 
 const NotebookWorkspacePage = () => {

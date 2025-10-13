@@ -9,7 +9,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { apiClient } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
 import type { Notebook, Note } from '@/types/api';
-import CreateNotebookDialog from '@/features/notebooks/components/CreateNotebookDialog';
+import CreateNotebookDialog from '@/components/menu/CreateNotebookDialog';
 
 const NotebookListPage = () => {
   const queryClient = useQueryClient();

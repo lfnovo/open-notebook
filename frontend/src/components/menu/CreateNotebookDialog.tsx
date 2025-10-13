@@ -1,40 +1,56 @@
 import { useState } from 'react';
 
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { apiClient } from '@/lib/api-client';
-import type { Notebook, Note, ResearchResponse } from '@/types/api';
+import type { Notebook } from '@/types/api';
 
 interface CreateNotebookDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onComplete: (payload: {
-    notebook: Notebook;
-    note: Note;
-    research: ResearchResponse;
-  }) => void;
+  onComplete: (payload: { notebook: Notebook }) => void;
 }
+
+const extractErrorMessage = (err: unknown): string | null => {
+  const maybeError = err as { response?: { data?: unknown }; message?: string };
+  const data = maybeError?.response?.data;
+
+  if (typeof data === 'string') return data;
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    if (typeof record.message === 'string') return record.message;
+    if (typeof record.error === 'string') return record.error;
+  }
+  if (maybeError?.message) return maybeError.message;
+  return null;
+};
 
 const CreateNotebookDialog = ({ open, onOpenChange, onComplete }: CreateNotebookDialogProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [question, setQuestion] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const reset = () => {
     setName('');
     setDescription('');
-    setQuestion('');
+    setIsSubmitting(false);
     setError(null);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!name.trim() || !question.trim()) {
-      setError('Notebook name and research prompt are required.');
+
+    if (!name.trim()) {
+      setError('Notebook name is required.');
       return;
     }
 
@@ -47,38 +63,33 @@ const CreateNotebookDialog = ({ open, onOpenChange, onComplete }: CreateNotebook
         description: description.trim(),
       });
 
-      const research = await apiClient.runResearch({
-        question: question.trim(),
-        notebook_id: notebook.id,
-      });
-
-      const note = await apiClient.createNote({
-        notebook_id: notebook.id,
-        content: research.final_report,
-        note_type: 'ai',
-        title: 'Research Draft',
-      });
-
       onOpenChange(false);
       reset();
-      onComplete({ notebook, note, research });
-    } catch (err: unknown) {
-      console.error(err);
-      setError('Failed to create notebook or fetch research. Please try again.');
+      onComplete({ notebook });
+    } catch (err) {
+      console.error('createNotebook failed:', err);
+      setError(extractErrorMessage(err) ?? 'Notebook creation failed unexpectedly.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(value) => { onOpenChange(value); if (!value) reset(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        onOpenChange(value);
+        if (!value) reset();
+      }}
+    >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Create a new Notebook</DialogTitle>
+          <DialogTitle>Create a new notebook</DialogTitle>
           <DialogDescription>
-            Provide a descriptive name, optional context, and the research objective to generate the first draft automatically.
+            Provide a notebook name and optional context. You can add sources and generate reports after creation.
           </DialogDescription>
         </DialogHeader>
+
         <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="notebook-name">
@@ -86,41 +97,35 @@ const CreateNotebookDialog = ({ open, onOpenChange, onComplete }: CreateNotebook
             </label>
             <Input
               id="notebook-name"
-              placeholder="Exploring climate change impacts..."
+              placeholder="Exploring climate change impacts…"
               value={name}
               onChange={(event) => setName(event.target.value)}
               disabled={isSubmitting}
               required
+              aria-invalid={Boolean(error) && !name.trim()}
             />
           </div>
+
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="notebook-description">
               Description (optional)
             </label>
             <Textarea
               id="notebook-description"
-              placeholder="Add broader context or project goals..."
+              placeholder="Add broader context or project goals…"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               disabled={isSubmitting}
               rows={3}
             />
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="notebook-question">
-              Research prompt
-            </label>
-            <Textarea
-              id="notebook-question"
-              placeholder="What should the deep research agent investigate?"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              disabled={isSubmitting}
-              rows={4}
-              required
-            />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+
           <div className="flex items-center justify-end gap-3">
             <Button
               type="button"
@@ -134,7 +139,7 @@ const CreateNotebookDialog = ({ open, onOpenChange, onComplete }: CreateNotebook
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Generating draft…' : 'Create & Research'}
+              {isSubmitting ? 'Creating…' : 'Create notebook'}
             </Button>
           </div>
         </form>

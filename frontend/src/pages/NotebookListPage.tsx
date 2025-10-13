@@ -1,15 +1,21 @@
-import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Loader2, PlusCircle } from 'lucide-react';
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { ArrowRight, Loader2, PlusCircle } from "lucide-react";
 
-import AppShell from '@/components/layout/AppShell';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { apiClient } from '@/lib/api-client';
-import { formatDateTime } from '@/lib/utils';
-import type { Notebook, Note } from '@/types/api';
-import CreateNotebookDialog from '@/components/menu/CreateNotebookDialog';
+import AppShell from "@/components/layout/AppShell";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { apiClient } from "@/lib/api-client";
+import { formatDateTime } from "@/lib/utils";
+import type { Notebook } from "@/types/api";
+import CreateNotebookDialog from "@/components/menu/CreateNotebookDialog";
 
 const NotebookListPage = () => {
   const queryClient = useQueryClient();
@@ -17,15 +23,17 @@ const NotebookListPage = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { data, isLoading, isError } = useQuery<Notebook[]>({
-    queryKey: ['notebooks'],
+    queryKey: ["notebooks"],
     queryFn: () => apiClient.getNotebooks(),
   });
 
-  const notebooks = [...(data ?? [])].sort((a, b) => (a.updated < b.updated ? 1 : -1));
+  const notebooks = [...(data ?? [])].sort((a, b) =>
+    a.updated < b.updated ? 1 : -1
+  );
 
-  const handleNotebookCreated = ({ notebook, note }: { notebook: Notebook; note: Pick<Note, 'id'> }) => {
-    queryClient.invalidateQueries({ queryKey: ['notebooks'] });
-    navigate(`/notebooks/${notebook.id}?note=${note.id}`);
+  const handleNotebookCreated = (notebook: Notebook) => {
+    queryClient.invalidateQueries({ queryKey: ["notebooks"] });
+    navigate(`/notebooks/${notebook.id}`);
   };
 
   return (
@@ -54,7 +62,9 @@ const NotebookListPage = () => {
           <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-12 text-center">
             <h2 className="text-xl font-semibold">No notebooks yet</h2>
             <p className="max-w-md text-sm text-muted-foreground">
-              Create your first notebook to kick off a deep research workflow and generate an initial draft automatically.
+              Create your first notebook to kick off a deep research workflow.
+              Add sources and generate reports from the workspace when you’re
+              ready.
             </p>
             <Button onClick={() => setDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Create notebook
@@ -63,11 +73,16 @@ const NotebookListPage = () => {
         )}
         <div className="grid gap-4 sm:grid-cols-2">
           {notebooks.map((notebook) => (
-            <Card key={notebook.id} className="flex h-full flex-col justify-between border-muted">
+            <Card
+              key={notebook.id}
+              className="flex h-full flex-col justify-between border-muted"
+            >
               <CardHeader>
                 <CardTitle className="text-lg">{notebook.name}</CardTitle>
                 {notebook.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-3">{notebook.description}</p>
+                  <p className="text-sm text-muted-foreground line-clamp-3">
+                    {notebook.description}
+                  </p>
                 )}
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground">
@@ -75,7 +90,11 @@ const NotebookListPage = () => {
                 <div>Created: {formatDateTime(notebook.created)}</div>
               </CardContent>
               <CardFooter>
-                <Button variant="ghost" className="ml-auto" onClick={() => navigate(`/notebooks/${notebook.id}`)}>
+                <Button
+                  variant="ghost"
+                  className="ml-auto"
+                  onClick={() => navigate(`/notebooks/${notebook.id}`)}
+                >
                   Open <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </CardFooter>
@@ -86,7 +105,7 @@ const NotebookListPage = () => {
       <CreateNotebookDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onComplete={({ notebook, note }) => handleNotebookCreated({ notebook, note })}
+        onComplete={({ notebook }) => handleNotebookCreated(notebook)}
       />
     </AppShell>
   );

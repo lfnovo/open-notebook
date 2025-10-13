@@ -172,8 +172,8 @@ const NotebookListPage = () => {
           <DialogHeader>
             <DialogTitle>Delete notebook</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{notebookToDelete?.name}"? This
-              action cannot be undone.
+              Are you sure you want to delete &quot;{notebookToDelete?.name}
+              &quot;? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           {deleteError && (
@@ -203,9 +203,7 @@ const NotebookListPage = () => {
                 }
                 deleteNotebookMutation.mutate(notebookToDelete.id);
               }}
-              disabled={
-                !notebookToDelete || deleteNotebookMutation.isPending
-              }
+              disabled={!notebookToDelete || deleteNotebookMutation.isPending}
             >
               {deleteNotebookMutation.isPending &&
               deletingNotebookId === notebookToDelete?.id ? (

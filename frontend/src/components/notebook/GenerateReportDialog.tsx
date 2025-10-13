@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FileText, Loader2, PenSquare, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from "react";
+import { FileText, Loader2, PenSquare, Sparkles } from "lucide-react";
 
 import {
   Dialog,
@@ -7,11 +7,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -19,12 +19,14 @@ import {
   SelectItem,
   SelectLabel,
   SelectTrigger,
-} from '@/components/ui/select';
-import builtinTemplatesRaw from '@/components/notebook/templates/builtin-templates';
-import { apiClient } from '@/lib/api-client';
-import type { Note, ResearchResponse } from '@/types/api';
+  SelectValue,
+} from "@/components/ui/select";
+import { SelectItemText } from "@radix-ui/react-select";
+import builtinTemplatesRaw from "@/components/notebook/templates/builtin-templates";
+import { apiClient } from "@/lib/api-client";
+import type { Note, ResearchResponse } from "@/types/api";
 
-type TemplateScope = 'builtin' | 'custom';
+type TemplateScope = "builtin" | "custom";
 
 type ReportTemplate = {
   id: string;
@@ -35,17 +37,19 @@ type ReportTemplate = {
   created_at?: string;
 };
 
-const CUSTOM_TEMPLATE_KEY = 'custom:adhoc';
-const CUSTOM_TEMPLATE_STORAGE_KEY = 'open-notebook:report-templates';
+const CUSTOM_TEMPLATE_KEY = "custom:adhoc";
+const CUSTOM_TEMPLATE_STORAGE_KEY = "open-notebook:report-templates";
 
-const builtInTemplates: ReportTemplate[] = builtinTemplatesRaw.map((template) => ({
-  ...template,
-  scope: 'builtin' as const,
-  created_at: undefined,
-}));
+const builtInTemplates: ReportTemplate[] = builtinTemplatesRaw.map(
+  (template) => ({
+    ...template,
+    scope: "builtin" as const,
+    created_at: undefined,
+  })
+);
 
 const loadCustomTemplates = (): ReportTemplate[] => {
-  if (typeof window === 'undefined') return [];
+  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(CUSTOM_TEMPLATE_STORAGE_KEY);
     if (!raw) return [];
@@ -53,38 +57,49 @@ const loadCustomTemplates = (): ReportTemplate[] => {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .map((item) => ({
-        id: typeof item.id === 'string' ? item.id : `custom:${crypto.randomUUID?.() ?? Date.now()}`,
-        name: typeof item.name === 'string' ? item.name : 'Custom Template',
-        description: typeof item.description === 'string' ? item.description : null,
-        body_md: typeof item.body_md === 'string' ? item.body_md : '',
-        scope: 'custom' as const,
-        created_at: typeof item.created_at === 'string' ? item.created_at : new Date().toISOString(),
+        id:
+          typeof item.id === "string"
+            ? item.id
+            : `custom:${crypto.randomUUID?.() ?? Date.now()}`,
+        name: typeof item.name === "string" ? item.name : "Custom Template",
+        description:
+          typeof item.description === "string" ? item.description : null,
+        body_md: typeof item.body_md === "string" ? item.body_md : "",
+        scope: "custom" as const,
+        created_at:
+          typeof item.created_at === "string"
+            ? item.created_at
+            : new Date().toISOString(),
       }))
       .filter((item) => item.body_md.trim().length > 0);
   } catch (error) {
-    console.error('Failed to load custom templates from storage:', error);
+    console.error("Failed to load custom templates from storage:", error);
     return [];
   }
 };
 
 const persistCustomTemplates = (templates: ReportTemplate[]) => {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
       CUSTOM_TEMPLATE_STORAGE_KEY,
       JSON.stringify(
         templates.map((template) => ({
           ...template,
-          scope: 'custom',
-        })),
-      ),
+          scope: "custom",
+        }))
+      )
     );
   } catch (error) {
-    console.error('Failed to persist custom templates:', error);
+    console.error("Failed to persist custom templates:", error);
   }
 };
 
-const resolveTemplateByKey = (key: string, builtins: ReportTemplate[], custom: ReportTemplate[]): ReportTemplate | null => {
+const resolveTemplateByKey = (
+  key: string,
+  builtins: ReportTemplate[],
+  custom: ReportTemplate[]
+): ReportTemplate | null => {
   if (key === CUSTOM_TEMPLATE_KEY) return null;
   const all = [...builtins, ...custom];
   return all.find((template) => template.id === key) ?? null;
@@ -94,7 +109,10 @@ interface GenerateReportDialogProps {
   open: boolean;
   notebookId: string;
   onOpenChange: (open: boolean) => void;
-  onReportCreated: (payload: { note: Note; research: ResearchResponse }) => void;
+  onReportCreated: (payload: {
+    note: Note;
+    research: ResearchResponse;
+  }) => void;
 }
 
 const GenerateReportDialog = ({
@@ -106,51 +124,114 @@ const GenerateReportDialog = ({
   const builtinTemplatesState = builtInTemplates;
   const [customTemplates, setCustomTemplates] = useState<ReportTemplate[]>([]);
 
-  const initialTemplate = builtinTemplatesState[0] ?? null;
-
-  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>(
-    initialTemplate?.id ?? CUSTOM_TEMPLATE_KEY,
-  );
-  const [templateBody, setTemplateBody] = useState<string>(initialTemplate?.body_md ?? '');
-  const [hasEditedTemplate, setHasEditedTemplate] = useState(false);
+  const [selectedTemplateKey, setSelectedTemplateKey] = useState<string>("");
+  const [templateBody, setTemplateBody] = useState<string>("");
 
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
-  const [newTemplateName, setNewTemplateName] = useState('');
-  const [newTemplateDescription, setNewTemplateDescription] = useState('');
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateDescription, setNewTemplateDescription] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [saveTemplateMode, setSaveTemplateMode] = useState<"create" | "update">(
+    "create"
+  );
+  const [templateToUpdate, setTemplateToUpdate] =
+    useState<ReportTemplate | null>(null);
 
   const [formError, setFormError] = useState<string | null>(null);
-  const [saveTemplateError, setSaveTemplateError] = useState<string | null>(null);
-
-  const lastAppliedTemplateKey = useRef<string | null>(initialTemplate?.id ?? null);
+  const [saveTemplateError, setSaveTemplateError] = useState<string | null>(
+    null
+  );
 
   const sortedCustomTemplates = useMemo(
     () => [...customTemplates].sort((a, b) => a.name.localeCompare(b.name)),
-    [customTemplates],
+    [customTemplates]
   );
 
   const loadingTemplates = false;
+  const selectPlaceholder = loadingTemplates
+    ? "Loading templates…"
+    : "Select a template…";
 
   const selectedTemplate = useMemo(
-    () => resolveTemplateByKey(selectedTemplateKey, builtinTemplatesState, customTemplates),
-    [selectedTemplateKey, builtinTemplatesState, customTemplates],
+    () =>
+      resolveTemplateByKey(
+        selectedTemplateKey,
+        builtinTemplatesState,
+        customTemplates
+      ),
+    [selectedTemplateKey, builtinTemplatesState, customTemplates]
   );
 
+  // prevent scroll chaining jitter at edges of the dropdown
+  const onWheelCapture: React.WheelEventHandler<HTMLDivElement> = (e) => {
+    const el = e.currentTarget;
+    const delta = e.deltaY;
+    const atTop = el.scrollTop <= 0 && delta < 0;
+    const atBottom =
+      Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight && delta > 0;
+    if (atTop || atBottom) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleTemplateSelection = (value: string) => {
+    const resolved = resolveTemplateByKey(
+      value,
+      builtinTemplatesState,
+      customTemplates
+    );
+    setSelectedTemplateKey(value);
+    setTemplateToUpdate(null);
+    setSaveTemplateMode("create");
+    setNewTemplateName("");
+    setNewTemplateDescription("");
+    setSaveTemplateError(null);
+    if (value === CUSTOM_TEMPLATE_KEY) {
+      if (selectedTemplateKey !== CUSTOM_TEMPLATE_KEY) {
+        setTemplateBody("");
+      }
+    } else if (resolved) {
+      setTemplateBody(resolved.body_md ?? "");
+    } else {
+      setTemplateBody("");
+    }
+  };
+
+  const startSaveTemplateFlow = () => {
+    setSaveTemplateError(null);
+    if (selectedTemplate && selectedTemplate.scope === "custom") {
+      setSaveTemplateMode("update");
+      setTemplateToUpdate(selectedTemplate);
+      setNewTemplateName(selectedTemplate.name);
+      setNewTemplateDescription(selectedTemplate.description ?? "");
+    } else if (selectedTemplate) {
+      setSaveTemplateMode("create");
+      setTemplateToUpdate(null);
+      setNewTemplateName(`${selectedTemplate.name} copy`.trim());
+      setNewTemplateDescription(selectedTemplate.description ?? "");
+    } else {
+      setSaveTemplateMode("create");
+      setTemplateToUpdate(null);
+      setNewTemplateName("");
+      setNewTemplateDescription("");
+    }
+    setShowSaveTemplate(true);
+  };
+
   const resetDialogState = () => {
-    const fallbackTemplate = (builtinTemplatesState[0] ?? builtInTemplates[0]) ?? null;
-    const fallbackId = fallbackTemplate?.id ?? CUSTOM_TEMPLATE_KEY;
-    setSelectedTemplateKey(fallbackId);
-    setTemplateBody(fallbackTemplate?.body_md ?? '');
-    setHasEditedTemplate(false);
+    setSelectedTemplateKey("");
+    setTemplateBody("");
     setFormError(null);
     setSaveTemplateError(null);
-    setNewTemplateName('');
-    setNewTemplateDescription('');
+    setNewTemplateName("");
+    setNewTemplateDescription("");
     setIsGenerating(false);
     setIsSavingTemplate(false);
-    lastAppliedTemplateKey.current = fallbackId;
+    setSaveTemplateMode("create");
+    setTemplateToUpdate(null);
   };
 
   useEffect(() => {
@@ -160,53 +241,27 @@ const GenerateReportDialog = ({
 
   useEffect(() => {
     if (!open) return;
-
-    if (selectedTemplateKey === CUSTOM_TEMPLATE_KEY) {
-      if (lastAppliedTemplateKey.current !== CUSTOM_TEMPLATE_KEY) {
-        setTemplateBody('');
-        setHasEditedTemplate(false);
-        lastAppliedTemplateKey.current = CUSTOM_TEMPLATE_KEY;
-      }
+    if (!selectedTemplateKey || selectedTemplateKey === CUSTOM_TEMPLATE_KEY)
       return;
+
+    const resolved = resolveTemplateByKey(
+      selectedTemplateKey,
+      builtinTemplatesState,
+      customTemplates
+    );
+    if (!resolved) {
+      setSelectedTemplateKey("");
+      setTemplateBody("");
     }
+  }, [selectedTemplateKey, builtinTemplatesState, customTemplates, open]);
 
-    if (!selectedTemplate) {
-      if (lastAppliedTemplateKey.current !== selectedTemplateKey) {
-        setTemplateBody('');
-        setHasEditedTemplate(false);
-        lastAppliedTemplateKey.current = selectedTemplateKey;
-      }
-      return;
-    }
-
-    const shouldApplyTemplate =
-      lastAppliedTemplateKey.current !== selectedTemplateKey ||
-      (!hasEditedTemplate && lastAppliedTemplateKey.current === selectedTemplateKey);
-
-    if (shouldApplyTemplate) {
-      setTemplateBody(selectedTemplate.body_md ?? '');
-      setHasEditedTemplate(false);
-      lastAppliedTemplateKey.current = selectedTemplateKey;
-    }
-  }, [selectedTemplateKey, selectedTemplate, open, hasEditedTemplate]);
-
-  useEffect(() => {
-    if (selectedTemplateKey === CUSTOM_TEMPLATE_KEY) return;
-    if (selectedTemplate) return;
-    if (builtinTemplatesState.length === 0) return;
-
-    const fallback = builtinTemplatesState[0];
-    setSelectedTemplateKey(fallback.id);
-    setTemplateBody(fallback.body_md);
-    setHasEditedTemplate(false);
-    lastAppliedTemplateKey.current = fallback.id;
-  }, [selectedTemplate, selectedTemplateKey, builtinTemplatesState]);
-
-  const handleGenerateReport = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleGenerateReport = async (
+    event: React.FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
     if (!templateBody.trim()) {
-      setFormError('Template body is required.');
+      setFormError("Template body is required.");
       return;
     }
 
@@ -214,18 +269,18 @@ const GenerateReportDialog = ({
     setFormError(null);
 
     try {
-      const templateName = selectedTemplate?.name ?? 'Custom Report';
-      const templateDescription = selectedTemplate?.description ?? '';
+      const templateName = selectedTemplate?.name ?? "Custom Report";
+      const templateDescription = selectedTemplate?.description ?? "";
       const question = [
         `Generate a comprehensive report for the current notebook using all relevant sources and notes.`,
         `Follow the markdown template titled "${templateName}" exactly. Preserve every heading and replace placeholders with detailed findings. If a section is not applicable, include a short explanation rather than removing the heading.`,
-        'Cite notebook sources inline and conclude with a Sources section that references the notebook materials.',
-        templateDescription ? `Template summary: ${templateDescription}` : '',
-        'Markdown Template:',
+        "Cite notebook sources inline and conclude with a Sources section that references the notebook materials.",
+        templateDescription ? `Template summary: ${templateDescription}` : "",
+        "Markdown Template:",
         templateBody,
       ]
         .filter(Boolean)
-        .join('\n\n');
+        .join("\n\n");
 
       const research = await apiClient.runResearch({
         notebook_id: notebookId,
@@ -235,34 +290,61 @@ const GenerateReportDialog = ({
       const note = await apiClient.createNote({
         notebook_id: notebookId,
         content: research.final_report,
-        note_type: 'ai',
-        title: selectedTemplate?.name ?? 'Report Draft',
+        note_type: "ai",
+        title: selectedTemplate?.name ?? "Report Draft",
       });
 
       onReportCreated({ note, research });
       onOpenChange(false);
       resetDialogState();
     } catch (error) {
-      console.error('Failed to generate report:', error);
-      setFormError('Failed to generate report. Please try again.');
+      console.error("Failed to generate report:", error);
+      setFormError("Failed to generate report. Please try again.");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleSaveTemplate = async () => {
+  const handleSaveTemplate = async (action: "create" | "update") => {
+    const trimmedBody = templateBody.trim();
     const trimmedName = newTemplateName.trim();
-    if (!trimmedName || !templateBody.trim()) {
-      setSaveTemplateError('Template name and body are required.');
+    const trimmedDescription = newTemplateDescription.trim();
+
+    if (!trimmedBody) {
+      setSaveTemplateError("Template body is required.");
+      return;
+    }
+    if (!trimmedName) {
+      setSaveTemplateError("Template name is required.");
       return;
     }
 
-    const duplicateExists =
-      builtinTemplatesState.some((tpl) => tpl.name.toLowerCase() === trimmedName.toLowerCase()) ||
-      customTemplates.some((tpl) => tpl.name.toLowerCase() === trimmedName.toLowerCase());
+    const nameConflicts = (excludeId?: string) =>
+      builtinTemplatesState.some(
+        (tpl) => tpl.name.toLowerCase() === trimmedName.toLowerCase()
+      ) ||
+      customTemplates.some(
+        (tpl) =>
+          tpl.id !== excludeId &&
+          tpl.name.toLowerCase() === trimmedName.toLowerCase()
+      );
 
-    if (duplicateExists) {
-      setSaveTemplateError('A template with this name already exists.');
+    if (action === "update" && !templateToUpdate) {
+      console.warn(
+        "Requested template update without a target; falling back to create."
+      );
+      return handleSaveTemplate("create");
+    }
+    if (action === "create" && nameConflicts()) {
+      setSaveTemplateError("A template with this name already exists.");
+      return;
+    }
+    if (
+      action === "update" &&
+      templateToUpdate &&
+      nameConflicts(templateToUpdate.id)
+    ) {
+      setSaveTemplateError("Another template already uses this name.");
       return;
     }
 
@@ -270,279 +352,448 @@ const GenerateReportDialog = ({
     setSaveTemplateError(null);
 
     try {
-      const template: ReportTemplate = {
-        id: `custom:${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString()}`,
-        name: trimmedName,
-        description: newTemplateDescription.trim() || null,
-        body_md: templateBody,
-        scope: 'custom',
-        created_at: new Date().toISOString(),
-      };
+      if (action === "update" && templateToUpdate) {
+        const updatedTemplate: ReportTemplate = {
+          ...templateToUpdate,
+          name: trimmedName,
+          description: trimmedDescription ? trimmedDescription : null,
+          body_md: templateBody,
+          created_at: templateToUpdate.created_at ?? new Date().toISOString(),
+        };
 
-      setCustomTemplates((prev) => {
-        const next = [template, ...prev];
-        persistCustomTemplates(next);
-        return next;
-      });
-      setSelectedTemplateKey(template.id);
-      lastAppliedTemplateKey.current = template.id;
+        setCustomTemplates((prev) => {
+          const next = prev.map((tpl) =>
+            tpl.id === updatedTemplate.id ? updatedTemplate : tpl
+          );
+          persistCustomTemplates(next);
+          return next;
+        });
+        setSelectedTemplateKey(updatedTemplate.id);
+        setTemplateBody(updatedTemplate.body_md);
+      } else {
+        const newTemplate: ReportTemplate = {
+          id: `custom:${
+            typeof crypto !== "undefined" && crypto.randomUUID
+              ? crypto.randomUUID()
+              : Date.now().toString()
+          }`,
+          name: trimmedName,
+          description: trimmedDescription ? trimmedDescription : null,
+          body_md: templateBody,
+          scope: "custom",
+          created_at: new Date().toISOString(),
+        };
+
+        setCustomTemplates((prev) => {
+          const next = [newTemplate, ...prev];
+          persistCustomTemplates(next);
+          return next;
+        });
+        setSelectedTemplateKey(newTemplate.id);
+        setTemplateBody(newTemplate.body_md);
+      }
+
       setShowSaveTemplate(false);
-      setNewTemplateName('');
-      setNewTemplateDescription('');
+      setNewTemplateName("");
+      setNewTemplateDescription("");
+      setTemplateToUpdate(null);
+      setSaveTemplateMode("create");
     } catch (error) {
-      console.error('Failed to save template locally:', error);
-      setSaveTemplateError('Failed to save template. Please try again.');
+      console.error("Failed to store custom template:", error);
+      setSaveTemplateError("Failed to save template. Please try again.");
     } finally {
       setIsSavingTemplate(false);
     }
   };
 
-  const builtInOptions = useMemo(() => builtinTemplatesState.map((template) => ({
-    key: template.id,
-    template,
-  })), [builtinTemplatesState]);
+  const builtInOptions = useMemo(
+    () =>
+      builtinTemplatesState.map((template) => ({ key: template.id, template })),
+    [builtinTemplatesState]
+  );
 
-  const activeTemplate = selectedTemplateKey === CUSTOM_TEMPLATE_KEY
-    ? {
-        name: 'Custom (Ad-hoc)',
-        description: 'Start from a blank template.',
-      }
-    : selectedTemplate;
+  const activeTemplateDescription =
+    selectedTemplateKey === CUSTOM_TEMPLATE_KEY
+      ? "Start from a blank template."
+      : selectedTemplate?.description ?? null;
 
   return (
     <Dialog
       open={open}
       onOpenChange={(value) => {
         onOpenChange(value);
-        if (!value) {
-          resetDialogState();
-        }
+        if (!value) resetDialogState();
       }}
     >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Create report from sources</DialogTitle>
-          <DialogDescription>
-            Choose a report template, refine the markdown structure, and generate a fresh report that cites the
-            sources in this notebook.
-          </DialogDescription>
-        </DialogHeader>
+      {/* Fit within viewport and scroll inside */}
+      <DialogContent className="sm:max-w-2xl p-0 rounded-2xl border shadow-2xl">
+        <div className="flex max-h-[85vh] flex-col">
+          {/* Sticky header */}
+          <DialogHeader className="select-none cursor-default sticky top-0 z-10 bg-background/95 backdrop-blur px-6 py-4 border-b">
+            <DialogTitle className="text-lg">
+              Create report from sources
+            </DialogTitle>
+            <DialogDescription>
+              Choose a report template, refine the markdown structure, and
+              generate a fresh report that cites the sources in this notebook.
+            </DialogDescription>
+          </DialogHeader>
 
-        <form className="flex flex-col gap-4" onSubmit={handleGenerateReport}>
-          <div className="space-y-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium" htmlFor="report-template-select">
-                Report template
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Built-in templates cover common operations. Custom templates let you reuse tailored structures.
-              </p>
-            </div>
-            <Select
-              value={selectedTemplateKey}
-              onValueChange={(value) => {
-                setSelectedTemplateKey(value);
-                setHasEditedTemplate(false);
-              }}
-              disabled={isGenerating || loadingTemplates}
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={handleGenerateReport}
             >
-              <SelectTrigger
-                id="report-template-select"
-                className="items-start justify-start py-2 text-left"
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium leading-tight">
-                    {loadingTemplates
-                      ? 'Loading templates…'
-                      : activeTemplate?.name ?? 'Select a template…'}
-                  </span>
-                  {activeTemplate?.description && (
-                    <span className="text-xs text-muted-foreground">
-                      {activeTemplate.description}
-                    </span>
-                  )}
+              <div className="space-y-2 select-none cursor-default">
+                <div className="flex flex-col gap-1">
+                  <label
+                    className="text-sm font-medium"
+                    htmlFor="report-template-select"
+                  >
+                    Report template
+                  </label>
+                  <p className="text-xs text-muted-foreground">
+                    Built-in templates cover common operations. Custom templates
+                    let you reuse tailored structures.
+                  </p>
                 </div>
-              </SelectTrigger>
-              <SelectContent className="min-w-[360px]">
-                <SelectGroup>
-                  <SelectLabel>Built-in templates</SelectLabel>
-                  {builtInOptions.map(({ key, template }) => (
-                    <SelectItem key={key} value={key} className="flex items-start gap-3 py-2">
-                      <FileText className="mt-0.5 h-4 w-4 text-primary" />
-                      <div className="flex flex-col items-start">
-                        <span className="text-sm font-medium leading-tight">{template.name}</span>
-                        {template.description && (
-                          <span className="text-xs text-muted-foreground">{template.description}</span>
-                        )}
-                        <Badge variant="outline" className="mt-1 text-xs font-normal">Built-in</Badge>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-                {sortedCustomTemplates.length > 0 && (
-                  <SelectGroup>
-                    <SelectLabel>Custom templates</SelectLabel>
-                    {sortedCustomTemplates.map((template) => (
-                      <SelectItem key={template.id} value={template.id} className="flex items-start gap-3 py-2">
-                        <Sparkles className="mt-0.5 h-4 w-4 text-amber-500" />
-                        <div className="flex flex-col items-start">
-                          <span className="text-sm font-medium leading-tight">{template.name}</span>
-                          {template.description && (
-                            <span className="text-xs text-muted-foreground">{template.description}</span>
-                          )}
-                          <Badge variant="outline" className="mt-1 text-xs font-normal text-amber-600 border-amber-200 bg-amber-50">
-                            Saved
-                          </Badge>
+
+                <Select
+                  value={selectedTemplateKey || undefined}
+                  onValueChange={handleTemplateSelection}
+                  disabled={isGenerating || loadingTemplates}
+                >
+                  <SelectTrigger
+                    id="report-template-select"
+                    className="items-start justify-start py-2 text-left cursor-pointer"
+                  >
+                    <SelectValue placeholder={selectPlaceholder} />
+                  </SelectTrigger>
+
+                  {/* Animated, scrollable dropdown; popper avoids clipping */}
+                  <SelectContent
+                    position="popper"
+                    side="bottom"
+                    sideOffset={8}
+                    avoidCollisions
+                    className="
+                      min-w-[380px]
+                      rounded-xl border shadow-lg
+                      data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95
+                      data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95
+                    "
+                  >
+                    <div
+                      onWheelCapture={onWheelCapture}
+                      className="max-h-80 overflow-y-auto overscroll-contain"
+                    >
+                      <SelectGroup className="select-none cursor-default">
+                        <SelectLabel
+                          className="sticky top-0 z-10 px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground/80
+                                     bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b"
+                        >
+                          Built-in templates
+                        </SelectLabel>
+                        <div className="py-1">
+                          {builtInOptions.map(({ key, template }) => (
+                            <SelectItem
+                              key={key}
+                              value={key}
+                              className="py-2 px-2"
+                            >
+                              <div className="flex w-full items-start gap-3">
+                                <FileText className="mt-0.5 h-4 w-4 text-primary" />
+                                <div className="flex flex-col items-start text-left">
+                                  <SelectItemText className="text-sm font-medium leading-tight">
+                                    {template.name}
+                                  </SelectItemText>
+                                  {template.description && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {template.description}
+                                    </span>
+                                  )}
+                                  <Badge
+                                    variant="outline"
+                                    className="mt-1 text-[10px] font-normal"
+                                  >
+                                    Built-in
+                                  </Badge>
+                                </div>
+                              </div>
+                            </SelectItem>
+                          ))}
                         </div>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                )}
-                <SelectGroup>
-                  <SelectLabel>Ad-hoc</SelectLabel>
-                  <SelectItem value={CUSTOM_TEMPLATE_KEY} className="flex items-start gap-3 py-2">
-                    <PenSquare className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                    <div className="flex flex-col items-start">
-                      <span className="text-sm font-medium leading-tight">Custom (Ad-hoc)</span>
-                      <span className="text-xs text-muted-foreground">Start from a blank slate and save it if you like the result.</span>
+                      </SelectGroup>
+
+                      {sortedCustomTemplates.length > 0 && (
+                        <SelectGroup className="select-none cursor-default">
+                          <SelectLabel
+                            className="sticky top-0 z-10 px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground/80
+                                       bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-y"
+                          >
+                            Custom templates
+                          </SelectLabel>
+                          <div className="py-1">
+                            {sortedCustomTemplates.map((template) => (
+                              <SelectItem
+                                key={template.id}
+                                value={template.id}
+                                className="py-2 px-2"
+                              >
+                                <div className="flex w-full items-start gap-3">
+                                  <Sparkles className="mt-0.5 h-4 w-4 text-amber-500" />
+                                  <div className="flex flex-col items-start text-left">
+                                    <SelectItemText className="text-sm font-medium leading-tight">
+                                      {template.name}
+                                    </SelectItemText>
+                                    {template.description && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {template.description}
+                                      </span>
+                                    )}
+                                    <Badge
+                                      variant="outline"
+                                      className="mt-1 text-[10px] font-normal text-amber-600 border-amber-200 bg-amber-50"
+                                    >
+                                      Saved
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        </SelectGroup>
+                      )}
+
+                      <SelectGroup className="select-none cursor-default">
+                        <SelectLabel
+                          className="sticky top-0 z-10 px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground/80
+                                     bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-y"
+                        >
+                          Ad-hoc
+                        </SelectLabel>
+                        <div className="py-1">
+                          <SelectItem
+                            value={CUSTOM_TEMPLATE_KEY}
+                            className="py-2 px-2"
+                          >
+                            <div className="flex w-full items-start gap-3">
+                              <PenSquare className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                              <div className="flex flex-col items-start text-left">
+                                <SelectItemText className="text-sm font-medium leading-tight">
+                                  Custom (Ad-hoc)
+                                </SelectItemText>
+                                <span className="text-xs text-muted-foreground">
+                                  Start from a blank slate and save it if you
+                                  like the result.
+                                </span>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        </div>
+                      </SelectGroup>
                     </div>
-                  </SelectItem>
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-            {selectedTemplate?.description && (
-              <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
-            )}
-          </div>
+                  </SelectContent>
+                </Select>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="report-template-body">
-              Template markdown
-            </label>
-            <Textarea
-              id="report-template-body"
-              placeholder="# Title\n\n## Objectives\n- ..."
-              value={templateBody}
-              onChange={(event) => {
-                setTemplateBody(event.target.value);
-                setHasEditedTemplate(true);
-              }}
-              rows={14}
-              disabled={isGenerating}
-              required
-            />
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                Adjust headings, placeholders, and figure/table callouts before generating the report.
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => {
-                  setShowSaveTemplate(true);
-                  setSaveTemplateError(null);
-                }}
-                disabled={!templateBody.trim() || isGenerating}
-              >
-                Save as template…
-              </Button>
-            </div>
-          </div>
+                {activeTemplateDescription && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {activeTemplateDescription}
+                  </p>
+                )}
+              </div>
 
-          {formError && (
-            <p className="text-sm text-destructive" role="alert">
-              {formError}
-            </p>
-          )}
+              <div className="space-y-2">
+                <label
+                  className="text-sm font-medium select-none cursor-default"
+                  htmlFor="report-template-body"
+                >
+                  Template
+                </label>
+                <Textarea
+                  id="report-template-body"
+                  placeholder="Insert your report format here, using headings, placeholders, and figure/table callouts as needed."
+                  value={templateBody}
+                  onChange={(event) => setTemplateBody(event.target.value)}
+                  rows={14}
+                  disabled={isGenerating}
+                  required
+                  className="font-mono leading-6 resize-y min-h-64"
+                />
+                <div className="flex items-center justify-between select-none cursor-default">
+                  <span className="text-xs text-muted-foreground">
+                    Adjust headings, placeholders, and figure/table callouts
+                    before generating the report.
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={startSaveTemplateFlow}
+                    disabled={!templateBody.trim() || isGenerating}
+                    className="cursor-pointer"
+                  >
+                    Save as template…
+                  </Button>
+                </div>
+              </div>
 
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              disabled={isGenerating}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isGenerating}>
-              {isGenerating ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating…
-                </>
-              ) : (
-                'Generate report'
+              {formError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {formError}
+                </p>
               )}
-            </Button>
-          </div>
-        </form>
 
+              {/* Sticky action bar so actions are always reachable */}
+              <div className="sticky bottom-0 z-10 -mx-6 mt-2 bg-background/95 backdrop-blur px-6 py-3 border-t flex items-center justify-end gap-2 select-none cursor-default">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => onOpenChange(false)}
+                  disabled={isGenerating}
+                  className="cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isGenerating}
+                  className="cursor-pointer"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating…
+                    </>
+                  ) : (
+                    "Generate report"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        {/* Nested: Save/Update Template dialog, also constrained + scrollable */}
         <Dialog
           open={showSaveTemplate}
           onOpenChange={(value) => {
             setShowSaveTemplate(value);
             if (!value) {
-              setNewTemplateName('');
-              setNewTemplateDescription('');
+              setNewTemplateName("");
+              setNewTemplateDescription("");
               setSaveTemplateError(null);
               setIsSavingTemplate(false);
+              setTemplateToUpdate(null);
+              setSaveTemplateMode("create");
             }
           }}
         >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Save as template</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="new-template-name">
-                  Template name
-                </label>
-                <Input
-                  id="new-template-name"
-                  placeholder="Sea-to-Sky Recovery v1"
-                  value={newTemplateName}
-                  onChange={(event) => setNewTemplateName(event.target.value)}
-                  disabled={isSavingTemplate}
-                />
+          <DialogContent className="p-0 rounded-xl">
+            <div className="flex max-h-[75vh] flex-col">
+              <DialogHeader className="select-none cursor-default sticky top-0 z-10 bg-background/95 backdrop-blur px-6 py-4 border-b">
+                <DialogTitle>
+                  {saveTemplateMode === "update"
+                    ? "Update template"
+                    : "Save as template"}
+                </DialogTitle>
+                {saveTemplateMode === "update" && templateToUpdate && (
+                  <DialogDescription>
+                    Update &quot;{templateToUpdate.name}&quot; in place or save
+                    a brand new template instead.
+                  </DialogDescription>
+                )}
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto px-6 py-4">
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <label
+                      className="text-sm font-medium select-none cursor-default"
+                      htmlFor="new-template-name"
+                    >
+                      Template name
+                    </label>
+                    <Input
+                      id="new-template-name"
+                      placeholder="Sea-to-Sky Recovery v1"
+                      value={newTemplateName}
+                      onChange={(event) =>
+                        setNewTemplateName(event.target.value)
+                      }
+                      disabled={isSavingTemplate}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      className="text-sm font-medium select-none cursor-default"
+                      htmlFor="new-template-description"
+                    >
+                      Description (optional)
+                    </label>
+                    <Textarea
+                      id="new-template-description"
+                      placeholder="Notes about when to use this template…"
+                      value={newTemplateDescription}
+                      onChange={(event) =>
+                        setNewTemplateDescription(event.target.value)
+                      }
+                      rows={3}
+                      disabled={isSavingTemplate}
+                    />
+                  </div>
+                  {saveTemplateError && (
+                    <p className="text-sm text-destructive">
+                      {saveTemplateError}
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium" htmlFor="new-template-description">
-                  Description (optional)
-                </label>
-                <Textarea
-                  id="new-template-description"
-                  placeholder="Notes about when to use this template…"
-                  value={newTemplateDescription}
-                  onChange={(event) => setNewTemplateDescription(event.target.value)}
-                  rows={3}
-                  disabled={isSavingTemplate}
-                />
-              </div>
-              {saveTemplateError && <p className="text-sm text-destructive">{saveTemplateError}</p>}
-              <div className="flex justify-end gap-2">
+
+              <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur px-6 py-3 border-t flex flex-wrap justify-end gap-2 select-none cursor-default">
                 <Button
                   type="button"
                   variant="ghost"
                   onClick={() => {
                     setShowSaveTemplate(false);
-                    setNewTemplateName('');
-                    setNewTemplateDescription('');
+                    setNewTemplateName("");
+                    setNewTemplateDescription("");
                     setSaveTemplateError(null);
+                    setTemplateToUpdate(null);
+                    setSaveTemplateMode("create");
                   }}
                   disabled={isSavingTemplate}
+                  className="cursor-pointer"
                 >
                   Cancel
                 </Button>
-                <Button type="button" onClick={handleSaveTemplate} disabled={isSavingTemplate || !templateBody.trim()}>
+                {saveTemplateMode === "update" && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => handleSaveTemplate("create")}
+                    disabled={isSavingTemplate || !templateBody.trim()}
+                    className="cursor-pointer"
+                  >
+                    Save as new template
+                  </Button>
+                )}
+                <Button
+                  type="button"
+                  onClick={() => handleSaveTemplate(saveTemplateMode)}
+                  disabled={isSavingTemplate || !templateBody.trim()}
+                  className="cursor-pointer"
+                >
                   {isSavingTemplate ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Saving…
                     </>
+                  ) : saveTemplateMode === "update" ? (
+                    "Update template"
                   ) : (
-                    'Save template'
+                    "Save template"
                   )}
                 </Button>
               </div>

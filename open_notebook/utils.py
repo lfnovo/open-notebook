@@ -135,8 +135,8 @@ def get_version_from_github(repo_url: str, branch: str = "main") -> str:
         f"https://raw.githubusercontent.com/{owner}/{repo}/{branch}/pyproject.toml"
     )
 
-    # Fetch the file
-    response = requests.get(raw_url)
+    # Fetch the file with timeout
+    response = requests.get(raw_url, timeout=10)
     response.raise_for_status()
 
     # Parse TOML content

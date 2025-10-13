@@ -74,7 +74,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}
-            ${{ github.event.inputs.push_latest == 'true' && format('{0}:latest', env.IMAGE_NAME) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -117,7 +117,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-single
-            ${{ github.event.inputs.push_latest == 'true' && format('{0}:latest-single', env.IMAGE_NAME) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest-single', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache-single
           cache-to: type=local,dest=/tmp/.buildx-cache-single-new,mode=max
 

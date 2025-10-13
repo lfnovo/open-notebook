@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, ChevronRight, FileText, Loader2, Save } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import AppShell from '@/components/layout/AppShell';
@@ -10,7 +10,8 @@ import { apiClient } from '@/lib/api-client';
 import { cn, formatDateTime } from '@/lib/utils';
 import CopilotPanel from '@/components/copilot/CopilotPanel';
 import SourcesPanel from '@/components/notebook/sources/SourcesPanel';
-import type { ContextResponse, Notebook, Note } from '@/types/api';
+import GenerateReportDialog from '@/features/notebooks/components/GenerateReportDialog';
+import type { ContextResponse, Notebook, Note, ResearchResponse } from '@/types/api';
 
 const NotebookWorkspacePage = () => {
   const { notebookId } = useParams<{ notebookId: string }>();
@@ -21,6 +22,7 @@ const NotebookWorkspacePage = () => {
   const [activeNoteId, setActiveNoteId] = useState<string | null>(() => searchParams.get('note'));
   const [draft, setDraft] = useState('');
   const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const {
     data: notebook,
@@ -102,6 +104,28 @@ const NotebookWorkspacePage = () => {
     updateNoteMutation.mutate({ noteId: activeNote.id, content: draft });
   };
 
+  const handleReportCreated = ({ note }: { note: Note; research: ResearchResponse }) => {
+    if (!notebookId) return;
+    queryClient.setQueryData<Note[] | undefined>(['notes', notebookId], (prev) => {
+      if (!prev) return [note];
+      const existingIndex = prev.findIndex((item) => item.id === note.id);
+      if (existingIndex === -1) {
+        return [note, ...prev];
+      }
+      const next = [...prev];
+      next[existingIndex] = note;
+      return next;
+    });
+    setActiveNoteId(note.id);
+    setDraft(note.content ?? '');
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      params.set('note', note.id);
+      return params;
+    });
+    queryClient.invalidateQueries({ queryKey: ['notes', notebookId] });
+  };
+
   useEffect(() => {
     if (!notebookId || (!isNotebookError && notebook)) return;
     if (isNotebookError) {
@@ -117,6 +141,9 @@ const NotebookWorkspacePage = () => {
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Back to notebooks
+          </Button>
+          <Button type="button" onClick={() => setIsReportDialogOpen(true)} disabled={!notebookId}>
+            <FileText className="mr-2 h-4 w-4" /> Create report from sources
           </Button>
           <Button onClick={handleSave} disabled={!activeNote || !isDirty || updateNoteMutation.isPending}>
             {updateNoteMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -139,7 +166,7 @@ const NotebookWorkspacePage = () => {
                 'flex h-full flex-col overflow-hidden border border-border/80 bg-card/50 transition-all duration-200 ease-in-out',
                 isSourcesCollapsed
                   ? 'w-0 border-transparent bg-transparent p-0 opacity-0 pointer-events-none'
-                  : 'w-72 p-4 opacity-100'
+                  : 'w-72 p-4 opacity-100',
               )}
             >
               {!isSourcesCollapsed && notebookId && <SourcesPanel notebookId={notebookId} />}
@@ -154,11 +181,7 @@ const NotebookWorkspacePage = () => {
               aria-label={isSourcesCollapsed ? 'Expand sources panel' : 'Collapse sources panel'}
               className="h-8 w-8 shrink-0 border border-border/70 bg-background/80 text-muted-foreground hover:bg-accent"
             >
-              {isSourcesCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
+              {isSourcesCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
           </div>
           <section className="flex min-w-0 flex-1 flex-col gap-3">
@@ -188,6 +211,14 @@ const NotebookWorkspacePage = () => {
           </aside>
         </div>
       </div>
+      {notebookId && (
+        <GenerateReportDialog
+          open={isReportDialogOpen}
+          notebookId={notebookId}
+          onOpenChange={setIsReportDialogOpen}
+          onReportCreated={handleReportCreated}
+        />
+      )}
     </AppShell>
   );
 };

@@ -172,4 +172,3 @@ export interface ModelProvidersResponse {
 export interface SourceUploadResponse {
   file_path: string;
 }
-

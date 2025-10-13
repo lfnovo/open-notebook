@@ -174,20 +174,110 @@ async def run_research_synthesis(research_request: ResearchRequest):
             research_request.notebook_id, research_request.config_overrides
         )
 
+        def _coerce_to_string(value, strip: bool = True):
+            if value is None:
+                return None
+            if isinstance(value, str):
+                return value.strip() if strip else value
+            if hasattr(value, "content"):
+                return _coerce_to_string(value.content, strip=strip)
+            if isinstance(value, (list, tuple, set)):
+                parts = [
+                    _coerce_to_string(item, strip=strip)
+                    for item in value
+                ]
+                parts = [part for part in parts if part]
+                joined = "\n".join(parts)
+                return joined.strip() if strip else joined
+            text = str(value)
+            return text.strip() if strip else text
+
         result = await research_graph.ainvoke(
             input={"messages": [HumanMessage(content=research_request.question.strip())]},
             config=config,
         )
 
-        if not result or "final_report" not in result:
-            raise ValueError("Deep research agent did not produce a final report")
+        if not result:
+            logger.error(
+                "Deep research agent returned no result for question '{}'",
+                research_request.question,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Deep research agent returned an empty result. Check server logs for more details.",
+            )
+
+        if not isinstance(result, dict):
+            logger.error(
+                "Deep research agent returned an unexpected payload type {} for question '{}'",
+                type(result),
+                research_request.question,
+            )
+            raise HTTPException(
+                status_code=500,
+                detail="Deep research agent returned an unexpected response. Check server logs for more details.",
+            )
+
+        final_report_value = result.get("final_report")
+        final_report = _coerce_to_string(final_report_value, strip=False)
+        final_report_text = _coerce_to_string(final_report_value)
+
+        if final_report_text and final_report_text.lower().startswith("error"):
+            logger.error(
+                "Deep research agent returned an error final report for question '{}': {}",
+                research_request.question,
+                final_report_text,
+            )
+            raise HTTPException(status_code=500, detail=final_report_text)
+
+        if not final_report or not final_report.strip():
+            reason_candidates = []
+
+            def _collect_reason(raw_value):
+                text = _coerce_to_string(raw_value)
+                if text and text not in reason_candidates:
+                    reason_candidates.append(text)
+
+            _collect_reason(final_report_value)
+
+            for key in ("error", "errors", "detail", "message", "debug"):
+                _collect_reason(result.get(key))
+
+            messages = result.get("messages")
+            if isinstance(messages, (list, tuple)):
+                preview = [_coerce_to_string(item) for item in messages[:3]]
+                preview = [item for item in preview if item]
+                if preview:
+                    _collect_reason("; ".join(preview))
+            else:
+                _collect_reason(messages)
+
+            reason_summary = " | ".join(reason_candidates[:3]) if reason_candidates else None
+            if reason_summary and len(reason_summary) > 800:
+                reason_summary = reason_summary[:797] + "..."
+
+            logger.error(
+                "Deep research agent failed to produce a final report for question '{}'. Result keys: {}. Extracted reasons: {}",
+                research_request.question,
+                list(result.keys()),
+                reason_candidates or None,
+            )
+
+            raise HTTPException(
+                status_code=500,
+                detail=(
+                    f"Deep research agent failed to produce a final report: {reason_summary}"
+                    if reason_summary
+                    else "Deep research agent failed to produce a final report. Check server logs for more details."
+                ),
+            )
 
         notes = result.get("notes") or result.get("raw_notes") or []
         if isinstance(notes, str):
             notes = [notes]
 
         return ResearchResponse(
-            final_report=str(result.get("final_report", "")),
+            final_report=final_report or "",
             notes=[str(item) for item in notes],
             research_brief=result.get("research_brief"),
         )

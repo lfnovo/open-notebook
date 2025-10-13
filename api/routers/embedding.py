@@ -29,6 +29,8 @@ async def embed_content(embed_request: EmbedRequest):
             )
 
         # Get the item and embed it
+        message = "Embedding complete"
+
         if item_type == "source":
             source_item = await Source.get(item_id)
             if not source_item:
@@ -52,7 +54,17 @@ async def embed_content(embed_request: EmbedRequest):
             if not note_item:
                 raise HTTPException(status_code=404, detail="Note not found")
 
-            await note_item.vectorize()
+            content = note_item.get_embedding_content()
+            if not content:
+                return EmbedResponse(
+                    success=True,
+                    message="Note has no content to embed",
+                    item_id=item_id,
+                    item_type=item_type,
+                )
+
+            await note_item.save()
+            message = "Note embedded successfully"
 
         return EmbedResponse(
             success=True, message=message, item_id=item_id, item_type=item_type

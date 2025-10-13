@@ -6,6 +6,7 @@ import type {
   ContextConfigRequest,
   ContextResponse,
   DefaultModelsResponse,
+  EmbedResponse,
   ModelCreatePayload,
   ModelItem,
   ModelProvidersResponse,
@@ -63,6 +64,8 @@ export const apiClient = {
   },
   createSource: (payload: SourceCreatePayload) => unwrap<SourceDetail>(api.post('/sources', payload)),
   deleteSource: (sourceId: string) => api.delete(`/sources/${sourceId}`),
+  embedContent: (payload: { item_id: string; item_type: string }) =>
+    unwrap<EmbedResponse>(api.post('/embed', payload)),
 
   runResearch: (payload: { question: string; notebook_id?: string; config_overrides?: Record<string, unknown> }) =>
     unwrap<ResearchResponse>(api.post('/search/research', payload)),

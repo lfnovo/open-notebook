@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { FileText, Loader2, PenSquare, Sparkles } from 'lucide-react';
 
 import {
@@ -21,8 +22,8 @@ import {
   SelectTrigger,
 } from '@/components/ui/select';
 import builtinTemplatesRaw from '@/components/notebook/templates/builtin-templates';
-import { apiClient } from '@/lib/api-client';
-import type { Note, ResearchResponse } from '@/types/api';
+import { apiClient, isAxiosError } from '@/lib/api-client';
+import type { Note, ResearchResponse, SourceListItem } from '@/types/api';
 
 type TemplateScope = 'builtin' | 'custom';
 
@@ -103,6 +104,7 @@ const GenerateReportDialog = ({
   onOpenChange,
   onReportCreated,
 }: GenerateReportDialogProps) => {
+  const queryClient = useQueryClient();
   const builtinTemplatesState = builtInTemplates;
   const [customTemplates, setCustomTemplates] = useState<ReportTemplate[]>([]);
 
@@ -123,8 +125,34 @@ const GenerateReportDialog = ({
 
   const [formError, setFormError] = useState<string | null>(null);
   const [saveTemplateError, setSaveTemplateError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
   const lastAppliedTemplateKey = useRef<string | null>(initialTemplate?.id ?? null);
+
+  const extractErrorMessage = useCallback((error: unknown): string | null => {
+    if (isAxiosError(error)) {
+      const data = error.response?.data;
+      if (typeof data === 'string') {
+        return data;
+      }
+      if (data && typeof data === 'object') {
+        const record = data as Record<string, unknown>;
+        for (const key of ['detail', 'message', 'error']) {
+          const value = record[key];
+          if (typeof value === 'string') {
+            return value;
+          }
+        }
+      }
+      if (error.message) {
+        return error.message;
+      }
+    }
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return null;
+  }, []);
 
   const sortedCustomTemplates = useMemo(
     () => [...customTemplates].sort((a, b) => a.name.localeCompare(b.name)),
@@ -150,6 +178,7 @@ const GenerateReportDialog = ({
     setNewTemplateDescription('');
     setIsGenerating(false);
     setIsSavingTemplate(false);
+    setStatusMessage(null);
     lastAppliedTemplateKey.current = fallbackId;
   };
 
@@ -202,8 +231,50 @@ const GenerateReportDialog = ({
     lastAppliedTemplateKey.current = fallback.id;
   }, [selectedTemplate, selectedTemplateKey, builtinTemplatesState]);
 
+  const ensureSourcesEmbedded = useCallback(async () => {
+    if (!notebookId) {
+      throw new Error('Notebook is not ready yet. Close the dialog and try again.');
+    }
+
+    let sources: SourceListItem[] = [];
+
+    try {
+      setStatusMessage('Checking notebook sources…');
+      sources = await apiClient.getSources(notebookId);
+    } catch (error) {
+      throw new Error(extractErrorMessage(error) ?? 'Failed to load notebook sources.');
+    }
+
+    const pending = sources.filter((source) => (source.embedded_chunks ?? 0) === 0);
+    if (pending.length === 0) {
+      return;
+    }
+
+    for (let index = 0; index < pending.length; index += 1) {
+      const source = pending[index];
+      const displayName = source.title?.trim() || 'Untitled source';
+      setStatusMessage(`Embedding source ${index + 1} of ${pending.length}: ${displayName}`);
+      try {
+        await apiClient.embedContent({ item_id: source.id, item_type: 'source' });
+      } catch (error) {
+        const reason = extractErrorMessage(error);
+        throw new Error(
+          reason ? `Failed to embed "${displayName}": ${reason}` : `Failed to embed "${displayName}".`,
+        );
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ['sources', notebookId] });
+    queryClient.invalidateQueries({ queryKey: ['context', notebookId] });
+  }, [extractErrorMessage, notebookId, queryClient]);
+
   const handleGenerateReport = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!notebookId) {
+      setFormError('Notebook is not ready yet. Close the dialog and try again.');
+      return;
+    }
 
     if (!templateBody.trim()) {
       setFormError('Template body is required.');
@@ -212,8 +283,11 @@ const GenerateReportDialog = ({
 
     setIsGenerating(true);
     setFormError(null);
+    setStatusMessage(null);
 
     try {
+      await ensureSourcesEmbedded();
+
       const templateName = selectedTemplate?.name ?? 'Custom Report';
       const templateDescription = selectedTemplate?.description ?? '';
       const question = [
@@ -227,11 +301,16 @@ const GenerateReportDialog = ({
         .filter(Boolean)
         .join('\n\n');
 
+      setStatusMessage('Running research agent…');
       const research = await apiClient.runResearch({
         notebook_id: notebookId,
         question,
+        config_overrides: {
+          allow_clarification: false,
+        },
       });
 
+      setStatusMessage('Saving report to notebook…');
       const note = await apiClient.createNote({
         notebook_id: notebookId,
         content: research.final_report,
@@ -239,14 +318,24 @@ const GenerateReportDialog = ({
         title: selectedTemplate?.name ?? 'Report Draft',
       });
 
+      try {
+        setStatusMessage('Embedding generated report…');
+        await apiClient.embedContent({ item_id: note.id, item_type: 'note' });
+        queryClient.invalidateQueries({ queryKey: ['context', notebookId] });
+      } catch (embedError) {
+        console.warn('Failed to embed generated report note:', embedError);
+      }
+
       onReportCreated({ note, research });
       onOpenChange(false);
       resetDialogState();
     } catch (error) {
       console.error('Failed to generate report:', error);
-      setFormError('Failed to generate report. Please try again.');
+      const message = extractErrorMessage(error) ?? 'Failed to generate report. Please try again.';
+      setFormError(message);
     } finally {
       setIsGenerating(false);
+      setStatusMessage(null);
     }
   };
 
@@ -453,6 +542,11 @@ const GenerateReportDialog = ({
           {formError && (
             <p className="text-sm text-destructive" role="alert">
               {formError}
+            </p>
+          )}
+          {statusMessage && !formError && (
+            <p className="text-xs text-muted-foreground" role="status">
+              {statusMessage}
             </p>
           )}
 

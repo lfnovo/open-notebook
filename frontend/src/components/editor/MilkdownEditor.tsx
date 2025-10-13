@@ -72,7 +72,7 @@ const CrepeEditor = ({ value, onChange, editable = true }: MilkdownEditorCorePro
 const MilkdownEditor = ({ className, ...props }: MilkdownEditorProps) => {
   return (
     <MilkdownProvider>
-      <div className={cn('milkdown-container flex-1 min-h-0 min-w-0 h-full w-full, ml-20', className)}>
+      <div className={cn('milkdown-container flex-1 min-h-0 min-w-0 h-full w-full ml-20 overflow-y-auto', className)}>
         <CrepeEditor {...props} />
       </div>
     </MilkdownProvider>

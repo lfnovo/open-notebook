@@ -17,7 +17,7 @@ import { apiClient } from "@/lib/api-client";
 import { cn, formatDateTime } from "@/lib/utils";
 import CopilotPanel from "@/components/copilot/CopilotPanel";
 import SourcesPanel from "@/components/notebook/sources/SourcesPanel";
-import GenerateReportDialog from "@/components/notebook/GenerateReportDialog";
+// import GenerateReportDialog from "@/components/notebook/GenerateReportDialog";
 import type {
   ContextResponse,
   Notebook,
@@ -238,7 +238,6 @@ const NotebookWorkspacePage = () => {
           <section className="flex min-w-0 flex-1 flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-lg font-semibold">Draft</h2>
                 {activeNote && (
                   <p className="text-sm text-muted-foreground">
                     Last updated {formatDateTime(activeNote.updated)}
@@ -266,14 +265,14 @@ const NotebookWorkspacePage = () => {
           </aside>
         </div>
       </div>
-      {notebookId && (
-        <GenerateReportDialog
-          open={isReportDialogOpen}
-          notebookId={notebookId}
-          onOpenChange={setIsReportDialogOpen}
-          onReportCreated={handleReportCreated}
-        />
-      )}
+      {/*{notebookId && (*/}
+      {/*  <GenerateReportDialog*/}
+      {/*    open={isReportDialogOpen}*/}
+      {/*    notebookId={notebookId}*/}
+      {/*    onOpenChange={setIsReportDialogOpen}*/}
+      {/*    onReportCreated={handleReportCreated}*/}
+      {/*  />*/}
+      {/*)}*/}
     </AppShell>
   );
 };

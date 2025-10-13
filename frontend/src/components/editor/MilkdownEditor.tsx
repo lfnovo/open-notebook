@@ -1,19 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Milkdown, MilkdownProvider, useEditor } from '@milkdown/react';
-import type { Ctx } from '@milkdown/ctx';
-import { Editor, defaultValueCtx, editorViewOptionsCtx, rootCtx } from '@milkdown/core';
-import { nord } from '@milkdown/theme-nord';
-import { commonmark } from '@milkdown/preset-commonmark';
-import { gfm } from '@milkdown/preset-gfm';
-import { listener, listenerCtx } from '@milkdown/plugin-listener';
+import { Crepe } from '@milkdown/crepe';
 import { replaceAll } from '@milkdown/utils';
 
-import { cn } from '@/lib/utils';
+import "@milkdown/crepe/theme/common/style.css";
+import "@milkdown/crepe/theme/frame.css";
 
-const nordPlugin = (ctx: Ctx) => {
-  nord(ctx);
-  return () => undefined;
-};
+import { cn } from '@/lib/utils';
 
 interface MilkdownEditorProps {
   value: string;
@@ -22,52 +15,56 @@ interface MilkdownEditorProps {
   editable?: boolean;
 }
 
-const EditorInstance = ({ value, onChange, editable = true }: MilkdownEditorProps) => {
-  const latestValue = useRef(value);
-  const latestEditable = useRef(editable);
-  latestValue.current = value;
-  latestEditable.current = editable;
+type MilkdownEditorCoreProps = Omit<MilkdownEditorProps, 'className'>;
 
-  const { get } = useEditor(
-    (root) =>
-      Editor.make()
-        .config((ctx) => {
-          ctx.set(rootCtx, root);
-          ctx.set(defaultValueCtx, value);
-          ctx.get(listenerCtx).markdownUpdated((_, markdown) => {
-            if (markdown !== latestValue.current) {
-              latestValue.current = markdown;
-              onChange?.(markdown);
-            }
-          });
-        })
-        .use(nordPlugin)
-        .use(commonmark)
-        .use(gfm)
-        .use(listener),
-    [onChange],
+const CrepeEditor = ({ value, onChange, editable = true }: MilkdownEditorCoreProps) => {
+  const latestValueRef = useRef(value);
+  const onChangeRef = useRef(onChange);
+  const crepeRef = useRef<Crepe | null>(null);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  const { get, loading } = useEditor(
+    (root) => {
+      const crepe = new Crepe({ root, defaultValue: latestValueRef.current });
+      crepeRef.current = crepe;
+
+      if (!editable) {
+        crepe.setReadonly(true);
+      }
+
+      crepe.on((listener) => {
+        listener.markdownUpdated((_, markdown) => {
+          if (markdown === latestValueRef.current) return;
+          latestValueRef.current = markdown;
+          onChangeRef.current?.(markdown);
+        });
+      });
+
+      return crepe;
+    },
+    []
   );
 
   useEffect(() => {
+    if (loading) return;
     const editor = get();
     if (!editor) return;
-    if (value === latestValue.current) return;
-    latestValue.current = value;
+    if (value === latestValueRef.current) return;
+
+    latestValueRef.current = value;
     editor.action(replaceAll(value));
-  }, [value, get]);
+  }, [value, get, loading]);
 
   useEffect(() => {
-    const editor = get();
-    if (!editor) return;
-    if (editable === latestEditable.current) return;
-    latestEditable.current = editable;
-    editor.action((ctx) => {
-      ctx.update(editorViewOptionsCtx, (prev) => ({
-        ...prev,
-        editable: () => editable,
-      }));
-    });
-  }, [editable, get]);
+    if (loading) return;
+    const crepe = crepeRef.current;
+    if (!crepe) return;
+
+    crepe.setReadonly(!editable);
+  }, [editable, loading]);
 
   return <Milkdown />;
 };
@@ -75,8 +72,8 @@ const EditorInstance = ({ value, onChange, editable = true }: MilkdownEditorProp
 const MilkdownEditor = ({ className, ...props }: MilkdownEditorProps) => {
   return (
     <MilkdownProvider>
-      <div className={cn('milkdown-container', className)}>
-        <EditorInstance {...props} />
+      <div className={cn('milkdown-container flex-1 min-h-0 min-w-0 h-full w-full, ml-20', className)}>
+        <CrepeEditor {...props} />
       </div>
     </MilkdownProvider>
   );

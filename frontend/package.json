@@ -11,16 +11,20 @@
   },
   "dependencies": {
     "@milkdown/core": "^7.0.3",
+    "@milkdown/crepe": "^7.17.1",
+    "@milkdown/plugin-listener": "^7.0.3",
     "@milkdown/preset-commonmark": "^7.0.3",
     "@milkdown/preset-gfm": "^7.0.3",
     "@milkdown/react": "^7.0.3",
     "@milkdown/theme-nord": "^7.0.3",
     "@milkdown/utils": "^7.0.3",
+    "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-popover": "^1.0.7",
     "@radix-ui/react-scroll-area": "^1.0.6",
     "@radix-ui/react-select": "^1.2.2",
     "@radix-ui/react-separator": "^1.0.3",
+    "@radix-ui/react-slot": "^1.0.2",
     "@radix-ui/react-tabs": "^1.0.4",
     "@radix-ui/react-toast": "^1.1.4",
     "@radix-ui/react-tooltip": "^1.0.7",
@@ -35,10 +39,7 @@
     "react-router-dom": "^6.26.2",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8",
-    "@milkdown/plugin-listener": "^7.0.3",
-    "@radix-ui/react-slot": "^1.0.2",
-    "@radix-ui/react-checkbox": "^1.0.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.14.11",

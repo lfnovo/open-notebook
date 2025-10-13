@@ -173,7 +173,7 @@ const NotebookWorkspacePage = () => {
               </div>
             </div>
             <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
-              <MilkdownEditor value={draft} onChange={setDraft} className="h-full w-full" />
+              <MilkdownEditor value={draft} onChange={setDraft} className="h-full" />
             </div>
           </section>
           <aside className="flex w-80 flex-col border border-border/80 bg-card/50 p-4">

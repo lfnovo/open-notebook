@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { Settings2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,21 @@ import {
 } from '@/components/ui/dialog';
 import SettingsPanel from './SettingsPanel';
 
-const SettingsLauncher = () => {
+interface SettingsLauncherProps {
+  trigger?: ReactNode;
+}
+
+const SettingsLauncher = ({ trigger }: SettingsLauncherProps) => {
   const [open, setOpen] = useState(false);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
-          <Settings2 className="h-4 w-4" />
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" size="icon">
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="flex h-[90vh] max-w-5xl flex-col overflow-hidden p-0">
         <DialogHeader className="border-b px-6 py-4 text-left">

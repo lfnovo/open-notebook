@@ -24,6 +24,7 @@ import { apiClient } from "@/lib/api-client";
 import { formatDateTime } from "@/lib/utils";
 import type { Notebook } from "@/types/api";
 import CreateNotebookDialog from "@/components/menu/CreateNotebookDialog";
+import SettingsLauncher from "@/components/settings/SettingsLauncher";
 
 const NotebookListPage = () => {
   const queryClient = useQueryClient();
@@ -75,9 +76,12 @@ const NotebookListPage = () => {
       title="Open Notebook"
       subtitle="Research notebooks backed by AI copilot"
       headerActions={
-        <Button onClick={() => setDialogOpen(true)}>
-          <PlusCircle className="mr-2 h-4 w-4" /> New Notebook
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setDialogOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> New Notebook
+          </Button>
+          <SettingsLauncher />
+        </div>
       }
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-10">

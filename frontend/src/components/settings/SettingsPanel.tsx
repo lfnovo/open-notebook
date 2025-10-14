@@ -141,8 +141,14 @@ const ModelsTab = () => {
                   <SelectLabel>Available</SelectLabel>
                   {(providersByType[newModel.type] ?? []).map((provider) => (
                     <SelectItem key={provider} value={provider}>
-                      {provider}
-                      {!availableProviders.includes(provider) && ' (missing env)'}
+                      <span className="flex items-center justify-between gap-3">
+                        <span>{provider}</span>
+                        {!availableProviders.includes(provider) && (
+                          <Badge variant="outline" className="text-[10px] uppercase">
+                            Missing env
+                          </Badge>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -180,7 +186,7 @@ const ModelsTab = () => {
             <div key={key} className="space-y-2 rounded-md border border-border/70 bg-card/60 p-4">
               <div>
                 <div className="text-sm font-medium">
-                  {key.replace(/_/g, ' ')}
+                  {defaultLabelMap[key] ?? key.replace(/_/g, ' ')}
                 </div>
               </div>
               <Select

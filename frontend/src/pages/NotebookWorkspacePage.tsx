@@ -1,23 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Loader2,
-  Save,
-} from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import AppShell from "@/components/layout/AppShell";
 import MilkdownEditor from "@/components/editor/MilkdownEditor";
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api-client";
-import { cn, formatDateTime } from "@/lib/utils";
-import CopilotPanel from "@/components/copilot/CopilotPanel";
-import SourcesPanel from "@/components/notebook/sources/SourcesPanel";
+import { formatDateTime } from "@/lib/utils";
 import GenerateReportDialog from "@/components/notebook/GenerateReportDialog";
+import CopilotLauncher from "@/components/copilot/CopilotLauncher";
+import NotebookSidebar from "@/components/notebook/NotebookSidebar";
 import type {
   ContextResponse,
   Notebook,
@@ -35,7 +28,6 @@ const NotebookWorkspacePage = () => {
     searchParams.get("note")
   );
   const [draft, setDraft] = useState("");
-  const [isSourcesCollapsed, setIsSourcesCollapsed] = useState(false);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const {
@@ -164,106 +156,64 @@ const NotebookWorkspacePage = () => {
 
   return (
     <AppShell
-      title={notebook?.name ?? "Notebook"}
-      subtitle={
-        notebook ? `Updated ${formatDateTime(notebook.updated)}` : undefined
+      title="Open Notebook"
+      sidebar={
+        <NotebookSidebar
+          notebook={notebook}
+          notebookId={notebookId}
+          isNotebookLoading={isNotebookLoading}
+          onNavigateHome={() => navigate("/")}
+          onOpenReportDialog={() => setIsReportDialogOpen(true)}
+        />
       }
       headerActions={
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => navigate("/")}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Back to notebooks
-          </Button>
+          <CopilotLauncher
+            notebookId={notebookId ?? undefined}
+            draft={draft}
+            onDraftUpdate={setDraft}
+            context={contextData}
+            disabled={!notebookId}
+          />
           <Button
             type="button"
-            onClick={() => setIsReportDialogOpen(true)}
-            disabled={!notebookId}
-          >
-            <FileText className="mr-2 h-4 w-4" /> Create report from sources
-          </Button>
-          <Button
+            variant="ghost"
+            size="icon"
             onClick={handleSave}
             disabled={!activeNote || !isDirty || updateNoteMutation.isPending}
+            className="rounded-full bg-background/70 text-muted-foreground hover:bg-accent/60 hover:text-primary"
           >
-            {updateNoteMutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {updateNoteMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
             )}
-            <Save className="mr-2 h-4 w-4" /> Save draft
+            <span className="sr-only">Save draft</span>
           </Button>
         </div>
       }
     >
-      <div className="flex h-[calc(100vh-72px)] flex-col divide-y">
+      <div className="flex h-full flex-col">
         {(isNotebookLoading || isNotesLoading) && (
-          <div className="flex h-12 items-center gap-2 px-6 text-sm text-muted-foreground">
+          <div className="flex h-10 items-center gap-2 border-b border-border/60 bg-card/50 px-6 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading notebook
             workspace…
           </div>
         )}
-        <div className="flex min-h-0 flex-1 gap-4 px-6 py-4">
-          <div className="flex items-start gap-2">
-            <aside
-              id="sources-panel"
-              className={cn(
-                "flex h-full flex-col overflow-hidden border border-border/80 bg-card/50 transition-all duration-200 ease-in-out",
-                isSourcesCollapsed
-                  ? "w-0 border-transparent bg-transparent p-0 opacity-0 pointer-events-none"
-                  : "w-72 p-4 opacity-100"
-              )}
-            >
-              {!isSourcesCollapsed && notebookId && (
-                <SourcesPanel notebookId={notebookId} />
-              )}
-            </aside>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSourcesCollapsed((prev) => !prev)}
-              aria-expanded={!isSourcesCollapsed}
-              aria-controls="sources-panel"
-              aria-label={
-                isSourcesCollapsed
-                  ? "Expand sources panel"
-                  : "Collapse sources panel"
-              }
-              className="h-8 w-8 shrink-0 border border-border/70 bg-background/80 text-muted-foreground hover:bg-accent"
-            >
-              {isSourcesCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
-              ) : (
-                <ChevronLeft className="h-4 w-4" />
-              )}
-            </Button>
+        <section className="flex min-h-0 flex-1 flex-col gap-4 px-6 py-4">
+          {activeNote && (
+            <p className="text-sm text-muted-foreground">
+              Last updated {formatDateTime(activeNote.updated)}
+            </p>
+          )}
+          <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
+            <MilkdownEditor
+              value={draft}
+              onChange={setDraft}
+              className="h-full"
+            />
           </div>
-          <section className="flex min-w-0 flex-1 flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div>
-                {activeNote && (
-                  <p className="text-sm text-muted-foreground">
-                    Last updated {formatDateTime(activeNote.updated)}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card">
-              <MilkdownEditor
-                value={draft}
-                onChange={setDraft}
-                className="h-full"
-              />
-            </div>
-          </section>
-          <aside className="flex w-80 flex-col border border-border/80 bg-card/50 p-4">
-            {notebookId && (
-              <CopilotPanel
-                notebookId={notebookId}
-                draft={draft}
-                onDraftUpdate={setDraft}
-                context={contextData}
-              />
-            )}
-          </aside>
-        </div>
+        </section>
       </div>
       {notebookId && (
         <GenerateReportDialog

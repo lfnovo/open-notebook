@@ -176,13 +176,19 @@ const NotebookWorkspacePage = () => {
             disabled={!notebookId}
           />
           <Button
+            type="button"
+            variant="ghost"
+            size="icon"
             onClick={handleSave}
             disabled={!activeNote || !isDirty || updateNoteMutation.isPending}
+            className="rounded-full bg-background/70 text-muted-foreground hover:bg-accent/60 hover:text-primary"
           >
-            {updateNoteMutation.isPending && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {updateNoteMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
             )}
-            <Save className="mr-2 h-4 w-4" /> Save draft
+            <span className="sr-only">Save draft</span>
           </Button>
         </div>
       }

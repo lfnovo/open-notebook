@@ -41,11 +41,11 @@ const ThemeToggle = () => {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ghost"
       size="icon"
       onClick={() => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))}
       aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="transition-colors"
+      className="rounded-full bg-background/70 text-muted-foreground transition-colors hover:bg-accent/60 hover:text-primary"
     >
       {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
     </Button>

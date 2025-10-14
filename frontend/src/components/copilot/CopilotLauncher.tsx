@@ -38,7 +38,7 @@ const CopilotLauncher = ({
           variant="ghost"
           size="icon"
           disabled={isDisabled}
-          className="rounded-full border border-border/60 bg-background/80 text-muted-foreground hover:text-primary"
+          className="rounded-full bg-background/70 text-muted-foreground hover:bg-accent/60 hover:text-primary"
         >
           <Sparkles className="h-4 w-4" />
           <span className="sr-only">Toggle copilot</span>

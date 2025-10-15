@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
@@ -8,14 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { apiClient } from '@/lib/api-client';
 import type {
   DefaultModelsResponse,
   SettingsResponse,
   SourceCreatePayload,
   SourceCreateType,
-  Transformation,
 } from '@/types/api';
 
 interface AddSourceDialogProps {
@@ -35,7 +33,6 @@ type FormState = {
   textContent: string;
   embed: boolean;
   deleteAfter: boolean;
-  selectedTransformations: string[];
 };
 
 const initialFormState: FormState = {
@@ -44,20 +41,14 @@ const initialFormState: FormState = {
   file: null,
   textTitle: '',
   textContent: '',
-  embed: false,
+  embed: true, // Always embed by default
   deleteAfter: false,
-  selectedTransformations: [],
 };
 
 const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourceDialogProps) => {
   const queryClient = useQueryClient();
   const [formState, setFormState] = useState<FormState>(initialFormState);
   const [error, setError] = useState<string | null>(null);
-
-  const transformationsQuery = useQuery<Transformation[]>({
-    queryKey: ['transformations'],
-    queryFn: () => apiClient.getTransformations(),
-  });
 
   const settingsQuery = useQuery<SettingsResponse>({
     queryKey: ['settings'],
@@ -83,24 +74,12 @@ const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourc
     mutationFn: (file: File) => apiClient.uploadSourceFile(file),
   });
 
-  const transformations = useMemo(() => transformationsQuery.data ?? [], [transformationsQuery.data]);
-
-  useEffect(() => {
-    if (!transformations.length || !open) return;
-    const defaults = transformations
-      .filter((transformation) => transformation.apply_default)
-      .map((item) => item.id);
-    setFormState((prev) => ({
-      ...prev,
-      selectedTransformations: defaults,
-    }));
-  }, [transformations, open]);
 
   useEffect(() => {
     const embeddingOption = settingsQuery.data?.default_embedding_option;
     setFormState((prev) => ({
       ...prev,
-      embed: embeddingOption === 'always' ? true : embeddingOption === 'ask' ? prev.embed : false,
+      embed: true, // Always embed by default regardless of settings
       deleteAfter: settingsQuery.data?.auto_delete_files === 'yes',
     }));
   }, [settingsQuery.data?.default_embedding_option, settingsQuery.data?.auto_delete_files]);
@@ -113,17 +92,6 @@ const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourc
     }
   };
 
-  const handleAddTransformation = (id: string, checked: boolean | string) => {
-    setFormState((prev) => {
-      const current = new Set(prev.selectedTransformations);
-      if (checked) {
-        current.add(id);
-      } else {
-        current.delete(id);
-      }
-      return { ...prev, selectedTransformations: Array.from(current) };
-    });
-  };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -155,7 +123,7 @@ const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourc
       const payload: SourceCreatePayload = {
         notebook_id: notebookId,
         type: formState.type,
-        transformations: formState.selectedTransformations,
+        transformations: [], // No transformations selected
         embed: formState.embed,
       };
 
@@ -277,48 +245,8 @@ const AddSourceDialog = ({ notebookId, open, onOpenChange, onCreated }: AddSourc
             </TabsContent>
           </Tabs>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Transformations</span>
-              {transformationsQuery.isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
-            </div>
-            <ScrollArea className="h-48 w-full rounded-md border border-border/70">
-              <div className="flex flex-col gap-2 p-3 pr-4">
-                {transformations.length === 0 && (
-                  <p className="text-xs text-muted-foreground">No transformations configured.</p>
-                )}
-                {transformations.map((transformation) => (
-                  <label key={transformation.id} className="flex items-start gap-3 text-sm">
-                    <Checkbox
-                      checked={formState.selectedTransformations.includes(transformation.id)}
-                      onCheckedChange={(checked) => handleAddTransformation(transformation.id, Boolean(checked))}
-                    />
-                    <span>
-                      <span className="font-medium">{transformation.title}</span>
-                      <br />
-                      <span className="text-xs text-muted-foreground">{transformation.description}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
 
-          {embeddingOption === 'ask' && (
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Checkbox
-                checked={formState.embed}
-                onCheckedChange={(checked) => setFormState((prev) => ({ ...prev, embed: Boolean(checked) }))}
-              />
-              Embed content for vector search
-            </label>
-          )}
-          {embeddingOption === 'always' && (
-            <p className="text-xs text-muted-foreground">Embedding enabled automatically based on workspace settings.</p>
-          )}
-          {embeddingOption !== 'always' && embeddingOption !== 'ask' && (
-            <p className="text-xs text-muted-foreground">Embedding disabled by default. You can embed later from the source details.</p>
-          )}
+          <p className="text-xs text-muted-foreground">Content will be automatically embedded for vector search.</p>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

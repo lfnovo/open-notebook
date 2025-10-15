@@ -9,14 +9,19 @@ from open_notebook.domain.base import ObjectModel
 nest_asyncio.apply()
 from open_notebook.exceptions import NotFoundError
 from pages.components import note_panel, source_insight_panel, source_panel
+from pages.components.vscode_navigation import create_vscode_sidebar, add_back_button
 from pages.stream_app.utils import setup_page
 
 load_dotenv()
-setup_page("📒 Open Notebook", sidebar_state="collapsed")
+setup_page("📒 Open Notebook", sidebar_state="expanded")
+create_vscode_sidebar()
 
 if "object_id" not in st.query_params:
     st.switch_page("pages/2_📒_Notebooks.py")
     st.stop()
+
+# Add back button for object views
+add_back_button()
 
 object_id = st.query_params["object_id"]
 

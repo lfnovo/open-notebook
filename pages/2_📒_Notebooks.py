@@ -5,25 +5,26 @@ from api.notebook_service import notebook_service
 from api.notes_service import notes_service
 from api.sources_service import sources_service
 from open_notebook.domain.notebook import Notebook
+from pages.components.vscode_navigation import create_vscode_sidebar, add_back_button
 from pages.stream_app.chat import chat_sidebar
 from pages.stream_app.note import add_note, note_card
 from pages.stream_app.source import add_source, source_card
 from pages.stream_app.utils import setup_page, setup_stream_state
 
 setup_page("📒 Open Notebook", only_check_mandatory_models=True)
+create_vscode_sidebar()
 
 
 def notebook_header(current_notebook: Notebook):
     """
     Defines the header of the notebook page, including the ability to edit the notebook's name and description.
     """
-    c1, c2, c3 = st.columns([8, 2, 2])
+    # Add back button
+    add_back_button()
+    
+    c1, c2 = st.columns([8, 2])
     c1.header(current_notebook.name)
-    if c2.button("Back to the list", icon="🔙"):
-        st.session_state["current_notebook_id"] = None
-        st.rerun()
-
-    if c3.button("Refresh", icon="🔄"):
+    if c2.button("Refresh", icon="🔄"):
         st.rerun()
     current_description = current_notebook.description
     with st.expander(
@@ -118,6 +119,7 @@ if st.session_state["current_notebook_id"]:
     notebook_page(current_notebook)
     st.stop()
 
+st.markdown('<div class="content-area">', unsafe_allow_html=True)
 st.title("📒 My Notebooks")
 st.caption(
     "Notebooks are a great way to organize your thoughts, ideas, and sources. You can create notebooks for different research topics and projects, to create new articles, etc. "
@@ -148,3 +150,5 @@ if len(archived_notebooks) > 0:
         st.write("ℹ Archived Notebooks can still be accessed and used in search.")
         for notebook in archived_notebooks:
             notebook_list_item(notebook)
+
+st.markdown('</div>', unsafe_allow_html=True)

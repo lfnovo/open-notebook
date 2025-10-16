@@ -20,6 +20,10 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+  packages: write
+
 env:
   # Dynamic registry and image configuration based on repository
   GHCR_REGISTRY: ghcr.io

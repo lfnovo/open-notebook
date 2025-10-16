@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 
 from open_notebook.domain.podcast import EpisodeProfile
 
-
 router = APIRouter()
 
 

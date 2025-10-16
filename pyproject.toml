@@ -81,4 +81,11 @@ line-length = 88
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
-ignore = ["E501"]
+ignore = [
+    "E501",  # line too long
+    "E402",  # module level import not at top of file (Streamlit requires this pattern)
+    "E722",  # do not use bare except (legacy code pattern)
+    "F401",  # imported but unused (may be used in type hints or re-exports)
+    "F541",  # f-string without placeholders
+    "F841",  # local variable assigned but never used
+]

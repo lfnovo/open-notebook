@@ -86,10 +86,17 @@ class ModelManager:
 
         model_instance: ModelType
         if model.type == "language":
+            # Fix for Anthropic models: set top_p to None to avoid conflict with temperature
+            # Anthropic API doesn't allow both temperature and top_p to be set simultaneously
+            # The esperanto library sets defaults for both, so we explicitly override top_p for Anthropic
+            config = kwargs.copy()
+            if model.provider.lower() == "anthropic":
+                config["top_p"] = None
+
             model_instance = AIFactory.create_language(
                 model_name=model.name,
                 provider=model.provider,
-                config=kwargs,
+                config=config,
             )
         elif model.type == "embedding":
             model_instance = AIFactory.create_embedding(

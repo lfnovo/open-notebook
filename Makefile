@@ -1,6 +1,6 @@
 .PHONY: run frontend check ruff database lint api start-all stop-all status clean-cache worker worker-start worker-stop worker-restart
 .PHONY: docker-buildx-prepare docker-buildx-clean docker-buildx-reset
-.PHONY: docker-push docker-push-latest docker-release tag
+.PHONY: docker-push docker-push-latest docker-release tag export-docs
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
@@ -177,6 +177,12 @@ status:
 	@pgrep -f "surreal-commands-worker" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Next.js Frontend:"
 	@pgrep -f "next dev" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
+
+# === Documentation Export ===
+export-docs:
+	@echo "📚 Exporting documentation..."
+	@uv run python scripts/export_docs.py
+	@echo "✅ Documentation export complete!"
 
 # === Cleanup ===
 clean-cache:

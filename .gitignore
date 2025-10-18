@@ -130,3 +130,4 @@ claude-logs/
 docs/custom_gpt
 
 specs/
+.claude

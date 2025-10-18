@@ -34,7 +34,7 @@ make start-all
 # Check that the API is running
 curl http://localhost:5055/health
 
-# Check that the UI is accessible
+# Check that the frontend is accessible
 open http://localhost:8502
 ```
 
@@ -501,8 +501,8 @@ uv run python -m open_notebook.database.async_migrate
 # Start the API server
 uv run python run_api.py
 
-# Start the React frontend (in another terminal)
-uv run cd frontend && npm run dev --server.port 8502
+# Start the Next.js frontend (in another terminal)
+cd frontend && npm run dev
 ```
 
 ### Development Tools
@@ -620,7 +620,7 @@ async def new_feature_graph(state: NewFeatureState):
 
 We're actively looking for contributions in these areas:
 
-1. **React Frontend**: Help build a modern React-based UI to replace Next.js
+1. **Frontend Enhancement**: Help improve the Next.js/React UI with real-time updates and better UX
 2. **Testing**: Expand test coverage across all components
 3. **Performance**: Async processing improvements and caching
 4. **Documentation**: API examples and user guides

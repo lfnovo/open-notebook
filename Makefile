@@ -1,17 +1,26 @@
-.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-v1-latest docker-release-single docker-release-both docker-release-all-versions docker-update-v1-latest
+.PHONY: run frontend check ruff database lint api start-all stop-all status clean-cache worker worker-start worker-stop worker-restart
+.PHONY: docker-buildx-prepare docker-buildx-clean docker-buildx-reset
+.PHONY: docker-push docker-push-latest docker-release tag
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
-IMAGE_NAME := lfnovo/open_notebook
 
-PLATFORMS=linux/amd64,linux/arm64
+# Image names for both registries
+DOCKERHUB_IMAGE := lfnovo/open_notebook
+GHCR_IMAGE := ghcr.io/lfnovo/open-notebook
+
+# Build platforms
+PLATFORMS := linux/amd64,linux/arm64
 
 database:
 	docker compose up -d surrealdb
 
 run:
-	@echo "⚠️  Warning: Starting UI only. For full functionality, use 'make start-all'"
-	uv run --env-file .env streamlit run app_home.py
+	@echo "⚠️  Warning: Starting frontend only. For full functionality, use 'make start-all'"
+	cd frontend && npm run dev
+
+frontend:
+	cd frontend && npm run dev
 
 lint:
 	uv run python -m mypy .
@@ -19,57 +28,82 @@ lint:
 ruff:
 	ruff check . --fix
 
-# buildx config for multi-platform
+# === Docker Build Setup ===
 docker-buildx-prepare:
 	@docker buildx inspect multi-platform-builder >/dev/null 2>&1 || \
 		docker buildx create --use --name multi-platform-builder --driver docker-container
 	@docker buildx use multi-platform-builder
 
-# Single-platform build for development (much faster)
-docker-build-dev:
-	docker build \
-		-t $(IMAGE_NAME):$(VERSION)-dev \
-		.
+docker-buildx-clean:
+	@echo "🧹 Cleaning up buildx builders..."
+	@docker buildx rm multi-platform-builder 2>/dev/null || true
+	@docker ps -a | grep buildx_buildkit | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@echo "✅ Buildx cleanup complete!"
 
-# Multi-platform build test (builds both platforms, doesn't load or push)
-docker-build-multi-test: docker-buildx-prepare
+docker-buildx-reset: docker-buildx-clean docker-buildx-prepare
+	@echo "✅ Buildx reset complete!"
+
+# === Docker Build Targets ===
+
+# Build and push version tags ONLY (no latest) for both regular and single images
+docker-push: docker-buildx-prepare
+	@echo "📤 Building and pushing version $(VERSION) to both registries..."
+	@echo "🔨 Building regular image..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
-		-t $(IMAGE_NAME):$(VERSION)-multi \
-		.
-
-# Load current platform only from multi-platform build
-docker-build-multi-load: docker-buildx-prepare
-	docker buildx build --pull \
-		--platform linux/amd64 \
-		-t $(IMAGE_NAME):$(VERSION)-multi \
-		--load \
-		.
-
-# multi-platform build with buildx (pushes to registry)
-docker-build: docker-buildx-prepare
-	docker buildx build --pull \
-		--platform $(PLATFORMS) \
-		-t $(IMAGE_NAME):$(VERSION) \
+		-t $(DOCKERHUB_IMAGE):$(VERSION) \
+		-t $(GHCR_IMAGE):$(VERSION) \
 		--push \
 		.
-
-# Build and push combined
-docker-release: docker-build
-
-# Check supported platforms
-docker-check-platforms:
-	docker manifest inspect $(IMAGE_NAME):$(VERSION)
-
-docker-update-v1-latest: docker-buildx-prepare
-	docker buildx build \
+	@echo "🔨 Building single-container image..."
+	docker buildx build --pull \
 		--platform $(PLATFORMS) \
-		-t $(IMAGE_NAME):v1-latest \
+		-f Dockerfile.single \
+		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
+		-t $(GHCR_IMAGE):$(VERSION)-single \
 		--push \
 		.
+	@echo "✅ Pushed version $(VERSION) to both registries (latest NOT updated)"
+	@echo "  📦 Docker Hub:"
+	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)"
+	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)-single"
+	@echo "  📦 GHCR:"
+	@echo "    - $(GHCR_IMAGE):$(VERSION)"
+	@echo "    - $(GHCR_IMAGE):$(VERSION)-single"
 
-# Release with v1-latest
-docker-release-all: docker-release docker-update-v1-latest docker-build-single-v1-latest
+# Update v1-latest tags to current version (both regular and single images)
+docker-push-latest: docker-buildx-prepare
+	@echo "📤 Updating v1-latest tags to version $(VERSION)..."
+	@echo "🔨 Building regular image with latest tag..."
+	docker buildx build --pull \
+		--platform $(PLATFORMS) \
+		-t $(DOCKERHUB_IMAGE):$(VERSION) \
+		-t $(DOCKERHUB_IMAGE):v1-latest \
+		-t $(GHCR_IMAGE):$(VERSION) \
+		-t $(GHCR_IMAGE):v1-latest \
+		--push \
+		.
+	@echo "🔨 Building single-container image with latest tag..."
+	docker buildx build --pull \
+		--platform $(PLATFORMS) \
+		-f Dockerfile.single \
+		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
+		-t $(DOCKERHUB_IMAGE):v1-latest-single \
+		-t $(GHCR_IMAGE):$(VERSION)-single \
+		-t $(GHCR_IMAGE):v1-latest-single \
+		--push \
+		.
+	@echo "✅ Updated v1-latest to version $(VERSION)"
+	@echo "  📦 Docker Hub:"
+	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION) → v1-latest"
+	@echo "    - $(DOCKERHUB_IMAGE):$(VERSION)-single → v1-latest-single"
+	@echo "  📦 GHCR:"
+	@echo "    - $(GHCR_IMAGE):$(VERSION) → v1-latest"
+	@echo "    - $(GHCR_IMAGE):$(VERSION)-single → v1-latest-single"
+
+# Full release: push version AND update latest tags
+docker-release: docker-push-latest
+	@echo "✅ Full release complete for version $(VERSION)"
 
 tag:
 	@version=$$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/'); \
@@ -107,7 +141,7 @@ worker-restart: worker-stop
 
 # === Service Management ===
 start-all:
-	@echo "🚀 Starting Open Notebook (Database + API + Worker + UI)..."
+	@echo "🚀 Starting Open Notebook (Database + API + Worker + Frontend)..."
 	@echo "📊 Starting SurrealDB..."
 	@docker compose up -d surrealdb
 	@sleep 3
@@ -117,16 +151,16 @@ start-all:
 	@echo "⚙️ Starting background worker..."
 	@uv run --env-file .env surreal-commands-worker --import-modules commands &
 	@sleep 2
-	@echo "🌐 Starting Streamlit UI..."
+	@echo "🌐 Starting Next.js frontend..."
 	@echo "✅ All services started!"
-	@echo "📱 UI: http://localhost:8502"
+	@echo "📱 Frontend: http://localhost:3000"
 	@echo "🔗 API: http://localhost:5055"
 	@echo "📚 API Docs: http://localhost:5055/docs"
-	uv run --env-file .env streamlit run app_home.py
+	cd frontend && npm run dev
 
 stop-all:
 	@echo "🛑 Stopping all Open Notebook services..."
-	@pkill -f "streamlit run app_home.py" || true
+	@pkill -f "next dev" || true
 	@pkill -f "surreal-commands-worker" || true
 	@pkill -f "run_api.py" || true
 	@pkill -f "uvicorn api.main:app" || true
@@ -141,10 +175,10 @@ status:
 	@pgrep -f "run_api.py\|uvicorn api.main:app" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Background Worker:"
 	@pgrep -f "surreal-commands-worker" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
-	@echo "Streamlit UI:"
-	@pgrep -f "streamlit run app_home.py" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
+	@echo "Next.js Frontend:"
+	@pgrep -f "next dev" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 
-# Clean up cache directories to reduce build context size
+# === Cleanup ===
 clean-cache:
 	@echo "🧹 Cleaning cache directories..."
 	@find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
@@ -155,61 +189,3 @@ clean-cache:
 	@find . -name "*.pyo" -type f -delete 2>/dev/null || true
 	@find . -name "*.pyd" -type f -delete 2>/dev/null || true
 	@echo "✅ Cache directories cleaned!"
-
-# Fast development build with cache cleanup
-docker-build-dev-clean: clean-cache docker-build-dev
-
-# === Single Container Builds ===
-# Single-container build for development (much faster)
-docker-build-single-dev:
-	docker build \
-		-f Dockerfile.single \
-		-t $(IMAGE_NAME):$(VERSION)-single-dev \
-		.
-
-# Single-container multi-platform build test
-docker-build-single-multi-test: docker-buildx-prepare
-	docker buildx build --pull \
-		--platform $(PLATFORMS) \
-		-f Dockerfile.single \
-		-t $(IMAGE_NAME):$(VERSION)-single-multi \
-		.
-
-# Single-container multi-platform build with buildx (pushes to registry)
-docker-build-single: docker-buildx-prepare
-	docker buildx build --pull \
-		--platform $(PLATFORMS) \
-		-f Dockerfile.single \
-		-t $(IMAGE_NAME):$(VERSION)-single \
-		--push \
-		.
-
-# Single-container build and push with v1-latest tag
-docker-build-single-v1-latest: docker-buildx-prepare
-	docker buildx build --pull \
-		--platform $(PLATFORMS) \
-		-f Dockerfile.single \
-		-t $(IMAGE_NAME):v1-latest-single \
-		--push \
-		.
-
-# Single-container release (both versioned and v1-latest)
-docker-release-single: docker-build-single docker-build-single-v1-latest
-
-# Release both multi-container and single-container versions (versioned only)
-docker-release-both: docker-release docker-build-single
-
-# Release all versions (both multi and single with latest tags)
-docker-release-all-versions: docker-release-all docker-release-single
-
-# === Buildx Cleanup ===
-.PHONY: docker-buildx-clean docker-buildx-reset
-
-docker-buildx-clean:
-	@echo "🧹 Cleaning up buildx builders..."
-	@docker buildx rm multi-platform-builder 2>/dev/null || true
-	@docker ps -a | grep buildx_buildkit | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
-	@echo "✅ Buildx cleanup complete!"
-
-docker-buildx-reset: docker-buildx-clean docker-buildx-prepare
-	@echo "✅ Buildx reset complete!"

@@ -44,7 +44,7 @@ Open Notebook is built with a modern Python stack using:
 | **Domain Models** | Core business logic | `open_notebook/domain/` |
 | **Database** | SurrealDB repository pattern | `open_notebook/database/` |
 | **AI Graphs** | LangChain processing workflows | `open_notebook/graphs/` |
-| **React frontend** | Web interface | `pages/` |
+| **Next.js Frontend** | Modern React-based web interface | `frontend/` |
 | **Commands** | Background job processing | `commands/` |
 
 ## 🔧 Development Workflow
@@ -118,7 +118,7 @@ We welcome contributions! Here's how to get started:
 
 ### Current Development Priorities
 
-- **React Frontend**: Replacing Next.js with modern React UI
+- **Frontend Enhancement**: Improving the Next.js/React UI with real-time updates
 - **Performance**: Async processing and caching improvements
 - **Testing**: Expanded test coverage
 - **Documentation**: API documentation and examples

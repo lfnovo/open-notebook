@@ -26,11 +26,10 @@ class ThreadState(TypedDict):
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     system_prompt = Prompter(prompt_template="chat").render(data=state)  # type: ignore[arg-type]
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
-    model_id = (
-        config.get("configurable", {}).get("model_id")
-        or state.get("model_override")
+    model_id = config.get("configurable", {}).get("model_id") or state.get(
+        "model_override"
     )
-    
+
     # Handle async model provisioning from sync context
     def run_in_new_loop():
         """Run the async function in a new event loop"""
@@ -39,20 +38,19 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
             asyncio.set_event_loop(new_loop)
             return new_loop.run_until_complete(
                 provision_langchain_model(
-                    str(payload),
-                    model_id,
-                    "chat",
-                    max_tokens=8192
+                    str(payload), model_id, "chat", max_tokens=8192
+                )
             )
         finally:
             new_loop.close()
             asyncio.set_event_loop(None)
-    
+
     try:
         # Try to get the current event loop
         asyncio.get_running_loop()
         # If we're in an event loop, run in a thread with a new loop
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
             future = executor.submit(run_in_new_loop)
             model = future.result()
@@ -66,7 +64,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                 max_tokens=8192,
             )
         )
-    
+
     ai_message = model.invoke(payload)
     return {"messages": ai_message}
 

@@ -32,7 +32,7 @@ For Docker deployments, add the password to your environment:
 # docker-compose.yml
 services:
   open_notebook:
-    image: lfnovo/open_notebook:latest-single
+    image: lfnovo/open_notebook:v1-latest-single
     ports:
       - "8502:8502"
     environment:
@@ -91,7 +91,7 @@ OPEN_NOTEBOOK_PASSWORD=admin
 
 ## 🛡️ How Security Works
 
-### Streamlit UI Protection
+### React frontend Protection
 
 When password protection is enabled:
 
@@ -126,7 +126,7 @@ These endpoints work without authentication:
 # docker-compose.single.yml
 services:
   open_notebook_single:
-    image: lfnovo/open_notebook:latest-single
+    image: lfnovo/open_notebook:v1-latest-single
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -146,7 +146,7 @@ services:
 # docker-compose.yml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "127.0.0.1:8000:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -155,7 +155,7 @@ services:
     restart: always
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -217,7 +217,7 @@ server {
     add_header X-XSS-Protection "1; mode=block";
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains";
     
-    # Streamlit UI
+    # React frontend
     location / {
         proxy_pass http://127.0.0.1:8502;
         proxy_set_header Host $host;
@@ -251,7 +251,7 @@ Configure your firewall to restrict access:
 sudo ufw allow ssh
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
-sudo ufw deny 8502/tcp  # Block direct access to Streamlit
+sudo ufw deny 8502/tcp  # Block direct access to Next.js
 sudo ufw deny 5055/tcp  # Block direct access to API
 sudo ufw enable
 
@@ -269,7 +269,7 @@ iptables -A INPUT -p tcp --dport 5055 -j DROP
 # Production docker-compose.yml with security
 services:
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "127.0.0.1:8502:8502"  # Bind to localhost only
       - "127.0.0.1:5055:5055"

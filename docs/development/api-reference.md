@@ -370,9 +370,9 @@ Ask questions using AI models (streaming response).
 ```json
 {
   "question": "What are the key benefits of AI?",
-  "strategy_model": "model:gpt-4o-mini",
-  "answer_model": "model:gpt-4o-mini",
-  "final_answer_model": "model:gpt-4o-mini"
+  "strategy_model": "model:gpt-5-mini",
+  "answer_model": "model:gpt-5-mini",
+  "final_answer_model": "model:gpt-5-mini"
 }
 ```
 
@@ -420,7 +420,7 @@ Get all configured models.
 [
   {
     "id": "model:uuid",
-    "name": "gpt-4o-mini",
+    "name": "gpt-5-mini",
     "provider": "openai",
     "type": "language",
     "created": "2024-01-01T00:00:00Z",
@@ -436,7 +436,7 @@ Create a new model configuration.
 **Request Body**:
 ```json
 {
-  "name": "gpt-4o-mini",
+  "name": "gpt-5-mini",
   "provider": "openai",
   "type": "language"
 }
@@ -480,13 +480,13 @@ Get default model configurations.
 **Response**:
 ```json
 {
-  "default_chat_model": "model:gpt-4o-mini",
-  "default_transformation_model": "model:gpt-4o-mini",
-  "large_context_model": "model:gpt-4o-mini",
-  "default_text_to_speech_model": "model:tts-1",
+  "default_chat_model": "model:gpt-5-mini",
+  "default_transformation_model": "model:gpt-5-mini",
+  "large_context_model": "model:gpt-5-mini",
+  "default_text_to_speech_model": "model:gpt-4o-mini-tts",
   "default_speech_to_text_model": "model:whisper-1",
   "default_embedding_model": "model:text-embedding-3-small",
-  "default_tools_model": "model:gpt-4o-mini"
+  "default_tools_model": "model:gpt-5-mini"
 }
 ```
 
@@ -583,7 +583,7 @@ Execute a transformation on content.
 {
   "transformation_id": "transformation:uuid",
   "input_text": "Content to transform...",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -592,7 +592,7 @@ Execute a transformation on content.
 {
   "output": "Transformed content...",
   "transformation_id": "transformation:uuid",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -632,7 +632,7 @@ Create a new insight for a source.
 ```json
 {
   "transformation_id": "transformation:uuid",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -677,9 +677,9 @@ Get all episode profiles.
     "description": "Technical discussion between 2 experts",
     "speaker_config": "tech_experts",
     "outline_provider": "openai",
-    "outline_model": "gpt-4o-mini",
+    "outline_model": "gpt-5-mini",
     "transcript_provider": "openai",
-    "transcript_model": "gpt-4o-mini",
+    "transcript_model": "gpt-5-mini",
     "default_briefing": "Create an engaging technical discussion...",
     "num_segments": 5,
     "created": "2024-01-01T00:00:00Z",
@@ -700,7 +700,7 @@ Get all speaker profiles.
     "name": "tech_experts",
     "description": "Two technical experts for tech discussions",
     "tts_provider": "openai",
-    "tts_model": "tts-1",
+    "tts_model": "gpt-4o-mini-tts",
     "speakers": [
       {
         "name": "Dr. Alex Chen",
@@ -797,6 +797,232 @@ Update application settings.
 ```
 
 **Response**: Same as GET response
+
+## 💬 Chat API
+
+Manage chat sessions and conversational AI interactions within notebooks.
+
+### GET /api/chat/sessions
+
+Get all chat sessions for a notebook.
+
+**Query Parameters**:
+- `notebook_id` (string, required): Notebook ID to get sessions for
+
+**Response**:
+```json
+[
+  {
+    "id": "chat_session:uuid",
+    "title": "Chat Session Title",
+    "notebook_id": "notebook:uuid",
+    "created": "2024-01-01T00:00:00Z",
+    "updated": "2024-01-01T00:00:00Z",
+    "message_count": 5
+  }
+]
+```
+
+**Example**:
+```bash
+curl -X GET "http://localhost:5055/api/chat/sessions?notebook_id=notebook:uuid"
+```
+
+### POST /api/chat/sessions
+
+Create a new chat session for a notebook.
+
+**Request Body**:
+```json
+{
+  "notebook_id": "notebook:uuid",
+  "title": "Optional session title"
+}
+```
+
+**Response**: Same as GET single session
+
+**Example**:
+```bash
+curl -X POST http://localhost:5055/api/chat/sessions \
+  -H "Content-Type: application/json" \
+  -d '{"notebook_id": "notebook:uuid", "title": "New Chat Session"}'
+```
+
+### GET /api/chat/sessions/{session_id}
+
+Get a specific chat session with its message history.
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Response**:
+```json
+{
+  "id": "chat_session:uuid",
+  "title": "Chat Session Title",
+  "notebook_id": "notebook:uuid",
+  "created": "2024-01-01T00:00:00Z",
+  "updated": "2024-01-01T00:00:00Z",
+  "message_count": 3,
+  "messages": [
+    {
+      "id": "msg_1",
+      "type": "human",
+      "content": "Hello, what can you tell me about AI?",
+      "timestamp": null
+    },
+    {
+      "id": "msg_2", 
+      "type": "ai",
+      "content": "AI, or Artificial Intelligence, refers to...",
+      "timestamp": null
+    }
+  ]
+}
+```
+
+### PUT /api/chat/sessions/{session_id}
+
+Update a chat session (currently supports title updates).
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Request Body**:
+```json
+{
+  "title": "Updated Session Title"
+}
+```
+
+**Response**: Same as GET single session (without messages)
+
+### DELETE /api/chat/sessions/{session_id}
+
+Delete a chat session and all its messages.
+
+**Path Parameters**:
+- `session_id` (string): Chat session ID
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Session deleted successfully"
+}
+```
+
+### POST /api/chat/execute
+
+Execute a chat message and get AI response.
+
+**Request Body**:
+```json
+{
+  "session_id": "chat_session:uuid",
+  "message": "What are the key benefits of machine learning?",
+  "context": {
+    "sources": [
+      {
+        "id": "source:uuid",
+        "title": "ML Research Paper",
+        "content": "Machine learning content..."
+      }
+    ],
+    "notes": [
+      {
+        "id": "note:uuid",
+        "title": "ML Notes",
+        "content": "My notes on ML..."
+      }
+    ]
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "session_id": "chat_session:uuid",
+  "messages": [
+    {
+      "id": "msg_1",
+      "type": "human", 
+      "content": "What are the key benefits of machine learning?",
+      "timestamp": null
+    },
+    {
+      "id": "msg_2",
+      "type": "ai",
+      "content": "Based on the provided context, machine learning offers several key benefits...",
+      "timestamp": null
+    }
+  ]
+}
+```
+
+**Example**:
+```bash
+curl -X POST http://localhost:5055/api/chat/execute \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "chat_session:uuid",
+    "message": "Summarize the main points",
+    "context": {"sources": [], "notes": []}
+  }'
+```
+
+### POST /api/chat/context
+
+Build context for chat based on notebook content and configuration.
+
+**Request Body**:
+```json
+{
+  "notebook_id": "notebook:uuid",
+  "context_config": {
+    "sources": {
+      "source:uuid1": "full content",
+      "source:uuid2": "insights only"
+    },
+    "notes": {
+      "note:uuid1": "full content"
+    }
+  }
+}
+```
+
+**Context Configuration Values**:
+- `"full content"`: Include complete source/note content
+- `"insights only"`: Include source insights/summary only  
+- `"not in context"`: Exclude from context
+
+**Response**:
+```json
+{
+  "context": {
+    "sources": [
+      {
+        "id": "source:uuid",
+        "title": "Source Title",
+        "content": "Source content or insights...",
+        "type": "source"
+      }
+    ],
+    "notes": [
+      {
+        "id": "note:uuid",
+        "title": "Note Title", 
+        "content": "Note content...",
+        "type": "note"
+      }
+    ]
+  },
+  "token_count": 1250,
+  "char_count": 5000
+}
+```
 
 ## 📐 Context API
 
@@ -904,33 +1130,231 @@ Cancel/delete a command.
 
 ## 🏷️ Embedding API
 
-Manage vector embeddings for content.
+Manage vector embeddings for content. The embedding system supports both synchronous and asynchronous processing, as well as bulk rebuild operations for upgrading embeddings when switching models.
 
 ### POST /api/embed
 
-Generate embeddings for an item.
+Generate embeddings for an item (source, note, or insight).
 
 **Request Body**:
 ```json
 {
   "item_id": "source:uuid",
-  "item_type": "source"
+  "item_type": "source",
+  "async_processing": false
 }
 ```
 
-**Item Types**:
-- `source`: Source content
-- `note`: Note content
+**Parameters**:
+- `item_id` (string, required): ID of the item to embed
+- `item_type` (string, required): Type of item - `source`, `note`, or `insight`
+- `async_processing` (boolean, optional): Process in background (default: false)
 
-**Response**:
+**Behavior**:
+- Embedding operations are **idempotent** - calling multiple times safely replaces existing embeddings
+- For sources: Deletes existing chunks and creates new embeddings
+- For notes: Updates the note's embedding vector
+- For insights: Regenerates the insight's embedding vector
+
+**Response (Synchronous)**:
 ```json
 {
   "success": true,
-  "message": "Embedding generated successfully",
+  "message": "Source embedded successfully",
   "item_id": "source:uuid",
   "item_type": "source"
 }
 ```
+
+**Response (Asynchronous)**:
+```json
+{
+  "success": true,
+  "message": "Embedding queued for background processing",
+  "item_id": "source:uuid",
+  "item_type": "source",
+  "command_id": "command:uuid"
+}
+```
+
+**Example (Synchronous)**:
+```bash
+curl -X POST http://localhost:5055/api/embed \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "item_id": "source:abc123",
+    "item_type": "source",
+    "async_processing": false
+  }'
+```
+
+**Example (Asynchronous)**:
+```bash
+# Submit for background processing
+COMMAND_ID=$(curl -X POST http://localhost:5055/api/embed \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "item_id": "source:abc123",
+    "item_type": "source",
+    "async_processing": true
+  }' | jq -r '.command_id')
+
+# Check status
+curl -X GET http://localhost:5055/api/commands/$COMMAND_ID
+```
+
+### POST /api/embeddings/rebuild
+
+Rebuild embeddings for multiple items in bulk. Useful when switching embedding models or fixing corrupted embeddings.
+
+**Request Body**:
+```json
+{
+  "mode": "existing",
+  "include_sources": true,
+  "include_notes": true,
+  "include_insights": true
+}
+```
+
+**Parameters**:
+- `mode` (string, required): Rebuild mode
+  - `"existing"`: Re-embed only items that already have embeddings
+  - `"all"`: Re-embed existing items + create embeddings for items without any
+- `include_sources` (boolean, optional): Include sources in rebuild (default: true)
+- `include_notes` (boolean, optional): Include notes in rebuild (default: true)
+- `include_insights` (boolean, optional): Include insights in rebuild (default: true)
+
+**Response**:
+```json
+{
+  "command_id": "command:uuid",
+  "message": "Rebuild started successfully",
+  "estimated_items": 165
+}
+```
+
+**Example**:
+```bash
+# Rebuild all existing embeddings
+curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "mode": "existing",
+    "include_sources": true,
+    "include_notes": true,
+    "include_insights": true
+  }'
+
+# Rebuild and create new embeddings for everything
+curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{
+    "mode": "all",
+    "include_sources": true,
+    "include_notes": false,
+    "include_insights": false
+  }'
+```
+
+### GET /api/embeddings/rebuild/{command_id}/status
+
+Get the status and progress of a rebuild operation.
+
+**Path Parameters**:
+- `command_id` (string): Command ID returned from rebuild endpoint
+
+**Response (Running)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "running",
+  "progress": null,
+  "stats": null,
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": null,
+  "error_message": null
+}
+```
+
+**Response (Completed)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "completed",
+  "progress": {
+    "total_items": 165,
+    "processed_items": 165,
+    "failed_items": 0
+  },
+  "stats": {
+    "sources_processed": 115,
+    "notes_processed": 25,
+    "insights_processed": 25,
+    "processing_time": 125.5
+  },
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": "2024-01-01T12:02:05Z",
+  "error_message": null
+}
+```
+
+**Response (Failed)**:
+```json
+{
+  "command_id": "command:uuid",
+  "status": "failed",
+  "progress": {
+    "total_items": 165,
+    "processed_items": 50,
+    "failed_items": 1
+  },
+  "stats": null,
+  "started_at": "2024-01-01T12:00:00Z",
+  "completed_at": "2024-01-01T12:01:00Z",
+  "error_message": "No embedding model configured"
+}
+```
+
+**Example**:
+```bash
+# Start rebuild
+COMMAND_ID=$(curl -X POST http://localhost:5055/api/embeddings/rebuild \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_PASSWORD" \
+  -d '{"mode": "existing", "include_sources": true}' \
+  | jq -r '.command_id')
+
+# Poll for status
+while true; do
+  STATUS=$(curl -s -X GET \
+    "http://localhost:5055/api/embeddings/rebuild/$COMMAND_ID/status" \
+    -H "Authorization: Bearer YOUR_PASSWORD" \
+    | jq -r '.status')
+
+  echo "Status: $STATUS"
+
+  if [ "$STATUS" = "completed" ] || [ "$STATUS" = "failed" ]; then
+    break
+  fi
+
+  sleep 5
+done
+
+# Get final results
+curl -X GET "http://localhost:5055/api/embeddings/rebuild/$COMMAND_ID/status" \
+  -H "Authorization: Bearer YOUR_PASSWORD" | jq .
+```
+
+**Status Values**:
+- `queued`: Rebuild job queued for processing
+- `running`: Rebuild in progress
+- `completed`: Rebuild finished successfully
+- `failed`: Rebuild failed with error
 
 ## 🚨 Error Responses
 
@@ -997,7 +1421,7 @@ SOURCE_ID=$(curl -X POST http://localhost:5055/api/sources \
 # 3. Create a model
 MODEL_ID=$(curl -X POST http://localhost:5055/api/models \
   -H "Content-Type: application/json" \
-  -d '{"name": "gpt-4o-mini", "provider": "openai", "type": "language"}' \
+  -d '{"name": "gpt-5-mini", "provider": "openai", "type": "language"}' \
   | jq -r '.id')
 
 # 4. Search for content
@@ -1028,6 +1452,32 @@ curl -X GET http://localhost:5055/api/commands
 
 # 4. Download audio when ready
 curl -X GET http://localhost:5055/api/podcasts/$EPISODE_ID/audio -o podcast.mp3
+```
+
+### Chat Conversation Example
+
+```bash
+# 1. Create a chat session
+SESSION_ID=$(curl -X POST http://localhost:5055/api/chat/sessions \
+  -H "Content-Type: application/json" \
+  -d "{\"notebook_id\": \"$NOTEBOOK_ID\", \"title\": \"Research Discussion\"}" \
+  | jq -r '.id')
+
+# 2. Build context for the chat
+CONTEXT=$(curl -X POST http://localhost:5055/api/chat/context \
+  -H "Content-Type: application/json" \
+  -d "{\"notebook_id\": \"$NOTEBOOK_ID\", \"context_config\": {\"sources\": {\"$SOURCE_ID\": \"full content\"}}}")
+
+# 3. Send a chat message
+curl -X POST http://localhost:5055/api/chat/execute \
+  -H "Content-Type: application/json" \
+  -d "{\"session_id\": \"$SESSION_ID\", \"message\": \"What are the key insights from this research?\", \"context\": $CONTEXT}"
+
+# 4. Get chat history
+curl -X GET http://localhost:5055/api/chat/sessions/$SESSION_ID
+
+# 5. List all sessions for the notebook
+curl -X GET "http://localhost:5055/api/chat/sessions?notebook_id=$NOTEBOOK_ID"
 ```
 
 ## 📡 WebSocket Support

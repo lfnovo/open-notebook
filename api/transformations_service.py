@@ -3,7 +3,7 @@ Transformations service layer using API.
 """
 
 from datetime import datetime
-from typing import Dict, List
+from typing import Any, Dict, List, Union
 
 from loguru import logger
 
@@ -38,7 +38,8 @@ class TransformationsService:
     
     def get_transformation(self, transformation_id: str) -> Transformation:
         """Get a specific transformation."""
-        trans_data = api_client.get_transformation(transformation_id)
+        response = api_client.get_transformation(transformation_id)
+        trans_data = response if isinstance(response, dict) else response[0]
         transformation = Transformation(
             name=trans_data["name"],
             title=trans_data["title"],
@@ -60,13 +61,14 @@ class TransformationsService:
         apply_default: bool = False
     ) -> Transformation:
         """Create a new transformation."""
-        trans_data = api_client.create_transformation(
+        response = api_client.create_transformation(
             name=name,
             title=title,
             description=description,
             prompt=prompt,
             apply_default=apply_default
         )
+        trans_data = response if isinstance(response, dict) else response[0]
         transformation = Transformation(
             name=trans_data["name"],
             title=trans_data["title"],
@@ -81,6 +83,9 @@ class TransformationsService:
     
     def update_transformation(self, transformation: Transformation) -> Transformation:
         """Update a transformation."""
+        if not transformation.id:
+            raise ValueError("Transformation ID is required for update")
+
         updates = {
             "name": transformation.name,
             "title": transformation.title,
@@ -88,8 +93,9 @@ class TransformationsService:
             "prompt": transformation.prompt,
             "apply_default": transformation.apply_default,
         }
-        trans_data = api_client.update_transformation(transformation.id, **updates)
-        
+        response = api_client.update_transformation(transformation.id, **updates)
+        trans_data = response if isinstance(response, dict) else response[0]
+
         # Update the transformation object with the response
         transformation.name = trans_data["name"]
         transformation.title = trans_data["title"]
@@ -97,7 +103,7 @@ class TransformationsService:
         transformation.prompt = trans_data["prompt"]
         transformation.apply_default = trans_data["apply_default"]
         transformation.updated = datetime.fromisoformat(trans_data["updated"].replace('Z', '+00:00'))
-        
+
         return transformation
     
     def delete_transformation(self, transformation_id: str) -> bool:
@@ -110,7 +116,7 @@ class TransformationsService:
         transformation_id: str,
         input_text: str,
         model_id: str
-    ) -> Dict[str, str]:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Execute a transformation on input text."""
         result = api_client.execute_transformation(
             transformation_id=transformation_id,

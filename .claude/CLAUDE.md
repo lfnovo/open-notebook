@@ -105,6 +105,25 @@ await repo_query("SELECT * FROM table WHERE field = $value", {"value": "example"
 await repo_delete(record_id)
 ```
 
+### Database Migrations
+
+Database schema migrations run **automatically** when the API starts up. The migration system:
+- Uses `AsyncMigrationManager` from `/open_notebook/database/async_migrate.py`
+- Runs in the FastAPI `lifespan` event handler in `/api/main.py`
+- Checks current database version against available migrations in `/migrations/`
+- Executes pending migrations sequentially on startup
+- Tracks migration state in the `_sbl_migrations` table
+- Fails fast if migrations encounter errors (preventing API startup with outdated schema)
+
+**Important**: Database migrations are now handled by the API. The Streamlit UI migration check (`pages/stream_app/utils.py:check_migration()`) is deprecated and does nothing. Always ensure the API is running before using the React frontend or Streamlit UI.
+
+**Troubleshooting**:
+- If the API fails to start, check logs for migration errors
+- Verify SurrealDB is running: `docker compose ps surrealdb`
+- Check database connection settings in `.env`
+- Migration files must exist in `/migrations/` directory
+- For manual migration rollback, use down migration files (not automated)
+
 ## Content Processing Pipeline
 
 1. Content ingestion (files, URLs, text) via `/open_notebook/graphs/source.py`

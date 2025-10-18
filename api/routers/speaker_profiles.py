@@ -1,10 +1,10 @@
-from typing import List, Dict, Any
+from typing import Any, Dict, List
+
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
 from loguru import logger
+from pydantic import BaseModel, Field
 
 from open_notebook.domain.podcast import SpeakerProfile
-
 
 router = APIRouter()
 

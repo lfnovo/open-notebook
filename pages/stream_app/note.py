@@ -32,6 +32,8 @@ def add_note(notebook_id):
 
 @st.dialog("Add a Note", width="large")
 def note_panel_dialog(note: Optional[Note] = None, notebook_id=None):
+    if not note:
+        raise ValueError("Note is required")
     note_panel(note_id=note.id, notebook_id=notebook_id)
 
 
@@ -78,7 +80,7 @@ def note_list_item(note_id, score=None):
         icon = "🤖"
 
     with st.expander(
-        f"{icon} [{score:.2f}] **{note.title}** {naturaltime(note.updated)}"
+        f"{icon} [{score:.2f}] **{note.title}** {naturaltime(note.updated) if note.updated else 'N/A'}"
     ):
         st.write(note.content)
         if st.button("Edit Note", icon="📝", key=f"x_edit_note_{note.id}"):

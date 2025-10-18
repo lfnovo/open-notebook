@@ -7,6 +7,7 @@ from esperanto import (
     SpeechToTextModel,
     TextToSpeechModel,
 )
+from loguru import logger
 
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
@@ -115,16 +116,24 @@ class ModelManager:
         self._model_cache[cache_key] = model_instance
         return model_instance
 
+    def clear_cache(self):
+        """Clear all cached model instances"""
+        self._model_cache.clear()
+        logger.info("Model cache cleared")
+
     async def refresh_defaults(self):
-        """Refresh the default models from the database"""
+        """Refresh the default models from the database and clear model cache"""
         self._default_models = await DefaultModels.get_instance()
+        # Clear the model cache to ensure we use fresh instances with the new defaults
+        self.clear_cache()
 
     async def get_defaults(self) -> DefaultModels:
-        """Get the default models configuration"""
+        """Get the default models configuration (always fetches fresh from DB)"""
+        # Always refresh to ensure we have the latest defaults
+        # This is important when embedding models are changed
+        await self.refresh_defaults()
         if not self._default_models:
-            await self.refresh_defaults()
-            if not self._default_models:
-                raise RuntimeError("Failed to initialize default models configuration")
+            raise RuntimeError("Failed to initialize default models configuration")
         return self._default_models
 
     async def get_speech_to_text(self, **kwargs) -> Optional[SpeechToTextModel]:
@@ -198,10 +207,6 @@ class ModelManager:
             return None
 
         return await self.get_model(model_id, **kwargs)
-
-    def clear_cache(self):
-        """Clear the model cache"""
-        self._model_cache.clear()
 
 
 model_manager = ModelManager()

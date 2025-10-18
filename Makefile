@@ -1,4 +1,4 @@
-.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-latest docker-release-single docker-release-both docker-release-all-versions
+.PHONY: run check ruff database lint docker-build docker-build-dev docker-build-multi-test docker-build-multi-load docker-push docker-buildx-prepare docker-release api start-all stop-all status clean-cache docker-build-dev-clean docker-build-single-dev docker-build-single-multi-test docker-build-single docker-build-single-v1-latest docker-release-single docker-release-both docker-release-all-versions docker-update-v1-latest
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
@@ -19,10 +19,11 @@ lint:
 ruff:
 	ruff check . --fix
 
-# buildx config for multi-plataform
+# buildx config for multi-platform
 docker-buildx-prepare:
-	docker buildx create --use --name multi-platform-builder --driver docker-container || \
-	docker buildx use multi-platform-builder
+	@docker buildx inspect multi-platform-builder >/dev/null 2>&1 || \
+		docker buildx create --use --name multi-platform-builder --driver docker-container
+	@docker buildx use multi-platform-builder
 
 # Single-platform build for development (much faster)
 docker-build-dev:
@@ -45,7 +46,7 @@ docker-build-multi-load: docker-buildx-prepare
 		--load \
 		.
 
-# multi-plataform build with buildx (pushes to registry)
+# multi-platform build with buildx (pushes to registry)
 docker-build: docker-buildx-prepare
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
@@ -60,15 +61,15 @@ docker-release: docker-build
 docker-check-platforms:
 	docker manifest inspect $(IMAGE_NAME):$(VERSION)
 
-docker-update-latest: docker-buildx-prepare
+docker-update-v1-latest: docker-buildx-prepare
 	docker buildx build \
 		--platform $(PLATFORMS) \
-		-t $(IMAGE_NAME):latest \
+		-t $(IMAGE_NAME):v1-latest \
 		--push \
 		.
 
-# Release with latest
-docker-release-all: docker-release docker-update-latest
+# Release with v1-latest
+docker-release-all: docker-release docker-update-v1-latest docker-build-single-v1-latest
 
 tag:
 	@version=$$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/'); \
@@ -183,20 +184,32 @@ docker-build-single: docker-buildx-prepare
 		--push \
 		.
 
-# Single-container build and push with latest tag
-docker-build-single-latest: docker-buildx-prepare
+# Single-container build and push with v1-latest tag
+docker-build-single-v1-latest: docker-buildx-prepare
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		-f Dockerfile.single \
-		-t $(IMAGE_NAME):latest-single \
+		-t $(IMAGE_NAME):v1-latest-single \
 		--push \
 		.
 
-# Single-container release (both versioned and latest)
-docker-release-single: docker-build-single docker-build-single-latest
+# Single-container release (both versioned and v1-latest)
+docker-release-single: docker-build-single docker-build-single-v1-latest
 
-# Release both multi-container and single-container versions
-docker-release-both: docker-release docker-release-single
+# Release both multi-container and single-container versions (versioned only)
+docker-release-both: docker-release docker-build-single
 
 # Release all versions (both multi and single with latest tags)
 docker-release-all-versions: docker-release-all docker-release-single
+
+# === Buildx Cleanup ===
+.PHONY: docker-buildx-clean docker-buildx-reset
+
+docker-buildx-clean:
+	@echo "🧹 Cleaning up buildx builders..."
+	@docker buildx rm multi-platform-builder 2>/dev/null || true
+	@docker ps -a | grep buildx_buildkit | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@echo "✅ Buildx cleanup complete!"
+
+docker-buildx-reset: docker-buildx-clean docker-buildx-prepare
+	@echo "✅ Buildx reset complete!"

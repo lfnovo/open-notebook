@@ -10,7 +10,7 @@ Open Notebook follows a modern layered architecture with clear separation of con
 ┌─────────────────────────────────────────────────────────────┐
 │                    Frontend Layer                           │
 ├─────────────────────────────────────────────────────────────┤
-│  Streamlit UI (pages/)  │  REST API Clients (external)     │
+│  React frontend (pages/)  │  REST API Clients (external)     │
 └─────────────────────────────────────────────────────────────┘
                                 │
                                 ▼

@@ -2,7 +2,7 @@
 Models service layer using API.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -35,7 +35,8 @@ class ModelsService:
     
     def create_model(self, name: str, provider: str, model_type: str) -> Model:
         """Create a new model."""
-        model_data = api_client.create_model(name, provider, model_type)
+        response = api_client.create_model(name, provider, model_type)
+        model_data = response if isinstance(response, dict) else response[0]
         model = Model(
             name=model_data["name"],
             provider=model_data["provider"],
@@ -53,9 +54,10 @@ class ModelsService:
     
     def get_default_models(self) -> DefaultModels:
         """Get default model assignments."""
-        defaults_data = api_client.get_default_models()
+        response = api_client.get_default_models()
+        defaults_data = response if isinstance(response, dict) else response[0]
         defaults = DefaultModels()
-        
+
         # Set the values from API response
         defaults.default_chat_model = defaults_data.get("default_chat_model")
         defaults.default_transformation_model = defaults_data.get("default_transformation_model")
@@ -64,7 +66,7 @@ class ModelsService:
         defaults.default_speech_to_text_model = defaults_data.get("default_speech_to_text_model")
         defaults.default_embedding_model = defaults_data.get("default_embedding_model")
         defaults.default_tools_model = defaults_data.get("default_tools_model")
-        
+
         return defaults
     
     def update_default_models(self, defaults: DefaultModels) -> DefaultModels:
@@ -78,9 +80,10 @@ class ModelsService:
             "default_embedding_model": defaults.default_embedding_model,
             "default_tools_model": defaults.default_tools_model,
         }
-        
-        defaults_data = api_client.update_default_models(**updates)
-        
+
+        response = api_client.update_default_models(**updates)
+        defaults_data = response if isinstance(response, dict) else response[0]
+
         # Update the defaults object with the response
         defaults.default_chat_model = defaults_data.get("default_chat_model")
         defaults.default_transformation_model = defaults_data.get("default_transformation_model")
@@ -89,7 +92,7 @@ class ModelsService:
         defaults.default_speech_to_text_model = defaults_data.get("default_speech_to_text_model")
         defaults.default_embedding_model = defaults_data.get("default_embedding_model")
         defaults.default_tools_model = defaults_data.get("default_tools_model")
-        
+
         return defaults
 
 

@@ -39,7 +39,8 @@ class EpisodeProfilesService:
     
     def get_episode_profile(self, profile_name: str) -> EpisodeProfile:
         """Get a specific episode profile by name."""
-        profile_data = api_client.get_episode_profile(profile_name)
+        profile_response = api_client.get_episode_profile(profile_name)
+        profile_data = profile_response if isinstance(profile_response, dict) else profile_response[0]
         profile = EpisodeProfile(
             name=profile_data["name"],
             description=profile_data.get("description", ""),
@@ -67,7 +68,7 @@ class EpisodeProfilesService:
         num_segments: int = 5,
     ) -> EpisodeProfile:
         """Create a new episode profile."""
-        profile_data = api_client.create_episode_profile(
+        profile_response = api_client.create_episode_profile(
             name=name,
             description=description,
             speaker_config=speaker_config,
@@ -78,6 +79,7 @@ class EpisodeProfilesService:
             default_briefing=default_briefing,
             num_segments=num_segments,
         )
+        profile_data = profile_response if isinstance(profile_response, dict) else profile_response[0]
         profile = EpisodeProfile(
             name=profile_data["name"],
             description=profile_data.get("description", ""),

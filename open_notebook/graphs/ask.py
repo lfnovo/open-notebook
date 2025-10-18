@@ -20,6 +20,7 @@ class SubGraphState(TypedDict):
     instructions: str
     results: dict
     answer: str
+    ids: list  # Added for provide_answer function
 
 
 class Search(BaseModel):
@@ -46,8 +47,8 @@ class ThreadState(TypedDict):
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     parser = PydanticOutputParser(pydantic_object=Strategy)
-    system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(
-        data=state
+    system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(  # type: ignore[arg-type]
+        data=state  # type: ignore[arg-type]
     )
     model = await provision_langchain_model(
         system_prompt,
@@ -61,7 +62,8 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
     ai_message = await model.ainvoke(system_prompt)
 
     # Clean the thinking content from the response
-    cleaned_content = clean_thinking_content(ai_message.content)
+    message_content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
+    cleaned_content = clean_thinking_content(message_content)
 
     # Parse the cleaned JSON content
     strategy = parser.parse(cleaned_content)
@@ -95,7 +97,7 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     payload["results"] = results
     ids = [r["id"] for r in results]
     payload["ids"] = ids
-    system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)
+    system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
     model = await provision_langchain_model(
         system_prompt,
         config.get("configurable", {}).get("answer_model"),
@@ -103,11 +105,12 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         max_tokens=2000,
     )
     ai_message = await model.ainvoke(system_prompt)
-    return {"answers": [clean_thinking_content(ai_message.content)]}
+    ai_content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
+    return {"answers": [clean_thinking_content(ai_content)]}
 
 
 async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
-    system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)
+    system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)  # type: ignore[arg-type]
     model = await provision_langchain_model(
         system_prompt,
         config.get("configurable", {}).get("final_answer_model"),
@@ -115,7 +118,8 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
         max_tokens=2000,
     )
     ai_message = await model.ainvoke(system_prompt)
-    return {"final_answer": clean_thinking_content(ai_message.content)}
+    final_content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
+    return {"final_answer": clean_thinking_content(final_content)}
 
 
 agent_state = StateGraph(ThreadState)

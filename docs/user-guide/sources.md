@@ -236,7 +236,7 @@ For audio and video files:
 
 #### "Audio/video upload disabled" warning
 **Solution:**
-- Configure speech-to-text model in Settings → Models
+- Configure speech-to-text model in Models
 - Ensure provider API keys are set
 - Check model availability
 

@@ -3,7 +3,7 @@ Podcast service layer using API client.
 This replaces direct httpx calls in the Streamlit pages.
 """
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from loguru import logger
 
@@ -17,9 +17,10 @@ class PodcastAPIService:
         logger.info("Using API client for podcast operations")
 
     # Episode methods
-    def get_episodes(self) -> List[Dict]:
+    def get_episodes(self) -> List[Dict[Any, Any]]:
         """Get all podcast episodes."""
-        return api_client._make_request("GET", "/api/podcasts/episodes")
+        result = api_client._make_request("GET", "/api/podcasts/episodes")
+        return result if isinstance(result, list) else [result]
 
     def delete_episode(self, episode_id: str) -> bool:
         """Delete a podcast episode."""
@@ -74,9 +75,10 @@ class PodcastAPIService:
             return False
 
     # Speaker Profile methods
-    def get_speaker_profiles(self) -> List[Dict]:
+    def get_speaker_profiles(self) -> List[Dict[Any, Any]]:
         """Get all speaker profiles."""
-        return api_client._make_request("GET", "/api/speaker-profiles")
+        result = api_client._make_request("GET", "/api/speaker-profiles")
+        return result if isinstance(result, list) else [result]
 
     def create_speaker_profile(self, profile_data: Dict) -> bool:
         """Create a new speaker profile."""

@@ -18,7 +18,8 @@ from open_notebook.graphs.transformation import graph as transform_graph
 class SourceState(TypedDict):
     content_state: ProcessSourceState
     apply_transformations: List[Transformation]
-    notebook_id: str
+    source_id: str
+    notebook_ids: List[str]
     source: Source
     transformation: Annotated[list, operator.add]
     embed: bool
@@ -30,8 +31,14 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
-    content_settings = ContentSettings()
-    content_state: Dict[str, Any] = state["content_state"]
+    content_settings = ContentSettings(
+        default_content_processing_engine_doc="auto",
+        default_content_processing_engine_url="auto",
+        default_embedding_option="ask",
+        auto_delete_files="yes",
+        youtube_preferred_languages=["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja"]
+    )
+    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
@@ -48,16 +55,23 @@ async def content_process(state: SourceState) -> dict:
 async def save_source(state: SourceState) -> dict:
     content_state = state["content_state"]
 
-    source = Source(
-        asset=Asset(url=content_state.url, file_path=content_state.file_path),
-        full_text=content_state.content,
-        title=content_state.title,
-    )
+    # Get existing source using the provided source_id
+    source = await Source.get(state["source_id"])
+    if not source:
+        raise ValueError(f"Source with ID {state['source_id']} not found")
+
+    # Update the source with processed content
+    source.asset = Asset(url=content_state.url, file_path=content_state.file_path)
+    source.full_text = content_state.content
+    
+    # Preserve existing title if none provided in processed content
+    if content_state.title:
+        source.title = content_state.title
+    
     await source.save()
 
-    if state["notebook_id"]:
-        logger.debug(f"Adding source to notebook {state['notebook_id']}")
-        await source.add_to_notebook(state["notebook_id"])
+    # NOTE: Notebook associations are created by the API immediately for UI responsiveness
+    # No need to create them here to avoid duplicate edges
 
     if state["embed"]:
         logger.debug("Embedding content for vector search")
@@ -94,7 +108,7 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
 
     logger.debug(f"Applying transformation {transformation.name}")
     result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)
+        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
     )
     await source.add_insight(transformation.title, result["output"])
     return {

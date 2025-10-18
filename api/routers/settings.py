@@ -3,7 +3,7 @@ from loguru import logger
 
 from api.models import SettingsResponse, SettingsUpdate
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -12,8 +12,8 @@ router = APIRouter()
 async def get_settings():
     """Get all application settings."""
     try:
-        settings = await ContentSettings.get_instance()
-        
+        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+
         return SettingsResponse(
             default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
             default_content_processing_engine_url=settings.default_content_processing_engine_url,
@@ -30,22 +30,39 @@ async def get_settings():
 async def update_settings(settings_update: SettingsUpdate):
     """Update application settings."""
     try:
-        settings = await ContentSettings.get_instance()
-        
+        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+
         # Update only provided fields
         if settings_update.default_content_processing_engine_doc is not None:
-            settings.default_content_processing_engine_doc = settings_update.default_content_processing_engine_doc
+            # Cast to proper literal type
+            from typing import Literal, cast
+            settings.default_content_processing_engine_doc = cast(
+                Literal["auto", "docling", "simple"],
+                settings_update.default_content_processing_engine_doc
+            )
         if settings_update.default_content_processing_engine_url is not None:
-            settings.default_content_processing_engine_url = settings_update.default_content_processing_engine_url
+            from typing import Literal, cast
+            settings.default_content_processing_engine_url = cast(
+                Literal["auto", "firecrawl", "jina", "simple"],
+                settings_update.default_content_processing_engine_url
+            )
         if settings_update.default_embedding_option is not None:
-            settings.default_embedding_option = settings_update.default_embedding_option
+            from typing import Literal, cast
+            settings.default_embedding_option = cast(
+                Literal["ask", "always", "never"],
+                settings_update.default_embedding_option
+            )
         if settings_update.auto_delete_files is not None:
-            settings.auto_delete_files = settings_update.auto_delete_files
+            from typing import Literal, cast
+            settings.auto_delete_files = cast(
+                Literal["yes", "no"],
+                settings_update.auto_delete_files
+            )
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
-        
+
         await settings.update()
-        
+
         return SettingsResponse(
             default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
             default_content_processing_engine_url=settings.default_content_processing_engine_url,

@@ -18,14 +18,15 @@ class TransformationState(TypedDict):
 
 
 async def run_transformation(state: dict, config: RunnableConfig) -> dict:
-    source: Source = state.get("source")
+    source_obj = state.get("source")
+    source: Source = source_obj if isinstance(source_obj, Source) else None  # type: ignore[assignment]
     content = state.get("input_text")
     assert source or content, "No content to transform"
     transformation: Transformation = state["transformation"]
     if not content:
         content = source.full_text
     transformation_template_text = transformation.prompt
-    default_prompts: DefaultPrompts = DefaultPrompts()
+    default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
     if default_prompts.transformation_instructions:
         transformation_template_text = f"{default_prompts.transformation_instructions}\n\n{transformation_template_text}"
 
@@ -34,7 +35,8 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     system_prompt = Prompter(template_text=transformation_template_text).render(
         data=state
     )
-    payload = [SystemMessage(content=system_prompt)] + [HumanMessage(content=content)]
+    content_str = str(content) if content else ""
+    payload = [SystemMessage(content=system_prompt), HumanMessage(content=content_str)]
     chain = await provision_langchain_model(
         str(payload),
         config.get("configurable", {}).get("model_id"),
@@ -45,7 +47,8 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     response = await chain.ainvoke(payload)
 
     # Clean thinking content from the response
-    cleaned_content = clean_thinking_content(response.content)
+    response_content = response.content if isinstance(response.content, str) else str(response.content)
+    cleaned_content = clean_thinking_content(response_content)
 
     if source:
         await source.add_insight(transformation.title, cleaned_content)
@@ -56,7 +59,7 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
 
 
 agent_state = StateGraph(TransformationState)
-agent_state.add_node("agent", run_transformation)
+agent_state.add_node("agent", run_transformation)  # type: ignore[type-var]
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 graph = agent_state.compile()

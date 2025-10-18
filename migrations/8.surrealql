@@ -1,0 +1,12 @@
+
+-- Migration 8: Support chat sessions for both notebooks and sources
+-- This migration allows chat_session to refer to either a notebook or a source
+
+DEFINE TABLE OVERWRITE refers_to
+TYPE RELATION 
+FROM chat_session TO notebook|source;
+
+-- Add model_override field to chat_session for per-session model selection
+DEFINE FIELD model_override ON chat_session TYPE option<string>;
+
+DEFINE FIELD command ON source TYPE option<record<command>>;

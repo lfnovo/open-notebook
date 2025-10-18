@@ -222,7 +222,7 @@ This document covers the most frequently encountered issues when installing, con
 3. **Verify model availability**:
    ```bash
    # Check model names in settings
-   # Use gpt-4o-mini instead of gpt-4-mini
+   # Use gpt-5-mini instead of gpt-4-mini
    # Use claude-3-haiku-20240307 instead of claude-3-haiku
    ```
 
@@ -260,7 +260,7 @@ This document covers the most frequently encountered issues when installing, con
    ```
 
 3. **Optimize model usage**:
-   - Use smaller models (gpt-4o-mini vs gpt-4)
+   - Use smaller models (gpt-5-mini vs gpt-5)
    - Reduce context window size
    - Process fewer documents at once
 
@@ -384,7 +384,7 @@ This document covers the most frequently encountered issues when installing, con
    - Reduce notebook size
 
 4. **Use faster models**:
-   - gpt-4o-mini instead of gpt-4
+   - gpt-5-mini instead of gpt-5
    - claude-3-haiku instead of claude-3-opus
    - Local models for simple tasks
 
@@ -491,7 +491,7 @@ This document covers the most frequently encountered issues when installing, con
 1. **Check model names**:
    ```bash
    # Use exact model names from provider documentation
-   # OpenAI: gpt-4o-mini, gpt-4o, text-embedding-3-small
+   # OpenAI: gpt-5-mini, gpt-5, text-embedding-3-small
    # Anthropic: claude-3-haiku-20240307, claude-3-sonnet-20240229
    ```
 

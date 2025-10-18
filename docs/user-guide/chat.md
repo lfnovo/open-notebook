@@ -323,7 +323,7 @@ The Ask feature provides sophisticated research assistance:
 - Grok for creative insights
 
 **Quick Questions**:
-- GPT-4o-mini for fast, cost-effective responses
+- GPT-5-mini for fast, cost-effective responses
 - Gemini Flash for quick summaries
 - Ollama models for privacy-focused usage
 

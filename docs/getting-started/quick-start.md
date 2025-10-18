@@ -72,9 +72,9 @@ docker-compose up -d
 ### 1. Configure AI Models
 - Click **⚙️ Settings** → **🤖 Models**
 - Set these recommended models:
-  - **Language Model**: `gpt-4o-mini`
+  - **Language Model**: `gpt-5-mini`
   - **Embedding Model**: `text-embedding-3-small`
-  - **Text-to-Speech**: `tts-1`
+  - **Text-to-Speech**: `gpt-4o-mini-tts`
   - **Speech-to-Text**: `whisper-1`
 - Click **Save**
 

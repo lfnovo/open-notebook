@@ -370,9 +370,9 @@ Ask questions using AI models (streaming response).
 ```json
 {
   "question": "What are the key benefits of AI?",
-  "strategy_model": "model:gpt-4o-mini",
-  "answer_model": "model:gpt-4o-mini",
-  "final_answer_model": "model:gpt-4o-mini"
+  "strategy_model": "model:gpt-5-mini",
+  "answer_model": "model:gpt-5-mini",
+  "final_answer_model": "model:gpt-5-mini"
 }
 ```
 
@@ -420,7 +420,7 @@ Get all configured models.
 [
   {
     "id": "model:uuid",
-    "name": "gpt-4o-mini",
+    "name": "gpt-5-mini",
     "provider": "openai",
     "type": "language",
     "created": "2024-01-01T00:00:00Z",
@@ -436,7 +436,7 @@ Create a new model configuration.
 **Request Body**:
 ```json
 {
-  "name": "gpt-4o-mini",
+  "name": "gpt-5-mini",
   "provider": "openai",
   "type": "language"
 }
@@ -480,13 +480,13 @@ Get default model configurations.
 **Response**:
 ```json
 {
-  "default_chat_model": "model:gpt-4o-mini",
-  "default_transformation_model": "model:gpt-4o-mini",
-  "large_context_model": "model:gpt-4o-mini",
-  "default_text_to_speech_model": "model:tts-1",
+  "default_chat_model": "model:gpt-5-mini",
+  "default_transformation_model": "model:gpt-5-mini",
+  "large_context_model": "model:gpt-5-mini",
+  "default_text_to_speech_model": "model:gpt-4o-mini-tts",
   "default_speech_to_text_model": "model:whisper-1",
   "default_embedding_model": "model:text-embedding-3-small",
-  "default_tools_model": "model:gpt-4o-mini"
+  "default_tools_model": "model:gpt-5-mini"
 }
 ```
 
@@ -583,7 +583,7 @@ Execute a transformation on content.
 {
   "transformation_id": "transformation:uuid",
   "input_text": "Content to transform...",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -592,7 +592,7 @@ Execute a transformation on content.
 {
   "output": "Transformed content...",
   "transformation_id": "transformation:uuid",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -632,7 +632,7 @@ Create a new insight for a source.
 ```json
 {
   "transformation_id": "transformation:uuid",
-  "model_id": "model:gpt-4o-mini"
+  "model_id": "model:gpt-5-mini"
 }
 ```
 
@@ -677,9 +677,9 @@ Get all episode profiles.
     "description": "Technical discussion between 2 experts",
     "speaker_config": "tech_experts",
     "outline_provider": "openai",
-    "outline_model": "gpt-4o-mini",
+    "outline_model": "gpt-5-mini",
     "transcript_provider": "openai",
-    "transcript_model": "gpt-4o-mini",
+    "transcript_model": "gpt-5-mini",
     "default_briefing": "Create an engaging technical discussion...",
     "num_segments": 5,
     "created": "2024-01-01T00:00:00Z",
@@ -700,7 +700,7 @@ Get all speaker profiles.
     "name": "tech_experts",
     "description": "Two technical experts for tech discussions",
     "tts_provider": "openai",
-    "tts_model": "tts-1",
+    "tts_model": "gpt-4o-mini-tts",
     "speakers": [
       {
         "name": "Dr. Alex Chen",
@@ -1421,7 +1421,7 @@ SOURCE_ID=$(curl -X POST http://localhost:5055/api/sources \
 # 3. Create a model
 MODEL_ID=$(curl -X POST http://localhost:5055/api/models \
   -H "Content-Type: application/json" \
-  -d '{"name": "gpt-4o-mini", "provider": "openai", "type": "language"}' \
+  -d '{"name": "gpt-5-mini", "provider": "openai", "type": "language"}' \
   | jq -r '.id')
 
 # 4. Search for content

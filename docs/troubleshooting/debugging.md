@@ -492,7 +492,7 @@ ERROR - Model not found: gpt-4-invalid
 
 ### Additional Context
 - Using OpenAI provider
-- gpt-4o-mini model configured
+- gpt-5-mini model configured
 - First time setup
 ```
 

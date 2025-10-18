@@ -145,7 +145,7 @@ For complex issues that aren't covered in the basic guides:
    uv run python -c "from open_notebook.database.repository import repo_query; import asyncio; print(asyncio.run(repo_query('SELECT * FROM system')))"
    
    # Test AI providers
-   uv run python -c "from esperanto import AIFactory; model = AIFactory.create_language('openai', 'gpt-4o-mini'); print(model.chat_complete([{'role': 'user', 'content': 'Hello'}]))"
+   uv run python -c "from esperanto import AIFactory; model = AIFactory.create_language('openai', 'gpt-5-mini'); print(model.chat_complete([{'role': 'user', 'content': 'Hello'}]))"
    ```
 
 ## 📚 Related Documentation

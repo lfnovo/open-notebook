@@ -114,9 +114,9 @@ Before creating your first notebook, configure your AI models:
 1. Click **"⚙️ Settings"** in the sidebar
 2. Click **"🤖 Models"** tab
 3. Configure these recommended models:
-   - **Language Model**: `gpt-4o-mini` (cost-effective)
+   - **Language Model**: `gpt-5-mini` (cost-effective)
    - **Embedding Model**: `text-embedding-3-small` (required for search)
-   - **Text-to-Speech**: `tts-1` (for podcast generation)
+   - **Text-to-Speech**: `gpt-4o-mini-tts` (for podcast generation)
    - **Speech-to-Text**: `whisper-1` (for audio transcription)
 4. Click **"Save"** after configuring all models
 

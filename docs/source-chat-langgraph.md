@@ -316,7 +316,7 @@ Choose appropriate models for different use cases:
 model_override = "model:claude-3-opus"
 
 # For quick summaries  
-model_override = "model:gpt-4o-mini"
+model_override = "model:gpt-5-mini"
 ```
 
 ## Troubleshooting

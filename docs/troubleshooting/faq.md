@@ -91,12 +91,12 @@ Open Notebook is an open-source, privacy-focused alternative to Google's Noteboo
 ### What are the best model combinations?
 
 **Budget-friendly**:
-- Language: `gpt-4o-mini` (OpenAI) or `deepseek-chat` (DeepSeek)
+- Language: `gpt-5-mini` (OpenAI) or `deepseek-chat` (DeepSeek)
 - Embedding: `text-embedding-3-small` (OpenAI)
-- TTS: `tts-1` (OpenAI)
+- TTS: `gpt-4o-mini-tts` (OpenAI)
 
 **High-quality**:
-- Language: `claude-3-5-sonnet` (Anthropic) or `gpt-4o` (OpenAI)
+- Language: `claude-3-7-sonnet` (Anthropic) or `gpt-4o` (OpenAI)
 - Embedding: `text-embedding-3-large` (OpenAI)
 - TTS: `eleven_turbo_v2_5` (ElevenLabs)
 

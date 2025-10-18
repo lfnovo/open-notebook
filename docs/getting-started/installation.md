@@ -455,7 +455,7 @@ After installation, configure your AI models for optimal performance:
 
 #### Language Models (Chat & Generation)
 **Budget-Friendly Options:**
-- `gpt-4o-mini` (OpenAI) - Great value for most tasks
+- `gpt-5-mini` (OpenAI) - Great value for most tasks
 - `deepseek-chat` (DeepSeek) - Excellent quality-to-price ratio
 - `gemini-2.0-flash` (Google) - Large context window
 
@@ -473,7 +473,7 @@ After installation, configure your AI models for optimal performance:
 #### Text-to-Speech (Podcast Generation)
 **High Quality:**
 - `eleven_turbo_v2_5` (ElevenLabs) - Best voice quality
-- `tts-1` (OpenAI) - Good quality, reliable
+- `gpt-4o-mini-tts` (OpenAI) - Good quality, reliable
 
 **Budget Options:**
 - `gemini-2.5-flash-preview-tts` (Google) - $10 per 1M tokens
@@ -507,9 +507,9 @@ After installation, configure your AI models for optimal performance:
 
 #### Personal Research
 ```env
-# Language: gpt-4o-mini (OpenAI)
+# Language: gpt-5-mini (OpenAI)
 # Embedding: text-embedding-3-small (OpenAI)
-# TTS: tts-1 (OpenAI)
+# TTS: gpt-4o-mini-tts (OpenAI)
 # STT: whisper-1 (OpenAI)
 ```
 

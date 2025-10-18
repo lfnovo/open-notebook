@@ -12,7 +12,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from .token_utils import token_count
 
 # Pattern for matching thinking content in AI responses
-THINK_PATTERN = re.compile(r'<think>(.*?)</think>', re.DOTALL)
+THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL)
 
 
 def split_text(txt: str, chunk_size=500):
@@ -76,62 +76,62 @@ def remove_non_printable(text: str) -> str:
 def parse_thinking_content(content: str) -> Tuple[str, str]:
     """
     Parse message content to extract thinking content from <think> tags.
-    
+
     Args:
         content (str): The original message content
-        
+
     Returns:
         Tuple[str, str]: (thinking_content, cleaned_content)
             - thinking_content: Content from within <think> tags
             - cleaned_content: Original content with <think> blocks removed
-    
+
     Example:
         >>> content = "<think>Let me analyze this</think>Here's my answer"
         >>> thinking, cleaned = parse_thinking_content(content)
         >>> print(thinking)
         "Let me analyze this"
-        >>> print(cleaned) 
+        >>> print(cleaned)
         "Here's my answer"
     """
     # Input validation
     if not isinstance(content, str):
         return "", str(content) if content is not None else ""
-    
+
     # Limit processing for very large content (100KB limit)
     if len(content) > 100000:
         return "", content
-    
+
     # Find all thinking blocks
     thinking_matches = THINK_PATTERN.findall(content)
-    
+
     if not thinking_matches:
         return "", content
-    
+
     # Join all thinking content with double newlines
     thinking_content = "\n\n".join(match.strip() for match in thinking_matches)
-    
+
     # Remove all <think>...</think> blocks from the original content
     cleaned_content = THINK_PATTERN.sub("", content)
-    
+
     # Clean up extra whitespace
-    cleaned_content = re.sub(r'\n\s*\n\s*\n', '\n\n', cleaned_content).strip()
-    
+    cleaned_content = re.sub(r"\n\s*\n\s*\n", "\n\n", cleaned_content).strip()
+
     return thinking_content, cleaned_content
 
 
 def clean_thinking_content(content: str) -> str:
     """
     Remove thinking content from AI responses, returning only the cleaned content.
-    
+
     This is a convenience function for cases where you only need the cleaned
     content and don't need access to the thinking process.
-    
+
     Args:
         content (str): The original message content with potential <think> tags
-        
+
     Returns:
         str: Content with <think> blocks removed and whitespace cleaned
-        
+
     Example:
         >>> content = "<think>Let me think...</think>Here's the answer"
         >>> clean_thinking_content(content)

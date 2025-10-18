@@ -42,8 +42,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                     str(payload),
                     model_id,
                     "chat",
-                    max_tokens=10000,
-                )
+                    max_tokens=8192
             )
         finally:
             new_loop.close()
@@ -64,7 +63,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                 str(payload),
                 model_id,
                 "chat",
-                max_tokens=10000,
+                max_tokens=8192,
             )
         )
     

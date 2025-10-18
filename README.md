@@ -93,6 +93,12 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 ## 🚀 Quick Start
 
+**Docker Images Available:**
+- **Docker Hub**: `lfnovo/open_notebook:v1-latest-single`
+- **GitHub Container Registry**: `ghcr.io/lfnovo/open-notebook:v1-latest-single`
+
+Both registries contain identical images - choose whichever you prefer!
+
 Ready to try Open Notebook? Choose your preferred method:
 
 ### ⚡ Instant Setup (Recommended)
@@ -109,6 +115,9 @@ docker run -d \
   -v ./surreal_data:/mydata \
   -e OPENAI_API_KEY=your_key \
   lfnovo/open_notebook:v1-latest-single
+
+# Or use GitHub Container Registry:
+# ghcr.io/lfnovo/open-notebook:v1-latest-single
 ```
 
 **What gets created:**

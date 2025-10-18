@@ -14,6 +14,19 @@ Open Notebook is a powerful AI-powered research and note-taking tool that:
 - Creates AI-generated podcasts from your content
 - Works with PDFs, web links, videos, audio files, and more
 
+## 📦 Docker Image Registries
+
+Open Notebook images are available from two registries:
+
+- **GitHub Container Registry (GHCR)**: `ghcr.io/lfnovo/open-notebook` - Hosted on GitHub, no Docker Hub account needed
+- **Docker Hub**: `lfnovo/open_notebook` - Traditional Docker registry
+
+Both registries contain identical images. Choose based on your preference:
+- Use **GHCR** if you prefer GitHub-native workflows or Docker Hub is blocked
+- Use **Docker Hub** if you're already using it or prefer the traditional registry
+
+All examples in this guide use Docker Hub (`lfnovo/open_notebook`), but you can replace it with `ghcr.io/lfnovo/open-notebook` anywhere.
+
 ## 🚀 Quick Start (5 Minutes)
 
 ### Step 1: Install Docker
@@ -108,6 +121,15 @@ OpenAI provides everything you need to get started:
    - **API Documentation**: http://localhost:5055/docs - Full REST API access
    - You should see the Open Notebook interface!
 
+**Alternative: Using GHCR**
+To use GitHub Container Registry instead, simply replace the image name:
+```yaml
+services:
+  open_notebook:
+    image: ghcr.io/lfnovo/open-notebook:v1-latest-single
+    # ... rest of configuration stays the same
+```
+
 ### Step 4: Configure Your Models
 
 Before creating your first notebook, configure your AI models:
@@ -147,6 +169,7 @@ services:
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
+    # Or use: ghcr.io/lfnovo/open-notebook:v1-latest
     ports:
       - "8502:8502"  # Next.js Frontend
       - "5055:5055"  # REST API

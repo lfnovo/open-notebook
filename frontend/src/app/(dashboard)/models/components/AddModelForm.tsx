@@ -43,11 +43,11 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const getModelPlaceholder = () => {
     switch (modelType) {
       case 'language':
-        return 'e.g., gpt-4o-mini, claude, gemini'
+        return 'e.g., gpt-5-mini, claude, gemini'
       case 'embedding':
         return 'e.g., text-embedding-3-small'
       case 'text_to_speech':
-        return 'e.g., tts-1, tts-1-hd'
+        return 'e.g., tts-gpt-4o-mini-tts, tts-1-hd'
       case 'speech_to_text':
         return 'e.g., whisper-1'
       default:

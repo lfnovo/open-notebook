@@ -1,0 +1,148 @@
+name: 🔧 Installation Issue
+description: Report problems with installation, setup, or connectivity
+title: "[Install]: "
+labels: ["installation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ⚠️ Before You Continue
+
+        **Please try these resources first:**
+
+        1. 🤖 **[Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant)** - Our AI assistant can help you troubleshoot most installation issues instantly!
+
+        2. 📚 **[Installation Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/getting-started/installation.md)** - Comprehensive setup instructions
+
+        3. 🐋 **[Docker Deployment Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/docker.md)** - Detailed Docker setup
+
+        4. 🦙 **Ollama Issues?** Read our [Ollama Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ollama.md) first
+
+        5. 💬 **[Discord Community](https://discord.gg/37XJPXfz2w)** - Get real-time help from the community
+
+        ---
+
+        If you've tried the above and still need help, please fill out the form below with as much detail as possible.
+
+  - type: dropdown
+    id: installation-method
+    attributes:
+      label: Installation Method
+      description: How are you trying to install Open Notebook?
+      options:
+        - Docker (single container - v1-latest-single)
+        - Docker (multi-container - docker-compose)
+        - Local development (make start-all)
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue-description
+    attributes:
+      label: What is the issue?
+      description: Describe the installation or setup problem you're experiencing
+      placeholder: |
+        Example: "I can't connect to the database" or "The container won't start" or "Getting 404 errors when accessing the UI"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: |
+        Please provide relevant logs. **This is very important for diagnosing issues!**
+
+        **How to get logs:**
+        - Docker single container: `docker logs open-notebook`
+        - Docker Compose: `docker compose logs -f`
+        - Specific service: `docker compose logs -f open_notebook`
+      placeholder: |
+        Paste your logs here. Include the full error message and stack trace if available.
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: docker-compose
+    attributes:
+      label: Docker Compose Configuration
+      description: |
+        If using Docker Compose, please paste your `docker-compose.yml` file here.
+
+        **⚠️ IMPORTANT: Redact any sensitive information (API keys, passwords, etc.)**
+      placeholder: |
+        services:
+          open_notebook:
+            image: lfnovo/open_notebook:v1-latest-single
+            ports:
+              - "8502:8502"
+              - "5055:5055"
+            environment:
+              - OPENAI_API_KEY=sk-***REDACTED***
+            ...
+      render: yaml
+    validations:
+      required: false
+
+  - type: textarea
+    id: env-file
+    attributes:
+      label: Environment File
+      description: |
+        If using an `.env` or `docker.env` file, please paste it here.
+
+        **⚠️ IMPORTANT: REDACT ALL API KEYS AND PASSWORDS!**
+      placeholder: |
+        SURREAL_URL=ws://surrealdb:8000/rpc
+        SURREAL_USER=root
+        SURREAL_PASSWORD=***REDACTED***
+        OPENAI_API_KEY=sk-***REDACTED***
+        ANTHROPIC_API_KEY=sk-ant-***REDACTED***
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: system-info
+    attributes:
+      label: System Information
+      description: Tell us about your setup
+      placeholder: |
+        - Operating System: Ubuntu 22.04 / Windows 11 / macOS 14
+        - Docker version: `docker --version`
+        - Docker Compose version: `docker compose version`
+        - Architecture: amd64 / arm64 (Apple Silicon)
+        - Available disk space: `df -h`
+        - Available memory: `free -h` (Linux) or Activity Monitor (Mac)
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: |
+        - Are you behind a corporate proxy or firewall?
+        - Are you using a VPN?
+        - Have you made any custom modifications?
+        - Did this work before and suddenly break?
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please confirm you've tried these steps
+      options:
+        - label: I tried the [Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant)
+          required: false
+        - label: I read the relevant documentation ([Installation Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/getting-started/installation.md) or [Ollama Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ollama.md))
+          required: false
+        - label: I searched existing issues to see if this was already reported
+          required: true
+        - label: I redacted all sensitive information (API keys, passwords, etc.)
+          required: true

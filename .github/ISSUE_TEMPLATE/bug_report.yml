@@ -1,0 +1,85 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior (app is running but misbehaving)
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill out the information below to help us understand and fix the issue.
+
+        **Note**: If you're having installation or setup issues, please use the "Installation Issue" template instead.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What did you do when it broke?
+      description: Describe the steps you took that led to the bug
+      placeholder: |
+        1. I went to the Notebooks page
+        2. I clicked on "Create New Notebook"
+        3. I filled in the form and clicked "Save"
+        4. Then the error occurred...
+    validations:
+      required: true
+
+  - type: textarea
+    id: how-broke
+    attributes:
+      label: How did it break?
+      description: What happened that was unexpected? What did you expect to happen instead?
+      placeholder: |
+        Expected: The notebook should be created and I should see it in the list
+        Actual: I got an error message saying "Failed to create notebook"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs-screenshots
+    attributes:
+      label: Logs or Screenshots
+      description: |
+        Please provide any error messages, logs, or screenshots that might help us understand the issue.
+
+        **How to get logs:**
+        - Docker: `docker compose logs -f open_notebook`
+        - Check browser console (F12 → Console tab)
+      placeholder: |
+        Paste logs here or drag and drop screenshots.
+
+        Error messages, stack traces, or browser console errors are very helpful!
+    validations:
+      required: false
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Open Notebook Version
+      description: Which version are you using?
+      options:
+        - v1-latest (Docker)
+        - v1-latest-single (Docker)
+        - Latest from main branch
+        - Other (please specify in additional context)
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: What environment are you running in?
+      placeholder: |
+        - OS: Ubuntu 22.04 / Windows 11 / macOS 14
+        - Browser: Chrome 120
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: "This started happening after I upgraded to v1.5.0..."
+    validations:
+      required: false

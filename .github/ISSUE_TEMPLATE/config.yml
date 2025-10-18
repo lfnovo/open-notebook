@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discord Community
+    url: https://discord.gg/37XJPXfz2w
+    about: Get help from the community and share ideas
+  - name: 🤖 Installation Assistant (ChatGPT)
+    url: https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant
+    about: AI-powered installation help - try this first for setup issues!
+  - name: 📚 Documentation
+    url: https://github.com/lfnovo/open-notebook/tree/main/docs
+    about: Browse our comprehensive documentation

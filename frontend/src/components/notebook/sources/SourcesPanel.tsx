@@ -12,9 +12,10 @@ import type { SourceListItem } from '@/types/api';
 
 interface SourcesPanelProps {
   notebookId: string;
+  showHeader?: boolean;
 }
 
-const SourcesPanel = ({ notebookId }: SourcesPanelProps) => {
+const SourcesPanel = ({ notebookId, showHeader = true }: SourcesPanelProps) => {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -28,15 +29,25 @@ const SourcesPanel = ({ notebookId }: SourcesPanelProps) => {
 
   return (
     <div className="flex h-full flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Sources</div>
-          <p className="text-xs text-muted-foreground">Documents linked to this research notebook.</p>
+      {showHeader ? (
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold">Sources</div>
+            <p className="text-xs text-muted-foreground">
+              Documents linked to this research notebook.
+            </p>
+          </div>
+          <Button size="sm" variant="ghost" onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
         </div>
-        <Button size="sm" variant="ghost" onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-1 h-4 w-4" /> Add
-        </Button>
-      </div>
+      ) : (
+        <div className="flex justify-end">
+          <Button size="sm" variant="ghost" onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-1 h-4 w-4" /> Add
+          </Button>
+        </div>
+      )}
       {isLoading && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Loading sources…
@@ -47,7 +58,7 @@ const SourcesPanel = ({ notebookId }: SourcesPanelProps) => {
           Failed to load sources. Verify that the API is reachable.
         </div>
       )}
-      <ScrollArea className="flex-1  max-w-full">
+      <ScrollArea className="max-w-full flex-1">
         <div className="flex flex-col gap-3 pr-2">
           {sources.length === 0 && !isLoading && (
             <div className="rounded-md border border-dashed p-4 text-xs text-muted-foreground">

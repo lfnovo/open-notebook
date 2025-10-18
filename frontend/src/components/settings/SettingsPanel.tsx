@@ -17,8 +17,6 @@ import type {
   ModelProvidersResponse,
   SettingsResponse,
   SettingsUpdatePayload,
-  Transformation,
-  TransformationCreatePayload,
 } from '@/types/api';
 
 interface SettingsPanelProps {
@@ -141,8 +139,14 @@ const ModelsTab = () => {
                   <SelectLabel>Available</SelectLabel>
                   {(providersByType[newModel.type] ?? []).map((provider) => (
                     <SelectItem key={provider} value={provider}>
-                      {provider}
-                      {!availableProviders.includes(provider) && ' (missing env)'}
+                      <span className="flex items-center justify-between gap-3">
+                        <span>{provider}</span>
+                        {!availableProviders.includes(provider) && (
+                          <Badge variant="outline" className="text-[10px] uppercase">
+                            Missing env
+                          </Badge>
+                        )}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -180,7 +184,7 @@ const ModelsTab = () => {
             <div key={key} className="space-y-2 rounded-md border border-border/70 bg-card/60 p-4">
               <div>
                 <div className="text-sm font-medium">
-                  {key.replace(/_/g, ' ')}
+                  {defaultLabelMap[key] ?? key.replace(/_/g, ' ')}
                 </div>
               </div>
               <Select
@@ -250,143 +254,6 @@ const ModelsTab = () => {
   );
 };
 
-const TransformationsTab = () => {
-  const queryClient = useQueryClient();
-  const transformationsQuery = useQuery<Transformation[]>({
-    queryKey: ['transformations'],
-    queryFn: () => apiClient.getTransformations(),
-  });
-
-  const [formState, setFormState] = useState<TransformationCreatePayload>({
-    name: '',
-    title: '',
-    description: '',
-    prompt: '',
-    apply_default: false,
-  });
-
-  const createTransformationMutation = useMutation<Transformation, Error, TransformationCreatePayload>({
-    mutationFn: (payload) => apiClient.createTransformation(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transformations'] });
-      setFormState({ name: '', title: '', description: '', prompt: '', apply_default: false });
-    },
-  });
-
-  const deleteTransformationMutation = useMutation<void, Error, string>({
-    mutationFn: (id) => apiClient.deleteTransformation(id).then(() => undefined),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transformations'] });
-    },
-  });
-
-  return (
-    <div className="flex h-full flex-col gap-6">
-      <section className="space-y-4">
-        <div>
-          <h3 className="text-base font-semibold">Create transformation</h3>
-          <p className="text-xs text-muted-foreground">Define reusable prompts to process sources.</p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <label className="text-xs font-medium uppercase text-muted-foreground">Name</label>
-            <Input
-              value={formState.name}
-              onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
-              placeholder="summarize"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium uppercase text-muted-foreground">Title</label>
-            <Input
-              value={formState.title}
-              onChange={(event) => setFormState((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="Summarize"
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-medium uppercase text-muted-foreground">Description</label>
-          <Textarea
-            value={formState.description}
-            onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
-            rows={2}
-          />
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-medium uppercase text-muted-foreground">Prompt</label>
-          <Textarea
-            value={formState.prompt}
-            onChange={(event) => setFormState((prev) => ({ ...prev, prompt: event.target.value }))}
-            rows={6}
-          />
-        </div>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Checkbox
-            checked={formState.apply_default ?? false}
-            onCheckedChange={(checked) =>
-              setFormState((prev) => ({ ...prev, apply_default: Boolean(checked) }))
-            }
-          />
-          Apply by default
-        </label>
-        <Button
-          onClick={() => createTransformationMutation.mutate(formState)}
-          disabled={
-            !formState.name.trim() ||
-            !formState.title.trim() ||
-            !formState.prompt.trim() ||
-            createTransformationMutation.isPending
-          }
-        >
-          {createTransformationMutation.isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
-          Create transformation
-        </Button>
-      </section>
-
-      <section className="space-y-3">
-        <h3 className="text-base font-semibold">Existing transformations</h3>
-        <div className="space-y-2">
-          {transformationsQuery.isLoading && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading transformations…
-            </div>
-          )}
-          {!transformationsQuery.isLoading && (transformationsQuery.data?.length ?? 0) === 0 && (
-            <div className="rounded-md border border-dashed p-4 text-xs text-muted-foreground">
-              No transformations configured yet.
-            </div>
-          )}
-          {(transformationsQuery.data ?? []).map((transformation) => (
-            <div key={transformation.id} className="rounded-md border border-border/60 bg-background p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-sm font-semibold text-foreground">{transformation.title}</div>
-                  <p className="text-xs text-muted-foreground">{transformation.description}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteTransformationMutation.mutate(transformation.id)}
-                  disabled={deleteTransformationMutation.isPending}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="mt-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                Default: {transformation.apply_default ? 'Yes' : 'No'}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-};
 
 const SettingsTab = () => {
   const queryClient = useQueryClient();
@@ -505,22 +372,18 @@ const SettingsTab = () => {
 };
 
 const SettingsPanel = ({ onClose }: SettingsPanelProps) => {
-  const [activeTab, setActiveTab] = useState<'models' | 'transformations' | 'settings'>('models');
+  const [activeTab, setActiveTab] = useState<'models' | 'settings'>('models');
 
   return (
     <div className="flex h-full flex-col gap-4">
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as typeof activeTab)} className="flex h-full flex-col">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="models">Models</TabsTrigger>
-          <TabsTrigger value="transformations">Transformations</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
         <div className="flex-1 overflow-y-auto py-4">
           <TabsContent value="models" className="h-full">
             <ModelsTab />
-          </TabsContent>
-          <TabsContent value="transformations" className="h-full">
-            <TransformationsTab />
           </TabsContent>
           <TabsContent value="settings" className="h-full">
             <SettingsTab />

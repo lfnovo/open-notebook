@@ -23,8 +23,8 @@ import {
 } from "@/components/ui/select";
 import { SelectItemText } from "@radix-ui/react-select";
 import builtinTemplatesRaw from "@/components/notebook/templates/builtin-templates";
-import { apiClient, isAxiosError } from "@/lib/api-client";
-import type { Note, ResearchResponse, SourceListItem } from "@/types/api";
+import { apiClient } from "@/lib/api-client";
+import type { ResearchResponse } from "@/types/api";
 
 type TemplateScope = "builtin" | "custom";
 
@@ -109,10 +109,7 @@ interface GenerateReportDialogProps {
   open: boolean;
   notebookId: string;
   onOpenChange: (open: boolean) => void;
-  onReportCreated: (payload: {
-    note: Note;
-    research: ResearchResponse;
-  }) => void;
+  onReportCreated: (payload: { research: ResearchResponse }) => void;
 }
 
 const GenerateReportDialog = ({
@@ -121,7 +118,6 @@ const GenerateReportDialog = ({
   onOpenChange,
   onReportCreated,
 }: GenerateReportDialogProps) => {
-  const queryClient = useQueryClient();
   const builtinTemplatesState = builtInTemplates;
   const [customTemplates, setCustomTemplates] = useState<ReportTemplate[]>([]);
 
@@ -261,13 +257,6 @@ const GenerateReportDialog = ({
   ) => {
     event.preventDefault();
 
-    if (!notebookId) {
-      setFormError(
-        "Notebook is not ready yet. Close the dialog and try again."
-      );
-      return;
-    }
-
     if (!templateBody.trim()) {
       setFormError("Template body is required.");
       return;
@@ -275,14 +264,14 @@ const GenerateReportDialog = ({
 
     setIsGenerating(true);
     setFormError(null);
-    setStatusMessage(null);
 
     try {
       const templateName = selectedTemplate?.name ?? "Custom Report";
       const templateDescription = selectedTemplate?.description ?? "";
       const question = [
         `Generate a comprehensive report for the current notebook using all relevant sources and notes.`,
-        `Follow the markdown template titled "${templateName}" exactly. Preserve every heading and replace placeholders with detailed findings. If a section is not applicable, include a short explanation rather than removing the heading.`,
+        `Follow the markdown template titled "${templateName}" exactly. Preserve every heading and replace placeholders with detailed findings.`,
+        `If a section is not applicable, include a short explanation rather than removing the heading.`,
         "Cite notebook sources inline and conclude with a Sources section that references the notebook materials.",
         templateDescription ? `Template summary: ${templateDescription}` : "",
         "Markdown Template:",
@@ -291,35 +280,29 @@ const GenerateReportDialog = ({
         .filter(Boolean)
         .join("\n\n");
 
-      setStatusMessage("Running research agent…");
       const research = await apiClient.runResearch({
         notebook_id: notebookId,
         question,
-        config_overrides: {
-          allow_clarification: false,
-        },
       });
 
-      setStatusMessage("Saving report to notebook…");
-      const note = await apiClient.createNote({
-        notebook_id: notebookId,
-        content: research.final_report,
-        note_type: "ai",
-        title: selectedTemplate?.name ?? "Report Draft",
-      });
+      // retired notes from notebook
 
-      onReportCreated({ note, research });
+      // const note = await apiClient.createNote({
+      //   notebook_id: notebookId,
+      //   content: research.final_report,
+      //   note_type: "ai",
+      //   title: selectedTemplate?.name ?? "Report Draft",
+      // });
+
+      // onReportCreated({ note, research });
+      onReportCreated({ research });
       onOpenChange(false);
       resetDialogState();
     } catch (error) {
       console.error("Failed to generate report:", error);
-      const message =
-        extractErrorMessage(error) ??
-        "Failed to generate report. Please try again.";
-      setFormError(message);
+      setFormError("Failed to generate report. Please try again.");
     } finally {
       setIsGenerating(false);
-      setStatusMessage(null);
     }
   };
 

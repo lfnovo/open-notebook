@@ -13,7 +13,7 @@ graph = deep_researcher
 
 
 def build_runnable_config(
-    notebook_id: Optional[str],
+    notebook_id: str, #notebookID should not be optional!
     overrides: Optional[Dict[str, Any]] = None,
 ) -> RunnableConfig:
     """Prepare a runnable config that injects notebook-aware defaults."""
@@ -22,8 +22,8 @@ def build_runnable_config(
         "search_api": SearchAPI.NOTEBOOK.value,
     }
 
-    if notebook_id:
-        configurable["notebook_id"] = notebook_id
+    
+    configurable["notebook_id"] = notebook_id
 
     if overrides:
         configurable.update(overrides)

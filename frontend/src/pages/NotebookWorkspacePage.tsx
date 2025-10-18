@@ -64,6 +64,7 @@ const NotebookWorkspacePage = () => {
     return draft !== (activeNote.content ?? "");
   }, [activeNote, draft]);
 
+  // Load the selected note's content into the editor, but don't overwrite local edits.
   useEffect(() => {
     if (!notes || notes.length === 0) {
       setActiveNoteId(null);
@@ -71,17 +72,23 @@ const NotebookWorkspacePage = () => {
       return;
     }
 
-    const note = notes.find((item) => item.id === activeNoteId) ?? notes[0];
-    if (note && note.id !== activeNoteId) {
-      setActiveNoteId(note.id);
+    const chosen = notes.find((item) => item.id === activeNoteId) ?? notes[0];
+
+    // Ensure URL param reflects the chosen note
+    if (chosen && chosen.id !== activeNoteId) {
+      setActiveNoteId(chosen.id);
       setSearchParams((prev) => {
         const params = new URLSearchParams(prev);
-        params.set("note", note.id);
+        params.set("note", chosen.id);
         return params;
       });
     }
-    setDraft(note?.content ?? "");
-  }, [notes, activeNoteId, setSearchParams]);
+
+    // Only sync server content into the editor when we don't have local changes.
+    if (!isDirty) {
+      setDraft(chosen?.content ?? "");
+    }
+  }, [notes, activeNoteId, setSearchParams, isDirty]);
 
   const updateNoteMutation = useMutation<
     Note,
@@ -91,6 +98,7 @@ const NotebookWorkspacePage = () => {
     mutationFn: ({ noteId, content }) =>
       apiClient.updateNote(noteId, { content }),
     onSuccess: (result, variables) => {
+      // Optimistically update cache for a smoother UX
       queryClient.setQueryData<Note[] | undefined>(
         ["notes", notebookId],
         (prev) => {
@@ -108,6 +116,7 @@ const NotebookWorkspacePage = () => {
       });
     },
     onSettled: () => {
+      // Keep cache fresh
       queryClient.invalidateQueries({ queryKey: ["notes", notebookId] });
     },
   });
@@ -117,36 +126,32 @@ const NotebookWorkspacePage = () => {
     updateNoteMutation.mutate({ noteId: activeNote.id, content: draft });
   };
 
+  // ⬇️ NEW: take the ODR research and write it straight to the Milkdown editor
   const handleReportCreated = ({
-    note,
+    research,
   }: {
-    note: Note;
     research: ResearchResponse;
   }) => {
-    if (!notebookId) return;
-    queryClient.setQueryData<Note[] | undefined>(
-      ["notes", notebookId],
-      (prev) => {
-        if (!prev) return [note];
-        const existingIndex = prev.findIndex((item) => item.id === note.id);
-        if (existingIndex === -1) {
-          return [note, ...prev];
-        }
-        const next = [...prev];
-        next[existingIndex] = note;
-        return next;
-      }
-    );
-    setActiveNoteId(note.id);
-    setDraft(note.content ?? "");
-    setSearchParams((prev) => {
-      const params = new URLSearchParams(prev);
-      params.set("note", note.id);
-      return params;
-    });
-    queryClient.invalidateQueries({ queryKey: ["notes", notebookId] });
+    if (!research) return;
+
+    const md = `
+
+---
+
+## Research Report
+
+${research.final_report ?? ""}
+
+`;
+
+    // Append into the current editor draft (Milkdown is controlled by `draft`)
+    setDraft((prev) => (prev ?? "") + md);
+
+    // Close the dialog if it's still open
+    setIsReportDialogOpen(false);
   };
 
+  // Redirect home if notebook fetch fails
   useEffect(() => {
     if (!notebookId || (!isNotebookError && notebook)) return;
     if (isNotebookError) {

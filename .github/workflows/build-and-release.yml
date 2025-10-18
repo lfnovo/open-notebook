@@ -74,7 +74,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}
-            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest', env.IMAGE_NAME) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:v1-latest', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -117,7 +117,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-single
-            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest-single', env.IMAGE_NAME) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:v1-latest-single', env.IMAGE_NAME) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache-single
           cache-to: type=local,dest=/tmp/.buildx-cache-single-new,mode=max
 
@@ -143,18 +143,18 @@ jobs:
           if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
             echo "✅ **Regular:** \`${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Regular Latest:** \`${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Regular v1-Latest:** \`${{ env.IMAGE_NAME }}:v1-latest\`" >> $GITHUB_STEP_SUMMARY
             fi
           elif [[ "${{ needs.build-regular.result }}" == "skipped" ]]; then
             echo "⏭️ **Regular:** Skipped" >> $GITHUB_STEP_SUMMARY
           else
             echo "❌ **Regular:** Failed" >> $GITHUB_STEP_SUMMARY
           fi
-          
+
           if [[ "${{ needs.build-single.result }}" == "success" ]]; then
             echo "✅ **Single:** \`${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Single Latest:** \`${{ env.IMAGE_NAME }}:latest-single\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Single v1-Latest:** \`${{ env.IMAGE_NAME }}:v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
             fi
           elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then
             echo "⏭️ **Single:** Skipped" >> $GITHUB_STEP_SUMMARY

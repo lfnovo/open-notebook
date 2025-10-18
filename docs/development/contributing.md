@@ -488,7 +488,7 @@ LOG_LEVEL=DEBUG
 ```bash
 # Start SurrealDB
 docker run -d --name surrealdb -p 8000:8000 \
-  surrealdb/surrealdb:latest start \
+  surrealdb/surrealdb:v1-latest start \
   --user root --pass password \
   --bind 0.0.0.0:8000 memory
 
@@ -501,8 +501,8 @@ uv run python -m open_notebook.database.async_migrate
 # Start the API server
 uv run python run_api.py
 
-# Start the Streamlit UI (in another terminal)
-uv run streamlit run app_home.py --server.port 8502
+# Start the React frontend (in another terminal)
+uv run cd frontend && npm run dev --server.port 8502
 ```
 
 ### Development Tools
@@ -620,7 +620,7 @@ async def new_feature_graph(state: NewFeatureState):
 
 We're actively looking for contributions in these areas:
 
-1. **React Frontend**: Help build a modern React-based UI to replace Streamlit
+1. **React Frontend**: Help build a modern React-based UI to replace Next.js
 2. **Testing**: Expand test coverage across all components
 3. **Performance**: Async processing improvements and caching
 4. **Documentation**: API examples and user guides

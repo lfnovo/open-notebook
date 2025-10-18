@@ -57,9 +57,9 @@ insert into episode_profile
                 description: "Technical discussion between 2 experts",
                 speaker_config: "tech_experts",
                 outline_provider: "openai",
-                outline_model: "gpt-4o-mini",
+                outline_model: "gpt-5-mini",
                 transcript_provider: "openai", 
-                transcript_model: "gpt-4o-mini",
+                transcript_model: "gpt-5-mini",
                 default_briefing: "Create an engaging technical discussion about the provided content. Focus on practical insights, real-world applications, and detailed explanations that would interest developers and technical professionals.",
                 num_segments: 5
             },
@@ -68,9 +68,9 @@ insert into episode_profile
                 description: "Single expert explaining complex topics",
                 speaker_config: "solo_expert",
                 outline_provider: "openai",
-                outline_model: "gpt-4o-mini",
+                outline_model: "gpt-5-mini",
                 transcript_provider: "openai",
-                transcript_model: "gpt-4o-mini", 
+                transcript_model: "gpt-5-mini", 
                 default_briefing: "Create an educational explanation of the provided content. Break down complex concepts into digestible segments, use analogies and examples, and maintain an engaging teaching style.",
                 "num_segments":4            },
             {
@@ -78,9 +78,9 @@ insert into episode_profile
                 description: "Business-focused analysis and discussion",
                 speaker_config: "business_panel",
                 outline_provider: "openai",
-                outline_model: "gpt-4o-mini",
+                outline_model: "gpt-5-mini",
                 transcript_provider: "openai",
-                transcript_model: "gpt-4o-mini",
+                transcript_model: "gpt-5-mini",
                 default_briefing: "Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.",
                 "num_segments":6            }
         ];
@@ -91,7 +91,7 @@ insert into speaker_profile
                 name: "tech_experts",
                 description: "Two technical experts for tech discussions",
                 tts_provider: "openai",
-                tts_model: "tts-1",
+                tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Dr. Alex Chen",
@@ -111,7 +111,7 @@ insert into speaker_profile
                 name: "solo_expert",
                 description: "Single expert for educational content",
                 tts_provider: "openai",
-                tts_model: "tts-1",
+                tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Professor Sarah Kim",
@@ -125,7 +125,7 @@ insert into speaker_profile
                 name: "business_panel",
                 description: "Business analysis panel with diverse perspectives",
                 tts_provider: "openai", 
-                tts_model: "tts-1",
+                tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Marcus Thompson",

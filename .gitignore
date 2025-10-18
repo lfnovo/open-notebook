@@ -1,6 +1,6 @@
 .env
 prompts/patterns/user/
-notebooks/
+/notebooks/
 data/
 .uploads/
 sqlite-db/
@@ -23,8 +23,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -122,4 +122,11 @@ desktop.ini
 
 .quarentena
 
+claude-logs/
+.claude/sessions
 **/claude-logs
+
+
+docs/custom_gpt
+
+specs/

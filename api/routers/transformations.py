@@ -4,6 +4,8 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import (
+    DefaultPromptResponse,
+    DefaultPromptUpdate,
     TransformationCreate,
     TransformationExecuteRequest,
     TransformationExecuteResponse,
@@ -11,8 +13,8 @@ from api.models import (
     TransformationUpdate,
 )
 from open_notebook.domain.models import Model
-from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.domain.transformation import DefaultPrompts, Transformation
+from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.transformation import graph as transformation_graph
 
 router = APIRouter()
@@ -26,7 +28,7 @@ async def get_transformations():
 
         return [
             TransformationResponse(
-                id=transformation.id,
+                id=transformation.id or "",
                 name=transformation.name,
                 title=transformation.title,
                 description=transformation.description,
@@ -58,7 +60,7 @@ async def create_transformation(transformation_data: TransformationCreate):
         await new_transformation.save()
 
         return TransformationResponse(
-            id=new_transformation.id,
+            id=new_transformation.id or "",
             name=new_transformation.name,
             title=new_transformation.title,
             description=new_transformation.description,
@@ -87,7 +89,7 @@ async def get_transformation(transformation_id: str):
             raise HTTPException(status_code=404, detail="Transformation not found")
 
         return TransformationResponse(
-            id=transformation.id,
+            id=transformation.id or "",
             name=transformation.name,
             title=transformation.title,
             description=transformation.description,
@@ -132,7 +134,7 @@ async def update_transformation(
         await transformation.save()
 
         return TransformationResponse(
-            id=transformation.id,
+            id=transformation.id or "",
             name=transformation.name,
             title=transformation.title,
             description=transformation.description,
@@ -188,7 +190,7 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
 
         # Execute the transformation
         result = await transformation_graph.ainvoke(
-            dict(
+            dict(  # type: ignore[arg-type]
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),
@@ -207,4 +209,39 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
         logger.error(f"Error executing transformation: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error executing transformation: {str(e)}"
+        )
+
+
+@router.get("/transformations/default-prompt", response_model=DefaultPromptResponse)
+async def get_default_prompt():
+    """Get the default transformation prompt."""
+    try:
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
+        return DefaultPromptResponse(
+            transformation_instructions=default_prompts.transformation_instructions or ""
+        )
+    except Exception as e:
+        logger.error(f"Error fetching default prompt: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching default prompt: {str(e)}"
+        )
+
+
+@router.put("/transformations/default-prompt", response_model=DefaultPromptResponse)
+async def update_default_prompt(prompt_update: DefaultPromptUpdate):
+    """Update the default transformation prompt."""
+    try:
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
+        default_prompts.transformation_instructions = prompt_update.transformation_instructions
+        await default_prompts.update()
+
+        return DefaultPromptResponse(
+            transformation_instructions=default_prompts.transformation_instructions
+        )
+    except Exception as e:
+        logger.error(f"Error updating default prompt: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating default prompt: {str(e)}"
         )

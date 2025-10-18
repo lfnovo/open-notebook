@@ -36,9 +36,9 @@ def note_panel(note_id, notebook_id=None):
                 notes_service.update_note(note)
             else:
                 note = notes_service.create_note(
-                    content=note.content,
+                    content=note.content or "",
                     title=note.title,
-                    note_type=note.note_type,
+                    note_type=note.note_type or "human",  # type: ignore[arg-type]
                     notebook_id=notebook_id,
                 )
             st.rerun()

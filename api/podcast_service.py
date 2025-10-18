@@ -96,7 +96,9 @@ class PodcastService:
             job_id = submit_command("open_notebook", "generate_podcast", command_args)
 
             # Convert RecordID to string if needed
-            job_id_str = str(job_id) if job_id else None
+            if not job_id:
+                raise ValueError("Failed to get job_id from submit_command")
+            job_id_str = str(job_id)
             logger.info(
                 f"Submitted podcast generation job: {job_id_str} for episode '{episode_name}'"
             )

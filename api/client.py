@@ -4,7 +4,7 @@ This module provides a client interface to interact with the Open Notebook API.
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 from loguru import logger
@@ -24,7 +24,7 @@ class APIClient:
 
     def _make_request(
         self, method: str, endpoint: str, timeout: Optional[float] = None, **kwargs
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Make HTTP request to the API."""
         url = f"{self.base_url}{endpoint}"
         request_timeout = timeout if timeout is not None else self.timeout
@@ -56,28 +56,29 @@ class APIClient:
     # Notebooks API methods
     def get_notebooks(
         self, archived: Optional[bool] = None, order_by: str = "updated desc"
-    ) -> List[Dict]:
+    ) -> List[Dict[Any, Any]]:
         """Get all notebooks."""
-        params = {"order_by": order_by}
+        params: Dict[str, Any] = {"order_by": order_by}
         if archived is not None:
-            params["archived"] = archived
+            params["archived"] = str(archived).lower()
 
-        return self._make_request("GET", "/api/notebooks", params=params)
+        result = self._make_request("GET", "/api/notebooks", params=params)
+        return result if isinstance(result, list) else [result]
 
-    def create_notebook(self, name: str, description: str = "") -> Dict:
+    def create_notebook(self, name: str, description: str = "") -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new notebook."""
         data = {"name": name, "description": description}
         return self._make_request("POST", "/api/notebooks", json=data)
 
-    def get_notebook(self, notebook_id: str) -> Dict:
+    def get_notebook(self, notebook_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific notebook."""
         return self._make_request("GET", f"/api/notebooks/{notebook_id}")
 
-    def update_notebook(self, notebook_id: str, **updates) -> Dict:
+    def update_notebook(self, notebook_id: str, **updates) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update a notebook."""
         return self._make_request("PUT", f"/api/notebooks/{notebook_id}", json=updates)
 
-    def delete_notebook(self, notebook_id: str) -> Dict:
+    def delete_notebook(self, notebook_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a notebook."""
         return self._make_request("DELETE", f"/api/notebooks/{notebook_id}")
 
@@ -90,7 +91,7 @@ class APIClient:
         search_sources: bool = True,
         search_notes: bool = True,
         minimum_score: float = 0.2,
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Search the knowledge base."""
         data = {
             "query": query,
@@ -108,7 +109,7 @@ class APIClient:
         strategy_model: str,
         answer_model: str,
         final_answer_model: str,
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Ask the knowledge base a question (simple, non-streaming)."""
         data = {
             "question": question,
@@ -122,14 +123,15 @@ class APIClient:
         )
 
     # Models API methods
-    def get_models(self, model_type: Optional[str] = None) -> List[Dict]:
+    def get_models(self, model_type: Optional[str] = None) -> List[Dict[Any, Any]]:
         """Get all models with optional type filtering."""
         params = {}
         if model_type:
             params["type"] = model_type
-        return self._make_request("GET", "/api/models", params=params)
+        result = self._make_request("GET", "/api/models", params=params)
+        return result if isinstance(result, list) else [result]
 
-    def create_model(self, name: str, provider: str, model_type: str) -> Dict:
+    def create_model(self, name: str, provider: str, model_type: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new model."""
         data = {
             "name": name,
@@ -138,22 +140,23 @@ class APIClient:
         }
         return self._make_request("POST", "/api/models", json=data)
 
-    def delete_model(self, model_id: str) -> Dict:
+    def delete_model(self, model_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a model."""
         return self._make_request("DELETE", f"/api/models/{model_id}")
 
-    def get_default_models(self) -> Dict:
+    def get_default_models(self) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get default model assignments."""
         return self._make_request("GET", "/api/models/defaults")
 
-    def update_default_models(self, **defaults) -> Dict:
+    def update_default_models(self, **defaults) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update default model assignments."""
         return self._make_request("PUT", "/api/models/defaults", json=defaults)
 
     # Transformations API methods
-    def get_transformations(self) -> List[Dict]:
+    def get_transformations(self) -> List[Dict[Any, Any]]:
         """Get all transformations."""
-        return self._make_request("GET", "/api/transformations")
+        result = self._make_request("GET", "/api/transformations")
+        return result if isinstance(result, list) else [result]
 
     def create_transformation(
         self,
@@ -162,7 +165,7 @@ class APIClient:
         description: str,
         prompt: str,
         apply_default: bool = False,
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new transformation."""
         data = {
             "name": name,
@@ -173,23 +176,23 @@ class APIClient:
         }
         return self._make_request("POST", "/api/transformations", json=data)
 
-    def get_transformation(self, transformation_id: str) -> Dict:
+    def get_transformation(self, transformation_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific transformation."""
         return self._make_request("GET", f"/api/transformations/{transformation_id}")
 
-    def update_transformation(self, transformation_id: str, **updates) -> Dict:
+    def update_transformation(self, transformation_id: str, **updates) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update a transformation."""
         return self._make_request(
             "PUT", f"/api/transformations/{transformation_id}", json=updates
         )
 
-    def delete_transformation(self, transformation_id: str) -> Dict:
+    def delete_transformation(self, transformation_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a transformation."""
         return self._make_request("DELETE", f"/api/transformations/{transformation_id}")
 
     def execute_transformation(
         self, transformation_id: str, input_text: str, model_id: str
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Execute a transformation on input text."""
         data = {
             "transformation_id": transformation_id,
@@ -202,12 +205,13 @@ class APIClient:
         )
 
     # Notes API methods
-    def get_notes(self, notebook_id: Optional[str] = None) -> List[Dict]:
+    def get_notes(self, notebook_id: Optional[str] = None) -> List[Dict[Any, Any]]:
         """Get all notes with optional notebook filtering."""
         params = {}
         if notebook_id:
             params["notebook_id"] = notebook_id
-        return self._make_request("GET", "/api/notes", params=params)
+        result = self._make_request("GET", "/api/notes", params=params)
+        return result if isinstance(result, list) else [result]
 
     def create_note(
         self,
@@ -215,7 +219,7 @@ class APIClient:
         title: Optional[str] = None,
         note_type: str = "human",
         notebook_id: Optional[str] = None,
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new note."""
         data = {
             "content": content,
@@ -227,61 +231,86 @@ class APIClient:
             data["notebook_id"] = notebook_id
         return self._make_request("POST", "/api/notes", json=data)
 
-    def get_note(self, note_id: str) -> Dict:
+    def get_note(self, note_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific note."""
         return self._make_request("GET", f"/api/notes/{note_id}")
 
-    def update_note(self, note_id: str, **updates) -> Dict:
+    def update_note(self, note_id: str, **updates) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update a note."""
         return self._make_request("PUT", f"/api/notes/{note_id}", json=updates)
 
-    def delete_note(self, note_id: str) -> Dict:
+    def delete_note(self, note_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a note."""
         return self._make_request("DELETE", f"/api/notes/{note_id}")
 
     # Embedding API methods
-    def embed_content(self, item_id: str, item_type: str) -> Dict:
+    def embed_content(self, item_id: str, item_type: str, async_processing: bool = False) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Embed content for vector search."""
         data = {
             "item_id": item_id,
             "item_type": item_type,
+            "async_processing": async_processing,
         }
         # Use extended timeout for embedding operations
         return self._make_request("POST", "/api/embed", json=data, timeout=120.0)
 
+    def rebuild_embeddings(
+        self,
+        mode: str = "existing",
+        include_sources: bool = True,
+        include_notes: bool = True,
+        include_insights: bool = True
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
+        """Rebuild embeddings in bulk."""
+        data = {
+            "mode": mode,
+            "include_sources": include_sources,
+            "include_notes": include_notes,
+            "include_insights": include_insights,
+        }
+        # Use extended timeout for rebuild operations (up to 10 minutes)
+        return self._make_request("POST", "/api/embeddings/rebuild", json=data, timeout=600.0)
+
+    def get_rebuild_status(self, command_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
+        """Get status of a rebuild operation."""
+        return self._make_request("GET", f"/api/embeddings/rebuild/{command_id}/status")
+
     # Settings API methods
-    def get_settings(self) -> Dict:
+    def get_settings(self) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get all application settings."""
         return self._make_request("GET", "/api/settings")
 
-    def update_settings(self, **settings) -> Dict:
+    def update_settings(self, **settings) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update application settings."""
         return self._make_request("PUT", "/api/settings", json=settings)
 
     # Context API methods
     def get_notebook_context(
         self, notebook_id: str, context_config: Optional[Dict] = None
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get context for a notebook."""
-        data = {"notebook_id": notebook_id}
+        data: Dict[str, Any] = {"notebook_id": notebook_id}
         if context_config:
             data["context_config"] = context_config
-        return self._make_request(
+        result = self._make_request(
             "POST", f"/api/notebooks/{notebook_id}/context", json=data
         )
+        return result if isinstance(result, dict) else {}
 
     # Sources API methods
-    def get_sources(self, notebook_id: Optional[str] = None) -> List[Dict]:
+    def get_sources(self, notebook_id: Optional[str] = None) -> List[Dict[Any, Any]]:
         """Get all sources with optional notebook filtering."""
         params = {}
         if notebook_id:
             params["notebook_id"] = notebook_id
-        return self._make_request("GET", "/api/sources", params=params)
+        result = self._make_request("GET", "/api/sources", params=params)
+        return result if isinstance(result, list) else [result]
 
     def create_source(
         self,
-        notebook_id: str,
-        source_type: str,
+        notebook_id: Optional[str] = None,
+        notebooks: Optional[List[str]] = None,
+        source_type: str = "text",
         url: Optional[str] = None,
         file_path: Optional[str] = None,
         content: Optional[str] = None,
@@ -289,14 +318,24 @@ class APIClient:
         transformations: Optional[List[str]] = None,
         embed: bool = False,
         delete_source: bool = False,
-    ) -> Dict:
+        async_processing: bool = False,
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new source."""
         data = {
-            "notebook_id": notebook_id,
             "type": source_type,
             "embed": embed,
             "delete_source": delete_source,
+            "async_processing": async_processing,
         }
+
+        # Handle backward compatibility for notebook_id vs notebooks
+        if notebooks:
+            data["notebooks"] = notebooks
+        elif notebook_id:
+            data["notebook_id"] = notebook_id
+        else:
+            raise ValueError("Either notebook_id or notebooks must be provided")
+
         if url:
             data["url"] = url
         if file_path:
@@ -308,36 +347,41 @@ class APIClient:
         if transformations:
             data["transformations"] = transformations
 
-        return self._make_request("POST", "/api/sources", json=data)
+        return self._make_request("POST", "/api/sources/json", json=data)
 
-    def get_source(self, source_id: str) -> Dict:
+    def get_source(self, source_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific source."""
         return self._make_request("GET", f"/api/sources/{source_id}")
 
-    def update_source(self, source_id: str, **updates) -> Dict:
+    def get_source_status(self, source_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
+        """Get processing status for a source."""
+        return self._make_request("GET", f"/api/sources/{source_id}/status")
+
+    def update_source(self, source_id: str, **updates) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update a source."""
         return self._make_request("PUT", f"/api/sources/{source_id}", json=updates)
 
-    def delete_source(self, source_id: str) -> Dict:
+    def delete_source(self, source_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a source."""
         return self._make_request("DELETE", f"/api/sources/{source_id}")
 
     # Insights API methods
-    def get_source_insights(self, source_id: str) -> List[Dict]:
+    def get_source_insights(self, source_id: str) -> List[Dict[Any, Any]]:
         """Get all insights for a specific source."""
-        return self._make_request("GET", f"/api/sources/{source_id}/insights")
+        result = self._make_request("GET", f"/api/sources/{source_id}/insights")
+        return result if isinstance(result, list) else [result]
 
-    def get_insight(self, insight_id: str) -> Dict:
+    def get_insight(self, insight_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific insight."""
         return self._make_request("GET", f"/api/insights/{insight_id}")
 
-    def delete_insight(self, insight_id: str) -> Dict:
+    def delete_insight(self, insight_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete a specific insight."""
         return self._make_request("DELETE", f"/api/insights/{insight_id}")
 
     def save_insight_as_note(
         self, insight_id: str, notebook_id: Optional[str] = None
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Convert an insight to a note."""
         data = {}
         if notebook_id:
@@ -348,7 +392,7 @@ class APIClient:
 
     def create_source_insight(
         self, source_id: str, transformation_id: str, model_id: Optional[str] = None
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new insight for a source by running a transformation."""
         data = {"transformation_id": transformation_id}
         if model_id:
@@ -358,11 +402,12 @@ class APIClient:
         )
 
     # Episode Profiles API methods
-    def get_episode_profiles(self) -> List[Dict]:
+    def get_episode_profiles(self) -> List[Dict[Any, Any]]:
         """Get all episode profiles."""
-        return self._make_request("GET", "/api/episode-profiles")
+        result = self._make_request("GET", "/api/episode-profiles")
+        return result if isinstance(result, list) else [result]
 
-    def get_episode_profile(self, profile_name: str) -> Dict:
+    def get_episode_profile(self, profile_name: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific episode profile by name."""
         return self._make_request("GET", f"/api/episode-profiles/{profile_name}")
 
@@ -377,7 +422,7 @@ class APIClient:
         transcript_model: str = "",
         default_briefing: str = "",
         num_segments: int = 5,
-    ) -> Dict:
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Create a new episode profile."""
         data = {
             "name": name,
@@ -392,11 +437,11 @@ class APIClient:
         }
         return self._make_request("POST", "/api/episode-profiles", json=data)
 
-    def update_episode_profile(self, profile_id: str, **updates) -> Dict:
+    def update_episode_profile(self, profile_id: str, **updates) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Update an episode profile."""
         return self._make_request("PUT", f"/api/episode-profiles/{profile_id}", json=updates)
 
-    def delete_episode_profile(self, profile_id: str) -> Dict:
+    def delete_episode_profile(self, profile_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Delete an episode profile."""
         return self._make_request("DELETE", f"/api/episode-profiles/{profile_id}")
 

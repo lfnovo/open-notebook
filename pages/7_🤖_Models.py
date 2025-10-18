@@ -8,6 +8,7 @@ import streamlit as st
 from esperanto import AIFactory
 
 from api.models_service import models_service
+from open_notebook.domain.models import Model
 from pages.components.model_selector import model_selector
 from pages.stream_app.utils import setup_page
 
@@ -74,7 +75,7 @@ esperanto_available_providers = AIFactory.get_available_providers()
 
 st.subheader("Provider Availability")
 st.markdown(
-    "Below, you'll find all AI providers supported and their current availability status. To enable more providers, you need to setup some of their ENV Variables. Please check [the documentation](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) for instructions on how to do so."
+    "Below, you'll find all AI providers supported and their current availability status. To enable more providers, you need to setup some of their ENV Variables. Please check [the documentation](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ai-models.md) for instructions on how to do so."
 )
 available_providers, unavailable_providers = check_available_providers()
 with st.expander("Available Providers"):
@@ -114,7 +115,7 @@ def add_model_form(model_type, container_key, configured_providers):
         model_name = st.text_input(
             "Model Name",
             key=f"name_{model_type}_{container_key}",
-            help="gpt-4o-mini, claude, gemini, llama3, etc. For azure, use the deployment_name as the model_name",
+            help="gpt-5-mini, claude, gemini, llama3, etc. For azure, use the deployment_name as the model_name",
         )
 
         if st.form_submit_button("Add Model"):
@@ -155,7 +156,7 @@ def handle_default_selection(
 
 
 # Group models by type
-models_by_type = {
+models_by_type: dict[str, list[Model]] = {
     "language": [],
     "embedding": [],
     "text_to_speech": [],
@@ -168,7 +169,7 @@ for model in all_models:
 
 
 st.markdown("""
-**Model Management Guide:** For optimal performance, refer to [Which model to choose?](https://github.com/lfnovo/open-notebook/blob/main/docs/models.md) 
+**Model Management Guide:** For optimal performance, refer to [Which model to choose?](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ai-models.md)
 You can test models in the [Transformations](Transformations) page.
 """)
 
@@ -189,8 +190,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_lang_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No language models configured")
 
@@ -226,7 +228,7 @@ with st.container(border=True):
             default_models.default_transformation_model,
             "Used for summaries, insights, etc.",
             "language",
-            "Can use cheaper models: gpt-4o-mini, llama3, gemma3, etc.",
+            "Can use cheaper models: gpt-5-mini, llama3, gemma3, etc.",
         )
 
         handle_default_selection(
@@ -268,8 +270,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_emb_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No embedding models configured")
 
@@ -308,8 +311,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_tts_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No text-to-speech models configured")
 
@@ -346,8 +350,9 @@ with st.container(border=True):
                     if st.button(
                         "🗑️", key=f"delete_stt_{model.id}", help="Delete model"
                     ):
-                        models_service.delete_model(model.id)
-                        st.rerun()
+                        if model.id:
+                            models_service.delete_model(model.id)
+                            st.rerun()
         else:
             st.info("No speech-to-text models configured")
 

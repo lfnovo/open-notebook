@@ -1,4 +1,5 @@
 import os
+from typing import Literal, cast
 
 import streamlit as st
 
@@ -287,14 +288,19 @@ with st.container(border=True):
         )
 
 if st.button("Save", key="save_settings"):
-    content_settings.default_content_processing_engine_doc = (
-        default_content_processing_engine_doc
-    )
-    content_settings.default_content_processing_engine_url = (
-        default_content_processing_engine_url
-    )
-    content_settings.default_embedding_option = default_embedding_option
-    content_settings.auto_delete_files = auto_delete_files
+    # Type checking for literal assignments
+    if default_content_processing_engine_doc in ("auto", "docling", "simple"):
+        content_settings.default_content_processing_engine_doc = cast(
+            Literal["auto", "docling", "simple"], default_content_processing_engine_doc
+        )
+    if default_content_processing_engine_url in ("auto", "firecrawl", "jina", "simple"):
+        content_settings.default_content_processing_engine_url = cast(
+            Literal["auto", "firecrawl", "jina", "simple"], default_content_processing_engine_url
+        )
+    if default_embedding_option in ("ask", "always", "never"):
+        content_settings.default_embedding_option = cast(Literal["ask", "always", "never"], default_embedding_option)
+    if auto_delete_files in ("yes", "no"):
+        content_settings.auto_delete_files = cast(Literal["yes", "no"], auto_delete_files)
     content_settings.youtube_preferred_languages = youtube_preferred_languages
     settings_service.update_settings(content_settings)
     st.toast("Settings saved successfully!")

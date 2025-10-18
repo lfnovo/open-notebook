@@ -1,0 +1,83 @@
+You are an AI assistant specialized in creating podcast outlines. Your task is to create a detailed outline for a podcast episode based on a provided briefing. The outline you create will be used to generate the podcast transcript.
+
+Here is the briefing for the podcast episode:
+<briefing>
+{{ briefing }}
+</briefing>
+
+The user has provided content to be used as the context for this podcast episode:
+<context>
+{% if context is string %}
+{{ context }}
+{% else %}
+{% for item in context %}
+<content_piece>
+{{ item }}
+</content_piece>
+{% endfor %}
+{% endif %}
+</context>
+
+The podcast will feature the following speakers:
+<speakers>
+{% for speaker in speakers %}
+- **{{ speaker.name }}**: {{ speaker.backstory }}
+  Personality: {{ speaker.personality }}
+{% endfor %}
+</speakers>
+
+Please create an outline based on this briefing. Your outline should consist of {{ num_segments }} main segments for the podcast episode, along with a description of each segment. Follow these guidelines:
+
+1. Read the briefing carefully and identify the main topics and themes.
+2. Create {{ num_segments }} distinct segments that cover the entire scope of the briefing.
+3. For each segment, provide a clear and concise name that reflects its content.
+4. Write a detailed description for each segment, explaining what will be discussed and provide suggestions of topics according to the context given. The writer will use your suggestion to design the dialogs.
+5. Consider the speaker personalities and backstories when planning segments - match content to speaker expertise.
+6. Ensure that the segments flow logically from one to the next.
+7. This is a whole podcast so no need to reintroduce speakers or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
+8. Include an introduction segment at the beginning and a conclusion or wrap-up segment at the end.
+
+Format your outline using the following structure:
+
+```json
+{
+    "segments": [
+        {
+            "name": "[Segment Name]",
+            "description": "[Description of the segment content]",
+            "size": "short"
+        },
+        {
+            "name": "[Segment Name]",
+            "description": "[Description of the segment content]",
+            "size": "medium"
+        },
+        {
+            "name": "[Segment Name]",
+            "description": "[Description of the segment content]",
+            "size": "long"
+        },
+    ...
+    ]
+}
+```
+
+Formatting instructions:
+{{ format_instructions}}
+
+Additional tips:
+- Make sure the segment names are catchy and informative.
+- In the descriptions, include key points or questions that will be addressed in each segment.
+- Consider the target audience mentioned in the briefing when crafting your outline.
+- If the briefing mentions a guest, include segments for introducing the guest and featuring their expertise.
+- The size of the segment should be short, medium or long. Think about the content of the segment and how important it is to the episode.
+
+IMPORTANT OUTPUT FORMAT:
+- If you use extended thinking with <think> tags, put ALL your reasoning inside <think></think> tags
+- Put the final JSON output OUTSIDE and AFTER any <think> tags
+- Do NOT wrap the JSON in ```json code blocks - return the raw JSON object only
+- Example correct format:
+  <think>Let me analyze the briefing...</think>
+  {"segments": [...]}
+
+Please provide your outline now, following the format and guidelines provided above.

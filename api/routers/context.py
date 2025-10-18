@@ -1,12 +1,10 @@
-from typing import Dict, List, Union
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import ContextRequest, ContextResponse
-from open_notebook.domain.base import ObjectModel
 from open_notebook.domain.notebook import Note, Notebook, Source
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import InvalidInputError
 from open_notebook.utils import token_count
 
 router = APIRouter()
@@ -21,7 +19,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        context_data = {"note": [], "source": []}
+        context_data: dict[str, list[dict[str, str]]] = {"note": [], "source": []}
         total_content = ""
 
         # Process context configuration if provided
@@ -41,7 +39,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
 
                     try:
                         source = await Source.get(full_source_id)
-                    except Exception as e:
+                    except Exception:
                         continue
 
                     if "insights" in status:

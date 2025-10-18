@@ -2,7 +2,7 @@ import os
 from typing import Optional
 
 from fastapi import HTTPException, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -25,6 +25,10 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         
         # Skip authentication for excluded paths
         if request.url.path in self.excluded_paths:
+            return await call_next(request)
+        
+        # Skip authentication for CORS preflight requests (OPTIONS)
+        if request.method == "OPTIONS":
             return await call_next(request)
         
         # Check authorization header
@@ -66,7 +70,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
 security = HTTPBearer(auto_error=False)
 
 
-def check_api_password(credentials: HTTPAuthorizationCredentials = None) -> bool:
+def check_api_password(credentials: Optional[HTTPAuthorizationCredentials] = None) -> bool:
     """
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.

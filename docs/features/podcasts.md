@@ -197,10 +197,31 @@ Each speaker profile includes:
 - **Batch Processing**: Automated generation workflows
 
 ### Advanced Configurations
+
+#### **Performance Tuning**
 - **Segment Structure**: Custom conversation organization
 - **Timing Control**: Precise episode length management
 - **Topic Weighting**: Emphasis on specific content areas
 - **Personality Mixing**: Complex speaker interaction patterns
+
+#### **TTS Concurrency Control**
+Configure parallel audio generation to optimize performance and avoid provider rate limits:
+
+```bash
+# Environment variable configuration
+export TTS_BATCH_SIZE=3  # Number of concurrent TTS requests (default: 5)
+```
+
+**Recommended Settings by Provider:**
+- **OpenAI TTS**: `TTS_BATCH_SIZE=5` (default, handles high concurrency well)
+- **ElevenLabs**: `TTS_BATCH_SIZE=2` (strict rate limits, reduce for stability)
+- **Google TTS**: `TTS_BATCH_SIZE=4` (moderate concurrency tolerance)
+- **Custom/Local TTS**: `TTS_BATCH_SIZE=1` (depends on hardware/setup)
+
+**Performance Trade-offs:**
+- **Higher values (4-5)**: Faster podcast generation, higher provider load
+- **Lower values (1-2)**: Slower generation, more reliable for rate-limited providers
+- **Optimal setting**: Balance between speed and provider stability
 
 ## 🛠️ Troubleshooting Common Issues
 
@@ -214,6 +235,18 @@ Each speaker profile includes:
 - **Problem**: TTS or LLM API limits exceeded
 - **Solution**: Check API quotas and upgrade plans if needed
 - **Prevention**: Monitor usage and set up billing alerts
+
+#### **TTS Concurrency Issues**
+- **Problem**: TTS provider rate limiting or concurrent request failures
+- **Solution**: Configure TTS batch size to reduce parallel audio generation
+- **Environment Variable**: `TTS_BATCH_SIZE=2` (default: 5)
+- **Usage**: Lower values reduce provider load but increase generation time
+```bash
+# Reduce concurrent TTS requests for providers with strict limits
+export TTS_BATCH_SIZE=2
+# or
+export TTS_BATCH_SIZE=1  # Most conservative, slowest
+```
 
 #### **Voice Configuration Errors**
 - **Problem**: Specific voice not available or misconfigured

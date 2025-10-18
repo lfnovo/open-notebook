@@ -59,7 +59,7 @@ uv sync
 docker run -d \
   --name surrealdb-dev \
   -p 8000:8000 \
-  surrealdb/surrealdb:latest \
+  surrealdb/surrealdb:v1-latest \
   start --log trace --user root --pass root memory
 ```
 
@@ -98,14 +98,17 @@ LOG_LEVEL=DEBUG
 ENABLE_ANALYTICS=false
 ```
 
-### Step 5: Database Migration
+### Step 5: Frontend Setup
 
-Run the database migrations to set up the schema:
+Install frontend dependencies:
 
 ```bash
-# Run migrations
-uv run python -m open_notebook.database.migrate
+cd frontend
+npm install
+cd ..
 ```
+
+> **Note**: Database migrations now run automatically when the API starts. No manual migration step is required.
 
 ### Step 6: Start the Application
 
@@ -120,7 +123,7 @@ This starts:
 - **SurrealDB** (if not already running)
 - **FastAPI backend** on port 5055
 - **Background worker** for async tasks
-- **Streamlit frontend** on port 8502
+- **React frontend** on port 8502
 
 #### Option B: Individual Services
 
@@ -133,8 +136,8 @@ uv run python api/main.py
 # Terminal 2: Start the background worker
 uv run python -m open_notebook.worker
 
-# Terminal 3: Start the Streamlit UI
-uv run streamlit run app_home.py
+# Terminal 3: Start the React frontend
+cd frontend && npm run dev
 ```
 
 ## 🔧 Development Workflow
@@ -146,11 +149,13 @@ open-notebook/
 ├── api/                    # FastAPI backend
 │   ├── routers/           # API routes
 │   └── main.py           # API entry point
+├── frontend/              # React frontend (Next.js)
+│   ├── src/              # React components and pages
+│   └── public/           # Static assets
 ├── open_notebook/         # Core application
 │   ├── domain/           # Business logic
 │   ├── database/         # Database layer
 │   └── graphs/           # LangGraph workflows
-├── pages/                 # Streamlit pages
 ├── prompts/              # Jinja2 templates
 ├── docs/                 # Documentation
 └── tests/                # Test files
@@ -262,7 +267,7 @@ make docker-build-single-dev
 docker run -p 8502:8502 \
   -v ./notebook_data:/app/data \
   -v ./surreal_data:/mydata \
-  open_notebook:latest
+  open_notebook:v1-latest
 ```
 
 ### Production Build
@@ -310,14 +315,17 @@ uv run python api/main.py --debug
 #### Frontend Issues
 
 ```bash
-# Check Streamlit version
-uv run streamlit --version
+# Check Node.js and npm versions
+node --version
+npm --version
 
-# Clear Streamlit cache
-uv run streamlit cache clear
+# Reinstall frontend dependencies
+cd frontend
+rm -rf node_modules package-lock.json
+npm install
 
-# Run with debug logging
-uv run streamlit run app_home.py --logger.level=debug
+# Start frontend in development mode
+npm run dev
 ```
 
 ### Debugging Tools
@@ -342,13 +350,13 @@ Create `.vscode/launch.json`:
       }
     },
     {
-      "name": "Streamlit",
-      "type": "python",
+      "name": "React Frontend",
+      "type": "node",
       "request": "launch",
-      "module": "streamlit",
-      "args": ["run", "app_home.py"],
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}/frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "console": "integratedTerminal"
     }
   ]
 }
@@ -430,7 +438,7 @@ test: add tests for notebook creation
 
 ### Areas for Contribution
 
-- **Frontend Development** - React-based UI to replace Streamlit
+- **Frontend Development** - Modern React/Next.js UI improvements
 - **Backend Features** - API endpoints, new functionality
 - **AI Integrations** - New model providers, better prompts
 - **Documentation** - Guides, tutorials, API docs
@@ -449,7 +457,7 @@ test: add tests for notebook creation
 
 - **[SurrealDB Documentation](https://surrealdb.com/docs)** - Database queries and schema
 - **[FastAPI Documentation](https://fastapi.tiangolo.com/)** - API framework
-- **[Streamlit Documentation](https://docs.streamlit.io/)** - UI framework
+- **[Next.js Documentation](https://nextjs.org/docs)** - React framework
 - **[LangChain Documentation](https://python.langchain.com/)** - AI workflows
 
 ### Getting Help
@@ -489,17 +497,14 @@ pre-commit autoupdate
 
 ### Database Migrations
 
-When database schema changes:
+Database migrations now run automatically when the API starts. When you need to create new migrations:
 
 ```bash
-# Create new migration
-uv run python -m open_notebook.database.migrate create "description"
+# Create new migration file
+# Add your migration to migrations/ folder with incremental number
 
-# Apply migrations
-uv run python -m open_notebook.database.migrate up
-
-# Rollback migration
-uv run python -m open_notebook.database.migrate down
+# Migrations are automatically applied on API startup
+uv run python api/main.py
 ```
 
 ---

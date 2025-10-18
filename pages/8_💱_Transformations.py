@@ -25,7 +25,7 @@ with transformations_tab:
     st.markdown(
         "Transformations are prompts that will be used by the LLM to process a source and extract insights, summaries, etc. "
     )
-    default_prompts: DefaultPrompts = DefaultPrompts()
+    default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
     with st.expander("**⚙️ Default Transformation Prompt**"):
         default_prompts.transformation_instructions = st.text_area(
             "Default Transformation Prompt",
@@ -138,11 +138,15 @@ with playground_tab:
 
     if st.button("Run"):
         if transformation and model and input_text:
-            result = transformations_service.execute_transformation(
-                transformation_id=transformation.id,
-                input_text=input_text,
-                model_id=model.id
-            )
-            st.markdown(result["output"])
+            if not model.id:
+                st.error("Selected model has no ID")
+            else:
+                result = transformations_service.execute_transformation(
+                    transformation_id=transformation.id,
+                    input_text=input_text,
+                    model_id=model.id
+                )
+                if isinstance(result, dict):
+                    st.markdown(result.get("output", ""))
         else:
             st.warning("Please select a transformation, model, and enter some text.")

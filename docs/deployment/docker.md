@@ -7,11 +7,25 @@ This guide covers everything you need to deploy Open Notebook using Docker, from
 ## 📋 What You'll Get
 
 Open Notebook is a powerful AI-powered research and note-taking tool that:
+- Modern Next.js/React interface for a smooth user experience
 - Helps you organize research across multiple notebooks
 - Lets you chat with your documents using AI
-- Supports 15+ AI providers (OpenAI, Anthropic, Google, Ollama, and more)
+- Supports 16+ AI providers (OpenAI, Anthropic, Google, Ollama, and more)
 - Creates AI-generated podcasts from your content
 - Works with PDFs, web links, videos, audio files, and more
+
+## 📦 Docker Image Registries
+
+Open Notebook images are available from two registries:
+
+- **GitHub Container Registry (GHCR)**: `ghcr.io/lfnovo/open-notebook` - Hosted on GitHub, no Docker Hub account needed
+- **Docker Hub**: `lfnovo/open_notebook` - Traditional Docker registry
+
+Both registries contain identical images. Choose based on your preference:
+- Use **GHCR** if you prefer GitHub-native workflows or Docker Hub is blocked
+- Use **Docker Hub** if you're already using it or prefer the traditional registry
+
+All examples in this guide use Docker Hub (`lfnovo/open_notebook`), but you can replace it with `ghcr.io/lfnovo/open-notebook` anywhere.
 
 ## 🚀 Quick Start (5 Minutes)
 
@@ -69,9 +83,10 @@ OpenAI provides everything you need to get started:
    ```yaml
    services:
      open_notebook:
-       image: lfnovo/open_notebook:latest-single
+       image: lfnovo/open_notebook:v1-latest-single
        ports:
-         - "8502:8502"
+         - "8502:8502"  # Frontend
+         - "5055:5055"  # API
        environment:
          - OPENAI_API_KEY=your_openai_key_here
        volumes:
@@ -102,8 +117,18 @@ OpenAI provides everything you need to get started:
    ```
 
 5. **Access the application**:
-   - Open your browser to: http://localhost:8502
+   - **Next.js UI**: http://localhost:8502 - Modern, responsive interface
+   - **API Documentation**: http://localhost:5055/docs - Full REST API access
    - You should see the Open Notebook interface!
+
+**Alternative: Using GHCR**
+To use GitHub Container Registry instead, simply replace the image name:
+```yaml
+services:
+  open_notebook:
+    image: ghcr.io/lfnovo/open-notebook:v1-latest-single
+    # ... rest of configuration stays the same
+```
 
 ### Step 4: Configure Your Models
 
@@ -112,9 +137,9 @@ Before creating your first notebook, configure your AI models:
 1. Click **"⚙️ Settings"** in the sidebar
 2. Click **"🤖 Models"** tab
 3. Configure these recommended models:
-   - **Language Model**: `gpt-4o-mini` (cost-effective)
+   - **Language Model**: `gpt-5-mini` (cost-effective)
    - **Embedding Model**: `text-embedding-3-small` (required for search)
-   - **Text-to-Speech**: `tts-1` (for podcast generation)
+   - **Text-to-Speech**: `gpt-4o-mini-tts` (for podcast generation)
    - **Speech-to-Text**: `whisper-1` (for audio transcription)
 4. Click **"Save"** after configuring all models
 
@@ -136,17 +161,18 @@ For production deployments or development, use the multi-container setup:
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "8000:8000"
     command: start --log trace --user root --pass root memory
     restart: always
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
+    # Or use: ghcr.io/lfnovo/open-notebook:v1-latest
     ports:
-      - "8502:8502"
-      - "5055:5055"
+      - "8502:8502"  # Next.js Frontend
+      - "5055:5055"  # REST API
     env_file:
       - ./docker.env
     volumes:
@@ -198,7 +224,7 @@ OpenRouter gives you access to virtually every AI model through a single API:
    ```bash
    docker compose restart
    ```
-4. **Configure models** in Settings → Models
+4. **Configure models** in Models
 
 **Recommended OpenRouter models**:
 - `anthropic/claude-3-haiku` - Fast and cost-effective
@@ -229,7 +255,7 @@ Run AI models locally for complete privacy:
    ```
    Replace `192.168.1.100` with your actual IP.
 
-6. **Restart and configure** models in Settings → Models
+6. **Restart and configure** models in Models
 
 ### Other Providers
 
@@ -273,7 +299,7 @@ This protects both the web interface and API endpoints.
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "127.0.0.1:8000:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -287,7 +313,7 @@ services:
           cpus: "0.5"
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "127.0.0.1:8502:8502"
       - "127.0.0.1:5055:5055"
@@ -464,7 +490,7 @@ ENABLE_ANALYTICS=false
 version: '3.8'
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "8000:8000"
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -478,10 +504,10 @@ services:
       retries: 3
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
-      - "8502:8502"
-      - "5055:5055"
+      - "8502:8502"  # Next.js Frontend
+      - "5055:5055"  # REST API
     env_file:
       - ./docker.env
     volumes:
@@ -491,7 +517,7 @@ services:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8502/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:5055/health"]
       interval: 30s
       timeout: 10s
       retries: 3

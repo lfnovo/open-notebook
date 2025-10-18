@@ -17,11 +17,6 @@ except ImportError as e:
     raise ValueError("podcast_creator library not available")
 
 
-# Add debugging to see if this module is being imported
-logger.info("=== IMPORTING podcast_commands.py ===")
-logger.info("Registering podcast commands...")
-
-
 def full_model_dump(model):
     if isinstance(model, BaseModel):
         return model.model_dump()
@@ -176,20 +171,17 @@ async def generate_podcast_command(
         logger.error(f"Podcast generation failed: {e}")
         logger.exception(e)
 
+        # Check for specific GPT-5 extended thinking issue
+        error_msg = str(e)
+        if "Invalid json output" in error_msg or "Expecting value" in error_msg:
+            # This often happens with GPT-5 models that use extended thinking (<think> tags)
+            # and put all output inside thinking blocks
+            error_msg += (
+                "\n\nNOTE: This error commonly occurs with GPT-5 models that use extended thinking. "
+                "The model may be putting all output inside <think> tags, leaving nothing to parse. "
+                "Try using gpt-4o, gpt-4o-mini, or gpt-4-turbo instead in your episode profile."
+            )
+
         return PodcastGenerationOutput(
-            success=False, processing_time=processing_time, error_message=str(e)
+            success=False, processing_time=processing_time, error_message=error_msg
         )
-
-
-# Add debugging to confirm commands are registered
-logger.info("✅ Podcast commands registered: generate_podcast")
-logger.info("=== FINISHED IMPORTING podcast_commands.py ===")
-
-# Let's also verify what the registry contains
-try:
-    from surreal_commands import registry
-
-    commands = registry.list_commands()
-    logger.info(f"Registry after podcast import: {commands}")
-except Exception as e:
-    logger.error(f"Error checking registry: {e}")

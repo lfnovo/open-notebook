@@ -9,7 +9,7 @@ This document covers the most frequently encountered issues when installing, con
 **Problem**: Error message "Port 8502 is already in use" or similar port conflicts.
 
 **Symptoms**:
-- Cannot start Streamlit UI
+- Cannot start React frontend
 - Error messages about address already in use
 - Services failing to bind to ports
 
@@ -26,8 +26,8 @@ This document covers the most frequently encountered issues when installing, con
 
 2. **Use different ports**:
    ```bash
-   # For Streamlit UI
-   uv run --env-file .env streamlit run app_home.py --server.port=8503
+   # For React frontend
+   uv run --env-file .env cd frontend && npm run dev --server.port=8503
    
    # For Docker deployment, modify docker-compose.yml
    ports:
@@ -35,7 +35,7 @@ This document covers the most frequently encountered issues when installing, con
    ```
 
 3. **Common port conflicts**:
-   - Port 8502 (Streamlit): Often used by other Streamlit apps
+   - Port 8502 (Next.js): Often used by other Next.js apps
    - Port 5055 (API): May conflict with other web services
    - Port 8000 (SurrealDB): May conflict with other databases
 
@@ -222,7 +222,7 @@ This document covers the most frequently encountered issues when installing, con
 3. **Verify model availability**:
    ```bash
    # Check model names in settings
-   # Use gpt-4o-mini instead of gpt-4-mini
+   # Use gpt-5-mini instead of gpt-4-mini
    # Use claude-3-haiku-20240307 instead of claude-3-haiku
    ```
 
@@ -260,7 +260,7 @@ This document covers the most frequently encountered issues when installing, con
    ```
 
 3. **Optimize model usage**:
-   - Use smaller models (gpt-4o-mini vs gpt-4)
+   - Use smaller models (gpt-5-mini vs gpt-5)
    - Reduce context window size
    - Process fewer documents at once
 
@@ -269,7 +269,7 @@ This document covers the most frequently encountered issues when installing, con
    # Clear Python cache
    find . -name "__pycache__" -type d -exec rm -rf {} +
    
-   # Clear Streamlit cache
+   # Clear Next.js cache
    rm -rf ~/.streamlit/cache/
    ```
 
@@ -327,7 +327,7 @@ This document covers the most frequently encountered issues when installing, con
 
 1. **Check file size limits**:
    ```bash
-   # Default Streamlit limit is 200MB
+   # Default Next.js limit is 200MB
    # Large files may timeout
    ```
 
@@ -384,7 +384,7 @@ This document covers the most frequently encountered issues when installing, con
    - Reduce notebook size
 
 4. **Use faster models**:
-   - gpt-4o-mini instead of gpt-4
+   - gpt-5-mini instead of gpt-5
    - claude-3-haiku instead of claude-3-opus
    - Local models for simple tasks
 
@@ -491,7 +491,7 @@ This document covers the most frequently encountered issues when installing, con
 1. **Check model names**:
    ```bash
    # Use exact model names from provider documentation
-   # OpenAI: gpt-4o-mini, gpt-4o, text-embedding-3-small
+   # OpenAI: gpt-5-mini, gpt-5, text-embedding-3-small
    # Anthropic: claude-3-haiku-20240307, claude-3-sonnet-20240229
    ```
 
@@ -501,7 +501,7 @@ This document covers the most frequently encountered issues when installing, con
    - Test with simple requests first
 
 3. **Reset model configuration**:
-   - Go to Settings → Models
+   - Go to Models
    - Clear all configurations
    - Reconfigure with known working models
 

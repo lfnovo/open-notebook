@@ -74,24 +74,27 @@ with ask_tab:
         st.session_state["ask_results"]["question"] = question
         st.session_state["ask_results"]["answer"] = None
 
-        with st.spinner("Processing your question..."):
-            try:
-                result = search_service.ask_knowledge_base(
-                    question=question,
-                    strategy_model=strategy_model.id,
-                    answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id,
-                )
+        if not strategy_model.id or not answer_model.id or not final_answer_model.id:
+            placeholder.error("One or more selected models has no ID")
+        else:
+            with st.spinner("Processing your question..."):
+                try:
+                    result = search_service.ask_knowledge_base(
+                        question=question,
+                        strategy_model=strategy_model.id,
+                        answer_model=answer_model.id,
+                        final_answer_model=final_answer_model.id,
+                    )
 
-                if result.get("answer"):
-                    st.session_state["ask_results"]["answer"] = result["answer"]
-                    with placeholder.container(border=True):
-                        st.markdown(convert_source_references(result["answer"]))
-                else:
-                    placeholder.error("No answer generated")
+                    if isinstance(result, dict) and result.get("answer"):
+                        st.session_state["ask_results"]["answer"] = result["answer"]
+                        with placeholder.container(border=True):
+                            st.markdown(convert_source_references(result["answer"]))
+                    else:
+                        placeholder.error("No answer generated")
 
-            except Exception as e:
-                placeholder.error(f"Error processing question: {str(e)}")
+                except Exception as e:
+                    placeholder.error(f"Error processing question: {str(e)}")
 
     if st.session_state["ask_results"].get("answer"):
         with st.container(border=True):

@@ -1,9 +1,9 @@
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
+from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
@@ -128,7 +128,7 @@ class SourceInsight(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def save_as_note(self, notebook_id: str = None) -> Any:
+    async def save_as_note(self, notebook_id: Optional[str] = None) -> Any:
         source = await self.get_source()
         note = Note(
             title=f"{self.insight_type} from source {source.title}",
@@ -146,6 +146,71 @@ class Source(ObjectModel):
     title: Optional[str] = None
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
+    command: Optional[Union[str, RecordID]] = Field(
+        default=None, description="Link to surreal-commands processing job"
+    )
+
+    class Config:
+        arbitrary_types_allowed = True
+
+    @field_validator("command", mode="before")
+    @classmethod
+    def parse_command(cls, value):
+        """Parse command field to ensure RecordID format"""
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    @field_validator("id", mode="before")
+    @classmethod
+    def parse_id(cls, value):
+        """Parse id field to handle both string and RecordID inputs"""
+        if value is None:
+            return None
+        if isinstance(value, RecordID):
+            return str(value)
+        return str(value) if value else None
+
+    async def get_status(self) -> Optional[str]:
+        """Get the processing status of the associated command"""
+        if not self.command:
+            return None
+
+        try:
+            from surreal_commands import get_command_status
+
+            status = await get_command_status(str(self.command))
+            return status.status if status else "unknown"
+        except Exception as e:
+            logger.warning(f"Failed to get command status for {self.command}: {e}")
+            return "unknown"
+
+    async def get_processing_progress(self) -> Optional[Dict[str, Any]]:
+        """Get detailed processing information for the associated command"""
+        if not self.command:
+            return None
+
+        try:
+            from surreal_commands import get_command_status
+
+            status_result = await get_command_status(str(self.command))
+            if not status_result:
+                return None
+
+            # Extract execution metadata if available
+            result = getattr(status_result, "result", None)
+            execution_metadata = result.get("execution_metadata", {}) if isinstance(result, dict) else {}
+
+            return {
+                "status": status_result.status,
+                "started_at": execution_metadata.get("started_at"),
+                "completed_at": execution_metadata.get("completed_at"),
+                "error": getattr(status_result, "error_message", None),
+                "result": result,
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get command progress for {self.command}: {e}")
+            return None
 
     async def get_context(
         self, context_size: Literal["short", "long"] = "short"
@@ -202,6 +267,17 @@ class Source(ObjectModel):
         EMBEDDING_MODEL = await model_manager.get_embedding_model()
 
         try:
+            # DELETE EXISTING EMBEDDINGS FIRST - Makes vectorize() idempotent
+            delete_result = await repo_query(
+                "DELETE source_embedding WHERE source = $source_id",
+                {"source_id": ensure_record_id(self.id)}
+            )
+            deleted_count = len(delete_result) if delete_result else 0
+            if deleted_count > 0:
+                logger.info(f"Deleted {deleted_count} existing embeddings for source {self.id}")
+            else:
+                logger.debug(f"No existing embeddings found for source {self.id}")
+
             if not self.full_text:
                 logger.warning(f"No text to vectorize for source {self.id}")
                 return
@@ -224,6 +300,8 @@ class Source(ObjectModel):
             ) -> Tuple[int, List[float], str]:
                 logger.debug(f"Processing chunk {idx}/{chunk_count}")
                 try:
+                    if EMBEDDING_MODEL is None:
+                        raise ValueError("EMBEDDING_MODEL is not configured")
                     embedding = (await EMBEDDING_MODEL.aembed([chunk]))[0]
                     cleaned_content = chunk
                     logger.debug(f"Successfully processed chunk {idx}")
@@ -294,6 +372,16 @@ class Source(ObjectModel):
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
             raise  # DatabaseOperationError(e)
 
+    def _prepare_save_data(self) -> dict:
+        """Override to ensure command field is always RecordID format for database"""
+        data = super()._prepare_save_data()
+
+        # Ensure command field is RecordID format if not None
+        if data.get("command") is not None:
+            data["command"] = ensure_record_id(data["command"])
+
+        return data
+
 
 class Note(ObjectModel):
     table_name: ClassVar[str] = "note"
@@ -335,11 +423,17 @@ class Note(ObjectModel):
 class ChatSession(ObjectModel):
     table_name: ClassVar[str] = "chat_session"
     title: Optional[str] = None
+    model_override: Optional[str] = None
 
     async def relate_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
         return await self.relate("refers_to", notebook_id)
+
+    async def relate_to_source(self, source_id: str) -> Any:
+        if not source_id:
+            raise InvalidInputError("Source ID must be provided")
+        return await self.relate("refers_to", source_id)
 
 
 async def text_search(
@@ -348,14 +442,14 @@ async def text_search(
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        results = await repo_query(
+        search_results = await repo_query(
             """
             select *
             from fn::text_search($keyword, $results, $source, $note)
             """,
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)
@@ -373,8 +467,10 @@ async def vector_search(
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         EMBEDDING_MODEL = await model_manager.get_embedding_model()
+        if EMBEDDING_MODEL is None:
+            raise ValueError("EMBEDDING_MODEL is not configured")
         embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
-        results = await repo_query(
+        search_results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
             """,
@@ -386,7 +482,7 @@ async def vector_search(
                 "minimum_score": minimum_score,
             },
         )
-        return results
+        return search_results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")
         logger.exception(e)

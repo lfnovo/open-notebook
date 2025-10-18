@@ -12,9 +12,9 @@ For immediate setup, use one of these configurations:
 export OPENAI_API_KEY=your_key_here
 
 # Configure these models in Settings:
-# Chat: gpt-4o-mini
-# Tools: gpt-4o  
-# Transformations: gpt-4o-mini
+# Chat: gpt-5-mini
+# Tools: gpt-5  
+# Transformations: gpt-5-mini
 # Embedding: text-embedding-3-small
 # Speech-to-Text: whisper-1
 # Text-to-Speech: tts-1
@@ -25,7 +25,7 @@ export OPENAI_API_KEY=your_key_here
 # Environment variables
 export OPENAI_API_KEY=your_key
 export GEMINI_API_KEY=your_key
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 
 # Recommended configuration in settings covered below
 ```
@@ -80,20 +80,20 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 
 **💰 Cost Considerations**
 - **Free**: Ollama models (run locally)
-- **Budget**: OpenAI GPT-4o-mini, Gemini Flash models
-- **Premium**: Claude 3.5 Sonnet, GPT-4o, Grok-3
+- **Budget**: OpenAI gpt-5-mini, Gemini Flash models
+- **Premium**: Claude 3.5 Sonnet, gpt-5, Grok-3
 
 **🎯 Quality Factors**
 - **Reasoning**: Claude 3.5 Sonnet, Grok-3, DeepSeek-R1
-- **Tool Calling**: GPT-4o, Claude 3.5 Sonnet, Grok-3
+- **Tool Calling**: gpt-5, Claude 3.5 Sonnet, Grok-3
 - **Large Context**: Gemini models (up to 2M tokens)
 - **Speed**: Groq models, Ollama local models
 
 **🔧 Special Features**
 - **Reasoning Models**: Show transparent thinking process
 - **Multilingual**: Gemini, Claude, GPT-4
-- **Code Generation**: Claude 3.5 Sonnet, GPT-4o
-- **Creative Writing**: Claude, GPT-4o, Grok
+- **Code Generation**: Claude 3.5 Sonnet, gpt-5
+- **Creative Writing**: Claude, gpt-5, Grok
 
 ## Provider Deep Dive
 
@@ -131,7 +131,7 @@ export OPENAI_API_KEY=your_api_key_here
 ```
 
 **Recommended Models**
-- **Language**: `gpt-4o-mini`, `gpt-4o`
+- **Language**: `gpt-5-mini`, `gpt-5`
 - **TTS**: `tts-1`, `gpt-4o-mini-tts`
 - **STT**: `whisper-1`
 - **Embedding**: `text-embedding-3-small`
@@ -180,8 +180,8 @@ export ANTHROPIC_API_KEY=your_api_key_here
 # Install Ollama locally
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# Set base URL (if running remotely)
-export OLLAMA_BASE_URL=http://localhost:11434
+# Set API base (if running remotely)
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 **Recommended Models**
@@ -198,6 +198,8 @@ export OLLAMA_BASE_URL=http://localhost:11434
 - Requires local hardware resources
 - Limited model variety compared to cloud providers
 - No TTS/STT capabilities
+
+> **📖 Need detailed Ollama setup help?** Check our comprehensive [Ollama Setup Guide](ollama.md) for network configuration, Docker deployment, troubleshooting, and optimization tips.
 
 ---
 
@@ -390,13 +392,13 @@ Open Notebook fully supports **reasoning models** that show their transparent th
 # Environment Variables
 export OPENAI_API_KEY=your_key
 export GEMINI_API_KEY=your_key
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 | Model Default | Recommended Model | Provider |
 |---------------|-------------------|----------|
-| Chat Model | `gpt-4o-mini` | OpenAI |
-| Tools Model | `gpt-4o` | OpenAI |
+| Chat Model | `gpt-5-mini` | OpenAI |
+| Tools Model | `gpt-5` | OpenAI |
 | Transformations | `ministral-8b-latest` | Mistral |
 | Large Context | `gemini-2.0-flash` | Google |
 | Embedding | `text-embedding-3-small` | OpenAI |
@@ -413,7 +415,7 @@ export OLLAMA_BASE_URL=http://localhost:11434
 ```bash
 # Environment Variables
 export OPENAI_API_KEY=your_key  # For STT/TTS only
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 ```
 
 | Model Default | Recommended Model | Provider |
@@ -423,7 +425,7 @@ export OLLAMA_BASE_URL=http://localhost:11434
 | Transformations | `gemma3` | Ollama |
 | Large Context | `qwen3` | Ollama |
 | Embedding | `mxbai-embed-large` | Ollama |
-| Text-to-Speech | `tts-1` | OpenAI |
+| Text-to-Speech | `gpt-4o-mini-tts` | OpenAI |
 | Speech-to-Text | `whisper-1` | OpenAI |
 
 **Monthly Cost Estimate**: $5-15 (only for audio services)
@@ -467,12 +469,12 @@ export OPENAI_API_KEY=your_key
 
 | Model Default | Recommended Model | Provider |
 |---------------|-------------------|----------|
-| Chat Model | `gpt-4o-mini` | OpenAI |
-| Tools Model | `gpt-4o` | OpenAI |
-| Transformations | `gpt-4o-mini` | OpenAI |
-| Large Context | `gpt-4o` | OpenAI |
+| Chat Model | `gpt-5-mini` | OpenAI |
+| Tools Model | `gpt-5` | OpenAI |
+| Transformations | `gpt-5-mini` | OpenAI |
+| Large Context | `gpt-5` | OpenAI |
 | Embedding | `text-embedding-3-small` | OpenAI |
-| Text-to-Speech | `tts-1` | OpenAI |
+| Text-to-Speech | `gpt-4o-mini-tts` | OpenAI |
 | Speech-to-Text | `whisper-1` | OpenAI |
 
 **Monthly Cost Estimate**: $30-80 for moderate usage
@@ -503,7 +505,7 @@ export ELEVENLABS_API_KEY=your_key
 export VOYAGE_API_KEY=your_key
 
 # Local/Cloud Infrastructure
-export OLLAMA_BASE_URL=http://localhost:11434
+export OLLAMA_API_BASE=http://localhost:11434
 
 # Azure OpenAI
 export AZURE_OPENAI_API_KEY=your_key
@@ -534,7 +536,7 @@ docker run -d \
   -e OPENAI_API_KEY=your_key \
   -e GEMINI_API_KEY=your_key \
   -e ANTHROPIC_API_KEY=your_key \
-  lfnovo/open_notebook:latest-single
+  lfnovo/open_notebook:v1-latest-single
 ```
 
 ### 3. Model Configuration
@@ -581,8 +583,8 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama pull qwen3
 ollama pull mxbai-embed-large
 
-# Set base URL if remote
-export OLLAMA_BASE_URL=http://your-server:11434
+# Set API base if remote
+export OLLAMA_API_BASE=http://your-server:11434
 ```
 
 #### ElevenLabs
@@ -652,12 +654,12 @@ Use different models for different complexity levels:
 
 ```
 Simple Tasks (70% of usage):
-- Chat: gpt-4o-mini or qwen3 (Ollama)
+- Chat: gpt-5-mini or qwen3 (Ollama)
 - Transformations: ministral-8b-latest
 
 Complex Tasks (25% of usage):
 - Analysis: claude-3-5-sonnet-latest
-- Tool calling: gpt-4o
+- Tool calling: gpt-5
 
 Specialized Tasks (5% of usage):
 - Large context: gemini-2.0-flash

@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "0.3.3"
+version = "1.0.0"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -69,6 +69,7 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pre-commit>=4.1.0",
+    "types-requests>=2.32.4.20250913",
     "watchdog>=6.0.0",
 ]
 
@@ -82,3 +83,14 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Streamlit files need nest_asyncio.apply() before imports
+"app_home.py" = ["E402"]
+"pages/**/*.py" = ["E402"]
+
+[tool.mypy]
+# Exclude Streamlit UI pages from type checking
+[[tool.mypy.overrides]]
+module = "pages.*"
+ignore_errors = true

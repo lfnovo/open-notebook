@@ -17,11 +17,6 @@ except ImportError as e:
     raise ValueError("podcast_creator library not available")
 
 
-# Add debugging to see if this module is being imported
-logger.info("=== IMPORTING podcast_commands.py ===")
-logger.info("Registering podcast commands...")
-
-
 def full_model_dump(model):
     if isinstance(model, BaseModel):
         return model.model_dump()
@@ -179,17 +174,3 @@ async def generate_podcast_command(
         return PodcastGenerationOutput(
             success=False, processing_time=processing_time, error_message=str(e)
         )
-
-
-# Add debugging to confirm commands are registered
-logger.info("✅ Podcast commands registered: generate_podcast")
-logger.info("=== FINISHED IMPORTING podcast_commands.py ===")
-
-# Let's also verify what the registry contains
-try:
-    from surreal_commands import registry
-
-    commands = registry.list_commands()
-    logger.info(f"Registry after podcast import: {commands}")
-except Exception as e:
-    logger.error(f"Error checking registry: {e}")

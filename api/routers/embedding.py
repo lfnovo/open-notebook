@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
+from api.command_service import CommandService
 from api.models import EmbedRequest, EmbedResponse
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note, Source
@@ -28,35 +29,63 @@ async def embed_content(embed_request: EmbedRequest):
                 status_code=400, detail="Item type must be either 'source' or 'note'"
             )
 
-        # Get the item and embed it
-        if item_type == "source":
-            source_item = await Source.get(item_id)
-            if not source_item:
-                raise HTTPException(status_code=404, detail="Source not found")
+        # Branch based on processing mode
+        if embed_request.async_processing:
+            # ASYNC PATH: Submit command for background processing
+            logger.info(f"Using async processing for {item_type} {item_id}")
 
-            # Check if already embedded
-            if await source_item.get_embedded_chunks() > 0:
-                return EmbedResponse(
-                    success=True,
-                    message="Source is already embedded",
-                    item_id=item_id,
-                    item_type=item_type,
+            try:
+                # Import commands to ensure they're registered
+                import commands.embedding_commands  # noqa: F401
+
+                # Submit command
+                command_id = await CommandService.submit_command_job(
+                    "open_notebook",  # app name
+                    "embed_single_item",  # command name
+                    {"item_id": item_id, "item_type": item_type},
                 )
 
-            # Perform embedding
-            await source_item.vectorize()
-            message = "Source embedded successfully"
+                logger.info(f"Submitted async embedding command: {command_id}")
 
-        elif item_type == "note":
-            note_item = await Note.get(item_id)
-            if not note_item:
-                raise HTTPException(status_code=404, detail="Note not found")
+                return EmbedResponse(
+                    success=True,
+                    message="Embedding queued for background processing",
+                    item_id=item_id,
+                    item_type=item_type,
+                    command_id=command_id,
+                )
 
-            await note_item.vectorize()
+            except Exception as e:
+                logger.error(f"Failed to submit async embedding command: {e}")
+                raise HTTPException(
+                    status_code=500, detail=f"Failed to queue embedding: {str(e)}"
+                )
 
-        return EmbedResponse(
-            success=True, message=message, item_id=item_id, item_type=item_type
-        )
+        else:
+            # SYNC PATH: Execute synchronously (existing behavior)
+            logger.info(f"Using sync processing for {item_type} {item_id}")
+
+            # Get the item and embed it
+            if item_type == "source":
+                source_item = await Source.get(item_id)
+                if not source_item:
+                    raise HTTPException(status_code=404, detail="Source not found")
+
+                # Perform embedding (vectorize is now idempotent - safe to call multiple times)
+                await source_item.vectorize()
+                message = "Source embedded successfully"
+
+            elif item_type == "note":
+                note_item = await Note.get(item_id)
+                if not note_item:
+                    raise HTTPException(status_code=404, detail="Note not found")
+
+                await note_item.save()  # Auto-embeds via ObjectModel.save()
+                message = "Note embedded successfully"
+
+            return EmbedResponse(
+                success=True, message=message, item_id=item_id, item_type=item_type, command_id=None
+            )
 
     except HTTPException:
         raise

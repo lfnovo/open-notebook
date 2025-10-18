@@ -61,8 +61,8 @@ def notebook_header(current_notebook: Notebook):
 
 def notebook_page(current_notebook: Notebook):
     # Guarantees that we have an entry for this notebook in the session state
-    if current_notebook.id not in st.session_state:
-        st.session_state[current_notebook.id] = {"notebook": current_notebook}
+    if current_notebook.id and current_notebook.id not in st.session_state:
+        st.session_state[current_notebook.id] = {"notebook": current_notebook}  # type: ignore[index]
 
     # sets up the active session
     current_session = setup_stream_state(
@@ -110,12 +110,14 @@ if "current_notebook_id" not in st.session_state:
     st.session_state["current_notebook_id"] = None
 
 # todo: get the notebook, check if it exists and if it's archived
-if st.session_state["current_notebook_id"]:
-    current_notebook: Notebook = notebook_service.get_notebook(st.session_state["current_notebook_id"])
+current_nb_id = st.session_state["current_notebook_id"]  # type: ignore[index]
+if current_nb_id:
+    current_notebook: Notebook | None = notebook_service.get_notebook(current_nb_id)
     if not current_notebook:
         st.error("Notebook not found")
         st.stop()
-    notebook_page(current_notebook)
+    # Type narrowing: st.stop() exits, so current_notebook is guaranteed to be Notebook here
+    notebook_page(current_notebook)  # type: ignore[arg-type]
     st.stop()
 
 st.title("📒 My Notebooks")

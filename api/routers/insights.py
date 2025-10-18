@@ -1,11 +1,10 @@
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
-from open_notebook.domain.notebook import Note, SourceInsight
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.domain.notebook import SourceInsight
+from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -22,8 +21,8 @@ async def get_insight(insight_id: str):
         source = await insight.get_source()
         
         return SourceInsightResponse(
-            id=insight.id,
-            source_id=source.id,
+            id=insight.id or "",
+            source_id=source.id or "",
             insight_type=insight.insight_type,
             content=insight.content,
             created=str(insight.created),
@@ -66,7 +65,7 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         note = await insight.save_as_note(request.notebook_id)
         
         return NoteResponse(
-            id=note.id,
+            id=note.id or "",
             title=note.title,
             content=note.content,
             note_type=note.note_type,

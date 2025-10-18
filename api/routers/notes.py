@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -29,7 +29,7 @@ async def get_notes(
         
         return [
             NoteResponse(
-                id=note.id,
+                id=note.id or "",
                 title=note.title,
                 content=note.content,
                 note_type=note.note_type,
@@ -54,16 +54,25 @@ async def create_note(note_data: NoteCreate):
         if not title and note_data.note_type == "ai" and note_data.content:
             from open_notebook.graphs.prompt import graph as prompt_graph
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
-            result = await prompt_graph.ainvoke({
-                "input_text": note_data.content,
-                "prompt": prompt
-            })
+            result = await prompt_graph.ainvoke(
+                {  # type: ignore[arg-type]
+                    "input_text": note_data.content,
+                    "prompt": prompt
+                }
+            )
             title = result.get("output", "Untitled Note")
         
+        # Validate note_type
+        note_type: Optional[Literal["human", "ai"]] = None
+        if note_data.note_type in ("human", "ai"):
+            note_type = note_data.note_type  # type: ignore[assignment]
+        elif note_data.note_type is not None:
+            raise HTTPException(status_code=400, detail="note_type must be 'human' or 'ai'")
+
         new_note = Note(
             title=title,
             content=note_data.content,
-            note_type=note_data.note_type,
+            note_type=note_type,
         )
         await new_note.save()
         
@@ -76,7 +85,7 @@ async def create_note(note_data: NoteCreate):
             await new_note.add_to_notebook(note_data.notebook_id)
         
         return NoteResponse(
-            id=new_note.id,
+            id=new_note.id or "",
             title=new_note.title,
             content=new_note.content,
             note_type=new_note.note_type,
@@ -101,7 +110,7 @@ async def get_note(note_id: str):
             raise HTTPException(status_code=404, detail="Note not found")
         
         return NoteResponse(
-            id=note.id,
+            id=note.id or "",
             title=note.title,
             content=note.content,
             note_type=note.note_type,
@@ -129,12 +138,15 @@ async def update_note(note_id: str, note_update: NoteUpdate):
         if note_update.content is not None:
             note.content = note_update.content
         if note_update.note_type is not None:
-            note.note_type = note_update.note_type
-        
+            if note_update.note_type in ("human", "ai"):
+                note.note_type = note_update.note_type  # type: ignore[assignment]
+            else:
+                raise HTTPException(status_code=400, detail="note_type must be 'human' or 'ai'")
+
         await note.save()
-        
+
         return NoteResponse(
-            id=note.id,
+            id=note.id or "",
             title=note.title,
             content=note.content,
             note_type=note.note_type,

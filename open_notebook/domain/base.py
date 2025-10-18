@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, cast
+from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union, cast
 
 from loguru import logger
 from pydantic import BaseModel, ValidationError, field_validator, model_validator
@@ -131,6 +131,7 @@ class ObjectModel(BaseModel):
                         else []
                     )
 
+            repo_result: Union[List[Dict[str, Any]], Dict[str, Any]]
             if self.id is None:
                 data["created"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 repo_result = await repo_create(self.__class__.table_name, data)
@@ -145,7 +146,9 @@ class ObjectModel(BaseModel):
                     self.__class__.table_name, self.id, data
                 )
             # Update the current instance with the result
-            for key, value in repo_result[0].items():
+            # repo_result is a list of dictionaries
+            result_list: List[Dict[str, Any]] = repo_result if isinstance(repo_result, list) else [repo_result]
+            for key, value in result_list[0].items():
                 if hasattr(self, key):
                     if isinstance(getattr(self, key), BaseModel):
                         setattr(self, key, type(getattr(self, key))(**value))

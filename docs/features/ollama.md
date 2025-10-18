@@ -105,7 +105,7 @@ export OLLAMA_API_BASE=http://ollama:11434
 version: '3.8'
 services:
   open-notebook:
-    image: lfnovo/open_notebook:latest-single
+    image: lfnovo/open_notebook:v1-latest-single
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -118,7 +118,7 @@ services:
       - ollama
 
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:v1-latest
     ports:
       - "11434:11434"
     volumes:
@@ -328,7 +328,7 @@ export OLLAMA_API_BASE=http://localhost:8080
 **1. Host networking on Linux:**
 ```bash
 # Use host networking if host.docker.internal doesn't work
-docker run --network host lfnovo/open_notebook:latest-single
+docker run --network host lfnovo/open_notebook:v1-latest-single
 export OLLAMA_API_BASE=http://localhost:11434
 ```
 
@@ -448,7 +448,7 @@ ollama create my-research-model -f Modelfile
 ```
 
 **Use in Open Notebook:**
-1. Go to Settings → Models
+1. Go to Models
 2. Add new model: `my-research-model`
 3. Set as default for specific tasks
 

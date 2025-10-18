@@ -2,13 +2,11 @@ import asyncio
 
 import humanize
 import streamlit as st
-from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
+from api.chat_service import chat_service
 from api.episode_profiles_service import episode_profiles_service
 from api.podcast_service import PodcastService
-from open_notebook.domain.notebook import ChatSession, Notebook
-from open_notebook.graphs.chat import graph as chat_graph
 
 # from open_notebook.plugins.podcasts import PodcastConfig
 from open_notebook.utils import parse_thinking_content, token_count
@@ -21,11 +19,9 @@ from .note import make_note_from_chat
 
 
 # todo: build a smarter, more robust context manager function
-def build_context(notebook_id):
-    from api.context_service import context_service
-
+async def build_context(notebook_id):
     # Convert context_config format for API
-    context_config = {"sources": {}, "notes": {}}
+    context_config: dict[str, dict[str, str]] = {"sources": {}, "notes": {}}
 
     for id, status in st.session_state[notebook_id]["context_config"].items():
         if not id:
@@ -41,35 +37,34 @@ def build_context(notebook_id):
             context_config["notes"][item_id] = status
 
     # Get context via API
-    result = context_service.get_notebook_context(
+    result = await chat_service.build_context(
         notebook_id=notebook_id, context_config=context_config
     )
 
     # Store in session state for compatibility
-    st.session_state[notebook_id]["context"] = {
-        "note": result["notes"],
-        "source": result["sources"],
-    }
+    st.session_state[notebook_id]["context"] = result["context"]
 
     return st.session_state[notebook_id]["context"]
 
 
-def execute_chat(txt_input, context, current_session):
-    current_state = st.session_state[current_session.id]
-    current_state["messages"] += [txt_input]
-    current_state["context"] = context
-    result = chat_graph.invoke(
-        input=current_state,
-        config=RunnableConfig(configurable={"thread_id": current_session.id}),
+async def execute_chat(txt_input, context, current_session):
+    # Execute chat via API
+    result = await chat_service.execute_chat(
+        session_id=current_session["id"],
+        message=txt_input,
+        context=context
     )
-    current_session.save()
+    
+    # Update session state with API response
+    st.session_state[current_session["id"]]["messages"] = result["messages"]
+    
     return result
 
 
-def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
-    context = build_context(notebook_id=current_notebook.id)
+def chat_sidebar(current_notebook, current_session):
+    context = asyncio.run(build_context(notebook_id=current_notebook.id))
     tokens = token_count(
-        str(context) + str(st.session_state[current_session.id]["messages"])
+        str(context) + str(st.session_state[current_session["id"]]["messages"])
     )
     chat_tab, podcast_tab = st.tabs(["Chat", "Podcast"])
     with st.expander(f"Context ({tokens} tokens), {len(str(context))} chars"):
@@ -164,20 +159,19 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
             st.page_link("pages/5_🎙️_Podcasts.py", label="🎙️ Go to Podcasts")
     with chat_tab:
         with st.expander(
-            f"**Session:** {current_session.title} - {humanize.naturaltime(current_session.updated)}"
+            f"**Session:** {current_session['title']} - {humanize.naturaltime(current_session['updated'])}"
         ):
             new_session_name = st.text_input(
                 "Current Session",
                 key="new_session_name",
-                value=current_session.title,
+                value=current_session["title"],
             )
             c1, c2 = st.columns(2)
             if c1.button("Rename", key="rename_session"):
-                current_session.title = new_session_name
-                current_session.save()
+                asyncio.run(chat_service.update_session(current_session["id"], new_session_name))
                 st.rerun()
             if c2.button("Delete", key="delete_session_1"):
-                current_session.delete()
+                asyncio.run(chat_service.delete_session(current_session["id"]))
                 st.session_state[current_notebook.id]["active_session"] = None
                 st.rerun()
             st.divider()
@@ -191,46 +185,51 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                 new_session = create_session_for_notebook(
                     notebook_id=current_notebook.id, session_name=new_session_name
                 )
-                st.session_state[current_notebook.id]["active_session"] = new_session.id
+                st.session_state[current_notebook.id]["active_session"] = new_session["id"]
                 st.rerun()
             st.divider()
-            sessions = asyncio.run(current_notebook.get_chat_sessions())
+            sessions = asyncio.run(chat_service.get_sessions(current_notebook.id))
             if len(sessions) > 1:
                 st.markdown("**Other Sessions:**")
                 for session in sessions:
-                    if session.id == current_session.id:
+                    if session["id"] == current_session["id"]:
                         continue
 
                     st.markdown(
-                        f"{session.title} - {humanize.naturaltime(session.updated)}"
+                        f"{session['title']} - {humanize.naturaltime(session['updated'])}"
                     )
-                    if st.button(label="Load", key=f"load_session_{session.id}"):
+                    if st.button(label="Load", key=f"load_session_{session['id']}"):
                         st.session_state[current_notebook.id]["active_session"] = (
-                            session.id
+                            session["id"]
                         )
                         st.rerun()
         with st.container(border=True):
             request = st.chat_input("Enter your question")
             # removing for now since it's not multi-model capable right now
             if request:
-                response = execute_chat(
+                response = asyncio.run(execute_chat(
                     txt_input=request,
                     context=context,
                     current_session=current_session,
-                )
-                st.session_state[current_session.id]["messages"] = response["messages"]
+                ))
+                st.session_state[current_session["id"]]["messages"] = response["messages"]
 
-            for msg in st.session_state[current_session.id]["messages"][::-1]:
-                if msg.type not in ["human", "ai"]:
+            for msg in st.session_state[current_session["id"]]["messages"][::-1]:
+                # Handle both domain objects and dict responses from API
+                msg_type = msg.get("type") if isinstance(msg, dict) else msg.type
+                msg_content = msg.get("content") if isinstance(msg, dict) else msg.content
+                msg_id = msg.get("id") if isinstance(msg, dict) else getattr(msg, 'id', 'unknown')
+                
+                if msg_type not in ["human", "ai"]:
                     continue
-                if not msg.content:
+                if not msg_content:
                     continue
 
-                with st.chat_message(name=msg.type):
-                    if msg.type == "ai":
+                with st.chat_message(name=msg_type):
+                    if msg_type == "ai":
                         # Parse thinking content for AI messages
                         thinking_content, cleaned_content = parse_thinking_content(
-                            msg.content
+                            msg_content
                         )
 
                         # Show thinking content in expander if present
@@ -242,17 +241,17 @@ def chat_sidebar(current_notebook: Notebook, current_session: ChatSession):
                         if cleaned_content:
                             st.markdown(convert_source_references(cleaned_content))
                         elif (
-                            msg.content
+                            msg_content
                         ):  # Fallback to original if cleaning resulted in empty content
-                            st.markdown(convert_source_references(msg.content))
+                            st.markdown(convert_source_references(msg_content))
 
                         # New Note button for AI messages
-                        if st.button("💾 New Note", key=f"render_save_{msg.id}"):
+                        if st.button("💾 New Note", key=f"render_save_{msg_id}"):
                             make_note_from_chat(
-                                content=msg.content,
+                                content=msg_content,
                                 notebook_id=current_notebook.id,
                             )
                             st.rerun()
                     else:
                         # Human messages - display normally
-                        st.markdown(convert_source_references(msg.content))
+                        st.markdown(convert_source_references(msg_content))

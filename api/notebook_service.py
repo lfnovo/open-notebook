@@ -35,7 +35,8 @@ class NotebookService:
     
     def get_notebook(self, notebook_id: str) -> Optional[Notebook]:
         """Get a specific notebook."""
-        nb_data = api_client.get_notebook(notebook_id)
+        response = api_client.get_notebook(notebook_id)
+        nb_data = response if isinstance(response, dict) else response[0]
         nb = Notebook(
             name=nb_data["name"],
             description=nb_data["description"],
@@ -45,10 +46,11 @@ class NotebookService:
         nb.created = nb_data["created"]
         nb.updated = nb_data["updated"]
         return nb
-    
+
     def create_notebook(self, name: str, description: str = "") -> Notebook:
         """Create a new notebook."""
-        nb_data = api_client.create_notebook(name, description)
+        response = api_client.create_notebook(name, description)
+        nb_data = response if isinstance(response, dict) else response[0]
         nb = Notebook(
             name=nb_data["name"],
             description=nb_data["description"],
@@ -66,7 +68,8 @@ class NotebookService:
             "description": notebook.description,
             "archived": notebook.archived,
         }
-        nb_data = api_client.update_notebook(notebook.id, **updates)
+        response = api_client.update_notebook(notebook.id or "", **updates)
+        nb_data = response if isinstance(response, dict) else response[0]
         # Update the notebook object with the response
         notebook.name = nb_data["name"]
         notebook.description = nb_data["description"]
@@ -76,7 +79,7 @@ class NotebookService:
     
     def delete_notebook(self, notebook: Notebook) -> bool:
         """Delete a notebook."""
-        api_client.delete_notebook(notebook.id)
+        api_client.delete_notebook(notebook.id or "")
         return True
 
 

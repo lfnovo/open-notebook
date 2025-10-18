@@ -388,32 +388,35 @@ export function AddSourceDialog({
 
             <div className="flex gap-2">
               {currentStep > 1 && (
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={handlePrevStep}
                 >
                   Back
                 </Button>
               )}
-              
-              {currentStep < 3 ? (
-                <Button 
+
+              {/* Show Next button on steps 1 and 2, styled as outline/secondary */}
+              {currentStep < 3 && (
+                <Button
                   type="button"
+                  variant="outline"
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >
                   Next
                 </Button>
-              ) : (
-                <Button 
-                  type="submit" 
-                  disabled={createSource.isPending || !selectedType}
-                  className="min-w-[120px]"
-                >
-                  {createSource.isPending ? 'Creating...' : 'Add Source'}
-                </Button>
               )}
+
+              {/* Show Done button on all steps, styled as primary */}
+              <Button
+                type="submit"
+                disabled={!currentStepValid || createSource.isPending}
+                className="min-w-[120px]"
+              >
+                {createSource.isPending ? 'Creating...' : 'Done'}
+              </Button>
             </div>
           </div>
         </form>

@@ -88,5 +88,7 @@ COPY supervisord.single.conf /etc/supervisor/conf.d/supervisord.conf
 # Create log directories
 RUN mkdir -p /var/log/supervisor
 
+# No default API_URL - the API will auto-detect from incoming requests
+# Users can still override by setting API_URL environment variable if needed
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

@@ -1,12 +1,9 @@
 import axios, { AxiosResponse } from 'axios'
+import { getApiUrl } from '@/lib/config'
 
-// Use relative URL for API calls - Next.js rewrites handle the routing
-// In production (Docker), this will be proxied to the API container
-// In development, Next.js dev server will proxy to localhost:5055
-const API_BASE_URL = '/api'
-
+// API client with runtime-configurable base URL
+// The base URL is fetched from the API config endpoint on first request
 export const apiClient = axios.create({
-  baseURL: API_BASE_URL,
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
@@ -14,8 +11,14 @@ export const apiClient = axios.create({
   withCredentials: false,
 })
 
-// Request interceptor to add auth header
-apiClient.interceptors.request.use((config) => {
+// Request interceptor to add base URL and auth header
+apiClient.interceptors.request.use(async (config) => {
+  // Set the base URL dynamically from runtime config
+  if (!config.baseURL) {
+    const apiUrl = await getApiUrl()
+    config.baseURL = `${apiUrl}/api`
+  }
+
   if (typeof window !== 'undefined') {
     const authStorage = localStorage.getItem('auth-storage')
     if (authStorage) {
@@ -29,7 +32,7 @@ apiClient.interceptors.request.use((config) => {
       }
     }
   }
-  
+
   // Handle FormData vs JSON content types
   if (config.data instanceof FormData) {
     // Remove any Content-Type header to let browser set multipart boundary
@@ -37,7 +40,7 @@ apiClient.interceptors.request.use((config) => {
   } else if (config.method && ['post', 'put', 'patch'].includes(config.method.toLowerCase())) {
     config.headers['Content-Type'] = 'application/json'
   }
-  
+
   return config
 })
 

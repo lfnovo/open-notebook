@@ -133,12 +133,7 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
 }
 
 export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
-  const directAudioUrl = useMemo(
-    () => resolvePodcastAssetUrl(episode.audio_url ?? episode.audio_file),
-    [episode.audio_file, episode.audio_url]
-  )
-
-  const [audioSrc, setAudioSrc] = useState<string | undefined>(directAudioUrl)
+  const [audioSrc, setAudioSrc] = useState<string | undefined>()
   const [audioError, setAudioError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
 
@@ -151,6 +146,9 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
 
     // If backend exposed a protected endpoint, fetch it with auth headers
     const loadProtectedAudio = async () => {
+      // First resolve the audio URL
+      const directAudioUrl = await resolvePodcastAssetUrl(episode.audio_url ?? episode.audio_file)
+
       if (!directAudioUrl || !episode.audio_url) {
         setAudioSrc(directAudioUrl)
         return
@@ -197,7 +195,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
         URL.revokeObjectURL(revokeUrl)
       }
     }
-  }, [directAudioUrl, episode.audio_url])
+  }, [episode.audio_url, episode.audio_file])
 
   const createdLabel = episode.created
     ? formatDistanceToNow(new Date(episode.created), {

@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getApiUrl } from '@/lib/config'
 import {
   PodcastEpisode,
   EpisodeProfile,
@@ -10,9 +11,7 @@ import {
 export type EpisodeProfileInput = Omit<EpisodeProfile, 'id'>
 export type SpeakerProfileInput = Omit<SpeakerProfile, 'id'>
 
-const DEFAULT_API_BASE_URL = 'http://localhost:5055'
-
-export function resolvePodcastAssetUrl(path?: string | null) {
+export async function resolvePodcastAssetUrl(path?: string | null): Promise<string | undefined> {
   if (!path) {
     return undefined
   }
@@ -21,7 +20,7 @@ export function resolvePodcastAssetUrl(path?: string | null) {
     return path
   }
 
-  const base = process.env.NEXT_PUBLIC_API_URL || DEFAULT_API_BASE_URL
+  const base = await getApiUrl()
 
   if (path.startsWith('/')) {
     return `${base}${path}`

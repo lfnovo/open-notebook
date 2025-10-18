@@ -8,6 +8,7 @@ from api.auth import PasswordAuthMiddleware
 from api.routers import (
     auth,
     chat,
+    config,
     context,
     embedding,
     embedding_rebuild,
@@ -79,8 +80,8 @@ app = FastAPI(
 )
 
 # Add password authentication middleware first
-# Exclude /api/auth/status from authentication
-app.add_middleware(PasswordAuthMiddleware, excluded_paths=["/", "/health", "/docs", "/openapi.json", "/redoc", "/api/auth/status"])
+# Exclude /api/auth/status and /api/config from authentication
+app.add_middleware(PasswordAuthMiddleware, excluded_paths=["/", "/health", "/docs", "/openapi.json", "/redoc", "/api/auth/status", "/api/config"])
 
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
@@ -93,6 +94,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(models.router, prefix="/api", tags=["models"])

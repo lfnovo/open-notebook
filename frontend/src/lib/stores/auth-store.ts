@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { getApiUrl } from '@/lib/config'
 
 interface AuthState {
   isAuthenticated: boolean
@@ -35,7 +36,15 @@ export const useAuthStore = create<AuthState>()(
 
       checkAuthRequired: async () => {
         try {
-          const response = await fetch('/api/auth/status')
+          const apiUrl = await getApiUrl()
+          const response = await fetch(`${apiUrl}/api/auth/status`, {
+            cache: 'no-store',
+          })
+
+          if (!response.ok) {
+            throw new Error(`Auth status check failed: ${response.status}`)
+          }
+
           const data = await response.json()
           const required = data.auth_enabled || false
           set({ authRequired: required })
@@ -48,19 +57,30 @@ export const useAuthStore = create<AuthState>()(
           return required
         } catch (error) {
           console.error('Failed to check auth status:', error)
-          // Default to requiring auth if we can't check
-          set({ authRequired: true })
-          return true
+
+          // If it's a network error, set a more helpful error message
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            set({
+              error: 'Unable to connect to server. Please check if the API is running.',
+              authRequired: null  // Don't assume auth is required if we can't connect
+            })
+          } else {
+            // For other errors, default to requiring auth to be safe
+            set({ authRequired: true })
+          }
+
+          // Re-throw the error so the UI can handle it
+          throw error
         }
       },
 
       login: async (password: string) => {
         set({ isLoading: true, error: null })
         try {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'
-          
+          const apiUrl = await getApiUrl()
+
           // Test auth with notebooks endpoint
-          const response = await fetch(`${API_BASE_URL}/api/notebooks`, {
+          const response = await fetch(`${apiUrl}/api/notebooks`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${password}`,
@@ -130,29 +150,29 @@ export const useAuthStore = create<AuthState>()(
       checkAuth: async () => {
         const state = get()
         const { token, lastAuthCheck, isCheckingAuth, isAuthenticated } = state
-        
+
         // If already checking, return current auth state
         if (isCheckingAuth) {
           return isAuthenticated
         }
-        
+
         // If no token, not authenticated
         if (!token) {
           return false
         }
-        
+
         // If we checked recently (within 30 seconds) and are authenticated, skip
         const now = Date.now()
         if (isAuthenticated && lastAuthCheck && (now - lastAuthCheck) < 30000) {
           return true
         }
-        
+
         set({ isCheckingAuth: true })
-        
+
         try {
-          const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5055'
-          
-          const response = await fetch(`${API_BASE_URL}/api/notebooks`, {
+          const apiUrl = await getApiUrl()
+
+          const response = await fetch(`${apiUrl}/api/notebooks`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

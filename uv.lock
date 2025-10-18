@@ -2224,7 +2224,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.0.0a0"
+version = "0.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },

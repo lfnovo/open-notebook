@@ -19,10 +19,11 @@ lint:
 ruff:
 	ruff check . --fix
 
-# buildx config for multi-plataform
+# buildx config for multi-platform
 docker-buildx-prepare:
-	docker buildx create --use --name multi-platform-builder --driver docker-container || \
-	docker buildx use multi-platform-builder
+	@docker buildx inspect multi-platform-builder >/dev/null 2>&1 || \
+		docker buildx create --use --name multi-platform-builder --driver docker-container
+	@docker buildx use multi-platform-builder
 
 # Single-platform build for development (much faster)
 docker-build-dev:
@@ -45,7 +46,7 @@ docker-build-multi-load: docker-buildx-prepare
 		--load \
 		.
 
-# multi-plataform build with buildx (pushes to registry)
+# multi-platform build with buildx (pushes to registry)
 docker-build: docker-buildx-prepare
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
@@ -195,8 +196,20 @@ docker-build-single-latest: docker-buildx-prepare
 # Single-container release (both versioned and latest)
 docker-release-single: docker-build-single docker-build-single-latest
 
-# Release both multi-container and single-container versions
-docker-release-both: docker-release docker-release-single
+# Release both multi-container and single-container versions (versioned only)
+docker-release-both: docker-release docker-build-single
 
 # Release all versions (both multi and single with latest tags)
 docker-release-all-versions: docker-release-all docker-release-single
+
+# === Buildx Cleanup ===
+.PHONY: docker-buildx-clean docker-buildx-reset
+
+docker-buildx-clean:
+	@echo "🧹 Cleaning up buildx builders..."
+	@docker buildx rm multi-platform-builder 2>/dev/null || true
+	@docker ps -a | grep buildx_buildkit | awk '{print $$1}' | xargs -r docker rm -f 2>/dev/null || true
+	@echo "✅ Buildx cleanup complete!"
+
+docker-buildx-reset: docker-buildx-clean docker-buildx-prepare
+	@echo "✅ Buildx reset complete!"

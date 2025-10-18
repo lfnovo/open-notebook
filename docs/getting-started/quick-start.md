@@ -25,7 +25,7 @@ Create a new folder called `open-notebook` and add these two files:
 ```yaml
 services:
   open_notebook:
-    image: lfnovo/open_notebook:latest-single
+    image: lfnovo/open_notebook:v1-latest-single
     ports:
       - "8502:8502"
     env_file:
@@ -43,12 +43,11 @@ services:
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 
 # Database settings (don't change these)
-SURREAL_ADDRESS=localhost
-SURREAL_PORT=8000
-SURREAL_USER=root
-SURREAL_PASS=root
-SURREAL_NAMESPACE=open_notebook
-SURREAL_DATABASE=production
+SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_USER="root"
+SURREAL_PASSWORD="root"
+SURREAL_NAMESPACE="open_notebook"
+SURREAL_DATABASE="production"
 ```
 
 ### Step 2: Start Open Notebook
@@ -70,11 +69,11 @@ docker-compose up -d
 ## Simple Example Workflow
 
 ### 1. Configure AI Models
-- Click **⚙️ Settings** → **🤖 Models**
+- Click **Models** in the sidebar
 - Set these recommended models:
-  - **Language Model**: `gpt-4o-mini`
+  - **Language Model**: `gpt-5-mini`
   - **Embedding Model**: `text-embedding-3-small`
-  - **Text-to-Speech**: `tts-1`
+  - **Text-to-Speech**: `gpt-4o-mini-tts`
   - **Speech-to-Text**: `whisper-1`
 - Click **Save**
 

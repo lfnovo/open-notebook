@@ -1,6 +1,6 @@
 # Single Container Deployment
 
-For users who prefer an all-in-one container solution (e.g., PikaPods, Railway, simple cloud deployments), Open Notebook provides a single-container image that includes all services: SurrealDB, API backend, background worker, and Streamlit UI.
+For users who prefer an all-in-one container solution (e.g., PikaPods, Railway, simple cloud deployments), Open Notebook provides a single-container image that includes all services: SurrealDB, API backend, background worker, and React frontend.
 
 ## 📋 Overview
 
@@ -8,7 +8,7 @@ The single-container deployment packages everything you need:
 - **SurrealDB**: Database service
 - **FastAPI**: REST API backend  
 - **Background Worker**: For podcast generation and transformations
-- **Streamlit**: Web UI interface
+- **Next.js**: Web UI interface
 
 All services are managed by supervisord with proper startup ordering, making it perfect for platforms that prefer single-container deployments.
 
@@ -28,9 +28,9 @@ This is the easiest way to get started with persistent data.
    ```yaml
    services:
      open_notebook_single:
-       image: lfnovo/open_notebook:latest-single
+       image: lfnovo/open_notebook:v1-latest-single
        ports:
-         - "8502:8502"  # Streamlit UI
+         - "8502:8502"  # React frontend
          - "5055:5055"  # REST API
        environment:
          # Required: Add your API keys here
@@ -55,7 +55,7 @@ This is the easiest way to get started with persistent data.
    ```
 
 4. **Access the application**:
-   - Streamlit UI: http://localhost:8502
+   - React frontend: http://localhost:8502
    - REST API: http://localhost:5055
    - API Documentation: http://localhost:5055/docs
 
@@ -73,7 +73,7 @@ docker run -d \
   -e OPENAI_API_KEY=your_openai_key \
   -e ANTHROPIC_API_KEY=your_anthropic_key \
   -e OPEN_NOTEBOOK_PASSWORD=your_secure_password \
-  lfnovo/open_notebook:latest-single
+  lfnovo/open_notebook:v1-latest-single
 ```
 
 ## 🌐 Platform-Specific Deployments
@@ -84,7 +84,7 @@ Perfect for PikaPods one-click deployment:
 
 1. **Use this configuration**:
    ```
-   Image: lfnovo/open_notebook:latest-single
+   Image: lfnovo/open_notebook:v1-latest-single
    Port: 8502
    ```
 
@@ -113,7 +113,7 @@ For Railway deployment:
 ### DigitalOcean App Platform
 
 1. **Create a new app** from Docker Hub
-2. **Use image**: `lfnovo/open_notebook:latest-single`
+2. **Use image**: `lfnovo/open_notebook:v1-latest-single`
 3. **Set environment variables** in the app settings
 4. **Configure persistent storage** for `/app/data` and `/mydata`
 
@@ -171,7 +171,7 @@ For public deployments, **always set a password**:
 OPEN_NOTEBOOK_PASSWORD=your_secure_password
 ```
 
-This protects both the Streamlit UI and REST API with password authentication.
+This protects both the React frontend and REST API with password authentication.
 
 ### Security Best Practices
 
@@ -205,7 +205,7 @@ Services start in this order with proper delays:
 1. **SurrealDB** (5 seconds startup time)
 2. **API Backend** (3 seconds startup time)
 3. **Background Worker** (3 seconds startup time)
-4. **Streamlit UI** (5 seconds startup time)
+4. **React frontend** (5 seconds startup time)
 
 ### Service Monitoring
 

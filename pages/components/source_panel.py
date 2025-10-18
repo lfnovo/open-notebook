@@ -2,9 +2,9 @@ import streamlit as st
 from humanize import naturaltime
 
 from api.insights_service import insights_service
+from api.models_service import ModelsService
 from api.sources_service import SourcesService
 from api.transformations_service import TransformationsService
-from api.models_service import ModelsService
 from pages.stream_app.utils import check_models
 
 # Initialize service instances
@@ -47,14 +47,14 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     if x1.button(
                         "Delete", type="primary", key=f"delete_insight_{insight.id}"
                     ):
-                        insights_service.delete_insight(insight.id)
+                        insights_service.delete_insight(insight.id or "")
                         st.rerun(scope="fragment" if modal else "app")
                         st.toast("Insight deleted")
                     if notebook_id:
                         if x2.button(
                             "Save as Note", icon="📝", key=f"save_note_{insight.id}"
                         ):
-                            insights_service.save_insight_as_note(insight.id, notebook_id)
+                            insights_service.save_insight_as_note(insight.id or "", notebook_id)
                             st.toast("Saved as Note. Refresh the Notebook to see it.")
 
         with c2:
@@ -71,7 +71,7 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                     if st.button("Run"):
                         insights_service.create_source_insight(
                             source_id=source_with_metadata.id,
-                            transformation_id=transformation.id
+                            transformation_id=transformation.id or ""
                         )
                         st.rerun(scope="fragment" if modal else "app")
             else:
@@ -97,7 +97,8 @@ def source_panel(source_id: str, notebook_id=None, modal=False):
                 from api.embedding_service import embedding_service
 
                 result = embedding_service.embed_content(source_with_metadata.id, "source")
-                st.success(result.get("message", "Embedding complete"))
+                result_dict = result if isinstance(result, dict) else result[0] if isinstance(result, list) else {}
+                st.success(result_dict.get("message", "Embedding complete"))
 
             with st.container(border=True):
                 st.caption(

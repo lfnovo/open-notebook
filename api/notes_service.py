@@ -2,7 +2,7 @@
 Notes service layer using API.
 """
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from loguru import logger
 
@@ -35,7 +35,8 @@ class NotesService:
     
     def get_note(self, note_id: str) -> Note:
         """Get a specific note."""
-        note_data = api_client.get_note(note_id)
+        note_response = api_client.get_note(note_id)
+        note_data = note_response if isinstance(note_response, dict) else note_response[0]
         note = Note(
             title=note_data["title"],
             content=note_data["content"],
@@ -54,12 +55,13 @@ class NotesService:
         notebook_id: Optional[str] = None
     ) -> Note:
         """Create a new note."""
-        note_data = api_client.create_note(
+        note_response = api_client.create_note(
             content=content,
             title=title,
             note_type=note_type,
             notebook_id=notebook_id
         )
+        note_data = note_response if isinstance(note_response, dict) else note_response[0]
         note = Note(
             title=note_data["title"],
             content=note_data["content"],
@@ -77,14 +79,15 @@ class NotesService:
             "content": note.content,
             "note_type": note.note_type,
         }
-        note_data = api_client.update_note(note.id, **updates)
-        
+        note_response = api_client.update_note(note.id or "", **updates)
+        note_data = note_response if isinstance(note_response, dict) else note_response[0]
+
         # Update the note object with the response
         note.title = note_data["title"]
         note.content = note_data["content"]
         note.note_type = note_data["note_type"]
         note.updated = note_data["updated"]
-        
+
         return note
     
     def delete_note(self, note_id: str) -> bool:

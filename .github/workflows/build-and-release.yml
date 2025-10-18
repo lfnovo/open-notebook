@@ -118,9 +118,9 @@ jobs:
           push: true
           tags: |
             ${{ needs.extract-version.outputs.ghcr_image }}:${{ needs.extract-version.outputs.version }}
-            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest', needs.extract-version.outputs.ghcr_image) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:v1-latest', needs.extract-version.outputs.ghcr_image) || '' }}
             ${{ needs.extract-version.outputs.has_dockerhub_secrets == 'true' && format('{0}:{1}', needs.extract-version.outputs.dockerhub_image, needs.extract-version.outputs.version) || '' }}
-            ${{ (needs.extract-version.outputs.has_dockerhub_secrets == 'true' && (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease))) && format('{0}:latest', needs.extract-version.outputs.dockerhub_image) || '' }}
+            ${{ (needs.extract-version.outputs.has_dockerhub_secrets == 'true' && (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease))) && format('{0}:v1-latest', needs.extract-version.outputs.dockerhub_image) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache
           cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
 
@@ -171,9 +171,9 @@ jobs:
           push: true
           tags: |
             ${{ needs.extract-version.outputs.ghcr_image }}:${{ needs.extract-version.outputs.version }}-single
-            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:latest-single', needs.extract-version.outputs.ghcr_image) || '' }}
+            ${{ (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease)) && format('{0}:v1-latest-single', needs.extract-version.outputs.ghcr_image) || '' }}
             ${{ needs.extract-version.outputs.has_dockerhub_secrets == 'true' && format('{0}:{1}-single', needs.extract-version.outputs.dockerhub_image, needs.extract-version.outputs.version) || '' }}
-            ${{ (needs.extract-version.outputs.has_dockerhub_secrets == 'true' && (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease))) && format('{0}:latest-single', needs.extract-version.outputs.dockerhub_image) || '' }}
+            ${{ (needs.extract-version.outputs.has_dockerhub_secrets == 'true' && (github.event.inputs.push_latest == 'true' || (github.event_name == 'release' && !github.event.release.prerelease))) && format('{0}:v1-latest-single', needs.extract-version.outputs.dockerhub_image) || '' }}
           cache-from: type=local,src=/tmp/.buildx-cache-single
           cache-to: type=local,dest=/tmp/.buildx-cache-single-new,mode=max
 
@@ -207,12 +207,12 @@ jobs:
           if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
             echo "✅ **Regular (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Regular Latest (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:latest\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Regular v1-Latest (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:v1-latest\`" >> $GITHUB_STEP_SUMMARY
             fi
             if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
               echo "✅ **Regular (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
               if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-                echo "✅ **Regular Latest (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:latest\`" >> $GITHUB_STEP_SUMMARY
+                echo "✅ **Regular v1-Latest (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:v1-latest\`" >> $GITHUB_STEP_SUMMARY
               fi
             fi
           elif [[ "${{ needs.build-regular.result }}" == "skipped" ]]; then
@@ -224,12 +224,12 @@ jobs:
           if [[ "${{ needs.build-single.result }}" == "success" ]]; then
             echo "✅ **Single (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
             if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Single Latest (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:latest-single\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Single v1-Latest (GHCR):** \`${{ needs.extract-version.outputs.ghcr_image }}:v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
             fi
             if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
               echo "✅ **Single (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
               if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-                echo "✅ **Single Latest (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:latest-single\`" >> $GITHUB_STEP_SUMMARY
+                echo "✅ **Single v1-Latest (Docker Hub):** \`${{ needs.extract-version.outputs.dockerhub_image }}:v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
               fi
             fi
           elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then

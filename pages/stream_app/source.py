@@ -1,5 +1,7 @@
+import asyncio
 import os
 from pathlib import Path
+from typing import Any
 
 import streamlit as st
 from humanize import naturaltime
@@ -33,7 +35,7 @@ def add_source(notebook_id):
     source_text = None
     content_settings = settings_service.get_settings()
     source_type = st.radio("Type", ["Link", "Upload", "Text"])
-    req = {}
+    req: dict[str, Any] = {}
     transformations = transformations_service.get_all_transformations()
     if source_type == "Link":
         source_link = st.text_input("Link")
@@ -97,7 +99,7 @@ def add_source(notebook_id):
 
                 # Convert transformations to IDs
                 transformation_ids = (
-                    [t.id for t in apply_transformations]
+                    [t.id for t in apply_transformations if t.id is not None]
                     if apply_transformations
                     else []
                 )
@@ -112,13 +114,14 @@ def add_source(notebook_id):
                         embed=run_embed,
                     )
                 elif source_type == "Upload":
+                    delete_source_val = req.get("delete_source", False)
                     sources_service.create_source(
                         notebook_id=notebook_id,
                         source_type="upload",
                         file_path=req["file_path"],
                         transformations=transformation_ids,
                         embed=run_embed,
-                        delete_source=req.get("delete_source", False),
+                        delete_source=bool(delete_source_val) if not isinstance(delete_source_val, bool) else delete_source_val,
                     )
                 else:  # Text
                     sources_service.create_source(
@@ -180,9 +183,10 @@ def source_list_item(source_id, score=None):
     icon = "🔗"
 
     with st.expander(
-        f"{icon} [{score:.2f}] **{source.title}** {naturaltime(source.updated)}"
+        f"{icon} [{score:.2f}] **{source.title}** {naturaltime(source.updated) if source.updated else 'N/A'}"
     ):
-        for insight in source.insights:
+        source_insights = asyncio.run(source.get_insights())
+        for insight in source_insights:
             st.markdown(f"**{insight.insight_type}**")
             st.write(insight.content)
         if st.button("Edit source", icon="📝", key=f"x_edit_source_{source.id}"):

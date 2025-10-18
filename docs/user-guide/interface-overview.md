@@ -112,7 +112,7 @@ Visual indicators throughout the interface show:
 ## Mobile Responsiveness
 
 ### Responsive Design
-Open Notebook is built with Streamlit, providing:
+Open Notebook is built with Next.js, providing:
 - **Adaptive Layout**: Columns collapse and stack on smaller screens
 - **Touch-Friendly**: Buttons and interactions optimized for mobile devices
 - **Scrollable Interface**: All content accessible through touch scrolling

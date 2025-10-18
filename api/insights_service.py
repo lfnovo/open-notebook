@@ -34,7 +34,8 @@ class InsightsService:
     
     def get_insight(self, insight_id: str) -> SourceInsight:
         """Get a specific insight."""
-        insight_data = api_client.get_insight(insight_id)
+        insight_response = api_client.get_insight(insight_id)
+        insight_data = insight_response if isinstance(insight_response, dict) else insight_response[0]
         insight = SourceInsight(
             insight_type=insight_data["insight_type"],
             content=insight_data["content"],
@@ -42,8 +43,7 @@ class InsightsService:
         insight.id = insight_data["id"]
         insight.created = insight_data["created"]
         insight.updated = insight_data["updated"]
-        # Store source_id as an attribute for easy access
-        insight._source_id = insight_data["source_id"]
+        # Note: source_id from API response is not stored; use await insight.get_source() if needed
         return insight
     
     def delete_insight(self, insight_id: str) -> bool:
@@ -53,7 +53,8 @@ class InsightsService:
     
     def save_insight_as_note(self, insight_id: str, notebook_id: Optional[str] = None) -> Note:
         """Convert an insight to a note."""
-        note_data = api_client.save_insight_as_note(insight_id, notebook_id)
+        note_response = api_client.save_insight_as_note(insight_id, notebook_id)
+        note_data = note_response if isinstance(note_response, dict) else note_response[0]
         note = Note(
             title=note_data["title"],
             content=note_data["content"],
@@ -66,7 +67,8 @@ class InsightsService:
     
     def create_source_insight(self, source_id: str, transformation_id: str, model_id: Optional[str] = None) -> SourceInsight:
         """Create a new insight for a source by running a transformation."""
-        insight_data = api_client.create_source_insight(source_id, transformation_id, model_id)
+        insight_response = api_client.create_source_insight(source_id, transformation_id, model_id)
+        insight_data = insight_response if isinstance(insight_response, dict) else insight_response[0]
         insight = SourceInsight(
             insight_type=insight_data["insight_type"],
             content=insight_data["content"],
@@ -74,7 +76,7 @@ class InsightsService:
         insight.id = insight_data["id"]
         insight.created = insight_data["created"]
         insight.updated = insight_data["updated"]
-        insight._source_id = insight_data["source_id"]
+        # Note: source_id from API response is not stored; use await insight.get_source() if needed
         return insight
 
 

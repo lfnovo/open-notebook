@@ -32,7 +32,7 @@ Open Notebook is built with a modern Python stack using:
 
 - **Backend**: FastAPI with async/await patterns
 - **Database**: SurrealDB for flexible document storage
-- **Frontend**: Streamlit for rapid UI development
+- **Frontend**: Next.js for rapid UI development
 - **AI Integration**: Multi-provider support via Esperanto library
 - **Processing**: LangChain for AI workflows and content processing
 
@@ -44,7 +44,7 @@ Open Notebook is built with a modern Python stack using:
 | **Domain Models** | Core business logic | `open_notebook/domain/` |
 | **Database** | SurrealDB repository pattern | `open_notebook/database/` |
 | **AI Graphs** | LangChain processing workflows | `open_notebook/graphs/` |
-| **Streamlit UI** | Web interface | `pages/` |
+| **React frontend** | Web interface | `pages/` |
 | **Commands** | Background job processing | `commands/` |
 
 ## 🔧 Development Workflow
@@ -118,7 +118,7 @@ We welcome contributions! Here's how to get started:
 
 ### Current Development Priorities
 
-- **React Frontend**: Replacing Streamlit with modern React UI
+- **React Frontend**: Replacing Next.js with modern React UI
 - **Performance**: Async processing and caching improvements
 - **Testing**: Expanded test coverage
 - **Documentation**: API documentation and examples

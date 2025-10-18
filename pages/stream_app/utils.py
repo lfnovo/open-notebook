@@ -1,17 +1,15 @@
 import asyncio
 import re
 from datetime import datetime
-from typing import List, Union
+from typing import Optional
 
 import nest_asyncio
 import streamlit as st
 from loguru import logger
 
 nest_asyncio.apply()
+from api.chat_service import chat_service
 from api.models_service import models_service
-from open_notebook.database.migrate import MigrationManager
-from open_notebook.domain.notebook import ChatSession, Notebook
-from open_notebook.graphs.chat import ThreadState, graph
 from open_notebook.utils import (
     compare_versions,
     get_installed_version,
@@ -57,20 +55,17 @@ def version_sidebar():
             st.caption("⚠️ Could not check for updates (offline or GitHub unavailable)")
 
 
-def create_session_for_notebook(notebook_id: str, session_name: str = None):
+def create_session_for_notebook(notebook_id: str, session_name: Optional[str] = None):
     current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     title = f"Chat Session {current_time}" if not session_name else session_name
-    chat_session = ChatSession(title=title)
-    asyncio.run(chat_session.save())
-    asyncio.run(chat_session.relate_to_notebook(notebook_id))
-    return chat_session
+    session_data = asyncio.run(chat_service.create_session(notebook_id, title))
+    return session_data
 
 
-def setup_stream_state(current_notebook: Notebook) -> ChatSession:
+def setup_stream_state(current_notebook) -> dict:
     """
-    Sets the value of the current session_id for langgraph thread state.
-    If there is no existing thread state for this session_id, it creates a new one.
-    Finally, it acquires the existing state for the session from Langgraph state and sets it in the streamlit session state.
+    Sets the value of the current session_id for API-based chat functionality.
+    Creates or retrieves a chat session and sets up session state.
     """
     assert current_notebook is not None and current_notebook.id, (
         "Current Notebook not selected properly"
@@ -82,13 +77,16 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
     current_session_id = st.session_state[current_notebook.id].get("active_session")
 
     # gets the chat session if provided
-    chat_session: Union[ChatSession, None] = (
-        asyncio.run(ChatSession.get(current_session_id)) if current_session_id else None
-    )
+    chat_session = None
+    if current_session_id:
+        try:
+            chat_session = asyncio.run(chat_service.get_session(current_session_id))
+        except Exception as e:
+            logger.warning(f"Could not retrieve session {current_session_id}: {e}")
 
     # if there is no chat session, create one or get the first one
     if not chat_session:
-        sessions: List[ChatSession] = asyncio.run(current_notebook.get_chat_sessions())
+        sessions = asyncio.run(chat_service.get_sessions(current_notebook.id))
         if not sessions or len(sessions) == 0:
             logger.debug("Creating new chat session")
             chat_session = create_session_for_notebook(current_notebook.id)
@@ -96,41 +94,46 @@ def setup_stream_state(current_notebook: Notebook) -> ChatSession:
             logger.debug("Getting last updated session")
             chat_session = sessions[0]
 
-    if not chat_session or chat_session.id is None:
+    if not chat_session or not chat_session.get("id"):
         raise ValueError("Problem acquiring chat session")
+    
     # sets the active session for the notebook
-    st.session_state[current_notebook.id]["active_session"] = chat_session.id
+    session_id = chat_session["id"]
+    st.session_state[current_notebook.id]["active_session"] = session_id
 
-    # gets the existing state for the session from Langgraph state
-    existing_state = graph.get_state(
-        {"configurable": {"thread_id": chat_session.id}}
-    ).values
-    if not existing_state or len(existing_state.keys()) == 0:
-        st.session_state[chat_session.id] = ThreadState(
-            messages=[], context=None, notebook=None, context_config={}
-        )
-    else:
-        st.session_state[chat_session.id] = existing_state
+    # Initialize session state for messages if not exists
+    if session_id not in st.session_state:
+        # Load the full session with messages from API
+        try:
+            full_session = asyncio.run(chat_service.get_session(session_id))
+            messages = full_session.get("messages", [])
+        except Exception as e:
+            logger.warning(f"Could not load messages for session {session_id}: {e}")
+            messages = []
+            
+        st.session_state[session_id] = {
+            "messages": messages,
+            "context": None,
+            "notebook": None,
+            "context_config": {}
+        }
 
-    st.session_state[current_notebook.id]["active_session"] = chat_session.id
     return chat_session
 
 
 def check_migration():
+    """
+    DEPRECATED: This function is no longer used.
+    Database migrations now run automatically when the API starts up.
+    See api/main.py lifespan handler for the new migration logic.
+
+    This function is kept for backward compatibility but does nothing.
+    """
+    # Migrations are now handled automatically by the API on startup
+    # No user interaction needed
     if "migration_required" not in st.session_state:
-        logger.debug("Running migration check")
-        mm = MigrationManager()
-        if mm.needs_migration:
-            logger.critical("Migration required")
-            st.warning("The Open Notebook database needs a migration to run properly.")
-            if st.button("Run Migration"):
-                mm.run_migration_up()
-                st.success("Migration successful")
-                st.session_state["migration_required"] = False
-                st.rerun()
-            st.stop()
-        else:
-            st.session_state["migration_required"] = False
+        st.session_state["migration_required"] = False
+    pass
 
 
 def check_models(only_mandatory=True, stop_on_error=True):

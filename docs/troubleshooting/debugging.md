@@ -45,7 +45,7 @@ tail -f worker.log
 # Database logs
 docker compose logs surrealdb
 
-# Streamlit logs (stdout)
+# Next.js logs (stdout)
 # Run in foreground to see logs directly
 ```
 
@@ -77,7 +77,7 @@ logging.basicConfig(
 INFO - Starting Open Notebook services
 INFO - Database connection established
 INFO - API server started on port 5055
-INFO - Streamlit UI started on port 8502
+INFO - React frontend started on port 8502
 INFO - Background worker started
 INFO - Model configuration loaded
 INFO - Source processed successfully
@@ -492,7 +492,7 @@ ERROR - Model not found: gpt-4-invalid
 
 ### Additional Context
 - Using OpenAI provider
-- gpt-4o-mini model configured
+- gpt-5-mini model configured
 - First time setup
 ```
 
@@ -586,7 +586,7 @@ log_memory_usage()
 # Check all health endpoints
 curl -f http://localhost:8000/health  # SurrealDB
 curl -f http://localhost:5055/health  # API
-curl -f http://localhost:8502/healthz  # Streamlit
+curl -f http://localhost:8502/healthz  # Next.js
 ```
 
 #### Automated Health Monitoring

@@ -5,9 +5,13 @@ FROM python:3.12-slim-bookworm AS builder
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install system dependencies required for building certain Python packages
+# Add Node.js 20.x LTS for building frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     gcc g++ git make \
     libmagic-dev \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Set build optimization environment variables
@@ -30,14 +34,26 @@ RUN uv sync --frozen --no-dev
 # Copy the rest of the application code
 COPY . /app
 
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+RUN npm ci
+RUN npm run build
+
+# Return to app root
+WORKDIR /app
+
 # Runtime stage
 FROM python:3.12-slim-bookworm AS runtime
 
 # Install only runtime system dependencies (no build tools)
+# Add Node.js 20.x LTS for running frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     libmagic1 \
     ffmpeg \
     supervisor \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv using the official method
@@ -52,7 +68,12 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy the application code
 COPY --from=builder /app /app
 
-# Expose ports for Streamlit and API
+# Copy built frontend from builder stage
+COPY --from=builder /app/frontend/.next/standalone /app/frontend/
+COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
+COPY --from=builder /app/frontend/public /app/frontend/public
+
+# Expose ports for Frontend and API
 EXPOSE 8502 5055
 
 RUN mkdir -p /app/data
@@ -62,5 +83,8 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create log directories
 RUN mkdir -p /var/log/supervisor
+
+# No default API_URL - the API will auto-detect from incoming requests
+# Users can still override by setting API_URL environment variable if needed
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

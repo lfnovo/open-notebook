@@ -1,13 +1,11 @@
-from surreal_commands import command
-from pydantic import BaseModel
-from typing import Optional, List
-from loguru import logger
 import asyncio
 import time
+from typing import List, Optional
 
-# Add debugging to see if this module is being imported
-logger.info("=== IMPORTING example_commands.py ===")
-logger.info("Registering commands...")
+from loguru import logger
+from pydantic import BaseModel
+from surreal_commands import command
+
 
 class TextProcessingInput(BaseModel):
     text: str
@@ -135,15 +133,3 @@ async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOut
             processing_time=processing_time,
             error_message=str(e)
         )
-
-# Add debugging to confirm commands are registered
-logger.info("✅ Commands registered: process_text and analyze_data")
-logger.info("=== FINISHED IMPORTING example_commands.py ===")
-
-# Let's also verify what the registry contains
-try:
-    from surreal_commands import registry
-    commands = registry.list_commands()
-    logger.info(f"Registry after import: {commands}")
-except Exception as e:
-    logger.error(f"Error checking registry: {e}")

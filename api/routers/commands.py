@@ -1,11 +1,11 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field
 from loguru import logger
+from pydantic import BaseModel, Field
+from surreal_commands import registry
 
 from api.command_service import CommandService
-from api.models import ErrorResponse
-from surreal_commands import registry
 
 router = APIRouter()
 
@@ -136,7 +136,7 @@ async def debug_registry():
         
         # Get the basic command structure
         try:
-            commands_dict = {}
+            commands_dict: dict[str, list[str]] = {}
             for item in all_items:
                 if item.app_id not in commands_dict:
                     commands_dict[item.app_id] = []

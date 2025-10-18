@@ -114,7 +114,7 @@ Open Notebook is an open-source, privacy-focused alternative to Google's Noteboo
    ```env
    OLLAMA_API_BASE=http://localhost:11434
    ```
-5. **Select models**: In Settings → Models, choose Ollama models
+5. **Select models**: In Models, choose Ollama models
 
 ### Why are my AI requests failing?
 

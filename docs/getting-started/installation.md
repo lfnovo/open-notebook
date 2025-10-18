@@ -107,14 +107,14 @@ Open Notebook consists of four main services that work together:
 - **Tasks**: Podcast generation, content transformations, embeddings
 - **Technology**: Surreal Commands worker system
 
-### 4. **Streamlit UI** (Port 8502)
+### 4. **React frontend** (Port 8502)
 - **Purpose**: Web-based user interface
 - **Features**: Notebooks, chat, sources, notes, search
-- **Technology**: Streamlit framework
+- **Technology**: Next.js framework
 
 ### Service Communication Flow
 ```
-User Browser → Streamlit UI → FastAPI Backend → SurrealDB Database
+User Browser → React frontend → FastAPI Backend → SurrealDB Database
                     ↓
             Background Worker ← Job Queue
 ```
@@ -317,7 +317,7 @@ This will start:
 - SurrealDB database on port 8000
 - FastAPI backend on port 5055
 - Background worker for processing
-- Streamlit UI on port 8502
+- React frontend on port 8502
 
 ### Alternative: Start Services Individually
 
@@ -333,7 +333,7 @@ make api
 # Terminal 3: Background Worker
 make worker
 
-# Terminal 4: Streamlit UI
+# Terminal 4: React frontend
 make run
 ```
 
@@ -357,7 +357,7 @@ cd open-notebook
 cat > docker-compose.yml << 'EOF'
 services:
   open_notebook:
-    image: lfnovo/open_notebook:latest-single
+    image: lfnovo/open_notebook:v1-latest-single
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -552,7 +552,7 @@ curl http://localhost:8000/health
 # Test API backend
 curl http://localhost:5055/health
 
-# Test Streamlit UI
+# Test React frontend
 curl http://localhost:8502/healthz
 ```
 
@@ -611,7 +611,7 @@ OPEN_NOTEBOOK_PASSWORD=your_secure_password_here
 ```
 
 **Features:**
-- **Streamlit UI**: Password prompt on first access
+- **React frontend**: Password prompt on first access
 - **REST API**: Requires `Authorization: Bearer your_password` header
 - **Local Usage**: Optional (can be left empty)
 
@@ -654,7 +654,7 @@ lsof -i :8502
 kill -9 <PID>
 
 # Or use different port
-uv run --env-file .env streamlit run app_home.py --server.port=8503
+uv run --env-file .env cd frontend && npm run dev --server.port=8503
 ```
 
 #### Permission Denied (Docker)

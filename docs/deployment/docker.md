@@ -70,9 +70,10 @@ OpenAI provides everything you need to get started:
    ```yaml
    services:
      open_notebook:
-       image: lfnovo/open_notebook:latest-single
+       image: lfnovo/open_notebook:v1-latest-single
        ports:
-         - "8502:8502"
+         - "8502:8502"  # Frontend
+         - "5055:5055"  # API
        environment:
          - OPENAI_API_KEY=your_openai_key_here
        volumes:
@@ -138,14 +139,14 @@ For production deployments or development, use the multi-container setup:
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "8000:8000"
     command: start --log trace --user root --pass root memory
     restart: always
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "8502:8502"  # Next.js Frontend
       - "5055:5055"  # REST API
@@ -200,7 +201,7 @@ OpenRouter gives you access to virtually every AI model through a single API:
    ```bash
    docker compose restart
    ```
-4. **Configure models** in Settings → Models
+4. **Configure models** in Models
 
 **Recommended OpenRouter models**:
 - `anthropic/claude-3-haiku` - Fast and cost-effective
@@ -231,7 +232,7 @@ Run AI models locally for complete privacy:
    ```
    Replace `192.168.1.100` with your actual IP.
 
-6. **Restart and configure** models in Settings → Models
+6. **Restart and configure** models in Models
 
 ### Other Providers
 
@@ -275,7 +276,7 @@ This protects both the web interface and API endpoints.
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "127.0.0.1:8000:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -289,7 +290,7 @@ services:
           cpus: "0.5"
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "127.0.0.1:8502:8502"
       - "127.0.0.1:5055:5055"
@@ -466,7 +467,7 @@ ENABLE_ANALYTICS=false
 version: '3.8'
 services:
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v1-latest
     ports:
       - "8000:8000"
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -480,7 +481,7 @@ services:
       retries: 3
 
   open_notebook:
-    image: lfnovo/open_notebook:latest
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "8502:8502"  # Next.js Frontend
       - "5055:5055"  # REST API

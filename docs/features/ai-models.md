@@ -536,7 +536,7 @@ docker run -d \
   -e OPENAI_API_KEY=your_key \
   -e GEMINI_API_KEY=your_key \
   -e ANTHROPIC_API_KEY=your_key \
-  lfnovo/open_notebook:latest-single
+  lfnovo/open_notebook:v1-latest-single
 ```
 
 ### 3. Model Configuration

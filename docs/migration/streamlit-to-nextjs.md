@@ -1,10 +1,10 @@
-# Migration Guide: Streamlit to Next.js Frontend
+# Migration Guide: Next.js to Next.js Frontend
 
-**Complete guide for upgrading from the Streamlit UI to the new Next.js frontend.**
+**Complete guide for upgrading from the React frontend to the new Next.js frontend.**
 
 ## Overview
 
-Open Notebook has migrated from a Streamlit-based user interface to a modern Next.js/React frontend. This upgrade provides:
+Open Notebook has migrated from a Next.js-based user interface to a modern Next.js/React frontend. This upgrade provides:
 
 - **Improved Performance**: Faster page loads and smoother interactions
 - **Modern UI/UX**: Contemporary design with better responsiveness
@@ -14,7 +14,7 @@ Open Notebook has migrated from a Streamlit-based user interface to a modern Nex
 ## What's Changing
 
 ### User Interface
-- **Old**: Streamlit-based UI (Python/Streamlit)
+- **Old**: Next.js-based UI (Python/Next.js)
 - **New**: Next.js/React frontend (JavaScript/TypeScript)
 
 ### What Stays the Same
@@ -191,7 +191,7 @@ After upgrading, verify everything works correctly:
 
 ## Rollback Instructions
 
-If you need to rollback to the Streamlit version:
+If you need to rollback to the Next.js version:
 
 ### Quick Rollback
 
@@ -243,7 +243,7 @@ No, all your model configurations are stored in the database and will work autom
 
 No, the API is completely unchanged. All existing integrations will continue to work.
 
-### What if I prefer the old Streamlit UI?
+### What if I prefer the old React frontend?
 
 You can rollback to any previous version using the instructions above. However, we recommend trying the new UI as it provides better performance and will receive all future updates.
 

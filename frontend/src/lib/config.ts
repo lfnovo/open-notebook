@@ -3,16 +3,10 @@
  * This allows the same Docker image to work in different environments.
  */
 
+import { AppConfig } from '@/lib/types/config'
+
 // Build timestamp for debugging - set at build time
 const BUILD_TIME = new Date().toISOString()
-
-interface AppConfig {
-  apiUrl: string
-  version: string
-  buildTime: string
-  latestVersion?: string | null
-  hasUpdate?: boolean
-}
 
 let config: AppConfig | null = null
 let configPromise: Promise<AppConfig> | null = null
@@ -107,25 +101,18 @@ async function fetchConfig(): Promise<AppConfig> {
         buildTime: BUILD_TIME,
         latestVersion: data.latestVersion || null,
         hasUpdate: data.hasUpdate || false,
+        dbStatus: data.dbStatus, // Can be undefined for old backends
       }
       console.log('✅ [Config] Successfully loaded API config:', config)
       return config
     } else {
-      console.error('❌ [Config] API config request failed with status:', response.status)
+      // Don't log error here - ConnectionGuard will display it
+      throw new Error(`API config endpoint returned status ${response.status}`)
     }
   } catch (error) {
-    console.error('❌ [Config] Failed to fetch runtime config from', baseUrl, ':', error)
+    // Don't log error here - ConnectionGuard will display it with proper UI
+    throw error
   }
-
-  // If fetching config fails, use the baseUrl we determined
-  config = {
-    apiUrl: baseUrl,
-    version: 'unknown',
-    buildTime: BUILD_TIME,
-  }
-
-  console.warn('⚠️ [Config] Using fallback API config:', config)
-  return config
 }
 
 /**

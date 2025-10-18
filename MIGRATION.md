@@ -5,6 +5,123 @@
 
 This guide helps existing Open Notebook users migrate from the legacy Streamlit frontend to the new React/Next.js frontend.
 
+---
+
+## ⚠️ Breaking Changes in v1.0
+
+Open Notebook v1.0 introduces breaking changes that require manual migration. Please read this section carefully before upgrading.
+
+### Docker Tag Changes
+
+**The "latest" tag is now frozen** at the last Streamlit version. Starting with v1.0, we use versioned tags to prevent unexpected breaking changes:
+
+- **`latest`** and **`latest-single`** → FROZEN at Streamlit version (will not update)
+- **`v1-latest`** and **`v1-latest-single`** → NEW tags for v1.x releases (recommended)
+- **`X.Y.Z`** and **`X.Y.Z-single`** → Specific version tags (unchanged)
+
+**Why this change?**
+The v1.0 release brings significant architectural changes (Streamlit → React/Next.js frontend). Freezing the "latest" tag prevents existing deployments from breaking unexpectedly, while the new "v1-latest" tag allows users to explicitly opt into the v1 architecture.
+
+### Quick Migration for Docker Users
+
+If you're currently using `latest` or `latest-single`, you need to:
+
+1. **Update your docker-compose.yml or docker run command**:
+   ```yaml
+   # Before:
+   image: lfnovo/open_notebook:latest-single
+
+   # After (recommended):
+   image: lfnovo/open_notebook:v1-latest-single
+   ```
+
+2. **Expose port 5055** for the API (required in v1):
+   ```yaml
+   ports:
+     - "8502:8502"  # Frontend
+     - "5055:5055"  # API (NEW - required)
+   ```
+
+3. **Verify API connectivity** after upgrade:
+   ```bash
+   curl http://localhost:5055/api/config
+   ```
+
+### API Connectivity (Port 5055)
+
+**Important:** v1.0 requires port 5055 to be exposed to your host machine so the frontend can communicate with the API.
+
+**Auto-Detection:** The Next.js frontend automatically detects the API URL:
+- If you access the frontend at `http://localhost:8502`, it uses `http://localhost:5055`
+- If you access the frontend at `http://192.168.1.100:8502`, it uses `http://192.168.1.100:5055`
+- If you access the frontend at `http://my-server:8502`, it uses `http://my-server:5055`
+
+**Manual Override:** If auto-detection doesn't work (e.g., reverse proxy, complex networking), set the `API_URL` environment variable:
+
+```bash
+# Docker run example
+docker run -d \
+  --name open-notebook \
+  -p 8502:8502 -p 5055:5055 \
+  -e API_URL=http://my-custom-api:5055 \
+  -v ./notebook_data:/app/data \
+  -v ./surreal_data:/mydata \
+  lfnovo/open_notebook:v1-latest-single
+```
+
+```yaml
+# docker-compose.yml example
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    environment:
+      - API_URL=http://my-custom-api:5055
+    volumes:
+      - ./notebook_data:/app/data
+      - ./surreal_data:/mydata
+```
+
+### Health Check
+
+Verify your API is accessible with:
+
+```bash
+# Local deployment
+curl http://localhost:5055/api/config
+
+# Remote deployment
+curl http://your-server-ip:5055/api/config
+```
+
+Expected response:
+```json
+{
+  "apiUrl": "http://localhost:5055",
+  "version": "1.0.0",
+  "dbStatus": "connected"
+}
+```
+
+### Troubleshooting
+
+**Problem:** Frontend shows "Cannot connect to API" error
+- **Check:** Is port 5055 exposed? Run `docker ps` and verify port mapping
+- **Check:** Can you reach the API? Run `curl http://localhost:5055/api/config`
+- **Solution:** If using custom networking, set `API_URL` environment variable
+
+**Problem:** Auto-detection uses wrong hostname
+- **Example:** Frontend at `http://internal-hostname:8502` but API should use `http://public-hostname:5055`
+- **Solution:** Set `API_URL=http://public-hostname:5055` environment variable
+
+**Problem:** Still running the old Streamlit version after `docker pull`
+- **Check:** Are you using the "latest" tag? It's frozen at Streamlit version
+- **Solution:** Update to `v1-latest` or `v1-latest-single` tag
+
+---
+
 ## What Changed
 
 Open Notebook has migrated from a Streamlit-based frontend to a modern React/Next.js application. This brings significant improvements in performance, user experience, and maintainability.

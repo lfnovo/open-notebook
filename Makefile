@@ -69,7 +69,7 @@ docker-update-v1-latest: docker-buildx-prepare
 		.
 
 # Release with v1-latest
-docker-release-all: docker-release docker-update-v1-latest
+docker-release-all: docker-release docker-update-v1-latest docker-build-single-v1-latest
 
 tag:
 	@version=$$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/'); \

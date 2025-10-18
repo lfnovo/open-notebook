@@ -34,15 +34,9 @@
   </p>
 </div>
 
-## 📢 Open Notebook is under very active development
-
-> Open Notebook is under active development! We're moving fast and making improvements every week. Your feedback is incredibly valuable to me during this exciting phase and it gives me motivation to keep improving and building this amazing tool. Please feel free to star the project if you find it useful, and don't hesitate to reach out with any questions or suggestions. I'm excited to see how you'll use it and what ideas you'll bring to the project! Let's build something amazing together! 🚀
-
-## About The Project
+## A private, multi-model, 100% local, full-featured alternative to Notebook LM
 
 ![New Notebook](docs/assets/asset_list.png)
-
-An open source, privacy-focused alternative to Google's Notebook LM. Why give Google more of our data when we can take control of our own research workflows?
 
 In a world dominated by Artificial Intelligence, having the ability to think 🧠 and acquire new knowledge 💡, is a skill that should not be a privilege for a few, nor restricted to a single provider.
 

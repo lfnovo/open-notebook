@@ -2316,7 +2316,7 @@ dev = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3" },
     { name = "content-core", specifier = ">=1.0.2" },
-    { name = "esperanto", specifier = ">=2.6.0" },
+    { name = "esperanto", specifier = ">=2.4.1" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "groq", specifier = ">=0.12.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },

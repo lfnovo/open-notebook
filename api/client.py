@@ -347,7 +347,8 @@ class APIClient:
         if transformations:
             data["transformations"] = transformations
 
-        return self._make_request("POST", "/api/sources/json", json=data)
+        # Use 5 minute timeout for source creation (especially PDF processing with OCR)
+        return self._make_request("POST", "/api/sources/json", json=data, timeout=300.0)
 
     def get_source(self, source_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific source."""

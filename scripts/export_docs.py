@@ -8,9 +8,9 @@ This script:
 3. Saves the consolidated content to doc_exports/{folder_name}.md
 """
 
+import logging
 from pathlib import Path
 from typing import List
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

@@ -61,8 +61,12 @@ async function fetchConfig(): Promise<AppConfig> {
   console.log('🔧 [Config] Build time:', BUILD_TIME)
 
   // Try to get from environment variable first (for development)
-  const envApiUrl = process.env.NEXT_PUBLIC_API_URL
+  const nextEnvApiUrl = process.env.NEXT_PUBLIC_API_URL
   console.log('🔧 [Config] NEXT_PUBLIC_API_URL from build:', envApiUrl || '(not set)')
+
+  // Try to get from environment variable
+  const runtimeEnvApiUrl = process.env.API_URL
+  console.log('🔧 [Config] API_URL:', runtimeEnvApiUrl || '(not set)')
 
   // Smart default: infer API URL from current frontend URL
   // If frontend is at http://10.20.30.20:8502, API should be at http://10.20.30.20:5055
@@ -83,7 +87,7 @@ async function fetchConfig(): Promise<AppConfig> {
   }
 
   // Use env var if available, otherwise smart default
-  const baseUrl = envApiUrl || defaultApiUrl
+  const baseUrl = runtimeEnvApiUrl || nextEnvApiUrl || defaultApiUrl
   console.log('🔧 [Config] Final base URL to try:', baseUrl)
 
   try {

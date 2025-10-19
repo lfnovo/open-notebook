@@ -72,7 +72,7 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 | **Azure OpenAI** | ✅       | ✅        | ❌  | ❌  |
 | **OpenRouter**   | ✅       | ❌        | ❌  | ❌  |
 | **Perplexity**   | ✅       | ❌        | ❌  | ❌  |
-| **OpenAI Compatible** | ✅       | ❌        | ❌  | ❌  |
+| **OpenAI Compatible** | ✅       | ✅        | ✅  | ✅  |
 
 ## Model Selection Guide
 
@@ -103,6 +103,10 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 **Environment Setup**
 ```bash
 export GEMINI_API_KEY=your_api_key_here
+
+# Optional: Override the default Gemini API endpoint
+# Use this for Vertex AI, custom proxies, or alternative endpoints
+# export GEMINI_API_BASE_URL=https://your-custom-endpoint.com
 ```
 
 **Recommended Models**
@@ -490,6 +494,7 @@ Set up your API keys using environment variables. Here's the complete list:
 export OPENAI_API_KEY=your_key
 export ANTHROPIC_API_KEY=your_key
 export GEMINI_API_KEY=your_key
+export GEMINI_API_BASE_URL=https://custom-endpoint.com  # Optional
 
 # Additional Language Providers
 export MISTRAL_API_KEY=your_key
@@ -569,10 +574,14 @@ export ANTHROPIC_API_KEY=sk-ant-your-key-here
 #### Google (Gemini)
 ```bash
 export GEMINI_API_KEY=your-key-here
+
+# Optional: Custom API endpoint (for Vertex AI, proxies, etc.)
+# export GEMINI_API_BASE_URL=https://your-custom-endpoint.com
 ```
 - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - Excellent for large context and TTS
 - Cost-effective option
+- Supports custom endpoints via `GEMINI_API_BASE_URL` for advanced deployments
 
 #### Ollama (Local)
 ```bash

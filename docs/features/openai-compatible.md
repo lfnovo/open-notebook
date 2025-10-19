@@ -53,8 +53,10 @@ export OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:8080/v1
 
 # Speech services on a different server
 export OPENAI_COMPATIBLE_BASE_URL_STT=http://localhost:9000/v1
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:9000/v1
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
 ```
+
+> **🎙️ Want free, local text-to-speech?** Check our [Local TTS Setup Guide](local_tts.md) for completely private, zero-cost podcast generation!
 
 ## Environment Variable Reference
 
@@ -529,6 +531,13 @@ export OPENAI_API_KEY=your_openai_key  # Fallback to OpenAI for embeddings
    - Test configuration before production
    - Validate all required modalities work
    - Check error handling
+
+## Related Guides
+
+**OpenAI-Compatible Setups:**
+- **[Local TTS Setup](local_tts.md)** - Free, private text-to-speech for podcasts
+- **[Ollama Setup](ollama.md)** - Local language models and embeddings
+- **[AI Models Guide](ai-models.md)** - Complete model configuration overview
 
 ## Getting Help
 

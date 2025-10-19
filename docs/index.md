@@ -41,6 +41,9 @@ Deep dives into what makes Open Notebook special.
 - **[Transformations](features/transformations.md)** - Custom content processing
 - **[Podcasts](features/podcasts.md)** - Multi-speaker podcast generation
 - **[Citations](features/citations.md)** - Research integrity support
+- **[Local TTS](features/local_tts.md)** - 🆕 Free, private local text-to-speech
+- **[OpenAI-Compatible](features/openai-compatible.md)** - Use LM Studio and compatible endpoints
+- **[Ollama](features/ollama.md)** - Local AI models setup
 - **[REST API](development/api-reference.md)** - [![API Docs](https://img.shields.io/badge/API-Documentation-blue?style=flat-square)](http://localhost:5055/docs) Complete programmatic access
 
 ---

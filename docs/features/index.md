@@ -20,6 +20,29 @@ Master Open Notebook's granular context control system.
 - Integration with AI models for cost control
 - Advanced context features and automation
 
+### 🔧 **[OpenAI-Compatible Providers](openai-compatible.md)**
+Use any OpenAI-compatible endpoint with Open Notebook.
+- LM Studio, Text Generation WebUI, vLLM support
+- Mode-specific configuration for different capabilities
+- Docker networking and remote server setup
+- Comprehensive troubleshooting and best practices
+- Works with local and cloud endpoints
+
+### 🎙️ **[Local Text-to-Speech](local_tts.md)**
+Run text-to-speech completely locally using OpenAI-compatible TTS servers.
+- Zero ongoing costs after setup
+- Complete privacy - audio never leaves your machine
+- Multiple voice options and models
+- Perfect for podcast generation
+- Various local TTS solutions available
+
+### 🦙 **[Ollama Setup](ollama.md)**
+Configure local language models and embeddings with Ollama.
+- Free, privacy-focused AI models
+- Network configuration and Docker integration
+- Model recommendations and optimization
+- Troubleshooting and best practices
+
 ## 🔧 Content Processing
 
 ### ⚡ **[Transformations](transformations.md)**

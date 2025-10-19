@@ -114,6 +114,16 @@ Each speaker profile includes:
 - Emotional expression control
 - Professional-grade output
 
+#### **Local TTS (OpenAI-Compatible)**
+- 🆕 **Completely Free**: Zero ongoing costs after setup
+- 🔒 **Full Privacy**: Audio generation never leaves your machine
+- 🚀 **No Rate Limits**: Generate unlimited podcasts
+- 🎙️ **Multiple Voices**: Various high-quality voice options
+- ⚡ **Fast Processing**: Local generation without network latency
+- 🔧 **Multiple Options**: Various local TTS servers available
+
+> **💡 Want to run TTS locally?** Check our comprehensive [Local TTS Setup Guide](local_tts.md) for step-by-step setup instructions, voice selection tips, and troubleshooting help. Perfect for privacy-focused users or high-volume podcast generation!
+
 ## 🔄 Background Processing & Queue Management
 
 ### Non-Blocking Experience

@@ -15,7 +15,10 @@ class APIClient:
 
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5055")
-        self.timeout = 30.0
+        # Timeout increased to 5 minutes (300s) to accommodate slow LLM operations
+        # (transformations, insights) on slower hardware (Ollama, LM Studio, remote APIs)
+        # Configurable via API_CLIENT_TIMEOUT environment variable (in seconds)
+        self.timeout = float(os.getenv("API_CLIENT_TIMEOUT", "300.0"))
         # Add authentication header if password is set
         self.headers = {}
         password = os.getenv("OPEN_NOTEBOOK_PASSWORD")

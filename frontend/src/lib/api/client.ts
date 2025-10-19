@@ -3,8 +3,10 @@ import { getApiUrl } from '@/lib/config'
 
 // API client with runtime-configurable base URL
 // The base URL is fetched from the API config endpoint on first request
+// Timeout increased to 5 minutes (300000ms) to accommodate slow LLM operations
+// (transformations, insights generation) especially on slower hardware (Ollama, LM Studio)
 export const apiClient = axios.create({
-  timeout: 30000,
+  timeout: 300000,
   headers: {
     'Content-Type': 'application/json',
   },

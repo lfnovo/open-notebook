@@ -231,9 +231,6 @@ LANGCHAIN_PROJECT="Open Notebook"
 # Install Homebrew if not already installed
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-# Install system dependencies
-brew install libmagic
-
 # Install uv (Python package manager)
 brew install uv
 
@@ -246,8 +243,6 @@ brew install --cask docker
 # Update package list
 sudo apt update
 
-# Install system dependencies
-sudo apt install -y libmagic-dev python3-dev build-essential
 
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -676,18 +671,6 @@ source ~/.bashrc
 # Solution: Use uv's Python management
 uv python install 3.11
 uv python pin 3.11
-```
-
-#### libmagic Installation Issues
-```bash
-# macOS: Install via Homebrew
-brew install libmagic
-
-# Ubuntu/Debian: Install dev package
-sudo apt install libmagic-dev
-
-# CentOS/RHEL/Fedora: Install dev package
-sudo dnf install file-devel
 ```
 
 ### API and Database Issues

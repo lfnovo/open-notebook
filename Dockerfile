@@ -8,7 +8,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Add Node.js 20.x LTS for building frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     gcc g++ git make \
-    libmagic-dev \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
@@ -48,7 +47,6 @@ FROM python:3.12-slim-bookworm AS runtime
 # Install only runtime system dependencies (no build tools)
 # Add Node.js 20.x LTS for running frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    libmagic1 \
     ffmpeg \
     supervisor \
     curl \

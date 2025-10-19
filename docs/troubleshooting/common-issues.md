@@ -109,42 +109,6 @@ This document covers the most frequently encountered issues when installing, con
    uv cache clean
    ```
 
-### libmagic Installation Issues
-
-**Problem**: Errors related to `python-magic` or `libmagic` library.
-
-**Symptoms**:
-- "Failed to find libmagic"
-- File type detection errors
-- Import errors related to magic
-
-**Solutions**:
-
-1. **Install system dependencies**:
-   ```bash
-   # macOS
-   brew install libmagic
-   
-   # Ubuntu/Debian
-   sudo apt update
-   sudo apt install libmagic-dev
-   
-   # CentOS/RHEL/Fedora
-   sudo dnf install file-devel
-   ```
-
-2. **Reinstall Python package**:
-   ```bash
-   uv pip uninstall python-magic
-   uv pip install python-magic
-   ```
-
-3. **Alternative installation**:
-   ```bash
-   # If above doesn't work
-   uv pip install python-magic-bin
-   ```
-
 ### SurrealDB Connection Issues
 
 **Problem**: Cannot connect to SurrealDB database.

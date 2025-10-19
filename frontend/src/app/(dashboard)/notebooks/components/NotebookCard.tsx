@@ -5,7 +5,7 @@ import { NotebookResponse } from '@/lib/types/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   DropdownMenu,
@@ -108,9 +108,22 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             <CardDescription className="line-clamp-2 text-sm">
               {notebook.description || 'No description'}
             </CardDescription>
-            
+
             <div className="mt-3 text-xs text-muted-foreground">
               Updated {formatDistanceToNow(new Date(notebook.updated), { addSuffix: true })}
+            </div>
+
+            {/* Item counts footer */}
+            <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground border-t pt-3">
+              <div className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                <span>{notebook.source_count}</span>
+              </div>
+              <span>•</span>
+              <div className="flex items-center gap-1">
+                <StickyNote className="h-3 w-3" />
+                <span>{notebook.note_count}</span>
+              </div>
             </div>
           </CardContent>
       </Card>

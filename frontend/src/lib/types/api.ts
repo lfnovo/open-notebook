@@ -5,6 +5,8 @@ export interface NotebookResponse {
   archived: boolean
   created: string
   updated: string
+  source_count: number
+  note_count: number
 }
 
 export interface NoteResponse {

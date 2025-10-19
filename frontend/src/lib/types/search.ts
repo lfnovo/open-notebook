@@ -9,6 +9,7 @@ export interface SearchRequest {
 }
 
 export interface SearchResult {
+  id: string
   title: string
   parent_id: string
   final_score: number
@@ -16,6 +17,10 @@ export interface SearchResult {
   relevance?: number
   similarity?: number
   score?: number
+  type?: string
+  source_type?: string
+  created: string
+  updated: string
 }
 
 export interface SearchResponse {

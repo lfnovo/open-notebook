@@ -3,6 +3,13 @@ Token utilities for Open Notebook.
 Handles token counting and cost calculations for language models.
 """
 
+import os
+from open_notebook.config import TIKTOKEN_CACHE_DIR
+
+# Set tiktoken cache directory before importing tiktoken to ensure
+# tokenizer encodings are cached persistently in the data folder
+os.environ["TIKTOKEN_CACHE_DIR"] = TIKTOKEN_CACHE_DIR
+
 
 def token_count(input_string: str) -> int:
     """

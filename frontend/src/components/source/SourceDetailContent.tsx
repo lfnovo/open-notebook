@@ -51,6 +51,7 @@ import {
 import { formatDistanceToNow } from 'date-fns'
 import { toast } from 'sonner'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
+import { NotebookAssociations } from '@/components/source/NotebookAssociations'
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -726,6 +727,13 @@ export function SourceDetailContent({
                 </div>
               </CardContent>
             </Card>
+
+            {/* Notebook Associations */}
+            <NotebookAssociations
+              sourceId={sourceId}
+              currentNotebookIds={source.notebooks || []}
+              onSave={fetchSource}
+            />
           </TabsContent>
         </Tabs>
       </div>

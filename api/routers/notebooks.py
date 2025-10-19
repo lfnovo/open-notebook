@@ -5,7 +5,7 @@ from loguru import logger
 
 from api.models import NotebookCreate, NotebookResponse, NotebookUpdate
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook
+from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
@@ -177,6 +177,51 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         logger.error(f"Error updating notebook {notebook_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error updating notebook: {str(e)}"
+        )
+
+
+@router.post("/notebooks/{notebook_id}/sources/{source_id}")
+async def add_source_to_notebook(notebook_id: str, source_id: str):
+    """Add an existing source to a notebook (create the reference)."""
+    try:
+        # Check if notebook exists
+        notebook = await Notebook.get(notebook_id)
+        if not notebook:
+            raise HTTPException(status_code=404, detail="Notebook not found")
+
+        # Check if source exists
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        # Check if reference already exists (idempotency)
+        existing_ref = await repo_query(
+            "SELECT * FROM reference WHERE out = $source_id AND in = $notebook_id",
+            {
+                "notebook_id": ensure_record_id(notebook_id),
+                "source_id": ensure_record_id(source_id),
+            },
+        )
+
+        # If reference doesn't exist, create it
+        if not existing_ref:
+            await repo_query(
+                "RELATE $source_id->reference->$notebook_id",
+                {
+                    "notebook_id": ensure_record_id(notebook_id),
+                    "source_id": ensure_record_id(source_id),
+                },
+            )
+
+        return {"message": "Source linked to notebook successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error linking source {source_id} to notebook {notebook_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Error linking source to notebook: {str(e)}"
         )
 
 

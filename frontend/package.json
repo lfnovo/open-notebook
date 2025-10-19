@@ -44,6 +44,7 @@
     "react-markdown": "^10.1.0",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",
+    "use-debounce": "^10.0.6",
     "zod": "^4.0.5",
     "zustand": "^5.0.6"
   },

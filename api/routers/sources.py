@@ -653,6 +653,14 @@ async def get_source(source_id: str):
                 status = "unknown"
 
         embedded_chunks = await source.get_embedded_chunks()
+
+        # Get associated notebooks
+        notebooks_query = await repo_query(
+            "SELECT VALUE out FROM reference WHERE in = $source_id",
+            {"source_id": ensure_record_id(source.id or source_id)}
+        )
+        notebook_ids = [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []
+
         return SourceResponse(
             id=source.id or "",
             title=source.title,
@@ -673,6 +681,8 @@ async def get_source(source_id: str):
             command_id=str(source.command) if source.command else None,
             status=status,
             processing_info=processing_info,
+            # Notebook associations
+            notebooks=notebook_ids,
         )
     except HTTPException:
         raise

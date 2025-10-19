@@ -215,6 +215,65 @@ export function useRetrySource() {
   })
 }
 
+export function useAddSourcesToNotebook() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: async ({ notebookId, sourceIds }: { notebookId: string; sourceIds: string[] }) => {
+      const { notebooksApi } = await import('@/lib/api/notebooks')
+
+      // Use Promise.allSettled to handle partial failures gracefully
+      const results = await Promise.allSettled(
+        sourceIds.map(sourceId => notebooksApi.addSource(notebookId, sourceId))
+      )
+
+      // Count successes and failures
+      const successes = results.filter(r => r.status === 'fulfilled').length
+      const failures = results.filter(r => r.status === 'rejected').length
+
+      return { successes, failures, total: sourceIds.length }
+    },
+    onSuccess: (result, { notebookId, sourceIds }) => {
+      // Invalidate ALL sources queries to refresh all lists
+      queryClient.invalidateQueries({ queryKey: ['sources'] })
+      // Specifically invalidate the notebook's sources
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources(notebookId) })
+      // Invalidate each affected source
+      sourceIds.forEach(sourceId => {
+        queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
+      })
+
+      // Show appropriate toast based on results
+      if (result.failures === 0) {
+        toast({
+          title: 'Success',
+          description: `${result.successes} source${result.successes > 1 ? 's' : ''} added to notebook`,
+        })
+      } else if (result.successes === 0) {
+        toast({
+          title: 'Error',
+          description: 'Failed to add sources to notebook',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Partial Success',
+          description: `${result.successes} source${result.successes > 1 ? 's' : ''} added, ${result.failures} failed`,
+          variant: 'default',
+        })
+      }
+    },
+    onError: () => {
+      toast({
+        title: 'Error',
+        description: 'Failed to add sources to notebook',
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
 export function useRemoveSourceFromNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()

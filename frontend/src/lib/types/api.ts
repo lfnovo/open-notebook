@@ -40,6 +40,7 @@ export interface SourceListResponse {
 
 export interface SourceDetailResponse extends SourceListResponse {
   full_text: string
+  notebooks?: string[]  // List of notebook IDs this source is linked to
 }
 
 export type SourceResponse = SourceDetailResponse

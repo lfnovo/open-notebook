@@ -14,6 +14,8 @@ surreal-data/
 notebook_data/
 temp/
 *.env
+.git/
+.github/
 
 # Frontend build artifacts and dependencies
 frontend/node_modules/
@@ -55,3 +57,7 @@ coverage.xml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+
+.quarentena/
+surreal_single_data/

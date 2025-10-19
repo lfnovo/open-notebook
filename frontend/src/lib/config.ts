@@ -60,11 +60,30 @@ async function fetchConfig(): Promise<AppConfig> {
   console.log('🔧 [Config] Starting configuration detection...')
   console.log('🔧 [Config] Build time:', BUILD_TIME)
 
-  // Try to get from environment variable first (for development)
+  // STEP 1: Try to get runtime config from Next.js server-side API route
+  // This allows API_URL to be set at runtime (not baked into build)
+  let runtimeApiUrl: string | null = null
+  try {
+    console.log('🔧 [Config] Attempting to fetch runtime config from Next.js API route...')
+    const runtimeResponse = await fetch('/api/runtime-config', {
+      cache: 'no-store',
+    })
+    if (runtimeResponse.ok) {
+      const runtimeData = await runtimeResponse.json()
+      runtimeApiUrl = runtimeData.apiUrl
+      console.log('✅ [Config] Runtime API URL from server:', runtimeApiUrl)
+    } else {
+      console.log('⚠️ [Config] Runtime config endpoint returned status:', runtimeResponse.status)
+    }
+  } catch (error) {
+    console.log('⚠️ [Config] Could not fetch runtime config:', error)
+  }
+
+  // STEP 2: Fallback to build-time environment variable
   const envApiUrl = process.env.NEXT_PUBLIC_API_URL
   console.log('🔧 [Config] NEXT_PUBLIC_API_URL from build:', envApiUrl || '(not set)')
 
-  // Smart default: infer API URL from current frontend URL
+  // STEP 3: Smart default - infer API URL from current frontend URL
   // If frontend is at http://10.20.30.20:8502, API should be at http://10.20.30.20:5055
   let defaultApiUrl = 'http://localhost:5055'
 
@@ -82,13 +101,16 @@ async function fetchConfig(): Promise<AppConfig> {
     }
   }
 
-  // Use env var if available, otherwise smart default
-  const baseUrl = envApiUrl || defaultApiUrl
+  // Priority: Runtime config > Build-time env var > Smart default
+  const baseUrl = runtimeApiUrl || envApiUrl || defaultApiUrl
   console.log('🔧 [Config] Final base URL to try:', baseUrl)
+  console.log('🔧 [Config] Selection priority: runtime=' + (runtimeApiUrl ? '✅' : '❌') +
+              ', build-time=' + (envApiUrl ? '✅' : '❌') +
+              ', smart-default=' + (!runtimeApiUrl && !envApiUrl ? '✅' : '❌'))
 
   try {
-    console.log('🔧 [Config] Fetching runtime config from:', `${baseUrl}/api/config`)
-    // Try to fetch runtime config from API
+    console.log('🔧 [Config] Fetching backend config from:', `${baseUrl}/api/config`)
+    // Try to fetch runtime config from backend API
     const response = await fetch(`${baseUrl}/api/config`, {
       cache: 'no-store',
     })

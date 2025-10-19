@@ -29,7 +29,14 @@ This section provides comprehensive guides for deploying Open Notebook in differ
 - Development tools and debugging
 - Contributing to the project
 
-### 4. [Security Configuration](security.md)
+### 4. [Reverse Proxy Configuration](reverse-proxy.md)
+**For production deployments with custom domains**
+- nginx, Caddy, Traefik configurations
+- Custom domain setup
+- SSL/HTTPS configuration
+- Runtime API URL configuration
+
+### 5. [Security Configuration](security.md)
 **Essential for public deployments**
 - Password protection setup
 - Security best practices
@@ -49,6 +56,12 @@ This section provides comprehensive guides for deploying Open Notebook in differ
 - You want the simplest possible deployment
 - You have resource constraints
 - You don't need to scale services independently
+
+### Use Reverse Proxy Setup if:
+- You're deploying with a custom domain
+- You need HTTPS/SSL encryption
+- You're using nginx, Caddy, or Traefik
+- You want to expose only specific ports publicly
 
 ### Use Development Setup if:
 - You want to contribute to the project

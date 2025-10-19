@@ -72,7 +72,7 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 | **Azure OpenAI** | ✅       | ✅        | ❌  | ❌  |
 | **OpenRouter**   | ✅       | ❌        | ❌  | ❌  |
 | **Perplexity**   | ✅       | ❌        | ❌  | ❌  |
-| **OpenAI Compatible** | ✅       | ❌        | ❌  | ❌  |
+| **OpenAI Compatible** | ✅       | ✅        | ✅  | ✅  |
 
 ## Model Selection Guide
 
@@ -103,6 +103,10 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 **Environment Setup**
 ```bash
 export GEMINI_API_KEY=your_api_key_here
+
+# Optional: Override the default Gemini API endpoint
+# Use this for Vertex AI, custom proxies, or alternative endpoints
+# export GEMINI_API_BASE_URL=https://your-custom-endpoint.com
 ```
 
 **Recommended Models**
@@ -321,22 +325,32 @@ export VOYAGE_API_KEY=your_api_key_here
 ---
 
 ### 🔧 OpenAI Compatible (LM Studio & Others)
-**Best for**: Using any OpenAI-compatible API endpoint, including LM Studio
+**Best for**: Using any OpenAI-compatible API endpoint for all AI modalities, including LM Studio
 
 **Environment Setup**
 ```bash
+# Generic configuration (applies to all modalities)
 export OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
 # Optional - only if your endpoint requires authentication
 export OPENAI_COMPATIBLE_API_KEY=your_key_here
+
+# Mode-specific configuration (for different endpoints per modality)
+export OPENAI_COMPATIBLE_BASE_URL_LLM=http://localhost:1234/v1
+export OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:8080/v1
+export OPENAI_COMPATIBLE_BASE_URL_STT=http://localhost:9000/v1
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:9000/v1
 ```
 
 **Common Use Cases**
 - **LM Studio**: Run models locally with a familiar UI
 - **Text Generation WebUI**: Alternative local inference
+- **vLLM**: High-performance inference server
 - **Custom Endpoints**: Any OpenAI-compatible API
 
 **Strengths**
 - Use any OpenAI-compatible endpoint
+- **NEW**: Full support for all 4 modalities (language, embeddings, STT, TTS)
+- Configure different endpoints for different capabilities
 - Perfect for LM Studio users
 - Flexibility in model deployment
 - Works with local and remote endpoints
@@ -345,6 +359,8 @@ export OPENAI_COMPATIBLE_API_KEY=your_key_here
 - Performance depends on your hardware (for local)
 - Model availability varies by endpoint
 - Some endpoints may not support all features
+
+> **📖 Need detailed setup help?** Check our comprehensive [OpenAI-Compatible Setup Guide](openai-compatible.md) for LM Studio, Text Generation WebUI, vLLM, and other configurations.
 
 ## 🧠 Reasoning Models
 
@@ -490,6 +506,7 @@ Set up your API keys using environment variables. Here's the complete list:
 export OPENAI_API_KEY=your_key
 export ANTHROPIC_API_KEY=your_key
 export GEMINI_API_KEY=your_key
+export GEMINI_API_BASE_URL=https://custom-endpoint.com  # Optional
 
 # Additional Language Providers
 export MISTRAL_API_KEY=your_key
@@ -569,10 +586,14 @@ export ANTHROPIC_API_KEY=sk-ant-your-key-here
 #### Google (Gemini)
 ```bash
 export GEMINI_API_KEY=your-key-here
+
+# Optional: Custom API endpoint (for Vertex AI, proxies, etc.)
+# export GEMINI_API_BASE_URL=https://your-custom-endpoint.com
 ```
 - Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - Excellent for large context and TTS
 - Cost-effective option
+- Supports custom endpoints via `GEMINI_API_BASE_URL` for advanced deployments
 
 #### Ollama (Local)
 ```bash

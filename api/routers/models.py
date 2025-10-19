@@ -17,6 +17,21 @@ from open_notebook.exceptions import InvalidInputError
 router = APIRouter()
 
 
+def _check_openai_compatible_support(mode: str) -> bool:
+    """
+    Check if OpenAI-compatible provider is available for a specific mode.
+
+    Args:
+        mode: One of 'LLM', 'EMBEDDING', 'STT', 'TTS'
+
+    Returns:
+        bool: True if either generic or mode-specific env var is set
+    """
+    generic = os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+    specific = os.environ.get(f"OPENAI_COMPATIBLE_BASE_URL_{mode}") is not None
+    return generic or specific
+
+
 @router.get("/models", response_model=List[ModelResponse])
 async def get_models(
     type: Optional[str] = Query(None, description="Filter by model type")
@@ -191,22 +206,43 @@ async def get_provider_availability():
             ),
             "mistral": os.environ.get("MISTRAL_API_KEY") is not None,
             "deepseek": os.environ.get("DEEPSEEK_API_KEY") is not None,
-            "openai-compatible": os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None,
+            "openai-compatible": (
+                _check_openai_compatible_support("LLM")
+                or _check_openai_compatible_support("EMBEDDING")
+                or _check_openai_compatible_support("STT")
+                or _check_openai_compatible_support("TTS")
+            ),
         }
         
         available_providers = [k for k, v in provider_status.items() if v]
         unavailable_providers = [k for k, v in provider_status.items() if not v]
-        
+
         # Get supported model types from Esperanto
         esperanto_available = AIFactory.get_available_providers()
-        
+
         # Build supported types mapping only for available providers
         supported_types: dict[str, list[str]] = {}
         for provider in available_providers:
             supported_types[provider] = []
-            for model_type, providers in esperanto_available.items():
-                if provider in providers:
-                    supported_types[provider].append(model_type)
+
+            # Special handling for openai-compatible to check mode-specific availability
+            if provider == "openai-compatible":
+                # Map Esperanto model types to our environment variable modes
+                mode_mapping = {
+                    "language": "LLM",
+                    "embedding": "EMBEDDING",
+                    "speech_to_text": "STT",
+                    "text_to_speech": "TTS",
+                }
+                for model_type, mode in mode_mapping.items():
+                    if model_type in esperanto_available and provider in esperanto_available[model_type]:
+                        if _check_openai_compatible_support(mode):
+                            supported_types[provider].append(model_type)
+            else:
+                # Standard provider detection
+                for model_type, providers in esperanto_available.items():
+                    if provider in providers:
+                        supported_types[provider].append(model_type)
         
         return ProviderAvailabilityResponse(
             available=available_providers,

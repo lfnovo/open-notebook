@@ -118,34 +118,13 @@ async def check_database_health() -> dict:
 async def get_config(request: Request):
     """
     Get frontend configuration.
-    This endpoint provides runtime configuration to the frontend,
-    allowing the same Docker image to work in different environments.
 
-    Auto-detection logic:
-    1. If API_URL env var is set, use it (explicit override)
-    2. Otherwise, detect from incoming HTTP request (zero-config)
+    Returns version information and health status.
+    Note: The frontend determines the API URL via its own runtime-config endpoint,
+    so this endpoint no longer returns apiUrl.
 
     Also checks for version updates from GitHub (with caching and error handling).
     """
-    # Check if API_URL is explicitly set
-    env_api_url = os.getenv("API_URL")
-
-    if env_api_url:
-        logger.debug(f"Using API_URL from environment: {env_api_url}")
-        api_url = env_api_url
-    else:
-        # Auto-detect from request
-        # Get the protocol (http or https)
-        # Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme
-        proto = request.headers.get("x-forwarded-proto", request.url.scheme)
-
-        # Get the host (includes port if non-standard)
-        host = request.headers.get("host", f"{request.client.host}:5055")
-
-        # Construct the API URL
-        api_url = f"{proto}://{host}"
-        logger.info(f"Auto-detected API URL from request: {api_url} (proto={proto}, host={host})")
-
     # Get current version
     current_version = get_version()
 
@@ -168,7 +147,6 @@ async def get_config(request: Request):
         logger.warning(f"Database offline: {db_health.get('error', 'Unknown error')}")
 
     return {
-        "apiUrl": api_url,
         "version": current_version,
         "latestVersion": latest_version,
         "hasUpdate": has_update,

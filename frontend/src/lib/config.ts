@@ -3,7 +3,7 @@
  * This allows the same Docker image to work in different environments.
  */
 
-import { AppConfig } from '@/lib/types/config'
+import { AppConfig, BackendConfigResponse } from '@/lib/types/config'
 
 // Build timestamp for debugging - set at build time
 const BUILD_TIME = new Date().toISOString()
@@ -116,9 +116,9 @@ async function fetchConfig(): Promise<AppConfig> {
     })
 
     if (response.ok) {
-      const data = await response.json()
+      const data: BackendConfigResponse = await response.json()
       config = {
-        apiUrl: data.apiUrl || baseUrl,
+        apiUrl: baseUrl, // Use baseUrl from runtime-config (Python no longer returns this)
         version: data.version || 'unknown',
         buildTime: BUILD_TIME,
         latestVersion: data.latestVersion || null,

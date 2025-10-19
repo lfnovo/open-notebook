@@ -6,17 +6,24 @@ Starting from version 1.0.0-alpha, Open Notebook uses a simplified API connectio
 
 ### How It Works
 
-The frontend now automatically discovers the API location at runtime, eliminating the need for complex network configurations. This works for both Docker deployment modes:
+The frontend automatically discovers the API location at runtime by analyzing the incoming HTTP request. This eliminates the need for complex network configurations and works for both Docker deployment modes:
 - Multi-container (docker-compose with separate SurrealDB)
 - Single-container (all services in one container)
 
-### Default Configuration
+**Auto-detection logic:**
+1. If `API_URL` environment variable is set → use it (explicit override)
+2. Otherwise, detect from the HTTP request:
+   - Uses the same hostname you're accessing the frontend from
+   - Automatically changes port to 5055 (API port)
+   - Respects `X-Forwarded-Proto` header for reverse proxy setups
+3. Falls back to `http://localhost:5055` if detection fails
 
-By default, the API is accessible at `http://localhost:5055`. This works for most local Docker deployments where:
-- You access the frontend at `http://localhost:8502`
-- Your browser can directly reach `http://localhost:5055`
+**Examples:**
+- Access frontend at `http://localhost:8502` → API at `http://localhost:5055` ✅
+- Access frontend at `http://10.20.30.20:8502` → API at `http://10.20.30.20:5055` ✅
+- Access frontend at `http://my-server:8502` → API at `http://my-server:5055` ✅
 
-**No configuration needed** for standard localhost deployments!
+**No configuration needed** for most deployments!
 
 ### Custom Configuration
 

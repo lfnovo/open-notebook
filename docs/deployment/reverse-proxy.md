@@ -12,7 +12,14 @@ The frontend uses a three-tier priority system to determine the API URL:
 
 1. **Runtime Configuration** (Highest Priority): `API_URL` environment variable set at container runtime
 2. **Build-time Configuration**: `NEXT_PUBLIC_API_URL` baked into the Docker image
-3. **Auto-detection** (Fallback): Infers from the incoming HTTP request
+3. **Auto-detection** (Fallback): Infers from the incoming HTTP request headers
+
+**Auto-detection details:**
+- The Next.js frontend analyzes the incoming HTTP request
+- Extracts the hostname from the `host` header
+- Respects the `X-Forwarded-Proto` header (for HTTPS behind reverse proxies)
+- Constructs the API URL as `{protocol}://{hostname}:5055`
+- Example: Request to `http://10.20.30.20:8502` → API URL becomes `http://10.20.30.20:5055`
 
 ## Common Scenarios
 

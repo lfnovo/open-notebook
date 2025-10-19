@@ -99,11 +99,14 @@ curl http://your-server-ip:5055/api/config
 Expected response:
 ```json
 {
-  "apiUrl": "http://localhost:5055",
   "version": "1.0.0",
-  "dbStatus": "connected"
+  "latestVersion": "1.0.0",
+  "hasUpdate": false,
+  "dbStatus": "online"
 }
 ```
+
+Note: The API URL is now auto-detected by the frontend from the hostname you're accessing, so `/api/config` no longer returns `apiUrl`.
 
 ### Troubleshooting
 

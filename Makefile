@@ -51,6 +51,7 @@ docker-push: docker-buildx-prepare
 	@echo "🔨 Building regular image..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
+		--progress=plain \
 		-t $(DOCKERHUB_IMAGE):$(VERSION) \
 		-t $(GHCR_IMAGE):$(VERSION) \
 		--push \
@@ -58,6 +59,7 @@ docker-push: docker-buildx-prepare
 	@echo "🔨 Building single-container image..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
+		--progress=plain \
 		-f Dockerfile.single \
 		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
 		-t $(GHCR_IMAGE):$(VERSION)-single \
@@ -77,6 +79,7 @@ docker-push-latest: docker-buildx-prepare
 	@echo "🔨 Building regular image with latest tag..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
+		--progress=plain \
 		-t $(DOCKERHUB_IMAGE):$(VERSION) \
 		-t $(DOCKERHUB_IMAGE):v1-latest \
 		-t $(GHCR_IMAGE):$(VERSION) \
@@ -86,6 +89,7 @@ docker-push-latest: docker-buildx-prepare
 	@echo "🔨 Building single-container image with latest tag..."
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
+		--progress=plain \
 		-f Dockerfile.single \
 		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
 		-t $(DOCKERHUB_IMAGE):v1-latest-single \

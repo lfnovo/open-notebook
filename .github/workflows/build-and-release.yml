@@ -3,19 +3,10 @@ name: Build and Release
 on:
   workflow_dispatch:
     inputs:
-      build_type:
-        description: 'Build type to create'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-          - both
-          - regular
-          - single
       push_latest:
-        description: 'Also push latest tags'
-        required: false
-        default: true
+        description: 'Also push v1-latest tags'
+        required: true
+        default: false
         type: boolean
   release:
     types: [published]
@@ -59,7 +50,6 @@ jobs:
   build-regular:
     needs: extract-version
     runs-on: ubuntu-latest
-    if: github.event.inputs.build_type == 'regular' || github.event.inputs.build_type == 'both' || github.event_name == 'release'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -145,7 +135,6 @@ jobs:
   build-single:
     needs: extract-version
     runs-on: ubuntu-latest
-    if: github.event.inputs.build_type == 'single' || github.event.inputs.build_type == 'both' || github.event_name == 'release'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -237,8 +226,7 @@ jobs:
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Type:** ${{ github.event.inputs.build_type || 'both' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Push Latest:** ${{ github.event.inputs.push_latest || 'true' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Push v1-Latest:** ${{ github.event.inputs.push_latest || 'false' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Registries:" >> $GITHUB_STEP_SUMMARY
           echo "✅ **GHCR:** \`${{ env.GHCR_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY

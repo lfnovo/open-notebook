@@ -20,6 +20,7 @@ import { SessionManager } from '@/components/source/SessionManager'
 import { MessageActions } from '@/components/source/MessageActions'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
+import { toast } from 'sonner'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -80,7 +81,16 @@ export function ChatPanel({
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
-    openModal(modalType, id)
+
+    try {
+      openModal(modalType, id)
+      // Note: The modal system uses URL parameters and doesn't throw errors for missing items.
+      // The modal component itself will handle displaying "not found" states.
+      // This try-catch is here for future enhancements or unexpected errors.
+    } catch {
+      const typeLabel = type === 'source_insight' ? 'insight' : type
+      toast.error(`This ${typeLabel} could not be found`)
+    }
   }
 
   // Auto-scroll to bottom when new messages arrive
@@ -189,7 +199,7 @@ export function ChatPanel({
                           onReferenceClick={handleReferenceClick}
                         />
                       ) : (
-                        <p className="text-sm">{message.content}</p>
+                        <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
                       )}
                     </div>
                     {message.type === 'ai' && (
@@ -322,7 +332,7 @@ function AIMessageContent({
   const LinkComponent = createReferenceLinkComponent(onReferenceClick)
 
   return (
-    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
+    <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none break-words prose-headings:font-semibold prose-a:text-blue-600 prose-a:break-all prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
       <ReactMarkdown
         components={{
           a: LinkComponent,

@@ -114,13 +114,13 @@ docker run -d \
   -p 8502:8502 -p 5055:5055 \
   -v ./notebook_data:/app/data \
   -v ./surreal_data:/mydata \
-  -e OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969 \
+  -e OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969/v1 \
   lfnovo/open_notebook:v1-latest-single
 ```
 
 For local development:
 ```bash
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
 ```
 
 **2. Add the model in Open Notebook:**
@@ -221,7 +221,7 @@ ports:
 
 Then update your environment variable:
 ```bash
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:9000
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:9000/v1
 ```
 
 ### Multiple Models
@@ -247,13 +247,13 @@ When Open Notebook runs in Docker and needs to reach Speaches:
 
 **On macOS/Windows:**
 ```bash
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969/v1
 ```
 
 **On Linux:**
 ```bash
 # Option 1: Use Docker bridge IP
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://172.17.0.1:8969
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://172.17.0.1:8969/v1
 
 # Option 2: Use host networking
 docker run --network host ...
@@ -273,7 +273,7 @@ docker compose up -d
 
 Then configure Open Notebook:
 ```bash
-export OPENAI_COMPATIBLE_BASE_URL_TTS=http://server-ip:8969
+export OPENAI_COMPATIBLE_BASE_URL_TTS=http://server-ip:8969/v1
 ```
 
 **Security Warning:** Only expose Speaches on trusted networks or use proper authentication/firewall rules.
@@ -607,7 +607,7 @@ echo "✅ Setup complete!"
 echo ""
 echo "Next steps:"
 echo "1. Test the audio file: test-audio.mp3"
-echo "2. Set environment variable: export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969"
+echo "2. Set environment variable: export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1"
 echo "3. Configure in Open Notebook Settings → Models"
 echo ""
 echo "To stop Speaches: docker compose down"
@@ -627,7 +627,7 @@ The principles in this guide apply to any OpenAI-compatible TTS server. When usi
 1. **Start your TTS server** following its documentation
 2. **Set the environment variable** to point to your server:
    ```bash
-   export OPENAI_COMPATIBLE_BASE_URL_TTS=http://your-server-url:port
+   export OPENAI_COMPATIBLE_BASE_URL_TTS=http://your-server-url:port/v1
    ```
 3. **Add the model in Open Notebook** using provider `openai_compatible`
 4. **Use the model name** as specified by your TTS server

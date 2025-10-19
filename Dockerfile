@@ -84,7 +84,14 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Create log directories
 RUN mkdir -p /var/log/supervisor
 
-# No default API_URL - the API will auto-detect from incoming requests
-# Users can still override by setting API_URL environment variable if needed
+# Runtime API URL Configuration
+# The API_URL environment variable can be set at container runtime to configure
+# where the frontend should connect to the API. This allows the same Docker image
+# to work in different deployment scenarios without rebuilding.
+#
+# If not set, the system will auto-detect based on incoming requests.
+# Set API_URL when using reverse proxies or custom domains.
+#
+# Example: docker run -e API_URL=https://your-domain.com/api ...
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

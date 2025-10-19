@@ -620,15 +620,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.7.0"
+version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6d/cf/0da02a603a63b3850abd14d23629f101942db5c18840b0cc6f34d7db9a04/esperanto-2.7.0.tar.gz", hash = "sha256:3861e4e20697813b19f0070a1142934bd6792077c3c174a2c3dd4b6ca0676b06", size = 553433, upload-time = "2025-10-19T02:04:30.21Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/8c/a2a9c1e7428d700963e7450aba591b2f4fbcfa61bad88654af8d92df3a00/esperanto-2.7.1.tar.gz", hash = "sha256:a18abc38d30d38c496eac62f252a9c12d243fc49fef7cc92d9d23c5b5faee741", size = 554840, upload-time = "2025-10-19T02:30:45.251Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/14/9c/79827f246965ed66ae8d2f3e3937e552730eaf48b270dac852a4756c7bf4/esperanto-2.7.0-py3-none-any.whl", hash = "sha256:2ea3fa98d8622d08a18dc6701ad362461de02492a3252326c70c969b3aba3db6", size = 129524, upload-time = "2025-10-19T02:04:28.57Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/91/a2c43a4eb3c56f349d59c656783cdd8cd13149a8e521e75f77e84dcd5ac0/esperanto-2.7.1-py3-none-any.whl", hash = "sha256:ea81e531085e32828b2ecd02680088801222dd21e7a73012efdb9b68fa627ed4", size = 129593, upload-time = "2025-10-19T02:30:44.149Z" },
 ]
 
 [[package]]
@@ -2199,7 +2199,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.0.1"
+version = "1.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },

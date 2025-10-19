@@ -114,16 +114,15 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             </div>
 
             {/* Item counts footer */}
-            <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground border-t pt-3">
-              <div className="flex items-center gap-1">
+            <div className="mt-3 flex items-center gap-1.5 border-t pt-3">
+              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
                 <FileText className="h-3 w-3" />
                 <span>{notebook.source_count}</span>
-              </div>
-              <span>•</span>
-              <div className="flex items-center gap-1">
+              </Badge>
+              <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
                 <StickyNote className="h-3 w-3" />
                 <span>{notebook.note_count}</span>
-              </div>
+              </Badge>
             </div>
           </CardContent>
       </Card>

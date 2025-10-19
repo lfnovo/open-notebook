@@ -18,22 +18,33 @@ async def get_notebooks(
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
-        notebooks = await Notebook.get_all(order_by=order_by)
+        # Build the query with counts
+        query = f"""
+            SELECT *,
+            count(<-reference.in) as source_count,
+            count(<-artifact.in) as note_count
+            FROM notebook
+            ORDER BY {order_by}
+        """
+
+        result = await repo_query(query)
 
         # Filter by archived status if specified
         if archived is not None:
-            notebooks = [nb for nb in notebooks if nb.archived == archived]
+            result = [nb for nb in result if nb.get("archived") == archived]
 
         return [
             NotebookResponse(
-                id=nb.id or "",
-                name=nb.name,
-                description=nb.description,
-                archived=nb.archived or False,
-                created=str(nb.created),
-                updated=str(nb.updated),
+                id=str(nb.get("id", "")),
+                name=nb.get("name", ""),
+                description=nb.get("description", ""),
+                archived=nb.get("archived", False),
+                created=str(nb.get("created", "")),
+                updated=str(nb.get("updated", "")),
+                source_count=nb.get("source_count", 0),
+                note_count=nb.get("note_count", 0),
             )
-            for nb in notebooks
+            for nb in result
         ]
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
@@ -59,6 +70,8 @@ async def create_notebook(notebook: NotebookCreate):
             archived=new_notebook.archived or False,
             created=str(new_notebook.created),
             updated=str(new_notebook.updated),
+            source_count=0,  # New notebook has no sources
+            note_count=0,  # New notebook has no notes
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -73,17 +86,28 @@ async def create_notebook(notebook: NotebookCreate):
 async def get_notebook(notebook_id: str):
     """Get a specific notebook by ID."""
     try:
-        notebook = await Notebook.get(notebook_id)
-        if not notebook:
+        # Query with counts for single notebook
+        query = """
+            SELECT *,
+            count(<-reference.in) as source_count,
+            count(<-artifact.in) as note_count
+            FROM $notebook_id
+        """
+        result = await repo_query(query, {"notebook_id": ensure_record_id(notebook_id)})
+
+        if not result:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
+        nb = result[0]
         return NotebookResponse(
-            id=notebook.id or "",
-            name=notebook.name,
-            description=notebook.description,
-            archived=notebook.archived or False,
-            created=str(notebook.created),
-            updated=str(notebook.updated),
+            id=str(nb.get("id", "")),
+            name=nb.get("name", ""),
+            description=nb.get("description", ""),
+            archived=nb.get("archived", False),
+            created=str(nb.get("created", "")),
+            updated=str(nb.get("updated", "")),
+            source_count=nb.get("source_count", 0),
+            note_count=nb.get("note_count", 0),
         )
     except HTTPException:
         raise
@@ -112,6 +136,29 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
 
         await notebook.save()
 
+        # Query with counts after update
+        query = """
+            SELECT *,
+            count(<-reference.in) as source_count,
+            count(<-artifact.in) as note_count
+            FROM $notebook_id
+        """
+        result = await repo_query(query, {"notebook_id": ensure_record_id(notebook_id)})
+
+        if result:
+            nb = result[0]
+            return NotebookResponse(
+                id=str(nb.get("id", "")),
+                name=nb.get("name", ""),
+                description=nb.get("description", ""),
+                archived=nb.get("archived", False),
+                created=str(nb.get("created", "")),
+                updated=str(nb.get("updated", "")),
+                source_count=nb.get("source_count", 0),
+                note_count=nb.get("note_count", 0),
+            )
+
+        # Fallback if query fails
         return NotebookResponse(
             id=notebook.id or "",
             name=notebook.name,
@@ -119,6 +166,8 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
             archived=notebook.archived or False,
             created=str(notebook.created),
             updated=str(notebook.updated),
+            source_count=0,
+            note_count=0,
         )
     except HTTPException:
         raise

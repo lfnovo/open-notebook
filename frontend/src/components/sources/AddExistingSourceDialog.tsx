@@ -107,8 +107,6 @@ export function AddExistingSourceDialog({
         minimum_score: 0.01,
       })
 
-      console.log('Search results:', response.results)
-
       // Since we set search_sources=true and search_notes=false,
       // the API only returns sources, no need to filter
       const sources = response.results.map(r => ({
@@ -123,7 +121,6 @@ export function AddExistingSourceDialog({
         updated: r.updated,
       })) as SourceListResponse[]
 
-      console.log('Mapped sources:', sources)
       setFilteredSources(sources)
     } catch (error) {
       console.error('Error searching sources:', error)
@@ -264,6 +261,13 @@ export function AddExistingSourceDialog({
               </div>
             )}
           </ScrollArea>
+
+          {/* Truncation Warning */}
+          {allSources.length >= 100 && !debouncedSearchQuery && (
+            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+              Showing first 100 sources. Use the Search feature to find specific sources.
+            </div>
+          )}
 
           {/* Selection Summary */}
           {selectedSourceIds.length > 0 && (

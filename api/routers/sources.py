@@ -656,7 +656,7 @@ async def get_source(source_id: str):
 
         # Get associated notebooks
         notebooks_query = await repo_query(
-            "SELECT VALUE in FROM reference WHERE out = $source_id",
+            "SELECT VALUE out FROM reference WHERE in = $source_id",
             {"source_id": ensure_record_id(source.id or source_id)}
         )
         notebook_ids = [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []

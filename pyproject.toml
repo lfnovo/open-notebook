@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "1.0.5"
+version = "1.0.6"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -55,6 +55,7 @@ dev = [
     "types-requests>=2.32.0.20241016",
     "ipywidgets>=8.1.5",
     "pre-commit>=4.0.1",
+    "pytest>=8.0.0",
 ]
 
 [build-system]

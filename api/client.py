@@ -15,7 +15,24 @@ class APIClient:
 
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5055")
-        self.timeout = 30.0
+        # Timeout increased to 5 minutes (300s) to accommodate slow LLM operations
+        # (transformations, insights) on slower hardware (Ollama, LM Studio, remote APIs)
+        # Configurable via API_CLIENT_TIMEOUT environment variable (in seconds)
+        timeout_str = os.getenv("API_CLIENT_TIMEOUT", "300.0")
+        try:
+            timeout_value = float(timeout_str)
+            # Validate timeout is within reasonable bounds (30s - 3600s / 1 hour)
+            if timeout_value < 30:
+                logger.warning(f"API_CLIENT_TIMEOUT={timeout_value}s is too low, using minimum of 30s")
+                timeout_value = 30.0
+            elif timeout_value > 3600:
+                logger.warning(f"API_CLIENT_TIMEOUT={timeout_value}s is too high, using maximum of 3600s")
+                timeout_value = 3600.0
+            self.timeout = timeout_value
+        except ValueError:
+            logger.error(f"Invalid API_CLIENT_TIMEOUT value '{timeout_str}', using default 300s")
+            self.timeout = 300.0
+
         # Add authentication header if password is set
         self.headers = {}
         password = os.getenv("OPEN_NOTEBOOK_PASSWORD")
@@ -117,9 +134,9 @@ class APIClient:
             "answer_model": answer_model,
             "final_answer_model": final_answer_model,
         }
-        # Use 5 minute timeout for long-running ask operations
+        # Use configured timeout for long-running ask operations
         return self._make_request(
-            "POST", "/api/search/ask/simple", json=data, timeout=300.0
+            "POST", "/api/search/ask/simple", json=data, timeout=self.timeout
         )
 
     # Models API methods
@@ -199,9 +216,9 @@ class APIClient:
             "input_text": input_text,
             "model_id": model_id,
         }
-        # Use extended timeout for transformation operations
+        # Use configured timeout for transformation operations
         return self._make_request(
-            "POST", "/api/transformations/execute", json=data, timeout=120.0
+            "POST", "/api/transformations/execute", json=data, timeout=self.timeout
         )
 
     # Notes API methods
@@ -251,8 +268,8 @@ class APIClient:
             "item_type": item_type,
             "async_processing": async_processing,
         }
-        # Use extended timeout for embedding operations
-        return self._make_request("POST", "/api/embed", json=data, timeout=120.0)
+        # Use configured timeout for embedding operations
+        return self._make_request("POST", "/api/embed", json=data, timeout=self.timeout)
 
     def rebuild_embeddings(
         self,
@@ -261,15 +278,20 @@ class APIClient:
         include_notes: bool = True,
         include_insights: bool = True
     ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
-        """Rebuild embeddings in bulk."""
+        """Rebuild embeddings in bulk.
+
+        Note: This operation can take a long time for large databases.
+        Consider increasing API_CLIENT_TIMEOUT to 600-900s for bulk rebuilds.
+        """
         data = {
             "mode": mode,
             "include_sources": include_sources,
             "include_notes": include_notes,
             "include_insights": include_insights,
         }
-        # Use extended timeout for rebuild operations (up to 10 minutes)
-        return self._make_request("POST", "/api/embeddings/rebuild", json=data, timeout=600.0)
+        # Use double the configured timeout for bulk rebuild operations (or configured value if already high)
+        rebuild_timeout = max(self.timeout, min(self.timeout * 2, 3600.0))
+        return self._make_request("POST", "/api/embeddings/rebuild", json=data, timeout=rebuild_timeout)
 
     def get_rebuild_status(self, command_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get status of a rebuild operation."""
@@ -347,8 +369,8 @@ class APIClient:
         if transformations:
             data["transformations"] = transformations
 
-        # Use 5 minute timeout for source creation (especially PDF processing with OCR)
-        return self._make_request("POST", "/api/sources/json", json=data, timeout=300.0)
+        # Use configured timeout for source creation (especially PDF processing with OCR)
+        return self._make_request("POST", "/api/sources/json", json=data, timeout=self.timeout)
 
     def get_source(self, source_id: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get a specific source."""

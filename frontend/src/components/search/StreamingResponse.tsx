@@ -9,6 +9,7 @@ import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
+import { toast } from 'sonner'
 
 interface StrategyData {
   reasoning: string
@@ -34,7 +35,16 @@ export function StreamingResponse({
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
-    openModal(modalType, id)
+
+    try {
+      openModal(modalType, id)
+      // Note: The modal system uses URL parameters and doesn't throw errors for missing items.
+      // The modal component itself will handle displaying "not found" states.
+      // This try-catch is here for future enhancements or unexpected errors.
+    } catch {
+      const typeLabel = type === 'source_insight' ? 'insight' : type
+      toast.error(`This ${typeLabel} could not be found`)
+    }
   }
 
   if (!strategy && !answers.length && !finalAnswer && !isStreaming) {
@@ -160,7 +170,7 @@ function FinalAnswerContent({
   const LinkComponent = createReferenceLinkComponent(onReferenceClick)
 
   return (
-    <div className="prose prose-sm max-w-none dark:prose-invert prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
+    <div className="prose prose-sm max-w-none dark:prose-invert break-words prose-a:break-all prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
       <ReactMarkdown
         components={{
           a: LinkComponent

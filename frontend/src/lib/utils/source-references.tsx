@@ -1,4 +1,5 @@
 import React from 'react'
+import { FileText, Lightbulb, FileEdit } from 'lucide-react'
 
 export type ReferenceType = 'source' | 'note' | 'source_insight'
 
@@ -149,29 +150,103 @@ export function convertSourceReferences(
  * Convert references in text to markdown links
  * Use this BEFORE passing text to ReactMarkdown
  *
- * Converts patterns like:
- * - [source:abc] → [source:abc](#ref-source-abc)
- * - [[source:abc]] → [[source:abc]](#ref-source-abc)
- * - source:abc → [source:abc](#ref-source-abc)
+ * Handles complex patterns including:
+ * - Plain references: source:abc → [source:abc](#ref-source-abc)
+ * - Bracketed: [source:abc] → [[source:abc]](#ref-source-abc)
+ * - Double brackets: [[source:abc]] → [[[source:abc]]](#ref-source-abc)
+ * - With bold: [**source:abc**] → [**source:abc**](#ref-source-abc)
+ * - After commas: [source:a, note:b] → each converted separately
+ * - Nested: [**source:a**, [source_insight:b]] → both converted
+ *
+ * Uses greedy matching to catch all references regardless of surrounding context.
  *
  * @param text - Original text with references
  * @returns Text with references converted to markdown links
  */
 export function convertReferencesToMarkdownLinks(text: string): string {
-  // Pattern: optional [[ or [, then type:id, then optional ]] or ]
-  const pattern = /(\[\[|\[)?(source_insight|note|source):([a-zA-Z0-9_]+)(\]\]|\])?/g
+  // Step 1: Find ALL references using simple greedy pattern
+  const refPattern = /(source_insight|note|source):([a-zA-Z0-9_]+)/g
+  const references: Array<{ type: string; id: string; index: number; length: number }> = []
 
-  return text.replace(pattern, (match) => {
-    const displayText = match
-    // Extract type and id from the match
-    const refMatch = match.match(/(source_insight|note|source):([a-zA-Z0-9_]+)/)
-    if (!refMatch) return match
+  let match
+  while ((match = refPattern.exec(text)) !== null) {
+    const type = match[1]
+    const id = match[2]
 
-    const type = refMatch[1]
-    const id = refMatch[2]
-    const href = `#ref-${type}-${id}`
-    return `[${displayText}](${href})`
-  })
+    // Validate the reference
+    const validTypes = ['source', 'source_insight', 'note']
+    if (!validTypes.includes(type) || !id || id.length === 0 || id.length > 100) {
+      continue // Skip invalid references
+    }
+
+    references.push({
+      type,
+      id,
+      index: match.index,
+      length: match[0].length
+    })
+  }
+
+  // If no references found, return original text
+  if (references.length === 0) return text
+
+  // Step 2: Process references from end to start (to preserve indices)
+  let result = text
+  for (let i = references.length - 1; i >= 0; i--) {
+    const ref = references[i]
+    const refStart = ref.index
+    const refEnd = refStart + ref.length
+    const refText = `${ref.type}:${ref.id}`
+
+    // Step 3: Analyze context around the reference
+    // Look back up to 50 chars for opening brackets/bold markers
+    const contextBefore = result.substring(Math.max(0, refStart - 50), refStart)
+    // Look ahead up to 50 chars for closing brackets/bold markers
+    const contextAfter = result.substring(refEnd, Math.min(result.length, refEnd + 50))
+
+    // Determine display text by checking immediate surroundings
+    let displayText = refText
+    let replaceStart = refStart
+    let replaceEnd = refEnd
+
+    // Check for double brackets [[ref]]
+    if (contextBefore.endsWith('[[') && contextAfter.startsWith(']]')) {
+      displayText = `[[${refText}]]`
+      replaceStart = refStart - 2
+      replaceEnd = refEnd + 2
+    }
+    // Check for single brackets [ref]
+    else if (contextBefore.endsWith('[') && contextAfter.startsWith(']')) {
+      displayText = `[${refText}]`
+      replaceStart = refStart - 1
+      replaceEnd = refEnd + 1
+    }
+    // Check for bold with brackets [**ref**]
+    else if (contextBefore.endsWith('[**') && contextAfter.startsWith('**]')) {
+      displayText = `[**${refText}**]`
+      replaceStart = refStart - 3
+      replaceEnd = refEnd + 3
+    }
+    // Check for just bold **ref**
+    else if (contextBefore.endsWith('**') && contextAfter.startsWith('**')) {
+      displayText = `**${refText}**`
+      replaceStart = refStart - 2
+      replaceEnd = refEnd + 2
+    }
+    // Plain reference (no brackets)
+    else {
+      displayText = refText
+    }
+
+    // Step 4: Build the markdown link
+    const href = `#ref-${ref.type}-${ref.id}`
+    const markdownLink = `[${displayText}](${href})`
+
+    // Step 5: Replace in the result string
+    result = result.substring(0, replaceStart) + markdownLink + result.substring(replaceEnd)
+  }
+
+  return result
 }
 
 /**
@@ -198,6 +273,12 @@ export function createReferenceLinkComponent(
       const type = parts[0] as ReferenceType
       const id = parts.slice(1).join('-') // Rejoin in case ID has dashes
 
+      // Select appropriate icon based on reference type
+      const IconComponent =
+        type === 'source' ? FileText :
+        type === 'source_insight' ? Lightbulb :
+        FileEdit // note
+
       return (
         <button
           onClick={(e) => {
@@ -208,6 +289,7 @@ export function createReferenceLinkComponent(
           className="text-primary hover:underline cursor-pointer inline font-medium"
           type="button"
         >
+          <IconComponent className="h-3 w-3 inline mr-1" aria-hidden="true" />
           {children}
         </button>
       )

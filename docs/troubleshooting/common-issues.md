@@ -195,6 +195,72 @@ This document covers the most frequently encountered issues when installing, con
    - Use lower-tier models for testing
    - Check provider rate limits
 
+### API Timeout Errors During Transformations
+
+**Problem**: Timeout errors when running transformations or generating insights, even though the operation completes successfully.
+
+**Symptoms**:
+- "timeout of 30000ms exceeded" in React frontend
+- "Failed to connect to API: timed out" in Streamlit UI
+- Transformation completes after a few minutes, but error appears after 30-60 seconds
+- Common with local models (Ollama), remote LM Studio, or slow hardware
+
+**Solutions**:
+
+1. **Increase API client timeout** (recommended):
+   ```bash
+   # Add to your .env file
+   API_CLIENT_TIMEOUT=600  # 10 minutes (600 seconds)
+   ```
+
+   This controls how long the frontend/UI waits for API responses. Default is 300 seconds (5 minutes).
+
+2. **Adjust timeout based on your setup**:
+   ```bash
+   # Fast cloud APIs (OpenAI, Anthropic, Groq)
+   API_CLIENT_TIMEOUT=300  # 5 minutes (default)
+
+   # Local Ollama on GPU
+   API_CLIENT_TIMEOUT=600  # 10 minutes
+
+   # Local Ollama on CPU or slow hardware
+   API_CLIENT_TIMEOUT=1200  # 20 minutes
+
+   # Remote LM Studio over slow network
+   API_CLIENT_TIMEOUT=900  # 15 minutes
+   ```
+
+3. **Increase LLM provider timeout if needed**:
+   ```bash
+   # Add to your .env file if the model itself is timing out
+   ESPERANTO_LLM_TIMEOUT=180  # 3 minutes (default is 60s)
+   ```
+
+   Only increase this if you see errors during actual model inference, not just HTTP timeouts.
+
+4. **Use faster models for testing**:
+   - Test with cloud APIs first to verify setup
+   - Try smaller local models (e.g., `gemma2:2b` instead of `llama3:70b`)
+   - Preload models before running transformations: `ollama run model-name`
+
+5. **Restart services after configuration changes**:
+   ```bash
+   # For Docker
+   docker compose down
+   docker compose up -d
+
+   # For source installation
+   make stop-all
+   make start-all
+   ```
+
+**Important Notes**:
+- `API_CLIENT_TIMEOUT` should be HIGHER than `ESPERANTO_LLM_TIMEOUT` for proper error handling
+- If transformations complete successfully after refresh, you only need to increase `API_CLIENT_TIMEOUT`
+- First time running a model may be slower due to model loading
+
+**Related GitHub Issue**: [#131](https://github.com/lfnovo/open-notebook/issues/131)
+
 ### Memory and Performance Issues
 
 **Problem**: Application running slowly or crashing due to memory issues.

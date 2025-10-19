@@ -338,6 +338,27 @@ tar -xzf backup-20240101.tar.gz
 
 ## Troubleshooting
 
+### Why do I get timeout errors even though transformations complete successfully?
+
+**Cause**: The default client timeout (5 minutes) may be too short for slow AI providers or hardware.
+
+**Quick fix**:
+```bash
+# Add to your .env file
+API_CLIENT_TIMEOUT=600  # 10 minutes for slow hardware
+```
+
+**When this happens**:
+- Using local Ollama models on CPU
+- Using remote LM Studio over slow network
+- First transformation after starting (model loading)
+- Very large documents
+- Slower hardware configurations
+
+**Detailed solutions**: See [Common Issues - API Timeout Errors](./common-issues.md#api-timeout-errors-during-transformations)
+
+**Note**: If transformations complete after you refresh the page, you only need to increase `API_CLIENT_TIMEOUT`, not `ESPERANTO_LLM_TIMEOUT`.
+
 ### My question isn't answered here. What should I do?
 
 1. **Check the troubleshooting guide**: [Common Issues](./common-issues.md)

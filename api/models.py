@@ -24,6 +24,8 @@ class NotebookResponse(BaseModel):
     archived: bool
     created: str
     updated: str
+    source_count: int
+    note_count: int
 
 
 # Search models

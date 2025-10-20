@@ -106,13 +106,17 @@ Context Management → Citations → Transformations → Sharing
 ## 🌟 What Makes Open Notebook Special
 
 | Feature | Open Notebook | Google Notebook LM | Advantage |
-|---------|---------------|-------------------|-----------|
-| **Privacy** | Self-hosted | Cloud-only | Complete control |
-| **AI Providers** | 15+ providers | Google only | Flexibility |
-| **Context Control** | 3 granular levels | All-or-nothing | Privacy & performance |
-| **Podcasts** | 1-4 speakers | 2 speakers | Professional quality |
-| **Transformations** | Custom & built-in | Limited | Unlimited processing |
-| **Citations** | Comprehensive | Basic | Research integrity |
+|---------|---------------|--------------------|-----------|
+| **Privacy & Control** | Self-hosted, your data | Google cloud only | Complete data sovereignty |
+| **AI Provider Choice** | 16+ providers (OpenAI, Anthropic, Ollama, LM Studio, etc.) | Google models only | Flexibility and cost optimization |
+| **Podcast Speakers** | 1-4 speakers with custom profiles | 2 speakers only | Extreme flexibility |
+| **Context Control** | 3 granular levels | All-or-nothing | Privacy and performance tuning |
+| **Content Transformations** | Custom and built-in | Limited options | Unlimited processing power |
+| **API Access** | Full REST API | No API | Complete automation |
+| **Deployment** | Docker, cloud, or local | Google hosted only | Deploy anywhere |
+| **Citations** | Comprehensive with sources | Basic references | Research integrity |
+| **Customization** | Open source, fully customizable | Closed system | Unlimited extensibility |
+| **Cost** | Pay only for AI usage | Monthly subscription + usage | Transparent and controllable |
 
 ---
 

@@ -17,9 +17,17 @@ Before starting, ensure you have:
 
 ## Single Command Setup
 
-### Step 1: Create Your Setup Files
+### Step 1: Choose Your Setup Method
 
-Create a new folder called `open-notebook` and add these two files:
+Are you installing on:
+- **🏠 The same computer** you'll use to access Open Notebook? → Use **Local Setup**
+- **🌐 A remote server** (Raspberry Pi, NAS, cloud server, Proxmox)? → Use **Remote Setup**
+
+### Step 2: Create Your Configuration
+
+Create a new folder called `open-notebook` and add these files:
+
+#### For Local Machine (Same Computer):
 
 **docker-compose.yml**:
 ```yaml
@@ -27,7 +35,8 @@ services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest-single
     ports:
-      - "8502:8502"
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API (required!)
     env_file:
       - ./docker.env
     pull_policy: always
@@ -50,15 +59,61 @@ SURREAL_NAMESPACE="open_notebook"
 SURREAL_DATABASE="production"
 ```
 
-### Step 2: Start Open Notebook
+#### For Remote Server:
+
+**docker-compose.yml**:
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    ports:
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API (required!)
+    env_file:
+      - ./docker.env
+    pull_policy: always
+    volumes:
+      - ./notebook_data:/app/data
+      - ./surreal_single_data:/mydata
+    restart: always
+```
+
+**docker.env**:
+```env
+# Replace YOUR_OPENAI_API_KEY_HERE with your actual API key
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
+
+# CRITICAL: Replace YOUR_SERVER_IP with your server's actual IP address
+# Example: API_URL=http://192.168.1.100:5055
+API_URL=http://YOUR_SERVER_IP:5055
+
+# Database settings (don't change these)
+SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_USER="root"
+SURREAL_PASSWORD="root"
+SURREAL_NAMESPACE="open_notebook"
+SURREAL_DATABASE="production"
+```
+
+> **⚠️ Finding Your Server IP:**
+> On the server running Docker, use:
+> - **Linux**: `hostname -I` or `ip addr show`
+> - **Windows**: `ipconfig` (look for IPv4 Address)
+> - **Mac**: `ifconfig | grep inet`
+
+### Step 3: Start Open Notebook
 
 Open terminal/command prompt in your `open-notebook` folder and run:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
-**That's it!** Open Notebook is now running at: **http://localhost:8502**
+**That's it!** Open Notebook is now running.
+
+**Access at:**
+- **Local setup**: http://localhost:8502
+- **Remote setup**: http://YOUR_SERVER_IP:8502 (replace with your actual IP)
 
 ## Basic Verification
 
@@ -123,27 +178,53 @@ Now that you have Open Notebook running:
 
 ## Common Issues
 
-### Port Already in Use
-```bash
-docker-compose down
-docker-compose up -d
-```
+### ❌ "Unable to connect to server" Error
+
+**This is the #1 issue!** The frontend can't reach the API.
+
+**Quick Fix Checklist:**
+
+1. **Are you accessing from a different computer than where Docker runs?**
+   - ✅ Yes → You MUST set `API_URL` in your `docker.env` (see Remote Setup above)
+   - ❌ No → Skip to step 2
+
+2. **Is port 5055 exposed?**
+   ```bash
+   docker ps
+   # Should show both: 0.0.0.0:8502->8502 AND 0.0.0.0:5055->5055
+   ```
+   - ❌ Missing 5055? Add it to your `docker-compose.yml` ports section
+
+3. **Restart after changes:**
+   ```bash
+   docker compose down
+   docker compose up -d
+   ```
+
+**Still not working?** See the [complete troubleshooting guide](../troubleshooting/quick-fixes.md).
 
 ### API Key Errors
 - Double-check your API key in `docker.env`
 - Ensure you have credits in your OpenAI account
 - Verify no extra spaces around the key
+- Key should start with `sk-`
+
+### Port Already in Use
+```bash
+docker compose down
+docker compose up -d
+```
 
 ### Container Won't Start
 ```bash
-docker-compose down -v
-docker-compose up -d
+docker compose down -v
+docker compose up -d
 ```
 
 ### Can't Access Interface
 - Ensure Docker Desktop is running
-- Check firewall isn't blocking port 8502
-- Try: `docker-compose restart`
+- Check firewall isn't blocking ports 8502 and 5055
+- Try: `docker compose restart`
 
 ## Stopping Open Notebook
 

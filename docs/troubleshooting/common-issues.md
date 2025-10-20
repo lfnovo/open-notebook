@@ -2,6 +2,135 @@
 
 This document covers the most frequently encountered issues when installing, configuring, and using Open Notebook, along with their solutions.
 
+> **🆘 Quick Fixes for Setup Issues**
+>
+> Most problems are caused by incorrect API_URL configuration. Choose your scenario below for instant fixes.
+
+## Setup-Related Issues (START HERE!)
+
+### ❌ "Unable to connect to server" or "Connection Error"
+
+**This is the #1 issue for new users.** The frontend can't reach the API.
+
+#### Diagnostic Checklist:
+
+1. **Are both ports exposed?**
+   ```bash
+   docker ps
+   # Should show: 0.0.0.0:8502->8502 AND 0.0.0.0:5055->5055
+   ```
+   ✅ **Fix:** Add `-p 5055:5055` to your docker run command, or add it to docker-compose.yml:
+   ```yaml
+   ports:
+     - "8502:8502"
+     - "5055:5055"  # Add this!
+   ```
+
+2. **Are you accessing from a different machine than where Docker is running?**
+
+   **Determine your server's IP:**
+   ```bash
+   # On the Docker host machine:
+   hostname -I          # Linux
+   ipconfig             # Windows
+   ifconfig | grep inet # Mac
+   ```
+
+   ✅ **Fix:** Set environment variable (replace with your actual server IP):
+
+   **Docker Compose:**
+   ```yaml
+   environment:
+     - API_URL=http://192.168.1.100:5055
+   ```
+
+   **Docker Run:**
+   ```bash
+   -e API_URL=http://192.168.1.100:5055
+   ```
+
+3. **Using localhost in API_URL but accessing remotely?**
+
+   ❌ **Wrong:**
+   ```
+   Access from browser: http://192.168.1.100:8502
+   API_URL setting: http://localhost:5055  # This won't work!
+   ```
+
+   ✅ **Correct:**
+   ```
+   Access from browser: http://192.168.1.100:8502
+   API_URL setting: http://192.168.1.100:5055
+   ```
+
+#### Common Scenarios:
+
+| Your Setup | Access URL | API_URL Value |
+|------------|-----------|---------------|
+| Docker on your laptop, accessed locally | `http://localhost:8502` | Not needed (or `http://localhost:5055`) |
+| Docker on Proxmox VM at 192.168.1.50 | `http://192.168.1.50:8502` | `http://192.168.1.50:5055` |
+| Docker on Raspberry Pi at 10.0.0.10 | `http://10.0.0.10:8502` | `http://10.0.0.10:5055` |
+| Docker on NAS at nas.local | `http://nas.local:8502` | `http://nas.local:5055` |
+| Behind reverse proxy at notebook.mydomain.com | `https://notebook.mydomain.com` | `https://notebook.mydomain.com/api` |
+
+#### After changing API_URL:
+
+**Always restart the container:**
+```bash
+# Docker Compose
+docker compose down
+docker compose up -d
+
+# Docker Run
+docker stop open-notebook
+docker rm open-notebook
+# Then run your docker run command again
+```
+
+---
+
+### ❌ Frontend trying to connect on port 8502 instead of 5055
+
+**Symptom:** Frontend tries to access `http://10.10.10.107:8502/api/config` instead of using port 5055.
+
+**Cause:** API_URL is not set correctly or you're using an old version.
+
+✅ **Fix:**
+1. Ensure you're using version 1.0.6+ which supports runtime API_URL
+2. Set API_URL environment variable (not NEXT_PUBLIC_API_URL)
+3. Restart container after setting the variable
+   ```bash
+   docker compose down && docker compose up -d
+   ```
+
+---
+
+### ❌ "API config endpoint returned status 404"
+
+**Cause:** You added `/api` to the end of API_URL.
+
+❌ **Wrong:** `API_URL=http://192.168.1.100:5055/api`
+
+✅ **Correct:** `API_URL=http://192.168.1.100:5055`
+
+The `/api` path is added automatically by the application.
+
+---
+
+### ❌ "Missing authorization header"
+
+**Cause:** You have password authentication enabled but it's not configured correctly.
+
+✅ **Fix:** Set the password in your environment:
+```yaml
+environment:
+  - OPEN_NOTEBOOK_PASSWORD=your_secure_password
+```
+
+Or provide it when logging into the web interface.
+
+---
+
 ## Installation Problems
 
 ### Port Already in Use

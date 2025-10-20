@@ -111,42 +111,141 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 Both registries contain identical images - choose whichever you prefer!
 
-Ready to try Open Notebook? Choose your preferred method:
+### Choose Your Setup:
 
-### ⚡ Instant Setup (Recommended)
+<table>
+<tr>
+<td width="50%">
+
+#### 🏠 **Local Machine Setup**
+Perfect if Docker runs on the **same computer** where you'll access Open Notebook.
+
 ```bash
-# Create a new directory for your Open Notebook installation
-mkdir open-notebook
-cd open-notebook
+mkdir open-notebook && cd open-notebook
 
-# Using Docker - Get started in 2 minutes
 docker run -d \
   --name open-notebook \
   -p 8502:8502 -p 5055:5055 \
   -v ./notebook_data:/app/data \
   -v ./surreal_data:/mydata \
-  -e OPENAI_API_KEY=your_key \
+  -e OPENAI_API_KEY=your_key_here \
   lfnovo/open_notebook:v1-latest-single
-
-# Or use GitHub Container Registry:
-# ghcr.io/lfnovo/open-notebook:v1-latest-single
 ```
+
+**Access at:** http://localhost:8502
+
+</td>
+<td width="50%">
+
+#### 🌐 **Remote Server Setup**
+Use this for servers, Raspberry Pi, NAS, Proxmox, or any remote machine.
+
+```bash
+mkdir open-notebook && cd open-notebook
+
+docker run -d \
+  --name open-notebook \
+  -p 8502:8502 -p 5055:5055 \
+  -v ./notebook_data:/app/data \
+  -v ./surreal_data:/mydata \
+  -e OPENAI_API_KEY=your_key_here \
+  -e API_URL=http://YOUR_SERVER_IP:5055 \
+  lfnovo/open_notebook:v1-latest-single
+```
+
+**Replace `YOUR_SERVER_IP`** with your server's IP (e.g., `192.168.1.100`) or domain
+
+**Access at:** http://YOUR_SERVER_IP:8502
+
+</td>
+</tr>
+</table>
+
+> **⚠️ Critical Setup Notes:**
+>
+> **Both ports are required:**
+> - **Port 8502**: Web interface (what you see in your browser)
+> - **Port 5055**: API backend (required for the app to function)
+>
+> **API_URL must match how YOU access the server:**
+> - ✅ Access via `http://192.168.1.100:8502` → set `API_URL=http://192.168.1.100:5055`
+> - ✅ Access via `http://myserver.local:8502` → set `API_URL=http://myserver.local:5055`
+> - ❌ Don't use `localhost` for remote servers - it won't work from other devices!
+
+### Using Docker Compose (Recommended for Easy Management)
+
+Create a `docker-compose.yml` file:
+
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    # Or use: ghcr.io/lfnovo/open-notebook:v1-latest-single
+    ports:
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API (required!)
+    environment:
+      - OPENAI_API_KEY=your_key_here
+      # For remote access, uncomment and set your server IP/domain:
+      # - API_URL=http://192.168.1.100:5055
+    volumes:
+      - ./notebook_data:/app/data
+      - ./surreal_data:/mydata
+    restart: always
+```
+
+Start with: `docker compose up -d`
 
 **What gets created:**
 ```
 open-notebook/
+├── docker-compose.yml # Your configuration
 ├── notebook_data/     # Your notebooks and research content
 └── surreal_data/      # Database files
 ```
 
-**Access your installation:**
-- **🖥️ Main Interface**: http://localhost:8502 (Next.js UI)
-- **🔧 API Access**: http://localhost:5055 (REST API)
-- **📚 API Documentation**: http://localhost:5055/docs (Interactive Swagger UI)
+### 🆘 Quick Troubleshooting
 
-> **⚠️ Important**: 
-> 1. **Run from a dedicated folder**: Create and run this from inside a new `open-notebook` folder so your data volumes are properly organized
-> 2. **Volume persistence**: The volumes (`-v ./notebook_data:/app/data` and `-v ./surreal_data:/mydata`) are essential to persist your data between container restarts. Without them, you'll lose all your notebooks and research when the container stops.
+| Problem | Solution |
+|---------|----------|
+| **"Unable to connect to server"** | Set `API_URL` environment variable to match how you access the server (see remote setup above) |
+| **Blank page or errors** | Ensure BOTH ports (8502 and 5055) are exposed in your docker command |
+| **Works on server but not from other computers** | Don't use `localhost` in `API_URL` - use your server's actual IP address |
+| **"404" or "config endpoint" errors** | Don't add `/api` to `API_URL` - use just `http://your-ip:5055` |
+| **Still having issues?** | Check our [5-minute troubleshooting guide](docs/troubleshooting/quick-fixes.md) or [join Discord](https://discord.gg/37XJPXfz2w) |
+
+### How Open Notebook Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Your Browser                                           │
+│  Access: http://your-server-ip:8502                     │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │   Port 8502   │  ← Next.js Frontend (what you see)
+         │   Frontend    │
+         └───────┬───────┘
+                 │ needs to call ↓
+                 ▼
+         ┌───────────────┐
+         │   Port 5055   │  ← FastAPI Backend (handles requests)
+         │     API       │     This is why you need API_URL!
+         └───────┬───────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │   SurrealDB   │  ← Database (internal, auto-configured)
+         │   (Port 8000) │
+         └───────────────┘
+```
+
+**Key Point:** Your browser loads the frontend from port 8502, but that frontend needs to know where to find the API (port 5055). When accessing remotely, you must tell it explicitly: `API_URL=http://your-server-ip:5055`
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=lfnovo/open-notebook&type=date&legend=top-left)](https://www.star-history.com/#lfnovo/open-notebook&type=date&legend=top-left)
 
 ### 🛠️ Full Installation
 For development or customization:

@@ -1,157 +1,83 @@
-name: Development Build
+name: Build Dev
 
 on:
-  pull_request:
-    branches: [ main ]
   push:
-    branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'notebooks/**'
-      - '.github/workflows/claude*.yml'
-  workflow_dispatch:
-    inputs:
-      dockerfile:
-        description: 'Dockerfile to test'
-        required: true
-        default: 'both'
-        type: choice
-        options:
-          - both
-          - regular
-          - single
-      platform:
-        description: 'Platform to build'
-        required: true
-        default: 'linux/amd64'
-        type: choice
-        options:
-          - linux/amd64
-          - linux/arm64
-          - linux/amd64,linux/arm64
-
-env:
-  REGISTRY: docker.io
-  IMAGE_NAME: lfnovo/open_notebook
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  extract-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+  build:
+    runs-on: macos-latest
+
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Extract version from pyproject.toml
-        id: version
-        run: |
-          VERSION=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted version: $VERSION"
-
-  test-build-regular:
-    needs: extract-version
-    runs-on: ubuntu-latest
-    if: github.event.inputs.dockerfile == 'regular' || github.event.inputs.dockerfile == 'both' || github.event_name != 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
+      - uses: actions/checkout@v2
+      - name: Use Node.js 16.x
+        uses: actions/setup-node@v2
         with:
-          path: /tmp/.buildx-cache-dev
-          key: ${{ runner.os }}-buildx-dev-regular-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-dev-regular-
-
-      - name: Build regular image (test only)
-        uses: docker/build-push-action@v5
+          node-version: 16.x
+      - name: Install dependencies
+        run: npm install
+      - name: Build
+        run: npm run build
+      - name: Test
+        run: npm test
+      - name: Package
+        run: npm run package
+      - name: Zip
+        run: zip -r open-notebook-mac.zip ./out/open-notebook-darwin-x64/open-notebook.app
+      - name: Deploy to dev
+        if: github.ref == 'refs/heads/main'
+        uses: burnett01/rsync-deployments@5.2
         with:
-          context: .
-          file: ./Dockerfile
-          platforms: ${{ github.event.inputs.platform || 'linux/amd64' }}
-          push: false
-          tags: ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-dev-regular
-          cache-from: type=local,src=/tmp/.buildx-cache-dev
-          cache-to: type=local,dest=/tmp/.buildx-cache-dev-new,mode=max
+          switches: -avzr --delete
+          path: build/
+          remote_path: /var/www/dev.open-notebook.dev/html/
+          remote_host: ${{ secrets.SSH_HOST }}
+          remote_user: ${{ secrets.SSH_USER }}
+          remote_key: ${{ secrets.SSH_KEY }}
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache-dev
-          mv /tmp/.buildx-cache-dev-new /tmp/.buildx-cache-dev
-
-  test-build-single:
-    needs: extract-version
-    runs-on: ubuntu-latest
-    if: github.event.inputs.dockerfile == 'single' || github.event.inputs.dockerfile == 'both' || github.event_name != 'workflow_dispatch'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Cache Docker layers
-        uses: actions/cache@v3
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/create-release@v1
+        id: create_release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ github.ref }}
+          RELEASE_BODY: ${{ github.event.head_commit.message }}
         with:
-          path: /tmp/.buildx-cache-dev-single
-          key: ${{ runner.os }}-buildx-dev-single-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-dev-single-
+          tag_name: ${{ env.TAG_NAME }}
+          release_name: Release ${{ env.TAG_NAME }}
+          body: ${{ env.RELEASE_BODY }}
+          draft: false
+          prerelease: false
 
-      - name: Build single-container image (test only)
-        uses: docker/build-push-action@v5
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          context: .
-          file: ./Dockerfile.single
-          platforms: ${{ github.event.inputs.platform || 'linux/amd64' }}
-          push: false
-          tags: ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-dev-single
-          cache-from: type=local,src=/tmp/.buildx-cache-dev-single
-          cache-to: type=local,dest=/tmp/.buildx-cache-dev-single-new,mode=max
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./open-notebook-mac.zip
+          asset_name: open-notebook-mac.zip
+          asset_content_type: application/zip
 
-      - name: Move cache
-        run: |
-          rm -rf /tmp/.buildx-cache-dev-single
-          mv /tmp/.buildx-cache-dev-single-new /tmp/.buildx-cache-dev-single
-
-  summary:
-    needs: [extract-version, test-build-regular, test-build-single]
-    runs-on: ubuntu-latest
-    if: always()
-    steps:
-      - name: Development Build Summary
-        run: |
-          echo "## Development Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Platform:** ${{ github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Dockerfile:** ${{ github.event.inputs.dockerfile || 'both' }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Results:" >> $GITHUB_STEP_SUMMARY
-
-          if [[ "${{ needs.test-build-regular.result }}" == "success" ]]; then
-            echo "✅ **Regular Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
-          elif [[ "${{ needs.test-build-regular.result }}" == "skipped" ]]; then
-            echo "⏭️ **Regular Dockerfile:** Skipped" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Regular Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [[ "${{ needs.test-build-single.result }}" == "success" ]]; then
-            echo "✅ **Single Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
-          elif [[ "${{ needs.test-build-single.result }}" == "skipped" ]]; then
-            echo "⏭️ **Single Dockerfile:** Skipped" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ **Single Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Notes:" >> $GITHUB_STEP_SUMMARY
-          echo "- This is a development build (no images pushed to registry)" >> $GITHUB_STEP_SUMMARY
-          echo "- For production releases, use the 'Build and Release' workflow" >> $GITHUB_STEP_SUMMARY
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const output = `#### Build Succeeded 🚀
+            You can test the changes of this PR on the [dev website](https://dev.open-notebook.dev)
+            `;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

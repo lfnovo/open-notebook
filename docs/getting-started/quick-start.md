@@ -51,7 +51,7 @@ services:
 # Replace YOUR_OPENAI_API_KEY_HERE with your actual API key
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 
-# Database settings (don't change these)
+# Database connection (required for single-container)
 SURREAL_URL="ws://localhost:8000/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
@@ -87,7 +87,7 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 # Example: API_URL=http://192.168.1.100:5055
 API_URL=http://YOUR_SERVER_IP:5055
 
-# Database settings (don't change these)
+# Database connection (required for single-container)
 SURREAL_URL="ws://localhost:8000/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"

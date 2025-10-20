@@ -129,6 +129,11 @@ docker run -d \
   -v ./notebook_data:/app/data \
   -v ./surreal_data:/mydata \
   -e OPENAI_API_KEY=your_key_here \
+  -e SURREAL_URL="ws://localhost:8000/rpc" \
+  -e SURREAL_USER="root" \
+  -e SURREAL_PASSWORD="root" \
+  -e SURREAL_NAMESPACE="open_notebook" \
+  -e SURREAL_DATABASE="production" \
   lfnovo/open_notebook:v1-latest-single
 ```
 
@@ -150,6 +155,11 @@ docker run -d \
   -v ./surreal_data:/mydata \
   -e OPENAI_API_KEY=your_key_here \
   -e API_URL=http://YOUR_SERVER_IP:5055 \
+  -e SURREAL_URL="ws://localhost:8000/rpc" \
+  -e SURREAL_USER="root" \
+  -e SURREAL_PASSWORD="root" \
+  -e SURREAL_NAMESPACE="open_notebook" \
+  -e SURREAL_DATABASE="production" \
   lfnovo/open_notebook:v1-latest-single
 ```
 
@@ -188,6 +198,12 @@ services:
       - OPENAI_API_KEY=your_key_here
       # For remote access, uncomment and set your server IP/domain:
       # - API_URL=http://192.168.1.100:5055
+      # Database connection (required for single-container)
+      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=production
     volumes:
       - ./notebook_data:/app/data
       - ./surreal_data:/mydata

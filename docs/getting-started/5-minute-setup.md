@@ -41,6 +41,12 @@ services:
       - "5055:5055"  # API
     environment:
       - OPENAI_API_KEY=REPLACE_WITH_YOUR_KEY
+      # Database connection (required)
+      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=production
     volumes:
       - ./notebook_data:/app/data
       - ./surreal_data:/mydata
@@ -70,6 +76,12 @@ services:
     environment:
       - OPENAI_API_KEY=REPLACE_WITH_YOUR_KEY
       - API_URL=http://REPLACE_WITH_SERVER_IP:5055
+      # Database connection (required)
+      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=production
     volumes:
       - ./notebook_data:/app/data
       - ./surreal_data:/mydata

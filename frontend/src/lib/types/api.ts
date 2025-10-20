@@ -5,6 +5,8 @@ export interface NotebookResponse {
   archived: boolean
   created: string
   updated: string
+  source_count: number
+  note_count: number
 }
 
 export interface NoteResponse {
@@ -38,6 +40,7 @@ export interface SourceListResponse {
 
 export interface SourceDetailResponse extends SourceListResponse {
   full_text: string
+  notebooks?: string[]  // List of notebook IDs this source is linked to
 }
 
 export type SourceResponse = SourceDetailResponse

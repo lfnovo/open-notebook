@@ -38,8 +38,11 @@ jobs:
 
       - name: Check for Docker Hub credentials
         id: check
+        env:
+          SECRET_DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          SECRET_DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
         run: |
-          if [[ -n "${{ secrets.DOCKER_USERNAME }}" && -n "${{ secrets.DOCKER_PASSWORD }}" ]]; then
+          if [[ -n ""$SECRET_DOCKER_USERNAME"" && -n ""$SECRET_DOCKER_PASSWORD"" ]]; then
             echo "has_dockerhub_secrets=true" >> $GITHUB_OUTPUT
             echo "Docker Hub credentials available"
           else
@@ -90,26 +93,32 @@ jobs:
 
       - name: Prepare Docker tags for regular build
         id: tags-regular
+        env:
+          ENV_GHCR_IMAGE: ${{ env.GHCR_IMAGE }}
+          GITHUB_EVENT_INPUTS_PUSH_LATEST: ${{ github.event.inputs.push_latest }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          ENV_DOCKERHUB_IMAGE: ${{ env.DOCKERHUB_IMAGE }}
         run: |
-          TAGS="${{ env.GHCR_IMAGE }}:${{ needs.extract-version.outputs.version }}"
+          TAGS=""$ENV_GHCR_IMAGE":${{ needs.extract-version.outputs.version }}"
 
           # Determine if we should push latest tags
-          PUSH_LATEST="${{ github.event.inputs.push_latest }}"
+          PUSH_LATEST=""$GITHUB_EVENT_INPUTS_PUSH_LATEST""
           if [[ -z "$PUSH_LATEST" ]]; then
             PUSH_LATEST="false"
           fi
 
           # Add GHCR latest tag if requested or for non-prerelease releases
-          if [[ "$PUSH_LATEST" == "true" ]] || [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" != "true" ]]; then
-            TAGS="${TAGS},${{ env.GHCR_IMAGE }}:v1-latest"
+          if [[ "$PUSH_LATEST" == "true" ]] || [[ ""$GITHUB_EVENT_NAME"" == "release" && ""$GITHUB_EVENT_RELEASE_PRERELEASE"" != "true" ]]; then
+            TAGS="${TAGS},"$ENV_GHCR_IMAGE":v1-latest"
           fi
 
           # Add Docker Hub tags if credentials available
           if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-            TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:${{ needs.extract-version.outputs.version }}"
+            TAGS="${TAGS},"$ENV_DOCKERHUB_IMAGE":${{ needs.extract-version.outputs.version }}"
 
-            if [[ "$PUSH_LATEST" == "true" ]] || [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" != "true" ]]; then
-              TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-latest"
+            if [[ "$PUSH_LATEST" == "true" ]] || [[ ""$GITHUB_EVENT_NAME"" == "release" && ""$GITHUB_EVENT_RELEASE_PRERELEASE"" != "true" ]]; then
+              TAGS="${TAGS},"$ENV_DOCKERHUB_IMAGE":v1-latest"
             fi
           fi
 
@@ -175,26 +184,32 @@ jobs:
 
       - name: Prepare Docker tags for single build
         id: tags-single
+        env:
+          ENV_GHCR_IMAGE: ${{ env.GHCR_IMAGE }}
+          GITHUB_EVENT_INPUTS_PUSH_LATEST: ${{ github.event.inputs.push_latest }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_EVENT_RELEASE_PRERELEASE: ${{ github.event.release.prerelease }}
+          ENV_DOCKERHUB_IMAGE: ${{ env.DOCKERHUB_IMAGE }}
         run: |
-          TAGS="${{ env.GHCR_IMAGE }}:${{ needs.extract-version.outputs.version }}-single"
+          TAGS=""$ENV_GHCR_IMAGE":${{ needs.extract-version.outputs.version }}-single"
 
           # Determine if we should push latest tags
-          PUSH_LATEST="${{ github.event.inputs.push_latest }}"
+          PUSH_LATEST=""$GITHUB_EVENT_INPUTS_PUSH_LATEST""
           if [[ -z "$PUSH_LATEST" ]]; then
             PUSH_LATEST="false"
           fi
 
           # Add GHCR latest tag if requested or for non-prerelease releases
-          if [[ "$PUSH_LATEST" == "true" ]] || [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" != "true" ]]; then
-            TAGS="${TAGS},${{ env.GHCR_IMAGE }}:v1-latest-single"
+          if [[ "$PUSH_LATEST" == "true" ]] || [[ ""$GITHUB_EVENT_NAME"" == "release" && ""$GITHUB_EVENT_RELEASE_PRERELEASE"" != "true" ]]; then
+            TAGS="${TAGS},"$ENV_GHCR_IMAGE":v1-latest-single"
           fi
 
           # Add Docker Hub tags if credentials available
           if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-            TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:${{ needs.extract-version.outputs.version }}-single"
+            TAGS="${TAGS},"$ENV_DOCKERHUB_IMAGE":${{ needs.extract-version.outputs.version }}-single"
 
-            if [[ "$PUSH_LATEST" == "true" ]] || [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.prerelease }}" != "true" ]]; then
-              TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-latest-single"
+            if [[ "$PUSH_LATEST" == "true" ]] || [[ ""$GITHUB_EVENT_NAME"" == "release" && ""$GITHUB_EVENT_RELEASE_PRERELEASE"" != "true" ]]; then
+              TAGS="${TAGS},"$ENV_DOCKERHUB_IMAGE":v1-latest-single"
             fi
           fi
 
@@ -223,15 +238,20 @@ jobs:
     if: always()
     steps:
       - name: Build Summary
+        env:
+          GITHUB_EVENT_INPUTS_PUSH_LATEST_____FALSE_: ${{ github.event.inputs.push_latest || 'false' }}
+          ENV_GHCR_IMAGE: ${{ env.GHCR_IMAGE }}
+          ENV_DOCKERHUB_IMAGE: ${{ env.DOCKERHUB_IMAGE }}
+          GITHUB_EVENT_INPUTS_PUSH_LATEST: ${{ github.event.inputs.push_latest }}
         run: |
           echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Push v1-Latest:** ${{ github.event.inputs.push_latest || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Push v1-Latest:** "$GITHUB_EVENT_INPUTS_PUSH_LATEST_____FALSE_"" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Registries:" >> $GITHUB_STEP_SUMMARY
-          echo "✅ **GHCR:** \`${{ env.GHCR_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "✅ **GHCR:** \`"$ENV_GHCR_IMAGE"\`" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-            echo "✅ **Docker Hub:** \`${{ env.DOCKERHUB_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Docker Hub:** \`"$ENV_DOCKERHUB_IMAGE"\`" >> $GITHUB_STEP_SUMMARY
           else
             echo "⏭️ **Docker Hub:** Skipped (credentials not configured)" >> $GITHUB_STEP_SUMMARY
           fi
@@ -239,14 +259,14 @@ jobs:
           echo "### Images Built:" >> $GITHUB_STEP_SUMMARY
 
           if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
-            echo "✅ **Regular (GHCR):** \`${{ env.GHCR_IMAGE }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-            if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Regular v1-Latest (GHCR):** \`${{ env.GHCR_IMAGE }}:v1-latest\`" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Regular (GHCR):** \`"$ENV_GHCR_IMAGE":${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+            if [[ ""$GITHUB_EVENT_INPUTS_PUSH_LATEST"" == "true" ]]; then
+              echo "✅ **Regular v1-Latest (GHCR):** \`"$ENV_GHCR_IMAGE":v1-latest\`" >> $GITHUB_STEP_SUMMARY
             fi
             if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-              echo "✅ **Regular (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
-              if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-                echo "✅ **Regular v1-Latest (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-latest\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Regular (Docker Hub):** \`"$ENV_DOCKERHUB_IMAGE":${{ needs.extract-version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+              if [[ ""$GITHUB_EVENT_INPUTS_PUSH_LATEST"" == "true" ]]; then
+                echo "✅ **Regular v1-Latest (Docker Hub):** \`"$ENV_DOCKERHUB_IMAGE":v1-latest\`" >> $GITHUB_STEP_SUMMARY
               fi
             fi
           elif [[ "${{ needs.build-regular.result }}" == "skipped" ]]; then
@@ -256,14 +276,14 @@ jobs:
           fi
 
           if [[ "${{ needs.build-single.result }}" == "success" ]]; then
-            echo "✅ **Single (GHCR):** \`${{ env.GHCR_IMAGE }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
-            if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-              echo "✅ **Single v1-Latest (GHCR):** \`${{ env.GHCR_IMAGE }}:v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
+            echo "✅ **Single (GHCR):** \`"$ENV_GHCR_IMAGE":${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
+            if [[ ""$GITHUB_EVENT_INPUTS_PUSH_LATEST"" == "true" ]]; then
+              echo "✅ **Single v1-Latest (GHCR):** \`"$ENV_GHCR_IMAGE":v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
             fi
             if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
-              echo "✅ **Single (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
-              if [[ "${{ github.event.inputs.push_latest }}" == "true" ]]; then
-                echo "✅ **Single v1-Latest (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
+              echo "✅ **Single (Docker Hub):** \`"$ENV_DOCKERHUB_IMAGE":${{ needs.extract-version.outputs.version }}-single\`" >> $GITHUB_STEP_SUMMARY
+              if [[ ""$GITHUB_EVENT_INPUTS_PUSH_LATEST"" == "true" ]]; then
+                echo "✅ **Single v1-Latest (Docker Hub):** \`"$ENV_DOCKERHUB_IMAGE":v1-latest-single\`" >> $GITHUB_STEP_SUMMARY
               fi
             fi
           elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then

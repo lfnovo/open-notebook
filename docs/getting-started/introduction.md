@@ -126,7 +126,7 @@ Get accurate answers to questions about your documents with proper citations, en
 Ready to transform your research workflow? Here's what's next:
 
 ### 📋 Next Steps
-1. **[Installation Guide](setup.md)** - Set up Open Notebook on your system
+1. **[Installation Guide](installation.md)** - Set up Open Notebook on your system
 2. **[Model Selection](../models.md)** - Choose the right AI models for your needs
 3. **[Basic Workflow](../basic-workflow.md)** - Learn core concepts and workflows
 4. **[Features Overview](../features/)** - Explore all available features

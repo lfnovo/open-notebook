@@ -117,7 +117,17 @@ http {
         ssl_certificate /etc/nginx/ssl/fullchain.pem;
         ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
-        # Frontend
+        # API
+        location /api/ {
+            proxy_pass http://api/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Frontend (catch-all - handles /_config automatically)
         location / {
             proxy_pass http://frontend;
             proxy_http_version 1.1;
@@ -128,16 +138,6 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_cache_bypass $http_upgrade;
-        }
-
-        # API
-        location /api/ {
-            proxy_pass http://api/api/;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
 }
@@ -201,10 +201,11 @@ services:
       - "traefik.http.routers.notebook-frontend.tls.certresolver=myresolver"
       - "traefik.http.services.notebook-frontend.loadbalancer.server.port=8502"
 
-      # API
+      # API (higher priority to match first)
       - "traefik.http.routers.notebook-api.rule=Host(`notebook.example.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.notebook-api.entrypoints=websecure"
       - "traefik.http.routers.notebook-api.tls.certresolver=myresolver"
+      - "traefik.http.routers.notebook-api.priority=100"
       - "traefik.http.services.notebook-api.loadbalancer.server.port=5055"
     networks:
       - traefik-network
@@ -219,11 +220,11 @@ networks:
 **Caddyfile:**
 ```caddy
 notebook.example.com {
-    # Frontend
-    reverse_proxy / open-notebook:8502
-
     # API
     reverse_proxy /api/* open-notebook:5055
+
+    # Frontend (catch-all - handles /_config automatically)
+    reverse_proxy / open-notebook:8502
 }
 ```
 
@@ -260,6 +261,36 @@ services:
 4. **SSL/TLS certificate issues**
    - Ensure your reverse proxy has valid SSL certificates
    - Mixed content errors (HTTPS frontend trying to reach HTTP API)
+
+### Frontend adds `:5055` to URL when using reverse proxy (versions ≤ 1.0.10)
+
+**Symptoms** (only in versions 1.0.10 and earlier):
+- You set `API_URL=https://your-domain.com`
+- Browser console shows: "Attempted URL: https://your-domain.com:5055/api/config"
+- CORS errors with "Status code: (null)"
+
+**Root Cause**:
+In versions ≤ 1.0.10, the frontend's config endpoint was at `/api/runtime-config`, which gets intercepted by reverse proxies routing all `/api/*` requests to the backend. This prevented the frontend from reading the `API_URL` environment variable.
+
+**Solution**:
+Upgrade to version 1.0.11 or later. The config endpoint has been moved to `/_config` which avoids the `/api/*` routing conflict.
+
+**Note**: Most reverse proxy configurations with a catch-all rule like `location / { proxy_pass http://frontend; }` will automatically route `/_config` to the frontend without any additional configuration needed.
+
+**Only if you have issues**, explicitly configure the `/_config` route:
+
+```nginx
+# Only needed if your reverse proxy doesn't have a catch-all rule
+location = /_config {
+    proxy_pass http://open-notebook:8502;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**Verification**:
+Check browser console (F12) - should see: `✅ [Config] Runtime API URL from server: https://your-domain.com`
 
 ### How to Debug
 

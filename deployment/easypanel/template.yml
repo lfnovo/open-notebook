@@ -1,0 +1,33 @@
+﻿name: open-notebook
+description: An open source, privacy-focused alternative to Google's Notebook LM
+services:
+  open-notebook:
+    type: app
+    image: lfnovo/open_notebook:v1-latest-single
+    ports:
+      - 8502:8502
+      - 5055:5055
+    environment:
+      OPENAI_API_KEY: '{{ .openaiApiKey }}'
+      API_URL: 'https://{{ .project.domain }}'
+      SURREAL_URL: 'ws://surreal-db:8000/rpc'
+      SURREAL_USER: 'root'
+      SURREAL_PASSWORD: 'root'
+      SURREAL_NAMESPACE: 'open_notebook'
+      SURREAL_DATABASE: 'production'
+    volumes:
+      - data:/app/data
+      - surreal_data:/mydata
+    depends_on:
+      - surreal-db
+    
+  surreal-db:
+    type: app
+    image: surrealdb/surrealdb:latest
+    command: start --log trace --user root --pass root file:/mydata/surrealdb.db
+    volumes:
+      - surreal_data:/mydata
+
+volumes:
+  data:
+    surreal_data:

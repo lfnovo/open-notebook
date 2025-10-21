@@ -27,6 +27,7 @@ from api.routers import (
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
+from open_notebook.domain.content_settings import ContentSettings
 
 # Import commands to register them in the API process
 try:
@@ -62,6 +63,17 @@ async def lifespan(app: FastAPI):
         logger.exception(e)
         # Fail fast - don't start the API with an outdated database schema
         raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
+
+    try:
+        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        settings.apply_provider_credentials()
+        if settings.provider_credentials:
+            logger.info(
+                "Loaded %d provider credential(s) from settings",
+                len(settings.provider_credentials),
+            )
+    except Exception as e:
+        logger.warning(f"Could not apply stored provider credentials: {str(e)}")
 
     logger.success("API initialization completed successfully")
 

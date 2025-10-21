@@ -5,6 +5,8 @@ This test suite focuses on validation logic, business rules, and data structures
 that can be tested without database mocking.
 """
 
+import os
+
 import pytest
 from pydantic import ValidationError
 
@@ -252,6 +254,19 @@ class TestContentSettings:
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"
         assert len(settings.youtube_preferred_languages) > 0
+        assert settings.provider_credentials == {}
+
+    def test_apply_provider_credentials_sets_environment(self, monkeypatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+        settings = ContentSettings()
+        settings.provider_credentials["OPENAI_API_KEY"] = "test-key"
+
+        settings.apply_provider_credentials()
+
+        assert os.environ.get("OPENAI_API_KEY") == "test-key"
+
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
 
 # ============================================================================

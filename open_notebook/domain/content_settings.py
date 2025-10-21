@@ -1,4 +1,6 @@
-from typing import ClassVar, List, Literal, Optional
+from typing import ClassVar, Dict, List, Literal, Optional
+
+import os
 
 from pydantic import Field
 
@@ -23,3 +25,22 @@ class ContentSettings(RecordModel):
         ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
         description="Preferred languages for YouTube transcripts",
     )
+    provider_credentials: Dict[str, Optional[str]] = Field(
+        default_factory=dict,
+        description="Stored provider environment variables keyed by env var name",
+    )
+
+    def apply_provider_credentials(self) -> None:
+        """Apply stored provider credentials to process environment variables."""
+        for env_key, value in (self.provider_credentials or {}).items():
+            if not env_key:
+                continue
+
+            normalized_key = env_key.strip()
+            if not normalized_key:
+                continue
+
+            if value:
+                os.environ[normalized_key] = value
+            else:
+                os.environ.pop(normalized_key, None)

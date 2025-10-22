@@ -65,7 +65,8 @@ build-backend = "setuptools.build_meta"
 [dependency-groups]
 dev = [
     "pre-commit>=4.1.0",
-    "types-requests>=2.32.4.20250913"
+    "pytest-asyncio>=1.2.0",
+    "types-requests>=2.32.4.20250913",
 ]
 
 [tool.isort]

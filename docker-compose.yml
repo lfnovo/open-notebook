@@ -1,3 +1,4 @@
+# Docker Compose configuration for Open Notebook
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest-single

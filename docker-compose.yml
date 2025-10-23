@@ -1,0 +1,13 @@
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    container_name: open_notebook
+    ports:
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # Backend API
+    env_file:
+      - .env
+    volumes:
+      - ${NOTEBOOK_DATA}:/app/data
+      - ${SURREAL_DATA}:/mydata
+    restart: always

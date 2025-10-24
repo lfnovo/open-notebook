@@ -241,13 +241,13 @@ open-notebook/
                  ▼
          ┌───────────────┐
          │   Port 8502   │  ← Next.js Frontend (what you see)
-         │   Frontend    │
+         │   Frontend    │    Also proxies API requests internally!
          └───────┬───────┘
-                 │ needs to call ↓
+                 │ proxies /api/* requests ↓
                  ▼
          ┌───────────────┐
          │   Port 5055   │  ← FastAPI Backend (handles requests)
-         │     API       │     This is why you need API_URL!
+         │     API       │
          └───────┬───────┘
                  │
                  ▼
@@ -257,7 +257,11 @@ open-notebook/
          └───────────────┘
 ```
 
-**Key Point:** Your browser loads the frontend from port 8502, but that frontend needs to know where to find the API (port 5055). When accessing remotely, you must tell it explicitly: `API_URL=http://your-server-ip:5055`
+**Key Points:**
+- **v1.1+**: Next.js automatically proxies `/api/*` requests to the backend, simplifying reverse proxy setup
+- Your browser loads the frontend from port 8502
+- The frontend needs to know where to find the API - when accessing remotely, set: `API_URL=http://your-server-ip:5055`
+- **Behind reverse proxy?** You only need to proxy to port 8502 now! See [Reverse Proxy Guide](docs/deployment/reverse-proxy.md)
 
 ## Star History
 

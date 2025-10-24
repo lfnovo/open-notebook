@@ -19,7 +19,6 @@ from open_notebook.utils import (
 )
 from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
 
-
 # ============================================================================
 # TEST SUITE 1: Text Utilities
 # ============================================================================

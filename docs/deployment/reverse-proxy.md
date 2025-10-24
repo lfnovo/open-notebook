@@ -241,7 +241,7 @@ http {
             proxy_set_header X-Forwarded-Proto $scheme;
         }
 
-        # Frontend (catch-all - handles /_config automatically)
+        # Frontend (catch-all - handles /config automatically)
         location / {
             proxy_pass http://frontend;
             proxy_http_version 1.1;
@@ -337,7 +337,7 @@ notebook.example.com {
     # API
     reverse_proxy /api/* open-notebook:5055
 
-    # Frontend (catch-all - handles /_config automatically)
+    # Frontend (catch-all - handles /config automatically)
     reverse_proxy / open-notebook:8502
 }
 ```
@@ -387,15 +387,15 @@ services:
 In versions ≤ 1.0.10, the frontend's config endpoint was at `/api/runtime-config`, which gets intercepted by reverse proxies routing all `/api/*` requests to the backend. This prevented the frontend from reading the `API_URL` environment variable.
 
 **Solution**:
-Upgrade to version 1.0.11 or later. The config endpoint has been moved to `/_config` which avoids the `/api/*` routing conflict.
+Upgrade to version 1.0.11 or later. The config endpoint has been moved to `/config` which avoids the `/api/*` routing conflict.
 
-**Note**: Most reverse proxy configurations with a catch-all rule like `location / { proxy_pass http://frontend; }` will automatically route `/_config` to the frontend without any additional configuration needed.
+**Note**: Most reverse proxy configurations with a catch-all rule like `location / { proxy_pass http://frontend; }` will automatically route `/config` to the frontend without any additional configuration needed.
 
-**Only if you have issues**, explicitly configure the `/_config` route:
+**Only if you have issues**, explicitly configure the `/config` route:
 
 ```nginx
 # Only needed if your reverse proxy doesn't have a catch-all rule
-location = /_config {
+location = /config {
     proxy_pass http://open-notebook:8502;
     proxy_http_version 1.1;
     proxy_set_header Host $host;

@@ -14,9 +14,10 @@ from open_notebook.graphs.tools import get_current_timestamp
 from open_notebook.graphs.transformation import (
     TransformationState,
     run_transformation,
+)
+from open_notebook.graphs.transformation import (
     graph as transformation_graph,
 )
-
 
 # ============================================================================
 # TEST SUITE 1: Graph Tools
@@ -107,6 +108,7 @@ class TestTransformationGraph:
     def test_transformation_state_structure(self):
         """Test TransformationState structure and fields."""
         from unittest.mock import MagicMock
+
         from open_notebook.domain.notebook import Source
         from open_notebook.domain.transformation import Transformation
 
@@ -129,6 +131,7 @@ class TestTransformationGraph:
     async def test_run_transformation_assertion_no_content(self):
         """Test transformation raises assertion with no content."""
         from unittest.mock import MagicMock
+
         from open_notebook.domain.transformation import Transformation
 
         mock_transformation = MagicMock(spec=Transformation)

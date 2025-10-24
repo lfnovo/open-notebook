@@ -16,7 +16,6 @@ from open_notebook.domain.podcast import EpisodeProfile, SpeakerProfile
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
-
 # ============================================================================
 # TEST SUITE 1: RecordModel Singleton Pattern
 # ============================================================================

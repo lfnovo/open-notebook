@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useDebounce } from 'use-debounce'
 import { Search, Link2, LoaderIcon, FileText, Link as LinkIcon, Upload } from 'lucide-react'
 import {
@@ -50,25 +50,7 @@ export function AddExistingSourceDialog({
 
   const addSources = useAddSourcesToNotebook()
 
-  // Load all sources initially
-  useEffect(() => {
-    if (open) {
-      loadAllSources()
-    }
-  }, [open])
-
-  // Filter sources when search query changes
-  useEffect(() => {
-    if (!debouncedSearchQuery) {
-      setFilteredSources(allSources)
-      setIsSearching(false)
-      return
-    }
-
-    performSearch()
-  }, [debouncedSearchQuery, allSources])
-
-  const loadAllSources = async () => {
+  const loadAllSources = useCallback(async () => {
     try {
       setIsSearching(true)
       // Use sources API directly to get all sources (max 100 per API limit)
@@ -86,9 +68,9 @@ export function AddExistingSourceDialog({
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [])
 
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     if (!debouncedSearchQuery.trim()) {
       // Empty query - show all sources
       setFilteredSources(allSources)
@@ -129,7 +111,25 @@ export function AddExistingSourceDialog({
     } finally {
       setIsSearching(false)
     }
-  }
+  }, [debouncedSearchQuery, allSources])
+
+  // Load all sources initially
+  useEffect(() => {
+    if (open) {
+      loadAllSources()
+    }
+  }, [open, loadAllSources])
+
+  // Filter sources when search query changes
+  useEffect(() => {
+    if (!debouncedSearchQuery) {
+      setFilteredSources(allSources)
+      setIsSearching(false)
+      return
+    }
+
+    performSearch()
+  }, [debouncedSearchQuery, allSources, performSearch])
 
   const handleToggleSource = (sourceId: string) => {
     setSelectedSourceIds(prev =>

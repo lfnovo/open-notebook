@@ -105,7 +105,7 @@ export function NotesColumn({
                       ) : (
                         <User className="h-4 w-4 text-muted-foreground" />
                       )}
-                      <Badge variant={note.note_type === 'ai' ? 'default' : 'secondary'} className="text-xs">
+                      <Badge variant="secondary" className="text-xs">
                         {note.note_type === 'ai' ? 'AI Generated' : 'Human'}
                       </Badge>
                     </div>

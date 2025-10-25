@@ -58,6 +58,7 @@ export interface SettingsResponse {
   default_embedding_option?: string
   auto_delete_files?: string
   youtube_preferred_languages?: string[]
+  provider_credentials?: Record<string, string | null>
 }
 
 export interface CreateNotebookRequest {

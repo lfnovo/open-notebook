@@ -8,6 +8,7 @@ export function useSettings() {
   return useQuery({
     queryKey: QUERY_KEYS.settings,
     queryFn: () => settingsApi.get(),
+    refetchOnWindowFocus: false,
   })
 }
 

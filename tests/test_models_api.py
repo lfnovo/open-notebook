@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -6,6 +6,101 @@ from fastapi.testclient import TestClient
 from api.main import app
 
 client = TestClient(app)
+
+
+class TestModelCreation:
+    """Test suite for Model Creation endpoint."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.models.Model.get_all")
+    @patch("api.routers.models.Model.save")
+    async def test_create_duplicate_model_same_case(self, mock_save, mock_get_all):
+        """Test that creating a duplicate model with same case returns 400."""
+        from open_notebook.domain.models import Model
+
+        # Mock existing model
+        existing_model = Model(
+            name="gpt-4",
+            provider="openai",
+            type="language"
+        )
+        existing_model.id = "model:123"
+        mock_get_all.return_value = [existing_model]
+
+        # Attempt to create duplicate
+        response = client.post(
+            "/api/models",
+            json={
+                "name": "gpt-4",
+                "provider": "openai",
+                "type": "language"
+            }
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Model name already exists"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.models.Model.get_all")
+    @patch("api.routers.models.Model.save")
+    async def test_create_duplicate_model_different_case(self, mock_save, mock_get_all):
+        """Test that creating a duplicate model with different case returns 400."""
+        from open_notebook.domain.models import Model
+
+        # Mock existing model
+        existing_model = Model(
+            name="gpt-4",
+            provider="openai",
+            type="language"
+        )
+        existing_model.id = "model:123"
+        mock_get_all.return_value = [existing_model]
+
+        # Attempt to create duplicate with different case
+        response = client.post(
+            "/api/models",
+            json={
+                "name": "GPT-4",
+                "provider": "OpenAI",
+                "type": "language"
+            }
+        )
+
+        assert response.status_code == 400
+        assert response.json()["detail"] == "Model name already exists"
+
+    @pytest.mark.asyncio
+    @patch("api.routers.models.Model.get_all")
+    async def test_create_same_model_name_different_provider(self, mock_get_all):
+        """Test that creating a model with same name but different provider is allowed."""
+        from open_notebook.domain.models import Model
+        from unittest.mock import MagicMock
+
+        # Mock existing model with OpenAI
+        existing_model = Model(
+            name="gpt-4",
+            provider="openai",
+            type="language"
+        )
+        existing_model.id = "model:123"
+        existing_model.created = "2024-01-01 00:00:00"
+        existing_model.updated = "2024-01-01 00:00:00"
+        mock_get_all.return_value = [existing_model]
+
+        # Patch the save method on the Model class
+        with patch.object(Model, 'save', new_callable=AsyncMock) as mock_save:
+            # Attempt to create same model name with different provider (anthropic)
+            response = client.post(
+                "/api/models",
+                json={
+                    "name": "gpt-4",
+                    "provider": "anthropic",
+                    "type": "language"
+                }
+            )
+
+            # Should succeed because provider is different
+            assert response.status_code == 200
 
 
 class TestModelsProviderAvailability:

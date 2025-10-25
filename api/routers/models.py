@@ -67,17 +67,27 @@ async def create_model(model_data: ModelCreate):
         valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
         if model_data.type not in valid_types:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Invalid model type. Must be one of: {valid_types}"
             )
-        
+
+        # Check for duplicate model name under the same provider (case-insensitive)
+        existing_models = await Model.get_all()
+        for existing_model in existing_models:
+            if (existing_model.provider.lower() == model_data.provider.lower() and
+                existing_model.name.lower() == model_data.name.lower()):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Model name already exists"
+                )
+
         new_model = Model(
             name=model_data.name,
             provider=model_data.provider,
             type=model_data.type,
         )
         await new_model.save()
-        
+
         return ModelResponse(
             id=new_model.id or "",
             name=new_model.name,
@@ -86,6 +96,8 @@ async def create_model(model_data: ModelCreate):
             created=str(new_model.created),
             updated=str(new_model.updated),
         )
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

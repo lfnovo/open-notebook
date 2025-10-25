@@ -72,14 +72,16 @@ async def create_model(model_data: ModelCreate):
             )
 
         # Check for duplicate model name under the same provider (case-insensitive)
-        existing_models = await Model.get_all()
-        for existing_model in existing_models:
-            if (existing_model.provider.lower() == model_data.provider.lower() and
-                existing_model.name.lower() == model_data.name.lower()):
-                raise HTTPException(
-                    status_code=400,
-                    detail="Model name already exists"
-                )
+        from open_notebook.database.repository import repo_query
+        existing = await repo_query(
+            "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND string::lowercase(name) = $name LIMIT 1",
+            {"provider": model_data.provider.lower(), "name": model_data.name.lower()}
+        )
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model '{model_data.name}' already exists for provider '{model_data.provider}'"
+            )
 
         new_model = Model(
             name=model_data.name,

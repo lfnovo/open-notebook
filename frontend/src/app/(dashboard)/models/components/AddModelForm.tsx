@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { useCreateModel, useModels } from '@/lib/hooks/use-models'
+import { useCreateModel } from '@/lib/hooks/use-models'
 import { Plus } from 'lucide-react'
 
 interface AddModelFormProps {
@@ -18,9 +18,7 @@ interface AddModelFormProps {
 
 export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const [open, setOpen] = useState(false)
-  const [validationError, setValidationError] = useState<string | null>(null)
   const createModel = useCreateModel()
-  const { data: models } = useModels()
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreateModelRequest>({
     defaultValues: {
       type: modelType
@@ -33,24 +31,8 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   )
 
   const onSubmit = async (data: CreateModelRequest) => {
-    // Clear any previous validation errors
-    setValidationError(null)
-
-    // Check for duplicate model name under the same provider (case-insensitive)
-    const duplicate = models?.find(
-      (model) =>
-        model.provider.toLowerCase() === data.provider.toLowerCase() &&
-        model.name.toLowerCase() === data.name.toLowerCase()
-    )
-
-    if (duplicate) {
-      setValidationError('Model name already exists')
-      return
-    }
-
     await createModel.mutateAsync(data)
     reset()
-    setValidationError(null)
     setOpen(false)
   }
 
@@ -84,8 +66,6 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const handleOpenChange = (isOpen: boolean) => {
     setOpen(isOpen)
     if (!isOpen) {
-      // Clear validation error when closing the dialog
-      setValidationError(null)
       reset()
     }
   }
@@ -134,9 +114,6 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
             />
             {errors.name && (
               <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
-            )}
-            {validationError && (
-              <p className="text-sm text-destructive mt-1">{validationError}</p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
               {modelType === 'language' && watch('provider') === 'azure' &&

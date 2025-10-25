@@ -38,10 +38,11 @@ export function useCreateModel() {
         description: 'Model created successfully',
       })
     },
-    onError: () => {
+    onError: (error: unknown) => {
+      const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create model'
       toast({
         title: 'Error',
-        description: 'Failed to create model',
+        description: errorMessage,
         variant: 'destructive',
       })
     },

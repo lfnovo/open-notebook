@@ -23,6 +23,12 @@ export interface ExtractedReferences {
   references: ExtractedReference[]
 }
 
+export interface ReferenceData {
+  number: number
+  type: ReferenceType
+  id: string
+}
+
 /**
  * Parse source references from text
  *
@@ -305,6 +311,163 @@ export function createReferenceLinkComponent(
 
   ReferenceLinkComponent.displayName = 'ReferenceLinkComponent'
   return ReferenceLinkComponent
+}
+
+/**
+ * Convert references in text to compact numbered format with reference list
+ *
+ * This function transforms verbose inline references like [source:abc123] into
+ * compact numbered citations [1], [2], etc., and appends a "References:" section
+ * at the bottom of the message with the full reference details.
+ *
+ * Algorithm:
+ * 1. Parse all references using parseSourceReferences()
+ * 2. Build a reference map to deduplicate and assign numbers
+ * 3. Replace inline references with numbered citations
+ * 4. Append reference list at the bottom
+ *
+ * @param text - Original text with references
+ * @returns Text with numbered citations and reference list appended
+ *
+ * @example
+ * Input: "See [source:abc] and [note:xyz]. Also [source:abc] again."
+ * Output: "See [1] and [2]. Also [1] again.\n\nReferences:\n[1] - [source:abc]\n[2] - [note:xyz]"
+ */
+export function convertReferencesToCompactMarkdown(text: string): string {
+  // Step 1: Parse all references using existing function
+  const references = parseSourceReferences(text)
+
+  // Step 2: If no references found, return original text
+  if (references.length === 0) {
+    return text
+  }
+
+  // Step 3: Build reference map (deduplicate and assign numbers)
+  const referenceMap = new Map<string, ReferenceData>()
+  let nextNumber = 1
+
+  for (const reference of references) {
+    const key = `${reference.type}:${reference.id}`
+    if (!referenceMap.has(key)) {
+      referenceMap.set(key, {
+        number: nextNumber++,
+        type: reference.type,
+        id: reference.id
+      })
+    }
+  }
+
+  // Step 4: Replace references with numbered citations (process from end to start)
+  let result = text
+  for (let i = references.length - 1; i >= 0; i--) {
+    const reference = references[i]
+    const key = `${reference.type}:${reference.id}`
+    const refData = referenceMap.get(key)!
+    const number = refData.number
+
+    // Analyze context around the reference
+    const refStart = reference.startIndex
+    const refEnd = reference.endIndex
+    const contextBefore = result.substring(Math.max(0, refStart - 2), refStart)
+    const contextAfter = result.substring(refEnd, Math.min(result.length, refEnd + 2))
+
+    // Determine what to replace based on bracket context
+    let replaceStart = refStart
+    let replaceEnd = refEnd
+
+    // Check for double brackets [[ref]]
+    if (contextBefore === '[[' && contextAfter.startsWith(']]')) {
+      replaceStart = refStart - 2
+      replaceEnd = refEnd + 2
+    }
+    // Check for single brackets [ref]
+    else if (contextBefore.endsWith('[') && contextAfter.startsWith(']')) {
+      replaceStart = refStart - 1
+      replaceEnd = refEnd + 1
+    }
+
+    // Build the numbered citation with full reference in href
+    const citationLink = `[${number}](#ref-${reference.type}-${reference.id})`
+
+    // Replace in the result string
+    result = result.substring(0, replaceStart) + citationLink + result.substring(replaceEnd)
+  }
+
+  // Step 5: Build reference list
+  const refListLines: string[] = ['\n\nReferences:']
+
+  // Iterate through reference map in insertion order (Map preserves order)
+  for (const [, refData] of referenceMap) {
+    const refListItem = `[${refData.number}] - [${refData.type}:${refData.id}](#ref-${refData.type}-${refData.id})`
+    refListLines.push(refListItem)
+  }
+
+  // Step 6: Append reference list to result
+  result = result + refListLines.join('\n')
+
+  return result
+}
+
+/**
+ * Create a custom link component for ReactMarkdown that handles compact reference links
+ *
+ * This component handles two types of reference links:
+ * 1. Numbered citations in text: [1](#ref-source-abc123)
+ * 2. Reference list items: [source:abc123](#ref-source-abc123)
+ *
+ * Both use the same href format: #ref-{type}-{id}
+ * The component extracts the type and id from the href and triggers the click handler.
+ *
+ * @param onReferenceClick - Callback for when a reference link is clicked
+ * @returns React component for rendering links in ReactMarkdown
+ *
+ * @example
+ * const LinkComponent = createCompactReferenceLinkComponent((type, id) => openModal(type, id))
+ * <ReactMarkdown components={{ a: LinkComponent }}>...</ReactMarkdown>
+ */
+export function createCompactReferenceLinkComponent(
+  onReferenceClick: (type: ReferenceType, id: string) => void
+) {
+  const CompactReferenceLinkComponent = ({
+    href,
+    children,
+    ...props
+  }: React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    href?: string
+    children?: React.ReactNode
+  }) => {
+    // Check if this is a reference link (starts with #ref-)
+    if (href?.startsWith('#ref-')) {
+      // Parse: #ref-source-abc123 → type=source, id=abc123
+      const parts = href.substring(5).split('-') // Remove '#ref-'
+      const type = parts[0] as ReferenceType
+      const id = parts.slice(1).join('-') // Rejoin in case ID has dashes
+
+      return (
+        <button
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onReferenceClick(type, id)
+          }}
+          className="text-primary hover:underline cursor-pointer inline font-medium"
+          type="button"
+        >
+          {children}
+        </button>
+      )
+    }
+
+    // Regular link - open in new tab
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" {...props} className="text-primary hover:underline">
+        {children}
+      </a>
+    )
+  }
+
+  CompactReferenceLinkComponent.displayName = 'CompactReferenceLinkComponent'
+  return CompactReferenceLinkComponent
 }
 
 /**

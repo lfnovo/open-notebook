@@ -2,6 +2,120 @@
 
 This guide helps you deploy Open Notebook behind a reverse proxy (nginx, Caddy, Traefik, etc.) or with a custom domain.
 
+## ⭐ Simplified Configuration (v1.1+)
+
+Starting with v1.1, Open Notebook uses Next.js rewrites to dramatically simplify reverse proxy configuration. **You now only need to proxy to port 8502** - Next.js handles internal API routing automatically.
+
+### How It Works
+
+```
+Browser → Reverse Proxy → Port 8502 (Next.js)
+                             ↓ (internal proxy)
+                          Port 5055 (FastAPI)
+```
+
+Next.js rewrites automatically forward `/api/*` requests to the FastAPI backend on port 5055, so your reverse proxy only needs to know about one port!
+
+### Simple Configuration Examples
+
+#### Nginx (Recommended)
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name notebook.example.com;
+
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    # Single location block - that's it!
+    location / {
+        proxy_pass http://open-notebook:8502;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+#### Traefik
+
+```yaml
+services:
+  open-notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - API_URL=https://notebook.example.com
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.notebook.rule=Host(`notebook.example.com`)"
+      - "traefik.http.routers.notebook.entrypoints=websecure"
+      - "traefik.http.routers.notebook.tls.certresolver=myresolver"
+      - "traefik.http.services.notebook.loadbalancer.server.port=8502"
+    networks:
+      - traefik-network
+```
+
+#### Caddy
+
+```caddy
+notebook.example.com {
+    reverse_proxy open-notebook:8502
+}
+```
+
+#### Coolify
+
+1. Create a new service pointing to `lfnovo/open_notebook:v1-latest-single`
+2. Set port to **8502** (not 5055!)
+3. Add environment variable: `API_URL=https://your-domain.com`
+4. Enable HTTPS in Coolify settings
+5. Done! Coolify handles the reverse proxy automatically.
+
+### Environment Variables
+
+With the simplified approach, you typically only need:
+
+```bash
+# Required for reverse proxy setups
+API_URL=https://your-domain.com
+
+# Optional: Only needed for multi-container deployments
+# Default is http://localhost:5055 (single-container)
+# INTERNAL_API_URL=http://api-service:5055
+```
+
+### Optional: Direct API Access for External Integrations
+
+If you have external scripts or integrations that need direct API access, you can still route `/api/*` directly to port 5055:
+
+```nginx
+# Optional: Direct API access (for external integrations only)
+location /api/ {
+    proxy_pass http://open-notebook:5055/api/;
+    # ... same headers as above
+}
+
+# Primary route (handles browser traffic)
+location / {
+    proxy_pass http://open-notebook:8502;
+    # ... same headers as above
+}
+```
+
+**Note**: The simplified single-port approach (port 8502 only) works for 95% of use cases. Only add direct API routing if you specifically need it.
+
+---
+
+## Legacy Configuration (Pre-v1.1)
+
+> **Note**: The configurations below are still supported but no longer necessary with v1.1+. New deployments should use the simplified configuration above.
+
 ## The API_URL Environment Variable
 
 Starting with v1.0+, Open Notebook supports runtime configuration of the API URL through the `API_URL` environment variable. This means you can use the same Docker image in different deployment scenarios without rebuilding.
@@ -117,7 +231,17 @@ http {
         ssl_certificate /etc/nginx/ssl/fullchain.pem;
         ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
-        # Frontend
+        # API
+        location /api/ {
+            proxy_pass http://api/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Frontend (catch-all - handles /config automatically)
         location / {
             proxy_pass http://frontend;
             proxy_http_version 1.1;
@@ -128,16 +252,6 @@ http {
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Forwarded-Proto $scheme;
             proxy_cache_bypass $http_upgrade;
-        }
-
-        # API
-        location /api/ {
-            proxy_pass http://api/api/;
-            proxy_http_version 1.1;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
 }
@@ -201,10 +315,11 @@ services:
       - "traefik.http.routers.notebook-frontend.tls.certresolver=myresolver"
       - "traefik.http.services.notebook-frontend.loadbalancer.server.port=8502"
 
-      # API
+      # API (higher priority to match first)
       - "traefik.http.routers.notebook-api.rule=Host(`notebook.example.com`) && PathPrefix(`/api`)"
       - "traefik.http.routers.notebook-api.entrypoints=websecure"
       - "traefik.http.routers.notebook-api.tls.certresolver=myresolver"
+      - "traefik.http.routers.notebook-api.priority=100"
       - "traefik.http.services.notebook-api.loadbalancer.server.port=5055"
     networks:
       - traefik-network
@@ -219,11 +334,11 @@ networks:
 **Caddyfile:**
 ```caddy
 notebook.example.com {
-    # Frontend
-    reverse_proxy / open-notebook:8502
-
     # API
     reverse_proxy /api/* open-notebook:5055
+
+    # Frontend (catch-all - handles /config automatically)
+    reverse_proxy / open-notebook:8502
 }
 ```
 
@@ -260,6 +375,36 @@ services:
 4. **SSL/TLS certificate issues**
    - Ensure your reverse proxy has valid SSL certificates
    - Mixed content errors (HTTPS frontend trying to reach HTTP API)
+
+### Frontend adds `:5055` to URL when using reverse proxy (versions ≤ 1.0.10)
+
+**Symptoms** (only in versions 1.0.10 and earlier):
+- You set `API_URL=https://your-domain.com`
+- Browser console shows: "Attempted URL: https://your-domain.com:5055/api/config"
+- CORS errors with "Status code: (null)"
+
+**Root Cause**:
+In versions ≤ 1.0.10, the frontend's config endpoint was at `/api/runtime-config`, which gets intercepted by reverse proxies routing all `/api/*` requests to the backend. This prevented the frontend from reading the `API_URL` environment variable.
+
+**Solution**:
+Upgrade to version 1.0.11 or later. The config endpoint has been moved to `/config` which avoids the `/api/*` routing conflict.
+
+**Note**: Most reverse proxy configurations with a catch-all rule like `location / { proxy_pass http://frontend; }` will automatically route `/config` to the frontend without any additional configuration needed.
+
+**Only if you have issues**, explicitly configure the `/config` route:
+
+```nginx
+# Only needed if your reverse proxy doesn't have a catch-all rule
+location = /config {
+    proxy_pass http://open-notebook:8502;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**Verification**:
+Check browser console (F12) - should see: `✅ [Config] Runtime API URL from server: https://your-domain.com`
 
 ### How to Debug
 

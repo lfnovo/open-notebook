@@ -60,12 +60,13 @@ async function fetchConfig(): Promise<AppConfig> {
   console.log('🔧 [Config] Starting configuration detection...')
   console.log('🔧 [Config] Build time:', BUILD_TIME)
 
-  // STEP 1: Try to get runtime config from Next.js server-side API route
+  // STEP 1: Try to get runtime config from Next.js server-side endpoint
   // This allows API_URL to be set at runtime (not baked into build)
+  // Note: Endpoint is at /config (not /api/config) to avoid reverse proxy conflicts
   let runtimeApiUrl: string | null = null
   try {
-    console.log('🔧 [Config] Attempting to fetch runtime config from Next.js API route...')
-    const runtimeResponse = await fetch('/api/runtime-config', {
+    console.log('🔧 [Config] Attempting to fetch runtime config from /config endpoint...')
+    const runtimeResponse = await fetch('/config', {
       cache: 'no-store',
     })
     if (runtimeResponse.ok) {

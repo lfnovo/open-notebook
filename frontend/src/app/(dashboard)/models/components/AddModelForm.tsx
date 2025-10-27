@@ -26,7 +26,7 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   })
 
   // Get available providers that support this model type
-  const availableProviders = providers.available.filter(provider => 
+  const availableProviders = providers.available.filter(provider =>
     providers.supported_types[provider]?.includes(modelType)
   )
 
@@ -63,8 +63,15 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
     )
   }
 
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen)
+    if (!isOpen) {
+      reset()
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="sm">
           <Plus className="h-4 w-4 mr-2" />
@@ -109,7 +116,7 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
               <p className="text-sm text-destructive mt-1">{errors.name.message}</p>
             )}
             <p className="text-xs text-muted-foreground mt-1">
-              {modelType === 'language' && watch('provider') === 'azure' && 
+              {modelType === 'language' && watch('provider') === 'azure' &&
                 'For Azure, use the deployment name as the model name'}
             </p>
           </div>

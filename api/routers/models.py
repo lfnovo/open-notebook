@@ -67,17 +67,29 @@ async def create_model(model_data: ModelCreate):
         valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
         if model_data.type not in valid_types:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Invalid model type. Must be one of: {valid_types}"
             )
-        
+
+        # Check for duplicate model name under the same provider (case-insensitive)
+        from open_notebook.database.repository import repo_query
+        existing = await repo_query(
+            "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND string::lowercase(name) = $name LIMIT 1",
+            {"provider": model_data.provider.lower(), "name": model_data.name.lower()}
+        )
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Model '{model_data.name}' already exists for provider '{model_data.provider}'"
+            )
+
         new_model = Model(
             name=model_data.name,
             provider=model_data.provider,
             type=model_data.type,
         )
         await new_model.save()
-        
+
         return ModelResponse(
             id=new_model.id or "",
             name=new_model.name,
@@ -86,6 +98,8 @@ async def create_model(model_data: ModelCreate):
             created=str(new_model.created),
             updated=str(new_model.updated),
         )
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

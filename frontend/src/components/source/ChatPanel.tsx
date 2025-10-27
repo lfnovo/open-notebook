@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import {
@@ -18,7 +18,7 @@ import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
 import { SessionManager } from '@/components/source/SessionManager'
 import { MessageActions } from '@/components/source/MessageActions'
-import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
+import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 
@@ -142,6 +142,7 @@ export function ChatPanel({
                 <span className="text-xs">Sessions</span>
               </Button>
               <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+                <DialogTitle className="sr-only">Chat Sessions</DialogTitle>
                 <SessionManager
                   sessions={sessions}
                   currentSessionId={currentSessionId ?? null}
@@ -325,11 +326,11 @@ function AIMessageContent({
   content: string
   onReferenceClick: (type: string, id: string) => void
 }) {
-  // Convert references to markdown links
-  const markdownWithLinks = convertReferencesToMarkdownLinks(content)
+  // Convert references to compact markdown with numbered citations
+  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content)
 
-  // Create custom link component
-  const LinkComponent = createReferenceLinkComponent(onReferenceClick)
+  // Create custom link component for compact references
+  const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)
 
   return (
     <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none break-words prose-headings:font-semibold prose-a:text-blue-600 prose-a:break-all prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
@@ -348,7 +349,7 @@ function AIMessageContent({
           ol: ({ children }) => <ol className="mb-4 space-y-1">{children}</ol>,
         }}
       >
-        {markdownWithLinks}
+        {markdownWithCompactRefs}
       </ReactMarkdown>
     </div>
   )

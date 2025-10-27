@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Plus, StickyNote, Bot, User } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { Plus, StickyNote, Bot, User, MoreVertical, Trash2 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
@@ -12,6 +18,8 @@ import { NoteEditorDialog } from './NoteEditorDialog'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '../[id]/page'
+import { useDeleteNote } from '@/lib/hooks/use-notes'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
@@ -30,6 +38,27 @@ export function NotesColumn({
 }: NotesColumnProps) {
   const [showAddDialog, setShowAddDialog] = useState(false)
   const [editingNote, setEditingNote] = useState<NoteResponse | null>(null)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
+
+  const deleteNote = useDeleteNote()
+
+  const handleDeleteClick = (noteId: string) => {
+    setNoteToDelete(noteId)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!noteToDelete) return
+
+    try {
+      await deleteNote.mutateAsync(noteToDelete)
+      setDeleteDialogOpen(false)
+      setNoteToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete note:', error)
+    }
+  }
 
   return (
     <>
@@ -76,7 +105,7 @@ export function NotesColumn({
                       ) : (
                         <User className="h-4 w-4 text-muted-foreground" />
                       )}
-                      <Badge variant={note.note_type === 'ai' ? 'default' : 'secondary'} className="text-xs">
+                      <Badge variant="secondary" className="text-xs">
                         {note.note_type === 'ai' ? 'AI Generated' : 'Human'}
                       </Badge>
                     </div>
@@ -96,6 +125,32 @@ export function NotesColumn({
                           />
                         </div>
                       )}
+
+                      {/* Ellipsis menu for delete action */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleDeleteClick(note.id)
+                            }}
+                            className="text-red-600 focus:text-red-600"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Note
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
                   
@@ -127,6 +182,17 @@ export function NotesColumn({
         }}
         notebookId={notebookId}
         note={editingNote ?? undefined}
+      />
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Note"
+        description="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteNote.isPending}
+        confirmVariant="destructive"
       />
     </>
   )

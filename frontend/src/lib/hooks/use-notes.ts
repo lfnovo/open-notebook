@@ -78,7 +78,8 @@ export function useDeleteNote() {
   return useMutation({
     mutationFn: (id: string) => notesApi.delete(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes() })
+      // Invalidate all notes queries (with and without notebook IDs)
+      queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast({
         title: 'Success',
         description: 'Note deleted successfully',

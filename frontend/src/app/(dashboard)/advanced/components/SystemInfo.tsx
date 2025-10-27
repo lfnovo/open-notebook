@@ -63,7 +63,7 @@ export function SystemInfo() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">Status</span>
             {config?.hasUpdate ? (
-              <Badge variant="default" className="bg-primary">
+              <Badge variant="destructive">
                 Update Available
               </Badge>
             ) : config?.latestVersion ? (

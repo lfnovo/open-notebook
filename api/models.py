@@ -24,6 +24,8 @@ class NotebookResponse(BaseModel):
     archived: bool
     created: str
     updated: str
+    source_count: int
+    note_count: int
 
 
 # Search models
@@ -338,6 +340,8 @@ class SourceResponse(BaseModel):
     command_id: Optional[str] = None
     status: Optional[str] = None
     processing_info: Optional[Dict] = None
+    # Notebook associations
+    notebooks: Optional[List[str]] = None
 
 
 class SourceListResponse(BaseModel):

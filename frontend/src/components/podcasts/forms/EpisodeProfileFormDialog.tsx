@@ -229,7 +229,7 @@ export function EpisodeProfileFormDialog({
                 type="number"
                 min={3}
                 max={20}
-                {...register('num_segments')}
+                {...register('num_segments', { valueAsNumber: true })}
               />
               {errors.num_segments ? (
                 <p className="text-xs text-red-600">{errors.num_segments.message}</p>

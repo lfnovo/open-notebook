@@ -29,4 +29,18 @@ async def provision_langchain_model(
 
     logger.debug(f"Using model: {model}")
     assert isinstance(model, LanguageModel), f"Model is not a LanguageModel: {model}"
-    return model.to_langchain()
+
+    langchain_model = model.to_langchain()
+
+    # Anthropic doesn't support both temperature and top_p parameters simultaneously
+    # Priority: temperature > top_p (temperature is more intuitive and widely used)
+    if (hasattr(model, 'provider') and model.provider.lower() == 'anthropic' and
+        getattr(langchain_model, 'temperature', None) is not None and
+        getattr(langchain_model, 'top_p', None) is not None):
+        logger.debug(
+            f"Removing top_p={langchain_model.top_p} for Anthropic model "
+            f"(temperature={langchain_model.temperature})"
+        )
+        langchain_model.top_p = None
+
+    return langchain_model

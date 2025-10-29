@@ -34,5 +34,10 @@ export const notebooksApi = {
   removeSource: async (notebookId: string, sourceId: string) => {
     const response = await apiClient.delete(`/notebooks/${notebookId}/sources/${sourceId}`)
     return response.data
+  },
+
+  bulkSourceOperation: async (notebookId: string, data: { source_ids: string[]; operation: 'add' | 'remove' }) => {
+    const response = await apiClient.post(`/notebooks/${notebookId}/sources/bulk`, data)
+    return response.data
   }
 }

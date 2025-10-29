@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from pydantic import BaseModel
 from loguru import logger
 
 from api.models import NotebookCreate, NotebookResponse, NotebookUpdate
@@ -177,6 +178,104 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         logger.error(f"Error updating notebook {notebook_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error updating notebook: {str(e)}"
+        )
+
+
+class BulkSourceOperationRequest(BaseModel):
+    source_ids: List[str]
+    operation: Literal["add", "remove"]
+
+
+@router.post("/notebooks/{notebook_id}/sources/bulk")
+async def bulk_source_operation(
+    notebook_id: str, request: BulkSourceOperationRequest
+):
+    """Bulk add or remove sources from a notebook."""
+    try:
+        # Check if notebook exists
+        notebook = await Notebook.get(notebook_id)
+        if not notebook:
+            raise HTTPException(status_code=404, detail="Notebook not found")
+
+        results = []
+        for source_id in request.source_ids:
+            try:
+                if request.operation == "add":
+                    # Check if source exists
+                    source = await Source.get(source_id)
+                    if not source:
+                        results.append({
+                            "source_id": source_id,
+                            "success": False,
+                            "error": "Source not found"
+                        })
+                        continue
+
+                    # Check if reference already exists (idempotency)
+                    existing_ref = await repo_query(
+                        "SELECT * FROM reference WHERE out = $source_id AND in = $notebook_id",
+                        {
+                            "notebook_id": ensure_record_id(notebook_id),
+                            "source_id": ensure_record_id(source_id),
+                        },
+                    )
+
+                    # If reference doesn't exist, create it
+                    if not existing_ref:
+                        await repo_query(
+                            "RELATE $source_id->reference->$notebook_id",
+                            {
+                                "notebook_id": ensure_record_id(notebook_id),
+                                "source_id": ensure_record_id(source_id),
+                            },
+                        )
+                    
+                    results.append({
+                        "source_id": source_id,
+                        "success": True,
+                        "message": "Source added to notebook successfully"
+                    })
+                
+                elif request.operation == "remove":
+                    # Delete the reference record linking source to notebook
+                    await repo_query(
+                        "DELETE FROM reference WHERE out = $notebook_id AND in = $source_id",
+                        {
+                            "notebook_id": ensure_record_id(notebook_id),
+                            "source_id": ensure_record_id(source_id),
+                        },
+                    )
+                    
+                    results.append({
+                        "source_id": source_id,
+                        "success": True,
+                        "message": "Source removed from notebook successfully"
+                    })
+            
+            except Exception as e:
+                logger.error(
+                    f"Error processing source {source_id} for notebook {notebook_id}: {str(e)}"
+                )
+                results.append({
+                    "source_id": source_id,
+                    "success": False,
+                    "error": str(e)
+                })
+
+        success_count = sum(1 for r in results if r["success"])
+        return {
+            "message": f"Bulk operation completed. {success_count}/{len(results)} operations successful.",
+            "results": results
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error performing bulk source operation for notebook {notebook_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Error performing bulk source operation: {str(e)}"
         )
 
 

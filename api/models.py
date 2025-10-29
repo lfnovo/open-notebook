@@ -422,3 +422,8 @@ class SourceStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     message: str
+
+
+class BulkSourceOperationRequest(BaseModel):
+    source_ids: List[str]
+    operation: Literal["add", "remove"]

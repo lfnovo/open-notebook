@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -10,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown } from 'lucide-react'
+import { Plus, FileText, Link2, ChevronDown, ListPlus } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
@@ -19,40 +18,25 @@ import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
-import { ContextMode } from '../[id]/page'
+import { BulkSourceActionDialog } from '@/components/notebooks/BulkSourceActionDialog'
 
-interface SourcesColumnProps {
-  sources?: SourceListResponse[]
-  isLoading: boolean
-  notebookId: string
-  notebookName?: string
-  onRefresh?: () => void
-  contextSelections?: Record<string, ContextMode>
-  onContextModeChange?: (sourceId: string, mode: ContextMode) => void
-}
-
-export function SourcesColumn({
-  sources,
-  isLoading,
-  notebookId,
-  onRefresh,
-  contextSelections,
-  onContextModeChange
-}: SourcesColumnProps) {
+export function SourcesColumn({ sources, isLoading, notebookId, onRefresh, contextSelections, onContextModeChange }) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addExistingDialogOpen, setAddExistingDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
+  const [sourceToDelete, setSourceToDelete] = useState(null)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
-  const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
+  const [sourceToRemove, setSourceToRemove] = useState(null)
+  const [bulkAddDialogOpen, setBulkAddDialogOpen] = useState(false)
+  const [bulkRemoveDialogOpen, setBulkRemoveDialogOpen] = useState(false)
 
   const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
   
-  const handleDeleteClick = (sourceId: string) => {
+  const handleDeleteClick = (sourceId) => {
     setSourceToDelete(sourceId)
     setDeleteDialogOpen(true)
   }
@@ -70,7 +54,7 @@ export function SourcesColumn({
     }
   }
 
-  const handleRemoveFromNotebook = (sourceId: string) => {
+  const handleRemoveFromNotebook = (sourceId) => {
     setSourceToRemove(sourceId)
     setRemoveDialogOpen(true)
   }
@@ -91,7 +75,7 @@ export function SourcesColumn({
     }
   }
 
-  const handleRetry = async (sourceId: string) => {
+  const handleRetry = async (sourceId) => {
     try {
       await retrySource.mutateAsync(sourceId)
     } catch (error) {
@@ -99,9 +83,10 @@ export function SourcesColumn({
     }
   }
 
-  const handleSourceClick = (sourceId: string) => {
+  const handleSourceClick = (sourceId) => {
     openModal('source', sourceId)
   }
+  
   return (
     <Card className="h-full flex flex-col flex-1 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
@@ -123,6 +108,14 @@ export function SourcesColumn({
               <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
                 <Link2 className="h-4 w-4 mr-2" />
                 Add Existing Source
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setDropdownOpen(false); setBulkAddDialogOpen(true); }}>
+                <ListPlus className="h-4 w-4 mr-2" />
+                Bulk Add Sources
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setDropdownOpen(false); setBulkRemoveDialogOpen(true); }}>
+                <ListPlus className="h-4 w-4 mr-2" />
+                Bulk Remove Sources
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -196,6 +189,22 @@ export function SourcesColumn({
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
+      />
+
+      <BulkSourceActionDialog
+        open={bulkAddDialogOpen}
+        onOpenChange={setBulkAddDialogOpen}
+        notebookId={notebookId}
+        operation="add"
+        onSuccess={onRefresh}
+      />
+
+      <BulkSourceActionDialog
+        open={bulkRemoveDialogOpen}
+        onOpenChange={setBulkRemoveDialogOpen}
+        notebookId={notebookId}
+        operation="remove"
+        onSuccess={onRefresh}
       />
     </Card>
   )

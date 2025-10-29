@@ -35,10 +35,10 @@ export function useCreateSource() {
 
   return useMutation({
     mutationFn: (data: CreateSourceRequest) => sourcesApi.create(data),
-    onSuccess: (result: SourceResponse, variables) => {
+    onSuccess: (result: SourceResponse, variables: CreateSourceRequest) => {
       // Invalidate queries for all relevant notebooks with immediate refetch
       if (variables.notebooks) {
-        variables.notebooks.forEach(notebookId => {
+        variables.notebooks.forEach((notebookId: string) => {
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.sources(notebookId),
             refetchType: 'active' // Refetch active queries immediately
@@ -87,7 +87,7 @@ export function useUpdateSource() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateSourceRequest }) =>
       sourcesApi.update(id, data),
-    onSuccess: (_, { id }) => {
+    onSuccess: (_: unknown, { id }: { id: string }) => {
       // Invalidate ALL sources queries (both general and notebook-specific)
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(id) })
@@ -112,7 +112,7 @@ export function useDeleteSource() {
 
   return useMutation({
     mutationFn: (id: string) => sourcesApi.delete(id),
-    onSuccess: (_, id) => {
+    onSuccess: (_: unknown, id: string) => {
       // Invalidate ALL sources queries (both general and notebook-specific)
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Also invalidate the specific source
@@ -139,7 +139,7 @@ export function useFileUpload() {
   return useMutation({
     mutationFn: ({ file, notebookId }: { file: File; notebookId: string }) =>
       sourcesApi.upload(file, notebookId),
-    onSuccess: (_, variables) => {
+    onSuccess: (_: unknown, variables: { file: File; notebookId: string }) => {
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.sources(variables.notebookId) 
       })
@@ -163,10 +163,10 @@ export function useSourceStatus(sourceId: string, enabled = true) {
     queryKey: ['sources', sourceId, 'status'],
     queryFn: () => sourcesApi.status(sourceId),
     enabled: !!sourceId && enabled,
-    refetchInterval: (query) => {
+    refetchInterval: (query: { state: { data: SourceStatusResponse | undefined } }) => {
       // Auto-refresh every 2 seconds if processing
       // The query.state.data contains the SourceStatusResponse
-      const data = query.state.data as SourceStatusResponse | undefined
+      const data = query.state.data
       if (data?.status === 'running' || data?.status === 'queued' || data?.status === 'new') {
         return 2000
       }
@@ -174,7 +174,7 @@ export function useSourceStatus(sourceId: string, enabled = true) {
       return false
     },
     staleTime: 0, // Always consider status data stale for real-time updates
-    retry: (failureCount, error) => {
+    retry: (failureCount: number, error: unknown) => {
       // Don't retry on 404 (source not found)
       const axiosError = error as { response?: { status?: number } }
       if (axiosError?.response?.status === 404) {
@@ -191,7 +191,7 @@ export function useRetrySource() {
 
   return useMutation({
     mutationFn: (sourceId: string) => sourcesApi.retry(sourceId),
-    onSuccess: (result, sourceId) => {
+    onSuccess: (result: unknown, sourceId: string) => {
       // Invalidate status query to refetch latest status
       queryClient.invalidateQueries({
         queryKey: ['sources', sourceId, 'status']
@@ -234,7 +234,7 @@ export function useAddSourcesToNotebook() {
 
       return { successes, failures, total: sourceIds.length }
     },
-    onSuccess: (result, { notebookId, sourceIds }) => {
+    onSuccess: (result: { successes: number; failures: number; total: number }, { notebookId, sourceIds }: { notebookId: string; sourceIds: string[] }) => {
       // Invalidate ALL sources queries to refresh all lists
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
@@ -284,7 +284,7 @@ export function useRemoveSourceFromNotebook() {
       const { notebooksApi } = await import('@/lib/api/notebooks')
       return notebooksApi.removeSource(notebookId, sourceId)
     },
-    onSuccess: (_, { notebookId, sourceId }) => {
+    onSuccess: (_: unknown, { notebookId, sourceId }: { notebookId: string; sourceId: string }) => {
       // Invalidate ALL sources queries to refresh all lists
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
@@ -305,4 +305,39 @@ export function useRemoveSourceFromNotebook() {
       })
     },
   })
+}
+
+export function useBulkSourceOperation() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  
+  const mutation = useMutation({
+    mutationFn: async ({ notebookId, data }: { notebookId: string; data: { source_ids: string[]; operation: 'add' | 'remove' } }) => {
+      const { notebooksApi } = await import('@/lib/api/notebooks')
+      return notebooksApi.bulkSourceOperation(notebookId, data)
+    },
+    onSuccess: (_: unknown, variables: { notebookId: string; data: { source_ids: string[]; operation: 'add' | 'remove' } }) => {
+      // Invalidate queries to refresh the UI
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sources(variables.notebookId)
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.notebook(variables.notebookId)
+      })
+      toast({
+        title: 'Success',
+        description: 'Bulk operation completed successfully',
+      })
+    },
+    onError: (error: unknown) => {
+      console.error('Bulk source operation failed:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to perform bulk source operation',
+        variant: 'destructive',
+      })
+    }
+  })
+
+  return mutation
 }

@@ -28,7 +28,7 @@ For users who want to get started immediately:
 mkdir open-notebook && cd open-notebook
 
 # Download configuration files
-curl -O https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.single.yml
 curl -O https://raw.githubusercontent.com/lfnovo/open-notebook/main/.env.example
 
 # Rename and configure environment

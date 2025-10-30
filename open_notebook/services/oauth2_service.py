@@ -35,3 +35,27 @@ class OAuth2Service:
             refresh_token=refresh_token,
         )
         return token
+
+    def build_authorized_user_info(self, token: Dict[str, Any]) -> Dict[str, Any]:
+        """Augment the fetched token with provider fields required by Google auth."""
+        info: Dict[str, Any] = token.copy()
+
+        # The google client expects a top-level "token" field.
+        if "token" not in info and "access_token" in info:
+            info["token"] = info.get("access_token")
+
+        # Normalize scopes to a list so google-auth accepts them.
+        scopes: Any = info.get("scopes") or info.get("scope")
+        if isinstance(scopes, str):
+            scopes = scopes.split()
+        if scopes is None:
+            scopes = self.provider_config.get("scopes", [])
+        info["scopes"] = scopes
+        info.pop("scope", None)
+
+        info.setdefault("client_id", self.provider_config["client_id"])
+        info.setdefault("client_secret", self.provider_config["client_secret"])
+        info.setdefault("token_uri", self.provider_config.get("token_url"))
+        info.setdefault("type", "authorized_user")
+
+        return info

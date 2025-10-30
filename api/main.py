@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -82,12 +83,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-import os
-from starlette.middleware.sessions import SessionMiddleware
-
 # Add session middleware
 # Make sure to set the SESSION_SECRET_KEY environment variable
-app.add_middleware(SessionMiddleware, secret_key=os.environ.get("SESSION_SECRET_KEY", "your-secret-key"))
+session_secret_key = os.environ.get("SESSION_SECRET_KEY")
+if not session_secret_key:
+    raise RuntimeError(
+        "SESSION_SECRET_KEY environment variable must be set before starting the API"
+    )
+
+app.add_middleware(SessionMiddleware, secret_key=session_secret_key)
 
 # Add password authentication middleware first
 # Exclude /api/auth/status and /api/config from authentication

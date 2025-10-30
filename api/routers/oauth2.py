@@ -36,6 +36,7 @@ async def oauth2_callback(provider: str, code: str, state: str, session: Session
     try:
         oauth_service = OAuth2Service(provider)
         token = await oauth_service.exchange_code_for_token(code)
+        authorized_credentials = oauth_service.build_authorized_user_info(token)
 
         # Store the credentials in the database
         # We are storing credentials globally for now.
@@ -50,10 +51,10 @@ async def oauth2_callback(provider: str, code: str, state: str, session: Session
         
         if existing_credentials_data:
             credentials = OAuth2Credentials(**existing_credentials_data[0])
-            credentials.credentials = token
+            credentials.credentials = authorized_credentials
             await credentials.save()
         else:
-            credentials = OAuth2Credentials(provider=provider, credentials=token)
+            credentials = OAuth2Credentials(provider=provider, credentials=authorized_credentials)
             await credentials.save()
 
         # Redirect the user to the frontend settings page, or a success page

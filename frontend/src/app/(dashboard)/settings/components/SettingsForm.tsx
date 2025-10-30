@@ -265,6 +265,34 @@ export function SettingsForm() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Integrations</CardTitle>
+          <CardDescription>
+            Connect to third-party services
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-3">
+            <Label>Google Drive</Label>
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                Connect your Google Drive account to import files.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  window.location.href = "/api/oauth2/google/login";
+                }}
+              >
+                Connect
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button 
           type="submit" 

@@ -257,6 +257,7 @@ class SettingsResponse(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    google_drive_api_key: Optional[str] = None
 
 
 class SettingsUpdate(BaseModel):
@@ -265,6 +266,7 @@ class SettingsUpdate(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     youtube_preferred_languages: Optional[List[str]] = None
+    google_drive_api_key: Optional[str] = None
 
 
 # Sources API models
@@ -422,3 +424,20 @@ class SourceStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     message: str
+
+
+# Batch Upload models
+class BatchUploadResponse(BaseModel):
+    id: str
+    name: Optional[str] = None
+    status: str
+    total_files: int
+    processed_files: int
+    failed_files: int
+    created_at: str
+    updated_at: str
+
+
+class BatchSourceResponse(SourceResponse):
+    batch_id: str
+    batch_status: str

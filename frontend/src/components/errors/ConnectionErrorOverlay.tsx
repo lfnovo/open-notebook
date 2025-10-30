@@ -74,16 +74,21 @@ export function ConnectionErrorOverlay({
           <h2 className="font-semibold mt-4">Quick fixes:</h2>
           {isApiError ? (
             <div className="space-y-2 text-sm bg-muted p-4 rounded">
-              <p className="font-medium">Set the API_URL environment variable:</p>
+              <p className="font-medium">
+                Point <code>API_URL</code> at the address your users visit (or remove it to use same-origin auto-detection):
+              </p>
               <code className="block bg-background p-2 rounded text-xs">
-                # For Docker:
+                # For Docker (replace YOUR-HOST with your public hostname or IP):
                 <br />
-                docker run -e API_URL=http://your-host:5055 ...
+                docker run -e API_URL=https://YOUR-HOST ...
                 <br />
                 <br />
-                # For local development (.env file):
+                # For local development on the same machine:
                 <br />
-                API_URL=http://localhost:5055
+                API_URL=http://localhost:8502
+                <br />
+                <br />
+                # Remove API_URL to let Open Notebook auto-detect the correct origin.
               </code>
             </div>
           ) : (

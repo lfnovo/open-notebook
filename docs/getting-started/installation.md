@@ -125,6 +125,8 @@ User Browser → React frontend → FastAPI Backend → SurrealDB Database
 
 Open Notebook uses environment variables for configuration. Create a `.env` file (or `docker.env` for Docker) based on the template below:
 
+> **Tip:** Leave `API_URL` unset unless you need to force a specific host. When unset, Open Notebook automatically uses the same origin that served the frontend (for example, `https://notebook.example.com`) and proxies requests through `/api/*`, so you only need to expose port 8502. If you set `API_URL` to `http://localhost:5055` while serving other machines, their browsers will attempt to call their own localhost. Only set this variable when you truly need to override detection (e.g., custom reverse proxy rules or a dedicated API domain).
+
 ### Core Configuration
 ```env
 # Security (Optional - for public deployments)

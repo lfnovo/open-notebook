@@ -1,0 +1,17 @@
+DEFINE TABLE batch_upload SCHEMAFULL;
+DEFINE FIELD name ON TABLE batch_upload TYPE string;
+DEFINE FIELD status ON TABLE batch_upload TYPE string DEFAULT "processing";
+DEFINE FIELD total_files ON TABLE batch_upload TYPE int;
+DEFINE FIELD processed_files ON TABLE batch_upload TYPE int DEFAULT 0;
+DEFINE FIELD failed_files ON TABLE batch_upload TYPE int DEFAULT 0;
+DEFINE FIELD created_at ON TABLE batch_upload TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON TABLE batch_upload TYPE datetime DEFAULT time::now();
+
+DEFINE TABLE batch_source_relationship SCHEMAFULL;
+DEFINE FIELD batch_id ON TABLE batch_source_relationship TYPE record<batch_upload>;
+DEFINE FIELD source_id ON TABLE batch_source_relationship TYPE record<source>;
+DEFINE FIELD file_name ON TABLE batch_source_relationship TYPE string;
+DEFINE FIELD status ON TABLE batch_source_relationship TYPE string DEFAULT "pending";
+DEFINE FIELD error_message ON TABLE batch_source_relationship TYPE option<string>;
+DEFINE FIELD created_at ON TABLE batch_source_relationship TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at ON TABLE batch_source_relationship TYPE datetime DEFAULT time::now();

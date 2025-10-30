@@ -23,3 +23,6 @@ class ContentSettings(RecordModel):
         ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
         description="Preferred languages for YouTube transcripts",
     )
+    google_drive_api_key: Optional[str] = Field(
+        None, description="Google Drive API Key"
+    )

@@ -12,14 +12,13 @@ router = APIRouter()
 async def get_settings():
     """Get all application settings."""
     try:
-        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
-
         return SettingsResponse(
             default_content_processing_engine_doc=settings.default_content_processing_engine_doc,
             default_content_processing_engine_url=settings.default_content_processing_engine_url,
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
+            google_drive_api_key=settings.google_drive_api_key,
         )
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
@@ -60,6 +59,8 @@ async def update_settings(settings_update: SettingsUpdate):
             )
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
+        if settings_update.google_drive_api_key is not None:
+            settings.google_drive_api_key = settings_update.google_drive_api_key
 
         await settings.update()
 
@@ -69,6 +70,7 @@ async def update_settings(settings_update: SettingsUpdate):
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
+            google_drive_api_key=settings.google_drive_api_key,
         )
     except HTTPException:
         raise

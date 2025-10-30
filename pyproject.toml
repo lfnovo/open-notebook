@@ -40,6 +40,10 @@ dependencies = [
     "surrealdb>=1.0.4",
     "surreal-commands>=1.0.13",
     "podcast-creator>=0.7.0",
+    "google-api-python-client",
+    "google-auth-httplib2",
+    "google-auth-oauthlib",
+    "authlib",
 ]
 
 [tool.setuptools]

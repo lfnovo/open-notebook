@@ -1,0 +1,2 @@
+REMOVE TABLE batch_upload;
+REMOVE TABLE batch_source_relationship;

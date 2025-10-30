@@ -18,6 +18,7 @@ from surreal_commands import execute_command_sync
 from api.command_service import CommandService
 from api.models import (
     AssetModel,
+    BatchUploadResponse,
     CreateSourceInsightRequest,
     SourceCreate,
     SourceInsightResponse,
@@ -29,11 +30,137 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook, Source
+from open_notebook.domain.batch import BatchSourceRelationship, BatchUpload
+from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
+
+
+@router.post("/sources/batch", response_model=BatchUploadResponse)
+async def create_batch_sources(
+    files: List[UploadFile] = File(...),
+    notebook_id: Optional[str] = Form(None),
+    notebooks: Optional[str] = Form(None),
+    transformations: Optional[str] = Form(None),
+    embed: str = Form("false"),
+    async_processing: str = Form("true"),
+    batch_name: Optional[str] = Form(None)
+):
+    """Create a batch of new sources from multiple file uploads."""
+    import json
+
+    # Helper to convert string to bool
+    def str_to_bool(value: str) -> bool:
+        return value.lower() in ("true", "1", "yes", "on")
+
+    # Parse JSON strings for notebooks and transformations
+    notebook_ids = []
+    if notebooks:
+        try:
+            notebook_ids = json.loads(notebooks)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON in notebooks field")
+    elif notebook_id:
+        notebook_ids = [notebook_id]
+
+    transformation_ids = []
+    if transformations:
+        try:
+            transformation_ids = json.loads(transformations)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON in transformations field")
+
+    # Create a new batch upload record
+    batch_upload = BatchUpload(
+        name=batch_name,
+        total_files=len(files),
+        status="processing"
+    )
+    await batch_upload.save()
+
+    created_sources = []
+    for file in files:
+        if not file.filename:
+            logger.warning("Skipping file with no filename.")
+            batch_upload.total_files -= 1
+            batch_upload.failed_files += 1
+            await batch_upload.save()
+            continue
+
+        # Save the uploaded file
+        try:
+            file_path = await save_uploaded_file(file)
+        except Exception as e:
+            logger.error(f"File upload failed for {file.filename}: {e}")
+            # Decrement total_files and increment failed_files
+            batch_upload.failed_files += 1
+            await batch_upload.save()
+            continue
+
+        # Create a new source record for each file
+        source = Source(
+            title=file.filename,
+            topics=[],
+            asset=Asset(file_path=file_path)
+        )
+        await source.save()
+
+        # Create a relationship between the batch and the source
+        batch_source_relationship = BatchSourceRelationship(
+            batch_id=str(batch_upload.id),
+            source_id=str(source.id),
+            file_name=file.filename,
+            status="pending"
+        )
+        await batch_source_relationship.save()
+
+        # Add source to notebooks
+        for nb_id in notebook_ids:
+            await source.add_to_notebook(nb_id)
+
+        created_sources.append(source)
+
+    # If all files failed to upload, update batch status to failed
+    if not created_sources:
+        batch_upload.status = "failed"
+        await batch_upload.save()
+        raise HTTPException(status_code=400, detail="All file uploads failed.")
+
+    # Enqueue a background job to process the batch
+    try:
+        import commands.batch_commands  # noqa: F401
+        from commands.batch_commands import BatchProcessingInput
+
+        command_input = BatchProcessingInput(
+            batch_id=str(batch_upload.id),
+            notebook_ids=notebook_ids,
+            transformations=transformation_ids,
+            embed=str_to_bool(embed)
+        )
+        command_id = await CommandService.submit_command_job(
+            "open_notebook",
+            "process_batch_upload",
+            command_input.model_dump(),
+        )
+        logger.info(f"Submitted batch processing command: {command_id} for batch {batch_upload.id}")
+    except Exception as e:
+        logger.error(f"Failed to submit batch processing command: {e}")
+        batch_upload.status = "failed"
+        await batch_upload.save()
+        raise HTTPException(status_code=500, detail=f"Failed to queue batch processing: {str(e)}")
+
+    return BatchUploadResponse(
+        id=str(batch_upload.id),
+        name=batch_upload.name,
+        status=batch_upload.status,
+        total_files=batch_upload.total_files,
+        processed_files=batch_upload.processed_files,
+        failed_files=batch_upload.failed_files,
+        created_at=str(batch_upload.created),
+        updated_at=str(batch_upload.updated),
+    )
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:

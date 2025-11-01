@@ -74,7 +74,6 @@ async def repo_query(
                 raise RuntimeError(result)
             return result
         except Exception as e:
-            logger.error(f"Query: {query_str[:200]} vars: {vars}")
             logger.exception(e)
             raise
 

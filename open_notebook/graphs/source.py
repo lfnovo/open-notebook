@@ -10,6 +10,7 @@ from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.domain.content_settings import ContentSettings
+from open_notebook.domain.models import Model, ModelManager
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
@@ -47,6 +48,20 @@ async def content_process(state: SourceState) -> dict:
         content_settings.default_content_processing_engine_doc or "auto"
     )
     content_state["output_format"] = "markdown"
+
+    # Add speech-to-text model configuration from Default Models
+    try:
+        model_manager = ModelManager()
+        defaults = await model_manager.get_defaults()
+        if defaults.default_speech_to_text_model:
+            stt_model = await Model.get(defaults.default_speech_to_text_model)
+            if stt_model:
+                content_state["audio_provider"] = stt_model.provider
+                content_state["audio_model"] = stt_model.name
+                logger.debug(f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}")
+    except Exception as e:
+        logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
+        # Continue without custom audio model (content-core will use its default)
 
     processed_state = await extract_content(content_state)
     return {"content_state": processed_state}

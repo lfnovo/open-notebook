@@ -186,7 +186,17 @@ async def embed_single_item_command(
         )
 
 
-@command("embed_chunk", app="open_notebook")
+@command(
+    "embed_chunk",
+    app="open_notebook",
+    retry={
+        "max_attempts": 5,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 30,
+        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+    },
+)
 async def embed_chunk_command(
     input_data: EmbedChunkInput,
 ) -> EmbedChunkOutput:
@@ -195,6 +205,18 @@ async def embed_chunk_command(
 
     This command is designed to be submitted as a background job for each chunk
     of a source document, allowing natural concurrency control through the worker pool.
+
+    Retry Strategy:
+    - Retries up to 5 times for transient failures:
+      * RuntimeError: SurrealDB transaction conflicts ("read or write conflict")
+      * ConnectionError: Network failures when calling embedding provider
+      * TimeoutError: Request timeouts to embedding provider
+    - Uses exponential-jitter backoff (1-30s) to prevent thundering herd during concurrent operations
+    - Does NOT retry permanent failures (ValueError, authentication errors, invalid input)
+
+    Exception Handling:
+    - RuntimeError, ConnectionError, TimeoutError: Re-raised to trigger retry mechanism
+    - ValueError and other exceptions: Caught and returned as permanent failures (no retry)
     """
     try:
         logger.debug(
@@ -239,7 +261,20 @@ async def embed_chunk_command(
             chunk_index=input_data.chunk_index,
         )
 
+    except RuntimeError:
+        # Re-raise RuntimeError to allow retry mechanism to handle DB transaction conflicts
+        logger.warning(
+            f"Transaction conflict for chunk {input_data.chunk_index} - will be retried by retry mechanism"
+        )
+        raise
+    except (ConnectionError, TimeoutError) as e:
+        # Re-raise network/timeout errors to allow retry mechanism to handle transient provider failures
+        logger.warning(
+            f"Network/timeout error for chunk {input_data.chunk_index} ({type(e).__name__}: {e}) - will be retried by retry mechanism"
+        )
+        raise
     except Exception as e:
+        # Catch other exceptions (ValueError, etc.) as permanent failures
         logger.error(
             f"Failed to embed chunk {input_data.chunk_index} for source {input_data.source_id}: {e}"
         )
@@ -253,7 +288,7 @@ async def embed_chunk_command(
         )
 
 
-@command("vectorize_source", app="open_notebook")
+@command("vectorize_source", app="open_notebook", retry=None)
 async def vectorize_source_command(
     input_data: VectorizeSourceInput,
 ) -> VectorizeSourceOutput:
@@ -268,6 +303,11 @@ async def vectorize_source_command(
     4. Returns immediately (jobs run in background)
 
     Natural concurrency control is provided by the worker pool size.
+
+    Retry Strategy:
+    - Retries disabled (retry=None) - fails fast on job submission errors
+    - This ensures immediate visibility when orchestration fails
+    - Individual embed_chunk jobs have their own retry logic for DB conflicts
     """
     start_time = time.time()
 
@@ -422,12 +462,17 @@ async def collect_items_for_rebuild(
     return items
 
 
-@command("rebuild_embeddings", app="open_notebook")
+@command("rebuild_embeddings", app="open_notebook", retry=None)
 async def rebuild_embeddings_command(
     input_data: RebuildEmbeddingsInput,
 ) -> RebuildEmbeddingsOutput:
     """
     Rebuild embeddings for sources, notes, and/or insights
+
+    Retry Strategy:
+    - Retries disabled (retry=None) - batch failures are immediately reported
+    - This ensures immediate visibility when batch operations fail
+    - Allows operators to quickly identify and resolve issues
     """
     start_time = time.time()
 

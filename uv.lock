@@ -426,7 +426,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "1.6.0"
+version = "1.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -454,9 +454,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f7/bb/3c62caf24cfe0f2a54561cfd336e0b16373b431d23e63c280758ca781e3e/content_core-1.6.0.tar.gz", hash = "sha256:46f8a13eee7a5d24259df1e4dfc503527c21919355bc6a2268ef00eb2788a1e7", size = 20660116, upload-time = "2025-10-27T17:28:24.457Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/81/33a16ff0f4caa227c0f9569cbd196baaf45a296e1d172d30cd3215eb91f2/content_core-1.7.0.tar.gz", hash = "sha256:e7954de3a7aa2718863d5ab7ba9c5b29617ed5193e3a792cb0a62bc30816dfa5", size = 20656892, upload-time = "2025-11-01T15:03:46.289Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/d0/a1dd9e1cdf7bb9a4f9cef00f5bd67b8ec4ebb94ebeb423c772b4f843e080/content_core-1.6.0-py3-none-any.whl", hash = "sha256:e050140f639e3690fa21b2655379dca8cec4e25b54567e8e7c68cf437d3fdb43", size = 172666, upload-time = "2025-10-27T17:28:20.44Z" },
+    { url = "https://files.pythonhosted.org/packages/d8/9c/857c0fb5798d8e45f17249fc1513c197a8fd2f6d9a0b537aa176fffdf700/content_core-1.7.0-py3-none-any.whl", hash = "sha256:b51991a6498483b6e5f47cdcad36af19d5cffa770ff140ff773f0c9e886b7129", size = 173198, upload-time = "2025-11-01T15:03:43.084Z" },
 ]
 
 [[package]]
@@ -2377,7 +2377,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
-    { name = "surreal-commands", specifier = ">=1.0.13" },
+    { name = "surreal-commands", specifier = ">=1.2.0" },
     { name = "surrealdb", specifier = ">=1.0.4" },
     { name = "tiktoken", specifier = ">=0.8.0" },
     { name = "tomli", specifier = ">=2.0.2" },
@@ -3612,22 +3612,22 @@ wheels = [
 
 [[package]]
 name = "surreal-commands"
-version = "1.1.1"
+version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "humanize" },
     { name = "langchain-core" },
-    { name = "langgraph" },
     { name = "loguru" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "rich" },
     { name = "surrealdb" },
+    { name = "tenacity" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/89/c0234679e93c619583e1b8552079114f59ae77c31013001113a80bd6216a/surreal_commands-1.1.1.tar.gz", hash = "sha256:6994f65d3a7574f965fea887dc2ad3797177260b3a07aba07246bf4d61926574", size = 156443, upload-time = "2025-07-09T14:01:01.245Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/63/71d018478b1843f1e02ae3dd426faa4d1c9810c920167ac3719c85ef017e/surreal_commands-1.2.0.tar.gz", hash = "sha256:1fed8631485e4063fe62163cdce59a65ff38a2e76732320071b65d9f6ee2b3ed", size = 194102, upload-time = "2025-11-01T14:48:11.849Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/fe/a69762f6eacf14ec3b97eb16f97fc2fd276679caace36168adadc3264df2/surreal_commands-1.1.1-py3-none-any.whl", hash = "sha256:d4be9ee5bfbcfe9d3d962d161b2639dd9fdc8dcde0ce8fe0e3b4444c646fe421", size = 28960, upload-time = "2025-07-09T14:00:59.766Z" },
+    { url = "https://files.pythonhosted.org/packages/60/7d/c849b9e4b92914681f37d64bd09684671df5daf0ec1fd2d5aa79fcacfc77/surreal_commands-1.2.0-py3-none-any.whl", hash = "sha256:534cd037058efcf3d619a5c3147e74e24916394428158f835d2c640927035a1a", size = 34106, upload-time = "2025-11-01T14:48:10.641Z" },
 ]
 
 [[package]]

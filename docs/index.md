@@ -58,6 +58,7 @@ Complete deployment guides for all scenarios.
 - **[Single Container](deployment/single-container.md)** - Simplified deployment
 - **[Development](deployment/development.md)** - Source code setup
 - **[Security](deployment/security.md)** - Production security
+- **[Retry Configuration](deployment/retry-configuration.md)** - Background job reliability
 
 ---
 

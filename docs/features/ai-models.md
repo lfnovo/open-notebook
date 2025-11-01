@@ -362,6 +362,55 @@ export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:9000/v1
 
 > **📖 Need detailed setup help?** Check our comprehensive [OpenAI-Compatible Setup Guide](openai-compatible.md) for LM Studio, Text Generation WebUI, vLLM, and other configurations.
 
+---
+
+### ☁️ Azure OpenAI
+**Best for**: Enterprise deployments with Microsoft Azure infrastructure
+
+**Environment Setup**
+```bash
+# Generic configuration (applies to all modalities)
+export AZURE_OPENAI_API_KEY=your_key
+export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+export AZURE_OPENAI_API_VERSION=2024-12-01-preview
+
+# Mode-specific configuration (for different deployments per modality)
+# Use these when you have separate Azure deployments for different capabilities
+export AZURE_OPENAI_API_KEY_LLM=your_llm_key
+export AZURE_OPENAI_ENDPOINT_LLM=https://llm-resource.openai.azure.com/
+export AZURE_OPENAI_API_VERSION_LLM=2024-12-01-preview
+
+export AZURE_OPENAI_API_KEY_EMBEDDING=your_embedding_key
+export AZURE_OPENAI_ENDPOINT_EMBEDDING=https://embedding-resource.openai.azure.com/
+export AZURE_OPENAI_API_VERSION_EMBEDDING=2024-12-01-preview
+
+# STT and TTS also supported with _STT and _TTS suffixes
+```
+
+**Recommended Models**
+- **Language**: `gpt-4o`, `gpt-4o-mini`, `gpt-35-turbo`
+- **Embedding**: `text-embedding-3-small`, `text-embedding-ada-002`
+
+**Strengths**
+- Enterprise-grade security and compliance
+- **NEW**: Full support for modality-specific deployments
+- Configure different Azure resources for different capabilities
+- Integration with Azure ecosystem
+- SLA guarantees and dedicated support
+- Regional deployment options
+
+**Use Cases**
+- **Single Deployment**: Use generic configuration when all models are in one Azure resource
+- **Multi-Deployment**: Use mode-specific configuration for separate resources (e.g., production LLM in one region, embeddings in another)
+- **Cost Optimization**: Different Azure subscriptions or resources for different workloads
+- **Compliance**: Separate deployments for different data residency requirements
+
+**Considerations**
+- Requires Azure subscription and resource setup
+- More complex configuration than standard OpenAI
+- Limited to Azure OpenAI service capabilities
+- Deployment-based model access (not all models available)
+
 ## 🧠 Reasoning Models
 
 Open Notebook fully supports **reasoning models** that show their transparent thinking process. These models output their internal reasoning within `<think>` tags, which Open Notebook automatically handles.
@@ -525,10 +574,19 @@ export VOYAGE_API_KEY=your_key
 export OLLAMA_API_BASE=http://localhost:11434
 
 # Azure OpenAI
+# Generic configuration (applies to all modalities)
 export AZURE_OPENAI_API_KEY=your_key
 export AZURE_OPENAI_ENDPOINT=your_endpoint
 export AZURE_OPENAI_API_VERSION=2024-12-01-preview
-export AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment
+
+# Mode-specific configuration (for different deployments per modality)
+export AZURE_OPENAI_API_KEY_LLM=your_llm_key
+export AZURE_OPENAI_ENDPOINT_LLM=your_llm_endpoint
+export AZURE_OPENAI_API_VERSION_LLM=2024-12-01-preview
+
+export AZURE_OPENAI_API_KEY_EMBEDDING=your_embedding_key
+export AZURE_OPENAI_ENDPOINT_EMBEDDING=your_embedding_endpoint
+export AZURE_OPENAI_API_VERSION_EMBEDDING=2024-12-01-preview
 
 # Vertex AI
 export VERTEX_PROJECT=your_project

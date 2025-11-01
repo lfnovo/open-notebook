@@ -43,6 +43,13 @@ This section provides comprehensive guides for deploying Open Notebook in differ
 - Production deployment considerations
 - Troubleshooting security issues
 
+### 6. [Retry Configuration](retry-configuration.md)
+**For reliable background job processing**
+- Automatic retry for transient failures
+- Database transaction conflict handling
+- Embedding provider failure recovery
+- Performance tuning and monitoring
+
 ## 🎯 Choose Your Deployment Method
 
 ### Use Docker Setup if:

@@ -191,10 +191,18 @@ OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
 OPENROUTER_API_KEY=your-openrouter-key-here
 
 # Azure OpenAI
+# Generic configuration (applies to all modalities)
 AZURE_OPENAI_API_KEY=your-azure-key-here
 AZURE_OPENAI_ENDPOINT=https://your-endpoint.openai.azure.com/
-AZURE_OPENAI_API_VERSION="2024-12-01-preview"
-AZURE_OPENAI_DEPLOYMENT_NAME=your-deployment-name
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+
+# Mode-specific configuration (for different deployments per modality)
+# AZURE_OPENAI_API_KEY_LLM=your-llm-key
+# AZURE_OPENAI_ENDPOINT_LLM=https://llm-endpoint.openai.azure.com/
+# AZURE_OPENAI_API_VERSION_LLM=2024-12-01-preview
+# AZURE_OPENAI_API_KEY_EMBEDDING=your-embedding-key
+# AZURE_OPENAI_ENDPOINT_EMBEDDING=https://embedding-endpoint.openai.azure.com/
+# AZURE_OPENAI_API_VERSION_EMBEDDING=2024-12-01-preview
 
 # OpenAI Compatible (LM Studio, etc.)
 OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1

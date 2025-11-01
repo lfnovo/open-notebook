@@ -32,6 +32,33 @@ def _check_openai_compatible_support(mode: str) -> bool:
     return generic or specific
 
 
+def _check_azure_support(mode: str) -> bool:
+    """
+    Check if Azure OpenAI provider is available for a specific mode.
+
+    Args:
+        mode: One of 'LLM', 'EMBEDDING', 'STT', 'TTS'
+
+    Returns:
+        bool: True if either generic or mode-specific env vars are set
+    """
+    # Check generic configuration (applies to all modes)
+    generic = (
+        os.environ.get("AZURE_OPENAI_API_KEY") is not None
+        and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
+        and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+    )
+
+    # Check mode-specific configuration (takes precedence)
+    specific = (
+        os.environ.get(f"AZURE_OPENAI_API_KEY_{mode}") is not None
+        and os.environ.get(f"AZURE_OPENAI_ENDPOINT_{mode}") is not None
+        and os.environ.get(f"AZURE_OPENAI_API_VERSION_{mode}") is not None
+    )
+
+    return generic or specific
+
+
 @router.get("/models", response_model=List[ModelResponse])
 async def get_models(
     type: Optional[str] = Query(None, description="Filter by model type")
@@ -168,11 +195,9 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             defaults.default_tools_model = defaults_data.default_tools_model  # type: ignore[attr-defined]
         
         await defaults.update()
-        
-        # Refresh the model manager cache
-        from open_notebook.domain.models import model_manager
-        await model_manager.refresh_defaults()
-        
+
+        # No cache refresh needed - next access will fetch fresh data from DB
+
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,  # type: ignore[attr-defined]
             default_transformation_model=defaults.default_transformation_model,  # type: ignore[attr-defined]
@@ -213,10 +238,10 @@ async def get_provider_availability():
             "elevenlabs": os.environ.get("ELEVENLABS_API_KEY") is not None,
             "voyage": os.environ.get("VOYAGE_API_KEY") is not None,
             "azure": (
-                os.environ.get("AZURE_OPENAI_API_KEY") is not None
-                and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
-                and os.environ.get("AZURE_OPENAI_DEPLOYMENT_NAME") is not None
-                and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+                _check_azure_support("LLM")
+                or _check_azure_support("EMBEDDING")
+                or _check_azure_support("STT")
+                or _check_azure_support("TTS")
             ),
             "mistral": os.environ.get("MISTRAL_API_KEY") is not None,
             "deepseek": os.environ.get("DEEPSEEK_API_KEY") is not None,
@@ -239,18 +264,25 @@ async def get_provider_availability():
         for provider in available_providers:
             supported_types[provider] = []
 
+            # Map Esperanto model types to our environment variable modes
+            mode_mapping = {
+                "language": "LLM",
+                "embedding": "EMBEDDING",
+                "speech_to_text": "STT",
+                "text_to_speech": "TTS",
+            }
+
             # Special handling for openai-compatible to check mode-specific availability
             if provider == "openai-compatible":
-                # Map Esperanto model types to our environment variable modes
-                mode_mapping = {
-                    "language": "LLM",
-                    "embedding": "EMBEDDING",
-                    "speech_to_text": "STT",
-                    "text_to_speech": "TTS",
-                }
                 for model_type, mode in mode_mapping.items():
                     if model_type in esperanto_available and provider in esperanto_available[model_type]:
                         if _check_openai_compatible_support(mode):
+                            supported_types[provider].append(model_type)
+            # Special handling for azure to check mode-specific availability
+            elif provider == "azure":
+                for model_type, mode in mode_mapping.items():
+                    if model_type in esperanto_available and provider in esperanto_available[model_type]:
+                        if _check_azure_support(mode):
                             supported_types[provider].append(model_type)
             else:
                 # Standard provider detection

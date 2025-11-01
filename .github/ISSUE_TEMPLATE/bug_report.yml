@@ -83,3 +83,22 @@ body:
       placeholder: "This started happening after I upgraded to v1.5.0..."
     validations:
       required: false
+
+  - type: checkboxes
+    id: willing-to-contribute
+    attributes:
+      label: Contribution
+      description: Would you like to work on fixing this bug?
+      options:
+        - label: I am a developer and would like to work on fixing this issue (pending maintainer approval)
+          required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Next Steps:**
+        1. A maintainer will review your bug report
+        2. If you checked the box above and want to fix it, please propose your solution approach
+        3. Wait for assignment before starting development
+        4. See our [Contributing Guide](https://github.com/lfnovo/open-notebook/blob/main/CONTRIBUTING.md) for more details

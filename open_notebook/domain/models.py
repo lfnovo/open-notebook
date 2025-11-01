@@ -9,7 +9,7 @@ from esperanto import (
 )
 from loguru import logger
 
-from open_notebook.database.repository import repo_query
+from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
@@ -40,37 +40,39 @@ class DefaultModels(RecordModel):
     default_embedding_model: Optional[str] = None
     default_tools_model: Optional[str] = None
 
+    @classmethod
+    async def get_instance(cls) -> "DefaultModels":
+        """Always fetch fresh defaults from database (override parent caching behavior)"""
+        result = await repo_query(
+            "SELECT * FROM ONLY $record_id",
+            {"record_id": ensure_record_id(cls.record_id)},
+        )
+
+        if result:
+            if isinstance(result, list) and len(result) > 0:
+                data = result[0]
+            elif isinstance(result, dict):
+                data = result
+            else:
+                data = {}
+        else:
+            data = {}
+
+        # Create new instance with fresh data (bypass singleton cache)
+        instance = object.__new__(cls)
+        object.__setattr__(instance, "__dict__", {})
+        super(RecordModel, instance).__init__(**data)
+        return instance
+
 
 class ModelManager:
-    _instance = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super(ModelManager, cls).__new__(cls)
-        return cls._instance
-
     def __init__(self):
-        if not hasattr(self, "_initialized"):
-            self._initialized = True
-            self._model_cache: Dict[str, ModelType] = {}
-            self._default_models = None
+        pass  # No caching needed
 
     async def get_model(self, model_id: str, **kwargs) -> Optional[ModelType]:
+        """Get a model by ID. Esperanto will cache the actual model instance."""
         if not model_id:
             return None
-
-        cache_key = f"{model_id}:{str(kwargs)}"
-
-        if cache_key in self._model_cache:
-            cached_model = self._model_cache[cache_key]
-            if not isinstance(
-                cached_model,
-                (LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel),
-            ):
-                raise TypeError(
-                    f"Cached model is of unexpected type: {type(cached_model)}"
-                )
-            return cached_model
 
         try:
             model: Model = await Model.get(model_id)
@@ -85,27 +87,27 @@ class ModelManager:
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
 
-        model_instance: ModelType
+        # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
-            model_instance = AIFactory.create_language(
+            return AIFactory.create_language(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "embedding":
-            model_instance = AIFactory.create_embedding(
+            return AIFactory.create_embedding(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "speech_to_text":
-            model_instance = AIFactory.create_speech_to_text(
+            return AIFactory.create_speech_to_text(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
             )
         elif model.type == "text_to_speech":
-            model_instance = AIFactory.create_text_to_speech(
+            return AIFactory.create_text_to_speech(
                 model_name=model.name,
                 provider=model.provider,
                 config=kwargs,
@@ -113,28 +115,12 @@ class ModelManager:
         else:
             raise ValueError(f"Invalid model type: {model.type}")
 
-        self._model_cache[cache_key] = model_instance
-        return model_instance
-
-    def clear_cache(self):
-        """Clear all cached model instances"""
-        self._model_cache.clear()
-        logger.info("Model cache cleared")
-
-    async def refresh_defaults(self):
-        """Refresh the default models from the database and clear model cache"""
-        self._default_models = await DefaultModels.get_instance()
-        # Clear the model cache to ensure we use fresh instances with the new defaults
-        self.clear_cache()
-
     async def get_defaults(self) -> DefaultModels:
-        """Get the default models configuration (always fetches fresh from DB)"""
-        # Always refresh to ensure we have the latest defaults
-        # This is important when embedding models are changed
-        await self.refresh_defaults()
-        if not self._default_models:
-            raise RuntimeError("Failed to initialize default models configuration")
-        return self._default_models
+        """Get the default models configuration from database"""
+        defaults = await DefaultModels.get_instance()
+        if not defaults:
+            raise RuntimeError("Failed to load default models configuration")
+        return defaults
 
     async def get_speech_to_text(self, **kwargs) -> Optional[SpeechToTextModel]:
         """Get the default speech-to-text model"""

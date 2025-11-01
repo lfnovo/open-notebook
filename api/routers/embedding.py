@@ -62,8 +62,12 @@ async def embed_content(embed_request: EmbedRequest):
                 )
 
         else:
-            # SYNC PATH: Execute synchronously (existing behavior)
+            # SYNC PATH: Submit job (returns immediately with command_id)
+            # NOTE: "sync" here means "submit and return command_id" - actual processing
+            # still happens asynchronously in the worker pool
             logger.info(f"Using sync processing for {item_type} {item_id}")
+
+            command_id = None
 
             # Get the item and embed it
             if item_type == "source":
@@ -71,9 +75,9 @@ async def embed_content(embed_request: EmbedRequest):
                 if not source_item:
                     raise HTTPException(status_code=404, detail="Source not found")
 
-                # Perform embedding (vectorize is now idempotent - safe to call multiple times)
-                await source_item.vectorize()
-                message = "Source embedded successfully"
+                # Submit vectorization job (returns command_id for tracking)
+                command_id = await source_item.vectorize()
+                message = "Source vectorization job submitted"
 
             elif item_type == "note":
                 note_item = await Note.get(item_id)
@@ -84,7 +88,7 @@ async def embed_content(embed_request: EmbedRequest):
                 message = "Note embedded successfully"
 
             return EmbedResponse(
-                success=True, message=message, item_id=item_id, item_type=item_type, command_id=None
+                success=True, message=message, item_id=item_id, item_type=item_type, command_id=command_id
             )
 
     except HTTPException:

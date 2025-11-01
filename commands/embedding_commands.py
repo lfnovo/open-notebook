@@ -3,11 +3,12 @@ from typing import Dict, List, Literal, Optional
 
 from loguru import logger
 from pydantic import BaseModel
-from surreal_commands import CommandInput, CommandOutput, command
+from surreal_commands import CommandInput, CommandOutput, command, submit_command
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note, Source, SourceInsight
+from open_notebook.utils.text_utils import split_text
 
 
 def full_model_dump(model):
@@ -31,6 +32,32 @@ class EmbedSingleItemOutput(CommandOutput):
     item_id: str
     item_type: str
     chunks_created: int = 0  # For sources
+    processing_time: float
+    error_message: Optional[str] = None
+
+
+class EmbedChunkInput(CommandInput):
+    source_id: str
+    chunk_index: int
+    chunk_text: str
+
+
+class EmbedChunkOutput(CommandOutput):
+    success: bool
+    source_id: str
+    chunk_index: int
+    error_message: Optional[str] = None
+
+
+class VectorizeSourceInput(CommandInput):
+    source_id: str
+
+
+class VectorizeSourceOutput(CommandOutput):
+    success: bool
+    source_id: str
+    total_chunks: int
+    jobs_submitted: int
     processing_time: float
     error_message: Optional[str] = None
 
@@ -159,6 +186,215 @@ async def embed_single_item_command(
         )
 
 
+@command(
+    "embed_chunk",
+    app="open_notebook",
+    retry={
+        "max_attempts": 5,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 30,
+        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+    },
+)
+async def embed_chunk_command(
+    input_data: EmbedChunkInput,
+) -> EmbedChunkOutput:
+    """
+    Process a single text chunk for embedding as part of source vectorization.
+
+    This command is designed to be submitted as a background job for each chunk
+    of a source document, allowing natural concurrency control through the worker pool.
+
+    Retry Strategy:
+    - Retries up to 5 times for transient failures:
+      * RuntimeError: SurrealDB transaction conflicts ("read or write conflict")
+      * ConnectionError: Network failures when calling embedding provider
+      * TimeoutError: Request timeouts to embedding provider
+    - Uses exponential-jitter backoff (1-30s) to prevent thundering herd during concurrent operations
+    - Does NOT retry permanent failures (ValueError, authentication errors, invalid input)
+
+    Exception Handling:
+    - RuntimeError, ConnectionError, TimeoutError: Re-raised to trigger retry mechanism
+    - ValueError and other exceptions: Caught and returned as permanent failures (no retry)
+    """
+    try:
+        logger.debug(
+            f"Processing chunk {input_data.chunk_index} for source {input_data.source_id}"
+        )
+
+        # Get embedding model
+        EMBEDDING_MODEL = await model_manager.get_embedding_model()
+        if not EMBEDDING_MODEL:
+            raise ValueError(
+                "No embedding model configured. Please configure one in the Models section."
+            )
+
+        # Generate embedding for the chunk
+        embedding = (await EMBEDDING_MODEL.aembed([input_data.chunk_text]))[0]
+
+        # Insert chunk embedding into database
+        await repo_query(
+            """
+            CREATE source_embedding CONTENT {
+                "source": $source_id,
+                "order": $order,
+                "content": $content,
+                "embedding": $embedding,
+            };
+            """,
+            {
+                "source_id": ensure_record_id(input_data.source_id),
+                "order": input_data.chunk_index,
+                "content": input_data.chunk_text,
+                "embedding": embedding,
+            },
+        )
+
+        logger.debug(
+            f"Successfully embedded chunk {input_data.chunk_index} for source {input_data.source_id}"
+        )
+
+        return EmbedChunkOutput(
+            success=True,
+            source_id=input_data.source_id,
+            chunk_index=input_data.chunk_index,
+        )
+
+    except RuntimeError:
+        # Re-raise RuntimeError to allow retry mechanism to handle DB transaction conflicts
+        logger.warning(
+            f"Transaction conflict for chunk {input_data.chunk_index} - will be retried by retry mechanism"
+        )
+        raise
+    except (ConnectionError, TimeoutError) as e:
+        # Re-raise network/timeout errors to allow retry mechanism to handle transient provider failures
+        logger.warning(
+            f"Network/timeout error for chunk {input_data.chunk_index} ({type(e).__name__}: {e}) - will be retried by retry mechanism"
+        )
+        raise
+    except Exception as e:
+        # Catch other exceptions (ValueError, etc.) as permanent failures
+        logger.error(
+            f"Failed to embed chunk {input_data.chunk_index} for source {input_data.source_id}: {e}"
+        )
+        logger.exception(e)
+
+        return EmbedChunkOutput(
+            success=False,
+            source_id=input_data.source_id,
+            chunk_index=input_data.chunk_index,
+            error_message=str(e),
+        )
+
+
+@command("vectorize_source", app="open_notebook", retry=None)
+async def vectorize_source_command(
+    input_data: VectorizeSourceInput,
+) -> VectorizeSourceOutput:
+    """
+    Orchestrate source vectorization by splitting text into chunks and submitting
+    individual embed_chunk jobs to the worker queue.
+
+    This command:
+    1. Deletes existing embeddings (idempotency)
+    2. Splits source text into chunks
+    3. Submits each chunk as a separate embed_chunk job
+    4. Returns immediately (jobs run in background)
+
+    Natural concurrency control is provided by the worker pool size.
+
+    Retry Strategy:
+    - Retries disabled (retry=None) - fails fast on job submission errors
+    - This ensures immediate visibility when orchestration fails
+    - Individual embed_chunk jobs have their own retry logic for DB conflicts
+    """
+    start_time = time.time()
+
+    try:
+        logger.info(f"Starting vectorization orchestration for source {input_data.source_id}")
+
+        # 1. Load source
+        source = await Source.get(input_data.source_id)
+        if not source:
+            raise ValueError(f"Source '{input_data.source_id}' not found")
+
+        if not source.full_text:
+            raise ValueError(f"Source {input_data.source_id} has no text to vectorize")
+
+        # 2. Delete existing embeddings (idempotency)
+        logger.info(f"Deleting existing embeddings for source {input_data.source_id}")
+        delete_result = await repo_query(
+            "DELETE source_embedding WHERE source = $source_id",
+            {"source_id": ensure_record_id(input_data.source_id)}
+        )
+        deleted_count = len(delete_result) if delete_result else 0
+        if deleted_count > 0:
+            logger.info(f"Deleted {deleted_count} existing embeddings")
+
+        # 3. Split text into chunks
+        logger.info(f"Splitting text into chunks for source {input_data.source_id}")
+        chunks = split_text(source.full_text)
+        total_chunks = len(chunks)
+        logger.info(f"Split into {total_chunks} chunks")
+
+        if total_chunks == 0:
+            raise ValueError("No chunks created after splitting text")
+
+        # 4. Submit each chunk as a separate job
+        logger.info(f"Submitting {total_chunks} chunk jobs to worker queue")
+        jobs_submitted = 0
+
+        for idx, chunk_text in enumerate(chunks):
+            try:
+                job_id = submit_command(
+                    "open_notebook",  # app name
+                    "embed_chunk",    # command name
+                    {
+                        "source_id": input_data.source_id,
+                        "chunk_index": idx,
+                        "chunk_text": chunk_text,
+                    }
+                )
+                jobs_submitted += 1
+
+                if (idx + 1) % 100 == 0:
+                    logger.info(f"  Submitted {idx + 1}/{total_chunks} chunk jobs")
+
+            except Exception as e:
+                logger.error(f"Failed to submit chunk job {idx}: {e}")
+                # Continue submitting other chunks even if one fails
+
+        processing_time = time.time() - start_time
+
+        logger.info(
+            f"Vectorization orchestration complete for source {input_data.source_id}: "
+            f"{jobs_submitted}/{total_chunks} jobs submitted in {processing_time:.2f}s"
+        )
+
+        return VectorizeSourceOutput(
+            success=True,
+            source_id=input_data.source_id,
+            total_chunks=total_chunks,
+            jobs_submitted=jobs_submitted,
+            processing_time=processing_time,
+        )
+
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(f"Vectorization orchestration failed for source {input_data.source_id}: {e}")
+        logger.exception(e)
+
+        return VectorizeSourceOutput(
+            success=False,
+            source_id=input_data.source_id,
+            total_chunks=0,
+            jobs_submitted=0,
+            processing_time=processing_time,
+            error_message=str(e),
+        )
+
+
 async def collect_items_for_rebuild(
     mode: str,
     include_sources: bool,
@@ -226,12 +462,17 @@ async def collect_items_for_rebuild(
     return items
 
 
-@command("rebuild_embeddings", app="open_notebook")
+@command("rebuild_embeddings", app="open_notebook", retry=None)
 async def rebuild_embeddings_command(
     input_data: RebuildEmbeddingsInput,
 ) -> RebuildEmbeddingsOutput:
     """
     Rebuild embeddings for sources, notes, and/or insights
+
+    Retry Strategy:
+    - Retries disabled (retry=None) - batch failures are immediately reported
+    - This ensures immediate visibility when batch operations fail
+    - Allows operators to quickly identify and resolve issues
     """
     start_time = time.time()
 

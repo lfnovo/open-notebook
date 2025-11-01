@@ -656,15 +656,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.8.1"
+version = "2.8.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/b5/e268246f88376b1db8b24f124d926a1f152c177777c6e16e5b6ee6e62a47/esperanto-2.8.1.tar.gz", hash = "sha256:7d4ce8a125d8a98bae9d656cae28b5bc85b7a04b26690e24090631348f14b68e", size = 733884, upload-time = "2025-11-01T13:29:32.543Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/d8/1504c1d615be245b78fd440c1908a3b2237dbb54fddd75795ac1fa707316/esperanto-2.8.2.tar.gz", hash = "sha256:b4316eff0e01cffa8ace1c3c5a73fddecfe0118ffac1bd1a76c391cb1adbc718", size = 734199, upload-time = "2025-11-01T13:53:37.625Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/be/ddd2672be23ca3a550991dade348769f3ed93e99591885966feefd3b0891/esperanto-2.8.1-py3-none-any.whl", hash = "sha256:86611e486be07f60bb5b5504ab88240b567fdbe324a415564d3e534eef1a46b3", size = 143997, upload-time = "2025-11-01T13:29:30.869Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/f3/8e08a16274734afd8e7d988dc8ca9637a14e8857a3a0b20673a3640ed3b4/esperanto-2.8.2-py3-none-any.whl", hash = "sha256:83cc351a67003718c51b92d1f6e1417f81c6a0a007dba513fbce46905925e2c4", size = 144045, upload-time = "2025-11-01T13:53:35.896Z" },
 ]
 
 [[package]]

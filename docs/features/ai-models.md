@@ -69,7 +69,7 @@ Open Notebook uses four distinct types of AI models, each optimized for specific
 | **Voyage AI**    | ❌       | ✅        | ❌  | ❌  |
 | **Groq**         | ✅       | ❌        | ✅  | ❌  |
 | **Vertex AI**    | ✅       | ✅        | ❌  | ✅  |
-| **Azure OpenAI** | ✅       | ✅        | ❌  | ❌  |
+| **Azure OpenAI** | ✅       | ✅        | ✅  | ✅  |
 | **OpenRouter**   | ✅       | ❌        | ❌  | ❌  |
 | **Perplexity**   | ✅       | ❌        | ❌  | ❌  |
 | **OpenAI Compatible** | ✅       | ✅        | ✅  | ✅  |
@@ -390,6 +390,8 @@ export AZURE_OPENAI_API_VERSION_EMBEDDING=2024-12-01-preview
 **Recommended Models**
 - **Language**: `gpt-4o`, `gpt-4o-mini`, `gpt-35-turbo`
 - **Embedding**: `text-embedding-3-small`, `text-embedding-ada-002`
+- **STT**: `whisper` (deployment name for Whisper model)
+- **TTS**: `tts`, `tts-hd` (deployment names for TTS models)
 
 **Strengths**
 - Enterprise-grade security and compliance
@@ -587,6 +589,7 @@ export AZURE_OPENAI_API_VERSION_LLM=2024-12-01-preview
 export AZURE_OPENAI_API_KEY_EMBEDDING=your_embedding_key
 export AZURE_OPENAI_ENDPOINT_EMBEDDING=your_embedding_endpoint
 export AZURE_OPENAI_API_VERSION_EMBEDDING=2024-12-01-preview
+# Similarly for _STT and _TTS
 
 # Vertex AI
 export VERTEX_PROJECT=your_project

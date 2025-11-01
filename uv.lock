@@ -2297,7 +2297,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.1.1"
+version = "1.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
@@ -3599,15 +3599,15 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.49.2"
+version = "0.49.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dd/31/fd3576f6b0d7ee3b7968daf4473bb0bb4fa8c98777803b9e8fdb8b1817ca/starlette-0.49.2.tar.gz", hash = "sha256:24b6ab2d95311eedfd713a08b4cb82f6d9c69de9e2cac15866e72c36d90c0528", size = 2654876, upload-time = "2025-11-01T11:38:46.966Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/1a/608df0b10b53b0beb96a37854ee05864d182ddd4b1156a22f1ad3860425a/starlette-0.49.3.tar.gz", hash = "sha256:1c14546f299b5901a1ea0e34410575bc33bbd741377a10484a54445588d00284", size = 2655031, upload-time = "2025-11-01T15:12:26.13Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/a7/6148f05e9abea3780fed0de732b43629b5a159ebbf17b11bb7288e8a10ef/starlette-0.49.2-py3-none-any.whl", hash = "sha256:0d40c638fe75eaf16e3160103f6962918e0e17cf16cc09351e4c54b899a46291", size = 74208, upload-time = "2025-11-01T11:38:45.137Z" },
+    { url = "https://files.pythonhosted.org/packages/a3/e0/021c772d6a662f43b63044ab481dc6ac7592447605b5b35a957785363122/starlette-0.49.3-py3-none-any.whl", hash = "sha256:b579b99715fdc2980cf88c8ec96d3bf1ce16f5a8051a7c2b84ef9b1cdecaea2f", size = 74340, upload-time = "2025-11-01T15:12:24.387Z" },
 ]
 
 [[package]]

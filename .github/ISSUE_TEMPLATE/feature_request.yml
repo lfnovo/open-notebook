@@ -27,6 +27,15 @@ body:
       required: true
 
   - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution (Optional)
+      description: If you have ideas on how to implement this feature, please share them
+      placeholder: "This could be implemented by..."
+    validations:
+      required: false
+
+  - type: textarea
     id: additional-context
     attributes:
       label: Additional Context
@@ -34,4 +43,23 @@ body:
       placeholder: "For example, other tools do this by..."
     validations:
       required: false
+
+  - type: checkboxes
+    id: willing-to-contribute
+    attributes:
+      label: Contribution
+      description: Would you like to work on implementing this feature?
+      options:
+        - label: I am a developer and would like to work on implementing this feature (pending maintainer approval)
+          required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **Next Steps:**
+        1. A maintainer will review your feature request
+        2. If approved and you checked the box above, the issue will be assigned to you
+        3. Please wait for assignment before starting development
+        4. See our [Contributing Guide](https://github.com/lfnovo/open-notebook/blob/main/CONTRIBUTING.md) for more details
 

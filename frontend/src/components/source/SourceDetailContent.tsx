@@ -557,21 +557,6 @@ export function SourceDetailContent({
                               {insight.insight_type}
                             </Badge>
                           </div>
-                          {insight.created && (
-                            <span className="text-xs text-muted-foreground">
-                              {(() => {
-                                try {
-                                  const date = new Date(insight.created)
-                                  if (isNaN(date.getTime())) {
-                                    return 'Unknown date'
-                                  }
-                                  return formatDistanceToNow(date, { addSuffix: true })
-                                } catch {
-                                  return 'Unknown date'
-                                }
-                              })()}
-                            </span>
-                          )}
                         </div>
                         <p className="mt-2 text-sm text-muted-foreground">
                           {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}

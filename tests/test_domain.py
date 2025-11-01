@@ -48,20 +48,21 @@ class TestRecordModelSingleton:
 
 
 # ============================================================================
-# TEST SUITE 2: ModelManager Singleton
+# TEST SUITE 2: ModelManager Instance Isolation
 # ============================================================================
 
 
 class TestModelManager:
-    """Test suite for ModelManager singleton pattern."""
+    """Test suite for ModelManager instance behavior."""
 
-    def test_model_manager_singleton(self):
-        """Test ModelManager implements singleton pattern correctly."""
+    def test_model_manager_instance_isolation(self):
+        """Test that each ModelManager instance is independent (not a singleton)."""
         manager1 = ModelManager()
         manager2 = ModelManager()
 
-        assert manager1 is manager2
-        assert id(manager1) == id(manager2)
+        # Each instance should be independent (not a singleton)
+        assert manager1 is not manager2
+        assert id(manager1) != id(manager2)
 
 
 # ============================================================================

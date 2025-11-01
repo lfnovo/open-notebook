@@ -168,11 +168,9 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             defaults.default_tools_model = defaults_data.default_tools_model  # type: ignore[attr-defined]
         
         await defaults.update()
-        
-        # Refresh the model manager cache
-        from open_notebook.domain.models import model_manager
-        await model_manager.refresh_defaults()
-        
+
+        # No cache refresh needed - next access will fetch fresh data from DB
+
         return DefaultModelsResponse(
             default_chat_model=defaults.default_chat_model,  # type: ignore[attr-defined]
             default_transformation_model=defaults.default_transformation_model,  # type: ignore[attr-defined]

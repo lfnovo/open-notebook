@@ -224,3 +224,18 @@ export interface BuildContextResponse {
   token_count: number
   char_count: number
 }
+
+export interface BulkSourceOperationRequest {
+  source_ids: string[]
+  operation: 'add' | 'remove'
+}
+
+export interface BulkSourceOperationResponse {
+  message: string
+  results: Array<{
+    source_id: string
+    success: boolean
+    message?: string
+    error?: string
+  }>
+}

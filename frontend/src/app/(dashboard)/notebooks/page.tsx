@@ -47,7 +47,8 @@ export default function NotebooksPage() {
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto">
+        <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Notebooks</h1>
@@ -88,6 +89,7 @@ export default function NotebooksPage() {
               emptyDescription={isSearching ? 'Modify your search to find archived notebooks.' : undefined}
             />
           )}
+        </div>
         </div>
       </div>
 

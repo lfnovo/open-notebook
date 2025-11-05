@@ -78,6 +78,79 @@ async def create_transformation(transformation_data: TransformationCreate):
         )
 
 
+@router.post("/transformations/execute", response_model=TransformationExecuteResponse)
+async def execute_transformation(execute_request: TransformationExecuteRequest):
+    """Execute a transformation on input text."""
+    try:
+        # Validate transformation exists
+        transformation = await Transformation.get(execute_request.transformation_id)
+        if not transformation:
+            raise HTTPException(status_code=404, detail="Transformation not found")
+
+        # Validate model exists
+        model = await Model.get(execute_request.model_id)
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+
+        # Execute the transformation
+        result = await transformation_graph.ainvoke(
+            dict(  # type: ignore[arg-type]
+                input_text=execute_request.input_text,
+                transformation=transformation,
+            ),
+            config=dict(configurable={"model_id": execute_request.model_id}),
+        )
+
+        return TransformationExecuteResponse(
+            output=result["output"],
+            transformation_id=execute_request.transformation_id,
+            model_id=execute_request.model_id,
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error executing transformation: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error executing transformation: {str(e)}"
+        )
+
+
+@router.get("/transformations/default-prompt", response_model=DefaultPromptResponse)
+async def get_default_prompt():
+    """Get the default transformation prompt."""
+    try:
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
+        return DefaultPromptResponse(
+            transformation_instructions=default_prompts.transformation_instructions or ""
+        )
+    except Exception as e:
+        logger.error(f"Error fetching default prompt: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching default prompt: {str(e)}"
+        )
+
+
+@router.put("/transformations/default-prompt", response_model=DefaultPromptResponse)
+async def update_default_prompt(prompt_update: DefaultPromptUpdate):
+    """Update the default transformation prompt."""
+    try:
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
+
+        default_prompts.transformation_instructions = prompt_update.transformation_instructions
+        await default_prompts.update()
+
+        return DefaultPromptResponse(
+            transformation_instructions=default_prompts.transformation_instructions
+        )
+    except Exception as e:
+        logger.error(f"Error updating default prompt: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating default prompt: {str(e)}"
+        )
+
+
 @router.get(
     "/transformations/{transformation_id}", response_model=TransformationResponse
 )
@@ -171,77 +244,4 @@ async def delete_transformation(transformation_id: str):
         logger.error(f"Error deleting transformation {transformation_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error deleting transformation: {str(e)}"
-        )
-
-
-@router.post("/transformations/execute", response_model=TransformationExecuteResponse)
-async def execute_transformation(execute_request: TransformationExecuteRequest):
-    """Execute a transformation on input text."""
-    try:
-        # Validate transformation exists
-        transformation = await Transformation.get(execute_request.transformation_id)
-        if not transformation:
-            raise HTTPException(status_code=404, detail="Transformation not found")
-
-        # Validate model exists
-        model = await Model.get(execute_request.model_id)
-        if not model:
-            raise HTTPException(status_code=404, detail="Model not found")
-
-        # Execute the transformation
-        result = await transformation_graph.ainvoke(
-            dict(  # type: ignore[arg-type]
-                input_text=execute_request.input_text,
-                transformation=transformation,
-            ),
-            config=dict(configurable={"model_id": execute_request.model_id}),
-        )
-
-        return TransformationExecuteResponse(
-            output=result["output"],
-            transformation_id=execute_request.transformation_id,
-            model_id=execute_request.model_id,
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error executing transformation: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error executing transformation: {str(e)}"
-        )
-
-
-@router.get("/transformations/default-prompt", response_model=DefaultPromptResponse)
-async def get_default_prompt():
-    """Get the default transformation prompt."""
-    try:
-        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
-
-        return DefaultPromptResponse(
-            transformation_instructions=default_prompts.transformation_instructions or ""
-        )
-    except Exception as e:
-        logger.error(f"Error fetching default prompt: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error fetching default prompt: {str(e)}"
-        )
-
-
-@router.put("/transformations/default-prompt", response_model=DefaultPromptResponse)
-async def update_default_prompt(prompt_update: DefaultPromptUpdate):
-    """Update the default transformation prompt."""
-    try:
-        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
-
-        default_prompts.transformation_instructions = prompt_update.transformation_instructions
-        await default_prompts.update()
-
-        return DefaultPromptResponse(
-            transformation_instructions=default_prompts.transformation_instructions
-        )
-    except Exception as e:
-        logger.error(f"Error updating default prompt: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail=f"Error updating default prompt: {str(e)}"
         )

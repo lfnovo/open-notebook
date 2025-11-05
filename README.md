@@ -34,6 +34,10 @@
   </p>
 </div>
 
+<p align="center">
+<a href="https://trendshift.io/repositories/14536" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14536" alt="lfnovo%2Fopen-notebook | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
+</p>
+
 <div align="center">
   <!-- Keep these links. Translations will automatically update with the README. -->
   <a href="https://zdoc.app/de/lfnovo/open-notebook">Deutsch</a> | 

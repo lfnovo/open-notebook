@@ -7,11 +7,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, Maximize, Minimize } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import {
   SourceChatMessage,
-  SourceChatContextIndicator,
+  SourceChatContextIndicator, 
   BaseChatSession
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
@@ -75,6 +75,7 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
@@ -92,6 +93,12 @@ export function ChatPanel({
       toast.error(`This ${typeLabel} could not be found`)
     }
   }
+  
+  // prevent background scrolling
+  useEffect(() => {
+    document.body.style.overflow = isFullscreen ? 'hidden' : 'auto'
+  }, [isFullscreen])
+
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -122,198 +129,217 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            {title}
-          </CardTitle>
-          {onSelectSession && onCreateSession && onDeleteSession && (
-            <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2"
-                onClick={() => setSessionManagerOpen(true)}
-                disabled={loadingSessions}
-              >
-                <Clock className="h-4 w-4" />
-                <span className="text-xs">Sessions</span>
-              </Button>
-              <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">Chat Sessions</DialogTitle>
-                <SessionManager
-                  sessions={sessions}
-                  currentSessionId={currentSessionId ?? null}
-                  onCreateSession={(title) => onCreateSession?.(title)}
-                  onSelectSession={(sessionId) => {
-                    onSelectSession(sessionId)
-                    setSessionManagerOpen(false)
-                  }}
-                  onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
-                  loadingSessions={loadingSessions}
-                />
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
-          <div className="space-y-4 py-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-muted-foreground py-8">
-                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">
-                  Start a conversation about this {contextType}
-                </p>
-                <p className="text-xs mt-2">Ask questions to understand the content better</p>
-              </div>
-            ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.type === 'human' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.type === 'ai' && (
+      <div
+        className={`${
+          isFullscreen
+            ? 'fixed inset-0 z-50 bg-background flex flex-col p-4'
+            : 'flex flex-col h-full flex-1'
+        }`}
+      >
+        <Card className="flex flex-col h-full flex-1 overflow-hidden">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Bot className="h-5 w-5" />
+                {title}
+              </CardTitle>
+              {onSelectSession && onCreateSession && onDeleteSession && (
+                <div className="flex items-center gap-2">
+                  <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setSessionManagerOpen(true)}
+                      disabled={loadingSessions}
+                    >
+                      <Clock className="h-4 w-4" />
+                      <span className="text-xs">Sessions</span>
+                    </Button>
+                    <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
+                      <DialogTitle className="sr-only">Chat Sessions</DialogTitle>
+                      <SessionManager
+                        sessions={sessions}
+                        currentSessionId={currentSessionId ?? null}
+                        onCreateSession={(title) => onCreateSession?.(title)}
+                        onSelectSession={(sessionId) => {
+                          onSelectSession(sessionId)
+                          setSessionManagerOpen(false)
+                        }}
+                        onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
+                        onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+                        loadingSessions={loadingSessions}
+                      />
+                    </DialogContent>
+                  </Dialog>
+
+                  {/* Fullscreen toggle */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setIsFullscreen(!isFullscreen)}
+                  >
+                    {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+            <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
+              <div className="space-y-4 py-4">
+                {messages.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">
+                      Start a conversation about this {contextType}
+                    </p>
+                    <p className="text-xs mt-2">Ask questions to understand the content better</p>
+                  </div>
+                ) : (
+                  messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex gap-3 ${
+                        message.type === 'human' ? 'justify-end' : 'justify-start'
+                      }`}
+                    >
+                      {message.type === 'ai' && (
+                        <div className="flex-shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Bot className="h-4 w-4" />
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-2 max-w-[80%]">
+                        <div
+                          className={`rounded-lg px-4 py-2 ${
+                            message.type === 'human'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {message.type === 'ai' ? (
+                            <AIMessageContent
+                              content={message.content}
+                              onReferenceClick={handleReferenceClick}
+                            />
+                          ) : (
+                            <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
+                          )}
+                        </div>
+                        {message.type === 'ai' && (
+                          <MessageActions
+                            content={message.content}
+                            notebookId={notebookId}
+                          />
+                        )}
+                      </div>
+                      {message.type === 'human' && (
+                        <div className="flex-shrink-0">
+                          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                            <User className="h-4 w-4 text-primary-foreground" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+                {isStreaming && (
+                  <div className="flex gap-3 justify-start">
                     <div className="flex-shrink-0">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <Bot className="h-4 w-4" />
                       </div>
                     </div>
-                  )}
-                  <div className="flex flex-col gap-2 max-w-[80%]">
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        message.type === 'human'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      {message.type === 'ai' ? (
-                        <AIMessageContent
-                          content={message.content}
-                          onReferenceClick={handleReferenceClick}
-                        />
-                      ) : (
-                        <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
-                      )}
+                    <div className="rounded-lg px-4 py-2 bg-muted">
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
-                    {message.type === 'ai' && (
-                      <MessageActions
-                        content={message.content}
-                        notebookId={notebookId}
-                      />
-                    )}
                   </div>
-                  {message.type === 'human' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            {/* Context Indicators */}
+            {contextIndicators && (
+              <div className="border-t px-4 py-2">
+                <div className="flex flex-wrap gap-2 text-xs">
+                  {contextIndicators.sources?.length > 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <FileText className="h-3 w-3" />
+                      {contextIndicators.sources.length} source{contextIndicators.sources.length > 1 ? 's' : ''}
+                    </Badge>
                   )}
-                </div>
-              ))
-            )}
-            {isStreaming && (
-              <div className="flex gap-3 justify-start">
-                <div className="flex-shrink-0">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Bot className="h-4 w-4" />
-                  </div>
-                </div>
-                <div className="rounded-lg px-4 py-2 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {contextIndicators.insights?.length > 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <Lightbulb className="h-3 w-3" />
+                      {contextIndicators.insights.length} insight{contextIndicators.insights.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
+                  {contextIndicators.notes?.length > 0 && (
+                    <Badge variant="outline" className="gap-1">
+                      <StickyNote className="h-3 w-3" />
+                      {contextIndicators.notes.length} note{contextIndicators.notes.length > 1 ? 's' : ''}
+                    </Badge>
+                  )}
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
-        </ScrollArea>
 
-        {/* Context Indicators */}
-        {contextIndicators && (
-          <div className="border-t px-4 py-2">
-            <div className="flex flex-wrap gap-2 text-xs">
-              {contextIndicators.sources?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <FileText className="h-3 w-3" />
-                  {contextIndicators.sources.length} source{contextIndicators.sources.length > 1 ? 's' : ''}
-                </Badge>
-              )}
-              {contextIndicators.insights?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <Lightbulb className="h-3 w-3" />
-                  {contextIndicators.insights.length} insight{contextIndicators.insights.length > 1 ? 's' : ''}
-                </Badge>
-              )}
-              {contextIndicators.notes?.length > 0 && (
-                <Badge variant="outline" className="gap-1">
-                  <StickyNote className="h-3 w-3" />
-                  {contextIndicators.notes.length} note{contextIndicators.notes.length > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Notebook Context Indicator */}
-        {notebookContextStats && (
-          <ContextIndicator
-            sourcesInsights={notebookContextStats.sourcesInsights}
-            sourcesFull={notebookContextStats.sourcesFull}
-            notesCount={notebookContextStats.notesCount}
-            tokenCount={notebookContextStats.tokenCount}
-            charCount={notebookContextStats.charCount}
-          />
-        )}
-
-        {/* Input Area */}
-        <div className="flex-shrink-0 p-4 space-y-3 border-t">
-          {/* Model selector */}
-          {onModelChange && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Model</span>
-              <ModelSelector
-                currentModel={modelOverride}
-                onModelChange={onModelChange}
-                disabled={isStreaming}
+            {/* Notebook Context Indicator */}
+            {notebookContextStats && (
+              <ContextIndicator
+                sourcesInsights={notebookContextStats.sourcesInsights}
+                sourcesFull={notebookContextStats.sourcesFull}
+                notesCount={notebookContextStats.notesCount}
+                tokenCount={notebookContextStats.tokenCount}
+                charCount={notebookContextStats.charCount}
               />
-            </div>
-          )}
+            )}
 
-          <div className="flex gap-2 items-end">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`Ask a question about this ${contextType}... (${keyHint} to send)`}
-              disabled={isStreaming}
-              className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3"
-              rows={1}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isStreaming}
-              size="icon"
-              className="h-[40px] w-[40px] flex-shrink-0"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
+            {/* Input Area */}
+            <div className="flex-shrink-0 p-4 space-y-3 border-t">
+              {/* Model selector */}
+              {onModelChange && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Model</span>
+                  <ModelSelector
+                    currentModel={modelOverride}
+                    onModelChange={onModelChange}
+                    disabled={isStreaming}
+                  />
+                </div>
               )}
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
 
+              <div className="flex gap-2 items-end">
+                <Textarea
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={`Ask a question about this ${contextType}... (${keyHint} to send)`}
+                  disabled={isStreaming}
+                  className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3"
+                  rows={1}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!input.trim() || isStreaming}
+                  size="icon"
+                  className="h-[40px] w-[40px] flex-shrink-0"
+                >
+                  {isStreaming ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+    </div>
     </>
   )
 }

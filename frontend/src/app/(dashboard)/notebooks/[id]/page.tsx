@@ -13,6 +13,8 @@ import { useNotes } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { cn } from '@/lib/utils'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { FileText, StickyNote, MessageSquare } from 'lucide-react'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -33,6 +35,9 @@ export default function NotebookPage() {
 
   // Get collapse states for dynamic layout
   const { sourcesCollapsed, notesCollapsed } = useNotebookColumnsStore()
+
+  // Mobile tab state (Sources, Notes, or Chat)
+  const [mobileActiveTab, setMobileActiveTab] = useState<'sources' | 'notes' | 'chat'>('chat')
 
   // Context selection state
   const [contextSelections, setContextSelections] = useState<ContextSelections>({
@@ -110,22 +115,66 @@ export default function NotebookPage() {
           <NotebookHeader notebook={notebook} />
         </div>
 
-        <div className="flex-1 p-6 pt-6 overflow-hidden">
-          {/* Dynamic layout based on collapse states */}
+        <div className="flex-1 p-6 pt-6 overflow-hidden flex flex-col">
+          {/* Mobile: Tabbed interface */}
+          <div className="lg:hidden mb-4">
+            <Tabs value={mobileActiveTab} onValueChange={(value) => setMobileActiveTab(value as 'sources' | 'notes' | 'chat')}>
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="sources" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Sources
+                </TabsTrigger>
+                <TabsTrigger value="notes" className="gap-2">
+                  <StickyNote className="h-4 w-4" />
+                  Notes
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Chat
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
+          {/* Mobile: Show only active tab */}
+          <div className="flex-1 overflow-hidden lg:hidden">
+            {mobileActiveTab === 'sources' && (
+              <SourcesColumn
+                sources={sources}
+                isLoading={sourcesLoading}
+                notebookId={notebookId}
+                notebookName={notebook?.name}
+                onRefresh={refetchSources}
+                contextSelections={contextSelections.sources}
+                onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+              />
+            )}
+            {mobileActiveTab === 'notes' && (
+              <NotesColumn
+                notes={notes}
+                isLoading={notesLoading}
+                notebookId={notebookId}
+                contextSelections={contextSelections.notes}
+                onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+              />
+            )}
+            {mobileActiveTab === 'chat' && (
+              <ChatColumn
+                notebookId={notebookId}
+                contextSelections={contextSelections}
+              />
+            )}
+          </div>
+
+          {/* Desktop: Collapsible columns layout */}
           <div className={cn(
-            'h-full min-h-0 gap-6 transition-all duration-150',
-            // Mobile: stack vertically
-            'flex flex-col',
-            // Desktop: horizontal layout
-            'lg:flex-row'
+            'hidden lg:flex h-full min-h-0 gap-6 transition-all duration-150',
+            'flex-row'
           )}>
             {/* Sources Column */}
             <div className={cn(
               'transition-all duration-150',
-              // Mobile: full width
-              'w-full',
-              // Desktop: fixed 1/3 width when expanded, minimal when collapsed
-              sourcesCollapsed ? 'lg:w-12 lg:flex-shrink-0' : 'lg:flex-none lg:basis-1/3'
+              sourcesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none basis-1/3'
             )}>
               <SourcesColumn
                 sources={sources}
@@ -141,10 +190,7 @@ export default function NotebookPage() {
             {/* Notes Column */}
             <div className={cn(
               'transition-all duration-150',
-              // Mobile: full width
-              'w-full',
-              // Desktop: fixed 1/3 width when expanded, minimal when collapsed
-              notesCollapsed ? 'lg:w-12 lg:flex-shrink-0' : 'lg:flex-none lg:basis-1/3'
+              notesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none basis-1/3'
             )}>
               <NotesColumn
                 notes={notes}
@@ -156,13 +202,7 @@ export default function NotebookPage() {
             </div>
 
             {/* Chat Column - always expanded, takes remaining space */}
-            <div className={cn(
-              'transition-all duration-150',
-              // Mobile: full width
-              'w-full',
-              // Desktop: flex-1 to take remaining space
-              'lg:flex-1'
-            )}>
+            <div className="transition-all duration-150 flex-1">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}

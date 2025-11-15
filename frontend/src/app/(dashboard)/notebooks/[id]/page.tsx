@@ -11,6 +11,8 @@ import { useNotebook } from '@/lib/hooks/use-notebooks'
 import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
+import { cn } from '@/lib/utils'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -28,6 +30,9 @@ export default function NotebookPage() {
   const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
   const { data: sources, isLoading: sourcesLoading, refetch: refetchSources } = useSources(notebookId)
   const { data: notes, isLoading: notesLoading } = useNotes(notebookId)
+
+  // Get collapse states for dynamic layout
+  const { sourcesCollapsed, notesCollapsed } = useNotebookColumnsStore()
 
   // Context selection state
   const [contextSelections, setContextSelections] = useState<ContextSelections>({
@@ -106,31 +111,58 @@ export default function NotebookPage() {
         </div>
 
         <div className="flex-1 p-6 pt-6 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 h-full min-h-0">
-              <div className="flex flex-col h-full min-h-0 overflow-hidden">
-                <SourcesColumn
-                  sources={sources}
-                  isLoading={sourcesLoading}
-                  notebookId={notebookId}
-                  notebookName={notebook?.name}
-                  onRefresh={refetchSources}
-                  contextSelections={contextSelections.sources}
-                  onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
-                />
-              </div>
-              <div className="flex flex-col h-full min-h-0 overflow-hidden">
-                <NotesColumn
-                  notes={notes}
-                  isLoading={notesLoading}
-                  notebookId={notebookId}
-                  contextSelections={contextSelections.notes}
-                  onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
-                />
-              </div>
+          {/* Dynamic layout based on collapse states */}
+          <div className={cn(
+            'h-full min-h-0 gap-6 transition-all duration-150',
+            // Mobile: stack vertically
+            'flex flex-col',
+            // Desktop: horizontal layout
+            'lg:flex-row'
+          )}>
+            {/* Sources Column */}
+            <div className={cn(
+              'transition-all duration-150',
+              // Mobile: full width
+              'w-full',
+              // Desktop: fixed 1/3 width when expanded, minimal when collapsed
+              sourcesCollapsed ? 'lg:w-12 lg:flex-shrink-0' : 'lg:flex-none lg:basis-1/3'
+            )}>
+              <SourcesColumn
+                sources={sources}
+                isLoading={sourcesLoading}
+                notebookId={notebookId}
+                notebookName={notebook?.name}
+                onRefresh={refetchSources}
+                contextSelections={contextSelections.sources}
+                onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+              />
             </div>
 
-            <div className="flex flex-col h-full min-h-0 overflow-hidden">
+            {/* Notes Column */}
+            <div className={cn(
+              'transition-all duration-150',
+              // Mobile: full width
+              'w-full',
+              // Desktop: fixed 1/3 width when expanded, minimal when collapsed
+              notesCollapsed ? 'lg:w-12 lg:flex-shrink-0' : 'lg:flex-none lg:basis-1/3'
+            )}>
+              <NotesColumn
+                notes={notes}
+                isLoading={notesLoading}
+                notebookId={notebookId}
+                contextSelections={contextSelections.notes}
+                onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+              />
+            </div>
+
+            {/* Chat Column - always expanded, takes remaining space */}
+            <div className={cn(
+              'transition-all duration-150',
+              // Mobile: full width
+              'w-full',
+              // Desktop: flex-1 to take remaining space
+              'lg:flex-1'
+            )}>
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}

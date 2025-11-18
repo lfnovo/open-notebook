@@ -273,16 +273,26 @@ open-notebook/
 
 ### 🛠️ Full Installation
 For development or customization:
+
+**Linux/macOS:**
 ```bash
 git clone https://github.com/lfnovo/open-notebook
 cd open-notebook
 make start-all
 ```
 
+**Windows:**
+```powershell
+git clone https://github.com/lfnovo/open-notebook
+cd open-notebook
+.\scripts\dev.ps1 start-all
+```
+
 ### 📖 Need Help?
 - **🤖 AI Installation Assistant**: We have a [CustomGPT built to help you install Open Notebook](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant) - it will guide you through each step!
 - **New to Open Notebook?** Start with our [Getting Started Guide](docs/getting-started/index.md)
 - **Need installation help?** Check our [Installation Guide](docs/getting-started/installation.md)
+- **🪟 Windows users?** See the [Windows Setup Guide](docs/getting-started/windows-setup.md) for Windows-specific instructions
 - **Want to see it in action?** Try our [Quick Start Tutorial](docs/getting-started/quick-start.md)
 
 ## Provider Support Matrix

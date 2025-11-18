@@ -38,13 +38,27 @@ cd open-notebook
 
 Open Notebook uses **uv** for dependency management:
 
+**Linux/macOS:**
 ```bash
 # Install uv (if not already installed)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Create and activate virtual environment
 uv venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+source .venv/bin/activate
+
+# Install dependencies
+uv sync
+```
+
+**Windows (PowerShell):**
+```powershell
+# Install uv (if not already installed)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Create and activate virtual environment
+uv venv
+.\.venv\Scripts\activate
 
 # Install dependencies
 uv sync
@@ -112,11 +126,18 @@ cd ..
 
 ### Step 6: Start the Application
 
-#### Option A: Full Stack with Make
+#### Option A: Full Stack
 
+**Linux/macOS (using Make):**
 ```bash
 # Start all services (recommended for development)
 make start-all
+```
+
+**Windows (using PowerShell):**
+```powershell
+# Start all services (recommended for development)
+.\scripts\dev.ps1 start-all
 ```
 
 This starts:
@@ -129,6 +150,7 @@ This starts:
 
 Start services separately for debugging:
 
+**Linux/macOS:**
 ```bash
 # Terminal 1: Start the API
 uv run python api/main.py
@@ -138,6 +160,34 @@ uv run python -m open_notebook.worker
 
 # Terminal 3: Start the React frontend
 cd frontend && npm run dev
+```
+
+**Windows (PowerShell):**
+```powershell
+# Terminal 1: Start the API
+uv run python api/main.py
+
+# Terminal 2: Start the background worker
+uv run python -m open_notebook.worker
+
+# Terminal 3: Start the React frontend
+cd frontend
+npm run dev
+```
+
+**Windows (PowerShell Script):**
+```powershell
+# Terminal 1: Database
+.\scripts\dev.ps1 database
+
+# Terminal 2: API
+.\scripts\dev.ps1 api
+
+# Terminal 3: Worker
+.\scripts\dev.ps1 worker
+
+# Terminal 4: Frontend
+.\scripts\dev.ps1 frontend
 ```
 
 ## 🔧 Development Workflow

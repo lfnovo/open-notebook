@@ -16,6 +16,8 @@ This comprehensive guide will help you install and configure Open Notebook, an o
 10. [Security Configuration](#security-configuration)
 11. [Troubleshooting](#troubleshooting)
 
+**🪟 Windows Users**: See the dedicated **[Windows Setup Guide](windows-setup.md)** for complete Windows installation instructions, including PowerShell scripts and troubleshooting.
+
 ---
 
 ## Quick Start
@@ -40,6 +42,8 @@ docker compose up -d
 ```
 
 ### From Source (Developers)
+
+**Linux/macOS:**
 ```bash
 # Clone and setup
 git clone https://github.com/lfnovo/open-notebook
@@ -50,6 +54,19 @@ cp .env.example .env
 # Install dependencies and start
 uv sync
 make start-all
+```
+
+**Windows (PowerShell):**
+```powershell
+# Clone and setup
+git clone https://github.com/lfnovo/open-notebook
+cd open-notebook
+copy .env.example .env
+# Edit .env with your API keys
+
+# Install dependencies and start
+uv sync
+.\scripts\dev.ps1 start-all
 ```
 
 Access Open Notebook at `http://localhost:8502`
@@ -67,7 +84,10 @@ Access Open Notebook at `http://localhost:8502`
 ### Operating System Support
 - **macOS**: 10.15 (Catalina) or later
 - **Linux**: Ubuntu 18.04+, Debian 9+, CentOS 7+, Fedora 30+
-- **Windows**: Windows 10 or later (WSL2 recommended)
+- **Windows**: Windows 10 (version 2004+) or Windows 11
+  - Native Windows with Docker Desktop (recommended)
+  - WSL2 with Docker (alternative)
+  - **📖 See the detailed [Windows Setup Guide](windows-setup.md) for Windows-specific instructions**
 
 ### Software Prerequisites
 - **Python**: 3.9 or later (for source installation)

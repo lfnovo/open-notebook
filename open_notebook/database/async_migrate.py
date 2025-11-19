@@ -22,7 +22,7 @@ class AsyncMigration:
     @classmethod
     def from_file(cls, file_path: str) -> "AsyncMigration":
         """Create migration from SQL file."""
-        with open(file_path, "r") as file:
+        with open(file_path, "r", encoding="utf-8") as file:
             raw_content = file.read()
             # Clean up SQL content
             lines = []

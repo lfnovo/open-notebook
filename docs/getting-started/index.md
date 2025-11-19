@@ -12,6 +12,8 @@ The fastest path from zero to running Open Notebook. Clear steps, no fluff.
 
 **Perfect for:** First-time users, quick testing, simple deployments
 
+**🪟 Windows users?** Also check the **[Windows Setup Guide](windows-setup.md)** for Windows-specific instructions with PowerShell scripts!
+
 ---
 
 ## 📚 **Want to Learn More First?**

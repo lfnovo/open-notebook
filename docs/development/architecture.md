@@ -383,7 +383,7 @@ async def vector_search(
 
 ### Multi-Speaker Podcast System
 
-The podcast generation feature uses a sophisticated multi-step process:
+The podcast generation feature uses a sophisticated multistep process:
 
 **Episode Profiles**: Define the structure and style of podcasts
 - Speaker configuration

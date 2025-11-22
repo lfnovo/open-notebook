@@ -98,7 +98,7 @@ Always verify citations by:
 
 ### How Ask Feature Citations Work
 
-The Ask feature provides comprehensive citations through a multi-step process:
+The Ask feature provides comprehensive citations through a multistep process:
 
 1. **Query Strategy**: AI determines what information to search for
 2. **Source Search**: Vector search identifies relevant content

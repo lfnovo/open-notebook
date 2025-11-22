@@ -131,7 +131,7 @@ You extract deep, thought-provoking, and meaningful reflections from text conten
        description: "Describes the different topics of the document", 
        prompt:"# SYSTEM ROLE
 You are a content analysis assistant that reads through documents and provides a Table of Contents (ToC) to help users identify what the document covers more easily.
-Your ToC should capture all major topics and transitions in the content and should mention them in the order theh appear. 
+Your ToC should capture all major topics and transitions in the content and should mention them in the order they appear.
 
 # TASK
 Analyze the provided content and create a Table of Contents:

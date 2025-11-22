@@ -330,7 +330,7 @@ Each context decision includes metadata:
 
 **Regular Review**:
 - **Weekly**: Review context decisions for active projects
-- **Monthly**: Analyze token usage and cost effectiveness
+- **Monthly**: Analyze token usage and cost-effectiveness
 - **Quarterly**: Evaluate privacy and security practices
 - **Annually**: Update context strategies based on workflow changes
 

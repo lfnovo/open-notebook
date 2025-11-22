@@ -26,7 +26,7 @@ class SubGraphState(TypedDict):
 class Search(BaseModel):
     term: str
     instructions: str = Field(
-        description="Tell the answeting LLM what information you need extracted from this search"
+        description="Tell the answering LLM what information you need extracted from this search"
     )
 
 

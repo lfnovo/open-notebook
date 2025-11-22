@@ -96,7 +96,7 @@ async def generate_podcast_command(
         if input_data.briefing_suffix:
             briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
 
-        # Create the a record for the episose and associate with the ongoing command
+        # Create the record for the episode and associate with the ongoing command
         episode = PodcastEpisode(
             name=input_data.episode_name,
             episode_profile=full_model_dump(episode_profile.model_dump()),

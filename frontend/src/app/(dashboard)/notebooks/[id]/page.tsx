@@ -12,6 +12,7 @@ import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
+import { useIsDesktop } from '@/lib/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
@@ -35,6 +36,9 @@ export default function NotebookPage() {
 
   // Get collapse states for dynamic layout
   const { sourcesCollapsed, notesCollapsed } = useNotebookColumnsStore()
+
+  // Detect desktop to avoid double-mounting ChatColumn
+  const isDesktop = useIsDesktop()
 
   // Mobile tab state (Sources, Notes, or Chat)
   const [mobileActiveTab, setMobileActiveTab] = useState<'sources' | 'notes' | 'chat'>('chat')
@@ -116,55 +120,59 @@ export default function NotebookPage() {
         </div>
 
         <div className="flex-1 p-6 pt-6 overflow-hidden flex flex-col">
-          {/* Mobile: Tabbed interface */}
-          <div className="lg:hidden mb-4">
-            <Tabs value={mobileActiveTab} onValueChange={(value) => setMobileActiveTab(value as 'sources' | 'notes' | 'chat')}>
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="sources" className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Sources
-                </TabsTrigger>
-                <TabsTrigger value="notes" className="gap-2">
-                  <StickyNote className="h-4 w-4" />
-                  Notes
-                </TabsTrigger>
-                <TabsTrigger value="chat" className="gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  Chat
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </div>
+          {/* Mobile: Tabbed interface - only render on mobile to avoid double-mounting */}
+          {!isDesktop && (
+            <>
+              <div className="lg:hidden mb-4">
+                <Tabs value={mobileActiveTab} onValueChange={(value) => setMobileActiveTab(value as 'sources' | 'notes' | 'chat')}>
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="sources" className="gap-2">
+                      <FileText className="h-4 w-4" />
+                      Sources
+                    </TabsTrigger>
+                    <TabsTrigger value="notes" className="gap-2">
+                      <StickyNote className="h-4 w-4" />
+                      Notes
+                    </TabsTrigger>
+                    <TabsTrigger value="chat" className="gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Chat
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
 
-          {/* Mobile: Show only active tab */}
-          <div className="flex-1 overflow-hidden lg:hidden">
-            {mobileActiveTab === 'sources' && (
-              <SourcesColumn
-                sources={sources}
-                isLoading={sourcesLoading}
-                notebookId={notebookId}
-                notebookName={notebook?.name}
-                onRefresh={refetchSources}
-                contextSelections={contextSelections.sources}
-                onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
-              />
-            )}
-            {mobileActiveTab === 'notes' && (
-              <NotesColumn
-                notes={notes}
-                isLoading={notesLoading}
-                notebookId={notebookId}
-                contextSelections={contextSelections.notes}
-                onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
-              />
-            )}
-            {mobileActiveTab === 'chat' && (
-              <ChatColumn
-                notebookId={notebookId}
-                contextSelections={contextSelections}
-              />
-            )}
-          </div>
+              {/* Mobile: Show only active tab */}
+              <div className="flex-1 overflow-hidden lg:hidden">
+                {mobileActiveTab === 'sources' && (
+                  <SourcesColumn
+                    sources={sources}
+                    isLoading={sourcesLoading}
+                    notebookId={notebookId}
+                    notebookName={notebook?.name}
+                    onRefresh={refetchSources}
+                    contextSelections={contextSelections.sources}
+                    onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                  />
+                )}
+                {mobileActiveTab === 'notes' && (
+                  <NotesColumn
+                    notes={notes}
+                    isLoading={notesLoading}
+                    notebookId={notebookId}
+                    contextSelections={contextSelections.notes}
+                    onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                  />
+                )}
+                {mobileActiveTab === 'chat' && (
+                  <ChatColumn
+                    notebookId={notebookId}
+                    contextSelections={contextSelections}
+                  />
+                )}
+              </div>
+            </>
+          )}
 
           {/* Desktop: Collapsible columns layout */}
           <div className={cn(

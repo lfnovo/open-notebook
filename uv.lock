@@ -426,7 +426,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "1.7.0"
+version = "1.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -451,12 +451,13 @@ dependencies = [
     { name = "python-pptx" },
     { name = "pytubefix" },
     { name = "readability-lxml" },
+    { name = "tenacity" },
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a4/81/33a16ff0f4caa227c0f9569cbd196baaf45a296e1d172d30cd3215eb91f2/content_core-1.7.0.tar.gz", hash = "sha256:e7954de3a7aa2718863d5ab7ba9c5b29617ed5193e3a792cb0a62bc30816dfa5", size = 20656892, upload-time = "2025-11-01T15:03:46.289Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/73/168d004b3b741bfa3acc16661eca96a1d5d3d25c36cb8b60a18ec6a77aa6/content_core-1.8.0.tar.gz", hash = "sha256:9aa4e03c5ea6b49ead471a0448ea1589b7055e8110b95272ca8ac4fcedb59953", size = 20674964, upload-time = "2025-11-25T16:54:02.993Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/9c/857c0fb5798d8e45f17249fc1513c197a8fd2f6d9a0b537aa176fffdf700/content_core-1.7.0-py3-none-any.whl", hash = "sha256:b51991a6498483b6e5f47cdcad36af19d5cffa770ff140ff773f0c9e886b7129", size = 173198, upload-time = "2025-11-01T15:03:43.084Z" },
+    { url = "https://files.pythonhosted.org/packages/83/5d/e117b1ea093b5347f2efbaaed867d6d03087a98e557bd07d128e1a9bd71c/content_core-1.8.0-py3-none-any.whl", hash = "sha256:538869ea8dee598b794cf91ea3cca1b2ce6385f1a1b264682d779235d92b4c34", size = 179875, upload-time = "2025-11-25T16:54:01.121Z" },
 ]
 
 [[package]]
@@ -517,7 +518,7 @@ wheels = [
 
 [[package]]
 name = "cyclopts"
-version = "4.2.5"
+version = "4.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
@@ -525,9 +526,9 @@ dependencies = [
     { name = "rich" },
     { name = "rich-rst" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/94/f0/5a83ac365800969552a7eb261b03860dea38647fb6cc31574bdbcdc9f0f5/cyclopts-4.2.5.tar.gz", hash = "sha256:91aff5da5b8b841ccb32b5142c2d12fd93678fbc9eba7ef7319452323e24d6d4", size = 149497, upload-time = "2025-11-22T02:33:37.526Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/0f/fe026df2ab8301e30a2b0bd425ff1462ad858fd4f991c1ac0389c2059c24/cyclopts-4.3.0.tar.gz", hash = "sha256:e95179cd0a959ce250ecfb2f0262a5996a92c1f9467bccad2f3d829e6833cef5", size = 151411, upload-time = "2025-11-25T02:59:33.572Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/00/a9b81bdba88e2904602e970e46ffd18b6a833d902f18d91bdce6fc271c49/cyclopts-4.2.5-py3-none-any.whl", hash = "sha256:361be316ce7f6ce674cad8d34bf6c5e39c34daaeceae40632a55b599472975c7", size = 185196, upload-time = "2025-11-22T02:33:36.103Z" },
+    { url = "https://files.pythonhosted.org/packages/7a/e8/77a231ae531cf38765b75ddf27dae28bb5f70b41d8bb4f15ce1650e93f57/cyclopts-4.3.0-py3-none-any.whl", hash = "sha256:91a30b69faf128ada7cfeaefd7d9649dc222e8b2a8697f1fc99e4ee7b7ca44f3", size = 187184, upload-time = "2025-11-25T02:59:32.21Z" },
 ]
 
 [[package]]

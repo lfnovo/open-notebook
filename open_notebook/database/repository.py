@@ -73,6 +73,10 @@ async def repo_query(
             if isinstance(result, str):
                 raise RuntimeError(result)
             return result
+        except RuntimeError as e:
+            # RuntimeError is raised for retriable transaction conflicts - log without stack trace
+            logger.error(str(e))
+            raise
         except Exception as e:
             logger.exception(e)
             raise
@@ -87,6 +91,9 @@ async def repo_create(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         async with db_connection() as connection:
             return parse_record_ids(await connection.insert(table, data))
+    except RuntimeError as e:
+        logger.error(str(e))
+        raise
     except Exception as e:
         logger.exception(e)
         raise RuntimeError("Failed to create record")
@@ -142,18 +149,6 @@ async def repo_update(
         return parse_record_ids(result)
     except Exception as e:
         raise RuntimeError(f"Failed to update record: {str(e)}")
-
-
-async def repo_get_news_by_jota_id(jota_id: str) -> Dict[str, Any]:
-    try:
-        results = await repo_query(
-            "SELECT * omit embedding FROM news where jota_id=$jota_id",
-            {"jota_id": jota_id},
-        )
-        return parse_record_ids(results)
-    except Exception as e:
-        logger.exception(e)
-        raise RuntimeError(f"Failed to fetch record: {str(e)}")
 
 
 async def repo_delete(record_id: Union[str, RecordID]):

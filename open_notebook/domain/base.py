@@ -158,6 +158,9 @@ class ObjectModel(BaseModel):
         except ValidationError as e:
             logger.error(f"Validation failed: {e}")
             raise
+        except RuntimeError:
+            # Transaction conflicts should propagate for retry
+            raise
         except Exception as e:
             logger.error(f"Error saving record: {e}")
             raise DatabaseOperationError(e)

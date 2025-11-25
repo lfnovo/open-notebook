@@ -21,32 +21,6 @@ export function CollapsibleColumn({
   collapsedLabel,
   children,
 }: CollapsibleColumnProps) {
-  // Export the collapse button component for use in headers
-  const CollapseButton = () => (
-    <div className="hidden lg:block">
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation()
-                onToggle()
-              }}
-              className="h-7 w-7 hover:bg-accent"
-              aria-label={`Collapse ${collapsedLabel}`}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Collapse {collapsedLabel}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </div>
-  )
   if (isCollapsed) {
     return (
       <TooltipProvider>
@@ -89,8 +63,8 @@ export function CollapsibleColumn({
   )
 }
 
-// Export a hook to get the collapse button
-export function useCollapseButton(onToggle: () => void, label: string) {
+// Factory function to create a collapse button for card headers
+export function createCollapseButton(onToggle: () => void, label: string) {
   return (
     <div className="hidden lg:block">
       <TooltipProvider>

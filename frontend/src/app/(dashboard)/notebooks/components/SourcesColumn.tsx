@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +20,7 @@ import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
-import { CollapsibleColumn, useCollapseButton } from '@/components/notebooks/CollapsibleColumn'
+import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 
 interface SourcesColumnProps {
@@ -56,7 +56,10 @@ export function SourcesColumn({
 
   // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
-  const collapseButton = useCollapseButton(toggleSources, 'Sources')
+  const collapseButton = useMemo(
+    () => createCollapseButton(toggleSources, 'Sources'),
+    [toggleSources]
+  )
   
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
@@ -110,75 +113,78 @@ export function SourcesColumn({
   }
 
   return (
-    <CollapsibleColumn
-      isCollapsed={sourcesCollapsed}
-      onToggle={toggleSources}
-      collapsedIcon={FileText}
-      collapsedLabel="Sources"
-    >
-      <Card className="h-full flex flex-col flex-1 overflow-hidden">
-        <CardHeader className="pb-3 flex-shrink-0">
-          <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-lg">Sources</CardTitle>
-            <div className="flex items-center gap-2">
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                <DropdownMenuTrigger asChild>
-                  <Button size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Source
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New Source
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
-                    <Link2 className="h-4 w-4 mr-2" />
-                    Add Existing Source
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              {collapseButton}
+    <>
+      <CollapsibleColumn
+        isCollapsed={sourcesCollapsed}
+        onToggle={toggleSources}
+        collapsedIcon={FileText}
+        collapsedLabel="Sources"
+      >
+        <Card className="h-full flex flex-col flex-1 overflow-hidden">
+          <CardHeader className="pb-3 flex-shrink-0">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-lg">Sources</CardTitle>
+              <div className="flex items-center gap-2">
+                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Source
+                      <ChevronDown className="h-4 w-4 ml-2" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Source
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
+                      <Link2 className="h-4 w-4 mr-2" />
+                      Add Existing Source
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {collapseButton}
+              </div>
             </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
 
-        <CardContent className="flex-1 overflow-y-auto min-h-0">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <LoadingSpinner />
-            </div>
-          ) : !sources || sources.length === 0 ? (
-            <EmptyState
-              icon={FileText}
-              title="No sources yet"
-              description="Add your first source to start building your knowledge base."
-            />
-          ) : (
-            <div className="space-y-3">
-              {sources.map((source) => (
-                <SourceCard
-                  key={source.id}
-                  source={source}
-                  onClick={handleSourceClick}
-                  onDelete={handleDeleteClick}
-                  onRetry={handleRetry}
-                  onRemoveFromNotebook={handleRemoveFromNotebook}
-                  onRefresh={onRefresh}
-                  showRemoveFromNotebook={true}
-                  contextMode={contextSelections?.[source.id]}
-                  onContextModeChange={onContextModeChange
-                    ? (mode) => onContextModeChange(source.id, mode)
-                    : undefined
-                  }
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      
+          <CardContent className="flex-1 overflow-y-auto min-h-0">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <LoadingSpinner />
+              </div>
+            ) : !sources || sources.length === 0 ? (
+              <EmptyState
+                icon={FileText}
+                title="No sources yet"
+                description="Add your first source to start building your knowledge base."
+              />
+            ) : (
+              <div className="space-y-3">
+                {sources.map((source) => (
+                  <SourceCard
+                    key={source.id}
+                    source={source}
+                    onClick={handleSourceClick}
+                    onDelete={handleDeleteClick}
+                    onRetry={handleRetry}
+                    onRemoveFromNotebook={handleRemoveFromNotebook}
+                    onRefresh={onRefresh}
+                    showRemoveFromNotebook={true}
+                    contextMode={contextSelections?.[source.id]}
+                    onContextModeChange={onContextModeChange
+                      ? (mode) => onContextModeChange(source.id, mode)
+                      : undefined
+                    }
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </CollapsibleColumn>
+
       <AddSourceDialog
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
@@ -213,7 +219,6 @@ export function SourcesColumn({
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
       />
-      </Card>
-    </CollapsibleColumn>
+    </>
   )
 }

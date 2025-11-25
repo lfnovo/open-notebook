@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { NoteResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +20,7 @@ import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '../[id]/page'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { CollapsibleColumn, useCollapseButton } from '@/components/notebooks/CollapsibleColumn'
+import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 
 interface NotesColumnProps {
@@ -47,7 +47,10 @@ export function NotesColumn({
 
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
-  const collapseButton = useCollapseButton(toggleNotes, 'Notes')
+  const collapseButton = useMemo(
+    () => createCollapseButton(toggleNotes, 'Notes'),
+    [toggleNotes]
+  )
 
   const handleDeleteClick = (noteId: string) => {
     setNoteToDelete(noteId)

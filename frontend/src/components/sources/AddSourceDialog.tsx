@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LoaderIcon } from 'lucide-react'
+import { LoaderIcon, CheckCircleIcon, XCircleIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
-import { SourceTypeStep } from './steps/SourceTypeStep'
+import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
@@ -22,6 +23,8 @@ import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
+
+const MAX_BATCH_SIZE = 50
 
 const createSourceSchema = z.object({
   type: z.enum(['link', 'upload', 'text']),
@@ -80,6 +83,13 @@ interface ProcessingState {
   progress?: number
 }
 
+interface BatchProgress {
+  total: number
+  completed: number
+  failed: number
+  currentItem?: string
+}
+
 export function AddSourceDialog({ 
   open, 
   onOpenChange, 
@@ -93,6 +103,10 @@ export function AddSourceDialog({
     defaultNotebookId ? [defaultNotebookId] : []
   )
   const [selectedTransformations, setSelectedTransformations] = useState<string[]>([])
+
+  // Batch-specific state
+  const [urlValidationErrors, setUrlValidationErrors] = useState<{ url: string; line: number }[]>([])
+  const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
 
   // Cleanup timeouts to prevent memory leaks
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -158,12 +172,51 @@ export function AddSourceDialog({
   const watchedFile = watch('file')
   const watchedTitle = watch('title')
 
+  // Batch mode detection
+  const { isBatchMode, itemCount, parsedUrls, parsedFiles } = useMemo(() => {
+    let urlCount = 0
+    let fileCount = 0
+    let parsedUrls: string[] = []
+    let parsedFiles: File[] = []
+
+    if (selectedType === 'link' && watchedUrl) {
+      const { valid } = parseAndValidateUrls(watchedUrl)
+      parsedUrls = valid
+      urlCount = valid.length
+    }
+
+    if (selectedType === 'upload' && watchedFile) {
+      const fileList = watchedFile as FileList
+      if (fileList?.length) {
+        parsedFiles = Array.from(fileList)
+        fileCount = parsedFiles.length
+      }
+    }
+
+    const isBatchMode = urlCount > 1 || fileCount > 1
+    const itemCount = selectedType === 'link' ? urlCount : fileCount
+
+    return { isBatchMode, itemCount, parsedUrls, parsedFiles }
+  }, [selectedType, watchedUrl, watchedFile])
+
+  // Check for batch size limit
+  const isOverLimit = itemCount > MAX_BATCH_SIZE
+
   // Step validation - now reactive with watched values
   const isStepValid = (step: number): boolean => {
     switch (step) {
       case 1:
         if (!selectedType) return false
+        // Check batch size limit
+        if (isOverLimit) return false
+        // Check for URL validation errors
+        if (urlValidationErrors.length > 0) return false
+
         if (selectedType === 'link') {
+          // In batch mode, check that we have at least one valid URL
+          if (isBatchMode) {
+            return parsedUrls.length > 0
+          }
           return !!watchedUrl && watchedUrl.trim() !== ''
         }
         if (selectedType === 'text') {
@@ -172,7 +225,7 @@ export function AddSourceDialog({
         }
         if (selectedType === 'upload') {
           if (watchedFile instanceof FileList) {
-            return watchedFile.length > 0
+            return watchedFile.length > 0 && watchedFile.length <= MAX_BATCH_SIZE
           }
           return !!watchedFile
         }
@@ -189,9 +242,25 @@ export function AddSourceDialog({
   const handleNextStep = (e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
+
+    // Validate URLs when leaving step 1 in link mode
+    if (currentStep === 1 && selectedType === 'link' && watchedUrl) {
+      const { invalid } = parseAndValidateUrls(watchedUrl)
+      if (invalid.length > 0) {
+        setUrlValidationErrors(invalid)
+        return
+      }
+      setUrlValidationErrors([])
+    }
+
     if (currentStep < 3 && isStepValid(currentStep)) {
       setCurrentStep(currentStep + 1)
     }
+  }
+
+  // Clear URL validation errors when user edits
+  const handleClearUrlErrors = () => {
+    setUrlValidationErrors([])
   }
 
   const handlePrevStep = (e?: React.MouseEvent) => {
@@ -223,43 +292,127 @@ export function AddSourceDialog({
     setSelectedTransformations(updated)
   }
 
+  // Single source submission
+  const submitSingleSource = async (data: CreateSourceFormData): Promise<void> => {
+    const createRequest: CreateSourceRequest = {
+      type: data.type,
+      notebooks: selectedNotebooks,
+      url: data.type === 'link' ? data.url : undefined,
+      content: data.type === 'text' ? data.content : undefined,
+      title: data.title,
+      transformations: selectedTransformations,
+      embed: data.embed,
+      delete_source: false,
+      async_processing: true,
+    }
+
+    if (data.type === 'upload' && data.file) {
+      const file = data.file instanceof FileList ? data.file[0] : data.file
+      const requestWithFile = createRequest as CreateSourceRequest & { file?: File }
+      requestWithFile.file = file
+    }
+
+    await createSource.mutateAsync(createRequest)
+  }
+
+  // Batch submission
+  const submitBatch = async (data: CreateSourceFormData): Promise<{ success: number; failed: number }> => {
+    const results = { success: 0, failed: 0 }
+    const items: { type: 'url' | 'file'; value: string | File }[] = []
+
+    // Collect items to process
+    if (data.type === 'link' && parsedUrls.length > 0) {
+      parsedUrls.forEach(url => items.push({ type: 'url', value: url }))
+    } else if (data.type === 'upload' && parsedFiles.length > 0) {
+      parsedFiles.forEach(file => items.push({ type: 'file', value: file }))
+    }
+
+    setBatchProgress({
+      total: items.length,
+      completed: 0,
+      failed: 0,
+    })
+
+    // Process each item sequentially
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      const itemLabel = item.type === 'url'
+        ? (item.value as string).substring(0, 50) + '...'
+        : (item.value as File).name
+
+      setBatchProgress(prev => prev ? {
+        ...prev,
+        currentItem: itemLabel,
+      } : null)
+
+      try {
+        const createRequest: CreateSourceRequest = {
+          type: item.type === 'url' ? 'link' : 'upload',
+          notebooks: selectedNotebooks,
+          url: item.type === 'url' ? item.value as string : undefined,
+          transformations: selectedTransformations,
+          embed: data.embed,
+          delete_source: false,
+          async_processing: true,
+        }
+
+        if (item.type === 'file') {
+          const requestWithFile = createRequest as CreateSourceRequest & { file?: File }
+          requestWithFile.file = item.value as File
+        }
+
+        await createSource.mutateAsync(createRequest)
+        results.success++
+      } catch (error) {
+        console.error(`Error creating source for ${itemLabel}:`, error)
+        results.failed++
+      }
+
+      setBatchProgress(prev => prev ? {
+        ...prev,
+        completed: results.success,
+        failed: results.failed,
+      } : null)
+    }
+
+    return results
+  }
+
   // Form submission
   const onSubmit = async (data: CreateSourceFormData) => {
     try {
       setProcessing(true)
-      setProcessingStatus({ message: 'Submitting source for processing...' })
 
-      const createRequest: CreateSourceRequest = {
-        type: data.type,
-        notebooks: selectedNotebooks,
-        url: data.type === 'link' ? data.url : undefined,
-        content: data.type === 'text' ? data.content : undefined,
-        title: data.title,
-        transformations: selectedTransformations,
-        embed: data.embed,
-        delete_source: false,
-        async_processing: true, // Always use async processing for frontend submissions
+      if (isBatchMode) {
+        // Batch submission
+        setProcessingStatus({ message: `Processing ${itemCount} sources...` })
+        const results = await submitBatch(data)
+
+        // Show summary toast
+        if (results.failed === 0) {
+          toast.success(`${results.success} source${results.success !== 1 ? 's' : ''} created successfully`)
+        } else if (results.success === 0) {
+          toast.error(`Failed to create all ${results.failed} sources`)
+        } else {
+          toast.warning(`${results.success} succeeded, ${results.failed} failed`)
+        }
+
+        handleClose()
+      } else {
+        // Single source submission
+        setProcessingStatus({ message: 'Submitting source for processing...' })
+        await submitSingleSource(data)
+        handleClose()
       }
-
-      
-      if (data.type === 'upload' && data.file) {
-        const file = data.file instanceof FileList ? data.file[0] : data.file
-        const requestWithFile = createRequest as CreateSourceRequest & { file?: File }
-        requestWithFile.file = file
-      }
-
-      await createSource.mutateAsync(createRequest)
-
-      // Close immediately - the toast will show the success message
-      handleClose()
     } catch (error) {
       console.error('Error creating source:', error)
-      setProcessingStatus({ 
+      setProcessingStatus({
         message: 'Error creating source. Please try again.',
       })
       timeoutRef.current = setTimeout(() => {
         setProcessing(false)
         setProcessingStatus(null)
+        setBatchProgress(null)
       }, 3000)
     }
   }
@@ -277,6 +430,8 @@ export function AddSourceDialog({
     setProcessing(false)
     setProcessingStatus(null)
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
+    setUrlValidationErrors([])
+    setBatchProgress(null)
 
     // Reset to default transformations
     if (transformations.length > 0) {
@@ -293,16 +448,25 @@ export function AddSourceDialog({
 
   // Processing view
   if (processing) {
+    const progressPercent = batchProgress
+      ? Math.round(((batchProgress.completed + batchProgress.failed) / batchProgress.total) * 100)
+      : undefined
+
     return (
       <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
           <DialogHeader>
-            <DialogTitle>Processing Source</DialogTitle>
+            <DialogTitle>
+              {batchProgress ? 'Processing Batch' : 'Processing Source'}
+            </DialogTitle>
             <DialogDescription>
-              Your source is being processed. This may take a few moments.
+              {batchProgress
+                ? `Processing ${batchProgress.total} sources. This may take a few moments.`
+                : 'Your source is being processed. This may take a few moments.'
+              }
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
             <div className="flex items-center gap-3">
               <LoaderIcon className="h-5 w-5 animate-spin text-primary" />
@@ -310,11 +474,48 @@ export function AddSourceDialog({
                 {processingStatus?.message || 'Processing...'}
               </span>
             </div>
-            
-            {processingStatus?.progress && (
+
+            {/* Batch progress */}
+            {batchProgress && (
+              <>
+                <div className="w-full bg-muted rounded-full h-2">
+                  <div
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1.5 text-green-600">
+                      <CheckCircleIcon className="h-4 w-4" />
+                      {batchProgress.completed} completed
+                    </span>
+                    {batchProgress.failed > 0 && (
+                      <span className="flex items-center gap-1.5 text-destructive">
+                        <XCircleIcon className="h-4 w-4" />
+                        {batchProgress.failed} failed
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-muted-foreground">
+                    {batchProgress.completed + batchProgress.failed} / {batchProgress.total}
+                  </span>
+                </div>
+
+                {batchProgress.currentItem && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    Current: {batchProgress.currentItem}
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* Single source progress */}
+            {!batchProgress && processingStatus?.progress && (
               <div className="w-full bg-muted rounded-full h-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${processingStatus.progress}%` }}
                 />
               </div>
@@ -351,6 +552,8 @@ export function AddSourceDialog({
                 register={register}
                 // @ts-expect-error - Type inference issue with zod schema
                 errors={errors}
+                urlValidationErrors={urlValidationErrors}
+                onClearUrlErrors={handleClearUrlErrors}
               />
             )}
             

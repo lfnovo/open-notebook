@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -43,6 +44,10 @@ export default function SearchPage() {
   // Save to notebooks dialog
   const [showSaveDialog, setShowSaveDialog] = useState(false)
 
+  // Get URL param
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams.get('q')
+
   // Hooks
   const searchMutation = useSearch()
   const ask = useAsk()
@@ -56,6 +61,21 @@ export default function SearchPage() {
     }
     return new Map(availableModels.map((model) => [model.id, model.name]))
   }, [availableModels])
+
+  useEffect(() => {
+    if (initialQuery && !searchMutation.data && !searchMutation.isPending) {
+      setSearchQuery(initialQuery)
+
+      searchMutation.mutate({
+        query: initialQuery,
+        type: searchType,
+        limit: 100,
+        search_sources: searchSources,
+        search_notes: searchNotes,
+        minimum_score: 0.2
+      })
+    }
+  }, [initialQuery])
 
   const resolveModelName = (id?: string | null) => {
     if (!id) return 'Not set'
@@ -100,7 +120,7 @@ export default function SearchPage() {
       <div className="p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Ask and Search</h1>
 
-        <Tabs defaultValue="ask" className="w-full space-y-6">
+        <Tabs defaultValue={initialQuery ? 'search' : 'ask'} className="w-full space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a mode</p>
             <TabsList aria-label="Ask or search your knowledge base" className="w-full max-w-xl">

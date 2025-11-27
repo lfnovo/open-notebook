@@ -63,7 +63,7 @@ export default function SearchPage() {
   }, [availableModels])
 
   useEffect(() => {
-    if (initialQuery && !searchMutation.isPending) {
+    if (initialQuery) {
       setSearchQuery(initialQuery)
 
       searchMutation.mutate({

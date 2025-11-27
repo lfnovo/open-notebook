@@ -11,10 +11,11 @@ export function QuickSearch() {
   const [query, setQuery] = useState("");
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Trigger search on Enter key press
     if (e.key === "Enter" && query.trim()) {
-      
+      // Navigate to the search results page with the query as a URL parameter
       router.push(`/search?q=${encodeURIComponent(query)}`);
-      
+      // Clear the input field after navigating
       setQuery(""); 
     }
   };

@@ -75,6 +75,7 @@ export default function SearchPage() {
         minimum_score: 0.2
       })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery])
 
   const resolveModelName = (id?: string | null) => {

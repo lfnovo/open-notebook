@@ -30,11 +30,11 @@ class Notebook(ObjectModel):
         try:
             srcs = await repo_query(
                 """
-                select * omit source.full_text from (
-                select in as source from reference where out=$id
-                fetch source
-            ) order by source.updated desc
-            """,
+                SELECT * OMIT source.full_text FROM (
+                    SELECT in AS source FROM reference WHERE out = $id
+                    FETCH source
+                ) ORDER BY source.updated DESC
+                """,
                 {"id": ensure_record_id(self.id)},
             )
             return [Source(**src["source"]) for src in srcs] if srcs else []
@@ -47,11 +47,11 @@ class Notebook(ObjectModel):
         try:
             srcs = await repo_query(
                 """
-            select * omit note.content, note.embedding from (
-                select in as note from artifact where out=$id
-                fetch note
-            ) order by note.updated desc
-            """,
+                SELECT * OMIT note.content, note.embedding FROM (
+                    SELECT in AS note FROM artifact WHERE out = $id
+                    FETCH note
+                ) ORDER BY note.updated DESC
+                """,
                 {"id": ensure_record_id(self.id)},
             )
             return [Note(**src["note"]) for src in srcs] if srcs else []
@@ -64,15 +64,15 @@ class Notebook(ObjectModel):
         try:
             srcs = await repo_query(
                 """
-                select * from (
-                    select
-                    <- chat_session as chat_session
-                    from refers_to
-                    where out=$id
-                    fetch chat_session
+                SELECT * FROM (
+                    SELECT
+                    <- chat_session AS chat_session
+                    FROM refers_to
+                    WHERE out = $id
+                    FETCH chat_session
                 )
-                order by chat_session.updated desc
-            """,
+                ORDER BY chat_session.updated DESC
+                """,
                 {"id": ensure_record_id(self.id)},
             )
             return (
@@ -99,8 +99,8 @@ class SourceEmbedding(ObjectModel):
         try:
             src = await repo_query(
                 """
-            select source.* from $id fetch source
-            """,
+                SELECT source.* FROM $id FETCH source
+                """,
                 {"id": ensure_record_id(self.id)},
             )
             return Source(**src[0]["source"])
@@ -119,8 +119,8 @@ class SourceInsight(ObjectModel):
         try:
             src = await repo_query(
                 """
-            select source.* from $id fetch source
-            """,
+                SELECT source.* FROM $id FETCH source
+                """,
                 {"id": ensure_record_id(self.id)},
             )
             return Source(**src[0]["source"])
@@ -232,7 +232,7 @@ class Source(ObjectModel):
         try:
             result = await repo_query(
                 """
-                select count() as chunks from source_embedding where source=$id GROUP ALL
+                SELECT COUNT() AS chunks FROM source_embedding WHERE source = $id GROUP ALL
                 """,
                 {"id": ensure_record_id(self.id)},
             )
@@ -248,7 +248,7 @@ class Source(ObjectModel):
         try:
             result = await repo_query(
                 """
-                SELECT * FROM source_insight WHERE source=$id
+                SELECT * FROM source_insight WHERE source = $id
                 """,
                 {"id": ensure_record_id(self.id)},
             )
@@ -411,8 +411,7 @@ async def text_search(
     try:
         search_results = await repo_query(
             """
-            select *
-            from fn::text_search($keyword, $results, $source, $note)
+            SELECT * FROM fn::text_search($keyword, $results, $source, $note)
             """,
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
@@ -439,7 +438,7 @@ async def vector_search(
         embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score)
             """,
             {
                 "embed": embed,

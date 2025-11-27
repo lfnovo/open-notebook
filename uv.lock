@@ -657,15 +657,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.9.1"
+version = "2.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/00/b09d7ed2a7776cd89dce6db3cac41a9891c382e74dc44808b11a4530736b/esperanto-2.9.1.tar.gz", hash = "sha256:f616207cef6d1e17884dc593424d4b7ac3ee6ab2920be8910018a6a4e887b1e4", size = 796361, upload-time = "2025-11-11T12:09:57.961Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ae/75/e84b99e770d3941f65e365d521e6691d892336ab2a742e668d7eb60f1044/esperanto-2.10.0.tar.gz", hash = "sha256:3f66a9e0751bb291c23291c4693c0607ca039626fd6e37bba4e0b61ce6eaa7a5", size = 802109, upload-time = "2025-11-27T14:33:18.356Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ef/27/f3ce83e06eba994b9d9993175f18d7c29d5d640e1343dd5f48075a071a82/esperanto-2.9.1-py3-none-any.whl", hash = "sha256:7e57f58855023b08e5885021f1d6c4d471b031f9bca2a1e53cd19a016a0ea7ff", size = 148946, upload-time = "2025-11-11T12:09:56.674Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/ef/077dc15215383800c447ddcf55d762c209d8ad4713328fd910a1afd6f082/esperanto-2.10.0-py3-none-any.whl", hash = "sha256:44d9e566c78ab6d955a9ef2b588d48f6e3bebc92d8cf617ed845dd85e7854bb4", size = 150932, upload-time = "2025-11-27T14:33:19.931Z" },
 ]
 
 [[package]]
@@ -759,7 +759,7 @@ wheels = [
 
 [[package]]
 name = "firecrawl-py"
-version = "4.8.0"
+version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -770,9 +770,9 @@ dependencies = [
     { name = "requests" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3c/26/a7726f8867986d9483704878682ccc1f7febaf37e94d5a1d5e39bbf0d3af/firecrawl_py-4.8.0.tar.gz", hash = "sha256:da7167748862c9ded93a2a274d4e34694637ad7f6fb947654c1c3a57f068bf4d", size = 151962, upload-time = "2025-11-12T16:47:48.328Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a5/2e/e4112ebd229bc03202584f5ad2ece81c26cb2a7bad0cd4773b8705d996e9/firecrawl_py-4.9.0.tar.gz", hash = "sha256:8e5740ed923c89e6066dfd63b0449f049bbd274652dfac3d735c9ae0572c4b0c", size = 153395, upload-time = "2025-11-26T13:42:08.6Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/f5/76cd9e6a990432a494cf1e1b831d222e79ce439b8179716649928a0abe89/firecrawl_py-4.8.0-py3-none-any.whl", hash = "sha256:b86241e7d3357025abb1c555cee44bed535ebedf7bc5c521abb6ea2a1c00df24", size = 188790, upload-time = "2025-11-12T16:47:46.594Z" },
+    { url = "https://files.pythonhosted.org/packages/3a/cf/99848233303ca9c9d84cf22de08adc1051e8b6df672aeed14f32272df86b/firecrawl_py-4.9.0-py3-none-any.whl", hash = "sha256:adb027ed8bdda712201dc9727ead1a051dc3d114c2a0051de1f159c420703684", size = 190971, upload-time = "2025-11-26T13:42:07.566Z" },
 ]
 
 [[package]]
@@ -1821,7 +1821,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/0e/72/a3add0e4eec4eb9e2
 
 [[package]]
 name = "langgraph"
-version = "1.0.3"
+version = "1.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain-core" },
@@ -1831,9 +1831,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "xxhash" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/55/70f2d11d33b0310d3e48d8e049825b4a34a1c822d48f6448ae548d2cd0f8/langgraph-1.0.3.tar.gz", hash = "sha256:873a6aae6be054ef52a05c463be363a46da9711405b1b14454d595f543b68335", size = 483302, upload-time = "2025-11-10T17:41:45.425Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d6/3c/af87902d300c1f467165558c8966d8b1e1f896dace271d3f35a410a5c26a/langgraph-1.0.4.tar.gz", hash = "sha256:86d08e25d7244340f59c5200fa69fdd11066aa999b3164b531e2a20036fac156", size = 484397, upload-time = "2025-11-25T20:31:48.608Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/84/a3/fdf6ecd0e44cb02d20afe7d0fb64c748a749f4b2e011bf9a785a32642367/langgraph-1.0.3-py3-none-any.whl", hash = "sha256:4a75146f09bd0d127a724876f4244f460c4c66353a993641bd641ed710cd010f", size = 156845, upload-time = "2025-11-10T17:41:43.868Z" },
+    { url = "https://files.pythonhosted.org/packages/14/52/4eb25a3f60399da34ba34adff1b3e324cf0d87eb7a08cebf1882a9b5e0d5/langgraph-1.0.4-py3-none-any.whl", hash = "sha256:b1a835ceb0a8d69b9db48075e1939e28b1ad70ee23fa3fa8f90149904778bacf", size = 157271, upload-time = "2025-11-25T20:31:47.518Z" },
 ]
 
 [[package]]
@@ -1891,7 +1891,7 @@ wheels = [
 
 [[package]]
 name = "langsmith"
-version = "0.4.47"
+version = "0.4.49"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -1902,9 +1902,9 @@ dependencies = [
     { name = "requests-toolbelt" },
     { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ec/dd/d69922b79fb692b9736206574e5ba69b6354080cf1cc9796449d9fe61f9a/langsmith-0.4.47.tar.gz", hash = "sha256:6a576405696ee97147ccb96c9ae5c9437430500a5d118bd447ec2d1f8cf26de1", size = 986584, upload-time = "2025-11-24T16:02:00.914Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/69/85ae805ecbc1300d486136329b3cb1702483c0afdaf81da95947dd83884a/langsmith-0.4.49.tar.gz", hash = "sha256:4a16ef6f3a9b20c5471884991a12ff37d81f2c13a50660cfe27fa79a7ca2c1b0", size = 987017, upload-time = "2025-11-26T21:45:16.338Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/1a/0c84f7096d41d64425d29db549c8d6fe075f925a5f2022e8087d01d862c2/langsmith-0.4.47-py3-none-any.whl", hash = "sha256:b9e514611d4e1570e33595d33ccb1fe6eda9f96c5f961095a138651f746c1ef5", size = 411207, upload-time = "2025-11-24T16:01:59.123Z" },
+    { url = "https://files.pythonhosted.org/packages/31/79/59ecf7dceafd655ed20270a0f595d9e8e13895231cebcfbff9b6eec51fc4/langsmith-0.4.49-py3-none-any.whl", hash = "sha256:95f84edcd8e74ed658e4a3eb7355b530f35cb08a9a8865dbfde6740e4b18323c", size = 410905, upload-time = "2025-11-26T21:45:14.606Z" },
 ]
 
 [[package]]
@@ -2911,7 +2911,7 @@ wheels = [
 
 [[package]]
 name = "pydantic"
-version = "2.12.4"
+version = "2.12.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-types" },
@@ -2919,9 +2919,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/ad/a17bc283d7d81837c061c49e3eaa27a45991759a1b7eae1031921c6bd924/pydantic-2.12.4.tar.gz", hash = "sha256:0f8cb9555000a4b5b617f66bfd2566264c4984b27589d3b845685983e8ea85ac", size = 821038, upload-time = "2025-11-05T10:50:08.59Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/44/36f1a6e523abc58ae5f928898e4aca2e0ea509b5aa6f6f392a5d882be928/pydantic-2.12.5.tar.gz", hash = "sha256:4d351024c75c0f085a9febbb665ce8c0c6ec5d30e903bdb6394b7ede26aebb49", size = 821591, upload-time = "2025-11-26T15:11:46.471Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/2f/e68750da9b04856e2a7ec56fc6f034a5a79775e9b9a81882252789873798/pydantic-2.12.4-py3-none-any.whl", hash = "sha256:92d3d202a745d46f9be6df459ac5a064fdaa3c1c4cd8adcfa332ccf3c05f871e", size = 463400, upload-time = "2025-11-05T10:50:06.732Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/87/b70ad306ebb6f9b585f114d0ac2137d792b48be34d732d60e597c2f8465a/pydantic-2.12.5-py3-none-any.whl", hash = "sha256:e561593fccf61e8a20fc46dfc2dfe075b8be7d0188df33f221ad1f0139180f9d", size = 463580, upload-time = "2025-11-26T15:11:44.605Z" },
 ]
 
 [package.optional-dependencies]

@@ -286,6 +286,53 @@ Or provide it when logging into the web interface.
 
 ## Runtime Errors
 
+### SSL Certificate Verification Errors
+
+**Problem**: SSL verification errors when connecting to local AI providers (Ollama, LM Studio) behind reverse proxies with self-signed certificates.
+
+**Symptoms**:
+- `[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate`
+- `Connection error` when using HTTPS endpoints
+- Works with HTTP but fails with HTTPS
+
+**Cause**: Python's SSL verification uses the `certifi` package certificate store, not the system's certificate store. Self-signed certificates are not trusted by default.
+
+**Solutions**:
+
+1. **Use a custom CA bundle (recommended)**:
+   ```bash
+   # Add to your .env or docker-compose.yml
+   ESPERANTO_SSL_CA_BUNDLE=/path/to/your/ca-bundle.pem
+   ```
+
+   For Docker, mount the certificate:
+   ```yaml
+   services:
+     open-notebook:
+       environment:
+         - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
+       volumes:
+         - /path/to/your/ca-bundle.pem:/certs/ca-bundle.pem:ro
+   ```
+
+2. **Disable SSL verification (development only)**:
+   ```bash
+   # WARNING: Only use in trusted development environments
+   ESPERANTO_SSL_VERIFY=false
+   ```
+
+3. **Use HTTP instead of HTTPS**:
+   - If your services are on a trusted local network, using HTTP is acceptable
+   - Change your endpoint URL from `https://` to `http://`
+
+> **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer using a custom CA bundle or HTTP on trusted networks.
+
+**Related Documentation:**
+- [Ollama SSL Configuration](../features/ollama.md#ssl-configuration-self-signed-certificates)
+- [OpenAI-Compatible SSL Configuration](../features/openai-compatible.md#ssl-configuration-self-signed-certificates)
+
+---
+
 ### AI Provider API Errors
 
 **Problem**: Errors when using AI models (OpenAI, Anthropic, etc.).

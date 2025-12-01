@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
+import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
 import {
   Tooltip,
   TooltipContent,
@@ -22,9 +23,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
-import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
-import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
 import { Separator } from '@/components/ui/separator'
 import {
   Book,
@@ -39,6 +37,7 @@ import {
   FileText,
   Plus,
   Wrench,
+  Command,
 } from 'lucide-react'
 
 const navigation = [
@@ -78,21 +77,25 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
-  const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
-  const [notebookDialogOpen, setNotebookDialogOpen] = useState(false)
-  const [podcastDialogOpen, setPodcastDialogOpen] = useState(false)
+  const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
+
+  // Detect platform for keyboard shortcut display
+  useEffect(() => {
+    setIsMac(navigator.platform.toLowerCase().includes('mac'))
+  }, [])
 
   const handleCreateSelection = (target: CreateTarget) => {
     setCreateMenuOpen(false)
 
     if (target === 'source') {
-      setSourceDialogOpen(true)
+      openSourceDialog()
     } else if (target === 'notebook') {
-      setNotebookDialogOpen(true)
+      openNotebookDialog()
     } else if (target === 'podcast') {
-      setPodcastDialogOpen(true)
+      openPodcastDialog()
     }
   }
 
@@ -289,6 +292,24 @@ export function AppSidebar() {
             isCollapsed && 'px-2'
           )}
         >
+          {/* Command Palette hint */}
+          {!isCollapsed && (
+            <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Command className="h-3 w-3" />
+                  Quick actions
+                </span>
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
+                </kbd>
+              </div>
+              <p className="mt-1 text-[10px] text-sidebar-foreground/40">
+                Navigation, search, ask, theme
+              </p>
+            </div>
+          )}
+
           <div
             className={cn(
               'flex',
@@ -334,16 +355,6 @@ export function AppSidebar() {
           )}
         </div>
       </div>
-
-      <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
-      <CreateNotebookDialog
-        open={notebookDialogOpen}
-        onOpenChange={setNotebookDialogOpen}
-      />
-      <GeneratePodcastDialog
-        open={podcastDialogOpen}
-        onOpenChange={setPodcastDialogOpen}
-      />
     </TooltipProvider>
   )
 }

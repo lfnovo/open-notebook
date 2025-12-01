@@ -431,6 +431,45 @@ export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
 export OLLAMA_API_BASE=http://localhost:11434
 ```
 
+### SSL Configuration (Self-Signed Certificates)
+
+If you're running Ollama behind a reverse proxy with self-signed SSL certificates (e.g., Caddy, nginx with custom certs), you may encounter SSL verification errors:
+
+```
+[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate
+```
+
+**Solutions:**
+
+**Option 1: Use a custom CA bundle (recommended)**
+```bash
+# Point to your CA certificate file
+export ESPERANTO_SSL_CA_BUNDLE=/path/to/your/ca-bundle.pem
+```
+
+**Option 2: Disable SSL verification (development only)**
+```bash
+# WARNING: Only use in trusted development environments
+export ESPERANTO_SSL_VERIFY=false
+```
+
+**Docker Compose example with SSL configuration:**
+```yaml
+services:
+  open-notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - OLLAMA_API_BASE=https://ollama.local:11434
+      # Option 1: Custom CA bundle
+      - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
+      # Option 2: Disable verification (dev only)
+      # - ESPERANTO_SSL_VERIFY=false
+    volumes:
+      - /path/to/your/ca-bundle.pem:/certs/ca-bundle.pem:ro
+```
+
+> **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer using a custom CA bundle in production environments.
+
 ### Custom Model Imports
 
 **Import custom models:**

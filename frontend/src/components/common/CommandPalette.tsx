@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
@@ -127,23 +127,26 @@ export function CommandPalette() {
 
   // Check if query matches any command (navigation, create, theme, or notebook)
   const queryLower = query.toLowerCase().trim()
-  const hasCommandMatch = queryLower && (
-    navigationItems.some(item =>
-      item.name.toLowerCase().includes(queryLower) ||
-      item.keywords.some(k => k.includes(queryLower))
-    ) ||
-    createItems.some(item =>
-      item.name.toLowerCase().includes(queryLower)
-    ) ||
-    themeItems.some(item =>
-      item.name.toLowerCase().includes(queryLower) ||
-      item.keywords.some(k => k.includes(queryLower))
-    ) ||
-    (notebooks?.some(nb =>
-      nb.name.toLowerCase().includes(queryLower) ||
-      (nb.description && nb.description.toLowerCase().includes(queryLower))
-    ) ?? false)
-  )
+  const hasCommandMatch = useMemo(() => {
+    if (!queryLower) return false
+    return (
+      navigationItems.some(item =>
+        item.name.toLowerCase().includes(queryLower) ||
+        item.keywords.some(k => k.includes(queryLower))
+      ) ||
+      createItems.some(item =>
+        item.name.toLowerCase().includes(queryLower)
+      ) ||
+      themeItems.some(item =>
+        item.name.toLowerCase().includes(queryLower) ||
+        item.keywords.some(k => k.includes(queryLower))
+      ) ||
+      (notebooks?.some(nb =>
+        nb.name.toLowerCase().includes(queryLower) ||
+        (nb.description && nb.description.toLowerCase().includes(queryLower))
+      ) ?? false)
+    )
+  }, [queryLower, notebooks])
 
   // Determine if we should show the Search/Ask section at the top
   const showSearchFirst = query.trim() && !hasCommandMatch

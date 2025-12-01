@@ -27,6 +27,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Loader2,
 } from 'lucide-react'
 
 const navigationItems = [
@@ -204,7 +205,10 @@ export function CommandPalette() {
         {/* Notebooks */}
         <CommandGroup heading="Notebooks">
           {notebooksLoading ? (
-            <CommandItem disabled>Loading notebooks...</CommandItem>
+            <CommandItem disabled>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Loading notebooks...</span>
+            </CommandItem>
           ) : notebooks && notebooks.length > 0 ? (
             notebooks.map((notebook) => (
               <CommandItem

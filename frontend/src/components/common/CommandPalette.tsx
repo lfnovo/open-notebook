@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTheme } from '@/lib/stores/theme-store'
 import {
   CommandDialog,
@@ -57,6 +58,7 @@ export function CommandPalette() {
   const router = useRouter()
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
   const { setTheme } = useTheme()
+  const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false)
 
   // Global keyboard listener for ⌘K / Ctrl+K
   useEffect(() => {
@@ -113,7 +115,7 @@ export function CommandPalette() {
     handleSelect(() => setTheme(theme))
   }, [handleSelect, setTheme])
 
-  // Check if query matches any command (navigation, create, or theme)
+  // Check if query matches any command (navigation, create, theme, or notebook)
   const queryLower = query.toLowerCase().trim()
   const hasCommandMatch = queryLower && (
     navigationItems.some(item =>
@@ -126,7 +128,11 @@ export function CommandPalette() {
     themeItems.some(item =>
       item.name.toLowerCase().includes(queryLower) ||
       item.keywords.some(k => k.includes(queryLower))
-    )
+    ) ||
+    (notebooks?.some(nb =>
+      nb.name.toLowerCase().includes(queryLower) ||
+      (nb.description && nb.description.toLowerCase().includes(queryLower))
+    ) ?? false)
   )
 
   // Determine if we should show the Search/Ask section at the top
@@ -180,6 +186,24 @@ export function CommandPalette() {
               <span>{item.name}</span>
             </CommandItem>
           ))}
+        </CommandGroup>
+
+        {/* Notebooks */}
+        <CommandGroup heading="Notebooks">
+          {notebooksLoading ? (
+            <CommandItem disabled>Loading notebooks...</CommandItem>
+          ) : notebooks && notebooks.length > 0 ? (
+            notebooks.slice(0, 8).map((notebook) => (
+              <CommandItem
+                key={notebook.id}
+                value={`notebook ${notebook.name} ${notebook.description || ''}`}
+                onSelect={() => handleNavigate(`/notebooks/${notebook.id}`)}
+              >
+                <Book className="h-4 w-4" />
+                <span>{notebook.name}</span>
+              </CommandItem>
+            ))
+          ) : null}
         </CommandGroup>
 
         {/* Create */}

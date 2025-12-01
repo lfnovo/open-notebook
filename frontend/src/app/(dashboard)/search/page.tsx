@@ -27,7 +27,8 @@ export default function SearchPage() {
   // URL params
   const searchParams = useSearchParams()
   const urlQuery = searchParams.get('q') || ''
-  const urlMode = searchParams.get('mode') || 'ask'
+  const rawMode = searchParams.get('mode')
+  const urlMode = rawMode === 'search' ? 'search' : 'ask'
 
   // Tab state (controlled)
   const [activeTab, setActiveTab] = useState<'ask' | 'search'>(
@@ -118,19 +119,20 @@ export default function SearchPage() {
     // Wait for models to load before triggering ask
     if (urlMode === 'ask' && modelsLoading) return
 
-    hasAutoTriggeredRef.current = true
-
     if (urlMode === 'search') {
       handleSearch()
+      hasAutoTriggeredRef.current = true
     } else if (urlMode === 'ask' && modelDefaults?.default_chat_model) {
       handleAsk()
+      hasAutoTriggeredRef.current = true
     }
   }, [urlQuery, urlMode, modelsLoading, modelDefaults, handleSearch, handleAsk])
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {
     const currentQ = searchParams.get('q') || ''
-    const currentMode = searchParams.get('mode') || 'ask'
+    const rawCurrentMode = searchParams.get('mode')
+    const currentMode = rawCurrentMode === 'search' ? 'search' : 'ask'
 
     // Check if URL params have changed
     if (currentQ !== lastUrlParamsRef.current.q || currentMode !== lastUrlParamsRef.current.mode) {

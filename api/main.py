@@ -1,3 +1,7 @@
+# Load environment variables
+from dotenv import load_dotenv
+load_dotenv()
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI

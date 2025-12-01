@@ -63,6 +63,16 @@ export function CommandPalette() {
   // Global keyboard listener for ⌘K / Ctrl+K
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      // Skip if focus is inside editable elements
+      const target = e.target as HTMLElement | null
+      if (
+        target &&
+        (target.isContentEditable ||
+          ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
+      ) {
+        return
+      }
+
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         e.stopPropagation()
@@ -193,7 +203,7 @@ export function CommandPalette() {
           {notebooksLoading ? (
             <CommandItem disabled>Loading notebooks...</CommandItem>
           ) : notebooks && notebooks.length > 0 ? (
-            notebooks.slice(0, 8).map((notebook) => (
+            notebooks.map((notebook) => (
               <CommandItem
                 key={notebook.id}
                 value={`notebook ${notebook.name} ${notebook.description || ''}`}

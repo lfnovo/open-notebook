@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -23,14 +24,25 @@ import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
 
 export default function SearchPage() {
+  // URL params
+  const searchParams = useSearchParams()
+  const urlQuery = searchParams.get('q') || ''
+  const rawMode = searchParams.get('mode')
+  const urlMode = rawMode === 'search' ? 'search' : 'ask'
+
+  // Tab state (controlled)
+  const [activeTab, setActiveTab] = useState<'ask' | 'search'>(
+    urlMode === 'search' ? 'search' : 'ask'
+  )
+
   // Search state
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState(urlMode === 'search' ? urlQuery : '')
   const [searchType, setSearchType] = useState<'text' | 'vector'>('text')
   const [searchSources, setSearchSources] = useState(true)
   const [searchNotes, setSearchNotes] = useState(true)
 
   // Ask state
-  const [askQuestion, setAskQuestion] = useState('')
+  const [askQuestion, setAskQuestion] = useState(urlMode === 'ask' ? urlQuery : '')
 
   // Advanced models dialog
   const [showAdvancedModels, setShowAdvancedModels] = useState(false)
@@ -64,7 +76,11 @@ export default function SearchPage() {
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model
 
-  const handleSearch = () => {
+  // Track if we've already auto-triggered from URL params
+  const hasAutoTriggeredRef = useRef(false)
+  const lastUrlParamsRef = useRef({ q: '', mode: '' })
+
+  const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return
 
     searchMutation.mutate({
@@ -75,7 +91,7 @@ export default function SearchPage() {
       search_notes: searchNotes,
       minimum_score: 0.2
     })
-  }
+  }, [searchQuery, searchType, searchSources, searchNotes, searchMutation])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -83,7 +99,7 @@ export default function SearchPage() {
     }
   }
 
-  const handleAsk = () => {
+  const handleAsk = useCallback(() => {
     if (!askQuestion.trim() || !modelDefaults?.default_chat_model) return
 
     const models = customModels || {
@@ -93,14 +109,57 @@ export default function SearchPage() {
     }
 
     ask.sendAsk(askQuestion, models)
-  }
+  }, [askQuestion, modelDefaults, customModels, ask])
+
+  // Auto-trigger search/ask when arriving with URL params
+  useEffect(() => {
+    // Skip if already triggered or no query
+    if (hasAutoTriggeredRef.current || !urlQuery) return
+
+    // Wait for models to load before triggering ask
+    if (urlMode === 'ask' && modelsLoading) return
+
+    if (urlMode === 'search') {
+      handleSearch()
+      hasAutoTriggeredRef.current = true
+    } else if (urlMode === 'ask' && modelDefaults?.default_chat_model) {
+      handleAsk()
+      hasAutoTriggeredRef.current = true
+    }
+  }, [urlQuery, urlMode, modelsLoading, modelDefaults, handleSearch, handleAsk])
+
+  // Handle URL param changes while on page (e.g., from command palette again)
+  useEffect(() => {
+    const currentQ = searchParams.get('q') || ''
+    const rawCurrentMode = searchParams.get('mode')
+    const currentMode = rawCurrentMode === 'search' ? 'search' : 'ask'
+
+    // Check if URL params have changed
+    if (currentQ !== lastUrlParamsRef.current.q || currentMode !== lastUrlParamsRef.current.mode) {
+      lastUrlParamsRef.current = { q: currentQ, mode: currentMode }
+
+      if (currentQ) {
+        // Update state based on mode
+        if (currentMode === 'search') {
+          setSearchQuery(currentQ)
+          setActiveTab('search')
+          // Reset trigger flag so we auto-trigger with new params
+          hasAutoTriggeredRef.current = false
+        } else {
+          setAskQuestion(currentQ)
+          setActiveTab('ask')
+          hasAutoTriggeredRef.current = false
+        }
+      }
+    }
+  }, [searchParams])
 
   return (
     <AppShell>
       <div className="p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">Ask and Search</h1>
 
-        <Tabs defaultValue="ask" className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a mode</p>
             <TabsList aria-label="Ask or search your knowledge base" className="w-full max-w-xl">

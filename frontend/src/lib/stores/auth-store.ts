@@ -13,7 +13,7 @@ interface AuthState {
   authRequired: boolean | null
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
-  login: (password: string) => Promise<boolean>
+  login: (username: string, password: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
 }
@@ -74,24 +74,28 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async (password: string) => {
+      login: async (username: string, password: string) => {
         set({ isLoading: true, error: null })
         try {
           const apiUrl = await getApiUrl()
 
-          // Test auth with notebooks endpoint
-          const response = await fetch(`${apiUrl}/api/notebooks`, {
-            method: 'GET',
+          // Call login endpoint with username and password
+          const response = await fetch(`${apiUrl}/api/auth/login`, {
+            method: 'POST',
             headers: {
-              'Authorization': `Bearer ${password}`,
               'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+              username: username.trim(),
+              password: password
+            })
           })
           
           if (response.ok) {
+            const data = await response.json()
             set({ 
               isAuthenticated: true, 
-              token: password, 
+              token: data.token || password, 
               isLoading: false,
               lastAuthCheck: Date.now(),
               error: null
@@ -99,8 +103,10 @@ export const useAuthStore = create<AuthState>()(
             return true
           } else {
             let errorMessage = 'Authentication failed'
+            const errorData = await response.json().catch(() => ({}))
+            
             if (response.status === 401) {
-              errorMessage = 'Invalid password. Please try again.'
+              errorMessage = errorData.detail || 'Invalid username or password. Please try again.'
             } else if (response.status === 403) {
               errorMessage = 'Access denied. Please check your credentials.'
             } else if (response.status >= 500) {

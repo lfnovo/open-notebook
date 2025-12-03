@@ -146,7 +146,7 @@ services:
 # docker-compose.yml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v1-latest
+    image: surrealdb/surrealdb:v2
     ports:
       - "127.0.0.1:8000:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db

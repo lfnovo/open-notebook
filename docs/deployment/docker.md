@@ -161,7 +161,7 @@ For production deployments or development, use the multi-container setup:
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v1-latest
+    image: surrealdb/surrealdb:v2
     ports:
       - "8000:8000"
     command: start --log trace --user root --pass root memory
@@ -299,7 +299,7 @@ This protects both the web interface and API endpoints.
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v1-latest
+    image: surrealdb/surrealdb:v2
     ports:
       - "127.0.0.1:8000:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db
@@ -490,7 +490,7 @@ ENABLE_ANALYTICS=false
 version: '3.8'
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v1-latest
+    image: surrealdb/surrealdb:v2
     ports:
       - "8000:8000"
     command: start --log warn --user root --pass root file:///mydata/database.db

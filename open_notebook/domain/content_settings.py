@@ -23,3 +23,6 @@ class ContentSettings(RecordModel):
         ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
         description="Preferred languages for YouTube transcripts",
     )
+    smol_docling_enabled: bool = Field(
+        False, description="Enable Smol Docling Integration (Preview)"
+    )

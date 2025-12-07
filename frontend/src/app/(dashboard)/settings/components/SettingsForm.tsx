@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
@@ -19,6 +20,7 @@ const settingsSchema = z.object({
   default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'simple']).optional(),
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
+  smol_docling_enabled: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -42,6 +44,7 @@ export function SettingsForm() {
       default_content_processing_engine_url: undefined,
       default_embedding_option: undefined,
       auto_delete_files: undefined,
+      smol_docling_enabled: undefined,
     }
   })
 
@@ -57,6 +60,7 @@ export function SettingsForm() {
         default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
+        smol_docling_enabled: settings.smol_docling_enabled || false,
       }
       reset(formData)
       setHasResetForm(true)
@@ -130,6 +134,32 @@ export function SettingsForm() {
                 <p>• <strong>Auto (recommended)</strong> will try to process through docling and default to simple.</p>
               </CollapsibleContent>
             </Collapsible>
+          </div>
+
+          <div className="flex items-start space-x-2 pt-4 border-t">
+            <Controller
+              name="smol_docling_enabled"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="smol_docling"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  disabled={true}
+                />
+              )}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="smol_docling"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Enable Smol Docling Integration (Preview)
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Integration is available but currently disabled.
+              </p>
+            </div>
           </div>
           
           <div className="space-y-3">

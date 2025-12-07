@@ -13,7 +13,7 @@ GHCR_IMAGE := ghcr.io/lfnovo/open-notebook
 PLATFORMS := linux/amd64,linux/arm64
 
 database:
-	docker compose up -d surrealdb
+	docker compose -f docker-compose.dev.yml up -d surrealdb
 
 run:
 	@echo "⚠️  Warning: Starting frontend only. For full functionality, use 'make start-all'"
@@ -147,7 +147,7 @@ worker-restart: worker-stop
 start-all:
 	@echo "🚀 Starting Open Notebook (Database + API + Worker + Frontend)..."
 	@echo "📊 Starting SurrealDB..."
-	@docker compose up -d surrealdb
+	@docker compose -f docker-compose.dev.yml up -d surrealdb
 	@sleep 3
 	@echo "🔧 Starting API backend..."
 	@uv run run_api.py &
@@ -168,13 +168,13 @@ stop-all:
 	@pkill -f "surreal-commands-worker" || true
 	@pkill -f "run_api.py" || true
 	@pkill -f "uvicorn api.main:app" || true
-	@docker compose down
+	@docker compose -f docker-compose.dev.yml down
 	@echo "✅ All services stopped!"
 
 status:
 	@echo "📊 Open Notebook Service Status:"
 	@echo "Database (SurrealDB):"
-	@docker compose ps surrealdb 2>/dev/null || echo "  ❌ Not running"
+	@docker compose -f docker-compose.dev.yml ps surrealdb 2>/dev/null || echo "  ❌ Not running"
 	@echo "API Backend:"
 	@pgrep -f "run_api.py\|uvicorn api.main:app" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Background Worker:"

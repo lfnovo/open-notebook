@@ -20,6 +20,7 @@ async def get_settings():
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
+            smol_docling_enabled=settings.smol_docling_enabled,
         )
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
@@ -60,6 +61,8 @@ async def update_settings(settings_update: SettingsUpdate):
             )
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
+        if settings_update.smol_docling_enabled is not None:
+            settings.smol_docling_enabled = settings_update.smol_docling_enabled
 
         await settings.update()
 
@@ -69,6 +72,7 @@ async def update_settings(settings_update: SettingsUpdate):
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
+            smol_docling_enabled=settings.smol_docling_enabled,
         )
     except HTTPException:
         raise

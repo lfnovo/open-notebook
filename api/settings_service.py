@@ -27,6 +27,7 @@ class SettingsService:
             default_embedding_option=settings_data.get("default_embedding_option"),
             auto_delete_files=settings_data.get("auto_delete_files"),
             youtube_preferred_languages=settings_data.get("youtube_preferred_languages"),
+            smol_docling_enabled=settings_data.get("smol_docling_enabled"),
         )
 
         return settings
@@ -39,6 +40,7 @@ class SettingsService:
             "default_embedding_option": settings.default_embedding_option,
             "auto_delete_files": settings.auto_delete_files,
             "youtube_preferred_languages": settings.youtube_preferred_languages,
+            "smol_docling_enabled": settings.smol_docling_enabled,
         }
 
         settings_response = api_client.update_settings(**updates)
@@ -50,6 +52,7 @@ class SettingsService:
         settings.default_embedding_option = settings_data.get("default_embedding_option")
         settings.auto_delete_files = settings_data.get("auto_delete_files")
         settings.youtube_preferred_languages = settings_data.get("youtube_preferred_languages")
+        settings.smol_docling_enabled = settings_data.get("smol_docling_enabled")
 
         return settings
 

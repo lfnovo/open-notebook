@@ -14,7 +14,6 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (username: string, password: string) => Promise<boolean>
-  signup: (email: string, password: string, confirmPassword: string) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
 }
@@ -63,10 +62,10 @@ export const useAuthStore = create<AuthState>()(
           if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             set({
               error: 'Unable to connect to server. Please check if the API is running.',
-              authRequired: null  
+              authRequired: null  // Don't assume auth is required if we can't connect
             })
           } else {
-           
+            // For other errors, default to requiring auth to be safe
             set({ authRequired: true })
           }
 
@@ -80,14 +79,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const apiUrl = await getApiUrl()
 
-          // Call login endpoint with email and password
+          // Call login endpoint with username and password
           const response = await fetch(`${apiUrl}/api/auth/login`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              email: username.trim(), 
+              username: username.trim(),
               password: password
             })
           })
@@ -107,7 +106,7 @@ export const useAuthStore = create<AuthState>()(
             const errorData = await response.json().catch(() => ({}))
             
             if (response.status === 401) {
-              errorMessage = errorData.detail || 'Invalid email or password. Please try again.'
+              errorMessage = errorData.detail || 'Invalid username or password. Please try again.'
             } else if (response.status === 403) {
               errorMessage = 'Access denied. Please check your credentials.'
             } else if (response.status >= 500) {
@@ -141,69 +140,6 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
             isAuthenticated: false,
             token: null
-          })
-          return false
-        }
-      },
-
-      signup: async (email: string, password: string, confirmPassword: string) => {
-        set({ isLoading: true, error: null })
-        try {
-          const apiUrl = await getApiUrl()
-
-          // Call signup endpoint
-          const response = await fetch(`${apiUrl}/api/auth/signup`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              email: email.trim(),
-              password: password,
-              confirm_password: confirmPassword
-            })
-          })
-          
-          if (response.ok) {
-            const data = await response.json()
-            set({ 
-              isLoading: false,
-              error: null
-            })
-            return true
-          } else {
-            let errorMessage = 'Signup failed'
-            const errorData = await response.json().catch(() => ({}))
-            
-            if (response.status === 400) {
-              errorMessage = errorData.detail || 'Invalid input. Please check your email and password.'
-            } else if (response.status >= 500) {
-              errorMessage = 'Server error. Please try again later.'
-            } else {
-              errorMessage = `Signup failed (${response.status})`
-            }
-            
-            set({ 
-              error: errorMessage,
-              isLoading: false
-            })
-            return false
-          }
-        } catch (error) {
-          console.error('Network error during signup:', error)
-          let errorMessage = 'Signup failed'
-          
-          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-            errorMessage = 'Unable to connect to server. Please check if the API is running.'
-          } else if (error instanceof Error) {
-            errorMessage = `Network error: ${error.message}`
-          } else {
-            errorMessage = 'An unexpected error occurred during signup'
-          }
-          
-          set({ 
-            error: errorMessage,
-            isLoading: false
           })
           return false
         }

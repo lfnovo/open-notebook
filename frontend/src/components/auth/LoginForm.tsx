@@ -149,12 +149,12 @@ export function LoginForm() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Input
-                type="email"
-                placeholder="Email"
+                type="text"
+                placeholder="Email or Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={isLoading}
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
             <div>

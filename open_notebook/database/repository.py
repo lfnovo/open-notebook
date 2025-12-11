@@ -62,7 +62,9 @@ async def db_connection():
         await db.close()
 
 
-async def repo_query(query_str: str, vars: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+async def repo_query(
+    query_str: str, vars: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """Execute a SurrealQL query and return the results"""
 
     async with db_connection() as connection:
@@ -90,7 +92,9 @@ async def repo_create(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
         raise RuntimeError("Failed to create record")
 
 
-async def repo_relate(source: str, relationship: str, target: str, data: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+async def repo_relate(
+    source: str, relationship: str, target: str, data: Optional[Dict[str, Any]] = None
+) -> List[Dict[str, Any]]:
     """Create a relationship between two records with optional data"""
     if data is None:
         data = {}
@@ -105,7 +109,9 @@ async def repo_relate(source: str, relationship: str, target: str, data: Optiona
     )
 
 
-async def repo_upsert(table: str, id: Optional[str], data: Dict[str, Any], add_timestamp: bool = False) -> List[Dict[str, Any]]:
+async def repo_upsert(
+    table: str, id: Optional[str], data: Dict[str, Any], add_timestamp: bool = False
+) -> List[Dict[str, Any]]:
     """Create or update a record in the specified table"""
     data.pop("id", None)
     if add_timestamp:
@@ -114,7 +120,9 @@ async def repo_upsert(table: str, id: Optional[str], data: Dict[str, Any], add_t
     return await repo_query(query, {"data": data})
 
 
-async def repo_update(table: str, id: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
+async def repo_update(
+    table: str, id: str, data: Dict[str, Any]
+) -> List[Dict[str, Any]]:
     """Update an existing record by table and id"""
     # If id already contains the table name, use it as is
     try:

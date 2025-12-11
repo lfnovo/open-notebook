@@ -1,43 +1,23 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useAuthStore } from '@/lib/stores/auth-store'
-import { AlertCircle } from 'lucide-react'
-import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 export function SignupForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const { signup, isLoading, error } = useAuthStore()
-  const router = useRouter()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // UI-only form – no real submit logic yet
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      return
-    }
-
-    // Validate password length
-    if (password.length < 8) {
-      return
-    }
-
-    const success = await signup(email, password, confirmPassword)
-    if (success) {
-      // Redirect to login page after successful signup
-      router.push('/login?signup=success')
-    }
+    // In the future, add signup API call here
   }
 
-  const isFormValid = email.trim() && password.trim() && confirmPassword.trim() && password === confirmPassword && password.length >= 8
+  const isFormValid = email.trim() && password.trim() && confirmPassword.trim()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -77,40 +57,12 @@ export function SignupForm() {
                 autoComplete="new-password"
               />
             </div>
-            {error && (
-              <div className="flex items-start gap-2 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">{error}</div>
-              </div>
-            )}
-            
-            {password && confirmPassword && password !== confirmPassword && (
-              <div className="flex items-start gap-2 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">Passwords do not match</div>
-              </div>
-            )}
-
-            {password && password.length > 0 && password.length < 8 && (
-              <div className="flex items-start gap-2 text-red-600 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">Password must be at least 8 characters long</div>
-              </div>
-            )}
-
             <Button
               type="submit"
               className="w-full"
-              disabled={!isFormValid || isLoading}
+              disabled={!isFormValid}
             >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <LoadingSpinner size="sm" />
-                  Creating account...
-                </span>
-              ) : (
-                'Sign up'
-              )}
+              Sign up 
             </Button>
           </form>
 

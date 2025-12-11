@@ -1,0 +1,5 @@
+-- Rollback Migration 10: Remove user table for signup/login
+
+REMOVE INDEX IF EXISTS idx_user_email ON TABLE user;
+REMOVE TABLE IF EXISTS user;
+

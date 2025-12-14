@@ -59,7 +59,7 @@ uv sync
 docker run -d \
   --name surrealdb-dev \
   -p 8000:8000 \
-  surrealdb/surrealdb:v1-latest \
+  surrealdb/surrealdb:v2 \
   start --log trace --user root --pass root memory
 ```
 

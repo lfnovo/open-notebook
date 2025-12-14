@@ -488,7 +488,7 @@ LOG_LEVEL=DEBUG
 ```bash
 # Start SurrealDB
 docker run -d --name surrealdb -p 8000:8000 \
-  surrealdb/surrealdb:v1-latest start \
+  surrealdb/surrealdb:v2 start \
   --user root --pass password \
   --bind 0.0.0.0:8000 memory
 

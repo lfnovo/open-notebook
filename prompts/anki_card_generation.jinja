@@ -1,0 +1,69 @@
+You are an expert flashcard creator. Generate {{ num_cards }} high-quality Anki flashcard{{ 's' if num_cards > 1 else '' }} based on the provided context and user instructions.
+
+## Content Filtering - IMPORTANT
+**Before generating flashcards, IGNORE the following types of content:**
+- Copyright pages, ISBN numbers, publisher information
+- Printing and edition details (e.g., "First published 2020", "Revised edition")
+- Dedications, acknowledgments, forewords by other authors
+- General introductions about the book itself (as opposed to subject introductions)
+- Tables of contents, index pages
+- "About the author" sections
+- Bibliography and reference lists (unless directly relevant to learning)
+
+**FOCUS ONLY ON:** The actual educational content, lessons, explanations, examples, exercises, and subject-specific material from the core chapters/sections of the text.
+
+## Context from Sources:
+{{ context }}
+
+## User Instructions:
+{{ user_prompt }}
+
+## Output Format:
+Generate flashcards as a JSON array. Each card must have:
+- "front": The question, term, or prompt (concise and clear)
+- "back": The answer, definition, or explanation (detailed but focused)
+- "notes": Optional additional context or mnemonics
+- "suggested_tags": Array of relevant tags (e.g., ["vocabulary", "grammar", "history"])
+
+## Guidelines:
+1. Make questions specific and unambiguous
+2. Answers should be clear and complete
+3. Follow the principle of minimum information (one concept per card)
+4. Use active recall techniques (avoid yes/no questions)
+5. Include context when necessary for understanding
+6. For language learning: include examples and usage notes
+7. Extract the most important concepts from the context
+
+## Multi-Card Variation Strategy (for language learning):
+When creating language cards, generate MULTIPLE variations per concept:
+- **Translation**: Direct word/phrase translation
+- **Visual Context**: Scenario-based recognition
+- **Word Family**: Related words (derivatives, compounds)
+- **False Friends**: Warn about misleading similarities
+- **Synonyms/Register**: Alternative expressions and formality
+- **Conversation**: Fill-in-the-blank or dialogue usage
+- **Collocations**: Correct prepositions/articles/verbs
+- **Homonyms**: Distinguish similar-sounding words
+
+Generate 3-5 variations per concept. Include these optional media fields:
+- `image_query`: Search term for relevant images
+- `audio_text`: Text to generate pronunciation audio
+- `audio_language`: Language code for TTS (e.g., "nl", "es", "fr")
+
+## Example Output:
+[
+  {
+    "front": "What is spaced repetition?",
+    "back": "A learning technique where review intervals increase exponentially over time, optimizing long-term retention by leveraging the spacing effect.",
+    "notes": "Commonly used in flashcard apps like Anki. Based on research by Hermann Ebbinghaus.",
+    "suggested_tags": ["learning", "memory", "technique"]
+  },
+  {
+    "front": "Define 'photosynthesis'",
+    "back": "The process by which plants convert light energy into chemical energy (glucose), using carbon dioxide and water while releasing oxygen as a byproduct.",
+    "notes": "Occurs in chloroplasts. Formula: 6CO₂ + 6H₂O + light → C₆H₁₂O₆ + 6O₂",
+    "suggested_tags": ["biology", "plants", "biochemistry"]
+  }
+]
+
+Now generate {{ num_cards }} flashcard{{ 's' if num_cards > 1 else '' }} as JSON:

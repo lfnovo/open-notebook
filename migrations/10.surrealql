@@ -1,0 +1,57 @@
+-- Migration: Add Anki card generation transformations for Dutch CEFR levels
+-- Creates 5 transformations for generating flashcards at A2, B1, B2, C1, and C2 levels
+
+-- A2 (Elementary) Level
+CREATE transformation:anki_dutch_a2 CONTENT {
+    name: "anki_dutch_a2",
+    title: "Anki Cards - Dutch A2",
+    description: "Generate vocabulary flashcards for A2 (Elementary) level Dutch learners. Focuses on common everyday vocabulary with simple tenses and basic phrases.",
+    prompt: "anki_transformation_dutch_a2",
+    apply_default: false,
+    created: time::now(),
+    updated: time::now()
+};
+
+-- B1 (Intermediate) Level  
+CREATE transformation:anki_dutch_b1 CONTENT {
+    name: "anki_dutch_b1",
+    title: "Anki Cards - Dutch B1",
+    description: "Generate vocabulary flashcards for B1 (Intermediate) level Dutch learners. Includes workplace vocabulary, complex tenses, and idiomatic expressions.",
+    prompt: "anki_transformation_dutch_b1",
+    apply_default: false,
+    created: time::now(),
+    updated: time::now()
+};
+
+-- B2 (Upper Intermediate) Level
+CREATE transformation:anki_dutch_b2 CONTENT {
+    name: "anki_dutch_b2",
+    title: "Anki Cards - Dutch B2",
+    description: "Generate vocabulary flashcards for B2 (Upper Intermediate) level Dutch learners. Covers abstract concepts, formal language, and professional vocabulary.",
+    prompt: "anki_transformation_dutch_b2",
+    apply_default: false,
+    created: time::now(),
+    updated: time::now()
+};
+
+-- C1 (Advanced) Level
+CREATE transformation:anki_dutch_c1 CONTENT {
+    name: "anki_dutch_c1",
+    title: "Anki Cards - Dutch C1",
+    description: "Generate vocabulary flashcards for C1 (Advanced) level Dutch learners. Focuses on specialized terminology, literary language, and advanced discourse.",
+    prompt: "anki_transformation_dutch_c1",
+    apply_default: false,
+    created: time::now(),
+    updated: time::now()
+};
+
+-- C2 (Proficiency) Level
+CREATE transformation:anki_dutch_c2 CONTENT {
+    name: "anki_dutch_c2",
+    title: "Anki Cards - Dutch C2",
+    description: "Generate vocabulary flashcards for C2 (Proficiency) level Dutch learners. Includes rare vocabulary, archaic forms, regional variations, and highly specialized terminology.",
+    prompt: "anki_transformation_dutch_c2",
+    apply_default: false,
+    created: time::now(),
+    updated: time::now()
+};

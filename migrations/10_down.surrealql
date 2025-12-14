@@ -1,0 +1,7 @@
+-- Rollback: Remove Anki card generation transformations for Dutch CEFR levels
+
+DELETE transformation:anki_dutch_a2;
+DELETE transformation:anki_dutch_b1;
+DELETE transformation:anki_dutch_b2;
+DELETE transformation:anki_dutch_c1;
+DELETE transformation:anki_dutch_c2;

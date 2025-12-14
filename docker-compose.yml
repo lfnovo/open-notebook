@@ -1,0 +1,139 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"  # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: always
+
+  open_notebook_single:
+    # image: lfnovo/open_notebook:v1-latest-single
+    build:
+      context: .
+      dockerfile: Dockerfile.single
+    ports:
+      - "127.0.0.1:8502:8502"  # Next.js Frontend - localhost only
+      - "127.0.0.1:5055:5055"  # REST API - localhost only
+    env_file:
+      - ./docker.env
+    volumes:
+      - ./notebook_data:/app/data          # Application data
+      - ./surreal_single_data:/mydata      # SurrealDB data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WHISPER_API_URL=http://whisper:9000
+      - PIPER_API_URL=http://piper:10200
+      - DOCKER_HOST=tcp://host.docker.internal:2375
+    depends_on:
+      ollama:
+        condition: service_healthy
+      whisper:
+        condition: service_started
+      piper:
+        condition: service_started
+    restart: always
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "127.0.0.1:11434:11434"  # localhost only
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Optional: GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  
+  ollama-setup:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Checking for required Ollama models..."
+        
+        # Essential models for Open Notebook
+        MODELS="mxbai-embed-large qwen2.5:3b"
+        
+        for model in $$MODELS; do
+          if ! ollama list | grep -q "$$model"; then
+            echo "Pulling $$model..."
+            ollama pull $$model
+          else
+            echo "$$model already exists, skipping..."
+          fi
+        done
+        
+        echo "Model setup complete!"
+    restart: unless-stopped
+    # Single container includes all services: SurrealDB, API, Worker, and Next.js Frontend
+    # Access:
+    # - Next.js UI: http://localhost:8502
+    # - REST API: http://localhost:5055
+    # - API Documentation: http://localhost:5055/docs
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: whisper
+    ports:
+      - "127.0.0.1:9000:9000"  # localhost only
+    environment:
+      - ASR_MODEL=base
+      - ASR_ENGINE=openai_whisper
+    volumes:
+      - whisper-models:/root/.cache/whisper
+    # Optional: GPU support
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: piper
+    command: --voice en_GB-alan-medium --voice nl_NL-mls_5809-low
+    ports:
+      - "127.0.0.1:10200:10200"  # localhost only
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/10200' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  open-notebook-data:
+  ollama_data:
+  whisper-models:
+  surreal_single_data:
+  piper_data:
+  caddy_data:
+  caddy_config:

@@ -5,12 +5,13 @@ import { useForm } from 'react-hook-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ModelDefaults, Model } from '@/lib/types/models'
 import { useUpdateModelDefaults } from '@/lib/hooks/use-models'
-import { AlertCircle, X } from 'lucide-react'
+import { AlertCircle, X, RefreshCw } from 'lucide-react'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
+import { modelsApi } from '@/lib/api/models'
 
 interface DefaultModelsSectionProps {
   models: Model[]
@@ -88,6 +89,39 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
     newModelId?: string
   } | null>(null)
 
+  // State for Ollama validation
+  const [ollamaValidation, setOllamaValidation] = useState<{
+    loading: boolean
+    missingModels: Array<{ type: string; name: string }>
+    availableModels: string[]
+  }>({
+    loading: true,
+    missingModels: [],
+    availableModels: []
+  })
+
+  // Validate Ollama models on mount
+  useEffect(() => {
+    const validateModels = async () => {
+      try {
+        const validation = await modelsApi.validateConfiguredModels()
+        setOllamaValidation({
+          loading: false,
+          missingModels: validation.missing_models,
+          availableModels: validation.available_ollama_models
+        })
+      } catch (error) {
+        console.error('Error validating models:', error)
+        setOllamaValidation({
+          loading: false,
+          missingModels: [],
+          availableModels: []
+        })
+      }
+    }
+    validateModels()
+  }, [defaults])
+
   // Update form when defaults change
   useEffect(() => {
     if (defaults) {
@@ -159,6 +193,29 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {!ollamaValidation.loading && ollamaValidation.missingModels.length > 0 && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Ollama Models Not Found</AlertTitle>
+            <AlertDescription>
+              <div className="space-y-2">
+                <p>The following configured models are not available in Ollama:</p>
+                <ul className="list-disc list-inside ml-2">
+                  {ollamaValidation.missingModels.map((m) => (
+                    <li key={m.name}>
+                      <strong>{m.name}</strong> ({m.type.replace('_', ' ')})
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-sm mt-2">
+                  These models may still be downloading. Wait a few minutes and refresh this page. 
+                  Or pull them manually: <code className="bg-background px-1 py-0.5 rounded">docker exec open-notebook-ollama-1 ollama pull {ollamaValidation.missingModels[0]?.name}</code>
+                </p>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />

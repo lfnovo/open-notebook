@@ -1,0 +1,61 @@
+-- Migration: Initialize default models for Ollama
+-- Creates model records for mxbai-embed-large and qwen2.5 variants
+
+-- Only create models if they don't already exist
+IF array::len(SELECT * FROM model WHERE name = "mxbai-embed-large" AND provider = "ollama") == 0 THEN
+    CREATE model:mxbai_embed_large CONTENT {
+        name: "mxbai-embed-large",
+        provider: "ollama",
+        type: "embedding",
+        created: time::now(),
+        updated: time::now()
+    };
+END;
+
+IF array::len(SELECT * FROM model WHERE name = "qwen2.5:1.5b" AND provider = "ollama") == 0 THEN
+    CREATE model:qwen2_5_1_5b CONTENT {
+        name: "qwen2.5:1.5b",
+        provider: "ollama",
+        type: "language",
+        created: time::now(),
+        updated: time::now()
+    };
+END;
+
+IF array::len(SELECT * FROM model WHERE name = "qwen2.5:3b" AND provider = "ollama") == 0 THEN
+    CREATE model:qwen2_5_3b CONTENT {
+        name: "qwen2.5:3b",
+        provider: "ollama",
+        type: "language",
+        created: time::now(),
+        updated: time::now()
+    };
+END;
+
+IF array::len(SELECT * FROM model WHERE name = "qwen2.5:7b" AND provider = "ollama") == 0 THEN
+    CREATE model:qwen2_5_7b CONTENT {
+        name: "qwen2.5:7b",
+        provider: "ollama",
+        type: "language",
+        created: time::now(),
+        updated: time::now()
+    };
+END;
+
+-- Update default models configuration
+UPDATE open_notebook:default_models SET
+    default_embedding_model = model:mxbai_embed_large,
+    default_chat_model = model:qwen2_5_3b,
+    default_transformation_model = model:qwen2_5_1_5b,
+    large_context_model = model:qwen2_5_7b,
+    default_tools_model = model:qwen2_5_3b;
+
+-- Create the record if it doesn't exist
+IF (SELECT * FROM ONLY open_notebook:default_models) == NONE THEN
+    CREATE open_notebook:default_models SET
+        default_embedding_model = model:mxbai_embed_large,
+        default_chat_model = model:qwen2_5_3b,
+        default_transformation_model = model:qwen2_5_1_5b,
+        large_context_model = model:qwen2_5_7b,
+        default_tools_model = model:qwen2_5_3b;
+END;

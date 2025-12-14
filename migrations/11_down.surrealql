@@ -1,0 +1,14 @@
+-- Rollback: Remove default Ollama models
+
+DELETE model:mxbai_embed_large;
+DELETE model:qwen2_5_1_5b;
+DELETE model:qwen2_5_3b;
+DELETE model:qwen2_5_7b;
+
+-- Clear default models configuration
+UPDATE open_notebook:default_models SET
+    default_embedding_model = NONE,
+    default_chat_model = NONE,
+    default_transformation_model = NONE,
+    large_context_model = NONE,
+    default_tools_model = NONE;

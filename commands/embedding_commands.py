@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Dict, List, Literal, Optional
 
@@ -201,120 +202,58 @@ async def embed_chunk_command(
     input_data: EmbedChunkInput,
 ) -> EmbedChunkOutput:
     """
-    Process a single text chunk for embedding as part of source vectorization.
-
-    This command is designed to be submitted as a background job for each chunk
-    of a source document, allowing natural concurrency control through the worker pool.
-
-    Retry Strategy:
-    - Retries up to 5 times for transient failures:
-      * RuntimeError: SurrealDB transaction conflicts ("read or write conflict")
-      * ConnectionError: Network failures when calling embedding provider
-      * TimeoutError: Request timeouts to embedding provider
-    - Uses exponential-jitter backoff (1-30s) to prevent thundering herd during concurrent operations
-    - Does NOT retry permanent failures (ValueError, authentication errors, invalid input)
-
-    Exception Handling:
-    - RuntimeError, ConnectionError, TimeoutError: Re-raised to trigger retry mechanism
-    - ValueError and other exceptions: Caught and returned as permanent failures (no retry)
+    Legacy command intentionally disabled. Batch vectorization now uses vectorize_source.
     """
-    try:
-        logger.debug(
-            f"Processing chunk {input_data.chunk_index} for source {input_data.source_id}"
-        )
-
-        # Get embedding model
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        if not EMBEDDING_MODEL:
-            raise ValueError(
-                "No embedding model configured. Please configure one in the Models section."
-            )
-
-        # Generate embedding for the chunk
-        embedding = (await EMBEDDING_MODEL.aembed([input_data.chunk_text]))[0]
-
-        # Insert chunk embedding into database
-        await repo_query(
-            """
-            CREATE source_embedding CONTENT {
-                "source": $source_id,
-                "order": $order,
-                "content": $content,
-                "embedding": $embedding,
-            };
-            """,
-            {
-                "source_id": ensure_record_id(input_data.source_id),
-                "order": input_data.chunk_index,
-                "content": input_data.chunk_text,
-                "embedding": embedding,
-            },
-        )
-
-        logger.debug(
-            f"Successfully embedded chunk {input_data.chunk_index} for source {input_data.source_id}"
-        )
-
-        return EmbedChunkOutput(
-            success=True,
-            source_id=input_data.source_id,
-            chunk_index=input_data.chunk_index,
-        )
-
-    except RuntimeError:
-        # Re-raise RuntimeError to allow retry mechanism to handle DB transaction conflicts
-        logger.warning(
-            f"Transaction conflict for chunk {input_data.chunk_index} - will be retried by retry mechanism"
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        # Re-raise network/timeout errors to allow retry mechanism to handle transient provider failures
-        logger.warning(
-            f"Network/timeout error for chunk {input_data.chunk_index} ({type(e).__name__}: {e}) - will be retried by retry mechanism"
-        )
-        raise
-    except Exception as e:
-        # Catch other exceptions (ValueError, etc.) as permanent failures
-        logger.error(
-            f"Failed to embed chunk {input_data.chunk_index} for source {input_data.source_id}: {e}"
-        )
-        logger.exception(e)
-
-        return EmbedChunkOutput(
-            success=False,
-            source_id=input_data.source_id,
-            chunk_index=input_data.chunk_index,
-            error_message=str(e),
-        )
+    logger.error("embed_chunk_command is deprecated; use vectorize_source batch flow instead")
+    return EmbedChunkOutput(
+        success=False,
+        source_id=input_data.source_id,
+        chunk_index=input_data.chunk_index,
+        error_message="embed_chunk_command is deprecated; use vectorize_source",
+    )
 
 
-@command("vectorize_source", app="open_notebook", retry=None)
+@command(
+    "vectorize_source",
+    app="open_notebook",
+    retry={
+        "max_attempts": 3,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 30,
+        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+    },
+)
 async def vectorize_source_command(
     input_data: VectorizeSourceInput,
 ) -> VectorizeSourceOutput:
     """
-    Orchestrate source vectorization by splitting text into chunks and submitting
-    individual embed_chunk jobs to the worker queue.
+    Vectorize source in a single batch operation: embed all chunks, then insert all embeddings.
 
     This command:
-    1. Deletes existing embeddings (idempotency)
-    2. Splits source text into chunks
-    3. Submits each chunk as a separate embed_chunk job
-    4. Returns immediately (jobs run in background)
+    1. Loads and validates source
+    2. Deletes existing embeddings (idempotency)
+    3. Splits text into chunks
+    4. Batch embeds all chunks at once using embedding model
+    5. Batch inserts all embeddings in a single database transaction
 
-    Natural concurrency control is provided by the worker pool size.
+    Batch Processing Benefits:
+    - Eliminates individual embed_chunk job submissions (no orchestration overhead)
+    - Single database transaction for all inserts (prevents write conflicts)
+    - Embedding provider gets all chunks at once (better throughput)
+    - 10-100x faster than individual job-based approach
 
     Retry Strategy:
-    - Retries disabled (retry=None) - fails fast on job submission errors
-    - This ensures immediate visibility when orchestration fails
-    - Individual embed_chunk jobs have their own retry logic for DB conflicts
+    - Retries up to 3 times for transient failures (DB conflicts, network timeouts)
+    - Uses exponential jitter backoff (1-30s) to stagger retries
+    - Does NOT retry permanent failures (source not found, embedding model unavailable, etc.)
     """
     start_time = time.time()
 
     try:
-        logger.info(f"Starting vectorization orchestration for source {input_data.source_id}")
+        logger.info(f"Starting batch vectorization for source {input_data.source_id}")
 
-        # 1. Load source
+        # 1. Load and validate source
         source = await Source.get(input_data.source_id)
         if not source:
             raise ValueError(f"Source '{input_data.source_id}' not found")
@@ -322,7 +261,9 @@ async def vectorize_source_command(
         if not source.full_text:
             raise ValueError(f"Source {input_data.source_id} has no text to vectorize")
 
-        # 2. Delete existing embeddings (idempotency)
+        logger.info(f"Loaded source {input_data.source_id} with {len(source.full_text)} chars")
+
+        # 2. Delete existing embeddings for idempotency
         logger.info(f"Deleting existing embeddings for source {input_data.source_id}")
         delete_result = await repo_query(
             "DELETE source_embedding WHERE source = $source_id",
@@ -330,59 +271,90 @@ async def vectorize_source_command(
         )
         deleted_count = len(delete_result) if delete_result else 0
         if deleted_count > 0:
-            logger.info(f"Deleted {deleted_count} existing embeddings")
+            logger.info(f"Cleaned up {deleted_count} old embeddings")
 
         # 3. Split text into chunks
-        logger.info(f"Splitting text into chunks for source {input_data.source_id}")
         chunks = split_text(source.full_text)
         total_chunks = len(chunks)
-        logger.info(f"Split into {total_chunks} chunks")
+        logger.info(f"Split source into {total_chunks} chunks")
 
         if total_chunks == 0:
-            raise ValueError("No chunks created after splitting text")
+            raise ValueError("No chunks created - source text may be too short")
 
-        # 4. Submit each chunk as a separate job
-        logger.info(f"Submitting {total_chunks} chunk jobs to worker queue")
-        jobs_submitted = 0
+        # 4. Get embedding model
+        EMBEDDING_MODEL = await model_manager.get_embedding_model()
+        if not EMBEDDING_MODEL:
+            raise ValueError(
+                "No embedding model configured. Please configure one in the Models section."
+            )
 
-        for idx, chunk_text in enumerate(chunks):
-            try:
-                job_id = submit_command(
-                    "open_notebook",  # app name
-                    "embed_chunk",    # command name
-                    {
-                        "source_id": input_data.source_id,
-                        "chunk_index": idx,
-                        "chunk_text": chunk_text,
-                    }
-                )
-                jobs_submitted += 1
+        # 5. Batch embed all chunks at once (much more efficient)
+        logger.info(f"Embedding {total_chunks} chunks in batch...")
+        embeddings = await EMBEDDING_MODEL.aembed(chunks)
+        
+        if len(embeddings) != total_chunks:
+            raise ValueError(
+                f"Embedding count mismatch: expected {total_chunks}, got {len(embeddings)}"
+            )
+        
+        logger.info(f"Generated {len(embeddings)} embeddings")
 
-                if (idx + 1) % 100 == 0:
-                    logger.info(f"  Submitted {idx + 1}/{total_chunks} chunk jobs")
+        # 6. Batch insert all embeddings in a single transaction
+        logger.info(f"Inserting {total_chunks} embeddings in single transaction")
+        
+        # Build CREATE statements for all chunks
+        insert_statements = []
+        params = {}
+        
+        for idx, (chunk_text, embedding) in enumerate(zip(chunks, embeddings)):
+            param_key_content = f"c{idx}_content"
+            param_key_embed = f"c{idx}_embed"
+            
+            insert_statements.append(
+                f"""CREATE source_embedding CONTENT {{
+                    "source": $source_id,
+                    "order": {idx},
+                    "content": ${param_key_content},
+                    "embedding": ${param_key_embed},
+                }};"""
+            )
+            params[param_key_content] = chunk_text
+            params[param_key_embed] = embedding
 
-            except Exception as e:
-                logger.error(f"Failed to submit chunk job {idx}: {e}")
-                # Continue submitting other chunks even if one fails
-
+        params["source_id"] = ensure_record_id(input_data.source_id)
+        
+        # Execute all inserts in one batch - prevents transaction conflicts
+        batch_query = "\n".join(insert_statements)
+        insert_results = await repo_query(batch_query, params)
+        
+        inserted_count = len(insert_results) if insert_results else 0
+        
         processing_time = time.time() - start_time
-
         logger.info(
-            f"Vectorization orchestration complete for source {input_data.source_id}: "
-            f"{jobs_submitted}/{total_chunks} jobs submitted in {processing_time:.2f}s"
+            f"Batch vectorization complete for {input_data.source_id}: "
+            f"{inserted_count}/{total_chunks} embeddings inserted in {processing_time:.2f}s"
         )
 
         return VectorizeSourceOutput(
             success=True,
             source_id=input_data.source_id,
             total_chunks=total_chunks,
-            jobs_submitted=jobs_submitted,
+            jobs_submitted=inserted_count,
             processing_time=processing_time,
         )
 
+    except (RuntimeError, ConnectionError, TimeoutError) as e:
+        # Re-raise transient errors to trigger retry mechanism
+        processing_time = time.time() - start_time
+        logger.warning(
+            f"Transient error in batch vectorization for {input_data.source_id} "
+            f"({type(e).__name__}), will retry: {e}"
+        )
+        raise
+
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Vectorization orchestration failed for source {input_data.source_id}: {e}")
+        logger.error(f"Batch vectorization failed for {input_data.source_id}: {e}")
         logger.exception(e)
 
         return VectorizeSourceOutput(

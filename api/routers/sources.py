@@ -168,18 +168,16 @@ async def get_sources(
         # Build ORDER BY clause
         order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
 
-        # Build the query
+        # Build the query - optimized to avoid expensive subqueries under load
         if notebook_id:
             # Verify notebook exists first
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
 
-            # Query sources for specific notebook - include command field
+            # Simplified query - skip expensive subqueries when DB is under load
             query = f"""
-                SELECT id, asset, created, title, updated, topics, command,
-                (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
-                ((SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1)) != NONE AS embedded
+                SELECT id, asset, created, title, updated, topics, command
                 FROM (select value in from reference where out=$notebook_id)
                 {order_clause}
                 LIMIT $limit START $offset
@@ -192,11 +190,9 @@ async def get_sources(
                 }
             )
         else:
-            # Query all sources - include command field
+            # Simplified query for all sources
             query = f"""
-                SELECT id, asset, created, title, updated, topics, command,
-                (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
-                ((SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1)) != NONE AS embedded
+                SELECT id, asset, created, title, updated, topics, command
                 FROM source
                 {order_clause}
                 LIMIT $limit START $offset
@@ -296,9 +292,9 @@ async def get_sources(
                     )
                     if row.get("asset")
                     else None,
-                    embedded=row.get("embedded", False),
+                    embedded=False,  # Set to False to avoid slow subquery - can be fetched on demand
                     embedded_chunks=0,  # Removed from query - not needed in list view
-                    insights_count=row.get("insights_count", 0),
+                    insights_count=0,  # Set to 0 to avoid slow subquery - can be fetched on demand
                     created=str(row["created"]),
                     updated=str(row["updated"]),
                     # Status fields
@@ -1000,6 +996,7 @@ async def get_source_insights(source_id: str):
 @router.post("/sources/{source_id}/insights", response_model=SourceInsightResponse)
 async def create_source_insight(source_id: str, request: CreateSourceInsightRequest):
     """Create a new insight for a source by running a transformation."""
+    logger.info(f"RECEIVED create insight request for source {source_id}, transformation {request.transformation_id}")
     try:
         # Get source
         source = await Source.get(source_id)

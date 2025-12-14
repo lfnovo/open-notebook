@@ -180,9 +180,32 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending message:', error)
-      toast.error('Failed to send message')
+      
+      // Check for specific error types
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Unknown error'
+      
+      if (errorMessage.includes('not found') && errorMessage.includes('model')) {
+        // Extract model name from error message
+        const modelMatch = errorMessage.match(/model ['"]?([^'"]+)['"]? not found/)
+        const modelName = modelMatch ? modelMatch[1] : 'required model'
+        
+        toast.error(`Model not available: ${modelName}`, {
+          description: 'The AI model is being downloaded. Please wait a few minutes and try again.',
+          duration: 10000
+        })
+      } else if (errorMessage.includes('embeddings') || errorMessage.includes('mxbai-embed-large')) {
+        toast.error('Embedding model not ready', {
+          description: 'The embedding model is being downloaded. Chat will work in a few minutes.',
+          duration: 10000
+        })
+      } else {
+        toast.error('Failed to send message', {
+          description: errorMessage.length > 100 ? 'Check console for details' : errorMessage
+        })
+      }
+      
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {

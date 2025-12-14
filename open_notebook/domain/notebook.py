@@ -267,9 +267,8 @@ class Source(ObjectModel):
         """
         Submit vectorization as a background job using the vectorize_source command.
 
-        This method now leverages the job-based architecture to prevent HTTP connection
-        pool exhaustion when processing large documents. The actual chunk processing
-        happens in the background worker pool, with natural concurrency control.
+        This method uses the batch vectorization command to avoid HTTP connection
+        pool exhaustion and to insert embeddings in a single transaction via the worker pool.
 
         Returns:
             str: The command/job ID that can be used to track progress via the commands API
@@ -287,7 +286,7 @@ class Source(ObjectModel):
             # Submit the vectorize_source command which will:
             # 1. Delete existing embeddings (idempotency)
             # 2. Split text into chunks
-            # 3. Submit each chunk as an embed_chunk job
+            # 3. Batch embed and insert all chunks in a single job
             command_id = submit_command(
                 "open_notebook",      # app name
                 "vectorize_source",   # command name

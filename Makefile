@@ -188,6 +188,19 @@ export-docs:
 	@uv run python scripts/export_docs.py
 	@echo "✅ Documentation export complete!"
 
+# === Testing ===
+test:
+	@echo "🧪 Running all tests..."
+	@docker compose -f docker-compose.dev.yml exec open_notebook python -m pytest tests/ -v
+
+test-anki:
+	@echo "🧪 Running Anki tests..."
+	@docker compose -f docker-compose.dev.yml exec open_notebook python -m pytest tests/test_anki.py -v
+
+test-coverage:
+	@echo "🧪 Running tests with coverage..."
+	@docker compose -f docker-compose.dev.yml exec open_notebook python -m pytest tests/ -v --cov=open_notebook --cov-report=html
+
 # === Cleanup ===
 clean-cache:
 	@echo "🧹 Cleaning cache directories..."

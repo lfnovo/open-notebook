@@ -109,3 +109,32 @@ export function useProviders() {
     queryFn: () => modelsApi.getProviders(),
   })
 }
+
+export function useSyncOllamaModels() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: () => modelsApi.syncOllamaModels(),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.models })
+      if (data.synced > 0) {
+        toast({
+          title: 'Ollama Models Synced',
+          description: `Added ${data.synced} new model${data.synced !== 1 ? 's' : ''} from Ollama`,
+        })
+      }
+    },
+    onError: (error: unknown) => {
+      const errorMessage = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to sync Ollama models'
+      // Only show error toast if it's not an auth error (user will see login prompt instead)
+      if (errorMessage !== 'Invalid password' && errorMessage !== 'Missing authorization header') {
+        toast({
+          title: 'Error',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      }
+    },
+  })
+}

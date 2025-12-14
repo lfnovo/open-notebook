@@ -1,23 +1,39 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProviderStatus } from './components/ProviderStatus'
 import { ModelTypeSection } from './components/ModelTypeSection'
 import { DefaultModelsSection } from './components/DefaultModelsSection'
-import { useModels, useModelDefaults, useProviders } from '@/lib/hooks/use-models'
+import { useModels, useModelDefaults, useProviders, useSyncOllamaModels } from '@/lib/hooks/use-models'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function ModelsPage() {
   const { data: models, isLoading: modelsLoading, refetch: refetchModels } = useModels()
   const { data: defaults, isLoading: defaultsLoading, refetch: refetchDefaults } = useModelDefaults()
   const { data: providers, isLoading: providersLoading, refetch: refetchProviders } = useProviders()
+  const syncOllama = useSyncOllamaModels()
+  const hasSynced = useRef(false)
+
+  // Auto-sync Ollama models once when both providers and models are loaded
+  // This ensures authentication is working before attempting sync
+  useEffect(() => {
+    if (providers?.available.includes('ollama') && models !== undefined && !hasSynced.current) {
+      hasSynced.current = true
+      syncOllama.mutate()
+    }
+  }, [providers, models, syncOllama])
 
   const handleRefresh = () => {
     refetchModels()
     refetchDefaults()
     refetchProviders()
+  }
+
+  const handleSyncOllama = () => {
+    syncOllama.mutate()
   }
 
   if (modelsLoading || defaultsLoading || providersLoading) {
@@ -53,9 +69,22 @@ export default function ModelsPage() {
                 Configure AI models for different purposes across Open Notebook
               </p>
             </div>
-            <Button variant="outline" size="sm" onClick={handleRefresh}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            <div className="flex gap-2">
+              {providers.available.includes('ollama') && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleSyncOllama}
+                  disabled={syncOllama.isPending}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {syncOllama.isPending ? 'Syncing...' : 'Sync Ollama'}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={handleRefresh}>
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
         </div>
 
         <div className="grid gap-6">

@@ -7,7 +7,12 @@ sqlite-db/
 surreal-data/
 docker.env
 !setup_guide/docker.env
+docker.orangepi.env
+duckdns.env
 notebook_data/
+notebook_data_backup*/
+letsencrypt/
+HARDWARE_RECOMMENDATIONS.md
 # Python-specific
 *.py[cod]
 __pycache__/

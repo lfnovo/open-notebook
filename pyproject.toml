@@ -40,6 +40,7 @@ dependencies = [
     "surrealdb>=1.0.4",
     "podcast-creator>=0.7.0",
     "surreal-commands>=1.2.0",
+    "phonemizer>=3.2.1",
 ]
 
 [tool.setuptools]

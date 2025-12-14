@@ -115,6 +115,112 @@ async def cancel_command_job(job_id: str):
             detail=f"Failed to cancel command job: {str(e)}"
         )
 
+@router.get("/commands/embedding/status")
+async def get_embedding_tasks_status():
+    """Get status of all embedding-related tasks"""
+    try:
+        from open_notebook.database.repository import repo_query
+        from datetime import datetime, timedelta
+        
+        # Query only active/recent embedding-related commands
+        # Limit to last 2 hours to keep it fast
+        recent_cutoff = datetime.utcnow() - timedelta(hours=2)
+        
+        # Optimized query - only get running/pending tasks first
+        query_active = """
+            SELECT * FROM command
+            WHERE command IN ['embed_chunk', 'embed_single_item', 'vectorize_source', 'rebuild_embeddings']
+            AND status IN ['running', 'pending']
+            ORDER BY created DESC
+            LIMIT 50
+        """
+        
+        # Get recently completed/failed (last 2 hours, limit 20)
+        query_recent = """
+            SELECT * FROM command
+            WHERE command IN ['embed_chunk', 'embed_single_item', 'vectorize_source', 'rebuild_embeddings']
+            AND status IN ['completed', 'failed']
+            AND created > $cutoff
+            ORDER BY created DESC
+            LIMIT 20
+        """
+        
+        # Run queries in parallel for speed
+        import asyncio
+        active_results, recent_results = await asyncio.gather(
+            repo_query(query_active, {}),
+            repo_query(query_recent, {"cutoff": recent_cutoff.isoformat()}),
+            return_exceptions=True
+        )
+        
+        # Handle query errors gracefully
+        if isinstance(active_results, Exception):
+            logger.error(f"Error fetching active tasks: {active_results}")
+            active_results = []
+        if isinstance(recent_results, Exception):
+            logger.error(f"Error fetching recent tasks: {recent_results}")
+            recent_results = []
+        
+        # Combine results
+        all_results = list(active_results) + list(recent_results)
+        
+        tasks = []
+        summary = {
+            "total": len(all_results),
+            "running": 0,
+            "pending": 0,
+            "completed_recently": 0,
+            "failed_recently": 0
+        }
+        
+        for row in all_results:
+            status = row.get("status", "unknown")
+            task = {
+                "job_id": str(row.get("id", "")),
+                "command": row.get("command", "unknown"),
+                "status": status,
+                "created": row.get("created"),
+                "updated": row.get("updated"),
+                "error_message": row.get("error_message"),
+                "progress": row.get("progress"),
+            }
+            
+            # Try to extract source info from input
+            input_data = row.get("input", {})
+            if isinstance(input_data, dict):
+                task["source_id"] = input_data.get("source_id")
+            
+            tasks.append(task)
+            
+            # Update summary
+            if status == "running":
+                summary["running"] += 1
+            elif status == "pending":
+                summary["pending"] += 1
+            elif status == "completed":
+                summary["completed_recently"] += 1
+            elif status == "failed":
+                summary["failed_recently"] += 1
+        
+        return {
+            "tasks": tasks,
+            "summary": summary
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching embedding tasks: {e}")
+        # Return empty state instead of failing
+        return {
+            "tasks": [],
+            "summary": {
+                "total": 0,
+                "running": 0,
+                "pending": 0,
+                "completed_recently": 0,
+                "failed_recently": 0
+            }
+        }
+
 @router.get("/commands/registry/debug")
 async def debug_registry():
     """Debug endpoint to see what commands are registered"""

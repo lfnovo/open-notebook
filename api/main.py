@@ -10,6 +10,7 @@ from loguru import logger
 
 from api.auth import PasswordAuthMiddleware
 from api.routers import (
+    anki,
     auth,
     chat,
     config,
@@ -17,6 +18,7 @@ from api.routers import (
     embedding,
     embedding_rebuild,
     episode_profiles,
+    health,
     insights,
     models,
     notebooks,
@@ -97,8 +99,10 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(anki.router, prefix="/api", tags=["anki"])
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(config.router, prefix="/api", tags=["config"])
+app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(models.router, prefix="/api", tags=["models"])

@@ -1,6 +1,7 @@
 import os
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
+import httpx
 from esperanto import AIFactory
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
@@ -298,3 +299,199 @@ async def get_provider_availability():
     except Exception as e:
         logger.error(f"Error checking provider availability: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error checking provider availability: {str(e)}")
+
+
+@router.get("/models/ollama/available")
+async def get_available_ollama_models() -> Dict[str, Any]:
+    """Get list of models available in Ollama instance."""
+    try:
+        ollama_base = os.environ.get("OLLAMA_API_BASE")
+        if not ollama_base:
+            raise HTTPException(
+                status_code=503, 
+                detail="Ollama is not configured. Set OLLAMA_API_BASE environment variable."
+            )
+        
+        # Call Ollama API to list models
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(f"{ollama_base}/api/tags")
+                response.raise_for_status()
+                data = response.json()
+                
+                models = []
+                if "models" in data:
+                    for model in data["models"]:
+                        models.append({
+                            "name": model.get("name", ""),
+                            "size": model.get("size", 0),
+                            "modified_at": model.get("modified_at", ""),
+                            "digest": model.get("digest", "")
+                        })
+                
+                return {
+                    "available": True,
+                    "models": models,
+                    "base_url": ollama_base
+                }
+            except httpx.ConnectError:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Cannot connect to Ollama at {ollama_base}. Is Ollama running?"
+                )
+            except httpx.TimeoutException:
+                raise HTTPException(
+                    status_code=504,
+                    detail=f"Ollama at {ollama_base} is not responding. Check if it's running."
+                )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching Ollama models: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching Ollama models: {str(e)}")
+
+
+@router.post("/models/ollama/sync")
+async def sync_ollama_models() -> Dict[str, Any]:
+    """Auto-sync Ollama models to database - adds new ones, doesn't remove existing."""
+    try:
+        ollama_base = os.environ.get("OLLAMA_API_BASE")
+        if not ollama_base:
+            raise HTTPException(
+                status_code=503, 
+                detail="Ollama is not configured. Set OLLAMA_API_BASE environment variable."
+            )
+        
+        # Get models from Ollama
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(f"{ollama_base}/api/tags")
+                response.raise_for_status()
+                data = response.json()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"Cannot connect to Ollama: {str(e)}"
+                )
+        
+        if "models" not in data:
+            return {"synced": 0, "skipped": 0, "total": 0}
+        
+        synced = 0
+        skipped = 0
+        
+        from open_notebook.database.repository import repo_query
+        
+        for ollama_model in data["models"]:
+            model_name = ollama_model.get("name", "")
+            if not model_name:
+                continue
+            
+            # Determine model type based on name patterns
+            model_type = "language"  # Default
+            if "embed" in model_name.lower():
+                model_type = "embedding"
+            elif "whisper" in model_name.lower():
+                model_type = "speech_to_text"
+            
+            # Check if model already exists (case-insensitive)
+            existing = await repo_query(
+                "SELECT * FROM model WHERE string::lowercase(provider) = 'ollama' AND string::lowercase(name) = $name LIMIT 1",
+                {"name": model_name.lower()}
+            )
+            
+            if existing:
+                skipped += 1
+                continue
+            
+            # Create new model
+            new_model = Model(
+                name=model_name,
+                provider="ollama",
+                type=model_type,
+            )
+            await new_model.save()
+            synced += 1
+            logger.info(f"Auto-synced Ollama model: {model_name} (type: {model_type})")
+        
+        return {
+            "synced": synced,
+            "skipped": skipped,
+            "total": len(data["models"])
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error syncing Ollama models: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error syncing Ollama models: {str(e)}")
+
+
+@router.get("/models/validate")
+async def validate_configured_models() -> Dict[str, Any]:
+    """Validate that configured default models exist in Ollama."""
+    try:
+        # Get default models - handle case where they don't exist yet
+        try:
+            defaults = await DefaultModels.get_defaults()
+        except Exception as e:
+            logger.warning(f"Could not get default models (may not be initialized yet): {e}")
+            # Return empty validation if defaults not set up yet
+            return {
+                "valid": True,
+                "missing_models": [],
+                "available_ollama_models": [],
+                "details": {}
+            }
+        
+        # Get available Ollama models
+        ollama_models = []
+        ollama_base = os.environ.get("OLLAMA_API_BASE")
+        
+        if ollama_base:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                try:
+                    response = await client.get(f"{ollama_base}/api/tags")
+                    response.raise_for_status()
+                    data = response.json()
+                    if "models" in data:
+                        ollama_models = [m.get("name", "") for m in data["models"]]
+                except Exception as e:
+                    logger.warning(f"Could not fetch Ollama models: {e}")
+        
+        # Check each configured model
+        validation_results = {
+            "chat_model": {
+                "configured": defaults.default_chat_model,
+                "available": defaults.default_chat_model in ollama_models if defaults.default_chat_model else None,
+                "provider": "ollama" if defaults.default_chat_model and ":" in defaults.default_chat_model else "unknown"
+            },
+            "embedding_model": {
+                "configured": defaults.default_embedding_model,
+                "available": defaults.default_embedding_model in ollama_models if defaults.default_embedding_model else None,
+                "provider": "ollama" if defaults.default_embedding_model and ":" in defaults.default_embedding_model else "unknown"
+            },
+            "transformation_model": {
+                "configured": defaults.default_transformation_model,
+                "available": defaults.default_transformation_model in ollama_models if defaults.default_transformation_model else None,
+                "provider": "ollama" if defaults.default_transformation_model and ":" in defaults.default_transformation_model else "unknown"
+            }
+        }
+        
+        # Count issues
+        missing_models = []
+        for model_type, info in validation_results.items():
+            if info["configured"] and info["available"] is False:
+                missing_models.append({
+                    "type": model_type,
+                    "name": info["configured"]
+                })
+        
+        return {
+            "valid": len(missing_models) == 0,
+            "missing_models": missing_models,
+            "available_ollama_models": ollama_models,
+            "details": validation_results
+        }
+    except Exception as e:
+        logger.error(f"Error validating models: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error validating models: {str(e)}")

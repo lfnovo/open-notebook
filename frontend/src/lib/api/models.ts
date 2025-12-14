@@ -34,5 +34,45 @@ export const modelsApi = {
   getProviders: async () => {
     const response = await apiClient.get<ProviderAvailability>('/models/providers')
     return response.data
+  },
+
+  getAvailableOllamaModels: async () => {
+    const response = await apiClient.get<{
+      available: boolean
+      models: Array<{
+        name: string
+        size: number
+        modified_at: string
+        digest: string
+      }>
+      base_url: string
+    }>('/models/ollama/available')
+    return response.data
+  },
+
+  validateConfiguredModels: async () => {
+    const response = await apiClient.get<{
+      valid: boolean
+      missing_models: Array<{
+        type: string
+        name: string
+      }>
+      available_ollama_models: string[]
+      details: Record<string, {
+        configured: string | null
+        available: boolean | null
+        provider: string
+      }>
+    }>('/models/validate')
+    return response.data
+  },
+
+  syncOllamaModels: async () => {
+    const response = await apiClient.post<{
+      synced: number
+      skipped: number
+      total: number
+    }>('/models/ollama/sync')
+    return response.data
   }
 }

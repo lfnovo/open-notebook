@@ -1,0 +1,14 @@
+http:
+  routers:
+    open_notebook_single:
+      rule: "Host(`luisboullosanotebook.duckdns.org`)"
+      service: open_notebook_single
+      tls:
+        certResolver: duckdns
+
+  services:
+    open_notebook_single:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.2.127:8502"
+

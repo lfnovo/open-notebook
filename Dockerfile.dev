@@ -1,0 +1,57 @@
+# Development Dockerfile with test dependencies included
+FROM python:3.12-slim-bookworm
+
+# Install uv using the official method
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Install system dependencies (including espeak-ng for Anki audio features)
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    gcc g++ git make \
+    ffmpeg \
+    supervisor \
+    curl \
+    espeak-ng \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency files
+COPY pyproject.toml uv.lock ./
+COPY open_notebook/__init__.py ./open_notebook/__init__.py
+
+# Install ALL dependencies including dev dependencies
+RUN uv sync --frozen
+
+# Copy the rest of the application
+COPY . /app
+
+# Install frontend dependencies
+WORKDIR /app/frontend
+RUN npm install
+
+# Back to app root
+WORKDIR /app
+
+# Add .venv to PATH so pytest and other tools are available
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Create necessary directories
+RUN mkdir -p /app/data /var/log/supervisor
+
+# Copy supervisord configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose ports
+EXPOSE 8502 5055
+
+# Default command for development
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

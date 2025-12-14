@@ -135,16 +135,23 @@ export function SourceDetailContent({
       return
     }
 
+    console.log('Creating insight with transformation:', selectedTransformation)
     try {
       setCreatingInsight(true)
-      await insightsApi.create(sourceId, {
+      console.log('Calling insightsApi.create...')
+      const result = await insightsApi.create(sourceId, {
         transformation_id: selectedTransformation
       })
+      console.log('Insight created successfully:', result)
       toast.success('Insight created successfully')
       await fetchInsights()
       setSelectedTransformation('')
     } catch (err) {
       console.error('Failed to create insight:', err)
+      if (err && typeof err === 'object' && 'response' in err) {
+        console.error('Response data:', (err as any).response?.data)
+        console.error('Response status:', (err as any).response?.status)
+      }
       toast.error('Failed to create insight')
     } finally {
       setCreatingInsight(false)

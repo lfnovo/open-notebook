@@ -1,0 +1,78 @@
+# Caddy configuration for Open Notebook
+
+# Global options
+{
+	# Email for Let's Encrypt notifications
+	email luisboullosaphoto@gmail.com
+	
+	# Security - disable admin API from external access
+	admin off
+}
+
+# Main domain configuration
+luisboullosanotebook.duckdns.org {
+	# Automatic HTTPS with HTTP challenge
+	
+	# Security headers
+	header {
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		# XSS protection
+		X-Content-Type-Options "nosniff"
+		X-XSS-Protection "1; mode=block"
+		# Referrer policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Content Security Policy
+		Content-Security-Policy "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; img-src 'self' data: https:; font-src 'self' data:;"
+		# Permissions policy
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		# Remove server header
+		-Server
+	}
+	
+	# Rate limiting - 100 requests per minute per IP
+	@ratelimit {
+		not path /.well-known/*
+	}
+	rate_limit @ratelimit {
+		zone dynamic {
+			key {remote_host}
+			events 100
+			window 1m
+		}
+	}
+	
+	# API routing - higher priority
+	handle /api/* {
+		reverse_proxy open_notebook_single:5055 {
+			# Timeout settings
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+		}
+	}
+	
+	# Frontend routing - default
+	handle {
+		reverse_proxy open_notebook_single:8502 {
+			# Timeout settings
+			transport http {
+				dial_timeout 5s
+				response_header_timeout 30s
+			}
+		}
+	}
+	
+	# Enable compression
+	encode gzip
+	
+	# Logging
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}
+
+# HTTP to HTTPS redirect (automatic)

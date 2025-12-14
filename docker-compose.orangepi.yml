@@ -1,0 +1,119 @@
+services:
+  # Optional: Remove Caddy if using LAN-only access
+  # Uncomment if you want HTTPS with public domain
+  # caddy:
+  #   image: caddy:2-alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #     - "443:443/udp"
+  #   volumes:
+  #     - ./Caddyfile:/etc/caddy/Caddyfile
+  #     - caddy_data:/data
+  #     - caddy_config:/config
+  #   restart: always
+
+  open_notebook_single:
+    image: lfnovo/open_notebook:v1-latest-single  # ARM64 compatible
+    # If image doesn't support ARM64, you'll need to build locally:
+    # build:
+    #   context: .
+    #   dockerfile: Dockerfile.single
+    #   platforms:
+    #     - linux/arm64
+    ports:
+      - "8502:8502"  # Frontend - accessible from LAN
+      - "5055:5055"  # API - accessible from LAN
+    env_file:
+      - ./docker.env
+    volumes:
+      - ./notebook_data:/app/data
+      - ./surreal_single_data:/mydata
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WHISPER_API_URL=http://whisper:9000
+      - PIPER_API_URL=http://piper:10200
+    depends_on:
+      - ollama
+      - whisper
+      - piper
+    restart: always
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"  # Accessible from LAN
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Remove GPU support (Orange Pi doesn't have NVIDIA GPU)
+    restart: unless-stopped
+  
+  ollama-setup:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Checking for required Ollama models..."
+        
+        # Essential models for Open Notebook (smaller models for ARM)
+        MODELS="mxbai-embed-large qwen2.5:3b"
+        
+        for model in $$MODELS; do
+          if ! ollama list | grep -q "$$model"; then
+            echo "Pulling $$model..."
+            ollama pull $$model
+          else
+            echo "$$model already exists, skipping..."
+          fi
+        done
+        
+        echo "Model setup complete!"
+    restart: "no"
+
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: whisper
+    ports:
+      - "9000:9000"  # Accessible from LAN
+    environment:
+      - ASR_MODEL=tiny  # Use smaller model for ARM CPU (base/small/medium are slower)
+      - ASR_ENGINE=openai_whisper
+    volumes:
+      - whisper-models:/root/.cache/whisper
+    # Remove GPU support
+    restart: unless-stopped
+
+  piper:
+    image: lscr.io/linuxserver/piper:latest
+    container_name: piper
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - PIPER_VOICE=en_US-lessac-low  # Use low quality for faster ARM processing
+    volumes:
+      - piper_data:/config
+    ports:
+      - "10200:10200"  # Accessible from LAN
+    restart: unless-stopped
+
+volumes:
+  open-notebook-data:
+  ollama_data:
+  whisper-models:
+  surreal_single_data:
+  piper_data:
+  #caddy_data:
+  #caddy_config:

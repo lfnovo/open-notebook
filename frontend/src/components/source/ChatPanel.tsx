@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock, Trash2 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import {
   SourceChatMessage,
@@ -35,6 +35,7 @@ interface ChatPanelProps {
   isStreaming: boolean
   contextIndicators: SourceChatContextIndicator | null
   onSendMessage: (message: string, modelOverride?: string) => void
+  onDeleteMessage?: (messageIndex: number) => void
   modelOverride?: string
   onModelChange?: (model?: string) => void
   // Session management props
@@ -59,6 +60,7 @@ export function ChatPanel({
   isStreaming,
   contextIndicators,
   onSendMessage,
+  onDeleteMessage,
   modelOverride,
   onModelChange,
   sessions = [],
@@ -78,6 +80,10 @@ export function ChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
+  
+  // Message history navigation
+  const [messageHistory, setMessageHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
@@ -100,8 +106,17 @@ export function ChatPanel({
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
+      const message = input.trim()
+      onSendMessage(message, modelOverride)
+      
+      // Add to message history (avoid duplicates)
+      setMessageHistory(prev => {
+        const filtered = prev.filter(m => m !== message)
+        return [...filtered, message].slice(-50) // Keep last 50 messages
+      })
+      
       setInput('')
+      setHistoryIndex(-1)
     }
   }
 
@@ -110,9 +125,31 @@ export function ChatPanel({
     const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
     const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
 
+    // Handle Enter to send
     if (e.key === 'Enter' && isModifierPressed) {
       e.preventDefault()
       handleSend()
+      return
+    }
+
+    // Handle up/down arrow navigation through message history
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (messageHistory.length === 0) return
+      
+      const newIndex = historyIndex < messageHistory.length - 1 ? historyIndex + 1 : historyIndex
+      setHistoryIndex(newIndex)
+      setInput(messageHistory[messageHistory.length - 1 - newIndex] || '')
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (historyIndex <= 0) {
+        setHistoryIndex(-1)
+        setInput('')
+      } else {
+        const newIndex = historyIndex - 1
+        setHistoryIndex(newIndex)
+        setInput(messageHistory[messageHistory.length - 1 - newIndex] || '')
+      }
     }
   }
 
@@ -172,53 +209,72 @@ export function ChatPanel({
                 <p className="text-xs mt-2">Ask questions to understand the content better</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 ${
-                    message.type === 'human' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.type === 'ai' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
+              messages.map((message, index) => {
+                const isPending = message.id.startsWith('temp-')
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 ${
+                      message.type === 'human' ? 'justify-end' : 'justify-start'
+                    } ${isPending ? 'opacity-60' : 'opacity-100'} group`}
+                  >
+                    {message.type === 'ai' && (
+                      <div className="flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Bot className="h-4 w-4" />
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 max-w-[80%]">
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        message.type === 'human'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      {message.type === 'ai' ? (
-                        <AIMessageContent
+                    )}
+                    <div className="flex flex-col gap-2 max-w-[80%]">
+                      <div className="relative">
+                        <div
+                          className={`rounded-lg px-4 py-2 ${
+                            message.type === 'human'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {message.type === 'ai' ? (
+                            <AIMessageContent
+                              content={message.content}
+                              onReferenceClick={handleReferenceClick}
+                            />
+                          ) : (
+                            <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
+                          )}
+                        </div>
+                        {/* Delete button - shows on hover */}
+                        {onDeleteMessage && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className={`absolute ${
+                              message.type === 'human' ? '-left-10' : '-right-10'
+                            } top-1 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity`}
+                            onClick={() => onDeleteMessage(index)}
+                            title="Delete message"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {message.type === 'ai' && (
+                        <MessageActions
                           content={message.content}
-                          onReferenceClick={handleReferenceClick}
+                          notebookId={notebookId}
                         />
-                      ) : (
-                        <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
                       )}
                     </div>
-                    {message.type === 'ai' && (
-                      <MessageActions
-                        content={message.content}
-                        notebookId={notebookId}
-                      />
+                    {message.type === 'human' && (
+                      <div className="flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                          <User className="h-4 w-4 text-primary-foreground" />
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {message.type === 'human' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))
+                )
+              })
             )}
             {isStreaming && (
               <div className="flex gap-3 justify-start">

@@ -1,3 +1,24 @@
+# Development Environment Configuration
+# 
+# IMPORTANT: Hot Reload Limitations on Windows/macOS
+# =====================================================
+# Due to Docker volume mount limitations on Windows and macOS, file change events
+# from the host filesystem may not reliably propagate to the Linux container.
+# This affects Next.js hot reload (Fast Refresh) functionality.
+#
+# WORKAROUND:
+# - File changes ARE saved and synced to the container
+# - Backend API hot reload works (Uvicorn --reload)
+# - Frontend requires MANUAL BROWSER REFRESH (Ctrl+R / Cmd+R) to see changes
+# - Changes are immediate, just not automatically reflected in browser
+#
+# For full hot reload support, consider:
+# 1. Run frontend natively: cd frontend && npm run dev (port 3000)
+# 2. Use WSL2 and develop inside WSL2 filesystem (not /mnt/c/)
+# 3. Accept manual refresh workflow (recommended for simple changes)
+#
+# See DEVELOPMENT.md for detailed setup instructions.
+
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
@@ -9,18 +30,134 @@ services:
     pull_policy: always
     user: root
     restart: always
+  
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "127.0.0.1:11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        limits:
+          memory: 16G  # Increased to improve stability for larger models; lower if host RAM is limited
+        reservations:
+          memory: 2G
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  ollama-setup:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Checking for required Ollama models..."
+        
+        # Essential models for Open Notebook
+        # mxbai-embed-large: Embeddings (669 MB)
+        # qwen2.5:1.5b: Small chat/transformation model (934 MB)
+        # qwen2.5:3b: Medium chat/transformation model (1.9 GB)
+        # qwen2.5:7b: Large chat/transformation model (4.7 GB)
+        MODELS="mxbai-embed-large:latest qwen2.5:1.5b qwen2.5:3b qwen2.5:7b"
+        
+        for model in $$MODELS; do
+          if ! ollama list | grep -q "$$model"; then
+            echo "Pulling $$model..."
+            ollama pull $$model
+          else
+            echo "$$model already exists, skipping..."
+          fi
+        done
+        
+        echo "Model setup complete!"
+    restart: "no"
+  
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: whisper
+    ports:
+      - "127.0.0.1:9000:9000"
+    environment:
+      - ASR_MODEL=base
+      - ASR_ENGINE=openai_whisper
+    volumes:
+      - whisper-models:/root/.cache/whisper
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+  
+  piper:
+    image: rhasspy/wyoming-piper:latest
+    container_name: piper
+    command: --voice en_GB-alan-medium --voice nl_NL-mls_5809-low
+    ports:
+      - "127.0.0.1:10200:10200"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/10200' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+  
   open_notebook:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     ports:
       - "8502:8502"
       - "5055:5055"
     env_file:
       - ./docker.env
     depends_on:
-      - surrealdb
+      surrealdb:
+        condition: service_started
+      ollama:
+        condition: service_healthy
+      whisper:
+        condition: service_started
+      piper:
+        condition: service_started
     volumes:
       - ./notebook_data:/app/data
+      - .:/app  # Mount source code for live development
+      - frontend_node_modules:/app/frontend/node_modules  # Prevent overwriting node_modules
+      # Exclude Python cache for better performance
+      - /app/.venv
+      - /app/open_notebook.egg-info
+    environment:
+      - SURREAL_URL=ws://surrealdb:8000
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WHISPER_API_URL=http://whisper:9000
+      - PIPER_API_URL=http://piper:10200
+      - WATCHFILES_FORCE_POLLING=false  # Use native file watching (faster on most systems)
     restart: always
-    
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
+volumes:
+  ollama_data:
+  whisper-models:
+  piper-data:
+  frontend_node_modules:

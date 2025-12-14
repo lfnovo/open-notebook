@@ -16,6 +16,7 @@ import { useIsDesktop } from '@/lib/hooks/use-media-query'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import { AnkiInsightsPanel } from '@/components/anki/AnkiInsightsPanel'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -27,8 +28,9 @@ export interface ContextSelections {
 export default function NotebookPage() {
   const params = useParams()
 
-  // Ensure the notebook ID is properly decoded from URL
-  const notebookId = decodeURIComponent(params.id as string)
+  // Convert URL ID back to full SurrealDB ID
+  const urlId = decodeURIComponent(params.id as string)
+  const notebookId = urlId.includes(':') ? urlId : `notebook:${urlId}`
 
   const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
   const { data: sources, isLoading: sourcesLoading, refetch: refetchSources } = useSources(notebookId)
@@ -210,10 +212,15 @@ export default function NotebookPage() {
             </div>
 
             {/* Chat Column - always expanded, takes remaining space */}
-            <div className="transition-all duration-150 flex-1">
+            <div className="transition-all duration-150 flex-1 space-y-6">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}
+              />
+              
+              {/* Anki Insights Panel */}
+              <AnkiInsightsPanel
+                notebookId={notebookId}
               />
             </div>
           </div>

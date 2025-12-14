@@ -1,0 +1,14 @@
+http:
+  routers:
+    nextcloud:
+      rule: "Host(`luisboullosacloud.duckdns.org`)"
+      service: nextcloud_service
+      tls:
+        certResolver: duckdns
+
+  services:
+    nextcloud_service:
+      loadBalancer:
+        servers:
+          - url: "http://192.168.2.128:80"
+

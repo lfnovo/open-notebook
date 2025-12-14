@@ -210,16 +210,19 @@ export function CommandPalette() {
               <span>Loading notebooks...</span>
             </CommandItem>
           ) : notebooks && notebooks.length > 0 ? (
-            notebooks.map((notebook) => (
-              <CommandItem
-                key={notebook.id}
-                value={`notebook ${notebook.name} ${notebook.description || ''}`}
-                onSelect={() => handleNavigate(`/notebooks/${notebook.id}`)}
-              >
-                <Book className="h-4 w-4" />
-                <span>{notebook.name}</span>
-              </CommandItem>
-            ))
+            notebooks.map((notebook) => {
+              const urlId = notebook.id.split(':')[1] || notebook.id
+              return (
+                <CommandItem
+                  key={notebook.id}
+                  value={`notebook ${notebook.name} ${notebook.description || ''}`}
+                  onSelect={() => handleNavigate(`/notebooks/${urlId}`)}
+                >
+                  <Book className="h-4 w-4" />
+                  <span>{notebook.name}</span>
+                </CommandItem>
+              )
+            })
           ) : null}
         </CommandGroup>
 

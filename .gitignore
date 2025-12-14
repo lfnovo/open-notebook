@@ -11,6 +11,10 @@ docker.orangepi.env
 duckdns.env
 notebook_data/
 notebook_data_backup*/
+# Local data backups and runtime state (do not commit)
+*_data
+*_data_backup*
+surreal_single_data_YYYYMMDD.zip
 letsencrypt/
 HARDWARE_RECOMMENDATIONS.md
 # Python-specific
@@ -139,3 +143,5 @@ specs/
 .claude
 
 .playwright-mcp/
+# Local large archive left in workspace — do not commit
+surreal_single_data_YYYYMMDD.zip

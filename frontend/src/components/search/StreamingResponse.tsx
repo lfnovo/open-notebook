@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { CheckCircle, Sparkles, Lightbulb, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
@@ -172,8 +173,19 @@ function FinalAnswerContent({
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert break-words prose-a:break-all prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
       <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
         components={{
-          a: LinkComponent
+          a: LinkComponent,
+          table: ({ children }) => (
+            <div className="my-4 overflow-x-auto">
+              <table className="min-w-full border-collapse border border-border">{children}</table>
+            </div>
+          ),
+          thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+          tbody: ({ children }) => <tbody>{children}</tbody>,
+          tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+          th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+          td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
         }}
       >
         {markdownWithLinks}

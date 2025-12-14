@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { sourcesApi } from '@/lib/api/sources'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
@@ -52,8 +52,11 @@ export function useNotebookSources(notebookId: string) {
     refetchOnWindowFocus: true,
   })
 
-  // Flatten all pages into a single array
-  const sources: SourceListResponse[] = query.data?.pages.flatMap(page => page.sources) ?? []
+  // Flatten all pages into a single array (memoized to prevent infinite re-renders)
+  const sources: SourceListResponse[] = useMemo(
+    () => query.data?.pages.flatMap(page => page.sources) ?? [],
+    [query.data?.pages]
+  )
 
   // Refetch function that resets to first page
   const refetch = useCallback(() => {

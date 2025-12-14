@@ -12,6 +12,7 @@ import { Transformation } from '@/lib/types/transformations'
 import { useExecuteTransformation } from '@/lib/hooks/use-transformations'
 import { ModelSelector } from '@/components/common/ModelSelector'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 interface TransformationPlaygroundProps {
   transformations: Transformation[] | undefined
@@ -118,8 +119,24 @@ export function TransformationPlayground({ transformations, selectedTransformati
               <Card>
                 <ScrollArea className="h-[400px]">
                   <CardContent className="pt-6">
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown>{output}</ReactMarkdown>
+                    <div className="prose prose-sm max-w-none dark:prose-invert">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          table: ({ children }) => (
+                            <div className="my-4 overflow-x-auto">
+                              <table className="min-w-full border-collapse border border-border">{children}</table>
+                            </div>
+                          ),
+                          thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                          tbody: ({ children }) => <tbody>{children}</tbody>,
+                          tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+                          th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+                          td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+                        }}
+                      >
+                        {output}
+                      </ReactMarkdown>
                     </div>
                   </CardContent>
                 </ScrollArea>

@@ -147,7 +147,7 @@ worker-restart: worker-stop
 start-all:
 	@echo "🚀 Starting Open Notebook (Database + API + Worker + Frontend)..."
 	@echo "📊 Starting SurrealDB..."
-	@docker compose up -d surrealdb
+	@docker compose -f docker-compose.dev.yml up -d surrealdb
 	@sleep 3
 	@echo "🔧 Starting API backend..."
 	@uv run run_api.py &

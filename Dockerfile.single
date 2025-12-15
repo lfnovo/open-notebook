@@ -77,6 +77,10 @@ COPY --from=builder /app/frontend/public /app/frontend/public
 # Create directories for data persistence
 RUN mkdir -p /app/data /mydata
 
+# Copy and make executable the wait-for-api script
+COPY scripts/wait-for-api.sh /app/scripts/wait-for-api.sh
+RUN chmod +x /app/scripts/wait-for-api.sh
+
 # Expose ports for Frontend and API
 EXPOSE 8502 5055
 

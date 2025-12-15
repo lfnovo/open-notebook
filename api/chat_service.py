@@ -135,7 +135,9 @@ class ChatService:
             if model_override is not None:
                 data["model_override"] = model_override
             
-            async with httpx.AsyncClient(timeout=120.0) as client:  # Longer timeout for chat
+            # Short connect timeout (10s), long read timeout (10 min) for Ollama/local LLMs
+            timeout = httpx.Timeout(connect=10.0, read=600.0, write=30.0, pool=10.0)
+            async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.post(
                     f"{self.base_url}/api/chat/execute",
                     json=data,

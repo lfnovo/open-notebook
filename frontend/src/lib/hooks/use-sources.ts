@@ -1,13 +1,17 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query'
+import { useCallback, useMemo } from 'react'
 import { sourcesApi } from '@/lib/api/sources'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
-import { 
-  CreateSourceRequest, 
-  UpdateSourceRequest, 
+import {
+  CreateSourceRequest,
+  UpdateSourceRequest,
   SourceResponse,
-  SourceStatusResponse 
+  SourceStatusResponse,
+  SourceListResponse
 } from '@/lib/types/api'
+
+const NOTEBOOK_SOURCES_PAGE_SIZE = 30
 
 export function useSources(notebookId?: string) {
   return useQuery({
@@ -17,6 +21,57 @@ export function useSources(notebookId?: string) {
     staleTime: 5 * 1000, // 5 seconds - more responsive for real-time source updates
     refetchOnWindowFocus: true, // Refetch when user comes back to the tab
   })
+}
+
+/**
+ * Hook for fetching notebook sources with infinite scroll pagination.
+ * Returns flattened sources array and pagination controls.
+ */
+export function useNotebookSources(notebookId: string) {
+  const queryClient = useQueryClient()
+
+  const query = useInfiniteQuery({
+    queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+    queryFn: async ({ pageParam = 0 }) => {
+      const data = await sourcesApi.list({
+        notebook_id: notebookId,
+        limit: NOTEBOOK_SOURCES_PAGE_SIZE,
+        offset: pageParam,
+        sort_by: 'updated',
+        sort_order: 'desc',
+      })
+      return {
+        sources: data,
+        nextOffset: data.length === NOTEBOOK_SOURCES_PAGE_SIZE ? pageParam + data.length : undefined,
+      }
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => lastPage.nextOffset,
+    enabled: !!notebookId,
+    staleTime: 5 * 1000,
+    refetchOnWindowFocus: true,
+  })
+
+  // Flatten all pages into a single array (memoized to prevent infinite re-renders)
+  const sources: SourceListResponse[] = useMemo(
+    () => query.data?.pages.flatMap(page => page.sources) ?? [],
+    [query.data?.pages]
+  )
+
+  // Refetch function that resets to first page
+  const refetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId) })
+  }, [queryClient, notebookId])
+
+  return {
+    sources,
+    isLoading: query.isLoading,
+    isFetchingNextPage: query.isFetchingNextPage,
+    hasNextPage: query.hasNextPage,
+    fetchNextPage: query.fetchNextPage,
+    refetch,
+    error: query.error,
+  }
 }
 
 export function useSource(id: string) {

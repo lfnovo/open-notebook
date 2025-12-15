@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown } from 'lucide-react'
+import { Plus, FileText, Link2, ChevronDown, Loader2 } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
@@ -31,6 +31,10 @@ interface SourcesColumnProps {
   onRefresh?: () => void
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
+  // Pagination props
+  hasNextPage?: boolean
+  isFetchingNextPage?: boolean
+  fetchNextPage?: () => void
 }
 
 export function SourcesColumn({
@@ -39,7 +43,10 @@ export function SourcesColumn({
   notebookId,
   onRefresh,
   contextSelections,
-  onContextModeChange
+  onContextModeChange,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
 }: SourcesColumnProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
@@ -60,6 +67,30 @@ export function SourcesColumn({
     () => createCollapseButton(toggleSources, 'Sources'),
     [toggleSources]
   )
+
+  // Scroll container ref for infinite scroll
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+  // Handle scroll for infinite loading
+  const handleScroll = useCallback(() => {
+    const container = scrollContainerRef.current
+    if (!container || !hasNextPage || isFetchingNextPage || !fetchNextPage) return
+
+    const { scrollTop, scrollHeight, clientHeight } = container
+    // Load more when user scrolls within 200px of the bottom
+    if (scrollHeight - scrollTop - clientHeight < 200) {
+      fetchNextPage()
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    container.addEventListener('scroll', handleScroll)
+    return () => container.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
   
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
@@ -149,7 +180,7 @@ export function SourcesColumn({
             </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto min-h-0">
+          <CardContent ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <LoadingSpinner />
@@ -179,6 +210,12 @@ export function SourcesColumn({
                     }
                   />
                 ))}
+                {/* Loading indicator for infinite scroll */}
+                {isFetchingNextPage && (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

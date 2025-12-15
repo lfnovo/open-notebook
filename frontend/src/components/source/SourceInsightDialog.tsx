@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { useInsight } from '@/lib/hooks/use-insights'
 
 interface SourceInsightDialogProps {
@@ -48,7 +49,23 @@ export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsig
             </div>
           ) : displayInsight ? (
             <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-              <ReactMarkdown>{displayInsight.content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  table: ({ children }) => (
+                    <div className="my-4 overflow-x-auto">
+                      <table className="min-w-full border-collapse border border-border">{children}</table>
+                    </div>
+                  ),
+                  thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                  tbody: ({ children }) => <tbody>{children}</tbody>,
+                  tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+                  th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+                  td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+                }}
+              >
+                {displayInsight.content}
+              </ReactMarkdown>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No insight selected.</p>

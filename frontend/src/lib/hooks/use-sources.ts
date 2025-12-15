@@ -31,7 +31,7 @@ export function useNotebookSources(notebookId: string) {
   const queryClient = useQueryClient()
 
   const query = useInfiniteQuery({
-    queryKey: ['notebookSources', notebookId],
+    queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
     queryFn: async ({ pageParam = 0 }) => {
       const data = await sourcesApi.list({
         notebook_id: notebookId,
@@ -60,7 +60,7 @@ export function useNotebookSources(notebookId: string) {
 
   // Refetch function that resets to first page
   const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['notebookSources', notebookId] })
+    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId) })
   }, [queryClient, notebookId])
 
   return {

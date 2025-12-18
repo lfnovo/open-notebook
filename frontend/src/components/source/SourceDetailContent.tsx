@@ -25,6 +25,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -80,6 +90,8 @@ export function SourceDetailContent({
   const [isDownloadingFile, setIsDownloadingFile] = useState(false)
   const [fileAvailable, setFileAvailable] = useState<boolean | null>(null)
   const [selectedInsight, setSelectedInsight] = useState<SourceInsightResponse | null>(null)
+  const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
+  const [deletingInsight, setDeletingInsight] = useState(false)
 
   const fetchSource = useCallback(async () => {
     try {
@@ -149,6 +161,23 @@ export function SourceDetailContent({
       toast.error('Failed to create insight')
     } finally {
       setCreatingInsight(false)
+    }
+  }
+
+  const handleDeleteInsight = async () => {
+    if (!insightToDelete) return
+
+    try {
+      setDeletingInsight(true)
+      await insightsApi.delete(insightToDelete)
+      toast.success('Insight deleted successfully')
+      setInsightToDelete(null)
+      await fetchInsights()
+    } catch (err) {
+      console.error('Failed to delete insight:', err)
+      toast.error('Failed to delete insight')
+    } finally {
+      setDeletingInsight(false)
     }
   }
 
@@ -573,9 +602,17 @@ export function SourceDetailContent({
                         <p className="mt-2 text-sm text-muted-foreground">
                           {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
                         </p>
-                        <div className="mt-3 flex justify-end">
+                        <div className="mt-3 flex justify-end gap-2">
                           <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>
                             View Insight
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setInsightToDelete(insight.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
@@ -744,6 +781,27 @@ export function SourceDetailContent({
         }}
         insight={selectedInsight ?? undefined}
       />
+
+      <AlertDialog open={!!insightToDelete} onOpenChange={() => setInsightToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Insight?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This insight will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingInsight}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteInsight}
+              disabled={deletingInsight}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingInsight ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

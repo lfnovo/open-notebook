@@ -2,9 +2,12 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useInsight } from '@/lib/hooks/use-insights'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -14,10 +17,13 @@ interface SourceInsightDialogProps {
     insight_type?: string
     content?: string
     created?: string
+    source_id?: string
   }
 }
 
 export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsightDialogProps) {
+  const { openModal } = useModalManager()
+
   // Ensure insight ID has 'source_insight:' prefix for API calls
   const insightIdWithPrefix = insight?.id
     ? (insight.id.includes(':') ? insight.id : `source_insight:${insight.id}`)
@@ -28,17 +34,39 @@ export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsig
   // Use fetched data if available, otherwise fall back to passed-in insight
   const displayInsight = fetchedInsight ?? insight
 
+  // Get source_id from fetched data (preferred) or passed-in insight
+  const sourceId = fetchedInsight?.source_id ?? insight?.source_id
+
+  const handleViewSource = () => {
+    if (sourceId) {
+      openModal('source', sourceId)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>Source Insight</span>
-            {displayInsight?.insight_type && (
-              <Badge variant="outline" className="text-xs uppercase">
-                {displayInsight.insight_type}
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {displayInsight?.insight_type && (
+                <Badge variant="outline" className="text-xs uppercase">
+                  {displayInsight.insight_type}
+                </Badge>
+              )}
+              {sourceId && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleViewSource}
+                  className="gap-1"
+                >
+                  <FileText className="h-3 w-3" />
+                  View Source
+                </Button>
+              )}
+            </div>
           </DialogTitle>
         </DialogHeader>
 

@@ -1,16 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
-import { 
-  MessageSquare, 
-  Plus, 
-  Trash2, 
-  Edit2, 
+import {
+  MessageSquare,
+  Plus,
+  Trash2,
+  Edit2,
   Check,
   X,
   Clock
@@ -27,6 +27,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { BaseChatSession } from '@/lib/types/api'
+import { useModels } from '@/lib/hooks/use-models'
 
 interface SessionManagerProps {
   sessions: BaseChatSession[]
@@ -52,6 +53,16 @@ export function SessionManager({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+
+  const { data: models } = useModels()
+
+  // Helper to get model name from ID
+  const getModelName = useMemo(() => {
+    return (modelId: string) => {
+      const model = models?.find(m => m.id === modelId)
+      return model?.name || 'Custom Model'
+    }
+  }, [models])
 
   const handleCreateSession = () => {
     if (newSessionTitle.trim()) {
@@ -211,14 +222,14 @@ export function SessionManager({
                           <Clock className="h-3 w-3" />
                           {formatDistanceToNow(new Date(session.created), { addSuffix: true })}
                         </div>
-                        {session.message_count && session.message_count > 0 && (
+                        {session.message_count != null && session.message_count > 0 && (
                           <Badge variant="secondary" className="mt-2 text-xs">
                             {session.message_count} messages
                           </Badge>
                         )}
                         {session.model_override && (
                           <Badge variant="outline" className="mt-2 ml-2 text-xs">
-                            {session.model_override}
+                            {getModelName(session.model_override)}
                           </Badge>
                         )}
                       </>

@@ -28,6 +28,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [isSending, setIsSending] = useState(false)
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
+  // Pending model override for when user changes model before a session exists
+  const [pendingModelOverride, setPendingModelOverride] = useState<string | null>(null)
 
   // Fetch sessions for this notebook
   const {
@@ -176,10 +178,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
           : message
         const newSession = await chatApi.createSession({
           notebook_id: notebookId,
-          title: defaultTitle
+          title: defaultTitle,
+          // Include pending model override when creating session
+          model_override: pendingModelOverride ?? undefined
         })
         sessionId = newSession.id
         setCurrentSessionId(sessionId)
+        // Clear pending model override now that it's applied to the session
+        setPendingModelOverride(null)
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
         })
@@ -226,6 +232,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     notebookId,
     currentSessionId,
     currentSession,
+    pendingModelOverride,
     buildContext,
     refetchCurrentSession,
     queryClient
@@ -257,6 +264,20 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return deleteSessionMutation.mutate(sessionId)
   }, [deleteSessionMutation])
 
+  // Set model override - handles both existing sessions and pending state
+  const setModelOverride = useCallback((model: string | null) => {
+    if (currentSessionId) {
+      // Session exists - update it directly
+      updateSessionMutation.mutate({
+        sessionId: currentSessionId,
+        data: { model_override: model }
+      })
+    } else {
+      // No session yet - store as pending
+      setPendingModelOverride(model)
+    }
+  }, [currentSessionId, updateSessionMutation])
+
   // Update token/char counts when context selections change
   useEffect(() => {
     const updateContextCounts = async () => {
@@ -279,6 +300,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     loadingSessions,
     tokenCount,
     charCount,
+    pendingModelOverride,
 
     // Actions
     createSession,
@@ -286,6 +308,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     deleteSession,
     switchSession,
     sendMessage,
+    setModelOverride,
     refetchSessions
   }
 }

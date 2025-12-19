@@ -27,6 +27,12 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY open_notebook/__init__.py ./open_notebook/__init__.py
 
+# 配置使用国内镜像源
+ENV UV_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+# 或者
+# ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple/
+# 或者用阿里云：https://mirrors.aliyun.com/pypi/simple/
+
 # Install dependencies with optimizations (this layer will be cached unless dependencies change)
 RUN uv sync --frozen --no-dev
 

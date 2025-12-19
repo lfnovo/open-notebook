@@ -1,13 +1,15 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
 import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { ChatPanel } from '@/components/source/ChatPanel'
+import { AgentPanel } from '@/components/agent'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Card, CardContent } from '@/components/ui/card'
-import { AlertCircle } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { AlertCircle, MessageSquare, Bot } from 'lucide-react'
 import { ContextSelections } from '../[id]/page'
 
 interface ChatColumnProps {
@@ -15,10 +17,16 @@ interface ChatColumnProps {
   contextSelections: ContextSelections
 }
 
+type ChatMode = 'chat' | 'agent'
+
 export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
+  // Mode: chat or agent
+  const [mode, setMode] = useState<ChatMode>('chat')
+  
   // Fetch sources and notes for this notebook
   const { data: sources = [], isLoading: sourcesLoading } = useSources(notebookId)
   const { data: notes = [], isLoading: notesLoading } = useNotes(notebookId)
+  const [apiKey, setApiKey] = useState('')
 
   // Initialize notebook chat hook
   const chat = useNotebookChat({
@@ -88,28 +96,58 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
   }
 
   return (
-    <ChatPanel
-      title="Chat with Notebook"
-      contextType="notebook"
-      messages={chat.messages}
-      isStreaming={chat.isSending}
-      contextIndicators={null}
-      onSendMessage={(message, modelOverride) => chat.sendMessage(message, modelOverride)}
-      modelOverride={chat.currentSession?.model_override ?? undefined}
-      onModelChange={(model) => {
-        if (chat.currentSessionId) {
-          chat.updateSession(chat.currentSessionId, { model_override: model ?? null })
-        }
-      }}
-      sessions={chat.sessions}
-      currentSessionId={chat.currentSessionId}
-      onCreateSession={(title) => chat.createSession(title)}
-      onSelectSession={chat.switchSession}
-      onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
-      onDeleteSession={chat.deleteSession}
-      loadingSessions={chat.loadingSessions}
-      notebookContextStats={contextStats}
-      notebookId={notebookId}
-    />
+    <Card className="h-full flex flex-col overflow-hidden">
+      {/* Mode Switcher */}
+      <div className="flex-shrink-0 px-4 pt-3 pb-2 border-b">
+        <Tabs value={mode} onValueChange={(v) => setMode(v as ChatMode)}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="chat" className="gap-2">
+              <MessageSquare className="h-4 w-4" />
+              对话
+            </TabsTrigger>
+            <TabsTrigger value="agent" className="gap-2">
+              <Bot className="h-4 w-4" />
+              Agent
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden">
+        {mode === 'chat' ? (
+          <ChatPanel
+            title="Chat with Notebook"
+            contextType="notebook"
+            messages={chat.messages}
+            isStreaming={chat.isSending}
+            contextIndicators={null}
+            onSendMessage={(message, modelOverride) => chat.sendMessage(message, modelOverride, apiKey)}
+            modelOverride={chat.currentSession?.model_override ?? undefined}
+            onModelChange={(model) => {
+              if (chat.currentSessionId) {
+                chat.updateSession(chat.currentSessionId, { model_override: model ?? null })
+              }
+            }}
+            apiKey={apiKey}
+            onApiKeyChange={setApiKey}
+            sessions={chat.sessions}
+            currentSessionId={chat.currentSessionId}
+            onCreateSession={(title) => chat.createSession(title)}
+            onSelectSession={chat.switchSession}
+            onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
+            onDeleteSession={chat.deleteSession}
+            loadingSessions={chat.loadingSessions}
+            notebookContextStats={contextStats}
+            notebookId={notebookId}
+          />
+        ) : (
+          <AgentPanel 
+            notebookId={notebookId}
+            className="h-full"
+          />
+        )}
+      </div>
+    </Card>
   )
 }

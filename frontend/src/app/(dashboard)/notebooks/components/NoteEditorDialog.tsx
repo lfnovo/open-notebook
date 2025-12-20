@@ -70,12 +70,14 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   }, [open, note, fetchedNote, reset])
 
   useEffect(() => {
+    if (!open) return
+
     const observer = new MutationObserver(() => {
       setIsEditorFullscreen(!!document.querySelector('.w-md-editor-fullscreen'))
     })
-    observer.observe(document.body, {subtree: true, attributes: true, attributeFilter: ['class']})
+    observer.observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] })
     return () => observer.disconnect()
-  }, [])
+  }, [open])
 
   const onSubmit = async (data: CreateNoteFormData) => {
     if (note) {

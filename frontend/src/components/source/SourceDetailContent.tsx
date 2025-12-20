@@ -782,10 +782,15 @@ export function SourceDetailContent({
         }}
         insight={selectedInsight ?? undefined}
         onDelete={async (insightId) => {
-          await insightsApi.delete(insightId)
-          toast.success('Insight deleted successfully')
-          setSelectedInsight(null)
-          await fetchInsights()
+          try {
+            await insightsApi.delete(insightId)
+            toast.success('Insight deleted successfully')
+            setSelectedInsight(null)
+            await fetchInsights()
+          } catch (err) {
+            console.error('Failed to delete insight:', err)
+            toast.error('Failed to delete insight')
+          }
         }}
       />
 

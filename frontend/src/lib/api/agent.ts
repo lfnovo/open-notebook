@@ -104,15 +104,71 @@ export const agentApi = {
    * Get list of supported models
    */
   async getModels(): Promise<AgentModelsResponse> {
-    const response = await apiClient.get<AgentModelsResponse>('/agent/models')
-    return response.data
+    const apiUrl = await getApiUrl()
+
+    let authHeader: Record<string, string> = {}
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          if (state?.token) {
+            authHeader = { 'Authorization': `Bearer ${state.token}` }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    const response = await fetch(`${apiUrl}/api/agent/models`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to load agent models: ${response.statusText}`)
+    }
+
+    return (await response.json()) as AgentModelsResponse
   },
 
   /**
    * Get list of available tools
    */
   async getTools(): Promise<AgentToolsResponse> {
-    const response = await apiClient.get<AgentToolsResponse>('/agent/tools')
-    return response.data
+    const apiUrl = await getApiUrl()
+
+    let authHeader: Record<string, string> = {}
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          if (state?.token) {
+            authHeader = { 'Authorization': `Bearer ${state.token}` }
+          }
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    }
+
+    const response = await fetch(`${apiUrl}/api/agent/tools`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeader,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to load agent tools: ${response.statusText}`)
+    }
+
+    return (await response.json()) as AgentToolsResponse
   },
 }

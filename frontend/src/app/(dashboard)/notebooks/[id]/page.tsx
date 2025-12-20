@@ -126,7 +126,7 @@ export default function NotebookPage() {
           <NotebookHeader notebook={notebook} />
         </div>
 
-        <div className="flex-1 p-6 pt-6 overflow-hidden flex flex-col">
+        <div className="flex-1 p-6 pt-6 overflow-x-auto flex flex-col">
           {/* Mobile: Tabbed interface - only render on mobile to avoid double-mounting */}
           {!isDesktop && (
             <>
@@ -223,7 +223,7 @@ export default function NotebookPage() {
             </div>
 
             {/* Chat Column - always expanded, takes remaining space */}
-            <div className="transition-all duration-150 flex-1">
+            <div className="transition-all duration-150 flex-1 lg:pr-6 lg:-mr-6">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}

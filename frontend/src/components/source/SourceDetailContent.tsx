@@ -164,7 +164,8 @@ export function SourceDetailContent({
     }
   }
 
-  const handleDeleteInsight = async () => {
+  const handleDeleteInsight = async (e?: React.MouseEvent) => {
+    e?.preventDefault()
     if (!insightToDelete) return
 
     try {
@@ -780,6 +781,12 @@ export function SourceDetailContent({
           }
         }}
         insight={selectedInsight ?? undefined}
+        onDelete={async (insightId) => {
+          await insightsApi.delete(insightId)
+          toast.success('Insight deleted successfully')
+          setSelectedInsight(null)
+          await fetchInsights()
+        }}
       />
 
       <AlertDialog open={!!insightToDelete} onOpenChange={() => setInsightToDelete(null)}>
@@ -792,12 +799,14 @@ export function SourceDetailContent({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deletingInsight}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteInsight}
-              disabled={deletingInsight}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deletingInsight ? 'Deleting...' : 'Delete'}
+            <AlertDialogAction asChild>
+              <Button
+                onClick={handleDeleteInsight}
+                disabled={deletingInsight}
+                variant="destructive"
+              >
+                {deletingInsight ? 'Deleting...' : 'Delete'}
+              </Button>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

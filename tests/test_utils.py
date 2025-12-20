@@ -94,6 +94,14 @@ class TestTextUtilities:
         assert thinking == ""
         assert cleaned == "Just regular content"
 
+    def test_parse_thinking_content_malformed_no_open_tag(self):
+        """Test parsing malformed output where opening <think> tag is missing."""
+        content = "Some thinking content</think>Here is my answer"
+        thinking, cleaned = parse_thinking_content(content)
+
+        assert thinking == "Some thinking content"
+        assert cleaned == "Here is my answer"
+
     def test_parse_thinking_content_invalid_input(self):
         """Test parsing with invalid input types."""
         # Non-string input

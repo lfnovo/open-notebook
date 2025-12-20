@@ -3,8 +3,10 @@ import sqlite3
 from typing import Annotated, Dict, List, Optional
 
 from ai_prompter import Prompter
-from langchain_core.messages import SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
+
+from open_notebook.utils import clean_thinking_content
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
@@ -154,9 +156,14 @@ def call_model_with_source_context(
 
     ai_message = model.invoke(payload)
 
+    # Clean thinking content from AI response (e.g., <think>...</think> tags)
+    content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
+    cleaned_content = clean_thinking_content(content)
+    cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+
     # Update state with context information
     return {
-        "messages": ai_message,
+        "messages": cleaned_message,
         "source": source,
         "insights": insights,
         "context": formatted_context,

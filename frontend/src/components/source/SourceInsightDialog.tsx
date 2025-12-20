@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FileText } from 'lucide-react'
@@ -23,8 +23,10 @@ interface SourceInsightDialogProps {
   onDelete?: (insightId: string) => Promise<void>
 }
 
-export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsightDialogProps) {
+export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: SourceInsightDialogProps) {
   const { openModal } = useModalManager()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   // Ensure insight ID has 'source_insight:' prefix for API calls
   const insightIdWithPrefix = insight?.id
@@ -44,6 +46,25 @@ export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsig
       openModal('source', sourceId)
     }
   }
+
+  const handleDelete = async () => {
+    if (!insight?.id || !onDelete) return
+    setIsDeleting(true)
+    try {
+      await onDelete(insight.id)
+      onOpenChange(false)
+    } finally {
+      setIsDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
+  // Reset delete confirmation when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setShowDeleteConfirm(false)
+    }
+  }, [open])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

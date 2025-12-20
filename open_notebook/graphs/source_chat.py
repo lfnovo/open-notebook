@@ -159,7 +159,7 @@ def call_model_with_source_context(
     # Clean thinking content from AI response (e.g., <think>...</think> tags)
     content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
     cleaned_content = clean_thinking_content(content)
-    cleaned_message = AIMessage(content=cleaned_content)
+    cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
 
     # Update state with context information
     return {

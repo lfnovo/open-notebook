@@ -30,5 +30,9 @@ export const insightsApi = {
       data
     )
     return response.data
+  },
+
+  delete: async (insightId: string) => {
+    await apiClient.delete(`/insights/${insightId}`)
   }
 }

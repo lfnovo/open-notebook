@@ -107,7 +107,7 @@ echo.
 
 REM Start SurrealDB
 echo [INFO] Starting SurrealDB...
-start "SurrealDB" /MIN cmd /c "surreal start --log info --user root --pass root memory > surreal.log 2>&1"
+start "Open Notebook SurrealDB" /MIN cmd /c "surreal start --log info --user root --pass root memory > surreal.log 2>&1"
 timeout /t 2 /nobreak >nul
 echo [OK] SurrealDB started (Port: 8000)
 

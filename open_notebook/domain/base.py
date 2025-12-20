@@ -25,6 +25,7 @@ T = TypeVar("T", bound="ObjectModel")
 class ObjectModel(BaseModel):
     id: Optional[str] = None
     table_name: ClassVar[str] = ""
+    nullable_fields: ClassVar[set[str]] = set()  # Fields that can be saved as None
     created: Optional[datetime] = None
     updated: Optional[datetime] = None
 
@@ -167,7 +168,11 @@ class ObjectModel(BaseModel):
 
     def _prepare_save_data(self) -> Dict[str, Any]:
         data = self.model_dump()
-        return {key: value for key, value in data.items() if value is not None}
+        return {
+            key: value
+            for key, value in data.items()
+            if value is not None or key in self.__class__.nullable_fields
+        }
 
     async def delete(self) -> bool:
         if self.id is None:

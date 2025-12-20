@@ -389,6 +389,7 @@ class Note(ObjectModel):
 
 class ChatSession(ObjectModel):
     table_name: ClassVar[str] = "chat_session"
+    nullable_fields: ClassVar[set[str]] = {"model_override"}
     title: Optional[str] = None
     model_override: Optional[str] = None
 

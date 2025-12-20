@@ -8,9 +8,12 @@ Click your problem:
 
 ### 1. ["Unable to connect to server" or blank page](#fix-connection-error)
 ### 2. [Container won't start or crashes](#fix-container-crash)
-### 3. [Works on server but not from my computer](#fix-remote-access)
-### 4. [API or authentication errors](#fix-api-errors)
-### 5. [Slow or timeout errors](#fix-performance)
+### 3. [Quotes in environment variables](#fix-quotes-in-env)
+### 4. [SurrealDB configuration issues](#fix-surrealdb-config)
+### 5. [Network timeouts (slow connections / China)](#fix-network-timeouts)
+### 6. [Works on server but not from my computer](#fix-remote-access)
+### 7. [API or authentication errors](#fix-api-errors)
+### 8. [Slow or timeout errors](#fix-performance)
 
 ---
 
@@ -128,12 +131,136 @@ docker compose logs
 | "Invalid API key" | Check OPENAI_API_KEY in environment variables |
 | "Out of memory" | Increase Docker memory limit to 2GB+ in Docker Desktop settings |
 | "No such file or directory" | Check volume paths exist and are accessible |
+| "'' is not a valid UrlScheme" | [Remove quotes from environment variables](#fix-quotes-in-env) |
+| "There was a problem with authentication" | [Check SurrealDB configuration](#fix-surrealdb-config) |
+| Worker/API crashes on startup | [Check network timeouts](#fix-network-timeouts) |
 
 **Quick reset:**
 ```bash
 docker compose down -v
 docker compose up -d
 ```
+
+<a name="fix-quotes-in-env"></a>
+### Fix: Quotes in Environment Variables
+
+**Symptom:** Error `'' is not a valid UrlScheme` or database connection fails with empty URL.
+
+**Cause:** Docker Compose interprets quotes literally. If you have quotes around values in your `docker-compose.yml` or `.env` file, they become part of the value.
+
+❌ **Wrong** (quotes become part of the value):
+```yaml
+environment:
+  - SURREAL_URL="ws://localhost:8000/rpc"
+  - SURREAL_USER="root"
+```
+
+❌ **Also wrong** in `.env` files:
+```env
+SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_USER="root"
+```
+
+✅ **Correct** (no quotes):
+```yaml
+environment:
+  - SURREAL_URL=ws://localhost:8000/rpc
+  - SURREAL_USER=root
+  - SURREAL_PASSWORD=root
+  - SURREAL_NAMESPACE=open_notebook
+  - SURREAL_DATABASE=production
+```
+
+✅ **Correct** `.env` file:
+```env
+SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_USER=root
+```
+
+After fixing, restart:
+```bash
+docker compose down && docker compose up -d
+```
+
+<a name="fix-surrealdb-config"></a>
+### Fix: SurrealDB Configuration Issues
+
+#### Single Container Already Has SurrealDB
+
+**Symptom:** Authentication errors or connection issues when using `v1-latest-single` with an external SurrealDB.
+
+**Cause:** The `-single` image already includes SurrealDB. You don't need to run a separate SurrealDB container.
+
+❌ **Wrong** - running separate SurrealDB with single container:
+```yaml
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest  # Not needed!
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - SURREAL_URL=ws://surrealdb:8000/rpc  # Wrong!
+```
+
+✅ **Correct** - single container uses built-in SurrealDB:
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - SURREAL_URL=ws://localhost:8000/rpc  # Uses internal DB
+```
+
+**If you want a separate SurrealDB**, use the `v1-latest` image (without `-single`) instead.
+
+#### SurrealDB Version Compatibility
+
+**Symptom:** Various database errors, authentication failures, or unexpected behavior.
+
+**Cause:** Open Notebook currently supports **SurrealDB v2.x only**. SurrealDB v3 (alpha) is not yet supported.
+
+✅ **Supported versions:**
+```yaml
+# Use v2.x
+image: surrealdb/surrealdb:v2.1.4
+image: surrealdb/surrealdb:v2  # Latest v2
+```
+
+❌ **Not supported yet:**
+```yaml
+# Don't use v3 alpha
+image: surrealdb/surrealdb:v3.0.0-alpha.17
+```
+
+<a name="fix-network-timeouts"></a>
+### Fix: Network Timeouts (Slow Connections / China)
+
+**Symptom:** Container crashes on startup with `exit status 1`, worker enters FATAL state, or pip/uv dependency downloads fail.
+
+**Cause:** The container downloads Python dependencies on first startup. Slow networks or restricted access (especially in China) can cause timeouts.
+
+✅ **Fix:** Add timeout and mirror configuration:
+
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      # Increase download timeout to 10 minutes (default is 30s)
+      - UV_HTTP_TIMEOUT=600
+
+      # For users in China - use mirror
+      - UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+      - PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+**Alternative mirrors for China:**
+- Tsinghua: `https://pypi.tuna.tsinghua.edu.cn/simple`
+- Aliyun: `https://mirrors.aliyun.com/pypi/simple/`
+- Huawei: `https://repo.huaweicloud.com/repository/pypi/simple`
+
+**Note:** First startup may take several minutes while dependencies are downloaded. Subsequent startups will be faster.
 
 ---
 

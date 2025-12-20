@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Trash2 } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useInsight } from '@/lib/hooks/use-insights'
+import { useModalManager } from '@/lib/hooks/use-modal-manager'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -17,13 +18,13 @@ interface SourceInsightDialogProps {
     insight_type?: string
     content?: string
     created?: string
+    source_id?: string
   }
   onDelete?: (insightId: string) => Promise<void>
 }
 
-export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: SourceInsightDialogProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
+export function SourceInsightDialog({ open, onOpenChange, insight }: SourceInsightDialogProps) {
+  const { openModal } = useModalManager()
 
   // Ensure insight ID has 'source_insight:' prefix for API calls
   const insightIdWithPrefix = insight?.id
@@ -35,25 +36,12 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   // Use fetched data if available, otherwise fall back to passed-in insight
   const displayInsight = fetchedInsight ?? insight
 
-  // Reset delete state when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setShowDeleteConfirm(false)
-      setIsDeleting(false)
-    }
-  }, [open])
+  // Get source_id from fetched data (preferred) or passed-in insight
+  const sourceId = fetchedInsight?.source_id ?? insight?.source_id
 
-  const handleDelete = async () => {
-    if (!insight?.id || !onDelete) return
-
-    try {
-      setIsDeleting(true)
-      await onDelete(insight.id)
-      // Parent's onDelete callback handles closing the dialog via setSelectedInsight(null)
-    } catch {
-      // Only reset state if delete failed - dialog stays open
-      setShowDeleteConfirm(false)
-      setIsDeleting(false)
+  const handleViewSource = () => {
+    if (sourceId) {
+      openModal('source', sourceId)
     }
   }
 
@@ -69,14 +57,15 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                   {displayInsight.insight_type}
                 </Badge>
               )}
-              {onDelete && insight?.id && !showDeleteConfirm && (
+              {sourceId && (
                 <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="text-destructive hover:text-destructive"
+                  size="sm"
+                  onClick={handleViewSource}
+                  className="gap-1"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <FileText className="h-3 w-3" />
+                  View Source
                 </Button>
               )}
             </div>

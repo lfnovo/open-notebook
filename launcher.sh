@@ -188,7 +188,7 @@ sleep 5
 
 if ps -p $FRONTEND_PID > /dev/null; then
     # Try to detect the port
-    FRONTEND_PORT=$(grep -oP "localhost:\K\d+" /tmp/frontend.log | head -1)
+FRONTEND_PORT=$(grep -Eo "localhost:[0-9]+" /tmp/frontend.log | head -1 | cut -d: -f2)
     if [ -z "$FRONTEND_PORT" ]; then
         FRONTEND_PORT="3000"
     fi

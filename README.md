@@ -356,6 +356,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **[🎙️ Podcast Generation](docs/features/podcasts.md)** - Create professional podcasts
 - **[🔧 Content Transformations](docs/features/transformations.md)** - Customize content processing
 - **[🤖 AI Models](docs/features/ai-models.md)** - AI model configuration
+- **[🔌 MCP Integration](docs/features/mcp-integration.md)** - Connect with Claude Desktop, VS Code and other MCP clients
 - **[🔧 REST API Reference](docs/development/api-reference.md)** - Complete API documentation
 - **[🔐 Security](docs/deployment/security.md)** - Password protection and privacy
 - **[🚀 Deployment](docs/deployment/index.md)** - Complete deployment guides for all scenarios

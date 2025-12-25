@@ -1,10 +1,9 @@
-from typing import List, Dict, Protocol, Optional, Any
+from typing import List, Dict, Protocol, Any
+
 
 class ResearchAgentInterface(Protocol):
     """
     Standard interface for the Research Agent.
-    This contract ensures that the implementation (Local vs Remote) 
-    can be swapped without affecting the main Open Notebook application.
     """
     
     def search_papers(self, query: str, limit: int = 5) -> List[Dict[str, Any]]:
@@ -29,11 +28,5 @@ class ResearchAgentInterface(Protocol):
             
         Returns:
             Status dictionary (e.g., {"success": True, "document_id": "..."})
-        """
-        ...
-        
-    def health_check(self) -> bool:
-        """
-        Verify if the agent service is operational.
         """
         ...

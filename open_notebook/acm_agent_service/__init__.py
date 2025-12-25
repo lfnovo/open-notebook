@@ -1,9 +1,9 @@
-from .core import AgentFactory
+from .core import get_agent, ACMAgent
 from .interfaces import ResearchAgentInterface
 
 # Public API for the package
 def get_research_agent() -> ResearchAgentInterface:
     """
-    Main entry point. Returns the configured agent instance.
+    Main entry point. Returns the ACM Agent instance.
     """
-    return AgentFactory.get_agent()
+    return get_agent()

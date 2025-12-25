@@ -193,19 +193,3 @@ async def ingest_acm_paper(request: IngestPaperRequest):
             os.unlink(file_path)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/agent/health")
-async def agent_health_check():
-    """
-    Check if the Agent service is operational and which mode it is running in.
-    """
-    try:
-        agent = get_research_agent()
-        mode = "PRO" if "RemoteProAgent" in str(type(agent)) else "LOCAL"
-        status = agent.health_check()
-        return {
-            "status": "healthy" if status else "unhealthy",
-            "mode": mode,
-            "agent_type": str(type(agent).__name__)
-        }
-    except Exception as e:
-        return {"status": "error", "detail": str(e)}

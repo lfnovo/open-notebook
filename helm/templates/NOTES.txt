@@ -1,0 +1,111 @@
+{{- /*
+Copyright © 2024 Open Notebook Contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/ -}}
+
+{{- /*
+Copyright © 2024 Open Notebook Contributors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/ -}}
+
+{{- $svcPort := .Values.service.ports.http -}}
+{{- $apiPort := .Values.service.ports.api -}}
+{{- $svcName := include "common.names.fullname" . -}}
+{{- $svcNamespace := include "common.names.namespace" . -}}
+{{- $releaseName := .Release.Name -}}
+{{- $chartName := include "common.names.chart" . -}}
+
+Thank you for installing {{ $chartName }}!
+
+Your release is named {{ $releaseName }}.
+
+{{- if eq .Values.service.type "ClusterIP" }}
+
+1. Get the application URL by running these commands:
+{{- if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ $svcNamespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ $svcName }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ $svcNamespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status by running 'kubectl get --namespace {{ $svcNamespace }} svc -w {{ $svcName }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ $svcNamespace }} {{ $svcName }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ $svcPort }}
+  echo API URL: http://$SERVICE_IP:{{ $apiPort }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ $svcNamespace }} -l "app.kubernetes.io/name={{ include "common.names.name" . }},app.kubernetes.io/instance={{ $releaseName }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ $svcNamespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ $svcNamespace }} port-forward $POD_NAME 8080:{{ $svcPort }}
+  echo "API available at http://127.0.0.1:5055"
+  kubectl --namespace {{ $svcNamespace }} port-forward $POD_NAME 5055:{{ $apiPort }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.ingress.enabled }}
+
+2. Access the application via Ingress:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.surrealdb.enabled }}
+
+SurrealDB Information:
+- Internal Service: {{ $svcName }}-surrealdb.{{ $svcNamespace }}.svc.{{ .Values.global.clusterDomain }}:8000
+- WebSocket URL: ws://{{ $svcName }}-surrealdb.{{ $svcNamespace }}.svc.{{ .Values.global.clusterDomain }}:8000/rpc
+- User: {{ .Values.surrealdb.auth.user }}
+- Password: {{ if .Values.surrealdb.auth.existingSecret }}*** (from secret {{ .Values.surrealdb.auth.existingSecret }}){{ else }}{{ .Values.surrealdb.auth.password }}{{ end }}
+- Namespace: {{ .Values.surrealdb.database.namespace }}
+- Database: {{ .Values.surrealdb.database.database }}
+
+To connect to SurrealDB directly:
+  kubectl port-forward -n {{ $svcNamespace }} svc/{{ $svcName }}-surrealdb 8000:8000
+  surreal sql --endpoint ws://localhost:8000/rpc --namespace {{ .Values.surrealdb.database.namespace }} --database {{ .Values.surrealdb.database.database }} --user {{ .Values.surrealdb.auth.user }} --pass {{ .Values.surrealdb.auth.password }}
+
+{{- end }}
+
+{{- if .Values.config.auth.password }}
+
+SECURITY NOTE:
+Your Open Notebook instance is protected with a password. Make sure to keep the password secure!
+
+{{- end }}
+
+Configuration:
+- API Provider Configuration: Configure your AI providers in the values.yaml file or via Helm --set flags
+- Data Persistence: {{ if .Values.app.persistence.enabled }}Enabled (PVC: {{ $svcName }}){{ else }}Disabled{{ end }}
+- SurrealDB: {{ if .Values.surrealdb.enabled }}Internal (StatefulSet: {{ $svcName }}-surrealdb){{ else if .Values.surrealdb.external.enabled }}External ({{ if .Values.surrealdb.external.secure }}wss://{{ else }}ws://{{ end }}{{ .Values.surrealdb.external.host }}:{{ .Values.surrealdb.external.port }}){{ else }}Disabled{{ end }}
+
+To upgrade your installation:
+  helm upgrade {{ $releaseName }} .
+
+To uninstall your installation:
+  helm uninstall {{ $releaseName }}
+
+For more information, visit:
+  - Documentation: https://github.com/lfnovo/open-notebook
+  - Issue Tracker: https://github.com/lfnovo/open-notebook/issues

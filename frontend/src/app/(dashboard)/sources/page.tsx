@@ -81,7 +81,7 @@ export default function SourcesPage() {
       setLoadingMore(false)
       loadingMoreRef.current = false
     }
-  }, [sortBy, sortOrder])
+  }, [sortBy, sortOrder, t.sources.failedToLoad])
 
   // Initial load and when sort changes
   useEffect(() => {

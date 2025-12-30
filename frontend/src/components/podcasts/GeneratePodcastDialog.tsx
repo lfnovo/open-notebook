@@ -31,8 +31,9 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { TranslationKeys } from '@/lib/locales'
 
-const getSourceModes = (t: any) => [
+const getSourceModes = (t: TranslationKeys) => [
   { value: 'insights', label: t.podcasts.summary },
   { value: 'full', label: t.podcasts.fullContent },
 ] as const
@@ -840,4 +841,3 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     </Dialog>
   )
 }
-Nodes

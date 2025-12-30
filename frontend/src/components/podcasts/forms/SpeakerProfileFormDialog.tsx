@@ -33,16 +33,17 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 
+import { TranslationKeys } from '@/lib/locales'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
-const speakerConfigSchema = (t: any) => z.object({
+const speakerConfigSchema = (t: TranslationKeys) => z.object({
   name: z.string().min(1, t.common.nameRequired || 'Name is required'),
   voice_id: z.string().min(1, t.podcasts.voiceIdRequired || 'Voice ID is required'),
   backstory: z.string().min(1, t.podcasts.backstoryRequired || 'Backstory is required'),
   personality: z.string().min(1, t.podcasts.personalityRequired || 'Personality is required'),
 })
 
-const speakerProfileSchema = (t: any) => z.object({
+const speakerProfileSchema = (t: TranslationKeys) => z.object({
   name: z.string().min(1, t.common.nameRequired || 'Name is required'),
   description: z.string().optional(),
   tts_provider: z.string().min(1, t.models.providerRequired || 'Provider is required'),
@@ -318,7 +319,7 @@ export function SpeakerProfileFormDialog({
                     <Label>{t.common.name} *</Label>
                     <Input
                       {...register(`speakers.${index}.name` as const)}
-                      placeholder="Host 1"
+                      placeholder={t.podcasts.hostPlaceholder.replace('{number}', (index + 1).toString())}
                     />
                     {errors.speakers?.[index]?.name ? (
                       <p className="text-xs text-red-600">

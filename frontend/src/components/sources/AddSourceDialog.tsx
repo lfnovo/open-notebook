@@ -73,12 +73,6 @@ interface AddSourceDialogProps {
   defaultNotebookId?: string
 }
 
-  const WIZARD_STEPS: readonly WizardStep[] = [
-    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
-    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
-    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
-  ]
-
 interface ProcessingState {
   message: string
   progress?: number
@@ -97,6 +91,13 @@ export function AddSourceDialog({
   defaultNotebookId 
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
+
+  const WIZARD_STEPS: readonly WizardStep[] = [
+    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
+    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
+    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
+  ]
+
   // Simplified state management
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
@@ -392,17 +393,17 @@ export function AddSourceDialog({
 
         // Show summary toast
         if (results.failed === 0) {
-          toast.success(`${results.success} source${results.success !== 1 ? 's' : ''} created successfully`)
+          toast.success(t.sources.batchSuccess.replace('{count}', results.success.toString()))
         } else if (results.success === 0) {
-          toast.error(`Failed to create all ${results.failed} sources`)
+          toast.error(t.sources.batchFailed.replace('{count}', results.failed.toString()))
         } else {
-          toast.warning(`${results.success} succeeded, ${results.failed} failed`)
+          toast.warning(t.sources.batchPartial.replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
         }
 
         handleClose()
       } else {
         // Single source submission
-        setProcessingStatus({ message: 'Submitting source for processing...' })
+        setProcessingStatus({ message: t.sources.submittingSource })
         await submitSingleSource(data)
         handleClose()
       }
@@ -463,8 +464,8 @@ export function AddSourceDialog({
             </DialogTitle>
             <DialogDescription>
               {batchProgress
-                ? `Processing ${batchProgress.total} sources. This may take a few moments.`
-                : 'Your source is being processed. This may take a few moments.'
+                ? t.sources.processingBatchSources.replace('{count}', batchProgress.total.toString())
+                : t.sources.processingSource
               }
             </DialogDescription>
           </DialogHeader>
@@ -473,7 +474,7 @@ export function AddSourceDialog({
             <div className="flex items-center gap-3">
               <LoaderIcon className="h-5 w-5 animate-spin text-primary" />
               <span className="text-sm text-muted-foreground">
-                {processingStatus?.message || 'Processing...'}
+                {processingStatus?.message || t.common.processing}
               </span>
             </div>
 

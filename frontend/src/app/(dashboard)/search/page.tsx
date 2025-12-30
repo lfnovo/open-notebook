@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -163,7 +164,7 @@ export default function SearchPage() {
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.search.chooseAMode}</p>
-            <TabsList aria-label="Ask or search your knowledge base" className="w-full max-w-xl">
+            <TabsList aria-label={t.common.accessibility.searchKB} className="w-full max-w-xl">
               <TabsTrigger value="ask">
                 <MessageCircleQuestion className="h-4 w-4" />
                 {t.search.askBeta}
@@ -201,7 +202,7 @@ export default function SearchPage() {
                     }}
                     disabled={ask.isStreaming}
                     rows={3}
-                    aria-label="Enter your question to ask the knowledge base"
+                    aria-label={t.common.accessibility.enterQuestion}
                   />
                   <p className="text-xs text-muted-foreground">{t.search.pressToSubmit}</p>
                 </div>
@@ -326,12 +327,12 @@ export default function SearchPage() {
                       onKeyPress={handleKeyPress}
                       disabled={searchMutation.isPending}
                       className="flex-1"
-                      aria-label="Enter search query"
+                      aria-label={t.common.accessibility.enterSearch}
                     />
                     <Button
                       onClick={handleSearch}
                       disabled={searchMutation.isPending || !searchQuery.trim()}
-                      aria-label="Search knowledge base"
+                      aria-label={t.common.accessibility.searchKBBtn}
                       className="w-full sm:w-auto"
                     >
                       {searchMutation.isPending ? (

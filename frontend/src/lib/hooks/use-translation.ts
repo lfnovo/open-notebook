@@ -17,6 +17,7 @@ export function useTranslation() {
 
   return { 
     t: translatedProxy, 
+    i18n,
     language: i18n.language, 
     setLanguage: (lang: string) => i18n.changeLanguage(lang) 
   }

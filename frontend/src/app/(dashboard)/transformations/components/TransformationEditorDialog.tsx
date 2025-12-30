@@ -15,6 +15,13 @@ import { useCreateTransformation, useUpdateTransformation, useTransformation } f
 import { Transformation } from '@/lib/types/transformations'
 import { useQueryClient } from '@tanstack/react-query'
 import { TRANSFORMATION_QUERY_KEYS } from '@/lib/hooks/use-transformations'
+import { useTranslation } from '@/lib/hooks/use-translation'
+
+const transformationSchema = z.object({
+  name: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  prompt: z.string().min(1),
   apply_default: z.boolean().optional(),
 })
 
@@ -220,13 +227,13 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
              <Button type="button" variant="outline" onClick={handleClose}>
                {t.common.cancel}
              </Button>
-             <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
-               {isSaving
-                 ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
-                 : isEditing
-                   ? t.transformations.updateSuccess.replace('成功', '').replace(' successfully', '') // Hack to get "Update Transformation"
-                   : t.transformations.createNew}
-             </Button>
+              <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
+                {isSaving
+                  ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                  : isEditing
+                    ? t.common.editTransformation
+                    : t.transformations.createNew}
+              </Button>
           </div>
         </form>
       </DialogContent>

@@ -91,8 +91,7 @@ export function ChatPanel({
       // The modal component itself will handle displaying "not found" states.
       // This try-catch is here for future enhancements or unexpected errors.
     } catch {
-      const typeLabel = type === 'source_insight' ? 'insight' : type
-      toast.error(`This ${typeLabel} could not be found`)
+      toast.error(t.common.noResults)
     }
   }
 
@@ -145,7 +144,7 @@ export function ChatPanel({
                 <span className="text-xs">{t.chat.sessions}</span>
               </Button>
               <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">Chat Sessions</DialogTitle>
+                <DialogTitle className="sr-only">{t.chat.sessionsTitle}</DialogTitle>
                 <SessionManager
                   sessions={sessions}
                   currentSessionId={currentSessionId ?? null}

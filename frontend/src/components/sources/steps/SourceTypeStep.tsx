@@ -63,7 +63,9 @@ export function parseAndValidateUrls(text: string): {
   return { valid, invalid }
 }
 
-const getSourceTypes = (t: any) => [
+import { TranslationKeys } from '@/lib/locales'
+
+const getSourceTypes = (t: TranslationKeys) => [
   {
     value: 'link' as const,
     label: t.sources.addUrl,
@@ -247,7 +249,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                       )}
                       {isOverLimit && selectedType === 'upload' && (
                         <p className="text-sm text-destructive mt-1">
-                          Maximum {MAX_BATCH_SIZE} files allowed per batch
+                          {t.sources.maxFilesAllowed.replace('{count}', MAX_BATCH_SIZE.toString())}
                         </p>
                       )}
                     </div>

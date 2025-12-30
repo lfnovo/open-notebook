@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { TranslationKeys } from '@/lib/locales'
 import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
@@ -50,7 +51,7 @@ const SOURCE_TYPE_ICONS = {
   text: FileText,
 } as const
 
-const getStatusConfig = (t: any) => ({
+const getStatusConfig = (t: TranslationKeys) => ({
   new: {
     icon: Clock,
     color: 'text-blue-600',
@@ -108,10 +109,10 @@ function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
 
 export function SourceCard({
   source,
+  onClick,
   onDelete,
   onRetry,
   onRemoveFromNotebook,
-  onClick,
   onRefresh,
   className,
   showRemoveFromNotebook = false,

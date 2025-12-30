@@ -33,6 +33,7 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { TranslationKeys } from '@/lib/locales'
 
 interface EpisodeCardProps {
   episode: PodcastEpisode
@@ -40,7 +41,7 @@ interface EpisodeCardProps {
   deleting?: boolean
 }
 
-const getSTATUS_META = (t: any): Record<
+const getSTATUS_META = (t: TranslationKeys): Record<
   EpisodeStatus | 'unknown',
   { label: string; className: string }
 > => ({

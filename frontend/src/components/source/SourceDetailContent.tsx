@@ -330,7 +330,7 @@ export function SourceDetailContent({
   const handleDelete = async () => {
     if (!source) return
 
-    if (confirm(t.sources.deleteSourceConfirm || 'Are you sure?')) {
+    if (confirm(t.sources.deleteSourceConfirm || t.common.confirm)) {
       try {
         await sourcesApi.delete(source.id)
         toast.success(t.common.success)
@@ -472,7 +472,7 @@ export function SourceDetailContent({
                     <div className="aspect-video rounded-lg overflow-hidden bg-black">
                       <iframe
                         src={`https://www.youtube.com/embed/${youTubeVideoId}`}
-                        title="YouTube video"
+                        title={t.common.accessibility.ytVideo}
                         className="w-full h-full"
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
@@ -660,7 +660,7 @@ export function SourceDetailContent({
                 <div className="space-y-4">
                   {source.asset?.url && (
                     <div>
-                      <h3 className="mb-2 text-sm font-semibold">URL</h3>
+                      <h3 className="mb-2 text-sm font-semibold">{t.common.url}</h3>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
                           {source.asset.url}

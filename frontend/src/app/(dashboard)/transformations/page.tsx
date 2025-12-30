@@ -45,7 +45,7 @@ export default function TransformationsPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.transformations.workspace}</p>
-            <TabsList aria-label="Transformation views" className="w-full max-w-xl">
+            <TabsList aria-label={t.common.accessibility.transformationViews} className="w-full max-w-xl">
               <TabsTrigger value="transformations" className="flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />
                 {t.transformations.title}

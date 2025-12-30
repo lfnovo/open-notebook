@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { TranslationKeys } from '@/lib/locales'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -42,7 +43,7 @@ import {
   Command,
 } from 'lucide-react'
 
-const getNavigation = (t: any) => [
+const getNavigation = (t: TranslationKeys) => [
   {
     title: t.navigation.collect,
     items: [
@@ -177,7 +178,7 @@ export function AppSidebar() {
                         variant="default"
                         size="sm"
                         className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                        aria-label="Create"
+                        aria-label={t.common.create}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -251,7 +252,7 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
+                  const isActive = pathname?.startsWith(item.href) || false
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}
@@ -377,4 +378,3 @@ export function AppSidebar() {
     </TooltipProvider>
   )
 }
-```

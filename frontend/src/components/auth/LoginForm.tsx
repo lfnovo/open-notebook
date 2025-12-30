@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AlertCircle } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { zhCN, enUS } from 'date-fns/locale'
 
 export function LoginForm() {
   const { t, language } = useTranslation()

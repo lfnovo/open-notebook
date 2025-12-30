@@ -10,6 +10,7 @@ import {
   useCreateEpisodeProfile,
   useUpdateEpisodeProfile,
 } from '@/lib/hooks/use-podcasts'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import {
   Dialog,
   DialogContent,
@@ -30,8 +31,9 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { TranslationKeys } from '@/lib/locales'
 
-const episodeProfileSchema = (t: any) => z.object({
+const episodeProfileSchema = (t: TranslationKeys) => z.object({
   name: z.string().min(1, t.podcasts.nameRequired || 'Name is required'),
   description: z.string().optional(),
   speaker_config: z.string().min(1, t.podcasts.profileRequired || 'Speaker profile is required'),

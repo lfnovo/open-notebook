@@ -17,7 +17,8 @@ interface LanguageToggleProps {
 export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
   const { language, setLanguage, t } = useTranslation()
   
-  const currentLang = language?.startsWith('zh') ? 'zh-CN' : 'en-US'
+  // Keep the actual language code for proper comparison
+  const currentLang = language || 'en-US'
 
   return (
     <DropdownMenu>
@@ -29,7 +30,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         >
           <Languages className="h-[1.2rem] w-[1.2rem]" />
           {!iconOnly && <span>{t.common.language}</span>}
-          <span className="sr-only">Toggle language</span>
+          <span className="sr-only">{t.navigation.language}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -44,6 +45,12 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
           className={currentLang === 'zh-CN' ? 'bg-accent' : ''}
         >
           <span>{t.common.chinese}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem 
+          onClick={() => setLanguage('zh-TW')}
+          className={currentLang === 'zh-TW' ? 'bg-accent' : ''}
+        >
+          <span>{t.common.traditionalChinese}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -115,7 +115,7 @@ export function SettingsForm() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t.settings.autoRecommended}</SelectItem>
-                      <SelectItem value="docling">Docling</SelectItem>
+                      <SelectItem value="docling">{t.settings.docling}</SelectItem>
                       <SelectItem value="simple">{t.settings.simple}</SelectItem>
                     </SelectContent>
                   </Select>

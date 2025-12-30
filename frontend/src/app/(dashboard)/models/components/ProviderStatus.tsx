@@ -83,7 +83,7 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
                       {supportedTypes.length > 0 ? (
                         supportedTypes.map((type) => (
                           <Badge key={type} variant="secondary" className="text-xs font-medium">
-                            {(t.models as any)[type] || type.replace('_', ' ')}
+                            {(t.models as Record<string, string>)[type] || type.replace('_', ' ')}
                           </Badge>
                         ))
                       ) : (

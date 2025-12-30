@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Settings2, Sparkles } from 'lucide-react'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 interface ModelSelectorProps {
@@ -34,6 +35,7 @@ export function ModelSelector({
   onModelChange,
   disabled = false 
 }: ModelSelectorProps) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [selectedModel, setSelectedModel] = useState(currentModel || 'default')
   const { data: models, isLoading } = useModels()
@@ -65,8 +67,8 @@ export function ModelSelector({
     if (defaultModel) {
       return defaultModel.name
     }
-    return 'Default Model'
-  }, [currentModel, languageModels, defaultModel])
+    return t.common.default
+  }, [currentModel, languageModels, defaultModel, t.common.default])
 
   const handleSave = () => {
     onModelChange(selectedModel === 'default' ? undefined : selectedModel)
@@ -98,24 +100,26 @@ export function ModelSelector({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            Model Configuration
+            {t.common.modelConfiguration}
           </DialogTitle>
           <DialogDescription>
-            Override the default model for this chat session. Leave empty to use the system default.
+            {t.transformations.overrideModelDesc}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="model">Model</Label>
+            <Label htmlFor="model">{t.common.model}</Label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger id="model">
-                <SelectValue placeholder="Select a model (or use default)" />
+                <SelectValue placeholder={t.models.selectModelPlaceholder} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">
                   <div className="flex items-center justify-between w-full">
                     <span>
-                      {defaultModel ? `Default (${defaultModel.name})` : 'System Default'}
+                      {defaultModel 
+                        ? `${t.common.default} (${defaultModel.name})` 
+                        : t.transformations.systemDefault}
                     </span>
                     {defaultModel?.provider && (
                       <span className="text-xs text-muted-foreground ml-2">
@@ -146,17 +150,20 @@ export function ModelSelector({
           {selectedModel && selectedModel !== 'default' && (
             <div className="rounded-lg bg-muted p-3">
               <p className="text-sm text-muted-foreground">
-                This session will use <strong>{languageModels.find(m => m.id === selectedModel)?.name}</strong> instead of the default model.
+                {t.transformations.sessionUseReplacement.replace(
+                  '{name}', 
+                  languageModels.find(m => m.id === selectedModel)?.name || selectedModel
+                )}
               </p>
             </div>
           )}
         </div>
         <DialogFooter className="flex justify-between">
           <Button variant="outline" onClick={handleReset}>
-            Reset to Default
+            {t.common.resetToDefault}
           </Button>
           <Button onClick={handleSave}>
-            Save Changes
+            {t.common.saveChanges}
           </Button>
         </DialogFooter>
       </DialogContent>

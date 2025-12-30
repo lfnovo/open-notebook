@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Plus, FileText, Book, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ export function AddButton({
   className,
   iconOnly = false
 }: AddButtonProps) {
+  const { t } = useTranslation()
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
 
   const handleAddSource = () => {
@@ -50,11 +52,11 @@ export function AddButton({
           <DropdownMenuContent align="start" side="right">
             <DropdownMenuItem onClick={handleAddSource} className="gap-2">
               <FileText className="h-4 w-4" />
-              Source
+              {t.common.source}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={handleAddNotebook} className="gap-2">
               <Book className="h-4 w-4" />
-              Notebook <span className="text-xs text-muted-foreground ml-auto">Coming soon</span>
+              {t.common.notebook} <span className="text-xs text-muted-foreground ml-auto">{t.common.comingSoon}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -77,18 +79,18 @@ export function AddButton({
             className={className}
           >
             <Plus className="h-4 w-4 mr-2" />
-            Add
+            {t.common.add}
             <ChevronDown className="h-3 w-3 ml-auto" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onClick={handleAddSource} className="gap-2">
             <FileText className="h-4 w-4" />
-            Source
+            {t.common.source}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleAddNotebook} className="gap-2">
             <Book className="h-4 w-4" />
-            Notebook <span className="text-xs text-muted-foreground ml-auto">Coming soon</span>
+            {t.common.notebook} <span className="text-xs text-muted-foreground ml-auto">{t.common.comingSoon}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

@@ -39,7 +39,7 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   }
 
   const getModelTypeName = () => {
-    return (t.models as any)[modelType] || modelType.replace(/_/g, ' ')
+    return (t.models as Record<string, string>)[modelType] || modelType.replace(/_/g, ' ')
   }
 
   const getModelPlaceholder = () => {

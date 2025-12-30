@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 interface ConfirmDialogProps {

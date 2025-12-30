@@ -31,7 +31,7 @@ export default function PodcastsPage() {
           >
             <div className="space-y-2">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.podcasts.chooseAView}</p>
-              <TabsList aria-label="Podcast views" className="w-full max-w-md">
+              <TabsList aria-label={t.common.accessibility.podcastViews} className="w-full max-w-md">
                 <TabsTrigger value="episodes">
                   <Mic className="h-4 w-4" />
                   {t.podcasts.episodesTab}

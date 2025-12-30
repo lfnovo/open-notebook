@@ -10,6 +10,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { toast } from 'sonner'
 
 interface StrategyData {
@@ -33,6 +34,7 @@ export function StreamingResponse({
   const [strategyOpen, setStrategyOpen] = useState(false)
   const [answersOpen, setAnswersOpen] = useState(false)
   const { openModal } = useModalManager()
+  const { t } = useTranslation()
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
@@ -56,7 +58,7 @@ export function StreamingResponse({
     <div
       className="space-y-4 mt-6 max-h-[60vh] overflow-y-auto pr-2"
       role="region"
-      aria-label="Ask response"
+      aria-label={t.common.accessibility.askResponse}
       aria-live="polite"
       aria-busy={isStreaming}
     >
@@ -149,7 +151,7 @@ export function StreamingResponse({
       {isStreaming && !finalAnswer && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <LoadingSpinner size="sm" />
-          <span>Processing your question...</span>
+          <span>{t.search.processingQuestion}</span>
         </div>
       )}
     </div>

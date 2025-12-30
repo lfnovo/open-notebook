@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start -p ${PORT:-8502}",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

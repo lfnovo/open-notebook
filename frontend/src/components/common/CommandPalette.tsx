@@ -30,8 +30,9 @@ import {
   Loader2,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { TranslationKeys } from '@/lib/locales'
 
-const getNavigationItems = (t: any) => [
+const getNavigationItems = (t: TranslationKeys) => [
   { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
   { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
@@ -42,13 +43,13 @@ const getNavigationItems = (t: any) => [
   { name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
 ]
 
-const getCreateItems = (t: any) => [
+const getCreateItems = (t: TranslationKeys) => [
   { name: t.common.create + ' ' + t.common.source, action: 'source', icon: FileText },
   { name: t.common.create + ' ' + t.common.notebook, action: 'notebook', icon: Book },
   { name: t.common.create + ' ' + t.common.podcast, action: 'podcast', icon: Mic },
 ]
 
-const getThemeItems = (t: any) => [
+const getThemeItems = (t: TranslationKeys) => [
   { name: t.common.light, value: 'light' as const, icon: Sun, keywords: ['bright', 'day'] },
   { name: t.common.dark, value: 'dark' as const, icon: Moon, keywords: ['night'] },
   { name: t.common.system, value: 'system' as const, icon: Monitor, keywords: ['auto', 'default'] },
@@ -56,9 +57,9 @@ const getThemeItems = (t: any) => [
 
 export function CommandPalette() {
   const { t } = useTranslation()
-  const navigationItems = getNavigationItems(t)
-  const createItems = getCreateItems(t)
-  const themeItems = getThemeItems(t)
+  const navigationItems = useMemo(() => getNavigationItems(t), [t])
+  const createItems = useMemo(() => getCreateItems(t), [t])
+  const themeItems = useMemo(() => getThemeItems(t), [t])
   
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -153,7 +154,7 @@ export function CommandPalette() {
         (nb.description && nb.description.toLowerCase().includes(queryLower))
       ) ?? false)
     )
-  }, [queryLower, notebooks])
+  }, [queryLower, notebooks, navigationItems, createItems, themeItems])
 
   // Determine if we should show the Search/Ask section at the top
   const showSearchFirst = query.trim() && !hasCommandMatch

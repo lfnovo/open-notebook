@@ -125,7 +125,7 @@ export function SessionManager({
                 <Input
                   value={newSessionTitle}
                   onChange={(e) => setNewSessionTitle(e.target.value)}
-                  placeholder={t.chat.sessionTitlePlaceHolder}
+                  placeholder={t.chat.sessionTitlePlaceholder}
                   className="mb-2"
                   autoFocus
                   onKeyPress={(e) => {

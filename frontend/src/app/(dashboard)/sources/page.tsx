@@ -421,7 +421,7 @@ export default function SourcesPage() {
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ open, source: deleteDialog.source })}
         title={t.sources.delete}
-        description={t.sources.deleteConfirm.split('?')[0] + ` "${deleteDialog.source?.title || t.sources.untitledSource}"? ` + t.sources.deleteConfirm.split('?')[1]}
+        description={t.sources.deleteConfirmWithTitle.replace('{title}', deleteDialog.source?.title || t.sources.untitledSource)}
         confirmText={t.common.delete}
         confirmVariant="destructive"
         onConfirm={handleDeleteConfirm}

@@ -418,7 +418,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         const response = await chatApi.buildContext(task.payload)
         const notebookName = notebooks.find((nb) => nb.id === task.notebookId)?.name ?? task.notebookId
         const contextString = JSON.stringify(response.context, null, 2)
-        const snippet = `Notebook: ${notebookName}\n${contextString}`
+        const snippet = `${t.common.notebookLabel.replace('{name}', notebookName)}\n${contextString}`
         parts.push(snippet)
       } catch (error) {
         console.error('Failed to build context for notebook', task.notebookId, error)

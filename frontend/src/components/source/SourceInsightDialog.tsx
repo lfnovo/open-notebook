@@ -98,8 +98,8 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
         {showDeleteConfirm ? (
           <div className="flex flex-col items-center justify-center py-8 gap-4">
             <p className="text-center text-muted-foreground">
-              {t.sources.deleteInsightConfirm.split('?')[0]}?<br />
-              <span className="text-sm">{t.sources.deleteInsightConfirm.split('?')[1]?.trim() || t.common.deleteForever}</span>
+              {t.sources.deleteInsightConfirm.split(/[?？]/)[0]}?<br />
+              <span className="text-sm">{t.sources.deleteInsightConfirm.split(/[?？]/)[1]?.trim() || t.common.deleteForever}</span>
             </p>
             <div className="flex gap-2">
               <Button

@@ -13,9 +13,10 @@ import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { zhCN, enUS } from 'date-fns/locale'
+import { zhCN, enUS, zhTW } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -243,9 +244,10 @@ export default function SourcesPage() {
       // Remove the deleted source from the list
       setSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
       setDeleteDialog({ open: false, source: null })
-    } catch (err) {
-      console.error('Failed to delete source:', err)
-      toast.error(t.sources.failedToDelete) // Need to add failedToDelete to locales
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      console.error('Failed to delete source:', error)
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message)))
     }
   }
 
@@ -379,7 +381,7 @@ export default function SourcesPage() {
                   <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.created), { 
                       addSuffix: true,
-                      locale: language === 'zh-CN' ? zhCN : enUS
+                      locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
                     })}
                   </td>
                   <td className="h-12 px-4 text-center hidden md:table-cell">

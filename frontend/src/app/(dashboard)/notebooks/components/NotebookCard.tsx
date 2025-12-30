@@ -17,7 +17,7 @@ import { useUpdateNotebook, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { zhCN, enUS } from 'date-fns/locale'
+import { zhCN, enUS, zhTW } from 'date-fns/locale'
 interface NotebookCardProps {
   notebook: NotebookResponse
 }
@@ -114,7 +114,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             <div className="mt-3 text-xs text-muted-foreground">
               {t.common.updated.replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
                 addSuffix: true,
-                locale: language === 'zh-CN' ? zhCN : enUS
+                locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
               }))}
             </div>
 

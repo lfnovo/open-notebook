@@ -76,23 +76,23 @@ export function ConnectionErrorOverlay({
           <h2 className="font-semibold mt-4">{t.connectionErrors.quickFixes}</h2>
           {isApiError ? (
             <div className="space-y-2 text-sm bg-muted p-4 rounded">
-              <p className="font-medium">Set the API_URL environment variable:</p>
+              <p className="font-medium">{t.connectionErrors.setApiUrl}</p>
               <code className="block bg-background p-2 rounded text-xs">
-                # For Docker:
+                # {t.connectionErrors.dockerLabel}:
                 <br />
                 docker run -e API_URL=http://your-host:5055 ...
                 <br />
                 <br />
-                # For local development (.env file):
+                # {t.connectionErrors.localDevLabel}:
                 <br />
                 API_URL=http://localhost:5055
               </code>
             </div>
           ) : (
             <div className="space-y-2 text-sm bg-muted p-4 rounded">
-              <p className="font-medium">Check if SurrealDB is running:</p>
+              <p className="font-medium">{t.connectionErrors.checkSurreal}</p>
               <code className="block bg-background p-2 rounded text-xs">
-                # For Docker:
+                # {t.connectionErrors.dockerLabel}:
                 <br />
                 docker compose ps | grep surrealdb
                 <br />

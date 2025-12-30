@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
+import { zhCN, enUS, zhTW } from 'date-fns/locale'
 import { InfoIcon, Trash2 } from 'lucide-react'
 
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
@@ -74,7 +74,7 @@ const getSTATUS_META = (t: TranslationKeys): Record<
     className: 'bg-sky-100 text-sky-800 border-sky-200',
   },
   unknown: {
-    label: (t.podcasts.unknown as string) || 'Unknown',
+    label: t.common.unknown,
     className: 'bg-muted text-muted-foreground border-transparent',
   },
 })
@@ -137,8 +137,7 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
 }
 
 export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
-  const { t, i18n } = useTranslation()
-  const isChinese = i18n.language === 'zh' || i18n.language.startsWith('zh')
+  const { t, language } = useTranslation()
   const [audioSrc, setAudioSrc] = useState<string | undefined>()
   const [audioError, setAudioError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -206,7 +205,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
   const distance = episode.created
     ? formatDistanceToNow(new Date(episode.created), {
         addSuffix: true,
-        locale: isChinese ? zhCN : undefined,
+        locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS,
       })
     : null
 
@@ -230,7 +229,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
               <StatusBadge status={episode.job_status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t.podcasts.profile}: {(episode.episode_profile?.name ?? t.podcasts.unknown) || 'Unknown'}
+              {t.podcasts.profile}: {episode.episode_profile?.name || t.common.unknown}
               {createdLabel ? ` • ${createdLabel}` : ''}
             </p>
           </div>
@@ -245,7 +244,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
                 <DialogHeader>
                   <DialogTitle>{episode.name}</DialogTitle>
                   <DialogDescription>
-                    {(episode.episode_profile?.name ?? t.podcasts.unknown) || 'Unknown profile'}
+                    {episode.episode_profile?.name || t.common.unknown}
                     {createdLabel ? ` • ${createdLabel}` : ''}
                   </DialogDescription>
                 </DialogHeader>

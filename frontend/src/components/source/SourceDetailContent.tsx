@@ -60,7 +60,7 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { zhCN, enUS } from 'date-fns/locale'
+import { zhCN, enUS, zhTW } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
@@ -747,7 +747,7 @@ export function SourceDetailContent({
                       <p className="text-sm">
                         {formatDistanceToNow(new Date(source.created), {
                           addSuffix: true,
-                          locale: language === 'zh-CN' ? zhCN : enUS
+                          locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
                         })}
                       </p>
                       <p className="text-xs text-muted-foreground">
@@ -759,7 +759,7 @@ export function SourceDetailContent({
                       <p className="text-sm">
                         {formatDistanceToNow(new Date(source.updated), {
                           addSuffix: true,
-                          locale: language === 'zh-CN' ? zhCN : enUS
+                          locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
                         })}
                       </p>
                       <p className="text-xs text-muted-foreground">

@@ -165,7 +165,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                         {urlCount > 0 && (
                           <Badge variant={isOverLimit ? "destructive" : "secondary"}>
                             {t.sources.urlsCount.replace('{count}', urlCount.toString())}
-                            {isOverLimit && ` (max ${MAX_BATCH_SIZE})`}
+                            {isOverLimit && ` (${t.sources.maxItems.replace('{count}', MAX_BATCH_SIZE.toString())})`}
                           </Badge>
                         )}
                       </div>
@@ -214,7 +214,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                         {fileCount > 0 && (
                           <Badge variant={isOverLimit ? "destructive" : "secondary"}>
                             {t.sources.filesCount.replace('{count}', fileCount.toString())}
-                            {isOverLimit && ` (max ${MAX_BATCH_SIZE})`}
+                            {isOverLimit && ` (${t.sources.maxItems.replace('{count}', MAX_BATCH_SIZE.toString())})`}
                           </Badge>
                         )}
                       </div>

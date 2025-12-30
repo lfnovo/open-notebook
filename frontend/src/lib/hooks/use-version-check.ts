@@ -3,12 +3,15 @@
 import { useEffect } from 'react'
 import { toast } from 'sonner'
 import { getConfig } from '@/lib/config'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 /**
  * Hook to check for version updates and display notification.
  * Should be called once per session in the dashboard layout.
  */
 export function useVersionCheck() {
+  const { t } = useTranslation()
+
   useEffect(() => {
     const checkVersion = async () => {
       try {
@@ -22,12 +25,12 @@ export function useVersionCheck() {
 
           if (!isDismissed) {
             // Show persistent toast notification
-            toast.info(`Version ${config.latestVersion} available`, {
-              description: 'A new version of Open Notebook is available.',
+            toast.info(t.advanced.updateAvailable.replace('{version}', config.latestVersion), {
+              description: t.advanced.updateAvailableDesc,
               duration: Infinity, // No auto-dismiss - user must manually dismiss
               closeButton: true, // Show close button for dismissing
               action: {
-                label: 'View on GitHub',
+                label: t.advanced.viewOnGithub,
                 onClick: () => {
                   window.open(
                     'https://github.com/lfnovo/open-notebook',
@@ -67,5 +70,5 @@ export function useVersionCheck() {
 
     // Run version check
     checkVersion()
-  }, []) // Run once on mount
+  }, [t.advanced.updateAvailable, t.advanced.updateAvailableDesc, t.advanced.viewOnGithub]) // Run once on mount
 }

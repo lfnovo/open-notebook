@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface InlineEditProps {
   value: string
@@ -20,8 +21,10 @@ export function InlineEdit({
   inputClassName,
   placeholder,
   multiline = false,
-  emptyText = 'Click to edit'
+  emptyText
 }: InlineEditProps) {
+  const { t } = useTranslation()
+  const defaultEmptyText = emptyText || t.common.clickToEdit
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
   const [isSaving, setIsSaving] = useState(false)
@@ -85,7 +88,7 @@ export function InlineEdit({
           setIsEditing(true)
         }}
       >
-        {value || <span className="text-muted-foreground">{emptyText}</span>}
+        {value || <span className="text-muted-foreground">{defaultEmptyText}</span>}
       </button>
     )
   }

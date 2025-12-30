@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
+import { enUS } from '@/lib/locales/en-US'
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -27,23 +28,13 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 })
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
+// Mock @/lib/hooks/use-translation with full locale structure
+vi.mock('@/lib/hooks/use-translation', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
-      const parts = key.split('.')
-      const lastPart = parts[parts.length - 1]
-      return lastPart.charAt(0).toUpperCase() + lastPart.slice(1)
-    },
-    i18n: {
-      language: 'en-US',
-      changeLanguage: vi.fn(),
-    },
+    t: enUS,
+    language: 'en-US',
+    setLanguage: vi.fn(),
   }),
-  initReactI18next: {
-    type: '3rdParty',
-    init: vi.fn(),
-  },
 }))
 
 // Mock @/lib/hooks/use-auth

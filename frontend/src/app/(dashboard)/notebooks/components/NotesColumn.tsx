@@ -15,7 +15,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Badge } from '@/components/ui/badge'
 import { NoteEditorDialog } from './NoteEditorDialog'
-import { zhCN, enUS } from 'date-fns/locale'
+import { zhCN, enUS, zhTW } from 'date-fns/locale'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '../[id]/page'
@@ -135,7 +135,7 @@ export function NotesColumn({
                         <span className="text-xs text-muted-foreground">
                           {formatDistanceToNow(new Date(note.updated), { 
                             addSuffix: true,
-                            locale: language === 'zh-CN' ? zhCN : enUS
+                            locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
                           })}
                         </span>
 

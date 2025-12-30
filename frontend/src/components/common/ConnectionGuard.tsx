@@ -4,12 +4,14 @@ import { useEffect, useState, useCallback } from 'react'
 import { ConnectionError } from '@/lib/types/config'
 import { ConnectionErrorOverlay } from '@/components/errors/ConnectionErrorOverlay'
 import { getConfig, resetConfig } from '@/lib/config'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ConnectionGuardProps {
   children: React.ReactNode
 }
 
 export function ConnectionGuard({ children }: ConnectionGuardProps) {
+  const { t } = useTranslation()
   const [error, setError] = useState<ConnectionError | null>(null)
   const [isChecking, setIsChecking] = useState(true)
 
@@ -28,7 +30,7 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
         setError({
           type: 'database-offline',
           details: {
-            message: 'The API server is running, but the database is not accessible',
+            message: t.connectionErrors.dbDesc,
             attemptedUrl: config.apiUrl,
           },
         })
@@ -42,7 +44,7 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
     } catch (err) {
       // API is unreachable
       const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred'
+        err instanceof Error ? err.message : t.common.error
       const attemptedUrl =
         typeof window !== 'undefined'
           ? `${window.location.origin}/api/config`
@@ -51,7 +53,7 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
       setError({
         type: 'api-unreachable',
         details: {
-          message: 'The Open Notebook API server could not be reached',
+          message: t.connectionErrors.apiDesc,
           technicalMessage: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
           attemptedUrl,
@@ -59,7 +61,7 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
       })
       setIsChecking(false)
     }
-  }, [])
+  }, [t])
 
   // Check connection on mount
   useEffect(() => {

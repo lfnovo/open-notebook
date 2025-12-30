@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+// Ensure we are testing the real implementation
+vi.unmock('@/lib/hooks/use-translation') 
 import { useTranslation } from './use-translation'
 import { useTranslation as useI18nTranslation } from 'react-i18next'
 

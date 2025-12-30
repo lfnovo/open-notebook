@@ -11,6 +11,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     curl \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
+    && curl -fsSL https://bun.sh/install | bash \
+    && mv /root/.bun/bin/bun /usr/local/bin/bun \
     && rm -rf /var/lib/apt/lists/*
 
 # Set build optimization environment variables
@@ -35,8 +37,8 @@ COPY . /app
 
 # Install frontend dependencies and build
 WORKDIR /app/frontend
-RUN npm ci
-RUN npm run build
+RUN bun install
+RUN bun run build
 
 # Return to app root
 WORKDIR /app

@@ -149,6 +149,7 @@ export function AppSidebar() {
                 size="sm"
                 onClick={toggleCollapse}
                 className="text-sidebar-foreground hover:bg-sidebar-accent"
+                data-testid="sidebar-toggle"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>

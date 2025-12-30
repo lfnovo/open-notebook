@@ -18,10 +18,10 @@ describe('AppSidebar', () => {
   it('renders correctly when expanded', () => {
     render(<AppSidebar />)
     
-    // Check for logo or app name
-    expect(screen.getByText(/AppName/i)).toBeDefined()
+    // Check for logo or app name (using actual locale value)
+    expect(screen.getByText(/Open Notebook/i)).toBeDefined()
     
-    // Check for navigation items (mock t returns capitalized last part)
+    // Check for navigation items (using actual locale values)
     expect(screen.getByText(/Sources/i)).toBeDefined()
     expect(screen.getByText(/Notebooks/i)).toBeDefined()
   })
@@ -41,7 +41,8 @@ describe('AppSidebar', () => {
     // Let's use more specific selector if possible, but AppSidebar has many buttons
     // Actually, line 147 has the button
     
-    fireEvent.click(screen.getByRole('button', { name: '' })) // Might be tricky without aria-label on that specific one
+    // Use data-testid for reliable selection
+    fireEvent.click(screen.getByTestId('sidebar-toggle'))
     // Wait, line 181 has aria-label={t.common.create} in collapsed mode
     // Component has many buttons. Let's look for the one with specific icon or class?
     

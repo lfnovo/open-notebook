@@ -354,6 +354,7 @@ export function AppSidebar() {
                   variant="outline"
                   className="w-full justify-center"
                   onClick={logout}
+                  aria-label={t.common.signOut}
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
@@ -365,6 +366,7 @@ export function AppSidebar() {
               variant="outline"
               className="w-full justify-start gap-3"
               onClick={logout}
+              aria-label={t.common.signOut}
              >
               <LogOut className="h-4 w-4" />
               {t.common.signOut}
@@ -375,3 +377,4 @@ export function AppSidebar() {
     </TooltipProvider>
   )
 }
+```

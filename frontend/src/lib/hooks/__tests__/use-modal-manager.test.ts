@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { renderHook, act } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useModalManager } from '../use-modal-manager'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 

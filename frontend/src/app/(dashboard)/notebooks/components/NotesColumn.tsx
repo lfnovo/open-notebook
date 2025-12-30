@@ -22,7 +22,7 @@ import { ContextMode } from '../[id]/page'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
-import { useNotebookColumnsStore } => '@/lib/stores/notebook-columns-store'
+import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface NotesColumnProps {
@@ -108,7 +108,7 @@ export function NotesColumn({
             ) : !notes || notes.length === 0 ? (
               <EmptyState
                 icon={StickyNote}
-                title={t.sources.noNotesYet}
+                title={t.notebooks.noNotesYet}
                 description={t.sources.createFirstNote}
               />
             ) : (
@@ -171,7 +171,7 @@ export function NotesColumn({
                               className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t.sources.deleteNote}
+                              {t.notebooks.deleteNote}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -212,8 +212,8 @@ export function NotesColumn({
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title={t.sources.deleteNote}
-        description={t.sources.deleteNoteConfirm}
+        title={t.notebooks.deleteNote}
+        description={t.notebooks.deleteNoteConfirm}
         confirmText={t.common.delete}
         onConfirm={handleDeleteConfirm}
         isLoading={deleteNote.isPending}

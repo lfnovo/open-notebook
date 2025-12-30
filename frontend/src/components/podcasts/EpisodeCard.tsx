@@ -73,13 +73,13 @@ const getSTATUS_META = (t: any): Record<
     className: 'bg-sky-100 text-sky-800 border-sky-200',
   },
   unknown: {
-    label: t.podcasts.unknown || 'Unknown',
+    label: (t.podcasts.unknown as string) || 'Unknown',
     className: 'bg-muted text-muted-foreground border-transparent',
   },
 })
 
 function StatusBadge({ status }: { status?: EpisodeStatus | null }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   // Don't show badge for completed episodes
   if (status === 'completed') {
     return null
@@ -137,7 +137,7 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
 
 export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
   const { t, i18n } = useTranslation()
-  const isChinese = i18n.language === 'zh'
+  const isChinese = i18n.language === 'zh' || i18n.language.startsWith('zh')
   const [audioSrc, setAudioSrc] = useState<string | undefined>()
   const [audioError, setAudioError] = useState<string | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -229,7 +229,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
               <StatusBadge status={episode.job_status} />
             </div>
             <p className="text-xs text-muted-foreground">
-              {t.podcasts.profile}: {episode.episode_profile?.name ?? t.podcasts.unknown || 'Unknown'}
+              {t.podcasts.profile}: {(episode.episode_profile?.name ?? t.podcasts.unknown) || 'Unknown'}
               {createdLabel ? ` • ${createdLabel}` : ''}
             </p>
           </div>
@@ -244,7 +244,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
                 <DialogHeader>
                   <DialogTitle>{episode.name}</DialogTitle>
                   <DialogDescription>
-                    {episode.episode_profile?.name ?? t.podcasts.unknown || 'Unknown profile'}
+                    {(episode.episode_profile?.name ?? t.podcasts.unknown) || 'Unknown profile'}
                     {createdLabel ? ` • ${createdLabel}` : ''}
                   </DialogDescription>
                 </DialogHeader>

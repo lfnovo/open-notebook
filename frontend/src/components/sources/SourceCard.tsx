@@ -365,7 +365,7 @@ export function SourceCard({
               className="h-7 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
-              {t.common.retry}
+              {t.sources.retry}
             </Button>
           </div>
         )}
@@ -374,7 +374,7 @@ export function SourceCard({
         {isProcessing && statusData?.processing_info?.progress && (
           <div className="mt-3 pt-2 border-t">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-gray-600">{t.common.progress}</span>
+            <span className="text-xs text-gray-600">{t.common.progress}</span>
               <span className="text-xs text-gray-600">
                 {Math.round(statusData.processing_info.progress as number)}%
               </span>

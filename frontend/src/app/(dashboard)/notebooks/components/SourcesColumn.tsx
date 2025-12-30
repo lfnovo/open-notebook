@@ -173,7 +173,7 @@ export function SourcesColumn({
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
                       <Link2 className="h-4 w-4 mr-2" />
-                      {t.sources.addExistingSource}
+                      {t.sources.addExistingTitle}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

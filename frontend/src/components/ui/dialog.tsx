@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { XIcon } from "lucide-react"
+import { X } from "lucide-react"
+import { useTranslation } from "@/lib/hooks/use-translation"
 
 import { cn } from "@/lib/utils"
 
@@ -46,14 +47,15 @@ function DialogOverlay({
   )
 }
 
-function DialogContent({
+const DialogContent = ({
   className,
   children,
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
-}) {
+}) => {
+  const { t } = useTranslation()
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />

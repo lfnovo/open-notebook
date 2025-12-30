@@ -29,6 +29,7 @@ import {
   Monitor,
   Loader2,
 } from 'lucide-react'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 const getNavigationItems = (t: any) => [
   { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
@@ -60,6 +61,11 @@ export function CommandPalette() {
   const themeItems = getThemeItems(t)
   
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const router = useRouter()
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { setTheme } = useTheme()
+  const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false)
 
   // Global keyboard listener for ⌘K / Ctrl+K
   useEffect(() => {

@@ -24,10 +24,11 @@ import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
 
 export default function SearchPage() {
+  const { t } = useTranslation()
   // URL params
   const searchParams = useSearchParams()
-  const urlQuery = searchParams.get('q') || ''
-  const rawMode = searchParams.get('mode')
+  const urlQuery = searchParams?.get('q') || ''
+  const rawMode = searchParams?.get('mode')
   const urlMode = rawMode === 'search' ? 'search' : 'ask'
 
   // Tab state (controlled)
@@ -130,8 +131,8 @@ export default function SearchPage() {
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {
-    const currentQ = searchParams.get('q') || ''
-    const rawCurrentMode = searchParams.get('mode')
+    const currentQ = searchParams?.get('q') || ''
+    const rawCurrentMode = searchParams?.get('mode')
     const currentMode = rawCurrentMode === 'search' ? 'search' : 'ask'
 
     // Check if URL params have changed

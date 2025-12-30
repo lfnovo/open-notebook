@@ -30,7 +30,7 @@ export default function NotebookPage() {
   const params = useParams()
 
   // Ensure the notebook ID is properly decoded from URL
-  const notebookId = decodeURIComponent(params.id as string)
+  const notebookId = params?.id ? decodeURIComponent(params.id as string) : ''
 
   const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
   const {

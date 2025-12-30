@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, ExternalLink } from 'lucide-react'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface EmbeddingModelChangeDialogProps {
   open: boolean
@@ -30,6 +31,7 @@ export function EmbeddingModelChangeDialog({
   oldModelName,
   newModelName
 }: EmbeddingModelChangeDialogProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [isConfirming, setIsConfirming] = useState(false)
 
@@ -55,54 +57,49 @@ export function EmbeddingModelChangeDialog({
         <AlertDialogHeader>
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            <AlertDialogTitle>Embedding Model Change</AlertDialogTitle>
+            <AlertDialogTitle>{t.models.embeddingChangeTitle}</AlertDialogTitle>
           </div>
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-base text-muted-foreground">
               <p>
-                You are about to change your embedding model{' '}
-                {oldModelName && newModelName && (
-                  <>
-                    from <strong>{oldModelName}</strong> to <strong>{newModelName}</strong>
-                  </>
-                )}
-                .
+                {t.models.embeddingChangeConfirm
+                  .replace('{from}', oldModelName || '...')
+                  .replace('{to}', newModelName || '...')}
               </p>
 
               <div className="bg-muted p-4 rounded-md space-y-2">
-                <p className="font-semibold text-foreground">⚠️ Important: Rebuild Required</p>
+                <p className="font-semibold text-foreground">⚠️ {t.models.rebuildRequired}</p>
                 <p className="text-sm">
-                  Changing your embedding model requires rebuilding all existing embeddings to maintain consistency.
-                  Without rebuilding, your searches may return incorrect or incomplete results.
+                  {t.models.rebuildReason}
                 </p>
               </div>
 
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-foreground">What happens next:</p>
+                <p className="font-medium text-foreground">{t.models.whatHappensNext}</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Your default embedding model will be updated</li>
-                  <li>Existing embeddings will remain unchanged until rebuild</li>
-                  <li>New content will use the new embedding model</li>
-                  <li>You should rebuild embeddings as soon as possible</li>
+                  <li>{t.models.step1}</li>
+                  <li>{t.models.step2}</li>
+                  <li>{t.models.step3}</li>
+                  <li>{t.models.step4}</li>
                 </ul>
               </div>
 
               <p className="text-sm font-medium text-foreground">
-                Would you like to proceed to the Advanced page to start the rebuild now?
+                {t.models.proceedToRebuildPrompt}
               </p>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
           <AlertDialogCancel disabled={isConfirming}>
-            Cancel
+            {t.common.cancel}
           </AlertDialogCancel>
           <Button
             variant="outline"
             onClick={handleConfirmOnly}
             disabled={isConfirming}
           >
-            Change Model Only
+            {t.models.changeModelOnly}
           </Button>
           <AlertDialogAction
             onClick={handleConfirmAndRebuild}
@@ -110,7 +107,7 @@ export function EmbeddingModelChangeDialog({
             className="bg-primary"
           >
             <ExternalLink className="mr-2 h-4 w-4" />
-            Change & Go to Rebuild
+            {t.models.changeAndRebuild}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

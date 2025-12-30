@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label'
 import { useModels } from '@/lib/hooks/use-models'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ModelSelectorProps {
   label?: string
@@ -14,16 +15,17 @@ interface ModelSelectorProps {
   disabled?: boolean
 }
 
-export function ModelSelector({ 
-  label, 
-  modelType, 
-  value, 
-  onChange, 
-  placeholder = 'Select a model',
-  disabled = false 
+export function ModelSelector({
+  label,
+  modelType,
+  value,
+  onChange,
+  placeholder,
+  disabled = false
 }: ModelSelectorProps) {
+  const { t } = useTranslation()
   const { data: models, isLoading } = useModels()
-  
+
   // Filter models by type
   const filteredModels = models?.filter(model => model.type === modelType) || []
   return (
@@ -31,7 +33,7 @@ export function ModelSelector({
       {label && <Label>{label}</Label>}
       <Select value={value} onValueChange={onChange} disabled={disabled || isLoading}>
         <SelectTrigger>
-          <SelectValue placeholder={placeholder} />
+          <SelectValue placeholder={placeholder || t.settings.embeddingOptionPlaceholder} />
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
@@ -40,7 +42,7 @@ export function ModelSelector({
             </div>
           ) : filteredModels.length === 0 ? (
             <div className="text-sm text-muted-foreground py-2 px-2">
-              No {modelType.replace('_', ' ')} models available
+              {t.common.noResults}
             </div>
           ) : (
             filteredModels.map((model) => (

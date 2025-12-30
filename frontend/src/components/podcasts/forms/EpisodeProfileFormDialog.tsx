@@ -31,22 +31,22 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 
-const episodeProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+const episodeProfileSchema = (t: any) => z.object({
+  name: z.string().min(1, t.podcasts.nameRequired || 'Name is required'),
   description: z.string().optional(),
-  speaker_config: z.string().min(1, 'Speaker profile is required'),
-  outline_provider: z.string().min(1, 'Outline provider is required'),
-  outline_model: z.string().min(1, 'Outline model is required'),
-  transcript_provider: z.string().min(1, 'Transcript provider is required'),
-  transcript_model: z.string().min(1, 'Transcript model is required'),
-  default_briefing: z.string().min(1, 'Default briefing is required'),
+  speaker_config: z.string().min(1, t.podcasts.profileRequired || 'Speaker profile is required'),
+  outline_provider: z.string().min(1, t.podcasts.outlineProviderRequired || 'Outline provider is required'),
+  outline_model: z.string().min(1, t.podcasts.outlineModelRequired || 'Outline model is required'),
+  transcript_provider: z.string().min(1, t.podcasts.transcriptProviderRequired || 'Transcript provider is required'),
+  transcript_model: z.string().min(1, t.podcasts.transcriptModelRequired || 'Transcript model is required'),
+  default_briefing: z.string().min(1, t.podcasts.defaultBriefingRequired || 'Default briefing is required'),
   num_segments: z.number()
-    .int('Must be an integer')
-    .min(3, 'At least 3 segments')
-    .max(20, 'Maximum 20 segments'),
+    .int(t.podcasts.segmentsInteger || 'Must be an integer')
+    .min(3, t.podcasts.segmentsMin || 'At least 3 segments')
+    .max(20, t.podcasts.segmentsMax || 'Maximum 20 segments'),
 })
 
-export type EpisodeProfileFormValues = z.infer<typeof episodeProfileSchema>
+export type EpisodeProfileFormValues = z.infer<ReturnType<typeof episodeProfileSchema>>
 
 interface EpisodeProfileFormDialogProps {
   mode: 'create' | 'edit'
@@ -65,6 +65,7 @@ export function EpisodeProfileFormDialog({
   modelOptions,
   initialData,
 }: EpisodeProfileFormDialogProps) {
+  const { t } = useTranslation()
   const createProfile = useCreateEpisodeProfile()
   const updateProfile = useUpdateEpisodeProfile()
 
@@ -111,7 +112,7 @@ export function EpisodeProfileFormDialog({
     watch,
     formState: { errors },
   } = useForm<EpisodeProfileFormValues>({
-    resolver: zodResolver(episodeProfileSchema),
+    resolver: zodResolver(episodeProfileSchema(t)),
     defaultValues: getDefaults(),
   })
 
@@ -185,29 +186,27 @@ export function EpisodeProfileFormDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Edit Episode Profile' : 'Create Episode Profile'}
+            {isEdit ? t.podcasts.editEpisodeProfile : t.podcasts.createEpisodeProfile}
           </DialogTitle>
           <DialogDescription>
-            Define how episodes should be generated and which speaker configuration
-            they use by default.
+            {t.podcasts.episodeProfileFormDesc}
           </DialogDescription>
         </DialogHeader>
 
         {speakerProfiles.length === 0 ? (
-          <Alert className="bg-amber-50 text-amber-900">
-            <AlertTitle>No speaker profiles available</AlertTitle>
+          <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+            <AlertTitle>{t.podcasts.noSpeakerProfilesAvailable}</AlertTitle>
             <AlertDescription>
-              Create a speaker profile before configuring an episode profile.
+              {t.podcasts.noSpeakerProfilesDesc}
             </AlertDescription>
           </Alert>
         ) : null}
 
         {providers.length === 0 ? (
-          <Alert className="bg-amber-50 text-amber-900">
-            <AlertTitle>No language models available</AlertTitle>
+          <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+            <AlertTitle>{t.podcasts.noLanguageModelsAvailable}</AlertTitle>
             <AlertDescription>
-              Add language models in the Models section to configure outline and transcript
-              generation.
+              {t.podcasts.noLanguageModelsDesc}
             </AlertDescription>
           </Alert>
         ) : null}
@@ -215,15 +214,15 @@ export function EpisodeProfileFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Profile name *</Label>
-              <Input id="name" placeholder="Tech discussion" {...register('name')} />
+              <Label htmlFor="name">{t.podcasts.profileName} *</Label>
+              <Input id="name" placeholder={t.podcasts.profileNamePlaceholder} {...register('name')} />
               {errors.name ? (
                 <p className="text-xs text-red-600">{errors.name.message}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="num_segments">Segments *</Label>
+              <Label htmlFor="num_segments">{t.podcasts.segments} *</Label>
               <Input
                 id="num_segments"
                 type="number"
@@ -237,11 +236,11 @@ export function EpisodeProfileFormDialog({
             </div>
 
             <div className="md:col-span-2 space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t.common.description}</Label>
               <Textarea
                 id="description"
                 rows={3}
-                placeholder="Short summary of when to use this profile"
+                placeholder={t.podcasts.descriptionPlaceholder}
                 {...register('description')}
               />
             </div>
@@ -250,7 +249,7 @@ export function EpisodeProfileFormDialog({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Speaker configuration
+                {t.podcasts.speakerConfig}
               </h3>
               <Separator className="mt-2" />
             </div>
@@ -259,10 +258,10 @@ export function EpisodeProfileFormDialog({
               name="speaker_config"
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label>Speaker profile *</Label>
+                  <Label>{t.podcasts.speakerProfile} *</Label>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select a speaker profile" />
+                      <SelectValue placeholder={t.podcasts.selectSpeakerProfile} />
                     </SelectTrigger>
                     <SelectContent>
                       {speakerProfiles.map((profile) => (
@@ -285,7 +284,7 @@ export function EpisodeProfileFormDialog({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Outline generation
+                {t.podcasts.outlineGeneration}
               </h3>
               <Separator className="mt-2" />
             </div>
@@ -295,10 +294,10 @@ export function EpisodeProfileFormDialog({
                 name="outline_provider"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Provider *</Label>
+                    <Label>{t.models.provider} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select provider" />
+                        <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                       </SelectTrigger>
                       <SelectContent>
                         {providers.map((provider) => (
@@ -322,10 +321,10 @@ export function EpisodeProfileFormDialog({
                 name="outline_model"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Model *</Label>
+                    <Label>{t.common.model} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
+                        <SelectValue placeholder={t.models.selectModelPlaceholder} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableOutlineModels.map((model) => (
@@ -349,7 +348,7 @@ export function EpisodeProfileFormDialog({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Transcript generation
+                {t.podcasts.transcriptGeneration}
               </h3>
               <Separator className="mt-2" />
             </div>
@@ -359,10 +358,10 @@ export function EpisodeProfileFormDialog({
                 name="transcript_provider"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Provider *</Label>
+                    <Label>{t.models.provider} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select provider" />
+                        <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                       </SelectTrigger>
                       <SelectContent>
                         {providers.map((provider) => (
@@ -386,10 +385,10 @@ export function EpisodeProfileFormDialog({
                 name="transcript_model"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>Model *</Label>
+                    <Label>{t.common.model} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select model" />
+                        <SelectValue placeholder={t.models.selectModelPlaceholder} />
                       </SelectTrigger>
                       <SelectContent>
                         {availableTranscriptModels.map((model) => (
@@ -411,11 +410,11 @@ export function EpisodeProfileFormDialog({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="default_briefing">Default briefing *</Label>
+            <Label htmlFor="default_briefing">{t.podcasts.defaultBriefingTitle} *</Label>
             <Textarea
               id="default_briefing"
               rows={6}
-              placeholder="Outline the structure, tone, and goals for this episode format"
+              placeholder={t.podcasts.defaultBriefingPlaceholder}
               {...register('default_briefing')}
             />
             {errors.default_briefing ? (
@@ -431,16 +430,14 @@ export function EpisodeProfileFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="submit" disabled={disableSubmit}>
               {isSubmitting
-                ? isEdit
-                  ? 'Saving…'
-                  : 'Creating…'
+                ? t.common.saving
                 : isEdit
-                  ? 'Save changes'
-                  : 'Create profile'}
+                  ? t.common.saveChanges
+                  : t.podcasts.createProfile}
             </Button>
           </div>
         </form>

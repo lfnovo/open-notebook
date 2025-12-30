@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Save, Copy, Loader2, Check } from 'lucide-react'
 import { useCreateNote } from '@/lib/hooks/use-notes'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 
 interface MessageActionsProps {
   content: string

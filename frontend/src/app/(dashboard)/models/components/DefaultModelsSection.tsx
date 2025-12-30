@@ -11,73 +11,75 @@ import { ModelDefaults, Model } from '@/lib/types/models'
 import { useUpdateModelDefaults } from '@/lib/hooks/use-models'
 import { AlertCircle, X } from 'lucide-react'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface DefaultModelsSectionProps {
   models: Model[]
   defaults: ModelDefaults
 }
 
-interface DefaultConfig {
-  key: keyof ModelDefaults
-  label: string
-  description: string
-  modelType: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
-  required?: boolean
-}
-
-const defaultConfigs: DefaultConfig[] = [
-  {
-    key: 'default_chat_model',
-    label: 'Chat Model',
-    description: 'Used for chat conversations',
-    modelType: 'language',
-    required: true
-  },
-  {
-    key: 'default_transformation_model',
-    label: 'Transformation Model',
-    description: 'Used for summaries, insights, and transformations',
-    modelType: 'language',
-    required: true
-  },
-  {
-    key: 'default_tools_model',
-    label: 'Tools Model',
-    description: 'Used for function calling - OpenAI or Anthropic recommended',
-    modelType: 'language'
-  },
-  {
-    key: 'large_context_model',
-    label: 'Large Context Model',
-    description: 'Used for processing large documents - Gemini recommended',
-    modelType: 'language'
-  },
-  {
-    key: 'default_embedding_model',
-    label: 'Embedding Model',
-    description: 'Used for semantic search and vector embeddings',
-    modelType: 'embedding',
-    required: true
-  },
-  {
-    key: 'default_text_to_speech_model',
-    label: 'Text-to-Speech Model',
-    description: 'Used for podcast generation',
-    modelType: 'text_to_speech'
-  },
-  {
-    key: 'default_speech_to_text_model',
-    label: 'Speech-to-Text Model',
-    description: 'Used for audio transcription',
-    modelType: 'speech_to_text'
-  }
-]
-
 export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionProps) {
+  const { t } = useTranslation()
   const updateDefaults = useUpdateModelDefaults()
   const { setValue, watch } = useForm<ModelDefaults>({
     defaultValues: defaults
   })
+
+  interface DefaultConfig {
+    key: keyof ModelDefaults
+    label: string
+    description: string
+    modelType: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+    required?: boolean
+  }
+
+  const defaultConfigs: DefaultConfig[] = [
+    {
+      key: 'default_chat_model',
+      label: t.models.chatModelLabel,
+      description: t.models.chatModelDesc,
+      modelType: 'language',
+      required: true,
+    },
+    {
+      key: 'default_transformation_model',
+      label: t.models.transformationModelLabel,
+      description: t.models.transformationModelDesc,
+      modelType: 'language',
+      required: true,
+    },
+    {
+      key: 'default_tools_model',
+      label: t.models.toolsModelLabel,
+      description: t.models.toolsModelDesc,
+      modelType: 'language',
+    },
+    {
+      key: 'large_context_model',
+      label: t.models.largeContextModelLabel,
+      description: t.models.largeContextModelDesc,
+      modelType: 'language',
+    },
+    {
+      key: 'default_embedding_model',
+      label: t.models.embeddingModelLabel,
+      description: t.models.embeddingModelDesc,
+      modelType: 'embedding',
+      required: true,
+    },
+    {
+      key: 'default_text_to_speech_model',
+      label: t.models.ttsModelLabel,
+      description: t.models.ttsModelDesc,
+      modelType: 'text_to_speech',
+    },
+    {
+      key: 'default_speech_to_text_model',
+      label: t.models.sttModelLabel,
+      description: t.models.sttModelDesc,
+      modelType: 'speech_to_text',
+    },
+  ]
 
   // State for embedding model change dialog
   const [showEmbeddingDialog, setShowEmbeddingDialog] = useState(false)
@@ -153,9 +155,9 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Default Model Assignments</CardTitle>
+        <CardTitle>{t.models.defaultAssignments}</CardTitle>
         <CardDescription>
-          Configure which models to use for different purposes across Open Notebook
+          {t.models.defaultAssignmentsDesc}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -163,8 +165,7 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Missing required models: {missingRequired.join(', ')}. 
-              Open Notebook may not function properly without these.
+              {t.models.missingRequiredModels.replace('{models}', missingRequired.join(', '))}
             </AlertDescription>
           </Alert>
         )}
@@ -195,8 +196,8 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
                     }>
                       <SelectValue placeholder={
                         config.required && !isValidModel && availableModels.length > 0 
-                          ? "⚠️ Required - Select a model"
-                          : "Select a model"
+                          ? t.models.requiredModelPlaceholder
+                          : t.models.selectModelPlaceholder
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -236,7 +237,7 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
           >
-            Which model should I choose? →
+            {t.models.whichModelToChoose}
           </a>
         </div>
       </CardContent>

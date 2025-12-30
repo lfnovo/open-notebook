@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Wand2 } from 'lucide-react'
 import { Transformation } from '@/lib/types/transformations'
 import { TransformationEditorDialog } from './TransformationEditorDialog'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface TransformationsListProps {
   transformations: Transformation[] | undefined
@@ -17,6 +18,7 @@ interface TransformationsListProps {
 }
 
 export function TransformationsList({ transformations, isLoading, onPlayground }: TransformationsListProps) {
+  const { t } = useTranslation()
   const [editorOpen, setEditorOpen] = useState(false)
   const [editingTransformation, setEditingTransformation] = useState<Transformation | undefined>()
 
@@ -37,12 +39,12 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     return (
       <EmptyState
         icon={Wand2}
-        title="No transformations yet"
-        description="Create your first transformation to process and extract insights from your content."
+        title={t.transformations.noTransformations}
+        description={t.transformations.createOne}
         action={
           <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
-            Create New Transformation
+            {t.transformations.createNew}
           </Button>
         }
       />
@@ -53,10 +55,10 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">Your Transformations</h2>
+          <h2 className="text-lg font-semibold">{t.transformations.listTitle}</h2>
           <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
-            Create New Transformation
+            {t.transformations.createNew}
           </Button>
         </div>
 

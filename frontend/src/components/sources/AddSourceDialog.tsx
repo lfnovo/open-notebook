@@ -23,6 +23,7 @@ import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 const MAX_BATCH_SIZE = 50
 
@@ -72,11 +73,11 @@ interface AddSourceDialogProps {
   defaultNotebookId?: string
 }
 
-const WIZARD_STEPS: readonly WizardStep[] = [
-  { number: 1, title: 'Source & Content', description: 'Choose type and add content' },
-  { number: 2, title: 'Organization', description: 'Select notebooks' },
-  { number: 3, title: 'Processing', description: 'Choose transformations and options' },
-]
+  const WIZARD_STEPS: readonly WizardStep[] = [
+    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
+    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
+    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
+  ]
 
 interface ProcessingState {
   message: string
@@ -95,6 +96,7 @@ export function AddSourceDialog({
   onOpenChange, 
   defaultNotebookId 
 }: AddSourceDialogProps) {
+  const { t } = useTranslation()
   // Simplified state management
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
@@ -385,7 +387,7 @@ export function AddSourceDialog({
 
       if (isBatchMode) {
         // Batch submission
-        setProcessingStatus({ message: `Processing ${itemCount} sources...` })
+        setProcessingStatus({ message: t.sources.processingFiles })
         const results = await submitBatch(data)
 
         // Show summary toast
@@ -407,7 +409,7 @@ export function AddSourceDialog({
     } catch (error) {
       console.error('Error creating source:', error)
       setProcessingStatus({
-        message: 'Error creating source. Please try again.',
+        message: t.common.error,
       })
       timeoutRef.current = setTimeout(() => {
         setProcessing(false)
@@ -457,7 +459,7 @@ export function AddSourceDialog({
         <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
           <DialogHeader>
             <DialogTitle>
-              {batchProgress ? 'Processing Batch' : 'Processing Source'}
+              {batchProgress ? t.sources.processingFiles : t.sources.statusProcessing}
             </DialogTitle>
             <DialogDescription>
               {batchProgress
@@ -494,18 +496,18 @@ export function AddSourceDialog({
                     {batchProgress.failed > 0 && (
                       <span className="flex items-center gap-1.5 text-destructive">
                         <XCircleIcon className="h-4 w-4" />
-                        {batchProgress.failed} failed
+                        {batchProgress.failed} {t.common.failed}
                       </span>
                     )}
                   </div>
-                  <span className="text-muted-foreground">
+                   <span className="text-muted-foreground">
                     {batchProgress.completed + batchProgress.failed} / {batchProgress.total}
                   </span>
                 </div>
 
                 {batchProgress.currentItem && (
                   <p className="text-xs text-muted-foreground truncate">
-                    Current: {batchProgress.currentItem}
+                    {t.common.current}: {batchProgress.currentItem}
                   </p>
                 )}
               </>
@@ -532,9 +534,9 @@ export function AddSourceDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] p-0">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>Add New Source</DialogTitle>
+          <DialogTitle>{t.sources.addNew}</DialogTitle>
           <DialogDescription>
-            Add content from links, uploads, or text to your notebooks.
+            {t.sources.processDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -586,7 +588,7 @@ export function AddSourceDialog({
               variant="outline" 
               onClick={handleClose}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
 
             <div className="flex gap-2">
@@ -596,7 +598,7 @@ export function AddSourceDialog({
                   variant="outline"
                   onClick={handlePrevStep}
                 >
-                  Back
+                  {t.common.back}
                 </Button>
               )}
 
@@ -608,7 +610,7 @@ export function AddSourceDialog({
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >
-                  Next
+                  {t.common.next}
                 </Button>
               )}
 
@@ -618,7 +620,7 @@ export function AddSourceDialog({
                 disabled={!currentStepValid || createSource.isPending}
                 className="min-w-[120px]"
               >
-                {createSource.isPending ? 'Creating...' : 'Done'}
+                {createSource.isPending ? t.common.adding : t.common.done}
               </Button>
             </div>
           </div>

@@ -31,8 +31,6 @@ Object.defineProperty(window, 'matchMedia', {
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
-      // Return the last part of the key as a simple translation fallback
-      // This is robust for testing component structure
       const parts = key.split('.')
       const lastPart = parts[parts.length - 1]
       return lastPart.charAt(0).toUpperCase() + lastPart.slice(1)
@@ -46,4 +44,30 @@ vi.mock('react-i18next', () => ({
     type: '3rdParty',
     init: vi.fn(),
   },
+}))
+
+// Mock @/lib/hooks/use-auth
+vi.mock('@/lib/hooks/use-auth', () => ({
+  useAuth: vi.fn(() => ({
+    user: { id: '1', email: 'test@example.com' },
+    logout: vi.fn(),
+    isLoading: false,
+  })),
+}))
+
+// Mock @/lib/stores/sidebar-store
+vi.mock('@/lib/stores/sidebar-store', () => ({
+  useSidebarStore: vi.fn(() => ({
+    isCollapsed: false,
+    toggleCollapse: vi.fn(),
+  })),
+}))
+
+// Mock @/lib/hooks/use-create-dialogs
+vi.mock('@/lib/hooks/use-create-dialogs', () => ({
+  useCreateDialogs: vi.fn(() => ({
+    openSourceDialog: vi.fn(),
+    openNotebookDialog: vi.fn(),
+    openPodcastDialog: vi.fn(),
+  })),
 }))

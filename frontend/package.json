@@ -69,6 +69,7 @@
     "typescript": "^5",
     "vitest": "^3.0.0",
     "@vitest/ui": "^3.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
     "@testing-library/react": "^16.2.0",
     "@testing-library/jest-dom": "^6.6.3"
   }

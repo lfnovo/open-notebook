@@ -11,6 +11,8 @@ export interface ParsedReference {
   endIndex: number
 }
 
+// ExtractedReference and ExtractedReferences are kept for backward compatibility
+// but not currently used in the codebase
 export interface ExtractedReference {
   type: ReferenceType
   id: string

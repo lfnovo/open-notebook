@@ -1,22 +1,27 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { ConnectionError } from '@/lib/types/config'
 import { ConnectionErrorOverlay } from '@/components/errors/ConnectionErrorOverlay'
 import { getConfig, resetConfig } from '@/lib/config'
-import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ConnectionGuardProps {
   children: React.ReactNode
 }
 
 export function ConnectionGuard({ children }: ConnectionGuardProps) {
-  const { t } = useTranslation()
   const [error, setError] = useState<ConnectionError | null>(null)
   const [isChecking, setIsChecking] = useState(true)
+  // Use a ref to track checking status to avoid dependency cycles
+  const isCheckingRef = useRef(true)
 
   const checkConnection = useCallback(async () => {
-    setIsChecking(true)
+    // Prevent re-entry if already checking
+    if (isCheckingRef.current === false) {
+       isCheckingRef.current = true
+       setIsChecking(true)
+    }
+    
     setError(null)
 
     // Reset config cache to force a fresh fetch
@@ -27,41 +32,46 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
 
       // Check if database is offline
       if (config.dbStatus === 'offline') {
-        setError({
+        const dbError: ConnectionError = {
           type: 'database-offline',
           details: {
-            message: t.connectionErrors.dbDesc,
+            message: 'Database is offline', // Fallback message, UI will translate
             attemptedUrl: config.apiUrl,
           },
-        })
+        }
+        setError(dbError)
+        isCheckingRef.current = false
         setIsChecking(false)
         return
       }
 
       // If we got here, connection is good
       setError(null)
+      isCheckingRef.current = false
       setIsChecking(false)
     } catch (err) {
       // API is unreachable
-      const errorMessage =
-        err instanceof Error ? err.message : t.common.error
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
       const attemptedUrl =
         typeof window !== 'undefined'
           ? `${window.location.origin}/api/config`
           : undefined
 
-      setError({
+      const apiError: ConnectionError = {
         type: 'api-unreachable',
         details: {
-          message: t.connectionErrors.apiDesc,
+          message: 'Unable to connect to API', // Fallback message
           technicalMessage: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
           attemptedUrl,
         },
-      })
+      }
+      
+      setError(apiError)
+      isCheckingRef.current = false
       setIsChecking(false)
     }
-  }, [t])
+  }, []) // Empty dependency array - stable callback
 
   // Check connection on mount
   useEffect(() => {

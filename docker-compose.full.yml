@@ -12,12 +12,17 @@ services:
     user: root
     restart: always
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    # image: lfnovo/open_notebook:v1-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8502:8502"
       - "5055:5055"
     env_file:
       - ./docker.env
+    environment:
+      - SURREAL_URL=ws://surrealdb:8000/rpc
     depends_on:
       - surrealdb
     volumes:

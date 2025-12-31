@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
       // Construct the API URL with port 5055
       const apiUrl = `${proto}://${hostname}:5055`
 
-      console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+      }
 
       return NextResponse.json({
         apiUrl,
@@ -61,7 +63,9 @@ export async function GET(request: NextRequest) {
   }
 
   // Priority 3: Fallback to localhost
-  console.log('[runtime-config] Using fallback: http://localhost:5055')
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[runtime-config] Using fallback: http://localhost:5055')
+  }
   return NextResponse.json({
     apiUrl: 'http://localhost:5055',
   })

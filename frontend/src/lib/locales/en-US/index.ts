@@ -1,7 +1,7 @@
 export const enUS = {
   common: {
     search: "Search...",
-    create: "Create",
+    create: "New",
     new: "New",
     cancel: "Cancel",
     delete: "Delete",

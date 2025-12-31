@@ -45,25 +45,35 @@ export function useVersionCheck() {
               },
             })
 
-            console.log(
-              `🔔 [Version Check] Update available: ${config.version} → ${config.latestVersion}`
-            )
+            if (process.env.NODE_ENV === 'development') {
+              console.log(
+                `🔔 [Version Check] Update available: ${config.version} → ${config.latestVersion}`
+              )
+            }
           } else {
-            console.log(
-              `🔕 [Version Check] Notification dismissed for version ${config.latestVersion}`
-            )
+            if (process.env.NODE_ENV === 'development') {
+              console.log(
+                `🔕 [Version Check] Notification dismissed for version ${config.latestVersion}`
+              )
+            }
           }
         } else if (config.latestVersion) {
-          console.log(
-            `✅ [Version Check] Running latest version: ${config.version}`
-          )
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              `✅ [Version Check] Running latest version: ${config.version}`
+            )
+          }
         } else {
-          console.log(
-            `⚠️ [Version Check] Could not check for updates (offline or GitHub unavailable)`
-          )
+          if (process.env.NODE_ENV === 'development') {
+            console.log(
+              `⚠️ [Version Check] Could not check for updates (offline or GitHub unavailable)`
+            )
+          }
         }
       } catch (error) {
-        console.error('❌ [Version Check] Failed to check version:', error)
+        if (process.env.NODE_ENV === 'development') {
+          console.error('❌ [Version Check] Failed to check version:', error)
+        }
         // Silently fail - don't disrupt user experience
       }
     }

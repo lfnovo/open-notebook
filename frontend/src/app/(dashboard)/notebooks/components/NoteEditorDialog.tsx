@@ -11,11 +11,8 @@ import { useCreateNote, useUpdateNote, useNote } from '@/lib/hooks/use-notes'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { InlineEdit } from '@/components/common/InlineEdit'
-<<<<<<< HEAD
 import { cn } from "@/lib/utils";
-=======
 import { useTranslation } from '@/lib/hooks/use-translation'
->>>>>>> 2fe1dc2 (fix(i18n): resolve localization errors, duplicates, and type issues)
 
 const createNoteSchema = z.object({
   title: z.string().optional(),
@@ -160,16 +157,11 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                       value={field.value}
                       onChange={field.onChange}
                       height={420}
-<<<<<<< HEAD
-                      placeholder="Write your note content here..."
+                      placeholder={t.sources.writeNotePlaceholder}
                       className={cn(
                           "w-full h-full min-h-[420px] [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full",
                           !isEditorFullscreen && "rounded-md border"
                       )}
-=======
-                      placeholder={t.sources.writeNotePlaceholder}
-                      className="rounded-md border"
->>>>>>> 2fe1dc2 (fix(i18n): resolve localization errors, duplicates, and type issues)
                     />
                   )}
                 />

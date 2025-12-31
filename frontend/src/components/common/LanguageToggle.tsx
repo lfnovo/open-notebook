@@ -26,7 +26,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         <Button 
           variant={iconOnly ? "ghost" : "outline"} 
           size={iconOnly ? "icon" : "default"} 
-          className={iconOnly ? "h-9 w-full" : "w-full justify-start gap-2"}
+          className={iconOnly ? "h-9 w-full sidebar-menu-item" : "w-full justify-start gap-2 sidebar-menu-item"}
         >
           <Languages className="h-[1.2rem] w-[1.2rem]" />
           {!iconOnly && <span>{t.common.language}</span>}

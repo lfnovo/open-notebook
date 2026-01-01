@@ -355,8 +355,8 @@ export default function SearchPage() {
                 {/* Search Options */}
                 <div className="space-y-4">
                   {/* Search Type */}
-                  <div className="space-y-2">
-                    <Label>{t.searchPage.searchType}</Label>
+                  <div className="space-y-2" role="group" aria-labelledby="search-type-label">
+                    <span id="search-type-label" className="text-sm font-medium leading-none">{t.searchPage.searchType}</span>
                     {!hasEmbeddingModel && (
                       <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
                         <AlertCircle className="h-4 w-4" />
@@ -392,8 +392,8 @@ export default function SearchPage() {
                   </div>
 
                   {/* Search Locations */}
-                  <div className="space-y-2">
-                    <Label>{t.searchPage.searchIn}</Label>
+                  <div className="space-y-2" role="group" aria-labelledby="search-in-label">
+                    <span id="search-in-label" className="text-sm font-medium leading-none">{t.searchPage.searchIn}</span>
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <Checkbox

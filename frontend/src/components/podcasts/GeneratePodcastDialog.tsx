@@ -780,7 +780,6 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                       <SelectContent>
                         {episodeProfiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
-                            {/* @ts-expect-error - dynamic key access */}
                             {t.podcasts.podcastProfiles[profile.name] ?? profile.name}
                           </SelectItem>
                         ))}

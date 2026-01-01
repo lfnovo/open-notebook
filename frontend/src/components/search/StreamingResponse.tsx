@@ -151,7 +151,7 @@ export function StreamingResponse({
       {isStreaming && !finalAnswer && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <LoadingSpinner size="sm" />
-          <span>{t.search.processingQuestion}</span>
+          <span>{t.searchPage.processingQuestion}</span>
         </div>
       )}
     </div>

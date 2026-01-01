@@ -60,9 +60,13 @@ export default function NotebooksPage() {
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <Input
+              id="notebook-search"
+              name="notebook-search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder={t.notebooks.searchPlaceholder}
+              autoComplete="off"
+              aria-label={t.common.accessibility?.searchNotebooks || "Search notebooks"}
               className="w-full sm:w-64"
             />
             <Button onClick={() => setCreateDialogOpen(true)}>

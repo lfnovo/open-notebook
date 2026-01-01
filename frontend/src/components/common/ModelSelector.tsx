@@ -1,5 +1,4 @@
-'use client'
-
+import { useId } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { useModels } from '@/lib/hooks/use-models'
@@ -7,6 +6,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ModelSelectorProps {
+  id?: string
   label?: string
   modelType: 'language' | 'embedding' | 'speech_to_text' | 'text_to_speech'
   value: string
@@ -16,6 +16,7 @@ interface ModelSelectorProps {
 }
 
 export function ModelSelector({
+  id,
   label,
   modelType,
   value,
@@ -25,14 +26,16 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const { t } = useTranslation()
   const { data: models, isLoading } = useModels()
+  const derivedId = useId()
+  const selectId = id || derivedId
 
   // Filter models by type
   const filteredModels = models?.filter(model => model.type === modelType) || []
   return (
     <div className="space-y-2">
-      {label && <Label>{label}</Label>}
+      {label && <Label htmlFor={selectId}>{label}</Label>}
       <Select value={value} onValueChange={onChange} disabled={disabled || isLoading}>
-        <SelectTrigger>
+        <SelectTrigger id={selectId}>
           <SelectValue placeholder={placeholder || t.settings.embeddingOptionPlaceholder} />
         </SelectTrigger>
         <SelectContent>

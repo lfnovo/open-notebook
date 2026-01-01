@@ -28,7 +28,12 @@ export function SettingsForm() {
   const { t } = useTranslation()
   const { data: settings, isLoading, error } = useSettings()
   const updateSettings = useUpdateSettings()
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({})
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    doc: false,
+    url: false,
+    embedding: false,
+    files: false
+  })
   const [hasResetForm, setHasResetForm] = useState(false)
   
   
@@ -104,15 +109,16 @@ export function SettingsForm() {
               name="default_content_processing_engine_doc"
               control={control}
               render={({ field }) => (
-                <Select
-                  key={field.value}
-                  value={field.value || ''}
-                  onValueChange={field.onChange}
-                  disabled={field.disabled || isLoading}
-                >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t.settings.docEnginePlaceholder} />
-                    </SelectTrigger>
+                  <Select
+                    key={field.value}
+                    name={field.name}
+                    value={field.value || ''}
+                    onValueChange={field.onChange}
+                    disabled={field.disabled || isLoading}
+                  >
+                      <SelectTrigger id="doc_engine" className="w-full">
+                        <SelectValue placeholder={t.settings.docEnginePlaceholder} />
+                      </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t.settings.autoRecommended}</SelectItem>
                       <SelectItem value="docling">{t.settings.docling}</SelectItem>
@@ -140,11 +146,12 @@ export function SettingsForm() {
               render={({ field }) => (
                 <Select
                   key={field.value}
+                  name={field.name}
                   value={field.value || ''}
                   onValueChange={field.onChange}
                   disabled={field.disabled || isLoading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id="url_engine" className="w-full">
                     <SelectValue placeholder={t.settings.urlEnginePlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -185,11 +192,12 @@ export function SettingsForm() {
               render={({ field }) => (
                 <Select
                   key={field.value}
+                  name={field.name}
                   value={field.value || ''}
                   onValueChange={field.onChange}
                   disabled={field.disabled || isLoading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id="embedding" className="w-full">
                     <SelectValue placeholder={t.settings.embeddingOptionPlaceholder} />
                   </SelectTrigger>
                   <SelectContent>
@@ -229,11 +237,12 @@ export function SettingsForm() {
               render={({ field }) => (
                 <Select
                   key={field.value}
+                  name={field.name}
                   value={field.value || ''}
                   onValueChange={field.onChange}
                   disabled={field.disabled || isLoading}
                 >
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger id="auto_delete" className="w-full">
                     <SelectValue placeholder={t.settings.autoDeletePlaceholder} />
                   </SelectTrigger>
                    <SelectContent>

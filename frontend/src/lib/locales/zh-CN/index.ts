@@ -448,7 +448,7 @@ export const zhCN = {
     sessionUpdated: "会话已更新",
     sessionDeleted: "会话已删除",
   },
-  search: {
+  searchPage: {
     askAndSearch: "提问与搜索",
     chooseAMode: "选择模式",
     askBeta: "提问 (beta)",
@@ -505,6 +505,11 @@ export const zhCN = {
     processingQuestion: "正在处理您的问题...",
   },
   podcasts: {
+    podcastProfiles: {
+      business_analysis: "商业分析",
+      solo_expert: "独家专家",
+      tech_discussion: "技术研讨",
+    },
     generateEpisode: "生成播客单集",
     generateEpisodeDesc: "在生成新的播客单集之前，选择要包含的内容并配置单集详情。",
     content: "内容",

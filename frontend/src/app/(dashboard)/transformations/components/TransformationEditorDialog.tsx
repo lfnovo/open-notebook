@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -115,6 +115,9 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
         <DialogTitle className="sr-only">
           {isEditing ? t.common.edit : t.transformations.createNew}
         </DialogTitle>
+        <DialogDescription className="sr-only">
+           {isEditing ? t.common.editTransformation : t.transformations.createNew}
+        </DialogDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
@@ -131,10 +134,11 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                     control={control}
                     name="name"
                     render={({ field }) => (
-                      <Input
+                        <Input
                         id="transformation-name"
                         {...field}
                         placeholder={t.transformations.namePlaceholder}
+                        autoComplete="off"
                       />
                     )}
                   />
@@ -156,6 +160,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                            id="transformation-title"
                            {...field}
                            placeholder={t.transformations.titlePlaceholder}
+                           autoComplete="off"
                          />
                       )}
                     />
@@ -191,6 +196,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                          {...field}
                          placeholder={t.transformations.descriptionPlaceholder}
                          rows={2}
+                         autoComplete="off"
                       />
                     )}
                   />
@@ -198,7 +204,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                <Label className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
+                <Label htmlFor="transformation-prompt" className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
                 <Controller
                   control={control}
                   name="prompt"
@@ -210,6 +216,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                        height={420}
                        placeholder={t.transformations.promptPlaceholder}
                        className="rounded-md border"
+                       textareaId="transformation-prompt"
                     />
                   )}
                 />

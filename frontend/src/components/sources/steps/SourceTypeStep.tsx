@@ -282,6 +282,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
       {/* Hide title field in batch mode - titles will be auto-generated */}
       {!isBatchMode && (
         <FormSection
+          htmlFor="source-title"
           title={selectedType === 'text' ? `${t.common.title} *` : `${t.common.title} (${t.common.optional})`}
           description={selectedType === 'text'
             ? t.sources.titleRequired
@@ -289,9 +290,10 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
           }
         >
           <Input
-            id="title"
+            id="source-title"
             {...register('title')}
             placeholder={t.sources.titlePlaceholder}
+            autoComplete="off"
           />
           {errors.title && (
             <p className="text-sm text-destructive mt-1">{errors.title.message}</p>

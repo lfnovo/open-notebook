@@ -45,7 +45,7 @@ export function SaveToNotebooksDialog({
 
   const handleSave = async () => {
     if (selectedNotebooks.length === 0) {
-      toast.error(t.search.selectNotebook)
+      toast.error(t.searchPage.selectNotebook)
       return
     }
 
@@ -60,11 +60,11 @@ export function SaveToNotebooksDialog({
         })
       }
 
-      toast.success(t.search.saveSuccess)
+      toast.success(t.searchPage.saveSuccess)
       setSelectedNotebooks([])
       onOpenChange(false)
     } catch {
-      toast.error(t.search.saveError)
+      toast.error(t.searchPage.saveError)
     }
   }
 
@@ -78,9 +78,9 @@ export function SaveToNotebooksDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t.search.saveToNotebooks}</DialogTitle>
+          <DialogTitle>{t.searchPage.saveToNotebooks}</DialogTitle>
           <DialogDescription>
-            {t.search.selectNotebook}
+            {t.searchPage.selectNotebook}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,10 +110,10 @@ export function SaveToNotebooksDialog({
             {createNote.isPending ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                {t.search.saving}
+                {t.searchPage.saving}
               </>
             ) : (
-              t.search.saveToNotebook
+              t.searchPage.saveToNotebook
             )}
           </Button>
         </DialogFooter>

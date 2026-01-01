@@ -21,7 +21,7 @@ export const zhTW = {
     system: "系統",
     language: "語言",
     english: "English",
-    chinese: "繁體中文",
+    chinese: "簡體中文",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",
@@ -448,7 +448,7 @@ export const zhTW = {
     sessionUpdated: "會話已更新",
     sessionDeleted: "會話已刪除",
   },
-  search: {
+  searchPage: {
     askAndSearch: "提問與搜尋",
     chooseAMode: "選擇模式",
     askBeta: "提問 (beta)",
@@ -505,6 +505,11 @@ export const zhTW = {
     processingQuestion: "正在處理您的問題...",
   },
   podcasts: {
+    podcastProfiles: {
+      business_analysis: "商業分析",
+      solo_expert: "獨家專家",
+      tech_discussion: "技術研討",
+    },
     generateEpisode: "生成播客單集",
     generateEpisodeDesc: "在生成新的播客單集之前，選擇要包含的內容並設定單集詳情。",
     content: "內容",

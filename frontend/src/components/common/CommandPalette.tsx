@@ -168,21 +168,21 @@ export function CommandPalette() {
       className="sm:max-w-lg"
     >
       <CommandInput
-        placeholder={t.search.enterSearchPlaceholder}
+        placeholder={t.searchPage.enterSearchPlaceholder}
         value={query}
         onValueChange={setQuery}
       />
       <CommandList>
         {/* Search/Ask - show FIRST when there's a query with no command match */}
         {showSearchFirst && (
-          <CommandGroup heading={t.search.searchAndAsk} forceMount>
+          <CommandGroup heading={t.searchPage.searchAndAsk} forceMount>
             <CommandItem
               value={`__search__ ${query}`}
               onSelect={handleSearch}
               forceMount
             >
               <Search className="h-4 w-4" />
-              <span>{t.search.searchResultsFor.replace('{query}', query)}</span>
+              <span>{t.searchPage.searchResultsFor.replace('{query}', query)}</span>
             </CommandItem>
             <CommandItem
               value={`__ask__ ${query}`}
@@ -190,7 +190,7 @@ export function CommandPalette() {
               forceMount
             >
               <MessageCircleQuestion className="h-4 w-4" />
-              <span>{t.search.askAbout.replace('{query}', query)}</span>
+              <span>{t.searchPage.askAbout.replace('{query}', query)}</span>
             </CommandItem>
           </CommandGroup>
         )}
@@ -262,14 +262,14 @@ export function CommandPalette() {
         {query.trim() && hasCommandMatch && (
           <>
             <CommandSeparator />
-            <CommandGroup heading={t.search.orSearchKb} forceMount>
+            <CommandGroup heading={t.searchPage.orSearchKb} forceMount>
               <CommandItem
                 value={`__search__ ${query}`}
                 onSelect={handleSearch}
                 forceMount
               >
                 <Search className="h-4 w-4" />
-                <span>{t.search.searchResultsFor.replace('{query}', query)}</span>
+                <span>{t.searchPage.searchResultsFor.replace('{query}', query)}</span>
               </CommandItem>
               <CommandItem
                 value={`__ask__ ${query}`}
@@ -277,7 +277,7 @@ export function CommandPalette() {
                 forceMount
               >
                 <MessageCircleQuestion className="h-4 w-4" />
-                <span>{t.search.askAbout.replace('{query}', query)}</span>
+                <span>{t.searchPage.askAbout.replace('{query}', query)}</span>
               </CommandItem>
             </CommandGroup>
           </>

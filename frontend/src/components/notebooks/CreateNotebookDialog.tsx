@@ -80,7 +80,7 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
               id="notebook-name"
               {...register('name')}
               placeholder={t.notebooks.namePlaceholder}
-              autoFocus
+              autoComplete="off"
             />
             {errors.name && (
               <p className="text-sm text-destructive">{errors.name.message}</p>

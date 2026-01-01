@@ -23,7 +23,7 @@ export function useTranslation() {
 
       return new Proxy(proxyTarget, {
         get(target, prop) {
-          // Handle standard properties
+          // Handle standard properties of the function itself
           if (typeof prop === 'symbol' || prop in target) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (target as any)[prop];
@@ -33,29 +33,32 @@ export function useTranslation() {
 
           const currentPath = path ? `${path}.${prop}` : prop;
 
-          // If the property is a standard string method or property (like .replace, .length, .split)
-          // we resolve the current path to its translation and return the string's property
-          if (prop in String.prototype || prop === 'length') {
-            const translated = i18nTranslateCopy(path);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const val = (translated as any)[prop];
-            return typeof val === 'function' ? val.bind(translated) : val;
-          }
-
-          // Check if currentPath is a leaf string node or an object
+          // Check if currentPath is a direct translation key
           const result = i18nTranslateCopy(currentPath, { returnObjects: true });
 
+          // If it's a leaf string node, return it directly
           if (typeof result === 'string') {
-            // Leaf node: return the string directly so React can render it
             return result;
           }
 
-          // If result is undefined or null, return empty string to prevent .replace() errors
-          if (result === undefined || result === null) {
-            return '';
+          // If result is NOT a string but we are accessing a String.prototype method 
+          // (meaning the user wants to treat the CURRENT path as a string and call a method on it)
+          if (prop === 'replace' || prop === 'split' || prop === 'length') {
+            const translated = i18nTranslateCopy(path);
+            if (typeof translated === 'string') {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const val = (translated as any)[prop];
+              return typeof val === 'function' ? val.bind(translated) : val;
+            }
           }
 
-          // Otherwise, assume it's a nested key and return a new proxy for that path
+          // If result is undefined/null or just the path string (meaning i18n didn't find it)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (result === undefined || result === null || (result as any) === currentPath) {
+             return createProxy(currentPath);
+          }
+
+          // Otherwise, it's an object (nested key structure), continue proxying
           return createProxy(currentPath);
         }
       });

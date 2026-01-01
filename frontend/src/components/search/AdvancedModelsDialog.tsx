@@ -59,35 +59,35 @@ export function AdvancedModelsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t.search.advancedModelTitle}</DialogTitle>
+          <DialogTitle>{t.searchPage.advancedModelTitle}</DialogTitle>
           <DialogDescription>
-            {t.search.advancedModelDesc}
+            {t.searchPage.advancedModelDesc}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <ModelSelector
-            label={t.search.strategyModel}
+            label={t.searchPage.strategyModel}
             modelType="language"
             value={strategyModel}
             onChange={setStrategyModel}
-            placeholder={t.search.selectStrategyPlaceholder}
+            placeholder={t.searchPage.selectStrategyPlaceholder}
           />
 
           <ModelSelector
-            label={t.search.answerModel}
+            label={t.searchPage.answerModel}
             modelType="language"
             value={answerModel}
             onChange={setAnswerModel}
-            placeholder={t.search.selectAnswerPlaceholder}
+            placeholder={t.searchPage.selectAnswerPlaceholder}
           />
 
           <ModelSelector
-            label={t.search.finalAnswerModel}
+            label={t.searchPage.finalAnswerModel}
             modelType="language"
             value={finalAnswerModel}
             onChange={setFinalAnswerModel}
-            placeholder={t.search.selectFinalPlaceholder}
+            placeholder={t.searchPage.selectFinalPlaceholder}
           />
         </div>
 
@@ -96,7 +96,7 @@ export function AdvancedModelsDialog({
             {t.common.cancel}
           </Button>
           <Button onClick={handleSave}>
-            {t.search.saveChanges}
+            {t.searchPage.saveChanges}
           </Button>
         </DialogFooter>
       </DialogContent>

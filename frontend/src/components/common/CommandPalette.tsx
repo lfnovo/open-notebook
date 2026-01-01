@@ -44,9 +44,9 @@ const getNavigationItems = (t: TranslationKeys) => [
 ]
 
 const getCreateItems = (t: TranslationKeys) => [
-  { name: t.common.create + ' ' + t.common.source, action: 'source', icon: FileText },
-  { name: t.common.create + ' ' + t.common.notebook, action: 'notebook', icon: Book },
-  { name: t.common.create + ' ' + t.common.podcast, action: 'podcast', icon: Mic },
+  { name: t.common.newSource, action: 'source', icon: FileText },
+  { name: t.common.newNotebook, action: 'notebook', icon: Book },
+  { name: t.common.newPodcast, action: 'podcast', icon: Mic },
 ]
 
 const getThemeItems = (t: TranslationKeys) => [

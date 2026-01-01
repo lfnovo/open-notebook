@@ -66,7 +66,7 @@ export function SystemInfo() {
             <span className="text-sm font-medium">{t.advanced.status}</span>
             {config?.hasUpdate ? (
               <Badge variant="destructive">
-                {t.advanced.updateAvailable}
+                {t.advanced.updateAvailable.replace('{version}', config.latestVersion || '')}
               </Badge>
             ) : config?.latestVersion ? (
               <Badge variant="outline" className="text-green-600 border-green-600">

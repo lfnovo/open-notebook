@@ -731,7 +731,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                             <span className="text-xs text-muted-foreground">
                                               {t.common.updated}{' '}
                                               {new Date(note.updated).toLocaleString(
-                                                language === 'zh-CN' ? 'zh-CN' : 'en-US'
+                                                language.startsWith('zh') ? language : 'en-US'
                                               )}
                                             </span>
                                           </div>

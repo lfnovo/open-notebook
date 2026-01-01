@@ -60,12 +60,13 @@ export function SessionManager({
   const { data: models } = useModels()
 
   // Helper to get model name from ID
+  const customModelLabel = t.common.customModel
   const getModelName = useMemo(() => {
     return (modelId: string) => {
       const model = models?.find(m => m.id === modelId)
-      return model?.name || t.common.customModel
+      return model?.name || customModelLabel
     }
-  }, [models])
+  }, [models, customModelLabel])
 
   const handleCreateSession = () => {
     if (newSessionTitle.trim()) {

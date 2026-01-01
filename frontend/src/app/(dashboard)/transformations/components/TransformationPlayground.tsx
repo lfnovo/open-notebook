@@ -57,7 +57,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="transformation">{t.navigation.transformations.replace('s', '')}</Label>
+              <Label htmlFor="transformation">{t.navigation.transformation}</Label>
               <Select value={selectedId} onValueChange={setSelectedId}>
                 <SelectTrigger id="transformation">
                   <SelectValue placeholder={t.transformations.selectToStart} />
@@ -78,7 +78,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
                 modelType="language"
                 value={modelId}
                 onChange={setModelId}
-                placeholder={t.settings.embeddingOptionPlaceholder}
+                placeholder={t.transformations.selectModel}
               />
             </div>
           </div>

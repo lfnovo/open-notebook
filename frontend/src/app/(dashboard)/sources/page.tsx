@@ -277,7 +277,7 @@ export default function SourcesPage() {
         <EmptyState
           icon={FileText}
           title={t.sources.noSourcesYet}
-          description={t.sources.allSourcesDesc.split('.')[0] + '.'}
+          description={t.sources.allSourcesDescShort}
         />
       </AppShell>
     )
@@ -322,7 +322,7 @@ export default function SourcesPage() {
                     onClick={() => toggleSort('created')}
                     className="h-8 px-2 hover:bg-muted"
                   >
-                    {t.common.created}
+                    {t.common.created_label}
                     <ArrowUpDown className={cn(
                       "ml-2 h-3 w-3",
                       sortBy === 'created' ? 'opacity-100' : 'opacity-30'

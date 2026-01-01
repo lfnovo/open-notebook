@@ -106,7 +106,7 @@ export function SpeakerProfilesPanel({
                       className="text-xs"
                     >
                       {usageCount > 0
-                        ? t.podcasts.usedByCount.replace('{count}', usageCount.toString())
+                        ? (usageCount === 1 ? t.podcasts.usedByCount_one : t.podcasts.usedByCount_other.replace('{count}', usageCount.toString()))
                         : t.podcasts.unused}
                     </Badge>
                   </div>

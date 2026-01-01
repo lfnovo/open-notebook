@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useTranslation as useI18nTranslation } from 'react-i18next'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { Loader2 } from 'lucide-react'
 
 /**
@@ -9,7 +10,8 @@ import { Loader2 } from 'lucide-react'
  * to provide a smoother UX and hide the flash caused by re-rendering.
  */
 export function LanguageLoadingOverlay() {
-  const { i18n } = useTranslation()
+  const { i18n } = useI18nTranslation()
+  const { t } = useTranslation()
   const [isChanging, setIsChanging] = useState(false)
 
   const handleLanguageChanging = useCallback(() => {
@@ -42,7 +44,7 @@ export function LanguageLoadingOverlay() {
     >
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-sm text-muted-foreground">Loading...</span>
+        <span className="text-sm text-muted-foreground">{t.common.loading}</span>
       </div>
     </div>
   )

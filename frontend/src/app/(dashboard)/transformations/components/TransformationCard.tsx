@@ -88,7 +88,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
 
               {transformation.description && (
                 <div>
-                  <p className="text-sm text-muted-foreground">{t.notebooks.addDescription.replace('...', '')}</p>
+                  <p className="text-sm text-muted-foreground">{t.common.description}</p>
                   <p className="text-sm leading-6">{transformation.description}</p>
                 </div>
               )}

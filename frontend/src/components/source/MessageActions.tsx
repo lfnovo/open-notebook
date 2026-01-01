@@ -20,7 +20,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
 
   const handleSaveToNote = () => {
     if (!notebookId) {
-      toast.error(t.common.error)
+      toast.error(t.sources.cannotSaveNoteNoNotebook)
       return
     }
 

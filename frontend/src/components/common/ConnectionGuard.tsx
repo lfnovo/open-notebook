@@ -13,14 +13,16 @@ export function ConnectionGuard({ children }: ConnectionGuardProps) {
   const [error, setError] = useState<ConnectionError | null>(null)
   const [isChecking, setIsChecking] = useState(true)
   // Use a ref to track checking status to avoid dependency cycles
-  const isCheckingRef = useRef(true)
+  const isCheckingRef = useRef(false)
 
   const checkConnection = useCallback(async () => {
     // Prevent re-entry if already checking
-    if (isCheckingRef.current === false) {
-       isCheckingRef.current = true
-       setIsChecking(true)
+    if (isCheckingRef.current) {
+       return
     }
+    
+    isCheckingRef.current = true
+    setIsChecking(true)
     
     setError(null)
 

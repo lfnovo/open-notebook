@@ -251,13 +251,13 @@ export function ChatPanel({
               {contextIndicators.insights?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <Lightbulb className="h-3 w-3" />
-                  {contextIndicators.insights.length} {t.common.insights}
+                  {contextIndicators.insights.length} {contextIndicators.insights.length === 1 ? t.common.insight : t.common.insights}
                 </Badge>
               )}
               {contextIndicators.notes?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <StickyNote className="h-3 w-3" />
-                  {contextIndicators.notes.length} {t.common.notes}
+                  {contextIndicators.notes.length} {contextIndicators.notes.length === 1 ? t.common.note : t.common.notes}
                 </Badge>
               )}
             </div>

@@ -43,11 +43,8 @@ describe('AppSidebar', () => {
     
     // Use data-testid for reliable selection
     fireEvent.click(screen.getByTestId('sidebar-toggle'))
-    // Wait, line 181 has aria-label={t.common.create} in collapsed mode
-    // Component has many buttons. Let's look for the one with specific icon or class?
     
-    // Let's just verify toggling logic by finding the button that calls toggleCollapse
-    // Based on code: isCollapsed ? Menu : ChevronLeft
+    expect(toggleCollapse).toHaveBeenCalled()
   })
 
   it('shows collapsed view when isCollapsed is true', () => {
@@ -59,6 +56,6 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
     
     // In collapsed mode, app name shouldn't be visible (as text)
-    expect(screen.queryByText(/AppName/i)).toBeNull()
+    expect(screen.queryByText(/Open Notebook/i)).toBeNull()
   })
 })

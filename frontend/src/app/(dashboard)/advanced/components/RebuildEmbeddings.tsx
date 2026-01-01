@@ -151,8 +151,8 @@ export function RebuildEmbeddings() {
               </p>
             </div>
 
-            <div className="space-y-3">
-              <Label>{t.advanced.rebuild.include}</Label>
+            <div className="space-y-3" role="group" aria-labelledby="include-label">
+              <span id="include-label" className="text-sm font-medium leading-none">{t.advanced.rebuild.include}</span>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox

@@ -117,7 +117,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
 
           {output && (
             <div className="space-y-2">
-              <Label>{t.transformations.outputLabel}</Label>
+              <span className="text-sm font-medium leading-none">{t.transformations.outputLabel}</span>
               <Card>
                 <ScrollArea className="h-[400px]">
                   <CardContent className="pt-6">

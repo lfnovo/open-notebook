@@ -63,6 +63,14 @@ Maintain research integrity with comprehensive citation support.
 
 ## 🎵 Advanced Features
 
+### 🖥️ **[ACM Scholar CLI](cli-tool.md)** 🆕
+Command-line tool for academic research powered by Gemini API.
+- Academic paper search via OpenAlex
+- PDF download from multiple sources
+- AI-powered Q&A with Gemini
+- Data export for model fine-tuning
+- Research activity analytics
+
 ### 🎙️ **[Podcasts](podcasts.md)**
 Create professional multi-speaker podcasts from your research.
 - Advanced 1-4 speaker system (vs Google Notebook LM's 2-speaker limit)

@@ -68,19 +68,6 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 ---
 
-## ⚠️ IMPORTANT: v1.0 Breaking Changes
-
-**If you're upgrading from a previous version**, please note:
-
-- 🏷️ **Docker tags have changed**: The `latest` tag is now **frozen** at the last Streamlit version
-- 🆕 **Use `v1-latest` tag** for the new React/Next.js version (recommended)
-- 🔌 **Port 5055 required**: You must expose port 5055 for the API to work
-- 📖 **Read the migration guide**: See [MIGRATION.md](MIGRATION.md) for detailed upgrade instructions
-
-**New users**: You can ignore this notice and proceed with the Quick Start below using the `v1-latest-single` tag.
-
----
-
 ## 🆚 Open Notebook vs Google Notebook LM
 
 | Feature | Open Notebook | Google Notebook LM | Advantage |

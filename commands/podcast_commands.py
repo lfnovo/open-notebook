@@ -8,7 +8,7 @@ from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.config import DATA_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.podcast import EpisodeProfile, PodcastEpisode, SpeakerProfile
+from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
 
 try:
     from podcast_creator import configure, create_podcast

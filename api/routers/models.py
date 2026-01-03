@@ -11,7 +11,7 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.domain.models import DefaultModels, Model
+from open_notebook.ai.models import DefaultModels, Model
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()

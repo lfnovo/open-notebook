@@ -12,7 +12,7 @@ from api.models import (
     TransformationResponse,
     TransformationUpdate,
 )
-from open_notebook.domain.models import Model
+from open_notebook.ai.models import Model
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.graphs.transformation import graph as transformation_graph

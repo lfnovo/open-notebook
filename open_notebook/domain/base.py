@@ -111,7 +111,7 @@ class ObjectModel(BaseModel):
         return None
 
     async def save(self) -> None:
-        from open_notebook.domain.models import model_manager
+        from open_notebook.ai.models import model_manager
 
         try:
             self.model_validate(self.model_dump(), strict=True)

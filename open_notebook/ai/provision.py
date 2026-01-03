@@ -2,7 +2,7 @@ from esperanto import LanguageModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 
-from open_notebook.domain.models import model_manager
+from open_notebook.ai.models import model_manager
 from open_notebook.utils import token_count
 
 

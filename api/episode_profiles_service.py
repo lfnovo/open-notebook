@@ -7,7 +7,7 @@ from typing import List
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.podcast import EpisodeProfile
+from open_notebook.podcasts.models import EpisodeProfile
 
 
 class EpisodeProfilesService:

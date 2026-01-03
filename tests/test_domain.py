@@ -8,13 +8,13 @@ that can be tested without database mocking.
 import pytest
 from pydantic import ValidationError
 
+from open_notebook.ai.models import ModelManager
 from open_notebook.domain.base import RecordModel
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.models import ModelManager
 from open_notebook.domain.notebook import Note, Notebook, Source
-from open_notebook.domain.podcast import EpisodeProfile, SpeakerProfile
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
+from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 # ============================================================================
 # TEST SUITE 1: RecordModel Singleton Pattern

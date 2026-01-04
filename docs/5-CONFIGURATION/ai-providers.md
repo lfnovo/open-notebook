@@ -27,15 +27,15 @@ OPENAI_API_KEY=sk-proj-xxxxx
 ```
 
 **Available Models (in Open Notebook):**
-- `gpt-4o` — Best quality, fast, expensive
+- `gpt-4o` — Best quality, fast (latest version)
 - `gpt-4o-mini` — Fast, cheap, good for testing
-- `gpt-4-turbo` — Older, good reasoning
-- `gpt-3.5-turbo` — Cheapest, basic quality
+- `o1` — Advanced reasoning model (slower, more expensive)
+- `o1-mini` — Faster reasoning model
 
 **Recommended:**
 - For general use: `gpt-4o` (best balance)
 - For testing/cheap: `gpt-4o-mini` (90% cheaper)
-- For deep analysis: `gpt-4o` (best reasoning)
+- For complex reasoning: `o1` (best for hard problems)
 
 **Cost Estimate:**
 ```
@@ -72,14 +72,15 @@ ANTHROPIC_API_KEY=sk-ant-xxxxx
 ```
 
 **Available Models:**
-- `claude-3-5-sonnet-20241022` — Recommended, best quality
+- `claude-sonnet-4-5-20250929` — Latest, best quality (recommended)
+- `claude-3-5-sonnet-20241022` — Previous generation, still excellent
 - `claude-3-5-haiku-20241022` — Fast, cheap
-- `claude-3-opus-20250219` — Most powerful, expensive
+- `claude-opus-4-5-20251101` — Most powerful, expensive
 
 **Recommended:**
-- For general use: `claude-3-5-sonnet` (best overall)
+- For general use: `claude-sonnet-4-5` (best overall, latest)
 - For cheap: `claude-3-5-haiku` (80% cheaper)
-- For complex: `claude-3-opus` (most capable)
+- For complex: `claude-opus-4-5` (most capable)
 
 **Cost Estimate:**
 ```
@@ -122,14 +123,15 @@ GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/models
 ```
 
 **Available Models:**
-- `gemini-2.0-flash` — Recommended, fast, cheap
-- `gemini-1.5-pro` — More capable, slower
-- `gemini-1.5-flash` — Fastest, cheapest
+- `gemini-2.0-flash-exp` — Latest experimental, fastest (recommended)
+- `gemini-2.0-flash` — Stable version, fast, cheap
+- `gemini-1.5-pro-latest` — More capable, longer context
+- `gemini-1.5-flash` — Previous generation, very cheap
 
 **Recommended:**
-- For general use: `gemini-2.0-flash` (best value)
+- For general use: `gemini-2.0-flash-exp` (best value, latest)
 - For cheap: `gemini-1.5-flash` (very cheap)
-- For complex: `gemini-1.5-pro` (most capable)
+- For complex/long context: `gemini-1.5-pro-latest` (2M token context)
 
 **Advantages:**
 - Very long context (1M tokens)
@@ -163,13 +165,15 @@ GROQ_API_KEY=gsk_xxxxx
 ```
 
 **Available Models:**
-- `mixtral-8x7b-32768` — Best on Groq
-- `llama-3.3-70b-versatile` — Good alternative
-- `llama-2-70b-chat` — Older but capable
+- `llama-3.3-70b-versatile` — Best on Groq (recommended)
+- `llama-3.1-70b-versatile` — Fast, capable
+- `mixtral-8x7b-32768` — Good alternative
+- `gemma2-9b-it` — Small, very fast
 
 **Recommended:**
-- For speed/cost: `mixtral-8x7b-32768`
-- For quality: `llama-3.3-70b-versatile`
+- For quality: `llama-3.3-70b-versatile` (best overall)
+- For speed: `gemma2-9b-it` (ultra-fast)
+- For balance: `llama-3.1-70b-versatile`
 
 **Advantages:**
 - Ultra-fast inference
@@ -207,17 +211,19 @@ OPENROUTER_API_KEY=sk-or-xxxxx
 ```
 
 **Available Models (100+ options):**
-- OpenAI models: `openai/gpt-4o`, `openai/gpt-4o-mini`
-- Anthropic: `anthropic/claude-3.5-sonnet`, `anthropic/claude-3-haiku`
-- Google: `google/gemini-pro`, `google/gemini-flash-1.5`
-- Meta: `meta-llama/llama-3.3-70b-instruct`
-- Mistral: `mistralai/mistral-large`
+- OpenAI: `openai/gpt-4o`, `openai/o1`
+- Anthropic: `anthropic/claude-sonnet-4.5`, `anthropic/claude-3.5-haiku`
+- Google: `google/gemini-2.0-flash-exp`, `google/gemini-1.5-pro`
+- Meta: `meta-llama/llama-3.3-70b-instruct`, `meta-llama/llama-3.1-405b-instruct`
+- Mistral: `mistralai/mistral-large-2411`
+- DeepSeek: `deepseek/deepseek-chat`
 - And many more...
 
 **Recommended:**
-- For quality: `anthropic/claude-3.5-sonnet`
-- For speed/cost: `google/gemini-flash-1.5`
+- For quality: `anthropic/claude-sonnet-4.5` (best overall)
+- For speed/cost: `google/gemini-2.0-flash-exp` (very fast, cheap)
 - For open-source: `meta-llama/llama-3.3-70b-instruct`
+- For reasoning: `openai/o1`
 
 **Advantages:**
 - One API key for 100+ models
@@ -269,17 +275,19 @@ OLLAMA_API_BASE=http://localhost:11434
 ```
 
 **Available Models:**
-- `mistral` — Recommended, balanced
-- `llama2` — Good general purpose
-- `neural-chat` — Conversational
-- `phi` — Small, fast
-- `openchat` — Open source
+- `llama3.3:70b` — Best quality (requires 40GB+ RAM)
+- `llama3.1:8b` — Recommended, balanced (8GB RAM)
+- `qwen2.5:7b` — Excellent for code and reasoning
+- `mistral:7b` — Good general purpose
+- `phi3:3.8b` — Small, fast (4GB RAM)
+- `gemma2:9b` — Google's model, balanced
 - Many more: `ollama list` to see available
 
 **Recommended:**
-- For general use: `mistral` (best balance)
-- For speed: `phi` (small, fast)
-- For quality: `llama2` (larger, better)
+- For quality (with GPU): `llama3.3:70b` (best)
+- For general use: `llama3.1:8b` (best balance)
+- For speed/low memory: `phi3:3.8b` (very fast)
+- For coding: `qwen2.5:7b` (excellent at code)
 
 **Hardware Requirements:**
 ```
@@ -437,34 +445,22 @@ EMBEDDING_PROVIDER=openai  # or custom
 
 ---
 
-## Comparison Table
-
-| Provider | Speed | Cost | Quality | Privacy | Models |
-|----------|-------|------|---------|---------|--------|
-| **OpenAI** | Fast | Medium | Excellent | Low | Many |
-| **Anthropic** | Fast | Medium | Excellent | Low | Few |
-| **Google Gemini** | Fast | Medium | Good | Low | Few |
-| **Groq** | Very Fast | Very Low | Good | Low | Few |
-| **OpenRouter** | Varies | Varies | Varies | Low | 100+ |
-| **Ollama (Local)** | Slow | Free | Good | Max | Many |
-| **LM Studio** | Slow | Free | Good | Max | Many |
-| **Azure OpenAI** | Fast | Medium | Excellent | High | Many |
-
----
-
 ## Choosing Your Provider
 
-**For most people:** OpenAI or Anthropic
-- Cloud-based (no setup)
-- Best quality
-- Reasonable cost
-- Simplest setup
+**1. Don't want to run locally and don't want to mess around with different providers:** 
 
-**For budget-conscious:** Groq or Ollama
+Use OpenAI
+- Cloud-based
+- Good quality
+- Reasonable cost
+- Simplest setup, supports all modes (text, embedding, tts, stt, etc)
+
+**For budget-conscious:** Groq, OpenRouter or Ollama
 - Groq: Super cheap cloud
 - Ollama: Free, but local
+- OpenRouter: many open source models very accessible
 
-**For privacy-first:** Ollama or LM Studio
+**For privacy-first:** Ollama or LM Studio and [Speaches](local-tts.md)
 - Everything stays local
 - Works offline
 - No API keys sent anywhere
@@ -486,3 +482,13 @@ EMBEDDING_PROVIDER=openai  # or custom
 6. **Verify it works** with a test chat
 
 Done!
+
+---
+
+## Related
+
+- **[Environment Reference](environment-reference.md)** - Complete list of all environment variables
+- **[Advanced Configuration](advanced.md)** - Timeouts, SSL, performance tuning
+- **[Ollama Setup](ollama.md)** - Detailed Ollama configuration guide
+- **[OpenAI-Compatible](openai-compatible.md)** - LM Studio and other compatible providers
+- **[Troubleshooting](../6-TROUBLESHOOTING/quick-fixes.md)** - Common issues and fixes

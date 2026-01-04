@@ -1,6 +1,43 @@
 # Open Notebook Architecture
 
-## Overview
+## High-Level Overview
+
+Open Notebook follows a three-tier architecture with clear separation of concerns:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Your Browser                                           │
+│  Access: http://your-server-ip:8502                     │
+└────────────────┬────────────────────────────────────────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │   Port 8502   │  ← Next.js Frontend (what you see)
+         │   Frontend    │    Also proxies API requests internally!
+         └───────┬───────┘
+                 │ proxies /api/* requests ↓
+                 ▼
+         ┌───────────────┐
+         │   Port 5055   │  ← FastAPI Backend (handles requests)
+         │     API       │
+         └───────┬───────┘
+                 │
+                 ▼
+         ┌───────────────┐
+         │   SurrealDB   │  ← Database (internal, auto-configured)
+         │   (Port 8000) │
+         └───────────────┘
+```
+
+**Key Points:**
+- **v1.1+**: Next.js automatically proxies `/api/*` requests to the backend, simplifying reverse proxy setup
+- Your browser loads the frontend from port 8502
+- The frontend needs to know where to find the API - when accessing remotely, set: `API_URL=http://your-server-ip:5055`
+- **Behind reverse proxy?** You only need to proxy to port 8502 now! See [Reverse Proxy Configuration](../5-CONFIGURATION/reverse-proxy.md)
+
+---
+
+## Detailed Architecture
 
 Open Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
 

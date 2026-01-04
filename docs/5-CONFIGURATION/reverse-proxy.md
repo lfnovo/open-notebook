@@ -106,6 +106,33 @@ API_URL=https://your-domain.com
 
 ---
 
+## Understanding API_URL
+
+The frontend uses a three-tier priority system to determine the API URL:
+
+1. **Runtime Configuration** (Highest Priority): `API_URL` environment variable set at container runtime
+2. **Build-time Configuration**: `NEXT_PUBLIC_API_URL` baked into the Docker image
+3. **Auto-detection** (Fallback): Infers from the incoming HTTP request headers
+
+### Auto-Detection Details
+
+When `API_URL` is not set, the Next.js frontend:
+- Analyzes the incoming HTTP request
+- Extracts the hostname from the `host` header
+- Respects the `X-Forwarded-Proto` header (for HTTPS behind reverse proxies)
+- Constructs the API URL as `{protocol}://{hostname}:5055`
+- Example: Request to `http://10.20.30.20:8502` → API URL becomes `http://10.20.30.20:5055`
+
+**Why set API_URL explicitly?**
+- **Reliability**: Auto-detection can fail with complex proxy setups
+- **HTTPS**: Ensures frontend uses `https://` when behind SSL-terminating proxy
+- **Custom domains**: Works correctly with domain names instead of IP addresses
+- **Port mapping**: Avoids exposing port 5055 in the URL when using reverse proxy
+
+**Important**: Don't include `/api` at the end - the system adds this automatically!
+
+---
+
 ## Complete Docker Compose Example
 
 ```yaml
@@ -225,6 +252,190 @@ location / {
 
 ---
 
+## Advanced Scenarios
+
+### Remote Server Access (LAN/VPS)
+
+Accessing Open Notebook from a different machine on your network:
+
+**Step 1: Get your server IP**
+```bash
+# On the server running Open Notebook:
+hostname -I
+# or
+ifconfig | grep "inet "
+# Note the IP (e.g., 192.168.1.100)
+```
+
+**Step 2: Configure API_URL**
+```bash
+# In docker-compose.yml or .env:
+API_URL=http://192.168.1.100:5055
+```
+
+**Step 3: Expose ports**
+```yaml
+services:
+  open-notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - API_URL=http://192.168.1.100:5055
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+```
+
+**Step 4: Access from client machine**
+```bash
+# In browser on other machine:
+http://192.168.1.100:8502
+```
+
+**Troubleshooting**:
+- Check firewall: `sudo ufw allow 8502 && sudo ufw allow 5055`
+- Verify connectivity: `ping 192.168.1.100` from client machine
+- Test port: `telnet 192.168.1.100 8502` from client machine
+
+---
+
+### API on Separate Subdomain
+
+Host the API and frontend on different subdomains:
+
+**docker-compose.yml:**
+```yaml
+services:
+  open-notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    environment:
+      - API_URL=https://api.notebook.example.com
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    # Don't expose ports (nginx handles routing)
+```
+
+**nginx.conf:**
+```nginx
+# Frontend server
+server {
+    listen 443 ssl http2;
+    server_name notebook.example.com;
+
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    location / {
+        proxy_pass http://open-notebook:8502;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+
+# API server (separate subdomain)
+server {
+    listen 443 ssl http2;
+    server_name api.notebook.example.com;
+
+    ssl_certificate /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+
+    location / {
+        proxy_pass http://open-notebook:5055;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Use case**: Separate DNS records, different rate limiting, or isolated API access control.
+
+---
+
+### Multi-Container Deployment (Advanced)
+
+For complex deployments with separate frontend and API containers:
+
+**docker-compose.yml:**
+```yaml
+services:
+  frontend:
+    image: lfnovo/open_notebook_frontend:v1-latest
+    environment:
+      - API_URL=https://notebook.example.com
+    ports:
+      - "8502:8502"
+
+  api:
+    image: lfnovo/open_notebook_api:v1-latest
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    ports:
+      - "5055:5055"
+    depends_on:
+      - surrealdb
+
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    command: start --log trace --user root --pass root file:/mydata/database.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
+```
+
+**nginx.conf:**
+```nginx
+http {
+    upstream frontend {
+        server frontend:8502;
+    }
+
+    upstream api {
+        server api:5055;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name notebook.example.com;
+
+        # API routes
+        location /api/ {
+            proxy_pass http://api/api/;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
+
+        # Frontend (catch-all)
+        location / {
+            proxy_pass http://frontend;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+}
+```
+
+**Note**: Most users should use the single-container approach (`v1-latest-single`). Multi-container is only needed for custom scaling or isolation requirements.
+
+---
+
 ## SSL Certificates
 
 ### Let's Encrypt with Certbot
@@ -309,19 +520,219 @@ proxy_send_timeout 300s;
 
 ---
 
+### How to Debug Configuration Issues
+
+**Step 1: Check browser console** (F12 → Console tab)
+```
+Look for messages starting with 🔧 [Config]
+These show the configuration detection process
+You'll see which API URL is being used
+```
+
+**Example good output:**
+```
+✅ [Config] Runtime API URL from server: https://your-domain.com
+```
+
+**Example bad output:**
+```
+❌ [Config] Failed to fetch runtime config
+⚠️  [Config] Using auto-detected URL: http://localhost:5055
+```
+
+**Step 2: Test API directly**
+```bash
+# Should return JSON config
+curl https://your-domain.com/api/config
+
+# Expected output:
+{"openai_api_key_set":true,"anthropic_api_key_set":false,...}
+```
+
+**Step 3: Check Docker logs**
+```bash
+docker logs open-notebook
+
+# Look for:
+# - Frontend startup: "▲ Next.js ready on http://0.0.0.0:8502"
+# - API startup: "INFO:     Uvicorn running on http://0.0.0.0:5055"
+# - Connection errors or CORS issues
+```
+
+**Step 4: Verify environment variable**
+```bash
+docker exec open-notebook env | grep API_URL
+
+# Should show:
+# API_URL=https://your-domain.com
+```
+
+---
+
+### Frontend Adds `:5055` to URL (Versions ≤ 1.0.10)
+
+**Symptoms** (only in older versions):
+- You set `API_URL=https://your-domain.com`
+- Browser console shows: "Attempted URL: https://your-domain.com:5055/api/config"
+- CORS errors with "Status code: (null)"
+
+**Root Cause:**
+In versions ≤ 1.0.10, the frontend's config endpoint was at `/api/runtime-config`, which got intercepted by reverse proxies routing all `/api/*` requests to the backend. This prevented the frontend from reading the `API_URL` environment variable.
+
+**Solution:**
+Upgrade to version 1.0.11 or later. The config endpoint has been moved to `/config` which avoids the `/api/*` routing conflict.
+
+**Verification:**
+Check browser console (F12) - should see: `✅ [Config] Runtime API URL from server: https://your-domain.com`
+
+**If you can't upgrade**, explicitly configure the `/config` route:
+```nginx
+# Only needed for versions ≤ 1.0.10
+location = /config {
+    proxy_pass http://open-notebook:8502;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+---
+
+### CORS Errors
+
+**Symptoms:**
+```
+Access-Control-Allow-Origin header is missing
+Cross-Origin Request Blocked
+Response to preflight request doesn't pass access control check
+```
+
+**Possible Causes:**
+
+1. **Missing proxy headers**:
+   ```nginx
+   # Make sure these are set:
+   proxy_set_header X-Forwarded-Proto $scheme;
+   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+   proxy_set_header Host $host;
+   ```
+
+2. **API_URL protocol mismatch**:
+   ```bash
+   # Frontend is HTTPS, but API_URL is HTTP:
+   API_URL=http://notebook.example.com  # ❌ Wrong
+   API_URL=https://notebook.example.com # ✅ Correct
+   ```
+
+3. **Reverse proxy not forwarding `/api/*` correctly**:
+   ```nginx
+   # Make sure this works:
+   location /api/ {
+       proxy_pass http://open-notebook:5055/api/;  # Note the trailing slash!
+   }
+   ```
+
+---
+
+### Missing Authorization Header
+
+**Symptoms:**
+```json
+{"detail": "Missing authorization header"}
+```
+
+This happens when:
+- You have set `OPEN_NOTEBOOK_PASSWORD` for authentication
+- You're trying to access `/api/config` directly without logging in first
+
+**Solution:**
+This is **expected behavior**! The frontend handles authentication automatically. Just:
+1. Access the frontend URL (not `/api/` directly)
+2. Log in through the UI
+3. The frontend will handle authorization headers for all API calls
+
+**For API integrations:** Include the password in the Authorization header:
+```bash
+curl -H "Authorization: Bearer your-password-here" \
+  https://your-domain.com/api/config
+```
+
+---
+
+### SSL/TLS Certificate Errors
+
+**Symptoms:**
+- Browser shows "Your connection is not private"
+- Certificate warnings
+- Mixed content errors
+
+**Solutions:**
+
+1. **Use Let's Encrypt** (recommended):
+   ```bash
+   sudo certbot --nginx -d notebook.example.com
+   ```
+
+2. **Check certificate paths** in nginx:
+   ```nginx
+   ssl_certificate /etc/nginx/ssl/fullchain.pem;      # Full chain
+   ssl_certificate_key /etc/nginx/ssl/privkey.pem;    # Private key
+   ```
+
+3. **Verify certificate is valid**:
+   ```bash
+   openssl x509 -in /etc/nginx/ssl/fullchain.pem -text -noout
+   ```
+
+4. **For development**, use self-signed (not for production):
+   ```bash
+   openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+     -keyout ssl/privkey.pem -out ssl/fullchain.pem \
+     -subj "/CN=localhost"
+   ```
+
+---
+
 ## Best Practices
 
 1. **Always use HTTPS** in production
-2. **Set API_URL explicitly** when using reverse proxies
-3. **Bind to localhost** (`127.0.0.1:8502`) and let proxy handle public access
-4. **Enable security headers** (HSTS, X-Frame-Options, etc.)
-5. **Set up certificate renewal** for Let's Encrypt
-6. **Test your configuration** before going live
+2. **Set API_URL explicitly** when using reverse proxies to avoid auto-detection issues
+3. **Bind to localhost** (`127.0.0.1:8502`) and let proxy handle public access for security
+4. **Enable security headers** (HSTS, X-Frame-Options, X-Content-Type-Options, X-XSS-Protection)
+5. **Set up certificate renewal** for Let's Encrypt (usually automatic with certbot)
+6. **Keep ports 5055 and 8502 accessible** from your reverse proxy container (use Docker networks)
+7. **Use environment files** (`.env` or `docker.env`) to manage configuration securely
+8. **Test your configuration** before going live:
+   - Check browser console for config messages
+   - Test API: `curl https://your-domain.com/api/config`
+   - Verify authentication works
+   - Check long-running operations (podcast generation)
+9. **Monitor logs** regularly: `docker logs open-notebook`
+10. **Don't include `/api` in API_URL** - the system adds this automatically
+
+---
+
+## Legacy Configurations (Pre-v1.1)
+
+If you're running Open Notebook **version 1.0.x or earlier**, you may need to use the legacy two-port configuration where you explicitly route `/api/*` to port 5055.
+
+**Check your version:**
+```bash
+docker exec open-notebook cat /app/package.json | grep version
+```
+
+**If version < 1.1.0**, you may need:
+- Explicit `/api/*` routing to port 5055 in reverse proxy
+- Explicit `/config` endpoint routing for versions ≤ 1.0.10
+- See the "Frontend Adds `:5055` to URL" troubleshooting section above
+
+**Recommendation:** Upgrade to v1.1+ for simplified configuration and better performance.
 
 ---
 
 ## Related
 
 - **[Security Configuration](security.md)** - Password protection and hardening
-- **[Server Configuration](server.md)** - Ports and API settings
+- **[Advanced Configuration](advanced.md)** - Ports, timeouts, and SSL settings
 - **[Troubleshooting](../6-TROUBLESHOOTING/connection-issues.md)** - Connection problems
+- **[Docker Deployment](../1-INSTALLATION/docker-compose.md)** - Complete deployment guide

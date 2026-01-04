@@ -6,13 +6,12 @@ Protect your Open Notebook deployment with password authentication and productio
 
 ## When to Use Password Protection
 
-### Use It For:
+### Use it for:
 - Public cloud deployments (PikaPods, Railway, DigitalOcean)
 - Shared network environments
-- Team deployments
 - Any deployment accessible beyond localhost
 
-### Skip It For:
+### You can skip it for:
 - Local development on your machine
 - Private, isolated networks
 - Single-user local setups
@@ -330,5 +329,5 @@ If you discover security vulnerabilities:
 ## Related
 
 - **[Reverse Proxy](reverse-proxy.md)** - HTTPS and SSL setup
-- **[Server Configuration](server.md)** - API settings
+- **[Advanced Configuration](advanced.md)** - Ports, timeouts, and SSL settings
 - **[Environment Reference](environment-reference.md)** - All configuration options

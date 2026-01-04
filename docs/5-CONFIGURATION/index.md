@@ -17,44 +17,37 @@ Three things:
 ## Quick Decision: Which Provider?
 
 ### Option 1: Cloud Provider (Fastest)
-- **OpenAI** (GPT-4o, GPT-4o-mini)
-- **Anthropic** (Claude Sonnet, Haiku)
+- **OpenRouter (recommended)** (access to all models with one key)
+- **OpenAI** (GPT)
+- **Anthropic** (Claude)
 - **Google Gemini** (multi-modal, long context)
 - **Groq** (ultra-fast inference)
 
 Setup: Get API key → Set env var → Done
 
-Cost: $0.01-0.10 per 1K tokens
-
 → Go to **[AI Providers Guide](ai-providers.md)**
 
 ### Option 2: Local (Free & Private)
 - **Ollama** (open-source models, on your machine)
-- **LM Studio** (desktop app)
-- **OpenAI-compatible** (LM Studio, etc.)
 
-Setup: Install/run locally → Set endpoint → Done
-
-Cost: Free (electricity only)
-
-→ Go to **[Ollama Setup](ai-providers.md#ollama-recommended-for-local)**
+→ Go to **[Ollama Setup](ollama.md)**
 
 ### Option 3: OpenAI-Compatible
 - **LM Studio** (local)
-- **Text Generation UI** (local)
 - **Custom endpoints**
 
-Setup: Point to your endpoint → Set API key → Done
-
-Cost: Depends on service
-
-→ Go to **[OpenAI-Compatible Guide](ai-providers.md)**
+→ Go to **[OpenAI-Compatible Guide](openai-compatible.md)**
 
 ---
 
-## Three Configuration Files
+## Configuration File
+
+Use the right file depending on your setup.
 
 ### `.env` (Local Development)
+
+You will only use .env if you are running Open Notebook locally.
+
 ```
 Located in: project root
 Use for: Development on your machine
@@ -62,6 +55,8 @@ Format: KEY=value, one per line
 ```
 
 ### `docker.env` (Docker Deployment)
+
+You will use this file to hold your environment variables if you are using docker-compose and prefer not to put the variables directly in the compose file. 
 ```
 Located in: project root (or ./docker)
 Use for: Docker deployments
@@ -69,20 +64,17 @@ Format: Same as .env
 Loaded by: docker-compose.yml
 ```
 
-### `.env.local` (Next.js Frontend)
-```
-Located in: frontend/
-Use for: Frontend-specific settings
-Currently: Just NEXT_PUBLIC_API_URL
-```
-
 ---
 
 ## Most Important Settings
 
-### For Every Setup
+All of the settings provided below are to be placed inside your environment file (.env or docker.env depending on your setup).
 
-**1. Surreal Database**
+
+###  Surreal Database
+
+This is the database used by the app.
+
 ```
 SURREAL_URL=ws://surrealdb:8000/rpc
 SURREAL_USER=root
@@ -91,27 +83,47 @@ SURREAL_NAMESPACE=open_notebook
 SURREAL_DATABASE=open_notebook
 ```
 
-Usually pre-configured. Only change if using different database.
+> The only thing that is critical to not miss is the hostname in the `SURREAL_URL`. Check what URL to use based on your deployment, [here](database.md).
 
-**2. AI Provider API Key**
+
+### AI Provider (API Key or URL)
+
+We need access to LLMs in order for the app to work. You can use any of the support AI Providers by adding their API Keys. 
+
 ```
-Pick ONE:
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=...
-GROQ_API_KEY=...
-# Or for Ollama: No key needed
+OPENROUTER_API_KEY=...
 ```
 
-Required. You must set at least one.
+Or, if you are planning to use only local providers, you can setup Ollama by configuring it's base URL. This will get you set and ready with text and embeddings in one go: 
 
-**3. API URL (If Behind Reverse Proxy)**
+```
+OLLAMA_BASE_URL=http://localhost:11434
+```
+
+> A lot of people screw up on the Ollama BASE URL by not knowing how to point to their Ollama installation. if you are having trouble connecting to Ollama, see [here](ollama.md).
+
+You can also use LM Studio locally if you prefer by using it as an OpenAI compatible endpoint. 
+
+```
+OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:1234/v1
+```
+
+> For more installation on using OpenAI compatible endpoints, see [here](openai-compatible.md).
+
+
+### API URL (If Behind Reverse Proxy)
+You only need to worry about this if you are deploying on a proxy or if you are changing port information. Otherwise, skip this.
+
 ```
 API_URL=https://your-domain.com
 # Usually auto-detected. Only set if needed.
 ```
 
-Optional. Auto-detection works for most setups.
+Auto-detection works for most setups.
 
 ---
 
@@ -174,13 +186,10 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 - Database vs. namespace
 - Running your own SurrealDB
 
-### [Server](server.md)
-- API_URL (when and how)
+### [Advanced](advanced.md)
 - Ports and networking
 - Timeouts and concurrency
 - SSL/security
-
-### [Advanced](advanced.md)
 - Retry configuration
 - Worker concurrency
 - Language models & embeddings
@@ -204,6 +213,11 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 - GPU acceleration
 - Voice options
 - Docker networking
+
+### [Ollama](ollama.md)
+- Setting up and pointing to an Ollama server
+- Downloading models
+- Using embedding
 
 ### [OpenAI-Compatible Providers](openai-compatible.md)
 - LM Studio, vLLM, Text Generation WebUI

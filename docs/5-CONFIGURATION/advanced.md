@@ -116,6 +116,63 @@ Then visit https://smith.langchain.com to see traces.
 
 ---
 
+## Port Configuration
+
+### Default Ports
+
+```
+Frontend: 8502 (Docker deployment)
+Frontend: 3000 (Development from source)
+API: 5055
+SurrealDB: 8000
+```
+
+### Changing Frontend Port
+
+Edit `docker-compose.yml`:
+
+```yaml
+services:
+  open-notebook:
+    ports:
+      - "8001:8502"  # Change from 8502 to 8001
+```
+
+Access at: `http://localhost:8001`
+
+API auto-detects to: `http://localhost:5055` ✓
+
+### Changing API Port
+
+```yaml
+services:
+  open-notebook:
+    ports:
+      - "127.0.0.1:8502:8502"  # Frontend
+      - "5056:5055"            # Change API from 5055 to 5056
+    environment:
+      - API_URL=http://localhost:5056  # Update API_URL
+```
+
+Access API directly: `http://localhost:5056/docs`
+
+**Note:** When changing API port, you must set `API_URL` explicitly since auto-detection assumes port 5055.
+
+### Changing SurrealDB Port
+
+```yaml
+services:
+  surrealdb:
+    ports:
+      - "8001:8000"  # Change from 8000 to 8001
+    environment:
+      - SURREAL_URL=ws://surrealdb:8001/rpc  # Update connection URL
+```
+
+**Important:** Internal Docker network uses container name (`surrealdb`), not `localhost`.
+
+---
+
 ## SSL/TLS Configuration
 
 ### Custom CA Certificate

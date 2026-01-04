@@ -72,8 +72,8 @@ OPENAI_COMPATIBLE_API_KEY=optional-api-key
 ### Embeddings
 
 ```bash
-OPENAI_COMPATIBLE_BASE_URL_EMBED=http://localhost:1234/v1
-OPENAI_COMPATIBLE_API_KEY_EMBED=optional-api-key
+OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:1234/v1
+OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=optional-api-key
 ```
 
 ### Text-to-Speech
@@ -331,7 +331,7 @@ You can use different compatible servers for different purposes:
 OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
 
 # Embeddings from different server
-OPENAI_COMPATIBLE_BASE_URL_EMBED=http://localhost:8080/v1
+OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:8080/v1
 
 # TTS from Speaches
 OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
@@ -391,4 +391,4 @@ Use OpenAI-compatible when:
 
 - **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
 - **[AI Providers](ai-providers.md)** - All provider options
-- **[Ollama Setup](../4-AI-PROVIDERS/index.md)** - Native Ollama integration
+- **[Ollama Setup](ollama.md)** - Native Ollama integration

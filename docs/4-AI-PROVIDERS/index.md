@@ -1,6 +1,8 @@
-# AI Providers - Setup & Configuration
+# AI Providers - Comparison & Selection Guide
 
-Open Notebook supports 15+ AI providers. This section helps you choose and configure yours.
+Open Notebook supports 15+ AI providers. This guide helps you **choose the right provider** for your needs.
+
+> 💡 **Just want to set up a provider?** Skip to the [Configuration Guide](../5-CONFIGURATION/ai-providers.md) for detailed setup instructions.
 
 ---
 
@@ -9,72 +11,67 @@ Open Notebook supports 15+ AI providers. This section helps you choose and confi
 ### Cloud Providers (Easiest)
 
 **OpenAI (Recommended)**
-- Models: GPT-4o, GPT-4o-mini
 - Cost: ~$0.03-0.15 per 1K tokens
 - Speed: Very fast
-- Setup: 5 minutes
+- Quality: Excellent
 - Best for: Most users (best quality/price balance)
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#openai)
 
 **Anthropic (Claude)**
-- Models: Claude 3.5 Sonnet, Haiku, Opus
 - Cost: ~$0.80-3.00 per 1M tokens
 - Speed: Fast
-- Setup: 5 minutes
-- Best for: Long context, reasoning
-- Advantage: 200K token context
+- Quality: Excellent
+- Best for: Long context (200K tokens), reasoning, latest AI
+- Advantage: Superior long-context handling
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#anthropic-claude)
 
 **Google Gemini**
-- Models: Gemini 2.0 Flash, 1.5 Pro
 - Cost: ~$0.075-0.30 per 1K tokens
 - Speed: Very fast
-- Setup: 5 minutes
+- Quality: Good to excellent
 - Best for: Multimodal (images, audio, video)
-- Advantage: 1M token context
+- Advantage: Longest context (up to 2M tokens)
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#google-gemini)
 
 **Groq (Ultra-Fast)**
-- Models: Mixtral, Llama 3.3
 - Cost: ~$0.05 per 1M tokens (cheapest)
 - Speed: Ultra-fast (fastest available)
-- Setup: 5 minutes
-- Best for: Budget-conscious, transformations
+- Quality: Good
+- Best for: Budget-conscious, transformations, speed-critical tasks
 - Disadvantage: Limited model selection
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#groq)
 
 **OpenRouter (100+ Models)**
-- Models: Access to OpenAI, Anthropic, Google, Llama, Mistral, and 100+ more
-- Cost: Pay-per-model (varies)
+- Cost: Pay-per-model (varies widely)
 - Speed: Varies by model
-- Setup: 5 minutes
-- Best for: Model comparison, testing many models, unified billing
-- Advantage: One API key for all models
+- Quality: Varies by model
+- Best for: Model comparison, testing, unified billing
+- Advantage: One API key for 100+ models from different providers
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#openrouter)
 
 ### Local / Self-Hosted (Free)
 
 **Ollama (Recommended for Local)**
-- Models: Mistral, Llama 2, Phi, Neural Chat
 - Cost: Free (electricity only)
 - Speed: Depends on hardware (slow on CPU, fast on GPU)
+- Quality: Good (open-source models)
 - Setup: 10 minutes
 - Best for: Privacy-first, offline use
 - Privacy: 100% local, nothing leaves your machine
 
-→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#ollama-local)
+→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#ollama-recommended-for-local)
 
 **LM Studio (Alternative)**
-- GUI-based local LLM runner
-- Cost: Free
+- Cost: Free (electricity only)
 - Speed: Depends on hardware
-- Setup: 15 minutes (GUI easier than Ollama CLI)
-- Best for: Non-technical users
+- Quality: Good (same models as Ollama)
+- Setup: 15 minutes (GUI interface)
+- Best for: Non-technical users who prefer GUI over CLI
 - Privacy: 100% local
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#lm-studio-local-alternative)
@@ -82,10 +79,11 @@ Open Notebook supports 15+ AI providers. This section helps you choose and confi
 ### Enterprise
 
 **Azure OpenAI**
-- Same as OpenAI but on Azure
-- Cost: Same as OpenAI
+- Cost: Same as OpenAI (usage-based)
+- Speed: Very fast
+- Quality: Excellent (same models as OpenAI)
 - Setup: 10 minutes (more complex)
-- Best for: Enterprise, compliance (HIPAA, SOC2)
+- Best for: Enterprise, compliance (HIPAA, SOC2), VPC integration
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#azure-openai)
 
@@ -93,16 +91,16 @@ Open Notebook supports 15+ AI providers. This section helps you choose and confi
 
 ## Comparison Table
 
-| Provider | Speed | Cost | Quality | Privacy | Setup | Models |
-|----------|-------|------|---------|---------|-------|--------|
-| **OpenAI** | Very Fast | $$ | Excellent | Low | 5 min | Many |
-| **Anthropic** | Fast | $$ | Excellent | Low | 5 min | Few |
-| **Google** | Very Fast | $$ | Good | Low | 5 min | Few |
-| **Groq** | Ultra Fast | $ | Good | Low | 5 min | Few |
-| **OpenRouter** | Varies | Varies | Varies | Low | 5 min | 100+ |
-| **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Many |
-| **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Many |
-| **Azure** | Very Fast | $$ | Excellent | High | 10 min | Many |
+| Provider | Speed | Cost | Quality | Privacy | Setup | Context |
+|----------|-------|------|---------|---------|-------|---------|
+| **OpenAI** | Very Fast | $$ | Excellent | Low | 5 min | 128K |
+| **Anthropic** | Fast | $$ | Excellent | Low | 5 min | 200K |
+| **Google** | Very Fast | $$ | Good-Excellent | Low | 5 min | 2M |
+| **Groq** | Ultra Fast | $ | Good | Low | 5 min | 32K |
+| **OpenRouter** | Varies | Varies | Varies | Low | 5 min | Varies |
+| **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
+| **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |
+| **Azure** | Very Fast | $$ | Excellent | High | 10 min | 128K |
 
 ---
 
@@ -137,117 +135,19 @@ Open Notebook supports 15+ AI providers. This section helps you choose and confi
 
 ---
 
-## Setup Paths
+## Ready to Set Up Your Provider?
 
-### Path 1: OpenAI (Most Common)
+Now that you've chosen a provider, follow the detailed setup instructions:
 
-```
-1. Go to https://platform.openai.com/api-keys
-2. Create account, add $5+ credit
-3. Create API key
-4. Add to .env: OPENAI_API_KEY=sk-...
-5. Restart services
-6. Done!
-```
+→ **[AI Providers Configuration Guide](../5-CONFIGURATION/ai-providers.md)**
 
-**Time:** 5 minutes
-**Cost:** Pay as you go (~$1-5/month light use)
-
-### Path 2: Local Ollama (Privacy)
-
-```
-1. Download Ollama: https://ollama.ai
-2. Run: ollama serve
-3. Download model: ollama pull mistral
-4. Add to .env: OLLAMA_API_BASE=http://localhost:11434
-5. Restart services
-6. Done!
-```
-
-**Time:** 10 minutes
-**Cost:** Free (electricity only)
-**Requirement:** 8GB RAM minimum (16GB+ recommended)
-
-### Path 3: Anthropic (Better Reasoning)
-
-```
-1. Go to https://console.anthropic.com/
-2. Create account, add payment method
-3. Create API key
-4. Add to .env: ANTHROPIC_API_KEY=sk-ant-...
-5. Restart services
-6. Done!
-```
-
-**Time:** 5 minutes
-**Cost:** Pay as you go (~$2-20/month typical use)
-
-### Path 4: OpenRouter (100+ Models)
-
-```
-1. Go to https://openrouter.ai/keys
-2. Create account, add credit
-3. Create API key
-4. Add to .env: OPENROUTER_API_KEY=sk-or-...
-5. Restart services
-6. Done!
-```
-
-**Time:** 5 minutes
-**Cost:** Varies by model ($0.05-15 per 1M tokens)
-
----
-
-## Model Recommendations by Task
-
-### General Chat
-- OpenAI: `gpt-4o` (best) or `gpt-4o-mini` (cheap)
-- Anthropic: `claude-3-5-sonnet` (best)
-- Google: `gemini-2.0-flash` (balanced)
-- Groq: `mixtral-8x7b-32768` (fast)
-- Ollama: `mistral` (balanced)
-
-### Long Documents (200K+ tokens)
-- Anthropic: `claude-3-5-sonnet` (200K context)
-- Google: `gemini-1.5-pro` (1M context)
-- OpenAI: `gpt-4-turbo` (128K context)
-
-### Fast/Cheap Operations
-- Groq: Ultra-fast, very cheap
-- OpenAI: `gpt-4o-mini` (fast, cheap)
-- Anthropic: `claude-3-5-haiku` (cheap)
-
-### Multimodal (Images/Audio/Video)
-- Google: `gemini-2.0-flash` (best multimodal)
-- OpenAI: `gpt-4o` (good multimodal)
-
-### Local/Offline
-- Ollama: `mistral` (best local balance)
-- LM Studio: `mistral` or `llama2`
-
----
-
-## Complete Configuration Reference
-
-For detailed environment variable setup, see:
-→ [Complete Configuration Reference](../5-CONFIGURATION/environment-reference.md)
-
-For detailed AI provider configuration, see:
-→ [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
-
----
-
-## Testing Your Setup
-
-Once configured:
-
-```
-1. Start Open Notebook
-2. Go to Settings → Models
-3. Select your configured provider
-4. Try a Chat question
-5. If it responds, you're good!
-```
+This guide includes:
+- Step-by-step setup instructions for each provider
+- Environment variable configuration
+- Model selection and recommendations
+- Provider-specific troubleshooting
+- Hardware requirements (for local providers)
+- Cost optimization tips
 
 ---
 
@@ -282,81 +182,18 @@ Any use: Free (electricity only)
 
 ---
 
-## Switching Providers
-
-You can switch providers anytime:
-
-```
-1. Edit .env
-2. Change/add API key
-3. Restart services
-4. Go to Settings → Models
-5. Select new provider
-6. Done!
-```
-
-Your existing notebooks and data stay the same.
-
----
-
-## Provider-Specific Guides
-
-For detailed setup instructions per provider, see:
-→ [5-CONFIGURATION/ai-providers.md](../5-CONFIGURATION/ai-providers.md)
-
-Includes:
-- OpenAI
-- Anthropic
-- Google Gemini
-- Groq
-- OpenRouter
-- Mistral
-- DeepSeek
-- xAI
-- Ollama
-- LM Studio
-- OpenAI-Compatible
-- Azure OpenAI
-
----
-
-## Troubleshooting
-
-**"Models not showing in Settings"**
-- API key missing or wrong
-- Restart services after changing .env
-- Check the key is set correctly: `echo $OPENAI_API_KEY`
-
-**"API key invalid"**
-- Copy fresh key from provider's dashboard
-- Check no extra spaces: `OPENAI_API_KEY="sk-..."`
-- Verify key format matches provider
-
-**"Rate limit exceeded"**
-- You're hitting provider's rate limits
-- Wait a bit, retry
-- For cloud: upgrade account or reduce request rate
-
-**"Connection refused" (Ollama)**
-- Ollama not running: `ollama serve`
-- Wrong port: Check `OLLAMA_API_BASE`
-- Not on localhost: Use IP instead
-
----
-
 ## Next Steps
 
-1. **Pick a provider** from above
-2. **Follow setup guide** in [5-CONFIGURATION/ai-providers.md](../5-CONFIGURATION/ai-providers.md)
-3. **Add API key** to .env
-4. **Restart services**
-5. **Test in Settings → Models**
-6. **Start using!**
+1. ✅ **You've chosen a provider** (from this comparison guide)
+2. 📖 **Follow the setup guide**: [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
+3. ⚙️ **Configure your environment** (detailed in the setup guide)
+4. 🧪 **Test your setup** in Settings → Models
+5. 🚀 **Start using Open Notebook!**
 
 ---
 
-## Support
+## Need Help?
 
-- **Provider issues?** Check their documentation
-- **Setup problems?** See [6-TROUBLESHOOTING](../6-TROUBLESHOOTING/index.md)
-- **Need help?** Join [Discord community](https://discord.gg/37XJPXfz2w)
+- **Setup issues?** See [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md) for detailed troubleshooting per provider
+- **General problems?** Check [Troubleshooting Guide](../6-TROUBLESHOOTING/index.md)
+- **Questions?** Join [Discord community](https://discord.gg/37XJPXfz2w)

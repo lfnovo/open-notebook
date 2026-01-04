@@ -15,11 +15,11 @@ Complete REST API for Open Notebook. All endpoints are served from the API backe
 Simple password-based (development only):
 
 ```bash
-curl http://localhost:5055/notebooks \
-  -H "X-Password: your_password"
+curl http://localhost:5055/api/notebooks \
+  -H "Authorization: Bearer your_password"
 ```
 
-**⚠️ Production**: Replace with OAuth/JWT. See CONFIGURATION.md for details.
+**⚠️ Production**: Replace with OAuth/JWT. See [Security Configuration](../5-CONFIGURATION/security.md) for details.
 
 ### 2. Base API Flow
 
@@ -88,10 +88,12 @@ Instead of memorizing endpoints, use the interactive API docs:
 All requests require password header:
 
 ```bash
-curl -H "X-Password: your_password" http://localhost:5055/notebooks
+curl -H "Authorization: Bearer your_password" http://localhost:5055/api/notebooks
 ```
 
-Password configured via `ADMIN_PASSWORD` environment variable.
+Password configured via `OPEN_NOTEBOOK_PASSWORD` environment variable.
+
+> **📖 See [Security Configuration](../5-CONFIGURATION/security.md)** for complete authentication setup, API examples, and production hardening.
 
 ### Production
 
@@ -100,7 +102,7 @@ Password configured via `ADMIN_PASSWORD` environment variable.
 - JWT tokens
 - API keys
 
-See CONFIGURATION.md for production setup.
+See [Security Configuration](../5-CONFIGURATION/security.md) for production setup.
 
 ---
 
@@ -202,10 +204,10 @@ All errors return JSON with status code:
 
 ## Production Considerations
 
-- Replace password auth with OAuth/JWT
+- Replace password auth with OAuth/JWT (see [Security](../5-CONFIGURATION/security.md))
 - Add rate limiting via reverse proxy (Nginx, CloudFlare, Kong)
 - Enable CORS restrictions (currently allows all origins)
-- Use HTTPS (reverse proxy + SSL cert)
+- Use HTTPS via reverse proxy (see [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md))
 - Set up API versioning strategy (currently implicit)
 
-See CONFIGURATION.md for complete production setup.
+See [Security Configuration](../5-CONFIGURATION/security.md) and [Reverse Proxy Setup](../5-CONFIGURATION/reverse-proxy.md) for complete production setup.

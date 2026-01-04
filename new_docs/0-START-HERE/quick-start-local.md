@@ -8,9 +8,9 @@ Get Open Notebook running with **100% local AI** using Ollama. No cloud API keys
    - [Download here](https://www.docker.com/products/docker-desktop/)
    - Already have it? Skip to step 2
 
-2. **Local LLM** - Choose one:
-   - **Ollama** (recommended): [Download here](https://ollama.ai/)
-   - **LM Studio** (GUI alternative): [Download here](https://lmstudio.ai)
+2. **Ollama** installed (for local LLM)
+   - [Download here](https://ollama.ai/)
+   - Or use Docker image (easier): `ollama/ollama`
 
 ## Step 1: Choose Your Setup (1 min)
 
@@ -237,31 +237,10 @@ docker exec open_notebook-ollama-1 ollama pull neural-chat
 
 ---
 
-## Alternative: Using LM Studio Instead of Ollama
-
-**Prefer a GUI?** LM Studio is easier for non-technical users:
-
-1. Download LM Studio: https://lmstudio.ai
-2. Open the app, download a model from the library
-3. Go to "Local Server" tab, start server (port 1234)
-4. Update your docker-compose.yml:
-   ```yaml
-   environment:
-     - OPENAI_COMPATIBLE_BASE_URL=http://host.docker.internal:1234/v1
-     - OPENAI_COMPATIBLE_API_KEY=not-needed
-   ```
-5. Configure in Settings → Models → Select your LM Studio model
-
-**Note**: LM Studio runs outside Docker, use `host.docker.internal` to connect.
-
----
-
 ## Going Further
 
 - **Switch models**: Change in Settings → Models anytime
-- **Add more models**:
-  - Ollama: Run `ollama pull <model>`
-  - LM Studio: Download from the app library
+- **Add more models**: Run `ollama pull <model>` and they'll appear in Settings
 - **Deploy to server**: Same docker-compose.yml works anywhere
 - **Use cloud hybrid**: Keep some local models, add OpenAI/Anthropic for complex tasks
 

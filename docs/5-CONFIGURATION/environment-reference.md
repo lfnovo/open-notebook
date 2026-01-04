@@ -176,7 +176,7 @@ For self-hosted LLMs, LM Studio, or OpenAI-compatible endpoints:
 | `SURREAL_USER` | Yes | root | SurrealDB username |
 | `SURREAL_PASSWORD` | Yes | root | SurrealDB password |
 | `SURREAL_NAMESPACE` | Yes | open_notebook | SurrealDB namespace |
-| `SURREAL_DATABASE` | Yes | staging | SurrealDB database name |
+| `SURREAL_DATABASE` | Yes | open_notebook | SurrealDB database name |
 
 ---
 

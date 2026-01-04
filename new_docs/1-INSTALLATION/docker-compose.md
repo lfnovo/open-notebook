@@ -2,8 +2,6 @@
 
 Multi-container setup with separate services. **Best for most users.**
 
-> **Alternative Registry:** All images are available on both Docker Hub (`lfnovo/open_notebook`) and GitHub Container Registry (`ghcr.io/lfnovo/open-notebook`). Use GHCR if Docker Hub is blocked or you prefer GitHub-native workflows.
-
 ## Prerequisites
 
 - **Docker Desktop** installed ([Download](https://www.docker.com/products/docker-desktop/))
@@ -12,7 +10,7 @@ Multi-container setup with separate services. **Best for most users.**
 
 ## Step 1: Get an API Key (2 min)
 
-Choose at least one AI provider. **OpenAI recommended if you're unsure:**
+Choose at least one AI provider. **OpenAI or OpenRouter recommended if you're unsure:**
 
 ```
 OpenAI:     https://platform.openai.com/api-keys
@@ -42,11 +40,10 @@ services:
     volumes:
       - surreal_data:/mydata
 
-  open_notebook:
+  api:
     image: lfnovo/open_notebook:v1-latest
     ports:
-      - "8502:8502"  # Web UI
-      - "5055:5055"  # API
+      - "5055:5055"
     environment:
       # AI Provider (choose ONE)
       - OPENAI_API_KEY=sk-...  # Your OpenAI key
@@ -59,10 +56,23 @@ services:
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
-    volumes:
-      - ./notebook_data:/app/data
+
+      # API Configuration
+      - API_URL=http://localhost:5055
     depends_on:
       - surrealdb
+    volumes:
+      - ./data:/app/data
+    restart: always
+
+  frontend:
+    image: lfnovo/open_notebook-frontend:v1-latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:5055
+    depends_on:
+      - api
     restart: always
 
 volumes:
@@ -87,7 +97,8 @@ docker compose up -d
 Wait 15-20 seconds for all services to start:
 ```
 ✅ surrealdb running on :8000
-✅ open_notebook running on :8502 (UI) and :5055 (API)
+✅ api running on :5055
+✅ frontend running on :3000
 ```
 
 Check status:
@@ -108,7 +119,7 @@ curl http://localhost:5055/health
 **Frontend Access:**
 Open browser to:
 ```
-http://localhost:8502
+http://localhost:3000
 ```
 
 You should see the Open Notebook interface!
@@ -187,6 +198,8 @@ docker exec open_notebook-ollama-1 ollama pull mistral
 | `SURREAL_URL` | Database connection | `ws://surrealdb:8000/rpc` |
 | `SURREAL_USER` | Database user | `root` |
 | `SURREAL_PASSWORD` | Database password | `password` |
+| `SURREAL_NAMESPACE` | The namespace  | `open_notebook` |
+| `SURREAL_DATABASE` | The database to use | `open_notebook` |
 | `API_URL` | API external URL | `http://localhost:5055` |
 | `NEXT_PUBLIC_API_URL` | Frontend API URL | `http://localhost:5055` |
 
@@ -252,15 +265,14 @@ docker compose logs api
 
 ### Port Already in Use
 
-If you get "Port 8502 already in use", change the port:
+If you get "Port 3000 already in use", change the port:
 
 ```yaml
 ports:
-  - "8503:8502"  # Use 8503 instead
-  - "5055:5055"  # Keep API port same
+  - "3001:3000"  # Use 3001 instead
 ```
 
-Then access at `http://localhost:8503`
+Then access at `http://localhost:3001`
 
 ---
 

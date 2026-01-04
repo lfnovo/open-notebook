@@ -88,7 +88,7 @@ SURREAL_URL=ws://surrealdb:8000/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root  # Change in production!
 SURREAL_NAMESPACE=open_notebook
-SURREAL_DATABASE=staging  # or "production"
+SURREAL_DATABASE=open_notebook
 ```
 
 Usually pre-configured. Only change if using different database.

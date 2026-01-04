@@ -124,7 +124,7 @@ docker run -d \
   -e SURREAL_USER="root" \
   -e SURREAL_PASSWORD="root" \
   -e SURREAL_NAMESPACE="open_notebook" \
-  -e SURREAL_DATABASE="production" \
+  -e SURREAL_DATABASE="open_notebook" \
   lfnovo/open_notebook:v1-latest-single
 ```
 
@@ -150,7 +150,7 @@ docker run -d \
   -e SURREAL_USER="root" \
   -e SURREAL_PASSWORD="root" \
   -e SURREAL_NAMESPACE="open_notebook" \
-  -e SURREAL_DATABASE="production" \
+  -e SURREAL_DATABASE="open_notebook" \
   lfnovo/open_notebook:v1-latest-single
 ```
 
@@ -194,7 +194,7 @@ services:
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=production
+      - SURREAL_DATABASE=open_notebook
     volumes:
       - ./notebook_data:/app/data
       - ./surreal_data:/mydata

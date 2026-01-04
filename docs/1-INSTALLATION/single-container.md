@@ -32,7 +32,7 @@ services:
       - SURREAL_USER=root
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=production
+      - SURREAL_DATABASE=open_notebook
     volumes:
       - ./data:/app/data
     restart: always

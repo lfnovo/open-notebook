@@ -9,6 +9,7 @@ Get Open Notebook running with **Anthropic, Google, Groq, or other cloud provide
    - Already have it? Skip to step 2
 
 2. **API Key** from your chosen provider:
+   - **OpenRouter** (100+ models, one key): https://openrouter.ai/keys
    - **Anthropic (Claude)**: https://console.anthropic.com/
    - **Google (Gemini)**: https://aistudio.google.com/
    - **Groq** (fast, free tier): https://console.groq.com/
@@ -29,15 +30,19 @@ services:
     ports:
       - "8000:8000"
 
-  api:
+  open_notebook:
     image: lfnovo/open_notebook:v1-latest
     ports:
-      - "5055:5055"
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API
     environment:
       # Choose ONE provider (uncomment your choice):
 
+      # OpenRouter - 100+ models with one API key
+      - OPENROUTER_API_KEY=sk-or-...
+
       # Anthropic (Claude) - Excellent reasoning
-      - ANTHROPIC_API_KEY=sk-ant-...
+      # - ANTHROPIC_API_KEY=sk-ant-...
 
       # Google (Gemini) - Large context, cost-effective
       # - GOOGLE_API_KEY=...
@@ -54,21 +59,12 @@ services:
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=production
+    volumes:
+      - ./notebook_data:/app/data
     depends_on:
       - surrealdb
-    volumes:
-      - ./data:/app/data
     restart: always
 
-  frontend:
-    image: lfnovo/open_notebook-frontend:v1-latest
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5055
-    depends_on:
-      - api
-    restart: always
 ```
 
 **Edit the file:**
@@ -93,7 +89,7 @@ Wait 15-20 seconds for services to start.
 
 Open your browser:
 ```
-http://localhost:3000
+http://localhost:8502
 ```
 
 You should see the Open Notebook interface!
@@ -108,6 +104,7 @@ You should see the Open Notebook interface!
 
 | Provider | Recommended Model | Notes |
 |----------|-------------------|-------|
+| **OpenRouter** | `anthropic/claude-3.5-sonnet` | Access 100+ models |
 | **Anthropic** | `claude-3-5-sonnet-latest` | Best reasoning |
 | **Google** | `gemini-2.0-flash` | Large context, fast |
 | **Groq** | `llama-3.3-70b-versatile` | Ultra-fast |
@@ -138,7 +135,7 @@ You should see the Open Notebook interface!
 ## Verification Checklist
 
 - [ ] Docker is running
-- [ ] You can access `http://localhost:3000`
+- [ ] You can access `http://localhost:8502`
 - [ ] Models are configured for your provider
 - [ ] You created a notebook
 - [ ] Chat works
@@ -151,6 +148,7 @@ You should see the Open Notebook interface!
 
 | Provider | Speed | Quality | Context | Cost |
 |----------|-------|---------|---------|------|
+| **OpenRouter** | Varies | Varies | Varies | Varies (100+ models) |
 | **Anthropic** | Medium | Excellent | 200K | $$$ |
 | **Google** | Fast | Very Good | 1M+ | $$ |
 | **Groq** | Ultra-fast | Good | 128K | $ (free tier) |
@@ -165,6 +163,7 @@ You can enable multiple providers simultaneously:
 
 ```yaml
 environment:
+  - OPENROUTER_API_KEY=sk-or-...
   - ANTHROPIC_API_KEY=sk-ant-...
   - GOOGLE_API_KEY=...
   - GROQ_API_KEY=gsk_...

@@ -139,7 +139,7 @@ Edit docker-compose.yml:
 services:
   frontend:
     ports:
-      - "8001:3000"  # Change from 8502 to 8001
+      - "8001:8502"  # Change from 8502 to 8001
 ```
 
 Access at: `http://localhost:8001`
@@ -292,7 +292,7 @@ server {
 
     # Frontend
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:8502;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";

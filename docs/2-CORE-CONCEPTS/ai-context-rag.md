@@ -1,6 +1,6 @@
 # AI Context & RAG - How Open Notebook Uses Your Research
 
-The core innovation in Open Notebook is how it makes AI models aware of your private research without uploading everything to the cloud. This section explains the "why" and "how" of that system.
+Open Notebook uses different approaches to make AI models aware of your research depending on the feature. This section explains **RAG** (used in Ask) and **full-content context** (used in Chat).
 
 ---
 
@@ -23,10 +23,17 @@ The core innovation in Open Notebook is how it makes AI models aware of your pri
 - Pro: Private, free
 - Con: AI doesn't know anything about your specific topic
 
-### Open Notebook's Solution: RAG
-**RAG** = Retrieval-Augmented Generation
+### Open Notebook's Dual Approach
 
-The insight: *Instead of changing the model, change what information you feed it.*
+**For Chat**: Sends the entire selected content to the LLM
+- Simple and transparent: You select sources, they're sent in full
+- Maximum context: AI sees everything you choose
+- You control which sources are included
+
+**For Ask (RAG)**: Retrieval-Augmented Generation
+- RAG = Retrieval-Augmented Generation
+- The insight: *Search your content, find relevant pieces, send only those*
+- Automatic: AI decides what's relevant based on your question
 
 ---
 
@@ -260,45 +267,83 @@ Result: AI doesn't get distracted; gives better answer
 
 ## The Difference: Chat vs. Ask
 
-Both use RAG, but differently.
+**IMPORTANT**: These use completely different approaches!
 
-### Chat: Manual Context Control
+### Chat: Full-Content Context (NO RAG)
+
+**How it works:**
 ```
 YOU:
-  1. Choose which sources to include
+  1. Select which sources to include in context
   2. Set context level (full/summary/excluded)
   3. Ask question
 
 SYSTEM:
-  - Uses ONLY the sources you selected
-  - Respects your context levels
-  - Answers based on what you chose
+  - Takes ALL selected sources (respecting context levels)
+  - Sends the ENTIRE content to the LLM at once
+  - NO search, NO retrieval, NO chunking
+  - AI sees everything you selected
 
-YOU:
-  4. Ask follow-up (context stays the same)
-  5. Or change context for next question
+AI:
+  - Responds based on the full content you provided
+  - Can reference any part of selected sources
+  - Conversational: context stays for follow-ups
 ```
 
-**Use this when**: You know which sources matter for THIS conversation.
+**Use this when**:
+- You know which sources are relevant
+- You want conversational back-and-forth
+- You want AI to see the complete context
+- You're doing close reading or analysis
 
-### Ask: Automatic Search
+**Advantages:**
+- Simple and transparent
+- AI sees everything (no missed content)
+- Conversational flow
+
+**Limitations:**
+- Limited by LLM context window
+- You must manually select relevant sources
+- Sends more tokens (higher cost with many sources)
+
+---
+
+### Ask: RAG - Automatic Retrieval
+
+**How it works:**
 ```
 YOU:
   Ask one complex question
 
 SYSTEM:
-  1. Analyzes your question (using smart model)
-  2. Breaks it into searchable parts
-  3. Automatically searches your sources
-  4. Retrieves relevant chunks
-  5. Processes results
+  1. Analyzes your question
+  2. Searches across ALL your sources automatically
+  3. Finds relevant chunks using vector similarity
+  4. Retrieves only the most relevant pieces
+  5. Sends ONLY those chunks to the LLM
   6. Synthesizes into comprehensive answer
 
-YOU:
-  Get one detailed answer (not conversational)
+AI:
+  - Sees ONLY the retrieved chunks (not full sources)
+  - Answers based on what was found to be relevant
+  - One-shot answer (not conversational)
 ```
 
-**Use this when**: You want a comprehensive answer and trust the AI to find what's relevant.
+**Use this when**:
+- You have many sources and don't know which are relevant
+- You want the AI to search automatically
+- You need a comprehensive answer to a complex question
+- You want to minimize tokens sent to LLM
+
+**Advantages:**
+- Automatic search (you don't pick sources)
+- Works across many sources at once
+- Cost-effective (sends only relevant chunks)
+
+**Limitations:**
+- Not conversational (single question/answer)
+- AI only sees retrieved chunks (might miss context)
+- Search quality depends on how well question matches content
 
 ---
 
@@ -380,16 +425,26 @@ This is why semantic search finds conceptually similar content even when words a
 
 ## Summary
 
-**RAG** allows Open Notebook to:
+Open Notebook gives you **two ways** to work with AI:
+
+### Chat (Full-Content)
+- Sends entire selected sources to LLM
+- Manual control: you pick sources
+- Conversational: back-and-forth dialog
+- Transparent: you know exactly what AI sees
+- Best for: focused analysis, close reading
+
+### Ask (RAG)
+- Searches and retrieves relevant chunks automatically
+- Automatic: AI finds what's relevant
+- One-shot: single comprehensive answer
+- Efficient: sends only relevant pieces
+- Best for: broad questions across many sources
+
+**Both approaches:**
 1. Keep your data private (doesn't leave your system by default)
-2. Make AI aware of your research (retrieval brings in relevant chunks)
-3. Give you control (you decide what's in context)
-4. Create audit trails (citations show what was used)
-5. Support multiple searches (keyword and semantic)
+2. Give you control (you choose which features to use)
+3. Create audit trails (citations show what was used)
+4. Support multiple AI providers
 
-This is fundamentally different from:
-- Systems that fine-tune (slow, permanent)
-- Systems that send everything (privacy nightmare)
-- Systems that ignore your data (no customization)
-
-It's **retrieval-augmented generation**: the system retrieves what's relevant, then augments the AI's knowledge with it.
+**Coming Soon**: The community is working on adding RAG capabilities to Chat as well, giving you the best of both worlds.

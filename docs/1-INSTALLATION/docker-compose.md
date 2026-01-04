@@ -42,10 +42,11 @@ services:
     volumes:
       - surreal_data:/mydata
 
-  api:
+  open_notebook:
     image: lfnovo/open_notebook:v1-latest
     ports:
-      - "5055:5055"
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API
     environment:
       # AI Provider (choose ONE)
       - OPENAI_API_KEY=sk-...  # Your OpenAI key
@@ -58,23 +59,10 @@ services:
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=production
-
-      # API Configuration
-      - API_URL=http://localhost:5055
+    volumes:
+      - ./notebook_data:/app/data
     depends_on:
       - surrealdb
-    volumes:
-      - ./data:/app/data
-    restart: always
-
-  frontend:
-    image: lfnovo/open_notebook-frontend:v1-latest
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5055
-    depends_on:
-      - api
     restart: always
 
 volumes:
@@ -99,8 +87,7 @@ docker compose up -d
 Wait 15-20 seconds for all services to start:
 ```
 ✅ surrealdb running on :8000
-✅ api running on :5055
-✅ frontend running on :3000
+✅ open_notebook running on :8502 (UI) and :5055 (API)
 ```
 
 Check status:
@@ -121,7 +108,7 @@ curl http://localhost:5055/health
 **Frontend Access:**
 Open browser to:
 ```
-http://localhost:3000
+http://localhost:8502
 ```
 
 You should see the Open Notebook interface!
@@ -265,14 +252,15 @@ docker compose logs api
 
 ### Port Already in Use
 
-If you get "Port 3000 already in use", change the port:
+If you get "Port 8502 already in use", change the port:
 
 ```yaml
 ports:
-  - "3001:3000"  # Use 3001 instead
+  - "8503:8502"  # Use 8503 instead
+  - "5055:5055"  # Keep API port same
 ```
 
-Then access at `http://localhost:3001`
+Then access at `http://localhost:8503`
 
 ---
 

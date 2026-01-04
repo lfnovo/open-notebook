@@ -26,7 +26,7 @@ curl http://localhost:5055/health
 docker compose restart
 
 # Step 4: Try again
-# Open http://localhost:3000 in browser
+# Open http://localhost:8502 in browser
 ```
 
 **If still broken:**
@@ -70,7 +70,7 @@ docker compose logs api | grep -i "api key\|error"
 
 ## #3: "Port X already in use"
 
-**Symptom:** Docker error "Port 3000 is already allocated"
+**Symptom:** Docker error "Port 8502 is already allocated"
 
 **Cause:** Another service using that port
 
@@ -78,18 +78,18 @@ docker compose logs api | grep -i "api key\|error"
 
 ```bash
 # Option 1: Stop the other service
-# Find what's using port 3000
-lsof -i :3000
+# Find what's using port 8502
+lsof -i :8502
 # Kill it or close the app
 
 # Option 2: Use different port
 # Edit docker-compose.yml
-# Change: - "3000:3000"
-# To:     - "3001:3000"
+# Change: - "8502:8502"
+# To:     - "8503:8502"
 
 # Then restart
 docker compose restart
-# Access at: http://localhost:3001
+# Access at: http://localhost:8503
 ```
 
 ---

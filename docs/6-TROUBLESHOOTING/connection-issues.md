@@ -60,7 +60,7 @@ docker compose up -d
 cat .env | grep API_URL
 
 # Should match your frontend URL:
-# Frontend: http://localhost:3000
+# Frontend: http://localhost:8502
 # API_URL: http://localhost:5055
 
 # If wrong, fix it:
@@ -292,7 +292,7 @@ docker compose restart
 ### Step 3: Access from Other Machine
 ```bash
 # In browser on other machine:
-http://192.168.1.100:3000
+http://192.168.1.100:8502
 # (or your server IP)
 ```
 
@@ -302,7 +302,7 @@ http://192.168.1.100:3000
 docker compose ps
 
 # Should show port mapping:
-# 0.0.0.0:3000->3000/tcp
+# 0.0.0.0:8502->8502/tcp
 # 0.0.0.0:5055->5055/tcp
 ```
 
@@ -311,7 +311,7 @@ docker compose ps
 # Check firewall on server
 sudo ufw status
 # May need to open ports:
-sudo ufw allow 3000
+sudo ufw allow 8502
 sudo ufw allow 5055
 
 # Check on different machine:
@@ -341,7 +341,7 @@ CORS policy: Response to preflight request doesn't pass access control check
 ```bash
 # Check browser console error for what URLs are being used
 # The error shows:
-# - Requesting from: http://localhost:3000
+# - Requesting from: http://localhost:8502
 # - Trying to reach: http://localhost:5055
 
 # Make sure API_URL matches:
@@ -364,19 +364,19 @@ docker compose ps
 # All should show "Up"
 
 # 2. Ports listening?
-netstat -tlnp | grep -E "3000|5055|8000"
+netstat -tlnp | grep -E "8502|5055|8000"
 
 # 3. API responding?
 curl http://localhost:5055/health
 
 # 4. Frontend accessible?
-curl http://localhost:3000 | head
+curl http://localhost:8502 | head
 
 # 5. Network OK?
 ping google.com
 
 # 6. No firewall?
-sudo ufw status | grep -E "5055|3000|8000"
+sudo ufw status | grep -E "5055|8502|8000"
 ```
 
 ---
@@ -384,9 +384,9 @@ sudo ufw status | grep -E "5055|3000|8000"
 ## Checklist for Remote Access
 
 - [ ] Server IP noted (e.g., 192.168.1.100)
-- [ ] Ports 3000, 5055, 8000 exposed in docker-compose
+- [ ] Ports 8502, 5055, 8000 exposed in docker-compose
 - [ ] API_URL set to server IP
-- [ ] Firewall allows ports 3000, 5055, 8000
+- [ ] Firewall allows ports 8502, 5055, 8000
 - [ ] Can reach server from client machine (ping IP)
 - [ ] All services running (docker compose ps)
 - [ ] Can curl API from client (curl http://IP:5055/health)

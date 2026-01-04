@@ -5,20 +5,20 @@
 ## Choose Your Path
 
 ### 🚀 I want to use OpenAI (Fastest)
-**5 minutes to running.** GPT-4, simple setup, powerful results.
+**5 minutes to running.** GPT, simple setup, powerful results.
 
 → [OpenAI Quick Start](quick-start-openai.md)
 
 ---
 
-### ☁️ I want to use other cloud AI (Anthropic, Google, Groq, etc.)
+### ☁️ I want to use other cloud AI (Anthropic, Google, OpenRouter, etc.)
 **5 minutes to running.** Choose from 15+ AI providers.
 
 → [Cloud Providers Quick Start](quick-start-cloud.md)
 
 ---
 
-### 🏠 I want to run locally (Ollama, completely private)
+### 🏠 I want to run locally (Ollama or LMStudio, completely private)
 **5 minutes to running.** Keep everything private, on your machine. No costs.
 
 → [Local Quick Start](quick-start-local.md)
@@ -41,21 +41,13 @@
 | **Privacy** | Self-hosted, your control | Cloud, Google's servers |
 | **AI Choice** | 15+ providers | Google's models only |
 | **Podcast Speakers** | 1-4 customizable | 2 only |
-| **Cost** | Pay what you use | Free (but your data) |
-| **Offline** | Yes (with Ollama) | No |
+| **Cost** | Completely free | Free (but your data) |
+| **Offline** | Yes  | No |
 
 ## Prerequisites
 
 - **Docker**: All paths use Docker (free)
 - **AI Provider**: Either a cloud API key OR use free local models (Ollama)
-- **Browser**: Modern browser (Chrome, Firefox, Safari, Edge)
-
-## System Requirements
-
-- **RAM**: 4GB minimum (8GB recommended)
-- **Storage**: 2GB for app + space for documents
-- **CPU**: Any modern processor
-- **Network**: Internet for cloud AI (optional for local)
 
 ---
 

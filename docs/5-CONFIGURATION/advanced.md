@@ -192,7 +192,7 @@ API_URL=https://mynotebook.example.com
 ### Firewall Rules
 
 Restrict access to your Open Notebook:
-- Port 8502/3000 (frontend): Only from your IP
+- Port 8502 (frontend): Only from your IP
 - Port 5055 (API): Only from frontend
 - Port 8000 (SurrealDB): Never expose to internet
 

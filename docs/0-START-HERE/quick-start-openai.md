@@ -27,10 +27,11 @@ services:
     ports:
       - "8000:8000"
 
-  api:
+  open_notebook:
     image: lfnovo/open_notebook:v1-latest
     ports:
-      - "5055:5055"
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API
     environment:
       # Your OpenAI key
       - OPENAI_API_KEY=sk-...
@@ -41,20 +42,10 @@ services:
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=production
+    volumes:
+      - ./notebook_data:/app/data
     depends_on:
       - surrealdb
-    volumes:
-      - ./data:/app/data
-    restart: always
-
-  frontend:
-    image: lfnovo/open_notebook-frontend:v1-latest
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5055
-    depends_on:
-      - api
     restart: always
 ```
 
@@ -79,7 +70,7 @@ Wait 15-20 seconds for services to start.
 
 Open your browser:
 ```
-http://localhost:3000
+http://localhost:8502
 ```
 
 You should see the Open Notebook interface!
@@ -116,7 +107,7 @@ You should see the Open Notebook interface!
 ## Verification Checklist
 
 - [ ] Docker is running
-- [ ] You can access `http://localhost:3000`
+- [ ] You can access `http://localhost:8502`
 - [ ] You created a notebook
 - [ ] You added a source
 - [ ] Chat works
@@ -135,15 +126,15 @@ In your notebook, go to **Settings** → **Models** to choose:
 
 ## Troubleshooting
 
-### "Port 3000 already in use"
+### "Port 8502 already in use"
 
 Change the port in docker-compose.yml:
 ```yaml
 ports:
-  - "3001:3000"  # Use 3001 instead
+  - "8503:8502"  # Use 8503 instead
 ```
 
-Then access at `http://localhost:3001`
+Then access at `http://localhost:8503`
 
 ### "API key not working"
 

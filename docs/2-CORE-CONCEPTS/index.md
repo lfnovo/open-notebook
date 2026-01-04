@@ -12,16 +12,16 @@ How Open Notebook organizes your research. Understand the three-tier container s
 ---
 
 ### 2. [AI Context & RAG](ai-context-rag.md)
-How Open Notebook makes AI aware of your research without uploading everything to the cloud.
+How Open Notebook makes AI aware of your research - two different approaches.
 
-**Key idea**: RAG (Retrieval-Augmented Generation) means the AI searches your content, finds relevant pieces, and answers based on what it found. You control which content is in scope.
+**Key idea**: **Chat** sends entire selected sources to the LLM (full context, conversational). **Ask** uses RAG (retrieval-augmented generation) to automatically search and retrieve only relevant chunks. Different tools for different needs.
 
 ---
 
 ### 3. [Chat vs. Transformations](chat-vs-transformations.md)
 Why Open Notebook has different interaction modes and when to use each one.
 
-**Key idea**: Chat is conversational exploration (you control context). Transformations are batch processing (you define the template). They answer different questions.
+**Key idea**: Chat is conversational exploration (you control context). Transformations are insight extractions. They reduced content to smaller bits of concentrated/dense information, which is much more suitable for an AI to use. 
 
 ---
 
@@ -42,8 +42,8 @@ Why Open Notebook can turn research into audio and why this matters.
 ## Read This Section If:
 
 - **You're new to Open Notebook** — Start here to understand how the system works conceptually before learning the features
-- **You're confused about RAG** — Section 2 explains what it is and why it matters
-- **You're wondering when to use Chat vs Ask** — Section 3 clarifies the differences
+- **You're confused about Chat vs Ask** — Section 2 explains the difference (full-content vs RAG)
+- **You're wondering when to use Chat vs Transformations** — Section 3 clarifies the differences
 - **You want to understand privacy controls** — Section 4 shows you what you can control
 - **You're curious about podcasts** — Section 5 explains the architecture and why it's different from competitors
 

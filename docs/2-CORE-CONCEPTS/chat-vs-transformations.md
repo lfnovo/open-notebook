@@ -93,30 +93,32 @@ You: [Get back one comprehensive answer]
 
 ---
 
-### 3. TRANSFORMATIONS - Batch Processing with Templates
+### 3. TRANSFORMATIONS - Template-Based Processing
 
-**What it is:** Apply a reusable template to one or more sources and get structured outputs.
+**What it is:** Apply a reusable template to a source and get structured output.
 
 **The flow:**
 ```
 1. You define a transformation (or choose a preset)
    "Extract: main argument, methodology, limitations"
 
-2. You apply it to one or more sources
-   OR system applies it to all sources
+2. You apply it to ONE source at a time
+   (You can repeat for other sources)
 
-3. For each source:
+3. For the source:
    - Source content + transformation prompt → AI
    - Result stored as new insight/note
 
 4. You get back
-   - Structured outputs (main argument, methodology, limitations)
-   - Saved as notes in your notebook
+   - Structured output (main argument, methodology, limitations)
+   - Saved as a note in your notebook
 ```
 
-**Context management:** You choose which sources to transform.
+**Context management:** Works on one source at a time.
 
-**Batch processing:** Process multiple sources at once.
+**Reusable:** Apply the same template to different sources (one by one).
+
+**Note**: Currently processes one source at a time. Batch processing (multiple sources at once) is planned for a future release.
 
 **Example:**
 ```
@@ -128,23 +130,24 @@ You: Define transformation
       - Limitations and gaps
       - Recommended next research"
 
-You: Apply to 10 papers
+You: Apply to paper 1
 
 System:
-  - For each paper, runs the transformation
-  - Results stored as 10 new notes
-  - Each note has the structure you defined
+  - Runs the transformation on paper 1
+  - Result stored as new note
 
-You: Now you have structured notes from all 10 papers
-     Perfect for writing a literature review or comparison
+You: Apply same transformation to paper 2, 3, etc.
+
+After 10 papers:
+  - You have 10 structured notes with consistent format
+  - Perfect for writing a literature review or comparison
 ```
 
 **Best for:**
-- Extracting the same information from multiple sources
-- Creating structured summaries
+- Extracting the same information from each source (run repeatedly)
+- Creating structured summaries with consistent format
 - Building a knowledge base of categorized insights
-- When you want consistent, reusable templates
-- Batch processing multiple sources
+- When you want reusable templates you can apply to each source
 
 ---
 
@@ -165,8 +168,8 @@ What are you trying to do?
 ├─→ "I need to compare these sources or get a comprehensive answer"
 │   └─→ USE: ASK
 │
-├─→ "I want to extract the same info from many sources"
-│   └─→ USE: TRANSFORMATIONS
+├─→ "I want to extract the same info from each source (one at a time)"
+│   └─→ USE: TRANSFORMATIONS (apply to each source)
 │
 └─→ "I just want to read and search"
     └─→ USE: Search (text or vector)
@@ -179,13 +182,13 @@ What are you trying to do?
 
 | Aspect | CHAT | ASK | TRANSFORMATIONS |
 |--------|------|-----|-----------------|
-| **What's it for?** | Conversational exploration | Comprehensive Q&A | Batch extraction |
-| **# of questions** | Multiple (conversational) | One | One template, many sources |
-| **Context control** | Manual (you choose) | Automatic (system searches) | Manual (you choose) |
-| **Conversational?** | Yes (follow-ups work) | No (one question only) | No (batch process) |
-| **Output** | Natural conversation | Natural answer | Structured notes |
-| **Time** | Quick (back-and-forth) | Longer (comprehensive) | Batch (all at once) |
-| **Best when** | Exploring & uncertain | Need full picture | Want consistency |
+| **What's it for?** | Conversational exploration | Comprehensive Q&A | Template-based extraction |
+| **# of questions** | Multiple (conversational) | One | One template per source |
+| **Context control** | Manual (you choose) | Automatic (system searches) | One source at a time |
+| **Conversational?** | Yes (follow-ups work) | No (one question only) | No (single operation) |
+| **Output** | Natural conversation | Natural answer | Structured note |
+| **Time** | Quick (back-and-forth) | Longer (comprehensive) | Per source |
+| **Best when** | Exploring & uncertain | Need full picture | Want consistent format |
 | **Model speed** | Any | Fast preferred | Any |
 
 ---
@@ -199,8 +202,10 @@ Goal: Write literature review from 15 papers
 
 Step 1: TRANSFORMATIONS
   - Define: "Extract abstract, methodology, findings, relevance"
-  - Apply to all 15 papers
-  - Get back 15 structured notes
+  - Apply to paper 1 → get structured note
+  - Apply to paper 2 → get structured note
+  - ... repeat for all 15 papers
+  - Result: 15 structured notes with consistent format
 
 Step 2: Read the notes
   - Now you have consistent summaries
@@ -231,7 +236,7 @@ Step 3: CHAT
 
 Step 4: TRANSFORMATIONS (optional)
   - Define: "Extract: pain point, frequency, who mentioned it"
-  - Apply to all interviews
+  - Apply to each interview (one by one)
   - Get structured data for analysis
 ```
 
@@ -338,11 +343,11 @@ CHAT → Save as Note → TRANSFORMATIONS
 |-----------|-----|-----|
 | "I want to explore a topic with follow-up questions" | **CHAT** | Conversational, you control context |
 | "I need a comprehensive answer to one complex question" | **ASK** | Automatic search, synthesized answer |
-| "I want consistent summaries from 10+ sources" | **TRANSFORMATIONS** | Template reuse, batch processing |
+| "I want consistent summaries from each source" | **TRANSFORMATIONS** | Template reuse, apply to each source |
 | "I'm comparing two specific sources" | **CHAT** | Select just those 2, have discussion |
-| "I need to categorize all sources by X criteria" | **TRANSFORMATIONS** | Extract category for each source |
+| "I need to categorize each source by X criteria" | **TRANSFORMATIONS** | Extract category from each source |
 | "I want to understand the big picture across all sources" | **ASK** | Automatic comprehensive search |
-| "I want to build a knowledge base" | **TRANSFORMATIONS** | Create structured notes |
+| "I want to build a knowledge base" | **TRANSFORMATIONS** | Create structured note from each source |
 | "I want to iterate on understanding" | **CHAT** | Multiple questions, refine thinking |
 
 The key insight: **Different questions need different tools.** Open Notebook gives you all three because research rarely fits one mode.

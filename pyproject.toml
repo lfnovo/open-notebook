@@ -38,7 +38,7 @@ dependencies = [
     "esperanto>=2.13",
     "surrealdb>=1.0.4",
     "podcast-creator>=0.7.0",
-    "surreal-commands>=1.2.0",
+    "surreal-commands>=1.3.0",
 ]
 
 [tool.setuptools]

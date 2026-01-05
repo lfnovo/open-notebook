@@ -48,11 +48,12 @@ class SourceProcessingOutput(CommandOutput):
     "process_source",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # Increased from 5 to handle deep queues (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 30,
+        "wait_max": 120,  # Increased from 30s to 120s to allow queue to drain
         "retry_on": [RuntimeError],
+        "retry_log_level": "debug",  # Use debug level to avoid log noise during transaction conflicts
     },
 )
 async def process_source_command(
@@ -136,7 +137,7 @@ async def process_source_command(
 
     except RuntimeError as e:
         # Transaction conflicts should be retried by surreal-commands
-        logger.warning(f"Transaction conflict, will retry: {e}")
+        logger.debug(f"Transaction conflict, will retry: {e}")
         raise
 
     except Exception as e:

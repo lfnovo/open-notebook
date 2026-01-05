@@ -190,11 +190,12 @@ async def embed_single_item_command(
     "embed_chunk",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # Increased from 5 to handle deep queues (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 30,
+        "wait_max": 120,  # Increased from 30s to 120s to allow queue to drain
         "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "retry_log_level": "debug",  # Use debug level to avoid log noise with hundreds of chunks
     },
 )
 async def embed_chunk_command(
@@ -206,13 +207,17 @@ async def embed_chunk_command(
     This command is designed to be submitted as a background job for each chunk
     of a source document, allowing natural concurrency control through the worker pool.
 
-    Retry Strategy:
-    - Retries up to 5 times for transient failures:
+    Retry Strategy (SurrealDB v2 workaround):
+    - Retries up to 15 times for transient failures (increased from 5):
       * RuntimeError: SurrealDB transaction conflicts ("read or write conflict")
       * ConnectionError: Network failures when calling embedding provider
       * TimeoutError: Request timeouts to embedding provider
-    - Uses exponential-jitter backoff (1-30s) to prevent thundering herd during concurrent operations
+    - Uses exponential-jitter backoff (1-120s, increased from 30s max)
+    - Higher retry limits allow deep queues (200+ chunks) to drain during concurrent processing
     - Does NOT retry permanent failures (ValueError, authentication errors, invalid input)
+
+    Note: These aggressive retry settings are a temporary workaround for SurrealDB v2.x
+    transaction conflict issues. Can be reduced once migrated to SurrealDB v3.
 
     Exception Handling:
     - RuntimeError, ConnectionError, TimeoutError: Re-raised to trigger retry mechanism
@@ -263,13 +268,13 @@ async def embed_chunk_command(
 
     except RuntimeError:
         # Re-raise RuntimeError to allow retry mechanism to handle DB transaction conflicts
-        logger.warning(
+        logger.debug(
             f"Transaction conflict for chunk {input_data.chunk_index} - will be retried by retry mechanism"
         )
         raise
     except (ConnectionError, TimeoutError) as e:
         # Re-raise network/timeout errors to allow retry mechanism to handle transient provider failures
-        logger.warning(
+        logger.debug(
             f"Network/timeout error for chunk {input_data.chunk_index} ({type(e).__name__}: {e}) - will be retried by retry mechanism"
         )
         raise

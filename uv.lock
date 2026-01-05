@@ -671,15 +671,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.12.1"
+version = "2.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/7d/856ecb7ab6b05fa212ef4cc9186be5008373aeced2dc1ebc99013c96fa3c/esperanto-2.12.1.tar.gz", hash = "sha256:177f001363d7710a7bdf747adc2c3f5e00aebd6b759c3ac6642e2c8df8a4e1cf", size = 811783, upload-time = "2025-12-16T00:53:46.798Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/8c/9f655703422fc895f4c327316a8b4c824ec334374a8f6e2dea61f2512362/esperanto-2.13.0.tar.gz", hash = "sha256:78df58492700d4cdfe9dd715313c48e5e4b816ecb87dc22a56d03610431c640e", size = 742118, upload-time = "2026-01-04T22:14:24.996Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/65/48/5d8c6bc2b5db29f3b8f8be7c0964f8d78bd40b3586133f71b773530f67af/esperanto-2.12.1-py3-none-any.whl", hash = "sha256:341c239d3c7a14d556a3b4225c6e1b5f66d635e34ec8026117fc18f4f608b3c3", size = 152050, upload-time = "2025-12-16T00:53:48.023Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/44/e1c9aa604f252a351d67398c886bb9b1cd572881289864d3e0d45212e61d/esperanto-2.13.0-py3-none-any.whl", hash = "sha256:5b9d12eb3d03f63acb7a77c0c17ed90b32b761ded1f122bc44bb4e8b6625cec0", size = 152019, upload-time = "2026-01-04T22:14:24.031Z" },
 ]
 
 [[package]]
@@ -2439,23 +2439,23 @@ dev = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3" },
     { name = "content-core", specifier = ">=1.0.2" },
-    { name = "esperanto", specifier = ">=2.8.3" },
+    { name = "esperanto", specifier = ">=2.13" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
     { name = "ipywidgets", marker = "extra == 'dev'", specifier = ">=8.1.5" },
-    { name = "langchain", specifier = ">=0.3.3" },
-    { name = "langchain-anthropic", specifier = ">=0.2.3" },
-    { name = "langchain-community", specifier = ">=0.3.3" },
-    { name = "langchain-deepseek", specifier = ">=0.1.3" },
-    { name = "langchain-google-genai", specifier = ">=2.1.10" },
-    { name = "langchain-google-vertexai", specifier = ">=2.0.28" },
-    { name = "langchain-groq", specifier = ">=0.2.1" },
-    { name = "langchain-mistralai", specifier = ">=0.2.1" },
-    { name = "langchain-ollama", specifier = ">=0.2.0" },
-    { name = "langchain-openai", specifier = ">=0.2.3" },
-    { name = "langgraph", specifier = ">=0.2.38" },
-    { name = "langgraph-checkpoint-sqlite", specifier = ">=2.0.0" },
+    { name = "langchain", specifier = ">=1.2.0" },
+    { name = "langchain-anthropic", specifier = ">=1.3.0" },
+    { name = "langchain-community", specifier = ">=0.4.1" },
+    { name = "langchain-deepseek", specifier = ">=1.0.0" },
+    { name = "langchain-google-genai", specifier = ">=4.1.2" },
+    { name = "langchain-google-vertexai", specifier = ">=3.2.0" },
+    { name = "langchain-groq", specifier = ">=1.1.1" },
+    { name = "langchain-mistralai", specifier = ">=1.1.1" },
+    { name = "langchain-ollama", specifier = ">=1.0.1" },
+    { name = "langchain-openai", specifier = ">=1.1.6" },
+    { name = "langgraph", specifier = ">=1.0.5" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.1" },
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "podcast-creator", specifier = ">=0.7.0" },
@@ -2466,7 +2466,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
     { name = "surreal-commands", specifier = ">=1.2.0" },
     { name = "surrealdb", specifier = ">=1.0.4" },
-    { name = "tiktoken", specifier = ">=0.8.0" },
+    { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tomli", specifier = ">=2.0.2" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.32.0.20241016" },
     { name = "uvicorn", specifier = ">=0.24.0" },

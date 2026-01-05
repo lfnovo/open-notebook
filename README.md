@@ -195,19 +195,6 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 
 ## Podcast Feature
 
-### Audio 1
-<audio controls>
-  <source src="audio1.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
-
-### Audio 2
-<audio controls>
-  <source src="audio2.mp3" type="audio/mpeg">
-  Your browser does not support the audio element.
-</audio>
-
-
 [![Check out our podcast sample](https://img.youtube.com/vi/D-760MlGwaI/0.jpg)](https://www.youtube.com/watch?v=D-760MlGwaI)
 
 ## 📚 Documentation

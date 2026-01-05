@@ -6,7 +6,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from open_notebook.graphs.utils import provision_langchain_model
+from open_notebook.ai.provision import provision_langchain_model
 
 
 class PatternChainState(TypedDict):

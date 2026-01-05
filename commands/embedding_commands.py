@@ -5,8 +5,8 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command, submit_command
 
+from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.models import model_manager
 from open_notebook.domain.notebook import Note, Source, SourceInsight
 from open_notebook.utils.text_utils import split_text
 

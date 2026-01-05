@@ -2,13 +2,13 @@ import asyncio
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
+from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
-from open_notebook.domain.models import model_manager
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.utils import split_text
 
@@ -142,6 +142,8 @@ class SourceInsight(ObjectModel):
 
 
 class Source(ObjectModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     table_name: ClassVar[str] = "source"
     asset: Optional[Asset] = None
     title: Optional[str] = None
@@ -150,9 +152,6 @@ class Source(ObjectModel):
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
-
-    class Config:
-        arbitrary_types_allowed = True
 
     @field_validator("command", mode="before")
     @classmethod

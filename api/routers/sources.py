@@ -113,7 +113,7 @@ def parse_source_form_data(
         try:
             notebooks_list = json.loads(notebooks)
         except json.JSONDecodeError:
-            logger.error(f"DEBUG - Invalid JSON in notebooks field: {notebooks}")
+            logger.error(f"Invalid JSON in notebooks field: {notebooks}")
             raise ValueError("Invalid JSON in notebooks field")
 
     transformations_list = []
@@ -122,7 +122,7 @@ def parse_source_form_data(
             transformations_list = json.loads(transformations)
         except json.JSONDecodeError:
             logger.error(
-                f"DEBUG - Invalid JSON in transformations field: {transformations}"
+                f"Invalid JSON in transformations field: {transformations}"
             )
             raise ValueError("Invalid JSON in transformations field")
 

@@ -74,7 +74,7 @@ Both leverage connection context manager for lifecycle management and automatic 
 - **Async-first design**: All operations async via AsyncSurreal; sync wrapper provided for legacy code
 - **Connection per operation**: Each repo_* function opens/closes connection (no pooling); designed for serverless/stateless API
 - **Auto-timestamping**: repo_create() and repo_update() auto-set `created`/`updated` fields
-- **Error resilience**: RuntimeError for transaction conflicts (retriable); catches and re-raises other exceptions
+- **Error resilience**: RuntimeError for transaction conflicts (retriable, logged at DEBUG level); catches and re-raises other exceptions
 - **RecordID polymorphism**: Functions accept string or RecordID; coerced to consistent type
 - **Graceful degradation**: Migration queries catch exceptions and treat table-not-found as version 0
 
@@ -91,7 +91,7 @@ Both leverage connection context manager for lifecycle management and automatic 
 - **Record ID format inconsistency**: repo_update() accepts both `table:id` format and full RecordID; path handling can be subtle
 - **ISO date parsing**: repo_update() parses `created` field from string to datetime if present; assumes ISO format
 - **Timestamp overwrite risk**: repo_create() always sets new timestamps; can't preserve original created time on reimport
-- **Transaction conflict handling**: RuntimeError from transaction conflicts logged without stack trace (prevents log spam)
+- **Transaction conflict handling**: RuntimeError from transaction conflicts logged at DEBUG level without stack trace (prevents log spam during concurrent operations)
 - **Graceful null returns**: get_all_versions() returns [] on table missing; allows migration system to bootstrap cleanly
 
 ## How to Extend

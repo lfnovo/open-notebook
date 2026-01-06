@@ -11,6 +11,8 @@ export interface ParsedReference {
   endIndex: number
 }
 
+// ExtractedReference and ExtractedReferences are kept for backward compatibility
+// but not currently used in the codebase
 export interface ExtractedReference {
   type: ReferenceType
   id: string
@@ -327,13 +329,14 @@ export function createReferenceLinkComponent(
  * 4. Append reference list at the bottom
  *
  * @param text - Original text with references
+ * @param referencesLabel - Locales label for "References" title (default: "References")
  * @returns Text with numbered citations and reference list appended
  *
  * @example
  * Input: "See [source:abc] and [note:xyz]. Also [source:abc] again."
  * Output: "See [1] and [2]. Also [1] again.\n\nReferences:\n[1] - [source:abc]\n[2] - [note:xyz]"
  */
-export function convertReferencesToCompactMarkdown(text: string): string {
+export function convertReferencesToCompactMarkdown(text: string, referencesLabel: string = 'References'): string {
   // Step 1: Parse all references using existing function
   const references = parseSourceReferences(text)
 
@@ -394,7 +397,7 @@ export function convertReferencesToCompactMarkdown(text: string): string {
   }
 
   // Step 5: Build reference list
-  const refListLines: string[] = ['\n\nReferences:']
+  const refListLines: string[] = [`\n\n${referencesLabel}:`]
 
   // Iterate through reference map in insertion order (Map preserves order)
   for (const [, refData] of referenceMap) {

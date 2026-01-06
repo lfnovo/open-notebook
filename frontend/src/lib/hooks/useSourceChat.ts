@@ -3,6 +3,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { sourceChatApi } from '@/lib/api/source-chat'
 import {
   SourceChatSession,
@@ -13,6 +15,7 @@ import {
 } from '@/lib/types/api'
 
 export function useSourceChat(sourceId: string) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<SourceChatMessage[]>([])
@@ -57,10 +60,11 @@ export function useSourceChat(sourceId: string) {
     onSuccess: (newSession) => {
       queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       setCurrentSessionId(newSession.id)
-      toast.success('Chat session created')
+      toast.success(t.chat.sessionCreated)
     },
-    onError: () => {
-      toast.error('Failed to create chat session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToCreateSession')))
     }
   })
 
@@ -71,10 +75,11 @@ export function useSourceChat(sourceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       queryClient.invalidateQueries({ queryKey: ['sourceChatSession', sourceId, currentSessionId] })
-      toast.success('Session updated')
+      toast.success(t.chat.sessionUpdated)
     },
-    onError: () => {
-      toast.error('Failed to update session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToUpdateSession')))
     }
   })
 
@@ -88,10 +93,11 @@ export function useSourceChat(sourceId: string) {
         setCurrentSessionId(null)
         setMessages([])
       }
-      toast.success('Session deleted')
+      toast.success(t.chat.sessionDeleted)
     },
-    onError: () => {
-      toast.error('Failed to delete session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToDeleteSession')))
     }
   })
 
@@ -107,9 +113,10 @@ export function useSourceChat(sourceId: string) {
         sessionId = newSession.id
         setCurrentSessionId(sessionId)
         queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
-      } catch (error) {
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { detail?: string } }, message?: string };
         console.error('Failed to create chat session:', error)
-        toast.error('Failed to create chat session')
+        toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToCreateSession')))
         return
       }
     }
@@ -180,9 +187,10 @@ export function useSourceChat(sourceId: string) {
           }
         }
       }
-    } catch (error) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
-      toast.error('Failed to send message')
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToSendMessage')))
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
@@ -190,7 +198,7 @@ export function useSourceChat(sourceId: string) {
       // Refetch session to get persisted messages
       refetchCurrentSession()
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient])
+  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {

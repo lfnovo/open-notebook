@@ -57,60 +57,56 @@ export async function getConfig(): Promise<AppConfig> {
  * Fetch configuration from the API or use defaults.
  */
 async function fetchConfig(): Promise<AppConfig> {
-  console.log('🔧 [Config] Starting configuration detection...')
-  console.log('🔧 [Config] Build time:', BUILD_TIME)
+  const isDev = process.env.NODE_ENV === 'development'
+  
+  if (isDev) {
+    console.log('🔧 [Config] Starting configuration detection...')
+    console.log('🔧 [Config] Build time:', BUILD_TIME)
+  }
 
   // STEP 1: Try to get runtime config from Next.js server-side endpoint
   // This allows API_URL to be set at runtime (not baked into build)
   // Note: Endpoint is at /config (not /api/config) to avoid reverse proxy conflicts
   let runtimeApiUrl: string | null = null
   try {
-    console.log('🔧 [Config] Attempting to fetch runtime config from /config endpoint...')
+    if (isDev) console.log('🔧 [Config] Attempting to fetch runtime config from /config endpoint...')
     const runtimeResponse = await fetch('/config', {
       cache: 'no-store',
     })
     if (runtimeResponse.ok) {
       const runtimeData = await runtimeResponse.json()
       runtimeApiUrl = runtimeData.apiUrl
-      console.log('✅ [Config] Runtime API URL from server:', runtimeApiUrl)
+      if (isDev) console.log('✅ [Config] Runtime API URL from server:', runtimeApiUrl)
     } else {
-      console.log('⚠️ [Config] Runtime config endpoint returned status:', runtimeResponse.status)
+      if (isDev) console.log('⚠️ [Config] Runtime config endpoint returned status:', runtimeResponse.status)
     }
   } catch (error) {
-    console.log('⚠️ [Config] Could not fetch runtime config:', error)
+    if (isDev) console.log('⚠️ [Config] Could not fetch runtime config:', error)
   }
 
   // STEP 2: Fallback to build-time environment variable
   const envApiUrl = process.env.NEXT_PUBLIC_API_URL
-  console.log('🔧 [Config] NEXT_PUBLIC_API_URL from build:', envApiUrl || '(not set)')
+  if (isDev) console.log('🔧 [Config] NEXT_PUBLIC_API_URL from build:', envApiUrl || '(not set)')
 
-  // STEP 3: Smart default - infer API URL from current frontend URL
-  // If frontend is at http://10.20.30.20:8502, API should be at http://10.20.30.20:5055
-  let defaultApiUrl = 'http://localhost:5055'
+  // STEP 3: Smart default - prefer relative path to use Next.js Rewrites
+  // This avoids CORS issues and port mapping complexities by proxying through Next.js
+  const defaultApiUrl = ''
 
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    const protocol = window.location.protocol
-    console.log('🔧 [Config] Current frontend URL:', `${protocol}//${hostname}${window.location.port ? ':' + window.location.port : ''}`)
-
-    // If not localhost, use the same hostname with port 5055
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      defaultApiUrl = `${protocol}//${hostname}:5055`
-      console.log('🔧 [Config] Detected remote hostname, using:', defaultApiUrl)
-    } else {
-      console.log('🔧 [Config] Detected localhost, using:', defaultApiUrl)
-    }
+  if (typeof window !== 'undefined' && isDev) {
+      console.log('🔧 [Config] Using relative path (rewrites) as default')
   }
 
   // Priority: Runtime config > Build-time env var > Smart default
-  const baseUrl = runtimeApiUrl || envApiUrl || defaultApiUrl
-  console.log('🔧 [Config] Final base URL to try:', baseUrl)
-  console.log('🔧 [Config] Selection priority: runtime=' + (runtimeApiUrl ? '✅' : '❌') +
-              ', build-time=' + (envApiUrl ? '✅' : '❌') +
-              ', smart-default=' + (!runtimeApiUrl && !envApiUrl ? '✅' : '❌'))
+  const baseUrl = runtimeApiUrl !== null ? runtimeApiUrl : (envApiUrl || defaultApiUrl)
+  if (isDev) {
+    console.log('🔧 [Config] Final base URL to try:', baseUrl)
+    console.log('🔧 [Config] Selection priority: runtime=' + (runtimeApiUrl ? '✅' : '❌') +
+                ', build-time=' + (envApiUrl ? '✅' : '❌') +
+                ', smart-default=' + (!runtimeApiUrl && !envApiUrl ? '✅' : '❌'))
+  }
 
   try {
-    console.log('🔧 [Config] Fetching backend config from:', `${baseUrl}/api/config`)
+    if (isDev) console.log('🔧 [Config] Fetching backend config from:', `${baseUrl}/api/config`)
     // Try to fetch runtime config from backend API
     const response = await fetch(`${baseUrl}/api/config`, {
       cache: 'no-store',
@@ -126,7 +122,7 @@ async function fetchConfig(): Promise<AppConfig> {
         hasUpdate: data.hasUpdate || false,
         dbStatus: data.dbStatus, // Can be undefined for old backends
       }
-      console.log('✅ [Config] Successfully loaded API config:', config)
+      if (isDev) console.log('✅ [Config] Successfully loaded API config:', config)
       return config
     } else {
       // Don't log error here - ConnectionGuard will display it

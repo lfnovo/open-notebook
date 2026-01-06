@@ -4,6 +4,8 @@ const nextConfig: NextConfig = {
   // Enable standalone output for optimized Docker deployment
   output: "standalone",
 
+
+
   // API Rewrites: Proxy /api/* requests to FastAPI backend
   // This simplifies reverse proxy configuration - users only need to proxy to port 8502
   // Next.js handles internal routing to the API backend on port 5055

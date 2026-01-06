@@ -13,6 +13,7 @@ import { useNotes } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useIsDesktop } from '@/lib/hooks/use-media-query'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
@@ -25,10 +26,11 @@ export interface ContextSelections {
 }
 
 export default function NotebookPage() {
+  const { t } = useTranslation()
   const params = useParams()
 
   // Ensure the notebook ID is properly decoded from URL
-  const notebookId = decodeURIComponent(params.id as string)
+  const notebookId = params?.id ? decodeURIComponent(params.id as string) : ''
 
   const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
   const {
@@ -112,8 +114,8 @@ export default function NotebookPage() {
     return (
       <AppShell>
         <div className="p-6">
-          <h1 className="text-2xl font-bold mb-4">Notebook Not Found</h1>
-          <p className="text-muted-foreground">The requested notebook could not be found.</p>
+          <h1 className="text-2xl font-bold mb-4">{t.notebooks.notFound}</h1>
+          <p className="text-muted-foreground">{t.notebooks.notFoundDesc}</p>
         </div>
       </AppShell>
     )
@@ -135,15 +137,15 @@ export default function NotebookPage() {
                   <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="sources" className="gap-2">
                       <FileText className="h-4 w-4" />
-                      Sources
+                      {t.navigation.sources}
                     </TabsTrigger>
                     <TabsTrigger value="notes" className="gap-2">
                       <StickyNote className="h-4 w-4" />
-                      Notes
+                      {t.common.notes}
                     </TabsTrigger>
                     <TabsTrigger value="chat" className="gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Chat
+                      {t.common.chat}
                     </TabsTrigger>
                   </TabsList>
                 </Tabs>

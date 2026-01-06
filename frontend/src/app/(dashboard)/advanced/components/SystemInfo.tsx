@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { getConfig } from '@/lib/config'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 export function SystemInfo() {
+  const { t } = useTranslation()
   const [config, setConfig] = useState<{
     version: string
     latestVersion?: string | null
@@ -32,8 +34,8 @@ export function SystemInfo() {
     return (
       <Card className="p-6">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">System Information</h2>
-          <div className="text-sm text-muted-foreground">Loading...</div>
+          <h2 className="text-xl font-semibold">{t.advanced.systemInfo}</h2>
+          <div className="text-sm text-muted-foreground">{t.common.loading}</div>
         </div>
       </Card>
     )
@@ -42,37 +44,37 @@ export function SystemInfo() {
   return (
     <Card className="p-6">
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">System Information</h2>
+        <h2 className="text-xl font-semibold">{t.advanced.systemInfo}</h2>
 
         <div className="space-y-3">
           {/* Current Version */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Current Version</span>
-            <Badge variant="outline">{config?.version || 'Unknown'}</Badge>
+            <span className="text-sm font-medium">{t.advanced.currentVersion}</span>
+            <Badge variant="outline">{config?.version || t.advanced.unknown}</Badge>
           </div>
 
           {/* Latest Version */}
           {config?.latestVersion && (
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Latest Version</span>
+              <span className="text-sm font-medium">{t.advanced.latestVersion}</span>
               <Badge variant="outline">{config.latestVersion}</Badge>
             </div>
           )}
 
           {/* Update Status */}
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Status</span>
+            <span className="text-sm font-medium">{t.advanced.status}</span>
             {config?.hasUpdate ? (
               <Badge variant="destructive">
-                Update Available
+                {t.advanced.updateAvailable.replace('{version}', config.latestVersion || '')}
               </Badge>
             ) : config?.latestVersion ? (
               <Badge variant="outline" className="text-green-600 border-green-600">
-                Up to Date
+                {t.advanced.upToDate}
               </Badge>
             ) : (
               <Badge variant="outline" className="text-muted-foreground">
-                Unknown
+                {t.advanced.unknown}
               </Badge>
             )}
           </div>
@@ -86,7 +88,7 @@ export function SystemInfo() {
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline inline-flex items-center gap-1"
               >
-                View on GitHub
+                {t.advanced.viewOnGithub}
                 <svg
                   className="w-4 h-4"
                   fill="none"
@@ -107,7 +109,7 @@ export function SystemInfo() {
           {/* Version Check Failed Message */}
           {!config?.latestVersion && config?.version && (
             <div className="pt-2 text-xs text-muted-foreground">
-              Unable to check for updates. GitHub may be unreachable.
+              {t.advanced.updateCheckFailed}
             </div>
           )}
         </div>

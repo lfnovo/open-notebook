@@ -9,20 +9,28 @@ interface FormSectionProps {
   description?: string
   children: ReactNode
   className?: string
+  htmlFor?: string
 }
 
 export function FormSection({
   title,
   description,
   children,
-  className
+  className,
+  htmlFor
 }: FormSectionProps) {
   return (
     <div className={cn("mb-6 last:mb-0", className)}>
       <div className="mb-4">
-        <Label className="text-base font-medium block mb-1">
-          {title}
-        </Label>
+        {htmlFor ? (
+          <Label htmlFor={htmlFor} className="text-base font-medium block mb-1">
+            {title}
+          </Label>
+        ) : (
+          <h3 className="text-base font-medium block mb-1">
+            {title}
+          </h3>
+        )}
         {description && (
           <p className="text-sm text-muted-foreground">
             {description}

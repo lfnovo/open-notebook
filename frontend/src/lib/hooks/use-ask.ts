@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
 import { AskStreamEvent } from '@/lib/types/search'
 
@@ -25,6 +27,7 @@ interface AskState {
 }
 
 export function useAsk() {
+  const { t } = useTranslation()
   const [state, setState] = useState<AskState>({
     isStreaming: false,
     strategy: null,
@@ -36,12 +39,12 @@ export function useAsk() {
   const sendAsk = useCallback(async (question: string, models: AskModels) => {
     // Validate inputs
     if (!question.trim()) {
-      toast.error('Please enter a question')
+      toast.error(t('apiErrors.pleaseEnterQuestion'))
       return
     }
 
     if (!models.strategy || !models.answer || !models.finalAnswer) {
-      toast.error('Please configure all required models')
+      toast.error(t('apiErrors.pleaseConfigureModels'))
       return
     }
 
@@ -130,7 +133,8 @@ export function useAsk() {
       setState(prev => ({ ...prev, isStreaming: false }))
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      const err = error as { message?: string }
+      const errorMessage = err.message || 'An unexpected error occurred'
       console.error('Ask error:', error)
 
       setState(prev => ({
@@ -139,11 +143,11 @@ export function useAsk() {
         error: errorMessage
       }))
 
-      toast.error('Ask failed', {
-        description: errorMessage
+      toast.error(t('apiErrors.askFailed'), {
+        description: t(getApiErrorKey(errorMessage))
       })
     }
-  }, [])
+  }, [t])
 
   const reset = useCallback(() => {
     setState({

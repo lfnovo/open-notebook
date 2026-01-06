@@ -62,6 +62,8 @@ export function CheckboxList({
               className="flex items-start gap-3 cursor-pointer hover:bg-muted p-2 rounded-md -m-2 transition-colors"
             >
               <Checkbox
+                id={`checkbox-${item.id}`}
+                name={`checkbox-${item.id}`}
                 checked={selectedIds.includes(item.id)}
                 onCheckedChange={() => onToggle(item.id)}
                 className="mt-0.5"

@@ -6,6 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Save, Copy, Loader2, Check } from 'lucide-react'
 import { useCreateNote } from '@/lib/hooks/use-notes'
 import { toast } from 'sonner'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface MessageActionsProps {
   content: string
@@ -13,12 +14,13 @@ interface MessageActionsProps {
 }
 
 export function MessageActions({ content, notebookId }: MessageActionsProps) {
+  const { t } = useTranslation()
   const [copySuccess, setCopySuccess] = useState(false)
   const createNote = useCreateNote()
 
   const handleSaveToNote = () => {
     if (!notebookId) {
-      toast.error('Cannot save note: notebook ID not available')
+      toast.error(t.sources.cannotSaveNoteNoNotebook)
       return
     }
 
@@ -35,7 +37,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(content)
-        toast.success('Message copied to clipboard')
+        toast.success(t.common.copyToClipboard)
         setCopySuccess(true)
         setTimeout(() => setCopySuccess(false), 2000)
       } else {
@@ -51,18 +53,18 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
 
         try {
           document.execCommand('copy')
-          toast.success('Message copied to clipboard')
+          toast.success(t.common.copyToClipboard)
           setCopySuccess(true)
           setTimeout(() => setCopySuccess(false), 2000)
         } catch {
-          toast.error('Failed to copy message')
+          toast.error(t.common.error)
         }
 
         document.body.removeChild(textArea)
       }
     } catch (err) {
       console.error('Failed to copy to clipboard:', err)
-      toast.error('Failed to copy message')
+      toast.error(t.common.error)
     }
   }
 
@@ -87,7 +89,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Save to note</p>
+              <p>{t.common.saveToNote}</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -108,7 +110,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Copy to clipboard</p>
+            <p>{t.common.copyToClipboard}</p>
           </TooltipContent>
         </Tooltip>
       </div>

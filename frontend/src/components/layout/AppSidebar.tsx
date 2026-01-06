@@ -23,6 +23,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
+import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { TranslationKeys } from '@/lib/locales'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
 import {
   Book,
@@ -40,33 +43,33 @@ import {
   Command,
 } from 'lucide-react'
 
-const navigation = [
+const getNavigation = (t: TranslationKeys) => [
   {
-    title: 'Collect',
+    title: t.navigation.collect,
     items: [
-      { name: 'Sources', href: '/sources', icon: FileText },
+      { name: t.navigation.sources, href: '/sources', icon: FileText },
     ],
   },
   {
-    title: 'Process',
+    title: t.navigation.process,
     items: [
-      { name: 'Notebooks', href: '/notebooks', icon: Book },
-      { name: 'Ask and Search', href: '/search', icon: Search },
+      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
+      { name: t.navigation.askAndSearch, href: '/search', icon: Search },
     ],
   },
   {
-    title: 'Create',
+    title: t.navigation.create,
     items: [
-      { name: 'Podcasts', href: '/podcasts', icon: Mic },
+      { name: t.navigation.podcasts, href: '/podcasts', icon: Mic },
     ],
   },
   {
-    title: 'Manage',
+    title: t.navigation.manage,
     items: [
-      { name: 'Models', href: '/models', icon: Bot },
-      { name: 'Transformations', href: '/transformations', icon: Shuffle },
-      { name: 'Settings', href: '/settings', icon: Settings },
-      { name: 'Advanced', href: '/advanced', icon: Wrench },
+      { name: t.navigation.models, href: '/models', icon: Bot },
+      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
+      { name: t.navigation.settings, href: '/settings', icon: Settings },
+      { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
     ],
   },
 ] as const
@@ -74,6 +77,8 @@ const navigation = [
 type CreateTarget = 'source' | 'notebook' | 'podcast'
 
 export function AppSidebar() {
+  const { t } = useTranslation()
+  const navigation = getNavigation(t)
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
@@ -134,9 +139,9 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <Image src="/logo.svg" alt="Open Notebook" width={32} height={32} />
+                <Image src="/logo.svg" alt={t.common.appName} width={32} height={32} />
                 <span className="text-base font-medium text-sidebar-foreground">
-                  Open Notebook
+                  {t.common.appName}
                 </span>
               </div>
               <Button
@@ -144,6 +149,7 @@ export function AppSidebar() {
                 size="sm"
                 onClick={toggleCollapse}
                 className="text-sidebar-foreground hover:bg-sidebar-accent"
+                data-testid="sidebar-toggle"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -173,13 +179,13 @@ export function AppSidebar() {
                         variant="default"
                         size="sm"
                         className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                        aria-label="Create"
+                        aria-label={t.common.create}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Create</TooltipContent>
+                   <TooltipContent side="right">{t.common.create}</TooltipContent>
                 </Tooltip>
               ) : (
                 <DropdownMenuTrigger asChild>
@@ -188,9 +194,9 @@ export function AppSidebar() {
                     variant="default"
                     size="sm"
                     className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                  >
+                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Create
+                    {t.common.create}
                   </Button>
                 </DropdownMenuTrigger>
               )}
@@ -207,8 +213,8 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                  <FileText className="h-4 w-4" />
-                  Source
+                   <FileText className="h-4 w-4" />
+                  {t.common.source}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -217,8 +223,8 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                  <Book className="h-4 w-4" />
-                  Notebook
+                   <Book className="h-4 w-4" />
+                  {t.common.notebook}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -227,8 +233,8 @@ export function AppSidebar() {
                   }}
                   className="gap-2"
                 >
-                  <Mic className="h-4 w-4" />
-                  Podcast
+                   <Mic className="h-4 w-4" />
+                  {t.common.podcast}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -247,12 +253,12 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
+                  const isActive = pathname?.startsWith(item.href) || false
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}
                       className={cn(
-                        'w-full gap-3 text-sidebar-foreground',
+                        'w-full gap-3 text-sidebar-foreground sidebar-menu-item',
                         isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
                         isCollapsed ? 'justify-center px-2' : 'justify-start'
                       )}
@@ -296,37 +302,50 @@ export function AppSidebar() {
           {!isCollapsed && (
             <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+                 <span className="flex items-center gap-1.5">
                   <Command className="h-3 w-3" />
-                  Quick actions
+                  {t.common.quickActions}
                 </span>
                 <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
                 </kbd>
               </div>
-              <p className="mt-1 text-[10px] text-sidebar-foreground/40">
-                Navigation, search, ask, theme
+               <p className="mt-1 text-[10px] text-sidebar-foreground/40">
+                {t.common.quickActionsDesc}
               </p>
             </div>
           )}
 
-          <div
+           <div
             className={cn(
-              'flex',
-              isCollapsed ? 'justify-center' : 'justify-start'
+              'flex flex-col gap-2',
+              isCollapsed ? 'items-center' : 'items-stretch'
             )}
           >
             {isCollapsed ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <ThemeToggle iconOnly />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="right">Theme</TooltipContent>
-              </Tooltip>
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <ThemeToggle iconOnly />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{t.common.theme}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div>
+                      <LanguageToggle iconOnly />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{t.common.language}</TooltipContent>
+                </Tooltip>
+              </>
             ) : (
-              <ThemeToggle />
+              <>
+                <ThemeToggle />
+                <LanguageToggle />
+              </>
             )}
           </div>
 
@@ -335,22 +354,24 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-center"
+                  className="w-full justify-center sidebar-menu-item"
                   onClick={logout}
+                  aria-label={t.common.signOut}
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Sign Out</TooltipContent>
+               <TooltipContent side="right">{t.common.signOut}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
               variant="outline"
-              className="w-full justify-start gap-3"
+              className="w-full justify-start gap-3 sidebar-menu-item"
               onClick={logout}
-            >
+              aria-label={t.common.signOut}
+             >
               <LogOut className="h-4 w-4" />
-              Sign Out
+              {t.common.signOut}
             </Button>
           )}
         </div>

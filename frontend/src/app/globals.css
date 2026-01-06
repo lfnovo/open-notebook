@@ -70,7 +70,7 @@
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.623 0.214 259.815);
   --sidebar-primary-foreground: oklch(0.97 0.014 254.604);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent: oklch(0.92 0.01 286.375);
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.623 0.214 259.815);
@@ -104,7 +104,7 @@
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.546 0.245 262.881);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent: oklch(0.35 0.01 286.033);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.488 0.243 264.376);
@@ -114,63 +114,78 @@
   * {
     @apply border-border outline-ring/50;
   }
-  
+
   html {
     @apply antialiased;
   }
-  
+
   body {
     @apply bg-background text-foreground transition-colors;
   }
-  
+
   /* Ensure proper theme inheritance for popovers and dropdowns */
   .dark {
     color-scheme: dark;
   }
-  
+
   :root {
     color-scheme: light;
   }
-  
+
   /* Ensure Radix UI components inherit theme properly */
   [data-radix-popper-content-wrapper] {
     @apply z-50;
   }
-  
+
   /* Force theme inheritance for portaled content */
   .dark [data-radix-popper-content-wrapper],
   .dark [data-overlay-container] {
     color-scheme: dark;
   }
-  
+
   /* Ensure sidebar gets proper theme */
   .app-sidebar {
     background-color: var(--sidebar);
     color: var(--sidebar-foreground);
     border-color: var(--sidebar-border);
   }
-  
+
+  /* Enhanced sidebar menu item hover effects */
+  .sidebar-menu-item {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .sidebar-menu-item:hover {
+    @apply scale-[1.02];
+    background-color: var(--sidebar-accent) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .sidebar-menu-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  }
+
   /* Enhanced hover effects for cards */
   .card-hover {
     @apply transition-all duration-200 cursor-pointer;
   }
-  
+
   .card-hover:hover {
     background-color: var(--muted) !important;
     border-color: var(--border);
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
-  
+
   .dark .card-hover:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
-  
+
   /* Ensure clickable cards show pointer cursor */
   .clickable-card {
     cursor: pointer !important;
   }
-  
+
   .clickable-card * {
     cursor: pointer !important;
   }

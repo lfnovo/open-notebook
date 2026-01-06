@@ -12,7 +12,7 @@ import { SourceDetailContent } from '@/components/source/SourceDetailContent'
 export default function SourceDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const sourceId = decodeURIComponent(params.id as string)
+  const sourceId = params?.id ? decodeURIComponent(params.id as string) : ''
   const navigation = useNavigation()
 
   // Initialize source chat

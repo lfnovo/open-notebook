@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 
 interface ConfirmDialogProps {
@@ -28,11 +29,14 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmText = 'Confirm',
+  confirmText,
   confirmVariant = 'default',
   onConfirm,
   isLoading = false,
 }: ConfirmDialogProps) {
+  const { t } = useTranslation()
+  const finalConfirmText = confirmText || t.common.confirm
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -41,7 +45,7 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={isLoading}>{t.common.cancel}</AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
@@ -50,10 +54,10 @@ export function ConfirmDialog({
             {isLoading ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                {confirmText}
+                {finalConfirmText}
               </>
             ) : (
-              confirmText
+              finalConfirmText
             )}
           </AlertDialogAction>
         </AlertDialogFooter>

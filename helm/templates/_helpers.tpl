@@ -55,6 +55,28 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{ end }}
 
 {{- /*
+Return the secret name for SurrealDB
+*/ -}}
+{{- define "open-notebook.surrealdb.secretName" -}}
+{{- if .Values.surrealdb.auth.existingSecret -}}
+{{- .Values.surrealdb.auth.existingSecret -}}
+{{- else -}}
+{{- printf "%s-surrealdb" (include "common.names.fullname" .) -}}
+{{- end -}}
+{{- end -}}
+
+{{- /*
+Return the secret name for application
+*/ -}}
+{{- define "open-notebook.secretName" -}}
+{{- if .Values.config.auth.existingSecret -}}
+{{- .Values.config.auth.existingSecret -}}
+{{- else -}}
+{{- include "common.names.fullname" . -}}
+{{- end -}}
+{{- end -}}
+
+{{- /*
 Get the image registry
 */ -}}
 {{- define "open-notebook.imageRegistry" -}}
@@ -149,15 +171,12 @@ Render environment variables for the application
   value: {{ include "open-notebook.surrealdb.url" . | quote }}
 - name: SURREAL_USER
   value: {{ .Values.surrealdb.auth.user | quote }}
-{{ if .Values.surrealdb.auth.existingSecret -}}
+{{ if or .Values.surrealdb.auth.password .Values.surrealdb.auth.existingSecret -}}
 - name: SURREAL_PASSWORD
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.surrealdb.auth.existingSecret }}
-      key: {{ .Values.surrealdb.auth.secretKey | default "surreal-password" }}
-{{ else -}}
-- name: SURREAL_PASSWORD
-  value: {{ .Values.surrealdb.auth.password | quote }}
+      name: {{ include "open-notebook.surrealdb.secretName" . }}
+      key: {{ .Values.surrealdb.auth.secretKey.password | default "password" }}
 {{- end }}
 - name: SURREAL_NAMESPACE
   value: {{ .Values.surrealdb.database.namespace | quote }}
@@ -183,7 +202,7 @@ Render environment variables for the application
   value: {{ .Values.config.worker.retry.waitMax | quote }}
 - name: TTS_BATCH_SIZE
   value: {{ .Values.config.tts.batchSize | quote }}
-{{ if .Values.config.aiProviders.openai.apiKey -}}
+{{- if or .Values.config.aiProviders.openai.apiKey .Values.config.aiProviders.openai.existingSecret -}}
 {{ if .Values.config.aiProviders.openai.existingSecret -}}
 - name: OPENAI_API_KEY
   valueFrom:
@@ -354,7 +373,7 @@ Render environment variables for the application
   valueFrom:
     secretKeyRef:
       name: {{ .Values.config.aiProviders.azureOpenai.existingSecret }}
-      key: azure-openai-api-key
+      key: {{ .Values.config.aiProviders.azureOpenai.secretKey | default "azure-openai-api-key" }}
 {{- else -}}
 - name: AZURE_OPENAI_API_KEY
   value: {{ .Values.config.aiProviders.azureOpenai.apiKey | quote }}

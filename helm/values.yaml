@@ -99,15 +99,22 @@ surrealdb:
     ##
     user: root
     ## @param surrealdb.auth.password SurrealDB password
+    ## NOTE: Must be set if existingSecret is not provided
     ##
-    password: root
-    ## @param surrealdb.auth.existingSecret Existing secret containing SurrealDB password
-    ## NOTE: Must contain key `surreal-password`
+    password: ""
+    ## @param surrealdb.auth.existingSecret Existing secret containing SurrealDB credentials
+    ## NOTE: Must contain keys specified in secretKey.username and secretKey.password
     ##
     existingSecret: ""
-    ## @param surrealdb.auth.secretKey Key in the secret containing the password
+    ## @param surrealdb.auth.secretKey Keys in the secret containing credentials
     ##
-    secretKey: surreal-password
+    secretKey:
+      ## @param surrealdb.auth.secretKey.username Key in secret containing username
+      ##
+      username: username
+      ## @param surrealdb.auth.secretKey.password Key in secret containing password
+      ##
+      password: password
 
   ## SurrealDB database configuration
   ##
@@ -468,10 +475,10 @@ service:
     api: 5055
     ## @param service.ports.httpNodePort Node port for HTTP service (when type=NodePort)
     ##
-    httpNodePort: ""
+    httpNodePort: null
     ## @param service.ports.apiNodePort Node port for API service (when type=NodePort)
     ##
-    apiNodePort: ""
+    apiNodePort: null
   ## @param service.annotations Service annotations
   ##
   annotations: {}

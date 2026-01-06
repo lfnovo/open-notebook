@@ -60,12 +60,22 @@ spec:
             - --log
             - info
             - --user
-            - {{ .Values.surrealdb.auth.user }}
+            - $(SURREAL_USER)
             - --pass
-            - {{ .Values.surrealdb.auth.password }}
+            - $(SURREAL_PASS)
             - --
-            - rocksdb:/mydata/mydatabase.db
+            - rocksdb:{{ .Values.surrealdb.persistence.mountPath }}/mydatabase.db
           env:
+            - name: SURREAL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "open-notebook.surrealdb.secretName" . }}
+                  key: {{ .Values.surrealdb.auth.secretKey.username | default "username" }}
+            - name: SURREAL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "open-notebook.surrealdb.secretName" . }}
+                  key: {{ .Values.surrealdb.auth.secretKey.password | default "password" }}
             {{- if .Values.surrealdb.experimental.graphql }}
             - name: SURREAL_EXPERIMENTAL_GRAPHQL
               value: "true"

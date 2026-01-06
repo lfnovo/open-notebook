@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: v2
 name: open-notebook
 description:  An Open Source implementation of Notebook LM with more flexibility and features
 type: application

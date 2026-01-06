@@ -54,7 +54,13 @@
             "user": { "type": "string" },
             "password": { "type": "string" },
             "existingSecret": { "type": "string" },
-            "secretKey": { "type": "string" }
+            "secretKey": {
+              "type": "object",
+              "properties": {
+                "username": { "type": "string" },
+                "password": { "type": "string" }
+              }
+            }
           }
         },
         "database": {
@@ -295,8 +301,8 @@
           "properties": {
             "http": { "type": "integer", "minimum": 1, "maximum": 65535 },
             "api": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "httpNodePort": { "type": "string" },
-            "apiNodePort": { "type": "string" }
+            "httpNodePort": { "type": ["integer", "null"] },
+            "apiNodePort": { "type": ["integer", "null"] }
           }
         },
         "annotations": { "type": "object" },

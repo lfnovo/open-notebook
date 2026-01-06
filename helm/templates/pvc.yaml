@@ -33,7 +33,7 @@ spec:
   {{- if (eq "-" .Values.app.persistence.storageClass) }}
   storageClassName: ""
   {{- else }}
-  storageClassName: {{ .Values.app.persistence.storageClass }}
+  storageClassName: {{ .Values.app.persistence.storageClass | quote }}
   {{- end }}
   {{- end }}
   resources:

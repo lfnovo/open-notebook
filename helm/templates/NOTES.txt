@@ -68,13 +68,25 @@ SurrealDB Information:
 - Internal Service: {{ $svcName }}-surrealdb.{{ $svcNamespace }}.svc.{{ .Values.global.clusterDomain }}:8000
 - WebSocket URL: ws://{{ $svcName }}-surrealdb.{{ $svcNamespace }}.svc.{{ .Values.global.clusterDomain }}:8000/rpc
 - User: {{ .Values.surrealdb.auth.user }}
-- Password: {{ if .Values.surrealdb.auth.existingSecret }}*** (from secret {{ .Values.surrealdb.auth.existingSecret }}){{ else }}{{ .Values.surrealdb.auth.password }}{{ end }}
+{{- if .Values.surrealdb.auth.existingSecret }}
+- Password: *** (from secret {{ .Values.surrealdb.auth.existingSecret }})
+{{- else if .Values.surrealdb.auth.password }}
+- Password: *** (set in values.yaml)
+{{- else }}
+- WARNING: No password set! Please set surrealdb.auth.password or surrealdb.auth.existingSecret
+{{- end }}
 - Namespace: {{ .Values.surrealdb.database.namespace }}
 - Database: {{ .Values.surrealdb.database.database }}
 
 To connect to SurrealDB directly:
   kubectl port-forward -n {{ $svcNamespace }} svc/{{ $svcName }}-surrealdb 8000:8000
-  surreal sql --endpoint ws://localhost:8000/rpc --namespace {{ .Values.surrealdb.database.namespace }} --database {{ .Values.surrealdb.database.database }} --user {{ .Values.surrealdb.auth.user }} --pass {{ .Values.surrealdb.auth.password }}
+{{- if or .Values.surrealdb.auth.password .Values.surrealdb.auth.existingSecret }}
+  surreal sql --endpoint ws://localhost:8000/rpc --namespace {{ .Values.surrealdb.database.namespace }} --database {{ .Values.surrealdb.database.database }} --user {{ .Values.surrealdb.auth.user }} --pass ***
+  (Password is stored in secret: {{ include "open-notebook.surrealdb.secretName" . }})
+{{- else }}
+  surreal sql --endpoint ws://localhost:8000/rpc --namespace {{ .Values.surrealdb.database.namespace }} --database {{ .Values.surrealdb.database.database }} --user {{ .Values.surrealdb.auth.user }}
+  (WARNING: No password set!)
+{{- end }}
 
 {{- end }}
 

@@ -99,15 +99,12 @@ spec:
                   name: {{ .Values.app.extraEnvVarsCM }}
                   key: app-extra-env-vars
             {{- end }}
-            {{- if and .Values.config.auth.password (not .Values.config.auth.existingSecret) }}
-            - name: OPEN_NOTEBOOK_PASSWORD
-              value: {{ .Values.config.auth.password | quote }}
-            {{- else if .Values.config.auth.existingSecret }}
+            {{- if or .Values.config.auth.password .Values.config.auth.existingSecret }}
             - name: OPEN_NOTEBOOK_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.auth.existingSecret }}
-                  key: {{ .Values.config.auth.secretKey }}
+                  name: {{ include "open-notebook.secretName" . }}
+                  key: {{ .Values.config.auth.secretKey | default "open-notebook-password" }}
             {{- end }}
           ports:
             - name: http

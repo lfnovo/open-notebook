@@ -168,7 +168,7 @@ surrealdb:
     port: 8000
     ## @param surrealdb.service.nodePort Specific node port when type is NodePort
     ##
-    nodePort: ""
+    nodePort: null
     ## @param surrealdb.service.annotations Service annotations
     ##
     annotations: {}

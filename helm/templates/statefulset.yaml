@@ -59,10 +59,6 @@ spec:
             - start
             - --log
             - info
-            - --user
-            - $(SURREAL_USER)
-            - --pass
-            - $(SURREAL_PASS)
             - --
             - rocksdb:{{ .Values.surrealdb.persistence.mountPath }}/mydatabase.db
           env:

@@ -92,7 +92,7 @@
           "properties": {
             "type": { "enum": ["ClusterIP", "LoadBalancer", "NodePort"] },
             "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "nodePort": { "type": "string" },
+            "nodePort": { "type": ["integer", "null"] },
             "annotations": { "type": "object" }
           }
         },
@@ -301,8 +301,8 @@
           "properties": {
             "http": { "type": "integer", "minimum": 1, "maximum": 65535 },
             "api": { "type": "integer", "minimum": 1, "maximum": 65535 },
-            "httpNodePort": { "type": ["integer", "null"] },
-            "apiNodePort": { "type": ["integer", "null"] }
+            "httpNodePort": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 },
+            "apiNodePort": { "type": ["integer", "null"], "minimum": 1, "maximum": 65535 }
           }
         },
         "annotations": { "type": "object" },

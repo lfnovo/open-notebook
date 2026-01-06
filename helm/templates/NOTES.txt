@@ -31,8 +31,6 @@ Thank you for installing {{ $chartName }}!
 
 Your release is named {{ $releaseName }}.
 
-{{- if eq .Values.service.type "ClusterIP" }}
-
 1. Get the application URL by running these commands:
 {{- if contains "NodePort" .Values.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ $svcNamespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ $svcName }})
@@ -51,7 +49,6 @@ Your release is named {{ $releaseName }}.
   kubectl --namespace {{ $svcNamespace }} port-forward $POD_NAME 8080:{{ $svcPort }}
   echo "API available at http://127.0.0.1:5055"
   kubectl --namespace {{ $svcNamespace }} port-forward $POD_NAME 5055:{{ $apiPort }}
-{{- end }}
 {{- end }}
 
 {{- if .Values.ingress.enabled }}

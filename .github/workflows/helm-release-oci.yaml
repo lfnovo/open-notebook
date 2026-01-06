@@ -53,6 +53,6 @@ jobs:
         run: |
           for pkg in .cr-release-packages/*.tgz; do
             if [ -f "${pkg}" ]; then
-              helm push "${pkg}" "oci://ghcr.io/${GITHUB_REPOSITORY_OWNER}/helm-charts"
+              helm push "${pkg}" "oci://ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/helm-charts"
             fi
           done

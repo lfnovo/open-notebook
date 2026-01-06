@@ -202,7 +202,7 @@ Render environment variables for the application
   value: {{ .Values.config.worker.retry.waitMax | quote }}
 - name: TTS_BATCH_SIZE
   value: {{ .Values.config.tts.batchSize | quote }}
-{{- if or .Values.config.aiProviders.openai.apiKey .Values.config.aiProviders.openai.existingSecret -}}
+{{ if or .Values.config.aiProviders.openai.apiKey .Values.config.aiProviders.openai.existingSecret -}}
 {{ if .Values.config.aiProviders.openai.existingSecret -}}
 - name: OPENAI_API_KEY
   valueFrom:
@@ -215,7 +215,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.anthropic.apiKey -}}
+{{- if or .Values.config.aiProviders.anthropic.apiKey .Values.config.aiProviders.anthropic.existingSecret -}}
 {{ if .Values.config.aiProviders.anthropic.existingSecret -}}
 - name: ANTHROPIC_API_KEY
   valueFrom:
@@ -228,7 +228,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.google.apiKey -}}
+{{- if or .Values.config.aiProviders.google.apiKey .Values.config.aiProviders.google.existingSecret -}}
 {{ if .Values.config.aiProviders.google.existingSecret -}}
 - name: GOOGLE_API_KEY
   valueFrom:
@@ -261,7 +261,7 @@ Render environment variables for the application
   value: {{ .Values.config.aiProviders.vertexai.location | quote }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.mistral.apiKey -}}
+{{- if or .Values.config.aiProviders.mistral.apiKey .Values.config.aiProviders.mistral.existingSecret -}}
 {{ if .Values.config.aiProviders.mistral.existingSecret -}}
 - name: MISTRAL_API_KEY
   valueFrom:
@@ -274,7 +274,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.deepseek.apiKey -}}
+{{- if or .Values.config.aiProviders.deepseek.apiKey .Values.config.aiProviders.deepseek.existingSecret -}}
 {{ if .Values.config.aiProviders.deepseek.existingSecret -}}
 - name: DEEPSEEK_API_KEY
   valueFrom:
@@ -297,7 +297,7 @@ Render environment variables for the application
   value: {{ .Values.config.aiProviders.openrouter.baseUrl | quote }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.openrouter.apiKey -}}
+{{- if or .Values.config.aiProviders.openrouter.apiKey .Values.config.aiProviders.openrouter.existingSecret -}}
 {{ if .Values.config.aiProviders.openrouter.existingSecret -}}
 - name: OPENROUTER_API_KEY
   valueFrom:
@@ -310,7 +310,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.groq.apiKey -}}
+{{- if or .Values.config.aiProviders.groq.apiKey .Values.config.aiProviders.groq.existingSecret -}}
 {{ if .Values.config.aiProviders.groq.existingSecret -}}
 - name: GROQ_API_KEY
   valueFrom:
@@ -323,7 +323,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.xai.apiKey -}}
+{{- if or .Values.config.aiProviders.xai.apiKey .Values.config.aiProviders.xai.existingSecret -}}
 {{ if .Values.config.aiProviders.xai.existingSecret -}}
 - name: XAI_API_KEY
   valueFrom:
@@ -336,7 +336,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.elevenlabs.apiKey -}}
+{{- if or .Values.config.aiProviders.elevenlabs.apiKey .Values.config.aiProviders.elevenlabs.existingSecret -}}
 {{ if .Values.config.aiProviders.elevenlabs.existingSecret -}}
 - name: ELEVENLABS_API_KEY
   valueFrom:
@@ -349,7 +349,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.voyage.apiKey -}}
+{{- if or .Values.config.aiProviders.voyage.apiKey .Values.config.aiProviders.voyage.existingSecret -}}
 {{ if .Values.config.aiProviders.voyage.existingSecret -}}
 - name: VOYAGE_API_KEY
   valueFrom:
@@ -367,7 +367,7 @@ Render environment variables for the application
   value: {{ .Values.config.aiProviders.openaiCompatible.baseUrl | quote }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.azureOpenai.apiKey -}}
+{{- if or .Values.config.aiProviders.azureOpenai.apiKey .Values.config.aiProviders.azureOpenai.existingSecret -}}
 {{ if .Values.config.aiProviders.azureOpenai.existingSecret -}}
 - name: AZURE_OPENAI_API_KEY
   valueFrom:
@@ -400,7 +400,7 @@ Render environment variables for the application
   value: {{ .Values.config.aiProviders.langchain.endpoint | quote }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.langchain.apiKey -}}
+{{- if or .Values.config.aiProviders.langchain.apiKey .Values.config.aiProviders.langchain.existingSecret -}}
 {{ if .Values.config.aiProviders.langchain.existingSecret -}}
 - name: LANGCHAIN_API_KEY
   valueFrom:
@@ -418,7 +418,7 @@ Render environment variables for the application
   value: {{ .Values.config.aiProviders.langchain.project | quote }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.firecrawl.apiKey -}}
+{{- if or .Values.config.aiProviders.firecrawl.apiKey .Values.config.aiProviders.firecrawl.existingSecret -}}
 {{ if .Values.config.aiProviders.firecrawl.existingSecret -}}
 - name: FIRECRAWL_API_KEY
   valueFrom:
@@ -431,7 +431,7 @@ Render environment variables for the application
 {{- end }}
 {{- end }}
 
-{{ if .Values.config.aiProviders.jina.apiKey -}}
+{{- if or .Values.config.aiProviders.jina.apiKey .Values.config.aiProviders.jina.existingSecret -}}
 {{ if .Values.config.aiProviders.jina.existingSecret -}}
 - name: JINA_API_KEY
   valueFrom:

@@ -147,9 +147,14 @@ spec:
           {{- end }}
           {{- if .Values.app.startupProbe.enabled }}
           startupProbe:
+            {{- if eq .Values.app.startupProbe.probeType "httpGet" }}
             httpGet:
               path: {{ .Values.app.startupProbe.path }}
               port: {{ .Values.app.startupProbe.port }}
+            {{- else if eq .Values.app.startupProbe.probeType "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.app.startupProbe.port }}
+            {{- end }}
             initialDelaySeconds: {{ .Values.app.startupProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.app.startupProbe.periodSeconds }}
             timeoutSeconds: {{ .Values.app.startupProbe.timeoutSeconds }}

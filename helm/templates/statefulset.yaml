@@ -59,6 +59,8 @@ spec:
             - start
             - --log
             - info
+            - --bind
+            - 0.0.0.0:{{ .Values.surrealdb.service.port }}
             - --
             - rocksdb:{{ .Values.surrealdb.persistence.mountPath }}/mydatabase.db
           env:

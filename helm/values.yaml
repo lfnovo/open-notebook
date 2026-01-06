@@ -101,7 +101,7 @@ surrealdb:
     ## @param surrealdb.auth.password SurrealDB password
     ## NOTE: Must be set if existingSecret is not provided
     ##
-    password: ""
+    password: "root"
     ## @param surrealdb.auth.existingSecret Existing secret containing SurrealDB credentials
     ## NOTE: Must contain keys specified in secretKey.username and secretKey.password
     ##
@@ -371,7 +371,7 @@ app:
   startupProbe:
     enabled: false
     probeType: httpGet
-    path: /api/health
+    path: /health
     port: api
     initialDelaySeconds: 0
     periodSeconds: 10

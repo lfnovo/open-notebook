@@ -67,6 +67,8 @@ spec:
         - name: init-permissions
           image: {{ include "open-notebook.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
           command:
             - /bin/sh
             - -cx

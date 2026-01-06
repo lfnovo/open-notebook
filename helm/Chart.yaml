@@ -1,26 +1,27 @@
-apiVersion: v2
+apiVersion: v1
 name: open-notebook
-description: Open Notebook - AI-powered note-taking application with SurrealDB backend
+description:  An Open Source implementation of Notebook LM with more flexibility and features
 type: application
 version: 1.0.0
-appVersion: "v1-latest"
+appVersion: "0.0.1"
 keywords:
   - notebook
-  - ai
+  - notebooklm
   - knowledge-management
   - surrealdb
 home: https://github.com/lfnovo/open-notebook
-icon: https://raw.githubusercontent.com/lfnovo/open-notebook/main/docs/assets/logo.png
 sources:
   - https://github.com/lfnovo/open-notebook
 maintainers:
   - name: lfnovo
-    email: open-notebook@example.com
+    url: https://github.com/lfnovo
+  - name: thuanpham582002
+    url: https://github.com/thuanpham582002
+annotations:
+  category: Analytics
+  licenses: MIT
+
 dependencies:
   - name: common
     repository: oci://registry-1.docker.io/bitnamicharts
     version: 2.x.x
-    condition: global.commonChartEnabled
-annotations:
-  category: Analytics
-  licenses: Apache-2.0

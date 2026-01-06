@@ -8,7 +8,7 @@
 ## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
 ##
 global:
-  ## @param global.commonChartEnabled Enable Bitnami common chart compatibility
+  ## @param global.commonChartEnabled Enable common chart library compatibility
   ##
   commonChartEnabled: true
   ## @param global.imageRegistry Global Docker image registry
@@ -160,7 +160,6 @@ surrealdb:
     ##
     port: 8000
     ## @param surrealdb.service.nodePort Specific node port when type is NodePort
-    ## NOTE: choose port between <30000-32767>
     ##
     nodePort: ""
     ## @param surrealdb.service.annotations Service annotations
@@ -468,7 +467,6 @@ service:
     ##
     api: 5055
     ## @param service.ports.httpNodePort Node port for HTTP service (when type=NodePort)
-    ## NOTE: choose port between <30000-32767>
     ##
     httpNodePort: ""
     ## @param service.ports.apiNodePort Node port for API service (when type=NodePort)
@@ -676,7 +674,7 @@ config:
       existingSecret: ""
       secretKey: deepseek-api-key
 
-    ## Ollama configuration (local models)
+    ## Ollama configuration
     ##
     ollama:
       ## @param config.aiProviders.ollama.baseUrl Ollama API base URL
@@ -787,21 +785,21 @@ config:
         endpoint: ""
         apiVersion: ""
 
-    ## Firecrawl configuration (web scraping)
+    ## Firecrawl configuration
     ##
     firecrawl:
       apiKey: ""
       existingSecret: ""
       secretKey: firecrawl-api-key
 
-    ## Jina configuration (AI processing)
+    ## Jina configuration
     ##
     jina:
       apiKey: ""
       existingSecret: ""
       secretKey: jina-api-key
 
-    ## LangChain configuration (for debugging/tracing)
+    ## LangChain configuration
     ##
     langchain:
       ## @param config.aiProviders.langchain.tracingV2 Enable LangSmith tracing

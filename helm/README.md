@@ -619,7 +619,7 @@ Metrics will be available at:
 
 ## License
 
-Apache License 2.0
+MIT License
 
 ## Support
 

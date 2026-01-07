@@ -142,11 +142,13 @@ Change `environment` section in `docker-compose.yml`:
 # For Groq (fast, free tier available)
 - GROQ_API_KEY=...
 
-# For local Ollama (free, offline)
-- OLLAMA_BASE_URL=http://ollama:11434
+# For local Ollama docker container (free, offline) --> Virtual machine
+- OLLAMA_API_BASE=http://ollama:11434
+# For localhost Ollama (free, offline) --> Real machine
+# - OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
-### Adding Ollama (Free Local Models)
+### Adding Ollama container (Free Local Models)
 
 Add to `docker-compose.yml`:
 
@@ -167,7 +169,7 @@ volumes:
 Then update API service:
 ```yaml
 environment:
-  - OLLAMA_BASE_URL=http://ollama:11434
+  - OLLAMA_API_BASE=http://ollama:11434
 ```
 
 Restart and pull a model:

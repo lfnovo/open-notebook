@@ -26,9 +26,11 @@ Create a new folder `open-notebook` and add this file:
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    command: start --user root --pass password --bind 0.0.0.0:8000 memory
+    command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
     ports:
       - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest

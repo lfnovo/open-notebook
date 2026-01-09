@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   // Enable standalone output for optimized Docker deployment
   output: "standalone",
 
+  // Experimental features
+  experimental: {
+    // Increase proxy body size limit for file uploads (default is 10MB)
+    // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI
+    proxyClientMaxBodySize: '100mb',
+  },
+
   // API Rewrites: Proxy /api/* requests to FastAPI backend
   // This simplifies reverse proxy configuration - users only need to proxy to port 8502
   // Next.js handles internal routing to the API backend on port 5055

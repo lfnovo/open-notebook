@@ -159,6 +159,7 @@ services:
 
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - OPENAI_COMPATIBLE_BASE_URL=http://text-gen:5000/v1
     depends_on:
@@ -204,6 +205,7 @@ services:
 
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - OPENAI_COMPATIBLE_BASE_URL=http://vllm:8000/v1
     depends_on:

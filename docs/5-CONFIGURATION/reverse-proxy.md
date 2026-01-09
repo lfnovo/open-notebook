@@ -70,6 +70,7 @@ That's it! Caddy handles HTTPS automatically.
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
     labels:
@@ -139,6 +140,7 @@ When `API_URL` is not set, the Next.js frontend:
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     container_name: open-notebook
     environment:
       - API_URL=https://notebook.example.com
@@ -278,6 +280,7 @@ API_URL=http://192.168.1.100:5055
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - API_URL=http://192.168.1.100:5055
     ports:
@@ -307,6 +310,7 @@ Host the API and frontend on different subdomains:
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - API_URL=https://api.notebook.example.com
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -368,6 +372,7 @@ For complex deployments with separate frontend and API containers:
 services:
   frontend:
     image: lfnovo/open_notebook_frontend:v1-latest
+    pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
     ports:
@@ -375,6 +380,7 @@ services:
 
   api:
     image: lfnovo/open_notebook_api:v1-latest
+    pull_policy: always
     environment:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     ports:

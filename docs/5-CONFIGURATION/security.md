@@ -27,6 +27,7 @@ Protect your Open Notebook deployment with password authentication and productio
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - OPENAI_API_KEY=sk-...
       - OPEN_NOTEBOOK_PASSWORD=your_secure_password
@@ -186,6 +187,7 @@ async function getNotebooks() {
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     ports:
       - "127.0.0.1:8502:8502"  # Bind to localhost only
     environment:

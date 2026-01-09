@@ -106,6 +106,7 @@ version: '3.8'
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -458,6 +459,7 @@ export ESPERANTO_SSL_VERIFY=false
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     environment:
       - OLLAMA_API_BASE=https://ollama.local:11434
       # Option 1: Custom CA bundle

@@ -23,6 +23,7 @@ All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest-single
+    pull_policy: always
     ports:
       - "8502:8502"  # Web UI (React frontend)
       - "5055:5055"  # API

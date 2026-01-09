@@ -98,16 +98,16 @@ async def create_model(model_data: ModelCreate):
                 detail=f"Invalid model type. Must be one of: {valid_types}"
             )
 
-        # Check for duplicate model name under the same provider (case-insensitive)
+        # Check for duplicate model name under the same provider and type (case-insensitive)
         from open_notebook.database.repository import repo_query
         existing = await repo_query(
-            "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND string::lowercase(name) = $name LIMIT 1",
-            {"provider": model_data.provider.lower(), "name": model_data.name.lower()}
+            "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND string::lowercase(name) = $name AND string::lowercase(type) = $type LIMIT 1",
+            {"provider": model_data.provider.lower(), "name": model_data.name.lower(), "type": model_data.type.lower()}
         )
         if existing:
             raise HTTPException(
                 status_code=400,
-                detail=f"Model '{model_data.name}' already exists for provider '{model_data.provider}'"
+                detail=f"Model '{model_data.name}' already exists for provider '{model_data.provider}' with type '{model_data.type}'"
             )
 
         new_model = Model(

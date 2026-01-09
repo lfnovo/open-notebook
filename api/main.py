@@ -5,9 +5,11 @@ load_dotenv()
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from loguru import logger
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
 from api.routers import (
@@ -96,6 +98,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Custom exception handler to ensure CORS headers are included in error responses
+# This helps when errors occur before the CORS middleware can process them
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Custom exception handler that ensures CORS headers are included in error responses.
+    This is particularly important for 413 (Payload Too Large) errors during file uploads.
+
+    Note: If a reverse proxy (nginx, traefik) returns 413 before the request reaches
+    FastAPI, this handler won't be called. In that case, configure your reverse proxy
+    to add CORS headers to error responses.
+    """
+    # Get the origin from the request
+    origin = request.headers.get("origin", "*")
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
+
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])

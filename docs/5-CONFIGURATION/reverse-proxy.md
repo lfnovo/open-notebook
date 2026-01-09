@@ -32,6 +32,9 @@ server {
     ssl_certificate /etc/nginx/ssl/fullchain.pem;
     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
+    # Allow file uploads up to 100MB
+    client_max_body_size 100M;
+
     # Single location block - that's it!
     location / {
         proxy_pass http://open-notebook:8502;
@@ -198,6 +201,9 @@ http {
         ssl_certificate_key /etc/nginx/ssl/privkey.pem;
         ssl_protocols TLSv1.2 TLSv1.3;
         ssl_ciphers HIGH:!aNULL:!MD5;
+
+        # Allow file uploads up to 100MB
+        client_max_body_size 100M;
 
         # Security headers
         add_header X-Frame-Options DENY;
@@ -601,6 +607,84 @@ location = /config {
     proxy_set_header X-Forwarded-Proto $scheme;
 }
 ```
+
+---
+
+### File Upload Errors (413 Payload Too Large)
+
+**Symptoms:**
+```
+CORS header 'Access-Control-Allow-Origin' missing. Status code: 413.
+Error creating source. Please try again.
+```
+
+**Root Cause:**
+When uploading files, your reverse proxy may reject the request due to body size limits *before* it reaches the application. Since the error happens at the proxy level, CORS headers are not included in the response.
+
+**Solutions:**
+
+1. **Nginx - Increase body size limit**:
+   ```nginx
+   server {
+       # Allow larger file uploads (default is 1MB)
+       client_max_body_size 100M;
+
+       # Add CORS headers to error responses
+       error_page 413 = @cors_error_413;
+
+       location @cors_error_413 {
+           add_header 'Access-Control-Allow-Origin' '*' always;
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+           add_header 'Access-Control-Allow-Headers' '*' always;
+           return 413 '{"detail": "File too large. Maximum size is 100MB."}';
+       }
+
+       location / {
+           # ... your existing proxy configuration
+       }
+   }
+   ```
+
+2. **Traefik - Increase buffer size**:
+   ```yaml
+   # In your traefik configuration
+   http:
+     middlewares:
+       large-body:
+         buffering:
+           maxRequestBodyBytes: 104857600  # 100MB
+   ```
+
+   Apply middleware to your router:
+   ```yaml
+   labels:
+     - "traefik.http.routers.notebook.middlewares=large-body"
+   ```
+
+3. **Kubernetes Ingress (nginx-ingress)**:
+   ```yaml
+   apiVersion: networking.k8s.io/v1
+   kind: Ingress
+   metadata:
+     name: open-notebook
+     annotations:
+       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+       # Add CORS headers for error responses
+       nginx.ingress.kubernetes.io/configuration-snippet: |
+         more_set_headers "Access-Control-Allow-Origin: *";
+   ```
+
+4. **Caddy**:
+   ```caddy
+   notebook.example.com {
+       request_body {
+           max_size 100MB
+       }
+       reverse_proxy open-notebook:8502
+   }
+   ```
+
+**Note:** Open Notebook's API includes CORS headers in error responses, but this only works for errors that reach the application. Proxy-level errors (like 413 from nginx) need to be configured at the proxy level.
 
 ---
 

@@ -41,7 +41,7 @@ class TestModelCreation:
         assert response.status_code == 400
         assert (
             response.json()["detail"]
-            == "Model 'gpt-4' already exists for provider 'openai'"
+            == "Model 'gpt-4' already exists for provider 'openai' with type 'language'"
         )
 
     @pytest.mark.asyncio
@@ -70,7 +70,7 @@ class TestModelCreation:
         assert response.status_code == 400
         assert (
             response.json()["detail"]
-            == "Model 'GPT-4' already exists for provider 'OpenAI'"
+            == "Model 'GPT-4' already exists for provider 'OpenAI' with type 'language'"
         )
 
     @pytest.mark.asyncio
@@ -93,6 +93,28 @@ class TestModelCreation:
             )
 
             # Should succeed because provider is different
+            assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.database.repository.repo_query")
+    async def test_create_same_model_name_different_type(
+        self, mock_repo_query, client
+    ):
+        """Test that creating a model with same name but different type is allowed."""
+        from open_notebook.ai.models import Model
+
+        # Mock repo_query to return empty (no duplicate found for different type)
+        mock_repo_query.return_value = []
+
+        # Patch the save method on the Model class
+        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+            # Attempt to create same model name with different type (embedding instead of language)
+            response = client.post(
+                "/api/models",
+                json={"name": "gpt-4", "provider": "openai", "type": "embedding"},
+            )
+
+            # Should succeed because type is different
             assert response.status_code == 200
 
 

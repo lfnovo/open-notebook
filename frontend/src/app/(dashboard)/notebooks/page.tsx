@@ -77,6 +77,8 @@ export default function NotebooksPage() {
             title="Active Notebooks"
             emptyTitle={isSearching ? 'No notebooks match your search' : undefined}
             emptyDescription={isSearching ? 'Try using a different notebook name.' : undefined}
+            onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
+            actionLabel={!isSearching ? "Create Notebook" : undefined}
           />
           
           {hasArchived && (

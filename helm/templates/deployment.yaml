@@ -1,0 +1,195 @@
+{{- /*
+Copyright © 2024 Luis Novo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/ -}}
+apiVersion: {{ include "common.capabilities.deployment.apiVersion" . }}
+kind: Deployment
+metadata:
+  name: {{ include "common.names.fullname" . }}
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "open-notebook.labels" . | nindent 4 }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.global.annotations "context" $ ) | nindent 4 }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels: {{- include "open-notebook.selectorLabels" . | nindent 6 }}
+  {{- if .Values.app.updateStrategy.type }}
+  strategy:
+    type: {{ .Values.app.updateStrategy.type }}
+    {{- if eq .Values.app.updateStrategy.type "RollingUpdate" }}
+    rollingUpdate:
+      maxSurge: {{ .Values.app.updateStrategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.app.updateStrategy.rollingUpdate.maxUnavailable }}
+    {{- end }}
+  {{- end }}
+  template:
+    metadata:
+      labels: {{- include "open-notebook.selectorLabels" . | nindent 8 }}
+        {{- if .Values.app.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.app.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- if .Values.app.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.app.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "common.images.pullSecrets" . | nindent 6 }}
+      {{- if .Values.app.serviceAccount.create }}
+      serviceAccountName: {{ include "open-notebook.serviceAccountName" . | default (include "common.names.fullname" .) }}
+      {{- end }}
+      {{- if .Values.app.podSecurityContext.enabled }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.app.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.app.priorityClassName }}
+      priorityClassName: {{ .Values.app.priorityClassName | quote }}
+      {{- end }}
+      initContainers:
+        {{- if and .Values.app.persistence.enabled .Values.app.persistence.existingClaim }}
+        - name: init-permissions
+          image: {{ include "open-notebook.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0
+          command:
+            - /bin/sh
+            - -cx
+            - |
+              mkdir -p {{ .Values.app.persistence.mountPath }}
+              chown -R {{ .Values.app.podSecurityContext.fsGroup }}:{{ .Values.app.podSecurityContext.fsGroup }} {{ .Values.app.persistence.mountPath }}
+          volumeMounts:
+            - name: app-data
+              mountPath: {{ .Values.app.persistence.mountPath }}
+        {{- end }}
+      containers:
+        - name: open-notebook
+          image: {{ include "open-notebook.image" . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.app.command }}
+          command: {{- include "common.tplvalues.render" (dict "value" .Values.app.command "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.app.args }}
+          args: {{- include "common.tplvalues.render" (dict "value" .Values.app.args "context" $) | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "open-notebook.envVars" . | nindent 12 }}
+            {{- if .Values.app.extraEnvVars }}
+            {{- include "common.tplvalues.render" (dict "value" .Values.app.extraEnvVars "context" $) | nindent 12 }}
+            {{- end }}
+            {{- if .Values.app.extraEnvVarsCM }}
+            - name: APP_EXTRA_ENV_VARS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.app.extraEnvVarsCM }}
+                  key: app-extra-env-vars
+            {{- end }}
+            {{- if or .Values.config.auth.password .Values.config.auth.existingSecret }}
+            - name: OPEN_NOTEBOOK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "open-notebook.secretName" . }}
+                  key: {{ .Values.config.auth.secretKey | default "open-notebook-password" }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.ports.http }}
+              protocol: TCP
+            - name: api
+              containerPort: {{ .Values.app.ports.api }}
+              protocol: TCP
+          {{- if .Values.app.livenessProbe.enabled }}
+          livenessProbe:
+            {{- if eq .Values.app.livenessProbe.probeType "httpGet" }}
+            httpGet:
+              path: {{ .Values.app.livenessProbe.path }}
+              port: {{ .Values.app.livenessProbe.port }}
+            {{- else if eq .Values.app.livenessProbe.probeType "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.app.livenessProbe.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.app.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.app.livenessProbe.failureThreshold }}
+            successThreshold: {{ .Values.app.livenessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.app.readinessProbe.enabled }}
+          readinessProbe:
+            {{- if eq .Values.app.readinessProbe.probeType "httpGet" }}
+            httpGet:
+              path: {{ .Values.app.readinessProbe.path }}
+              port: {{ .Values.app.readinessProbe.port }}
+            {{- else if eq .Values.app.readinessProbe.probeType "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.app.readinessProbe.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.app.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.app.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.app.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.app.readinessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.app.startupProbe.enabled }}
+          startupProbe:
+            {{- if eq .Values.app.startupProbe.probeType "httpGet" }}
+            httpGet:
+              path: {{ .Values.app.startupProbe.path }}
+              port: {{ .Values.app.startupProbe.port }}
+            {{- else if eq .Values.app.startupProbe.probeType "tcpSocket" }}
+            tcpSocket:
+              port: {{ .Values.app.startupProbe.port }}
+            {{- end }}
+            initialDelaySeconds: {{ .Values.app.startupProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.app.startupProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.app.startupProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.app.startupProbe.failureThreshold }}
+            successThreshold: {{ .Values.app.startupProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.app.resources }}
+          resources: {{- include "common.tplvalues.render" (dict "value" .Values.app.resources "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.app.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.app.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            {{- if .Values.app.persistence.enabled }}
+            - name: app-data
+              mountPath: {{ .Values.app.persistence.mountPath }}
+            {{- end }}
+      {{- if .Values.app.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.app.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.app.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.app.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.app.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.app.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+      volumes:
+        {{- if and .Values.app.persistence.enabled .Values.app.persistence.existingClaim }}
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.app.persistence.existingClaim }}
+        {{- else if .Values.app.persistence.enabled }}
+        - name: app-data
+          persistentVolumeClaim:
+            claimName: {{ include "common.names.fullname" . }}
+        {{- end }}

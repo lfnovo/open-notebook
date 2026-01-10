@@ -1,0 +1,9 @@
+﻿properties:
+  openaiApiKey:
+    title: OpenAI API Key
+    type: string
+    description: Your OpenAI API key for AI features (get from https://platform.openai.com/api-keys)
+    required: true
+
+required:
+  - openaiApiKey

@@ -14,11 +14,10 @@ on:
 
 jobs:
   claude-review:
-    # Optional: Filter by PR author
-    # if: |
-    #   github.event.pull_request.user.login == 'external-contributor' ||
-    #   github.event.pull_request.user.login == 'new-developer' ||
-    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    # Run for fork PRs (via pull_request_target) OR same-repo PRs (via pull_request), but not both
+    if: |
+      (github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository) ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
 
     runs-on: ubuntu-latest
     permissions:

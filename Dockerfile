@@ -66,6 +66,10 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy the application code
 COPY --from=builder /app /app
 
+# Ensure uv uses the existing venv without attempting network operations
+ENV UV_NO_SYNC=1
+ENV VIRTUAL_ENV=/app/.venv
+
 # Copy built frontend from builder stage
 COPY --from=builder /app/frontend/.next/standalone /app/frontend/
 COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static

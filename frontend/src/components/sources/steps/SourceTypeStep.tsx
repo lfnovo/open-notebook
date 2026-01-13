@@ -222,7 +222,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                         accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)
+                        Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG)
                       </p>
                       {fileCount > 1 && fileInput instanceof FileList && (
                         <div className="mt-2 p-3 bg-muted rounded-md">

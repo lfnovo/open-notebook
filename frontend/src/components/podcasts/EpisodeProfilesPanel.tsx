@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, Edit3, MoreVertical, Trash2, Users } from 'lucide-react'
+import { Copy, Edit3, FileText, MoreVertical, Trash2, Users } from 'lucide-react'
 
 import { EpisodeProfile, SpeakerProfile } from '@/lib/types/podcasts'
 import {
@@ -71,16 +71,24 @@ export function EpisodeProfilesPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Episode profiles</h2>
-          <p className="text-sm text-muted-foreground">
-            Define reusable generation settings for your shows.
-          </p>
+      {/* Distinctive header with blue/indigo accent for production/generation focus */}
+      <div className="rounded-lg border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-950/30 dark:to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-blue-100 p-2 dark:bg-blue-900/50">
+              <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Episode profiles</h2>
+              <p className="text-sm text-muted-foreground">
+                Define reusable generation settings for your shows.
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} disabled={disableCreate} className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-blue-300">
+            Create profile
+          </Button>
         </div>
-        <Button onClick={() => setCreateOpen(true)} disabled={disableCreate}>
-          Create profile
-        </Button>
       </div>
 
       {disableCreate ? (
@@ -90,7 +98,8 @@ export function EpisodeProfilesPanel({
       ) : null}
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20 p-10 text-center text-sm text-muted-foreground">
+          <FileText className="mx-auto mb-2 h-8 w-8 text-blue-400" />
           No episode profiles yet. Create one to kickstart podcast generation.
         </div>
       ) : (
@@ -102,7 +111,7 @@ export function EpisodeProfilesPanel({
             )
 
             return (
-              <Card key={profile.id} className="shadow-sm">
+              <Card key={profile.id} className="shadow-sm border-l-2 border-l-blue-300 dark:border-l-blue-700">
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
                     <CardTitle className="text-lg font-semibold">

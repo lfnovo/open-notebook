@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, Edit3, MoreVertical, Trash2, Volume2 } from 'lucide-react'
+import { Copy, Edit3, Mic, MoreVertical, Trash2, Volume2 } from 'lucide-react'
 
 import { SpeakerProfile } from '@/lib/types/podcasts'
 import {
@@ -62,18 +62,29 @@ export function SpeakerProfilesPanel({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Speaker profiles</h2>
-          <p className="text-sm text-muted-foreground">
-            Configure voices and personalities for generated episodes.
-          </p>
+      {/* Distinctive header with amber/orange accent for voice/speaker focus */}
+      <div className="rounded-lg border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-950/30 dark:to-transparent p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-full bg-amber-100 p-2 dark:bg-amber-900/50">
+              <Mic className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold">Speaker profiles</h2>
+              <p className="text-sm text-muted-foreground">
+                Configure voices and personalities for generated episodes.
+              </p>
+            </div>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} className="bg-amber-600 hover:bg-amber-700 text-white">
+            Create speaker
+          </Button>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Create speaker</Button>
       </div>
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 p-8 text-center text-sm text-muted-foreground">
+          <Mic className="mx-auto mb-2 h-8 w-8 text-amber-400" />
           No speaker profiles yet. Create one to make episode templates available.
         </div>
       ) : (
@@ -83,7 +94,7 @@ export function SpeakerProfilesPanel({
             const deleteDisabled = usageCount > 0
 
             return (
-              <Card key={profile.id} className="shadow-sm">
+              <Card key={profile.id} className="shadow-sm border-l-2 border-l-amber-300 dark:border-l-amber-700">
                 <CardHeader className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <div>

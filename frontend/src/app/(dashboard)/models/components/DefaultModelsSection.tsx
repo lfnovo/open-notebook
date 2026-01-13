@@ -231,7 +231,7 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
 
         <div className="pt-4 border-t">
           <a
-            href="https://github.com/lfnovo/open-notebook/blob/main/docs/features/ai-models.md"
+            href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"

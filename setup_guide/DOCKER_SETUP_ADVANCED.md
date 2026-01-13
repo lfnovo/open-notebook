@@ -11,6 +11,6 @@
 **Quick Links:**
 - [Docker Setup Guide](../docs/deployment/docker.md) - Complete Docker setup instructions
 - [Single-Container Deployment](../docs/deployment/single-container.md) - Simplified single-container setup
-- [AI Models Configuration](../docs/features/ai-models.md) - Guide to all supported AI providers
+- [AI Models Configuration](../docs/5-CONFIGURATION/ai-providers.md) - Guide to all supported AI providers
 - [Deployment Overview](../docs/deployment/index.md) - All deployment options
 - [Getting Started](../docs/getting-started/index.md) - Installation and setup guide

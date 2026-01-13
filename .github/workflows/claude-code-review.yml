@@ -33,6 +33,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Run Claude Code Review
         id: claude-review

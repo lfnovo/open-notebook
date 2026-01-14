@@ -1,0 +1,48 @@
+# Prior Notebook Configuration
+# Military-grade RAG for quantitative trading
+
+[server]
+host = "127.0.0.1"
+port = 8080
+workers = 4
+max_connections = 10000
+request_timeout_secs = 30
+
+[database]
+questdb_host = "localhost"
+questdb_port = 9000
+redis_url = "redis://localhost:6379"
+qdrant_url = "http://localhost:6334"
+qdrant_collection = "prior_notebook"
+
+[security]
+jwt_secret = "CHANGE_ME_IN_PRODUCTION_USE_prior_security_generate-secret"
+jwt_expiry_hours = 24
+allowed_wireguard_ips = ["10.0.0.0/24", "192.168.1.0/24"]
+enable_zero_trust = true
+# vault_addr = "http://localhost:8200"
+# vault_token = "dev-token"
+# tls_cert_path = "/path/to/cert.pem"
+# tls_key_path = "/path/to/key.pem"
+
+[search]
+# serpapi_key = "your-serpapi-key"
+arxiv_max_results = 50
+pdf_storage_path = "./data/pdfs"
+embedding_model = "BAAI/bge-small-en-v1.5"
+embedding_dimension = 384
+
+[llm]
+default_provider = "anthropic"
+# openai_api_key = "sk-..."
+# anthropic_api_key = "sk-ant-..."
+ollama_url = "http://localhost:11434"
+default_model = "claude-sonnet-4-20250514"
+max_tokens = 4096
+temperature = 0.7
+
+[julia]
+enabled = false
+# julia_path = "/usr/local/bin/julia"
+project_path = "./julia_lib"
+num_threads = 4

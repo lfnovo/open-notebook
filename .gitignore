@@ -1,139 +1,65 @@
-.env
-prompts/patterns/user/
-/notebooks/
-data/
-.uploads/
-sqlite-db/
-surreal-data/
-docker.env
-notebook_data/
-# Python-specific
-*.py[cod]
-__pycache__/
-*.so
-todo.md
-temp/
-google-credentials.json
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-/lib/
-/lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
+# Rust
+/target/
+Cargo.lock
+**/*.rs.bk
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# PyCharm
+# IDE
 .idea/
-
-# VS Code
 .vscode/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-ehthumbs.db
-desktop.ini
-
-# Linux
+*.swp
+*.swo
 *~
 
-# Log files
-*.log
+# Environment
+.env
+.env.local
+.env.*.local
+config.toml
+!config.toml.example
 
-# Database files
+# Data
+/data/
+*.pdf
 *.db
+*.sqlite
 *.sqlite3
 
-.quarentena
-
+# Logs
+*.log
+/logs/
 claude-logs/
 .claude/sessions
 **/claude-logs
 
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
 
-docs/custom_gpt
-doc_exports/
+# Build artifacts
+*.so
+*.dylib
+*.dll
 
+# Julia
+julia_lib/Manifest.toml
+
+# Docker
+.docker/
+
+# Testing
+/coverage/
+*.profraw
+*.profdata
+htmlcov/
+.coverage
+.coverage.*
+.pytest_cache/
+
+# Misc
+.quarentena
+temp/
+.playwright-mcp/
 specs/
 .claude
-
-.playwright-mcp/
-
-
-
 **/*.local.md

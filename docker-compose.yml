@@ -1,0 +1,107 @@
+# Prior Notebook - Docker Compose
+# Military-grade RAG for quantitative trading
+
+services:
+  # ============ Prior API ============
+  prior-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: prior-api
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+      - PRIOR_HOST=0.0.0.0
+      - PRIOR_PORT=8080
+      - QDRANT_URL=http://qdrant:6334
+      - REDIS_URL=redis://redis:6379
+      - QUESTDB_HOST=questdb
+      - QUESTDB_PORT=9000
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+      - pdf_data:/app/data/pdfs
+    depends_on:
+      - qdrant
+      - redis
+    networks:
+      - prior-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============ Qdrant Vector DB ============
+  qdrant:
+    image: qdrant/qdrant:v1.12.0
+    container_name: prior-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      - QDRANT__SERVICE__GRPC_PORT=6334
+    networks:
+      - prior-network
+
+  # ============ Redis Cache ============
+  redis:
+    image: redis:7-alpine
+    container_name: prior-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    networks:
+      - prior-network
+
+  # ============ QuestDB (Trading Data) ============
+  questdb:
+    image: questdb/questdb:8.0.0
+    container_name: prior-questdb
+    restart: unless-stopped
+    ports:
+      - "9000:9000"   # HTTP API & Web Console
+      - "9009:9009"   # InfluxDB Line Protocol
+      - "8812:8812"   # PostgreSQL wire protocol
+    volumes:
+      - questdb_data:/var/lib/questdb
+    environment:
+      - QDB_HTTP_ENABLED=true
+      - QDB_PG_ENABLED=true
+    networks:
+      - prior-network
+
+  # ============ Vault (Secrets) ============
+  vault:
+    image: hashicorp/vault:1.15
+    container_name: prior-vault
+    restart: unless-stopped
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=dev-token
+      - VAULT_DEV_LISTEN_ADDRESS=0.0.0.0:8200
+    cap_add:
+      - IPC_LOCK
+    networks:
+      - prior-network
+    profiles:
+      - full
+
+networks:
+  prior-network:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  redis_data:
+  questdb_data:
+  pdf_data:

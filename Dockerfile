@@ -1,103 +1,91 @@
-# Build stage
-FROM python:3.12-slim-bookworm AS builder
+# Prior Notebook - Multi-stage Rust build
+# Military-grade RAG for quantitative trading
 
-# Install uv using the official method
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# ============ Builder Stage ============
+FROM rust:1.84-bookworm AS builder
 
-# Install system dependencies required for building certain Python packages
-# Add Node.js 20.x LTS for building frontend
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    gcc g++ git make \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    libclang-dev \
+    cmake \
     && rm -rf /var/lib/apt/lists/*
 
-# Set build optimization environment variables
-ENV MAKEFLAGS="-j$(nproc)"
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-ENV UV_COMPILE_BYTECODE=1
-ENV UV_LINK_MODE=copy
+# Copy manifests
+COPY Cargo.toml Cargo.lock ./
 
-# Set the working directory in the container to /app
+# Create dummy src for dependency caching
+RUN mkdir src && \
+    echo "fn main() {}" > src/main.rs && \
+    mkdir -p src/bin && \
+    echo "fn main() {}" > src/bin/api.rs && \
+    echo "fn main() {}" > src/bin/cli.rs
+
+# Build dependencies only
+RUN cargo build --release && rm -rf src target/release/deps/prior*
+
+# Copy actual source
+COPY src ./src
+
+# Build actual application
+RUN cargo build --release --no-default-features
+
+# ============ Runtime Stage ============
+FROM debian:bookworm-slim AS runtime
+
 WORKDIR /app
 
-# Copy dependency files and minimal package structure first for better layer caching
-COPY pyproject.toml uv.lock ./
-COPY open_notebook/__init__.py ./open_notebook/__init__.py
-
-# Install dependencies with optimizations (this layer will be cached unless dependencies change)
-RUN uv sync --frozen --no-dev
-
-# Copy the rest of the application code
-COPY . /app
-
-# Install frontend dependencies and build
-WORKDIR /app/frontend
-RUN npm ci
-RUN npm run build
-
-# Return to app root
-WORKDIR /app
-
-# Runtime stage
-FROM python:3.12-slim-bookworm AS runtime
-
-# Install only runtime system dependencies (no build tools)
-# Add Node.js 20.x LTS for running frontend
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    ffmpeg \
-    supervisor \
-    curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs \
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl3 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv using the official method
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Create non-root user
+RUN useradd -m -u 1000 prior
 
-# Set the working directory in the container to /app
-WORKDIR /app
+# Copy binaries
+COPY --from=builder /app/target/release/prior-api /usr/local/bin/
+COPY --from=builder /app/target/release/prior /usr/local/bin/
 
-# Copy the virtual environment from builder stage
-COPY --from=builder /app/.venv /app/.venv
+# Copy config
+COPY config.toml.example /app/config.toml
 
-# Copy the application code
-COPY --from=builder /app /app
+# Create data directories
+RUN mkdir -p /app/data/pdfs /app/data/embeddings && \
+    chown -R prior:prior /app
 
-# Ensure uv uses the existing venv without attempting network operations
-ENV UV_NO_SYNC=1
-ENV VIRTUAL_ENV=/app/.venv
+USER prior
 
-# Copy built frontend from builder stage
-COPY --from=builder /app/frontend/.next/standalone /app/frontend/
-COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
-COPY --from=builder /app/frontend/public /app/frontend/public
+# Expose API port
+EXPOSE 8080
 
-# Expose ports for Frontend and API
-EXPOSE 8502 5055
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
 
-RUN mkdir -p /app/data
+# Default command
+CMD ["prior-api"]
 
-# Copy and make executable the wait-for-api script
-COPY scripts/wait-for-api.sh /app/scripts/wait-for-api.sh
-RUN chmod +x /app/scripts/wait-for-api.sh
+# ============ Julia Stage (optional) ============
+FROM runtime AS with-julia
 
-# Copy supervisord configuration
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+USER root
 
-# Create log directories
-RUN mkdir -p /var/log/supervisor
+# Install Julia
+RUN curl -fsSL https://julialang-s3.julialang.org/bin/linux/x64/1.10/julia-1.10.0-linux-x86_64.tar.gz | \
+    tar xz -C /opt && \
+    ln -s /opt/julia-1.10.0/bin/julia /usr/local/bin/julia
 
-# Runtime API URL Configuration
-# The API_URL environment variable can be set at container runtime to configure
-# where the frontend should connect to the API. This allows the same Docker image
-# to work in different deployment scenarios without rebuilding.
-#
-# If not set, the system will auto-detect based on incoming requests.
-# Set API_URL when using reverse proxies or custom domains.
-#
-# Example: docker run -e API_URL=https://your-domain.com/api ...
+# Copy Julia project
+COPY --chown=prior:prior julia_lib /app/julia_lib
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Precompile Julia packages
+RUN julia --project=/app/julia_lib -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()'
+
+USER prior
+
+ENV JULIA_PROJECT=/app/julia_lib

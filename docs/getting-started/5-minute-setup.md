@@ -42,7 +42,7 @@ services:
     environment:
       - OPENAI_API_KEY=REPLACE_WITH_YOUR_KEY
       # Database connection (required)
-      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_URL=ws://localhost:8001/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
@@ -77,7 +77,7 @@ services:
       - OPENAI_API_KEY=REPLACE_WITH_YOUR_KEY
       - API_URL=http://REPLACE_WITH_SERVER_IP:5055
       # Database connection (required)
-      - SURREAL_URL=ws://localhost:8000/rpc
+      - SURREAL_URL=ws://localhost:8001/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook

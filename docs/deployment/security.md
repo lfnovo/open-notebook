@@ -148,8 +148,8 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "127.0.0.1:8001:8000"  # Bind to localhost only
-    command: start --log warn --user root --pass root file:///mydata/database.db
+      - "127.0.0.1:8001:8001"  # Bind to localhost only
+    command: start --log warn --user root --pass root --bind 0.0.0.0:8001 file:///mydata/database.db
     volumes:
       - ./surreal_data:/mydata
     restart: always
@@ -162,7 +162,7 @@ services:
     environment:
       - OPENAI_API_KEY=sk-your-openai-key
       - OPEN_NOTEBOOK_PASSWORD=your_secure_password
-      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_URL=ws://surrealdb:8001/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
     volumes:

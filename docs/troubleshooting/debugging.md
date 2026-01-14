@@ -504,7 +504,7 @@ ERROR - Model not found: gpt-4-invalid
 ```bash
 # Connect to SurrealDB directly
 docker compose exec surrealdb /surreal sql \
-  --conn http://localhost:8000 \
+  --conn http://localhost:8001 \
   --user root \
   --pass root \
   --ns open_notebook \

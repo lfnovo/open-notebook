@@ -162,7 +162,7 @@ services:
     environment:
       - OPENAI_API_KEY=sk-your-openai-key
       - OPEN_NOTEBOOK_PASSWORD=your_secure_password
-      - SURREAL_URL=ws://surrealdb:8001/rpc
+      - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
     volumes:

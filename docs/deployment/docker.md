@@ -188,7 +188,7 @@ Create a comprehensive `docker.env` file:
 
 ```env
 # Required: Database connection
-SURREAL_URL=ws://surrealdb:8001/rpc
+SURREAL_URL=ws://surrealdb:8000/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook
@@ -456,7 +456,7 @@ After successful deployment:
 
 ```env
 # Database Configuration
-SURREAL_URL=ws://surrealdb:8001/rpc
+SURREAL_URL=ws://surrealdb:8000/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook

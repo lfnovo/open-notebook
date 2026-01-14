@@ -1,0 +1,128 @@
+[package]
+name = "prior-notebook"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.84"
+authors = ["Prior Systems <dev@prior-systems.com>"]
+description = "Military-grade RAG system for quantitative trading research"
+license = "MIT"
+repository = "https://github.com/prior-systems/prior-notebook"
+
+[lib]
+name = "prior_notebook"
+path = "src/lib.rs"
+
+[[bin]]
+name = "prior-api"
+path = "src/bin/api.rs"
+
+[[bin]]
+name = "prior"
+path = "src/bin/cli.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.44", features = ["full", "tracing"] }
+
+# Web framework
+actix-web = "4.9"
+actix-rt = "2.10"
+actix-cors = "0.7"
+actix-files = "0.6"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Database clients
+questdb-rs = "4.0"
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
+
+# Vector database / embeddings
+qdrant-client = "1.12"
+fastembed = "4"
+
+# HTTP client for external APIs
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "stream"] }
+
+# PDF parsing
+pdf-extract = "0.7"
+lopdf = "0.34"
+
+# CLI
+clap = { version = "4.5", features = ["derive", "env", "color"] }
+dialoguer = "0.11"
+indicatif = "0.17"
+console = "0.15"
+
+# Logging & tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tracing-actix-web = "0.7"
+
+# Error handling
+thiserror = "2.0"
+anyhow = "1.0"
+
+# Security
+jsonwebtoken = "9"
+argon2 = "0.5"
+uuid = { version = "1.11", features = ["v4", "v7", "serde"] }
+rand = "0.8"
+sha2 = "0.10"
+aes-gcm = "0.10"
+x25519-dalek = "2"
+
+# Date/time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Async utilities
+futures = "0.3"
+async-trait = "0.1"
+
+# Text processing
+pulldown-cmark = "0.12"
+regex = "1"
+tantivy = "0.22"  # Full-text search
+
+# Julia FFI
+jlrs = { version = "0.21", optional = true, features = ["tokio-rt"] }
+
+# LLM integrations
+async-openai = "0.25"
+anthropic-sdk = "0.1"
+
+# arXiv
+arxiv = "0.2"
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+proptest = "1.5"
+fake = "3"
+wiremock = "0.6"
+
+[features]
+default = ["full"]
+full = ["julia"]
+julia = ["jlrs"]
+cuda = []
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+opt-level = 3
+
+[profile.dev]
+opt-level = 1
+
+[[bench]]
+name = "rag_bench"
+harness = false

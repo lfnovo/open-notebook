@@ -6,8 +6,8 @@ services:
     environment:
       - SURREAL_EXPERIMENTAL_GRAPHQL=true
     ports:
-      - "8001:8000"
-    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+      - "8001:8001"
+    command: start --log info --user root --pass root --bind 0.0.0.0:8001 rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
     restart: always

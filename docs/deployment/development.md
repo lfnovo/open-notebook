@@ -58,9 +58,9 @@ uv sync
 # Start SurrealDB with Docker
 docker run -d \
   --name surrealdb-dev \
-  -p 8001:8000 \
+  -p 8001:8001 \
   surrealdb/surrealdb:v1-latest \
-  start --log trace --user root --pass root memory
+  start --log trace --user root --pass root --bind 0.0.0.0:8001 memory
 ```
 
 #### Option B: Local SurrealDB Installation

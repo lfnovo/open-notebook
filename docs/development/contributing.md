@@ -487,10 +487,10 @@ LOG_LEVEL=DEBUG
 
 ```bash
 # Start SurrealDB
-docker run -d --name surrealdb -p 8001:8000 \
+docker run -d --name surrealdb -p 8001:8001 \
   surrealdb/surrealdb:v1-latest start \
   --user root --pass password \
-  --bind 0.0.0.0:8000 memory
+  --bind 0.0.0.0:8001 memory
 
 # Install dependencies
 uv sync

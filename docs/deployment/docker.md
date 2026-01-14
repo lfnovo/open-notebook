@@ -163,8 +163,8 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "8001:8000"
-    command: start --log trace --user root --pass root memory
+      - "8001:8001"
+    command: start --log trace --user root --pass root --bind 0.0.0.0:8001 memory
     restart: always
 
   open_notebook:
@@ -188,7 +188,7 @@ Create a comprehensive `docker.env` file:
 
 ```env
 # Required: Database connection
-SURREAL_URL=ws://surrealdb:8000/rpc
+SURREAL_URL=ws://surrealdb:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook
@@ -301,8 +301,8 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "127.0.0.1:8001:8000"  # Bind to localhost only
-    command: start --log warn --user root --pass root file:///mydata/database.db
+      - "127.0.0.1:8001:8001"  # Bind to localhost only
+    command: start --log warn --user root --pass root --bind 0.0.0.0:8001 file:///mydata/database.db
     volumes:
       - ./surreal_data:/mydata
     restart: always
@@ -456,7 +456,7 @@ After successful deployment:
 
 ```env
 # Database Configuration
-SURREAL_URL=ws://surrealdb:8000/rpc
+SURREAL_URL=ws://surrealdb:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook
@@ -492,13 +492,13 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "8001:8000"
-    command: start --log warn --user root --pass root file:///mydata/database.db
+      - "8001:8001"
+    command: start --log warn --user root --pass root --bind 0.0.0.0:8001 file:///mydata/database.db
     volumes:
       - ./surreal_data:/mydata
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 30s
       timeout: 10s
       retries: 3

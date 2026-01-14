@@ -176,7 +176,7 @@ npm run dev
 You should see:
 ```
 > next dev
-  ▲ Next.js 15.x
+  ▲ Next.js 16.x
   - Local:        http://localhost:3000
 ```
 

@@ -95,7 +95,7 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 - **Auto-refetch**: `refetchOnWindowFocus: true` on frequently-changing data (sources, notebooks)
 
 ### Auth & Protected Routes
-- **Middleware** (`src/middleware.ts`): Redirects unauthenticated users to `/login`
+- **Proxy** (`src/proxy.ts`): Redirects root `/` to `/notebooks`
 - **Auth store**: Validates token via `/notebooks` API call (actual validation, not JWT decode)
 - **Interceptor**: Adds `Bearer {token}` to all requests; 401 response clears auth and redirects to login
 

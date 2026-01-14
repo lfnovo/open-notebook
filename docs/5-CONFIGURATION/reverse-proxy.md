@@ -621,6 +621,11 @@ Error creating source. Please try again.
 **Root Cause:**
 When uploading files, your reverse proxy may reject the request due to body size limits *before* it reaches the application. Since the error happens at the proxy level, CORS headers are not included in the response.
 
+**Version Requirement:**
+- **Open Notebook v1.3.2+** is required for file uploads >10MB
+- Uses Next.js 16+ which supports the `proxyClientMaxBodySize` configuration option
+- Check your version: Settings → About (bottom of settings page)
+
 **Solutions:**
 
 1. **Nginx - Increase body size limit**:

@@ -18,7 +18,7 @@ def get_database_url():
     # Fallback to old format - WebSocket URL format
     address = os.getenv("SURREAL_ADDRESS", "localhost")
     port = os.getenv("SURREAL_PORT", "8001")
-    return f"ws://{address}/rpc:{port}"
+    return f"ws://{address}:{port}/rpc"
 
 
 def get_database_password():

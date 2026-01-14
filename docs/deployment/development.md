@@ -58,7 +58,7 @@ uv sync
 # Start SurrealDB with Docker
 docker run -d \
   --name surrealdb-dev \
-  -p 8000:8000 \
+  -p 8001:8000 \
   surrealdb/surrealdb:v1-latest \
   start --log trace --user root --pass root memory
 ```
@@ -79,7 +79,7 @@ Create a `.env` file in the project root:
 
 ```env
 # Database Configuration
-SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_URL=ws://localhost:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook
@@ -294,7 +294,7 @@ docker ps | grep surrealdb
 docker logs surrealdb-dev
 
 # Test connection
-curl -X POST http://localhost:8000/sql \
+curl -X POST http://localhost:8001/sql \
   -H "Content-Type: application/json" \
   -d '{"sql": "SELECT * FROM VERSION"}'
 ```

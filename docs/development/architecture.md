@@ -303,7 +303,7 @@ graph TB
 
 **Database Configuration**:
 ```bash
-SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_URL=ws://localhost:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=password
 SURREAL_NAMESPACE=open_notebook
@@ -333,7 +333,7 @@ class Config:
     """Application configuration with environment variable support."""
     
     # Database settings
-    database_url: str = os.getenv("SURREAL_URL", "ws://localhost:8000/rpc")
+    database_url: str = os.getenv("SURREAL_URL", "ws://localhost:8001/rpc")
     database_user: str = os.getenv("SURREAL_USER", "root")
     database_password: str = os.getenv("SURREAL_PASSWORD", "password")
     

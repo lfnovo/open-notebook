@@ -466,7 +466,7 @@ Create a `.env` file in the project root:
 
 ```bash
 # Database
-SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_URL=ws://localhost:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=password
 SURREAL_NAMESPACE=open_notebook
@@ -487,7 +487,7 @@ LOG_LEVEL=DEBUG
 
 ```bash
 # Start SurrealDB
-docker run -d --name surrealdb -p 8000:8000 \
+docker run -d --name surrealdb -p 8001:8000 \
   surrealdb/surrealdb:v1-latest start \
   --user root --pass password \
   --bind 0.0.0.0:8000 memory

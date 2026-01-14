@@ -1,0 +1,25 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    volumes:
+      - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    ports:
+      - "8000:8000"
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    pull_policy: always
+    user: root
+    restart: always
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    env_file:
+      - ./docker.env
+    depends_on:
+      - surrealdb
+    volumes:
+      - ./notebook_data:/app/data
+    restart: always

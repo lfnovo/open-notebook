@@ -1,4 +1,6 @@
 import asyncio
+import os
+from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
@@ -347,6 +349,26 @@ class Source(ObjectModel):
             data["command"] = ensure_record_id(data["command"])
 
         return data
+
+    async def delete(self) -> bool:
+        """Delete source and clean up associated file if it exists."""
+        # Clean up uploaded file if it exists
+        if self.asset and self.asset.file_path:
+            file_path = Path(self.asset.file_path)
+            if file_path.exists():
+                try:
+                    os.unlink(file_path)
+                    logger.info(f"Deleted file for source {self.id}: {file_path}")
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to delete file {file_path} for source {self.id}: {e}. "
+                        "Continuing with database deletion."
+                    )
+            else:
+                logger.debug(f"File {file_path} not found for source {self.id}, skipping cleanup")
+
+        # Call parent delete to remove database record
+        return await super().delete()
 
 
 class Note(ObjectModel):

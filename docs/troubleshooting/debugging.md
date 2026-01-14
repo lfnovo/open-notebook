@@ -109,7 +109,7 @@ ERROR - Memory limit exceeded
 #### Symptoms
 ```
 ERROR - Database connection failed
-ERROR - Connection refused at localhost:8000
+ERROR - Connection refused at localhost:8001
 ERROR - Authentication failed for SurrealDB
 ```
 
@@ -129,7 +129,7 @@ ERROR - Authentication failed for SurrealDB
 
 3. **Test direct connection**:
    ```bash
-   curl http://localhost:8000/health
+   curl http://localhost:8001/health
    ```
 
 4. **Check database logs**:
@@ -584,7 +584,7 @@ log_memory_usage()
 #### Service Health Endpoints
 ```bash
 # Check all health endpoints
-curl -f http://localhost:8000/health  # SurrealDB
+curl -f http://localhost:8001/health  # SurrealDB
 curl -f http://localhost:5055/health  # API
 curl -f http://localhost:8502/healthz  # Next.js
 ```

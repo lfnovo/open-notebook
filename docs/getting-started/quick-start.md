@@ -52,7 +52,7 @@ services:
 OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 
 # Database connection (required for single-container)
-SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_URL="ws://localhost:8001/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
 SURREAL_NAMESPACE="open_notebook"
@@ -88,7 +88,7 @@ OPENAI_API_KEY=YOUR_OPENAI_API_KEY_HERE
 API_URL=http://YOUR_SERVER_IP:5055
 
 # Database connection (required for single-container)
-SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_URL="ws://localhost:8001/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
 SURREAL_NAMESPACE="open_notebook"

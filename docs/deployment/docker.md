@@ -104,7 +104,7 @@ OpenAI provides everything you need to get started:
    OPEN_NOTEBOOK_PASSWORD=your_secure_password
    
    # Database settings (auto-configured)
-   SURREAL_URL=ws://localhost:8000/rpc
+   SURREAL_URL=ws://localhost:8001/rpc
    SURREAL_USER=root
    SURREAL_PASSWORD=root
    SURREAL_NAMESPACE=open_notebook
@@ -163,7 +163,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "8000:8000"
+      - "8001:8000"
     command: start --log trace --user root --pass root memory
     restart: always
 
@@ -301,7 +301,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "127.0.0.1:8000:8000"  # Bind to localhost only
+      - "127.0.0.1:8001:8000"  # Bind to localhost only
     command: start --log warn --user root --pass root file:///mydata/database.db
     volumes:
       - ./surreal_data:/mydata
@@ -492,7 +492,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v1-latest
     ports:
-      - "8000:8000"
+      - "8001:8000"
     command: start --log warn --user root --pass root file:///mydata/database.db
     volumes:
       - ./surreal_data:/mydata

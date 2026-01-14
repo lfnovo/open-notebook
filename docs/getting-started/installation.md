@@ -92,7 +92,7 @@ Open Notebook supports multiple installation methods. Choose the one that best f
 
 Open Notebook consists of four main services that work together:
 
-### 1. **SurrealDB Database** (Port 8000)
+### 1. **SurrealDB Database** (Port 8001)
 - **Purpose**: Stores notebooks, sources, notes, and metadata
 - **Technology**: SurrealDB - a modern, multi-model database
 - **Configuration**: Runs in Docker container with persistent storage
@@ -131,7 +131,7 @@ Open Notebook uses environment variables for configuration. Create a `.env` file
 OPEN_NOTEBOOK_PASSWORD=your_secure_password_here
 
 # Database Configuration
-SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_URL="ws://localhost:8001/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
 SURREAL_NAMESPACE="open_notebook"
@@ -317,7 +317,7 @@ make start-all
 ```
 
 This will start:
-- SurrealDB database on port 8000
+- SurrealDB database on port 8001
 - FastAPI backend on port 5055
 - Background worker for processing
 - React frontend on port 8502
@@ -383,7 +383,7 @@ OPENAI_API_KEY=your-openai-key-here
 
 # Database settings (don't change)
 SURREAL_ADDRESS=localhost
-SURREAL_PORT=8000
+SURREAL_PORT=8001
 SURREAL_USER=root
 SURREAL_PASS=root
 SURREAL_NAMESPACE=open_notebook
@@ -550,7 +550,7 @@ docker compose ps
 #### Individual Service Tests
 ```bash
 # Test database connection
-curl http://localhost:8000/health
+curl http://localhost:8001/health
 
 # Test API backend
 curl http://localhost:5055/health

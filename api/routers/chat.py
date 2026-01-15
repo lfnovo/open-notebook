@@ -100,20 +100,44 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
             raise HTTPException(status_code=404, detail="Notebook not found")
 
         # Get sessions for this notebook
-        sessions = await notebook.get_chat_sessions()
+        sessions_list = await notebook.get_chat_sessions()
 
-        return [
-            ChatSessionResponse(
-                id=session.id or "",
-                title=session.title or "Untitled Session",
-                notebook_id=notebook_id,
-                created=str(session.created),
-                updated=str(session.updated),
-                message_count=0,  # TODO: Add message count if needed
-                model_override=getattr(session, "model_override", None),
+        results = []
+        for session in sessions_list:
+            session_id = (
+                str(session.id).split(":")[-1]
+                if ":" in str(session.id)
+                else str(session.id)
             )
-            for session in sessions
-        ]
+
+            msg_count = 0
+            try:
+                thread_state = chat_graph.get_state(
+                    config=RunnableConfig(configurable={"thread_id": session_id})
+                )
+                if (
+                    thread_state
+                    and thread_state.values
+                    and "messages" in thread_state.values
+                ):
+                    msg_count = len(thread_state.values["messages"])
+            except Exception as e:
+                logger.warning(
+                    f"Could not fetch message count for session {session_id}: {e}"
+                )
+
+            results.append(
+                ChatSessionResponse(
+                    id=session.id or "",
+                    title=session.title or "Untitled Session",
+                    notebook_id=notebook_id,
+                    created=str(session.created),
+                    updated=str(session.updated),
+                    message_count=msg_count,
+                )
+            )
+
+        return results
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
@@ -134,7 +158,8 @@ async def create_session(request: CreateSessionRequest):
 
         # Create new session
         session = ChatSession(
-            title=request.title or f"Chat Session {asyncio.get_event_loop().time():.0f}",
+            title=request.title
+            or f"Chat Session {asyncio.get_event_loop().time():.0f}",
             model_override=request.model_override,
         )
         await session.save()
@@ -270,13 +295,34 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         )
         notebook_id = notebook_query[0]["out"] if notebook_query else None
 
+        msg_count = 0
+        try:
+            session_id_short = (
+                str(session_id).split(":")[-1]
+                if ":" in str(session_id)
+                else str(session_id)
+            )
+            thread_state = chat_graph.get_state(
+                config=RunnableConfig(configurable={"thread_id": session_id_short})
+            )
+            if (
+                thread_state
+                and thread_state.values
+                and "messages" in thread_state.values
+            ):
+                msg_count = len(thread_state.values["messages"])
+        except Exception as e:
+            logger.warning(
+                f"Could not fetch message count for session {session_id}: {e}"
+            )
+
         return ChatSessionResponse(
             id=session.id or "",
             title=session.title or "",
             notebook_id=notebook_id,
             created=str(session.created),
             updated=str(session.updated),
-            message_count=0,
+            message_count=msg_count,
             model_override=session.model_override,
         )
     except NotFoundError:
@@ -334,9 +380,7 @@ async def execute_chat(request: ExecuteChatRequest):
 
         # Get current state
         current_state = chat_graph.get_state(
-            config=RunnableConfig(
-                configurable={"thread_id": request.session_id}
-            )
+            config=RunnableConfig(configurable={"thread_id": request.session_id})
         )
 
         # Prepare state for execution

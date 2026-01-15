@@ -1,35 +1,51 @@
-# Stage 1: Frontend Builder
-FROM oven/bun:1-slim AS frontend-builder
-WORKDIR /app/frontend
+# Build stage
+FROM python:3.12-slim-bookworm AS builder
 
-# Copy dependency files first to leverage cache
-COPY frontend/package.json frontend/bun.lock ./
-RUN bun install --frozen-lockfile
-
-# Copy the rest of the frontend source
-COPY frontend/ ./
-# Build the frontend
-RUN bun run build
-
-# Stage 2: Backend Builder
-FROM python:3.12-slim-bookworm AS backend-builder
-# Install uv
+# Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-WORKDIR /app
+
+# Install system dependencies required for building certain Python packages
+# Add Node.js 20.x LTS for building frontend
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    gcc g++ git make \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set build optimization environment variables
-ENV UV_HTTP_TIMEOUT=120
+ENV MAKEFLAGS="-j$(nproc)"
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV UV_COMPILE_BYTECODE=1
+ENV UV_LINK_MODE=copy
 
-# Copy dependency files first
+# Set the working directory in the container to /app
+WORKDIR /app
+
+# Copy dependency files and minimal package structure first for better layer caching
 COPY pyproject.toml uv.lock ./
 COPY open_notebook/__init__.py ./open_notebook/__init__.py
-# Install dependencies
+
+# Install dependencies with optimizations (this layer will be cached unless dependencies change)
 RUN uv sync --frozen --no-dev
 
-# Stage 3: Runtime
+# Copy the rest of the application code
+COPY . /app
+
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+RUN npm ci
+RUN npm run build
+
+# Return to app root
+WORKDIR /app
+
+# Runtime stage
 FROM python:3.12-slim-bookworm AS runtime
 
-# Install runtime dependencies
+# Install only runtime system dependencies (no build tools)
+# Add Node.js 20.x LTS for running frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ffmpeg \
     supervisor \
@@ -41,29 +57,31 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
 # Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Set the working directory in the container to /app
 WORKDIR /app
 
-# Copy backend virtualenv
-COPY --from=backend-builder /app/.venv /app/.venv
-# Copy application code
-COPY . /app/
+# Copy the virtual environment from builder stage
+COPY --from=builder /app/.venv /app/.venv
+
+# Copy the application code
+COPY --from=builder /app /app
 
 # Ensure uv uses the existing venv without attempting network operations
 ENV UV_NO_SYNC=1
 ENV VIRTUAL_ENV=/app/.venv
 
-# Copy built frontend from standalone output
-COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend/
-COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
-COPY --from=frontend-builder /app/frontend/public /app/frontend/public
+# Copy built frontend from builder stage
+COPY --from=builder /app/frontend/.next/standalone /app/frontend/
+COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
+COPY --from=builder /app/frontend/public /app/frontend/public
 
 # Expose ports for Frontend and API
 EXPOSE 8502 5055
 
-# Setup directories and permissions
 RUN mkdir -p /app/data
 
-# Ensure wait-for-api script is executable
+# Copy and make executable the wait-for-api script
+COPY scripts/wait-for-api.sh /app/scripts/wait-for-api.sh
 RUN chmod +x /app/scripts/wait-for-api.sh
 
 # Copy supervisord configuration
@@ -72,5 +90,14 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 # Create log directories
 RUN mkdir -p /var/log/supervisor
 
-# Set startup command
+# Runtime API URL Configuration
+# The API_URL environment variable can be set at container runtime to configure
+# where the frontend should connect to the API. This allows the same Docker image
+# to work in different deployment scenarios without rebuilding.
+#
+# If not set, the system will auto-detect based on incoming requests.
+# Set API_URL when using reverse proxies or custom domains.
+#
+# Example: docker run -e API_URL=https://your-domain.com/api ...
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

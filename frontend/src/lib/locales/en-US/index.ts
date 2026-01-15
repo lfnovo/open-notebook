@@ -127,7 +127,7 @@ export const enUS = {
     editTransformation: "Edit Transformation",
     comingSoon: "Coming soon",
     retry: "Try Again",
-    traditionalChinese: "Traditional Chinese",
+    traditionalChinese: "繁體中文",
     completed: "completed",
     saveSuccess: "Saved successfully",
     contextModes: {

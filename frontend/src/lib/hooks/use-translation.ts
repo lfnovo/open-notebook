@@ -1,5 +1,6 @@
 import { useTranslation as useI18nTranslation } from 'react-i18next'
 import { useMemo, useCallback, useRef } from 'react'
+import { emitLanguageChangeEnd, emitLanguageChangeStart } from '@/lib/i18n-events'
 
 /**
  * Custom useTranslation hook that provides a Proxy-based API for accessing translations.
@@ -131,9 +132,19 @@ export function useTranslation() {
     return createProxy('', 0);
   }, [i18nTranslate])
 
-  const setLanguage = useCallback((lang: string) => {
-    console.log('[useTranslation] Changing language to:', lang)
-    return i18n.changeLanguage(lang)
+  const setLanguage = useCallback(async (lang: string) => {
+    if (lang === i18n.language) {
+      return i18n.language
+    }
+
+    emitLanguageChangeStart(lang)
+
+    try {
+      await i18n.changeLanguage(lang)
+      return i18n.language
+    } finally {
+      emitLanguageChangeEnd(lang)
+    }
   }, [i18n])
 
   return useMemo(() => ({ 

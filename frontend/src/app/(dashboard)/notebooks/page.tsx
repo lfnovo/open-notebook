@@ -83,6 +83,8 @@ export default function NotebooksPage() {
             title={t.notebooks.activeNotebooks}
             emptyTitle={isSearching ? t.common.noMatches : undefined}
             emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
+            onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
+            actionLabel={!isSearching ? t.notebooks.newNotebook : undefined}
           />
           
           {hasArchived && (

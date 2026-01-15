@@ -1,14 +1,16 @@
 import asyncio
+import os
+from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
+from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
-from open_notebook.domain.models import model_manager
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.utils import split_text
 
@@ -142,6 +144,8 @@ class SourceInsight(ObjectModel):
 
 
 class Source(ObjectModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     table_name: ClassVar[str] = "source"
     asset: Optional[Asset] = None
     title: Optional[str] = None
@@ -150,9 +154,6 @@ class Source(ObjectModel):
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
-
-    class Config:
-        arbitrary_types_allowed = True
 
     @field_validator("command", mode="before")
     @classmethod
@@ -348,6 +349,26 @@ class Source(ObjectModel):
             data["command"] = ensure_record_id(data["command"])
 
         return data
+
+    async def delete(self) -> bool:
+        """Delete source and clean up associated file if it exists."""
+        # Clean up uploaded file if it exists
+        if self.asset and self.asset.file_path:
+            file_path = Path(self.asset.file_path)
+            if file_path.exists():
+                try:
+                    os.unlink(file_path)
+                    logger.info(f"Deleted file for source {self.id}: {file_path}")
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to delete file {file_path} for source {self.id}: {e}. "
+                        "Continuing with database deletion."
+                    )
+            else:
+                logger.debug(f"File {file_path} not found for source {self.id}, skipping cleanup")
+
+        # Call parent delete to remove database record
+        return await super().delete()
 
 
 class Note(ObjectModel):

@@ -74,8 +74,8 @@ async def repo_query(
                 raise RuntimeError(result)
             return result
         except RuntimeError as e:
-            # RuntimeError is raised for retriable transaction conflicts - log without stack trace
-            logger.error(str(e))
+            # RuntimeError is raised for retriable transaction conflicts - log at debug to avoid noise
+            logger.debug(str(e))
             raise
         except Exception as e:
             logger.exception(e)

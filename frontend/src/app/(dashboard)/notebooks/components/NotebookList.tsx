@@ -4,7 +4,7 @@ import { NotebookResponse } from '@/lib/types/api'
 import { NotebookCard } from './NotebookCard'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
-import { Book, ChevronDown, ChevronRight } from 'lucide-react'
+import { Book, ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -16,6 +16,8 @@ interface NotebookListProps {
   collapsible?: boolean
   emptyTitle?: string
   emptyDescription?: string
+  onAction?: () => void
+  actionLabel?: string
 }
 
 export function NotebookList({ 
@@ -25,6 +27,8 @@ export function NotebookList({
   collapsible = false,
   emptyTitle,
   emptyDescription,
+  onAction,
+  actionLabel,
 }: NotebookListProps) {
   const { t } = useTranslation()
   const [isExpanded, setIsExpanded] = useState(!collapsible)
@@ -43,6 +47,12 @@ export function NotebookList({
         icon={Book}
         title={emptyTitle ?? t.common.noResults}
         description={emptyDescription ?? t.chat.startByCreating}
+        action={onAction && actionLabel ? (
+          <Button onClick={onAction} variant="outline" className="mt-4">
+            <Plus className="h-4 w-4 mr-2" />
+            {actionLabel}
+          </Button>
+        ) : undefined}
       />
     )
   }

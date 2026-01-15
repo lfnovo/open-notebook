@@ -6,7 +6,6 @@ data/
 sqlite-db/
 surreal-data/
 docker.env
-!setup_guide/docker.env
 notebook_data/
 # Python-specific
 *.py[cod]
@@ -134,3 +133,7 @@ specs/
 .claude
 
 .playwright-mcp/
+
+
+
+**/*.local.md

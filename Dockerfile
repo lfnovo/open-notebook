@@ -48,10 +48,17 @@ COPY --from=backend-builder /app/.venv /app/.venv
 # Copy application code
 COPY . /app/
 
+# Ensure uv uses the existing venv without attempting network operations
+ENV UV_NO_SYNC=1
+ENV VIRTUAL_ENV=/app/.venv
+
 # Copy built frontend from standalone output
 COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
 COPY --from=frontend-builder /app/frontend/public /app/frontend/public
+
+# Expose ports for Frontend and API
+EXPOSE 8502 5055
 
 # Setup directories and permissions
 RUN mkdir -p /app/data
@@ -64,9 +71,6 @@ COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Create log directories
 RUN mkdir -p /var/log/supervisor
-
-# Expose ports
-EXPOSE 8502 5055
 
 # Set startup command
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

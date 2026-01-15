@@ -7,7 +7,7 @@ from typing import List, Optional
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.models import DefaultModels, Model
+from open_notebook.ai.models import DefaultModels, Model
 
 
 class ModelsService:

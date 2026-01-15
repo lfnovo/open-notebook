@@ -9,8 +9,8 @@ from langgraph.types import Send
 from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
+from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import vector_search
-from open_notebook.graphs.utils import provision_langchain_model
 from open_notebook.utils import clean_thinking_content
 
 

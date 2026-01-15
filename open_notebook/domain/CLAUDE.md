@@ -1,0 +1,100 @@
+# Domain Module
+
+Core data models for notebooks, sources, notes, and settings with async SurrealDB persistence, auto-embedding, and relationship management.
+
+## Purpose
+
+Two base classes support different persistence patterns: **ObjectModel** (mutable records with auto-increment IDs) and **RecordModel** (singleton configuration with fixed IDs).
+
+## Key Components
+
+### base.py
+- **ObjectModel**: Base for notebooks, sources, notes
+  - `save()`: Create/update with auto-embedding for searchable content
+  - `delete()`: Remove by ID
+  - `relate(relationship, target_id)`: Create graph relationships (reference, artifact, refers_to)
+  - `get(id)`: Polymorphic fetch; resolves subclass from ID prefix
+  - `get_all(order_by)`: Fetch all records from table
+  - Integrates with ModelManager for automatic embedding
+
+- **RecordModel**: Singleton configuration (ContentSettings, DefaultPrompts)
+  - Fixed record_id per subclass
+  - `update()`: Upsert to database
+  - Lazy DB loading via `_load_from_db()`
+
+### notebook.py
+- **Notebook**: Research project container
+  - `get_sources()`, `get_notes()`, `get_chat_sessions()`: Navigate relationships
+
+- **Source**: Content item (file/URL)
+  - `vectorize()`: Submit async embedding job (returns command_id, fire-and-forget)
+  - `get_status()`, `get_processing_progress()`: Track job via surreal_commands
+  - `get_context()`: Returns summary for LLM context
+  - `add_insight()`: Generate and store insights with embeddings
+
+- **Note**: Standalone or linked notes
+  - `needs_embedding()`: Always True (searchable)
+  - `add_to_notebook()`: Link to notebook
+
+- **SourceInsight, SourceEmbedding**: Derived content models
+- **ChatSession**: Conversation container with optional model_override
+- **Asset**: File/URL reference helper
+
+- **Search functions**:
+  - `text_search()`: Full-text keyword search
+  - `vector_search()`: Semantic search via embeddings (default minimum_score=0.2)
+
+### content_settings.py
+- **ContentSettings**: Singleton for processing engines, embedding strategy, file deletion, YouTube languages
+
+### transformation.py
+- **Transformation**: Reusable prompts for content transformation
+- **DefaultPrompts**: Singleton with transformation instructions
+
+## Important Patterns
+
+- **Async/await**: All DB operations async; always use await
+- **Polymorphic get()**: `ObjectModel.get(id)` determines subclass from ID prefix (table:id format)
+- **Auto-embedding**: `save()` generates embeddings if `needs_embedding()` returns True
+- **Nullable fields**: Declare via `nullable_fields` ClassVar to allow None in database
+- **Timestamps**: `created` and `updated` auto-managed as ISO strings
+- **Fire-and-forget jobs**: `source.vectorize()` returns command_id without waiting
+
+## Key Dependencies
+
+- `surrealdb`: RecordID type for relationships
+- `pydantic`: Validation and field_validator decorators
+- `open_notebook.database.repository`: CRUD and relationship functions
+- `open_notebook.ai.models`: ModelManager for embeddings
+- `surreal_commands`: Async job submission (vectorization, insights)
+- `loguru`: Logging
+
+## Quirks & Gotchas
+
+- **Polymorphic resolution**: `ObjectModel.get()` fails if subclass not imported (search subclasses list)
+- **RecordModel singleton**: __new__ returns existing instance; call `clear_instance()` in tests
+- **Source.command field**: Stored as RecordID; auto-parsed from strings via field_validator
+- **Text truncation**: `Note.get_context(short)` hardcodes 100-char limit
+- **Embedding async**: Only Note and SourceInsight embed on save; Source too large (uses async job)
+- **Relationship strings**: Must match SurrealDB schema (reference, artifact, refers_to)
+
+## How to Add New Model
+
+1. Inherit from ObjectModel with table_name ClassVar
+2. Define Pydantic fields with validators
+3. Override `needs_embedding()` if searchable
+4. Add custom methods for domain logic (get_X, add_to_Y)
+5. Implement `_prepare_save_data()` if custom serialization needed
+
+## Usage
+
+```python
+notebook = Notebook(name="Research", description="My project")
+await notebook.save()
+
+obj = await ObjectModel.get("notebook:123")  # Polymorphic fetch
+
+# Search
+await text_search("quantum", results=5)
+await vector_search("quantum computing", results=10, minimum_score=0.3)
+```

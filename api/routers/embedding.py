@@ -3,7 +3,7 @@ from loguru import logger
 
 from api.command_service import CommandService
 from api.models import EmbedRequest, EmbedResponse
-from open_notebook.domain.models import model_manager
+from open_notebook.ai.models import model_manager
 from open_notebook.domain.notebook import Note, Source
 
 router = APIRouter()

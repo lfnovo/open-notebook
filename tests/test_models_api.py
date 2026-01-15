@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 def client():
     """Create test client after environment variables have been cleared by conftest."""
     from api.main import app
+
     return TestClient(app)
 
 
@@ -17,67 +18,103 @@ class TestModelCreation:
     @pytest.mark.asyncio
     @patch("open_notebook.database.repository.repo_query")
     @patch("api.routers.models.Model.save")
-    async def test_create_duplicate_model_same_case(self, mock_save, mock_repo_query, client):
+    async def test_create_duplicate_model_same_case(
+        self, mock_save, mock_repo_query, client
+    ):
         """Test that creating a duplicate model with same case returns 400."""
         # Mock repo_query to return a duplicate model
-        mock_repo_query.return_value = [{"id": "model:123", "name": "gpt-4", "provider": "openai", "type": "language"}]
+        mock_repo_query.return_value = [
+            {
+                "id": "model:123",
+                "name": "gpt-4",
+                "provider": "openai",
+                "type": "language",
+            }
+        ]
 
         # Attempt to create duplicate
         response = client.post(
             "/api/models",
-            json={
-                "name": "gpt-4",
-                "provider": "openai",
-                "type": "language"
-            }
+            json={"name": "gpt-4", "provider": "openai", "type": "language"},
         )
 
         assert response.status_code == 400
-        assert response.json()["detail"] == "Model 'gpt-4' already exists for provider 'openai'"
+        assert (
+            response.json()["detail"]
+            == "Model 'gpt-4' already exists for provider 'openai' with type 'language'"
+        )
 
     @pytest.mark.asyncio
     @patch("open_notebook.database.repository.repo_query")
     @patch("api.routers.models.Model.save")
-    async def test_create_duplicate_model_different_case(self, mock_save, mock_repo_query, client):
+    async def test_create_duplicate_model_different_case(
+        self, mock_save, mock_repo_query, client
+    ):
         """Test that creating a duplicate model with different case returns 400."""
         # Mock repo_query to return a duplicate model (case-insensitive match)
-        mock_repo_query.return_value = [{"id": "model:123", "name": "gpt-4", "provider": "openai", "type": "language"}]
+        mock_repo_query.return_value = [
+            {
+                "id": "model:123",
+                "name": "gpt-4",
+                "provider": "openai",
+                "type": "language",
+            }
+        ]
 
         # Attempt to create duplicate with different case
         response = client.post(
             "/api/models",
-            json={
-                "name": "GPT-4",
-                "provider": "OpenAI",
-                "type": "language"
-            }
+            json={"name": "GPT-4", "provider": "OpenAI", "type": "language"},
         )
 
         assert response.status_code == 400
-        assert response.json()["detail"] == "Model 'GPT-4' already exists for provider 'OpenAI'"
+        assert (
+            response.json()["detail"]
+            == "Model 'GPT-4' already exists for provider 'OpenAI' with type 'language'"
+        )
 
     @pytest.mark.asyncio
     @patch("open_notebook.database.repository.repo_query")
-    async def test_create_same_model_name_different_provider(self, mock_repo_query, client):
+    async def test_create_same_model_name_different_provider(
+        self, mock_repo_query, client
+    ):
         """Test that creating a model with same name but different provider is allowed."""
-        from open_notebook.domain.models import Model
+        from open_notebook.ai.models import Model
 
         # Mock repo_query to return empty (no duplicate found for different provider)
         mock_repo_query.return_value = []
 
         # Patch the save method on the Model class
-        with patch.object(Model, 'save', new_callable=AsyncMock) as mock_save:
+        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
             # Attempt to create same model name with different provider (anthropic)
             response = client.post(
                 "/api/models",
-                json={
-                    "name": "gpt-4",
-                    "provider": "anthropic",
-                    "type": "language"
-                }
+                json={"name": "gpt-4", "provider": "anthropic", "type": "language"},
             )
 
             # Should succeed because provider is different
+            assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.database.repository.repo_query")
+    async def test_create_same_model_name_different_type(
+        self, mock_repo_query, client
+    ):
+        """Test that creating a model with same name but different type is allowed."""
+        from open_notebook.ai.models import Model
+
+        # Mock repo_query to return empty (no duplicate found for different type)
+        mock_repo_query.return_value = []
+
+        # Patch the save method on the Model class
+        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+            # Attempt to create same model name with different type (embedding instead of language)
+            response = client.post(
+                "/api/models",
+                json={"name": "gpt-4", "provider": "openai", "type": "embedding"},
+            )
+
+            # Should succeed because type is different
             assert response.status_code == 200
 
 
@@ -124,7 +161,9 @@ class TestModelsProviderAvailability:
 
     @patch("api.routers.models.os.environ.get")
     @patch("api.routers.models.AIFactory.get_available_providers")
-    def test_mode_specific_env_vars_llm_embedding(self, mock_esperanto, mock_env, client):
+    def test_mode_specific_env_vars_llm_embedding(
+        self, mock_esperanto, mock_env, client
+    ):
         """Test mode-specific env vars (LLM + EMBEDDING) enable only those 2 modes."""
 
         # Mock environment: only LLM and EMBEDDING specific vars are set
@@ -193,7 +232,9 @@ class TestModelsProviderAvailability:
 
     @patch("api.routers.models.os.environ.get")
     @patch("api.routers.models.AIFactory.get_available_providers")
-    def test_mixed_config_generic_and_mode_specific(self, mock_esperanto, mock_env, client):
+    def test_mixed_config_generic_and_mode_specific(
+        self, mock_esperanto, mock_env, client
+    ):
         """Test mixed config: generic + mode-specific (generic should enable all)."""
 
         # Mock environment: both generic and mode-specific vars are set

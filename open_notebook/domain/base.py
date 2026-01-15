@@ -2,7 +2,13 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union, cast
 
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, ValidationError, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from open_notebook.database.repository import (
     ensure_record_id,

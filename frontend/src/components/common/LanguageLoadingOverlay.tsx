@@ -52,10 +52,11 @@ export function LanguageLoadingOverlay() {
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-background/80 backdrop-blur-sm transition-opacity duration-200"
       style={{ opacity: isChanging ? 1 : 0 }}
+      onClick={() => setIsChanging(false)} // Emergency override: click to hide
     >
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+        <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
       </div>
     </div>
   )

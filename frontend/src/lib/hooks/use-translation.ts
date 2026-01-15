@@ -31,8 +31,17 @@ export function useTranslation() {
 
           if (typeof prop !== 'string') return undefined;
 
-          // Block React internals and other special properties from being proxied further
-          if (prop.startsWith('__') || prop === '$$typeof' || prop === 'toJSON' || prop === 'constructor') {
+          // Block React internals, common built-in properties, and debugging tools
+          // from being proxied further. This is critical to prevent infinite loops.
+          if (
+            prop.startsWith('__') || 
+            prop === '$$typeof' || 
+            prop === 'toJSON' || 
+            prop === 'constructor' ||
+            prop === 'valueOf' ||
+            prop === 'toString' ||
+            prop === 'inspect'
+          ) {
             return undefined;
           }
 
@@ -61,8 +70,9 @@ export function useTranslation() {
           // We only continue proxying if the results don't clearly indicate a missing leaf
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (result === undefined || result === null || (result as any) === currentPath) {
-             // Stop recursion depth to avoid stack overflow in extreme cases
-             if (currentPath.split('.').length > 10) return currentPath;
+             // Stop recursion depth to avoid stack overflow or infinite loops
+             // If we are at a depth > 4 and still haven't found a result, return the path
+             if (currentPath.split('.').length > 4) return currentPath;
              return createProxy(currentPath);
           }
 

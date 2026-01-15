@@ -130,13 +130,13 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 
 ## Providers & Context Setup
 
-**Root layout** (`app/layout.tsx`) wraps app with:
-1. `I18nProvider` — i18next initialization and language loading overlay
+**Root layout** (`app/layout.tsx`) wraps app with (outermost → innermost):
+1. `ErrorBoundary` — React error boundary (catches all render errors)
 2. `ThemeProvider` — next-themes for light/dark mode
 3. `QueryProvider` — TanStack Query client
-4. `ErrorBoundary` — React error boundary
+4. `I18nProvider` — i18next initialization and language loading overlay
 5. `ConnectionGuard` — checks backend connectivity on startup
-6. `Toaster` — sonner toast notification system
+6. `Toaster` — sonner toast notification system (inside ConnectionGuard)
 
 ## Important Gotchas & Design Decisions
 

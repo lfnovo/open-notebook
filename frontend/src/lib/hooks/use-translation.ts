@@ -92,7 +92,8 @@ export function useTranslation() {
           }
 
           // If i18n returned the key itself (meaning not found), stop recursion
-          if (result === currentPath || result === undefined || result === null) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if ((result as any) === currentPath || result === undefined || result === null) {
             return currentPath; // Return path as fallback instead of continuing
           }
 

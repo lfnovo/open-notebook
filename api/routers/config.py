@@ -11,7 +11,7 @@ from loguru import logger
 from open_notebook.database.repository import repo_query
 from open_notebook.utils.version_utils import (
     compare_versions,
-    get_version_from_github,
+    get_version_from_github_async,
 )
 
 router = APIRouter()
@@ -40,7 +40,7 @@ def get_version() -> str:
         return "unknown"
 
 
-def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool]:
+async def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool]:
     """
     Check for the latest version from GitHub with caching.
 
@@ -66,7 +66,7 @@ def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool
         logger.info("Checking for latest version from GitHub...")
 
         # Fetch latest version from GitHub with 10-second timeout
-        latest_version = get_version_from_github(
+        latest_version = await get_version_from_github_async(
             "https://github.com/lfnovo/open-notebook", "main"
         )
 
@@ -140,7 +140,7 @@ async def get_config(request: Request):
     has_update = False
 
     try:
-        latest_version, has_update = get_latest_version_cached(current_version)
+        latest_version, has_update = await get_latest_version_cached(current_version)
     except Exception as e:
         # Extra safety: ensure version check never breaks the config endpoint
         logger.error(f"Unexpected error during version check: {e}")

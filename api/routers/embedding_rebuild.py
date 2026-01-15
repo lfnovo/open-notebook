@@ -173,10 +173,12 @@ async def get_rebuild_status(command_id: str):
             response.completed_at = str(status.updated)
 
         # Add error message if failed
-        if status.status == "failed" and status.result and isinstance(status.result, dict):
-            response.error_message = status.result.get(
-                "error_message", "Unknown error"
-            )
+        if (
+            status.status == "failed"
+            and status.result
+            and isinstance(status.result, dict)
+        ):
+            response.error_message = status.result.get("error_message", "Unknown error")
 
         return response
 

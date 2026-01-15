@@ -52,7 +52,7 @@ class TestTextUtilities:
     def test_remove_non_printable(self):
         """Test removal of non-printable characters."""
         # Text with various Unicode whitespace and control chars
-        text = "Hello\u2000World\u200B\u202FTest"
+        text = "Hello\u2000World\u200b\u202fTest"
         result = remove_non_printable(text)
 
         # Should have regular spaces and printable chars only
@@ -146,7 +146,9 @@ class TestTokenUtilities:
         from unittest.mock import patch
 
         # Make tiktoken raise an ImportError to trigger fallback
-        with patch("tiktoken.get_encoding", side_effect=ImportError("tiktoken not available")):
+        with patch(
+            "tiktoken.get_encoding", side_effect=ImportError("tiktoken not available")
+        ):
             text = "one two three four five"
             count = token_count(text)
 
@@ -253,7 +255,7 @@ class TestContextBuilder:
             source_id="source:123",
             notebook_id="notebook:456",
             max_tokens=1000,
-            include_insights=False
+            include_insights=False,
         )
 
         assert builder.source_id == "source:123"

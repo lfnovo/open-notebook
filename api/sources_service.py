@@ -14,6 +14,7 @@ from open_notebook.domain.notebook import Asset, Source
 @dataclass
 class SourceProcessingResult:
     """Result of source creation with optional async processing info."""
+
     source: Source
     is_async: bool = False
     command_id: Optional[str] = None
@@ -24,38 +25,39 @@ class SourceProcessingResult:
 @dataclass
 class SourceWithMetadata:
     """Source object with additional metadata from API."""
+
     source: Source
     embedded_chunks: int
-    
+
     # Expose common source properties for easy access
     @property
     def id(self):
         return self.source.id
-    
-    @property  
+
+    @property
     def title(self):
         return self.source.title
-        
+
     @title.setter
     def title(self, value):
         self.source.title = value
-    
+
     @property
     def topics(self):
         return self.source.topics
-    
+
     @property
     def asset(self):
         return self.source.asset
-    
+
     @property
     def full_text(self):
         return self.source.full_text
-    
+
     @property
     def created(self):
         return self.source.created
-    
+
     @property
     def updated(self):
         return self.source.updated
@@ -67,7 +69,9 @@ class SourcesService:
     def __init__(self):
         logger.info("Using API for sources operations")
 
-    def get_all_sources(self, notebook_id: Optional[str] = None) -> List[SourceWithMetadata]:
+    def get_all_sources(
+        self, notebook_id: Optional[str] = None
+    ) -> List[SourceWithMetadata]:
         """Get all sources with optional notebook filtering."""
         sources_data = api_client.get_sources(notebook_id=notebook_id)
         # Convert API response to SourceWithMetadata objects
@@ -88,11 +92,10 @@ class SourcesService:
             source.id = source_data["id"]
             source.created = source_data["created"]
             source.updated = source_data["updated"]
-            
+
             # Wrap in SourceWithMetadata
             source_with_metadata = SourceWithMetadata(
-                source=source,
-                embedded_chunks=source_data.get("embedded_chunks", 0)
+                source=source, embedded_chunks=source_data.get("embedded_chunks", 0)
             )
             sources.append(source_with_metadata)
         return sources
@@ -119,8 +122,7 @@ class SourcesService:
         source.updated = source_data["updated"]
 
         return SourceWithMetadata(
-            source=source,
-            embedded_chunks=source_data.get("embedded_chunks", 0)
+            source=source, embedded_chunks=source_data.get("embedded_chunks", 0)
         )
 
     def create_source(
@@ -139,7 +141,7 @@ class SourcesService:
     ) -> Union[Source, SourceProcessingResult]:
         """
         Create a new source with support for async processing.
-        
+
         Args:
             notebook_id: Single notebook ID (deprecated, use notebooks parameter)
             source_type: Type of source (link, upload, text)
@@ -152,7 +154,7 @@ class SourcesService:
             delete_source: Whether to delete uploaded file after processing
             notebooks: List of notebook IDs to add source to (preferred over notebook_id)
             async_processing: Whether to process source asynchronously
-            
+
         Returns:
             Source object for sync processing (backward compatibility)
             SourceProcessingResult for async processing (contains additional metadata)
@@ -193,9 +195,15 @@ class SourcesService:
         source.updated = response_data["updated"]
 
         # Check if this is an async processing response
-        if response_data.get("command_id") or response_data.get("status") or response_data.get("processing_info"):
+        if (
+            response_data.get("command_id")
+            or response_data.get("status")
+            or response_data.get("processing_info")
+        ):
             # Ensure source_data is a dict for accessing attributes
-            source_data_dict = source_data if isinstance(source_data, dict) else source_data[0]
+            source_data_dict = (
+                source_data if isinstance(source_data, dict) else source_data[0]
+            )
             # Return enhanced result for async processing
             return SourceProcessingResult(
                 source=source,
@@ -228,7 +236,7 @@ class SourcesService:
     ) -> SourceProcessingResult:
         """
         Create a new source with async processing enabled.
-        
+
         This is a convenience method that always uses async processing.
         Returns a SourceProcessingResult with processing status information.
         """
@@ -245,7 +253,7 @@ class SourcesService:
             delete_source=delete_source,
             async_processing=True,
         )
-        
+
         # Since we forced async_processing=True, this should always be a SourceProcessingResult
         if isinstance(result, SourceProcessingResult):
             return result
@@ -259,14 +267,18 @@ class SourcesService:
     def is_source_processing_complete(self, source_id: str) -> bool:
         """
         Check if a source's async processing is complete.
-        
+
         Returns True if processing is complete (success or failure),
         False if still processing or queued.
         """
         try:
             status_data = self.get_source_status(source_id)
             status = status_data.get("status")
-            return status in ["completed", "failed", None]  # None indicates legacy/sync source
+            return status in [
+                "completed",
+                "failed",
+                None,
+            ]  # None indicates legacy/sync source
         except Exception as e:
             logger.error(f"Error checking source processing status: {e}")
             return True  # Assume complete on error
@@ -275,7 +287,7 @@ class SourcesService:
         """Update a source."""
         if not source.id:
             raise ValueError("Source ID is required for update")
-            
+
         updates = {
             "title": source.title,
             "topics": source.topics,
@@ -283,7 +295,9 @@ class SourcesService:
         source_data = api_client.update_source(source.id, **updates)
 
         # Ensure source_data is a dict
-        source_data_dict = source_data if isinstance(source_data, dict) else source_data[0]
+        source_data_dict = (
+            source_data if isinstance(source_data, dict) else source_data[0]
+        )
 
         # Update the source object with the response
         source.title = source_data_dict["title"]
@@ -302,4 +316,9 @@ class SourcesService:
 sources_service = SourcesService()
 
 # Export important classes for easy importing
-__all__ = ["SourcesService", "SourceWithMetadata", "SourceProcessingResult", "sources_service"]
+__all__ = [
+    "SourcesService",
+    "SourceWithMetadata",
+    "SourceProcessingResult",
+    "sources_service",
+]

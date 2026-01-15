@@ -173,13 +173,10 @@ class ModelManager:
             model_id = defaults.default_chat_model
         elif model_type == "transformation":
             model_id = (
-                defaults.default_transformation_model
-                or defaults.default_chat_model
+                defaults.default_transformation_model or defaults.default_chat_model
             )
         elif model_type == "tools":
-            model_id = (
-                defaults.default_tools_model or defaults.default_chat_model
-            )
+            model_id = defaults.default_tools_model or defaults.default_chat_model
         elif model_type == "embedding":
             model_id = defaults.default_embedding_model
         elif model_type == "text_to_speech":

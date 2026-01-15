@@ -174,7 +174,9 @@ async def embed_single_item_command(
 
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Embedding failed for {input_data.item_type} {input_data.item_id}: {e}")
+        logger.error(
+            f"Embedding failed for {input_data.item_type} {input_data.item_id}: {e}"
+        )
         logger.exception(e)
 
         return EmbedSingleItemOutput(
@@ -317,7 +319,9 @@ async def vectorize_source_command(
     start_time = time.time()
 
     try:
-        logger.info(f"Starting vectorization orchestration for source {input_data.source_id}")
+        logger.info(
+            f"Starting vectorization orchestration for source {input_data.source_id}"
+        )
 
         # 1. Load source
         source = await Source.get(input_data.source_id)
@@ -331,7 +335,7 @@ async def vectorize_source_command(
         logger.info(f"Deleting existing embeddings for source {input_data.source_id}")
         delete_result = await repo_query(
             "DELETE source_embedding WHERE source = $source_id",
-            {"source_id": ensure_record_id(input_data.source_id)}
+            {"source_id": ensure_record_id(input_data.source_id)},
         )
         deleted_count = len(delete_result) if delete_result else 0
         if deleted_count > 0:
@@ -354,12 +358,12 @@ async def vectorize_source_command(
             try:
                 job_id = submit_command(
                     "open_notebook",  # app name
-                    "embed_chunk",    # command name
+                    "embed_chunk",  # command name
                     {
                         "source_id": input_data.source_id,
                         "chunk_index": idx,
                         "chunk_text": chunk_text,
-                    }
+                    },
                 )
                 jobs_submitted += 1
 
@@ -387,7 +391,9 @@ async def vectorize_source_command(
 
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Vectorization orchestration failed for source {input_data.source_id}: {e}")
+        logger.error(
+            f"Vectorization orchestration failed for source {input_data.source_id}: {e}"
+        )
         logger.exception(e)
 
         return VectorizeSourceOutput(
@@ -484,7 +490,9 @@ async def rebuild_embeddings_command(
     try:
         logger.info("=" * 60)
         logger.info(f"Starting embedding rebuild with mode={input_data.mode}")
-        logger.info(f"Include: sources={input_data.include_sources}, notes={input_data.include_notes}, insights={input_data.include_insights}")
+        logger.info(
+            f"Include: sources={input_data.include_sources}, notes={input_data.include_notes}, insights={input_data.include_insights}"
+        )
         logger.info("=" * 60)
 
         # Check embedding model availability
@@ -561,7 +569,9 @@ async def rebuild_embeddings_command(
                 notes_processed += 1
 
                 if idx % 10 == 0 or idx == len(items["notes"]):
-                    logger.info(f"  Progress: {idx}/{len(items['notes'])} notes processed")
+                    logger.info(
+                        f"  Progress: {idx}/{len(items['notes'])} notes processed"
+                    )
 
             except Exception as e:
                 logger.error(f"Failed to re-embed note {note_id}: {e}")

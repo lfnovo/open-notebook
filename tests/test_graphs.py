@@ -77,10 +77,7 @@ class TestPromptGraph:
     def test_pattern_chain_state_structure(self):
         """Test PatternChainState structure and fields."""
         state = PatternChainState(
-            prompt="Test prompt",
-            parser=None,
-            input_text="Test input",
-            output=""
+            prompt="Test prompt", parser=None, input_text="Test input", output=""
         )
 
         assert state["prompt"] == "Test prompt"
@@ -119,7 +116,7 @@ class TestTransformationGraph:
             input_text="Test text",
             source=mock_source,
             transformation=mock_transformation,
-            output=""
+            output="",
         )
 
         assert state["input_text"] == "Test text"
@@ -139,7 +136,7 @@ class TestTransformationGraph:
         state = {
             "input_text": None,
             "transformation": mock_transformation,
-            "source": None
+            "source": None,
         }
 
         config = {"configurable": {"model_id": None}}

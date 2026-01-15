@@ -93,7 +93,7 @@ async def list_podcast_episodes():
             # Skip incomplete episodes without command or audio
             if not episode.command and not episode.audio_file:
                 continue
-            
+
             # Get job status if available
             job_status = None
             if episode.command:
@@ -209,7 +209,7 @@ async def delete_podcast_episode(episode_id: str):
     try:
         # Get the episode first to check if it exists and get the audio file path
         episode = await PodcastService.get_episode(episode_id)
-        
+
         # Delete the physical audio file if it exists
         if episode.audio_file:
             audio_path = _resolve_audio_path(episode.audio_file)
@@ -219,13 +219,15 @@ async def delete_podcast_episode(episode_id: str):
                     logger.info(f"Deleted audio file: {audio_path}")
                 except Exception as e:
                     logger.warning(f"Failed to delete audio file {audio_path}: {e}")
-        
+
         # Delete the episode from the database
         await episode.delete()
-        
+
         logger.info(f"Deleted podcast episode: {episode_id}")
         return {"message": "Episode deleted successfully", "episode_id": episode_id}
-        
+
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete episode: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to delete episode: {str(e)}"
+        )

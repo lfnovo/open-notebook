@@ -154,7 +154,9 @@ class ObjectModel(BaseModel):
                 )
             # Update the current instance with the result
             # repo_result is a list of dictionaries
-            result_list: List[Dict[str, Any]] = repo_result if isinstance(repo_result, list) else [repo_result]
+            result_list: List[Dict[str, Any]] = (
+                repo_result if isinstance(repo_result, list) else [repo_result]
+            )
             for key, value in result_list[0].items():
                 if hasattr(self, key):
                     if isinstance(getattr(self, key), BaseModel):

@@ -123,7 +123,8 @@ async def get_default_prompt():
         default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
 
         return DefaultPromptResponse(
-            transformation_instructions=default_prompts.transformation_instructions or ""
+            transformation_instructions=default_prompts.transformation_instructions
+            or ""
         )
     except Exception as e:
         logger.error(f"Error fetching default prompt: {str(e)}")
@@ -138,7 +139,9 @@ async def update_default_prompt(prompt_update: DefaultPromptUpdate):
     try:
         default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()  # type: ignore[assignment]
 
-        default_prompts.transformation_instructions = prompt_update.transformation_instructions
+        default_prompts.transformation_instructions = (
+            prompt_update.transformation_instructions
+        )
         await default_prompts.update()
 
         return DefaultPromptResponse(

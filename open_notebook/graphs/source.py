@@ -37,7 +37,17 @@ async def content_process(state: SourceState) -> dict:
         default_content_processing_engine_url="auto",
         default_embedding_option="ask",
         auto_delete_files="yes",
-        youtube_preferred_languages=["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja"]
+        youtube_preferred_languages=[
+            "en",
+            "pt",
+            "es",
+            "de",
+            "nl",
+            "en-GB",
+            "fr",
+            "hi",
+            "ja",
+        ],
     )
     content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
@@ -58,7 +68,9 @@ async def content_process(state: SourceState) -> dict:
             if stt_model:
                 content_state["audio_provider"] = stt_model.provider
                 content_state["audio_model"] = stt_model.name
-                logger.debug(f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}")
+                logger.debug(
+                    f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
+                )
     except Exception as e:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)
@@ -78,11 +90,11 @@ async def save_source(state: SourceState) -> dict:
     # Update the source with processed content
     source.asset = Asset(url=content_state.url, file_path=content_state.file_path)
     source.full_text = content_state.content
-    
+
     # Preserve existing title if none provided in processed content
     if content_state.title:
         source.title = content_state.title
-    
+
     await source.save()
 
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness

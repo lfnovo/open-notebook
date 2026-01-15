@@ -1,21 +1,49 @@
 import { useTranslation as useI18nTranslation } from 'react-i18next'
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useRef } from 'react'
 
+/**
+ * Custom useTranslation hook that provides a Proxy-based API for accessing translations.
+ * 
+ * CRITICAL: The Proxy implementation must be carefully designed to avoid infinite loops
+ * during language switching. Key safeguards:
+ * 1. Strict depth limit (max 4 levels)
+ * 2. Blocked properties list to prevent React/JS internals from triggering recursion
+ * 3. Early return for missing keys
+ * 4. Memoization with stable dependencies
+ */
 export function useTranslation() {
   const { t: i18nTranslate, i18n } = useI18nTranslation()
   
-  // High-performance Recursive Proxy to support t.section.sub.key syntax with full type safety
-  // This version handles any nesting depth and transparently supports string methods like .replace()
+  // Use a ref to track the current language to avoid unnecessary Proxy recreation
+  const languageRef = useRef(i18n.language)
+  languageRef.current = i18n.language
+  
+  // High-performance Recursive Proxy with strict safety limits
   const t = useMemo(() => {
     const i18nTranslateCopy = i18nTranslate;
     
+    // Set of properties to completely block from Proxy traversal
+    const BLOCKED_PROPS = new Set([
+      '__proto__', '__esModule', '$$typeof', 'toJSON', 'constructor',
+      'valueOf', 'toString', 'inspect', 'nodeType', 'tagName',
+      'then', 'catch', 'finally', // Promise methods
+      'prototype', 'caller', 'callee', 'arguments', // Function props
+      'Symbol(Symbol.toStringTag)', 'Symbol(Symbol.iterator)',
+    ]);
+    
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const createProxy = (path: string): any => {
+    const createProxy = (path: string, depth: number = 0): any => {
+      // SAFETY: Strict depth limit to prevent stack overflow
+      if (depth > 3) {
+        return path; // Return the path string as fallback
+      }
+      
       // Base function for t('key') or t.path({ options })
       const proxyTarget = (keyOrOptions?: string | unknown, options?: unknown) => {
         if (typeof keyOrOptions === 'string') {
+          const fullPath = path ? `${path}.${keyOrOptions}` : keyOrOptions;
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          return i18nTranslateCopy(path ? `${path}.${keyOrOptions}` : keyOrOptions, options as any);
+          return i18nTranslateCopy(fullPath, options as any);
         }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return i18nTranslateCopy(path, keyOrOptions as any);
@@ -23,41 +51,38 @@ export function useTranslation() {
 
       return new Proxy(proxyTarget, {
         get(target, prop) {
-          // Handle standard properties of the function itself
-          if (typeof prop === 'symbol' || prop in target) {
+          // Handle Symbol properties immediately
+          if (typeof prop === 'symbol') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            return (target as any)[prop];
+          }
+          
+          // Handle function's own properties
+          if (prop in target) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (target as any)[prop];
           }
 
           if (typeof prop !== 'string') return undefined;
 
-          // Block React internals, common built-in properties, and debugging tools
-          // from being proxied further. This is critical to prevent infinite loops.
-          if (
-            prop.startsWith('__') || 
-            prop === '$$typeof' || 
-            prop === 'toJSON' || 
-            prop === 'constructor' ||
-            prop === 'valueOf' ||
-            prop === 'toString' ||
-            prop === 'inspect'
-          ) {
+          // Block React internals and JS built-ins
+          if (prop.startsWith('__') || prop.startsWith('@@') || BLOCKED_PROPS.has(prop)) {
             return undefined;
           }
 
           const currentPath = path ? `${path}.${prop}` : prop;
 
-          // Check if currentPath is a direct translation key
+          // Try to get the translation
           const result = i18nTranslateCopy(currentPath, { returnObjects: true });
 
-          // If it's a leaf string node, return it directly
+          // If it's a leaf string, return it directly
           if (typeof result === 'string') {
             return result;
           }
 
-          // If result is NOT a string but we are accessing a String.prototype method 
-          // (meaning the user wants to treat the CURRENT path as a string and call a method on it)
-          if (prop === 'replace' || prop === 'split' || prop === 'length') {
+          // Handle String.prototype methods on the current path
+          if (prop === 'replace' || prop === 'split' || prop === 'length' ||
+              prop === 'trim' || prop === 'toLowerCase' || prop === 'toUpperCase') {
             const translated = i18nTranslateCopy(path);
             if (typeof translated === 'string') {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -66,30 +91,32 @@ export function useTranslation() {
             }
           }
 
-          // If result is undefined/null or just the path string (meaning i18n didn't find it)
-          // We only continue proxying if the results don't clearly indicate a missing leaf
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          if (result === undefined || result === null || (result as any) === currentPath) {
-             // Stop recursion depth to avoid stack overflow or infinite loops
-             // If we are at a depth > 4 and still haven't found a result, return the path
-             if (currentPath.split('.').length > 4) return currentPath;
-             return createProxy(currentPath);
+          // If i18n returned the key itself (meaning not found), stop recursion
+          if (result === currentPath || result === undefined || result === null) {
+            return currentPath; // Return path as fallback instead of continuing
           }
 
-          // Otherwise, it's an object (nested key structure), continue proxying
-          return createProxy(currentPath);
+          // If it's an object (nested structure), continue with depth limit
+          if (typeof result === 'object') {
+            return createProxy(currentPath, depth + 1);
+          }
+
+          return result;
         }
       });
     };
 
-    return createProxy('');
+    return createProxy('', 0);
   }, [i18nTranslate])
 
-  const setLanguage = useCallback((lang: string) => i18n.changeLanguage(lang), [i18n])
+  const setLanguage = useCallback((lang: string) => {
+    console.log('[useTranslation] Changing language to:', lang)
+    return i18n.changeLanguage(lang)
+  }, [i18n])
 
   return useMemo(() => ({ 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    t: t as any, // Keep as any here to allow both function and property access in TS
+    t: t as any,
     i18n,
     language: i18n.language, 
     setLanguage 

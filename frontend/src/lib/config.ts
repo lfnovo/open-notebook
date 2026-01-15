@@ -76,6 +76,10 @@ async function fetchConfig(): Promise<AppConfig> {
     if (runtimeResponse.ok) {
       const runtimeData = await runtimeResponse.json()
       runtimeApiUrl = runtimeData.apiUrl
+      // Treat empty string as "not set" to allow fallback to env var or default
+      if (runtimeApiUrl === '') {
+        runtimeApiUrl = null
+      }
       if (isDev) console.log('✅ [Config] Runtime API URL from server:', runtimeApiUrl)
     } else {
       if (isDev) console.log('⚠️ [Config] Runtime config endpoint returned status:', runtimeResponse.status)
@@ -97,7 +101,8 @@ async function fetchConfig(): Promise<AppConfig> {
   }
 
   // Priority: Runtime config > Build-time env var > Smart default
-  const baseUrl = runtimeApiUrl !== null ? runtimeApiUrl : (envApiUrl || defaultApiUrl)
+  // Note: runtimeApiUrl must be checked against null explicitly as empty string might be valid if intended (though we treat '' as null above)
+  const baseUrl = runtimeApiUrl !== null && runtimeApiUrl !== undefined ? runtimeApiUrl : (envApiUrl || defaultApiUrl)
   if (isDev) {
     console.log('🔧 [Config] Final base URL to try:', baseUrl)
     console.log('🔧 [Config] Selection priority: runtime=' + (runtimeApiUrl ? '✅' : '❌') +

@@ -7,8 +7,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Install system dependencies required for building certain Python packages
 # Add Node.js 20.x LTS for building frontend
 # NOTE: gcc/g++/make removed - uv should download pre-built wheels. Add back if build fails.
+# NOTE: gcc/g++/make required for some python dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    build-essential \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -35,7 +37,8 @@ COPY . /app
 
 # Install frontend dependencies and build
 WORKDIR /app/frontend
-RUN npm config set registry https://registry.npmmirror.com
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm config set registry ${NPM_REGISTRY}
 RUN npm ci
 RUN npm run build
 

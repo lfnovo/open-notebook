@@ -36,7 +36,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
       <DropdownMenuContent align="end">
         <DropdownMenuItem 
           onClick={() => setLanguage('en-US')}
-          className={currentLang === 'en-US' ? 'bg-accent' : ''}
+          className={currentLang === 'en-US' || currentLang.startsWith('en') ? 'bg-accent' : ''}
         >
           <span>{t.common.english}</span>
         </DropdownMenuItem>

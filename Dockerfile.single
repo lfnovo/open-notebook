@@ -4,6 +4,8 @@ WORKDIR /app/frontend
 
 # Copy dependency files first to leverage cache
 COPY frontend/package.json frontend/package-lock.json ./
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+RUN npm config set registry ${NPM_REGISTRY}
 RUN npm ci
 
 # Copy the rest of the frontend source
@@ -13,6 +15,8 @@ RUN npm run build
 
 # Stage 2: Backend Builder
 FROM python:3.12-slim-bookworm AS backend-builder
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
 # Install uv
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 WORKDIR /app

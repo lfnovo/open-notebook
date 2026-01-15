@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { getConfig } from '@/lib/config'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -11,6 +11,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
  */
 export function useVersionCheck() {
   const { t } = useTranslation()
+  const hasChecked = useRef(false)
 
   useEffect(() => {
     const checkVersion = async () => {
@@ -79,6 +80,9 @@ export function useVersionCheck() {
     }
 
     // Run version check
-    checkVersion()
-  }, [t.advanced.updateAvailable, t.advanced.updateAvailableDesc, t.advanced.viewOnGithub]) // Run once on mount
+    if (!hasChecked.current) {
+        hasChecked.current = true
+        checkVersion()
+    }
+  }, []) // Run once on mount
 }

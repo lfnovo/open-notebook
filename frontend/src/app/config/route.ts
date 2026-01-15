@@ -39,7 +39,7 @@ export async function GET() {
   
   // Return null/empty to let the frontend use its default (relative path)
   return NextResponse.json({
-    apiUrl: '' 
+    apiUrl: undefined 
   })
 
 

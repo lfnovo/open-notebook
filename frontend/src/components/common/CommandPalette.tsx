@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
@@ -57,6 +57,7 @@ const getThemeItems = (t: TranslationKeys) => [
 
 export function CommandPalette() {
   const { t } = useTranslation()
+  const commandInputId = useId()
   const navigationItems = useMemo(() => getNavigationItems(t), [t])
   const createItems = useMemo(() => getCreateItems(t), [t])
   const themeItems = useMemo(() => getThemeItems(t), [t])
@@ -168,10 +169,13 @@ export function CommandPalette() {
       className="sm:max-w-lg"
     >
       <CommandInput
+        id={commandInputId}
+        name="command-search"
         placeholder={t.searchPage.enterSearchPlaceholder}
         value={query}
         onValueChange={setQuery}
         aria-label={t.common.search}
+        autoComplete="off"
       />
       <CommandList>
         {/* Search/Ask - show FIRST when there's a query with no command match */}

@@ -809,9 +809,11 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                     <Label htmlFor="episode_name">{t.podcasts.episodeName}</Label>
                     <Input
                       id="episode_name"
+                      name="episode_name"
                       value={episodeName}
                       onChange={(event) => setEpisodeName(event.target.value)}
                       placeholder={t.podcasts.episodeNamePlaceholder}
+                      autoComplete="off"
                     />
                   </div>
 
@@ -819,10 +821,12 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                     <Label htmlFor="instructions">{t.podcasts.additionalInstructions}</Label>
                     <Textarea
                       id="instructions"
+                      name="instructions"
                       placeholder={t.podcasts.instructionsPlaceholder}
                       value={instructions}
                       onChange={(event) => setInstructions(event.target.value)}
                       className="min-h-[100px] text-xs"
+                      autoComplete="off"
                     />
                   </div>
                 </div>

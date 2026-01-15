@@ -291,6 +291,9 @@ export function ChatPanel({
 
           <div className="flex gap-2 items-end">
             <Textarea
+              id={chatInputId}
+              name="chat-message"
+              autoComplete="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}

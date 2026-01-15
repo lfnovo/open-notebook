@@ -227,10 +227,12 @@ export function EpisodeProfileFormDialog({
               <Label htmlFor="num_segments">{t.podcasts.segments} *</Label>
               <Input
                 id="num_segments"
+                name="num_segments"
                 type="number"
                 min={3}
                 max={20}
                 {...register('num_segments', { valueAsNumber: true })}
+                autoComplete="off"
               />
               {errors.num_segments ? (
                 <p className="text-xs text-red-600">{errors.num_segments.message}</p>
@@ -241,9 +243,11 @@ export function EpisodeProfileFormDialog({
               <Label htmlFor="description">{t.common.description}</Label>
               <Textarea
                 id="description"
+                name="description"
                 rows={3}
                 placeholder={t.podcasts.descriptionPlaceholder}
                 {...register('description')}
+                autoComplete="off"
               />
             </div>
           </div>

@@ -77,7 +77,11 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm">
+        <Button 
+          id={`add-model-${modelType}`} 
+          name={`add-model-${modelType}`} 
+          size="sm"
+        >
           <Plus className="h-4 w-4 mr-2" />
           {t.models.addModel}
         </Button>
@@ -94,7 +98,11 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor={providerSelectId}>{t.models.provider}</Label>
-            <Select onValueChange={(value) => setValue('provider', value)} required>
+            <Select 
+              name="provider" 
+              onValueChange={(value) => setValue('provider', value)} 
+              required
+            >
               <SelectTrigger id={providerSelectId}>
                 <SelectValue placeholder={t.models.selectProviderPlaceholder} />
               </SelectTrigger>

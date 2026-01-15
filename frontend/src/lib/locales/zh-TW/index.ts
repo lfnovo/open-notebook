@@ -128,6 +128,7 @@ export const zhTW = {
     comingSoon: "敬請期待",
     retry: "重試",
     traditionalChinese: "繁體中文",
+    portuguese: "葡萄牙語",
     completed: "已完成",
     saveSuccess: "儲存成功",
     contextModes: {

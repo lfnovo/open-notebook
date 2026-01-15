@@ -540,17 +540,21 @@ export function SourceDetailContent({
               <CardContent className="space-y-4">
                 {/* Create New Insight */}
                 <div className="rounded-lg border bg-muted/30 p-4">
-                  <h3 className="mb-3 text-sm font-semibold flex items-center gap-2">
+                  <Label 
+                    htmlFor="transformation-select"
+                    className="mb-3 text-sm font-semibold flex items-center gap-2"
+                  >
                     <Sparkles className="h-4 w-4" />
                     {t.sources.generateNewInsight}
-                  </h3>
+                  </Label>
                   <div className="flex gap-2">
                     <Select
+                      name="transformation"
                       value={selectedTransformation}
                       onValueChange={setSelectedTransformation}
                       disabled={creatingInsight}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger id="transformation-select" className="flex-1">
                         <SelectValue placeholder={t.sources.selectTransformation} />
                       </SelectTrigger>
                       <SelectContent>

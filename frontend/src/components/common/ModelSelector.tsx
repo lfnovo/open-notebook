@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ModelSelectorProps {
   id?: string
+  name?: string
   label?: string
   modelType: 'language' | 'embedding' | 'speech_to_text' | 'text_to_speech'
   value: string
@@ -17,6 +18,7 @@ interface ModelSelectorProps {
 
 export function ModelSelector({
   id,
+  name,
   label,
   modelType,
   value,
@@ -34,7 +36,7 @@ export function ModelSelector({
   return (
     <div className="space-y-2">
       {label && <Label htmlFor={selectId}>{label}</Label>}
-      <Select value={value} onValueChange={onChange} disabled={disabled || isLoading}>
+      <Select name={name} value={value} onValueChange={onChange} disabled={disabled || isLoading}>
         <SelectTrigger id={selectId}>
           <SelectValue placeholder={placeholder || t.settings.embeddingOptionPlaceholder} />
         </SelectTrigger>

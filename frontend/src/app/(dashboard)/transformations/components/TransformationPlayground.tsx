@@ -58,7 +58,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="transformation">{t.navigation.transformation}</Label>
-              <Select value={selectedId} onValueChange={setSelectedId}>
+              <Select name="transformation" value={selectedId} onValueChange={setSelectedId}>
                 <SelectTrigger id="transformation">
                   <SelectValue placeholder={t.transformations.selectToStart} />
                 </SelectTrigger>
@@ -75,6 +75,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
             <div>
               <ModelSelector
                 label={t.transformations.model}
+                name="model"
                 modelType="language"
                 value={modelId}
                 onChange={setModelId}
@@ -87,6 +88,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
             <Label htmlFor="input">{t.transformations.inputLabel}</Label>
             <Textarea
               id="input"
+              name="input"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder={t.transformations.inputPlaceholder}

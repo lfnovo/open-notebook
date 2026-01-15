@@ -128,7 +128,7 @@ def parse_thinking_content(content: str) -> Tuple[str, str]:
     if malformed_match:
         thinking_content = malformed_match.group(1).strip()
         # Remove the thinking content and </think> tag
-        cleaned_content = content[malformed_match.end():].strip()
+        cleaned_content = content[malformed_match.end() :].strip()
         return thinking_content, cleaned_content
 
     return "", content

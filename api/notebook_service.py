@@ -12,10 +12,10 @@ from open_notebook.domain.notebook import Notebook
 
 class NotebookService:
     """Service layer for notebook operations using API."""
-    
+
     def __init__(self):
         logger.info("Using API for notebook operations")
-    
+
     def get_all_notebooks(self, order_by: str = "updated desc") -> List[Notebook]:
         """Get all notebooks."""
         notebooks_data = api_client.get_notebooks(order_by=order_by)
@@ -32,7 +32,7 @@ class NotebookService:
             nb.updated = nb_data["updated"]
             notebooks.append(nb)
         return notebooks
-    
+
     def get_notebook(self, notebook_id: str) -> Optional[Notebook]:
         """Get a specific notebook."""
         response = api_client.get_notebook(notebook_id)
@@ -60,7 +60,7 @@ class NotebookService:
         nb.created = nb_data["created"]
         nb.updated = nb_data["updated"]
         return nb
-    
+
     def update_notebook(self, notebook: Notebook) -> Notebook:
         """Update a notebook."""
         updates = {
@@ -76,7 +76,7 @@ class NotebookService:
         notebook.archived = nb_data["archived"]
         notebook.updated = nb_data["updated"]
         return notebook
-    
+
     def delete_notebook(self, notebook: Notebook) -> bool:
         """Delete a notebook."""
         api_client.delete_notebook(notebook.id or "")

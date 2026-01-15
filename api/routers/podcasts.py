@@ -64,7 +64,7 @@ async def generate_podcast(request: PodcastGenerationRequest):
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to generate podcast: {str(e)}"
+            status_code=500, detail="Failed to generate podcast"
         )
 
 
@@ -78,7 +78,7 @@ async def get_podcast_job_status(job_id: str):
     except Exception as e:
         logger.error(f"Error fetching podcast job status: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to fetch job status: {str(e)}"
+            status_code=500, detail="Failed to fetch job status"
         )
 
 
@@ -93,7 +93,7 @@ async def list_podcast_episodes():
             # Skip incomplete episodes without command or audio
             if not episode.command and not episode.audio_file:
                 continue
-            
+
             # Get job status if available
             job_status = None
             if episode.command:
@@ -132,7 +132,7 @@ async def list_podcast_episodes():
     except Exception as e:
         logger.error(f"Error listing podcast episodes: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to list podcast episodes: {str(e)}"
+            status_code=500, detail="Failed to list podcast episodes"
         )
 
 
@@ -175,7 +175,7 @@ async def get_podcast_episode(episode_id: str):
 
     except Exception as e:
         logger.error(f"Error fetching podcast episode: {str(e)}")
-        raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
+        raise HTTPException(status_code=404, detail="Episode not found")
 
 
 @router.get("/podcasts/episodes/{episode_id}/audio")
@@ -187,7 +187,7 @@ async def stream_podcast_episode_audio(episode_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching podcast episode for audio: {str(e)}")
-        raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
+        raise HTTPException(status_code=404, detail="Episode not found")
 
     if not episode.audio_file:
         raise HTTPException(status_code=404, detail="Episode has no audio file")
@@ -209,7 +209,7 @@ async def delete_podcast_episode(episode_id: str):
     try:
         # Get the episode first to check if it exists and get the audio file path
         episode = await PodcastService.get_episode(episode_id)
-        
+
         # Delete the physical audio file if it exists
         if episode.audio_file:
             audio_path = _resolve_audio_path(episode.audio_file)
@@ -219,13 +219,15 @@ async def delete_podcast_episode(episode_id: str):
                     logger.info(f"Deleted audio file: {audio_path}")
                 except Exception as e:
                     logger.warning(f"Failed to delete audio file {audio_path}: {e}")
-        
+
         # Delete the episode from the database
         await episode.delete()
-        
+
         logger.info(f"Deleted podcast episode: {episode_id}")
         return {"message": "Episode deleted successfully", "episode_id": episode_id}
-        
+
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Failed to delete episode: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to delete episode"
+        )

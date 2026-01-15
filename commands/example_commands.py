@@ -12,6 +12,7 @@ class TextProcessingInput(BaseModel):
     operation: str = "uppercase"  # uppercase, lowercase, word_count, reverse
     delay_seconds: Optional[int] = None  # For testing async behavior
 
+
 class TextProcessingOutput(BaseModel):
     success: bool
     original_text: str
@@ -20,10 +21,12 @@ class TextProcessingOutput(BaseModel):
     processing_time: float
     error_message: Optional[str] = None
 
+
 class DataAnalysisInput(BaseModel):
     numbers: List[float]
     analysis_type: str = "basic"  # basic, detailed
     delay_seconds: Optional[int] = None
+
 
 class DataAnalysisOutput(BaseModel):
     success: bool
@@ -36,6 +39,7 @@ class DataAnalysisOutput(BaseModel):
     processing_time: float
     error_message: Optional[str] = None
 
+
 @command("process_text", app="open_notebook")
 async def process_text_command(input_data: TextProcessingInput) -> TextProcessingOutput:
     """
@@ -43,17 +47,17 @@ async def process_text_command(input_data: TextProcessingInput) -> TextProcessin
     and demonstrates different processing types.
     """
     start_time = time.time()
-    
+
     try:
         logger.info(f"Processing text with operation: {input_data.operation}")
-        
+
         # Simulate processing delay if specified
         if input_data.delay_seconds:
             await asyncio.sleep(input_data.delay_seconds)
-        
+
         processed_text = None
         word_count = None
-        
+
         if input_data.operation == "uppercase":
             processed_text = input_data.text.upper()
         elif input_data.operation == "lowercase":
@@ -65,17 +69,17 @@ async def process_text_command(input_data: TextProcessingInput) -> TextProcessin
             processed_text = f"Word count: {word_count}"
         else:
             raise ValueError(f"Unknown operation: {input_data.operation}")
-        
+
         processing_time = time.time() - start_time
-        
+
         return TextProcessingOutput(
             success=True,
             original_text=input_data.text,
             processed_text=processed_text,
             word_count=word_count,
-            processing_time=processing_time
+            processing_time=processing_time,
         )
-        
+
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"Text processing failed: {e}")
@@ -83,8 +87,9 @@ async def process_text_command(input_data: TextProcessingInput) -> TextProcessin
             success=False,
             original_text=input_data.text,
             processing_time=processing_time,
-            error_message=str(e)
+            error_message=str(e),
         )
+
 
 @command("analyze_data", app="open_notebook")
 async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOutput:
@@ -93,25 +98,27 @@ async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOut
     and demonstrates error handling.
     """
     start_time = time.time()
-    
+
     try:
-        logger.info(f"Analyzing {len(input_data.numbers)} numbers with {input_data.analysis_type} analysis")
-        
+        logger.info(
+            f"Analyzing {len(input_data.numbers)} numbers with {input_data.analysis_type} analysis"
+        )
+
         # Simulate processing delay if specified
         if input_data.delay_seconds:
             await asyncio.sleep(input_data.delay_seconds)
-        
+
         if not input_data.numbers:
             raise ValueError("No numbers provided for analysis")
-        
+
         count = len(input_data.numbers)
         sum_value = sum(input_data.numbers)
         average = sum_value / count
         min_value = min(input_data.numbers)
         max_value = max(input_data.numbers)
-        
+
         processing_time = time.time() - start_time
-        
+
         return DataAnalysisOutput(
             success=True,
             analysis_type=input_data.analysis_type,
@@ -120,9 +127,9 @@ async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOut
             average=average,
             min_value=min_value,
             max_value=max_value,
-            processing_time=processing_time
+            processing_time=processing_time,
         )
-        
+
     except Exception as e:
         processing_time = time.time() - start_time
         logger.error(f"Data analysis failed: {e}")
@@ -131,5 +138,5 @@ async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOut
             analysis_type=input_data.analysis_type,
             count=0,
             processing_time=processing_time,
-            error_message=str(e)
+            error_message=str(e),
         )

@@ -13,6 +13,7 @@ import { BuildContextRequest, NoteResponse, SourceListResponse } from '@/lib/typ
 import { PodcastGenerationRequest } from '@/lib/types/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import {
   Dialog,
   DialogContent,
@@ -30,10 +31,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
+import { TranslationKeys } from '@/lib/locales'
 
-const SOURCE_MODES = [
-  { value: 'insights', label: 'Summary' },
-  { value: 'full', label: 'Full content' },
+const getSourceModes = (t: TranslationKeys) => [
+  { value: 'insights', label: t.podcasts.summary },
+  { value: 'full', label: t.podcasts.fullContent },
 ] as const
 
 type SourceMode = 'off' | 'insights' | 'full'
@@ -74,6 +76,7 @@ interface GeneratePodcastDialogProps {
 }
 
 export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDialogProps) {
+  const { t, language } = useTranslation()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [expandedNotebooks, setExpandedNotebooks] = useState<string[]>([])
@@ -415,22 +418,22 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         const response = await chatApi.buildContext(task.payload)
         const notebookName = notebooks.find((nb) => nb.id === task.notebookId)?.name ?? task.notebookId
         const contextString = JSON.stringify(response.context, null, 2)
-        const snippet = `Notebook: ${notebookName}\n${contextString}`
+        const snippet = `${t.common.notebookLabel.replace('{name}', notebookName)}\n${contextString}`
         parts.push(snippet)
       } catch (error) {
         console.error('Failed to build context for notebook', task.notebookId, error)
-        throw new Error('Failed to build context. Please review your selections.')
+        throw new Error(t.podcasts.buildContextFailed)
       }
     }
 
     return parts.join('\n\n')
-  }, [notebooks, selections])
+  }, [notebooks, selections, t])
 
   const handleSubmit = useCallback(async () => {
     if (!selectedEpisodeProfile) {
       toast({
-        title: 'Episode profile required',
-        description: 'Select an episode profile before generating a podcast.',
+        title: t.podcasts.profileRequired,
+        description: t.podcasts.profileRequiredDesc,
         variant: 'destructive',
       })
       return
@@ -438,8 +441,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
     if (!episodeName.trim()) {
       toast({
-        title: 'Episode name required',
-        description: 'Provide a name for the episode.',
+        title: t.podcasts.nameRequired,
+        description: t.podcasts.nameRequiredDesc,
         variant: 'destructive',
       })
       return
@@ -450,8 +453,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       const content = await buildContentFromSelections()
       if (!content.trim()) {
         toast({
-          title: 'Add context',
-          description: 'Select at least one source or note to include in the episode.',
+          title: t.podcasts.addContext,
+          description: t.podcasts.addContextDesc,
           variant: 'destructive',
         })
         return
@@ -467,6 +470,11 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
       await generatePodcast.mutateAsync(payload)
 
+      toast({
+        title: t.common.success,
+        description: t.podcasts.podcastTaskStarted,
+      })
+
       // Delay closing dialog slightly to ensure refetch completes
       setTimeout(() => {
         onOpenChange(false)
@@ -475,8 +483,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     } catch (error) {
       console.error('Failed to generate podcast', error)
       toast({
-        title: 'Podcast generation failed',
-        description: error instanceof Error ? error.message : 'Please try again later.',
+        title: t.podcasts.generationFailed,
+        description: error instanceof Error ? error.message : t.common.refreshPage,
         variant: 'destructive',
       })
     } finally {
@@ -491,6 +499,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     resetState,
     selectedEpisodeProfile,
     toast,
+    t,
   ])
 
   const isSubmitting = generatePodcast.isPending || isBuildingContext
@@ -504,9 +513,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     }}>
       <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>Generate Podcast Episode</DialogTitle>
+          <DialogTitle>{t.podcasts.generateEpisode}</DialogTitle>
           <DialogDescription>
-            Select the content to include and configure the episode details before generating a new podcast episode.
+            {t.podcasts.generateEpisodeDesc}
           </DialogDescription>
         </DialogHeader>
 
@@ -515,25 +524,27 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Content
+                  {t.podcasts.content}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Pick notebooks, sources, and notes to include in this episode.
+                  {t.podcasts.contentDesc}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant="outline">
-                  {selectedNotebookSummaries.reduce(
-                    (acc, summary) => acc + summary.sources + summary.notes,
-                    0
-                  )}{' '}
-                  items selected
+                  {t.podcasts.itemsSelected.replace(
+                    '{count}',
+                    selectedNotebookSummaries.reduce(
+                      (acc, summary) => acc + summary.sources + summary.notes,
+                      0
+                    ).toString()
+                  )}
                 </Badge>
                 {(tokenCount > 0 || charCount > 0) && (
                   <span className="text-xs text-muted-foreground">
-                    {tokenCount > 0 && `${formatNumber(tokenCount)} tokens`}
+                    {tokenCount > 0 && t.podcasts.tokens.replace('{count}', formatNumber(tokenCount))}
                     {tokenCount > 0 && charCount > 0 && ' / '}
-                    {charCount > 0 && `${formatNumber(charCount)} chars`}
+                    {charCount > 0 && t.podcasts.chars.replace('{count}', formatNumber(charCount))}
                   </span>
                 )}
               </div>
@@ -542,11 +553,11 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
             <div className="rounded-lg border bg-muted/30">
               {notebooksQuery.isLoading ? (
                 <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading notebooks
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t.podcasts.loadingNotebooks}
                 </div>
               ) : notebooks.length === 0 ? (
                 <div className="p-6 text-sm text-muted-foreground">
-                  No notebooks found. Create a notebook and add content before generating a podcast.
+                  {t.podcasts.noNotebooksFoundInPodcasts}
                 </div>
               ) : (
                 <ScrollArea className="h-[60vh]">
@@ -572,6 +583,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                         <AccordionItem key={notebook.id} value={notebook.id}>
                           <div className="flex items-start gap-3 px-4 pt-3">
                             <Checkbox
+                              id={`notebook-toggle-${notebook.id}`}
                               checked={isIndeterminate ? 'indeterminate' : notebookChecked}
                               onCheckedChange={(checked) => {
                                 handleNotebookToggle(notebook.id, checked)
@@ -587,21 +599,24 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                               onClick={(event) => event.stopPropagation()}
                             />
                             <AccordionTrigger className="flex-1 px-0 py-0 hover:no-underline">
-                              <div className="flex w-full items-center justify-between gap-3">
+                              <Label 
+                                htmlFor={`notebook-toggle-${notebook.id}`}
+                                className="flex w-full items-center justify-between gap-3 pointer-events-none"
+                              >
                                 <div className="text-left">
                                   <p className="font-medium text-sm text-foreground">
                                     {notebook.name}
                                   </p>
                                   <p className="text-xs text-muted-foreground">
                                     {summary.sources + summary.notes > 0
-                                      ? `${summary.sources} sources, ${summary.notes} notes`
-                                      : 'No content selected'}
+                                      ? `${summary.sources} ${t.podcasts.sources}, ${summary.notes} ${t.podcasts.notes}`
+                                      : t.podcasts.noContentSelected}
                                   </p>
                                 </div>
                                 <Badge variant="outline" className="text-xs">
-                                  {sources.length} sources · {notes.length} notes
+                                  {sources.length} {t.podcasts.sources} · {notes.length} {t.podcasts.notes}
                                 </Badge>
-                              </div>
+                              </Label>
                             </AccordionTrigger>
                           </div>
                           <AccordionContent>
@@ -609,7 +624,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                               <div className="space-y-2">
                                 <div className="flex items-center justify-between">
                                   <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Sources
+                                    {t.podcasts.sources}
                                   </h4>
                                   {sourcesQueries[index]?.isFetching && (
                                     <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -617,7 +632,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                 </div>
                                 {sources.length === 0 ? (
                                   <p className="text-xs text-muted-foreground">
-                                    No sources available in this notebook.
+                                    {t.podcasts.noSources}
                                   </p>
                                 ) : (
                                   <div className="space-y-2">
@@ -629,6 +644,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                           className="flex items-center gap-3 rounded border bg-background px-3 py-2"
                                         >
                                           <Checkbox
+                                            id={`source-selection-${source.id}`}
                                             checked={mode !== 'off'}
                                             onCheckedChange={(checked) =>
                                               handleSourceModeChange(
@@ -638,16 +654,19 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                               )
                                             }
                                           />
-                                          <div className="flex flex-1 flex-col gap-1">
+                                          <Label 
+                                            htmlFor={`source-selection-${source.id}`}
+                                            className="flex flex-1 flex-col gap-1 cursor-pointer"
+                                          >
                                             <span className="text-sm font-medium text-foreground">
-                                              {source.title || 'Untitled source'}
+                                              {source.title || t.podcasts.untitledSource}
                                             </span>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                              <span>{source.asset?.url ? 'Link' : 'File'}</span>
-                                              <span>•</span>
-                                              <span>{source.embedded ? 'Embedded' : 'Not embedded'}</span>
-                                            </div>
-                                          </div>
+                                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                               <span>{source.asset?.url ? t.podcasts.link : t.podcasts.file}</span>
+                                               <span>•</span>
+                                               <span>{source.embedded ? t.podcasts.embedded : t.podcasts.notEmbedded}</span>
+                                             </div>
+                                          </Label>
                                           <Select
                                             value={mode === 'off' ? 'off' : mode}
                                             onValueChange={(value) =>
@@ -660,10 +679,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                             disabled={mode === 'off'}
                                           >
                                             <SelectTrigger className="w-[140px]">
-                                              <SelectValue placeholder="Select mode" />
+                                              <SelectValue placeholder={t.podcasts.selectMode} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                              {SOURCE_MODES.map((option) => (
+                                              {getSourceModes(t).map((option) => (
                                                 <SelectItem
                                                   key={option.value}
                                                   value={option.value}
@@ -688,11 +707,11 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
                               <div className="space-y-2">
                                 <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                  Notes
+                                  {t.podcasts.notes}
                                 </h4>
                                 {notes.length === 0 ? (
                                   <p className="text-xs text-muted-foreground">
-                                    No notes available in this notebook.
+                                    {t.podcasts.noNotes}
                                   </p>
                                 ) : (
                                   <div className="space-y-2">
@@ -704,6 +723,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                           className="flex items-center gap-3 rounded border bg-background px-3 py-2"
                                         >
                                           <Checkbox
+                                            id={`note-selection-${note.id}`}
                                             checked={mode !== 'off'}
                                             onCheckedChange={(checked) =>
                                               handleNoteToggle(
@@ -713,14 +733,20 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                               )
                                             }
                                           />
-                                          <div className="flex flex-1 flex-col">
+                                          <Label 
+                                            htmlFor={`note-selection-${note.id}`}
+                                            className="flex flex-1 flex-col cursor-pointer"
+                                          >
                                             <span className="text-sm font-medium text-foreground">
-                                              {note.title || 'Untitled note'}
+                                              {note.title || t.podcasts.untitledNote}
                                             </span>
                                             <span className="text-xs text-muted-foreground">
-                                              Updated {new Date(note.updated).toLocaleString()}
+                                              {t.common.updated}{' '}
+                                              {new Date(note.updated).toLocaleString(
+                                                language.startsWith('zh') ? language : 'en-US'
+                                              )}
                                             </span>
-                                          </div>
+                                          </Label>
                                         </div>
                                       )
                                     })}
@@ -741,88 +767,89 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           <div className="space-y-6">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Episode Settings
+                {t.podcasts.episodeSettings}
               </h3>
               {episodeProfilesQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Loading episode profiles
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t.podcasts.loadingProfiles}
                 </div>
               ) : episodeProfiles.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
-                  No episode profiles found. Create an episode profile before generating a podcast.
+                  {t.podcasts.noProfilesFound}
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="episode_profile">Episode profile</Label>
+                    <Label htmlFor="episode_profile">{t.podcasts.episodeProfile}</Label>
                     <Select
                       value={episodeProfileId}
                       onValueChange={setEpisodeProfileId}
                       disabled={episodeProfiles.length === 0}
                     >
                       <SelectTrigger id="episode_profile">
-                        <SelectValue placeholder="Select an episode profile" />
+                        <SelectValue placeholder={t.podcasts.episodeProfilePlaceholder} />
                       </SelectTrigger>
                       <SelectContent>
                         {episodeProfiles.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
-                            {profile.name}
+                            {t.podcasts.podcastProfiles[profile.name] ?? profile.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     {selectedEpisodeProfile && (
                       <p className="text-xs text-muted-foreground">
-                        Uses speaker profile <strong>{selectedEpisodeProfile.speaker_config}</strong>
+                        {t.podcasts.usesSpeakerProfile}{' '}
+                        <strong>{selectedEpisodeProfile.speaker_config}</strong>
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="episode_name">Episode name</Label>
+                    <Label htmlFor="episode_name">{t.podcasts.episodeName}</Label>
                     <Input
                       id="episode_name"
+                      name="episode_name"
                       value={episodeName}
                       onChange={(event) => setEpisodeName(event.target.value)}
-                      placeholder="e.g., AI and the Future of Work"
+                      placeholder={t.podcasts.episodeNamePlaceholder}
+                      autoComplete="off"
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="instructions">Additional instructions</Label>
+                   <div className="space-y-2">
+                    <Label htmlFor="instructions">{t.podcasts.additionalInstructions}</Label>
                     <Textarea
                       id="instructions"
+                      name="instructions"
+                      placeholder={t.podcasts.instructionsPlaceholder}
                       value={instructions}
                       onChange={(event) => setInstructions(event.target.value)}
-                      placeholder="Any supplemental guidance to append to the episode briefing..."
-                      rows={6}
+                      className="min-h-[100px] text-xs"
+                      autoComplete="off"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      These instructions will be appended to the episode profile&apos;s default briefing.
-                    </p>
                   </div>
                 </div>
               )}
             </div>
 
-            <Separator />
-
             <div className="flex flex-col gap-3">
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting || episodeProfiles.length === 0}
+                disabled={isSubmitting}
+                className="w-full"
               >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating episode...
-                  </>
-                ) : (
-                  'Generate Podcast'
-                )}
+                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting ? t.podcasts.generating : t.podcasts.generate}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                The episode will appear in the Episodes list once generation starts. Refresh the list to monitor progress.
-              </p>
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+                className="w-full"
+              >
+                {t.common.cancel}
+              </Button>
             </div>
           </div>
         </div>

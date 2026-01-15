@@ -12,10 +12,10 @@ from open_notebook.podcasts.models import EpisodeProfile
 
 class EpisodeProfilesService:
     """Service layer for episode profiles operations using API."""
-    
+
     def __init__(self):
         logger.info("Using API for episode profiles operations")
-    
+
     def get_all_episode_profiles(self) -> List[EpisodeProfile]:
         """Get all episode profiles."""
         profiles_data = api_client.get_episode_profiles()
@@ -31,16 +31,20 @@ class EpisodeProfilesService:
                 transcript_provider=profile_data["transcript_provider"],
                 transcript_model=profile_data["transcript_model"],
                 default_briefing=profile_data["default_briefing"],
-                num_segments=profile_data["num_segments"]
+                num_segments=profile_data["num_segments"],
             )
             profile.id = profile_data["id"]
             profiles.append(profile)
         return profiles
-    
+
     def get_episode_profile(self, profile_name: str) -> EpisodeProfile:
         """Get a specific episode profile by name."""
         profile_response = api_client.get_episode_profile(profile_name)
-        profile_data = profile_response if isinstance(profile_response, dict) else profile_response[0]
+        profile_data = (
+            profile_response
+            if isinstance(profile_response, dict)
+            else profile_response[0]
+        )
         profile = EpisodeProfile(
             name=profile_data["name"],
             description=profile_data.get("description", ""),
@@ -50,11 +54,11 @@ class EpisodeProfilesService:
             transcript_provider=profile_data["transcript_provider"],
             transcript_model=profile_data["transcript_model"],
             default_briefing=profile_data["default_briefing"],
-            num_segments=profile_data["num_segments"]
+            num_segments=profile_data["num_segments"],
         )
         profile.id = profile_data["id"]
         return profile
-    
+
     def create_episode_profile(
         self,
         name: str,
@@ -79,7 +83,11 @@ class EpisodeProfilesService:
             default_briefing=default_briefing,
             num_segments=num_segments,
         )
-        profile_data = profile_response if isinstance(profile_response, dict) else profile_response[0]
+        profile_data = (
+            profile_response
+            if isinstance(profile_response, dict)
+            else profile_response[0]
+        )
         profile = EpisodeProfile(
             name=profile_data["name"],
             description=profile_data.get("description", ""),
@@ -89,11 +97,11 @@ class EpisodeProfilesService:
             transcript_provider=profile_data["transcript_provider"],
             transcript_model=profile_data["transcript_model"],
             default_briefing=profile_data["default_briefing"],
-            num_segments=profile_data["num_segments"]
+            num_segments=profile_data["num_segments"],
         )
         profile.id = profile_data["id"]
         return profile
-    
+
     def delete_episode_profile(self, profile_id: str) -> bool:
         """Delete an episode profile."""
         api_client.delete_episode_profile(profile_id)

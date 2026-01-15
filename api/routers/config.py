@@ -11,7 +11,7 @@ from loguru import logger
 from open_notebook.database.repository import repo_query
 from open_notebook.utils.version_utils import (
     compare_versions,
-    get_version_from_github,
+    get_version_from_github_async,
 )
 
 router = APIRouter()
@@ -40,7 +40,7 @@ def get_version() -> str:
         return "unknown"
 
 
-def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool]:
+async def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool]:
     """
     Check for the latest version from GitHub with caching.
 
@@ -66,12 +66,13 @@ def get_latest_version_cached(current_version: str) -> tuple[Optional[str], bool
         logger.info("Checking for latest version from GitHub...")
 
         # Fetch latest version from GitHub with 10-second timeout
-        latest_version = get_version_from_github(
-            "https://github.com/lfnovo/open-notebook",
-            "main"
+        latest_version = await get_version_from_github_async(
+            "https://github.com/lfnovo/open-notebook", "main"
         )
 
-        logger.info(f"Latest version from GitHub: {latest_version}, Current version: {current_version}")
+        logger.info(
+            f"Latest version from GitHub: {latest_version}, Current version: {current_version}"
+        )
 
         # Compare versions
         has_update = compare_versions(current_version, latest_version) < 0
@@ -107,10 +108,7 @@ async def check_database_health() -> dict:
     """
     try:
         # 2-second timeout for database health check
-        result = await asyncio.wait_for(
-            repo_query("RETURN 1"),
-            timeout=2.0
-        )
+        result = await asyncio.wait_for(repo_query("RETURN 1"), timeout=2.0)
         if result:
             return {"status": "online"}
         return {"status": "offline", "error": "Empty result"}
@@ -142,7 +140,7 @@ async def get_config(request: Request):
     has_update = False
 
     try:
-        latest_version, has_update = get_latest_version_cached(current_version)
+        latest_version, has_update = await get_latest_version_cached(current_version)
     except Exception as e:
         # Extra safety: ensure version check never breaks the config endpoint
         logger.error(f"Unexpected error during version check: {e}")

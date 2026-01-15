@@ -23,6 +23,7 @@ import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 const MAX_BATCH_SIZE = 50
 
@@ -72,12 +73,6 @@ interface AddSourceDialogProps {
   defaultNotebookId?: string
 }
 
-const WIZARD_STEPS: readonly WizardStep[] = [
-  { number: 1, title: 'Source & Content', description: 'Choose type and add content' },
-  { number: 2, title: 'Organization', description: 'Select notebooks' },
-  { number: 3, title: 'Processing', description: 'Choose transformations and options' },
-]
-
 interface ProcessingState {
   message: string
   progress?: number
@@ -95,6 +90,14 @@ export function AddSourceDialog({
   onOpenChange, 
   defaultNotebookId 
 }: AddSourceDialogProps) {
+  const { t } = useTranslation()
+
+  const WIZARD_STEPS: readonly WizardStep[] = [
+    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
+    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
+    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
+  ]
+
   // Simplified state management
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
@@ -385,29 +388,29 @@ export function AddSourceDialog({
 
       if (isBatchMode) {
         // Batch submission
-        setProcessingStatus({ message: `Processing ${itemCount} sources...` })
+        setProcessingStatus({ message: t.sources.processingFiles })
         const results = await submitBatch(data)
 
         // Show summary toast
         if (results.failed === 0) {
-          toast.success(`${results.success} source${results.success !== 1 ? 's' : ''} created successfully`)
+          toast.success(t.sources.batchSuccess.replace('{count}', results.success.toString()))
         } else if (results.success === 0) {
-          toast.error(`Failed to create all ${results.failed} sources`)
+          toast.error(t.sources.batchFailed.replace('{count}', results.failed.toString()))
         } else {
-          toast.warning(`${results.success} succeeded, ${results.failed} failed`)
+          toast.warning(t.sources.batchPartial.replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
         }
 
         handleClose()
       } else {
         // Single source submission
-        setProcessingStatus({ message: 'Submitting source for processing...' })
+        setProcessingStatus({ message: t.sources.submittingSource })
         await submitSingleSource(data)
         handleClose()
       }
     } catch (error) {
       console.error('Error creating source:', error)
       setProcessingStatus({
-        message: 'Error creating source. Please try again.',
+        message: t.common.error,
       })
       timeoutRef.current = setTimeout(() => {
         setProcessing(false)
@@ -457,12 +460,12 @@ export function AddSourceDialog({
         <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
           <DialogHeader>
             <DialogTitle>
-              {batchProgress ? 'Processing Batch' : 'Processing Source'}
+              {batchProgress ? t.sources.processingFiles : t.sources.statusProcessing}
             </DialogTitle>
             <DialogDescription>
               {batchProgress
-                ? `Processing ${batchProgress.total} sources. This may take a few moments.`
-                : 'Your source is being processed. This may take a few moments.'
+                ? t.sources.processingBatchSources.replace('{count}', batchProgress.total.toString())
+                : t.sources.processingSource
               }
             </DialogDescription>
           </DialogHeader>
@@ -471,7 +474,7 @@ export function AddSourceDialog({
             <div className="flex items-center gap-3">
               <LoaderIcon className="h-5 w-5 animate-spin text-primary" />
               <span className="text-sm text-muted-foreground">
-                {processingStatus?.message || 'Processing...'}
+                {processingStatus?.message || t.common.processing}
               </span>
             </div>
 
@@ -489,23 +492,23 @@ export function AddSourceDialog({
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5 text-green-600">
                       <CheckCircleIcon className="h-4 w-4" />
-                      {batchProgress.completed} completed
+                      {batchProgress.completed} {t.common.completed}
                     </span>
                     {batchProgress.failed > 0 && (
                       <span className="flex items-center gap-1.5 text-destructive">
                         <XCircleIcon className="h-4 w-4" />
-                        {batchProgress.failed} failed
+                        {batchProgress.failed} {t.common.failed}
                       </span>
                     )}
                   </div>
-                  <span className="text-muted-foreground">
+                   <span className="text-muted-foreground">
                     {batchProgress.completed + batchProgress.failed} / {batchProgress.total}
                   </span>
                 </div>
 
                 {batchProgress.currentItem && (
                   <p className="text-xs text-muted-foreground truncate">
-                    Current: {batchProgress.currentItem}
+                    {t.common.current}: {batchProgress.currentItem}
                   </p>
                 )}
               </>
@@ -532,9 +535,9 @@ export function AddSourceDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] p-0">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>Add New Source</DialogTitle>
+          <DialogTitle>{t.sources.addNew}</DialogTitle>
           <DialogDescription>
-            Add content from links, uploads, or text to your notebooks.
+            {t.sources.processDescription}
           </DialogDescription>
         </DialogHeader>
 
@@ -586,7 +589,7 @@ export function AddSourceDialog({
               variant="outline" 
               onClick={handleClose}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
 
             <div className="flex gap-2">
@@ -596,7 +599,7 @@ export function AddSourceDialog({
                   variant="outline"
                   onClick={handlePrevStep}
                 >
-                  Back
+                  {t.common.back}
                 </Button>
               )}
 
@@ -608,7 +611,7 @@ export function AddSourceDialog({
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >
-                  Next
+                  {t.common.next}
                 </Button>
               )}
 
@@ -618,7 +621,7 @@ export function AddSourceDialog({
                 disabled={!currentStepValid || createSource.isPending}
                 className="min-w-[120px]"
               >
-                {createSource.isPending ? 'Creating...' : 'Done'}
+                {createSource.isPending ? t.common.adding : t.common.done}
               </Button>
             </div>
           </div>

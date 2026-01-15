@@ -1,9 +1,12 @@
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
 import { SearchRequest } from '@/lib/types/search'
 
 export function useSearch() {
+  const { t } = useTranslation()
   return useMutation({
     mutationFn: async (params: SearchRequest) => {
       const response = await searchApi.search(params)
@@ -23,8 +26,8 @@ export function useSearch() {
       }
     },
     onError: (error: Error) => {
-      toast.error('Search failed', {
-        description: error.message || 'An error occurred while searching'
+      toast.error(t('apiErrors.searchFailed'), {
+        description: t(getApiErrorKey(error.message))
       })
     }
   })

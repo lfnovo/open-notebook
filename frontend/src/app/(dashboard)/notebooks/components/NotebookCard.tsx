@@ -16,12 +16,14 @@ import {
 import { useUpdateNotebook, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useState } from 'react'
-
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { getDateLocale } from '@/lib/utils/date-locale'
 interface NotebookCardProps {
   notebook: NotebookResponse
 }
 
 export function NotebookCard({ notebook }: NotebookCardProps) {
+  const { t, language } = useTranslation()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const router = useRouter()
   const updateNotebook = useUpdateNotebook()
@@ -59,7 +61,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                 </CardTitle>
                 {notebook.archived && (
                   <Badge variant="secondary" className="mt-1">
-                    Archived
+                    {t.notebooks.archived}
                   </Badge>
                 )}
               </div>
@@ -80,12 +82,12 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     {notebook.archived ? (
                       <>
                         <ArchiveRestore className="h-4 w-4 mr-2" />
-                        Unarchive
+                        {t.notebooks.unarchive}
                       </>
                     ) : (
                       <>
                         <Archive className="h-4 w-4 mr-2" />
-                        Archive
+                        {t.notebooks.archive}
                       </>
                     )}
                   </DropdownMenuItem>
@@ -97,7 +99,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     className="text-red-600"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
+                    {t.common.delete}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -106,11 +108,14 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
           
           <CardContent>
             <CardDescription className="line-clamp-2 text-sm">
-              {notebook.description || 'No description'}
+              {notebook.description || t.chat.noDescription}
             </CardDescription>
 
             <div className="mt-3 text-xs text-muted-foreground">
-              Updated {formatDistanceToNow(new Date(notebook.updated), { addSuffix: true })}
+              {t.common.updated.replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
+                addSuffix: true,
+                locale: getDateLocale(language)
+              }))}
             </div>
 
             {/* Item counts footer */}
@@ -130,9 +135,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title="Delete Notebook"
-        description={`Are you sure you want to delete "${notebook.name}"? This action cannot be undone and will delete all sources, notes, and chat sessions.`}
-        confirmText="Delete"
+        title={t.notebooks.deleteNotebook}
+        description={t.notebooks.deleteNotebookDesc.replace('{name}', notebook.name)}
+        confirmText={t.common.delete}
         confirmVariant="destructive"
         onConfirm={handleDelete}
       />

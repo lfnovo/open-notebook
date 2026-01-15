@@ -6,9 +6,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install system dependencies required for building certain Python packages
 # Add Node.js 20.x LTS for building frontend
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
-    gcc g++ git make \
+# NOTE: gcc/g++/make removed - uv should download pre-built wheels. Add back if build fails.
+# NOTE: gcc/g++/make required for some python dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    build-essential \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -35,7 +37,11 @@ COPY . /app
 
 # Install frontend dependencies and build
 WORKDIR /app/frontend
+ARG NPM_REGISTRY=https://registry.npmjs.org/
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm config set registry ${NPM_REGISTRY}
 RUN npm ci
+COPY frontend/ ./
 RUN npm run build
 
 # Return to app root
@@ -46,7 +52,7 @@ FROM python:3.12-slim-bookworm AS runtime
 
 # Install only runtime system dependencies (no build tools)
 # Add Node.js 20.x LTS for running frontend
-RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     ffmpeg \
     supervisor \
     curl \
@@ -63,8 +69,8 @@ WORKDIR /app
 # Copy the virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy the application code
-COPY --from=builder /app /app
+# Copy the source code (the rest)
+COPY . /app
 
 # Ensure uv uses the existing venv without attempting network operations
 ENV UV_NO_SYNC=1

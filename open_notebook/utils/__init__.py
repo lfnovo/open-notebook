@@ -30,5 +30,5 @@ __all__ = [
     "token_cost",
     "compare_versions",
     "get_installed_version",
-    "get_version_from_github"
+    "get_version_from_github",
 ]

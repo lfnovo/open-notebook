@@ -15,6 +15,7 @@ from open_notebook.graphs.chat import graph as chat_graph
 
 router = APIRouter()
 
+
 # Request/Response models
 class CreateSessionRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to create session for")
@@ -134,7 +135,8 @@ async def create_session(request: CreateSessionRequest):
 
         # Create new session
         session = ChatSession(
-            title=request.title or f"Chat Session {asyncio.get_event_loop().time():.0f}",
+            title=request.title
+            or f"Chat Session {asyncio.get_event_loop().time():.0f}",
             model_override=request.model_override,
         )
         await session.save()
@@ -334,9 +336,7 @@ async def execute_chat(request: ExecuteChatRequest):
 
         # Get current state
         current_state = chat_graph.get_state(
-            config=RunnableConfig(
-                configurable={"thread_id": request.session_id}
-            )
+            config=RunnableConfig(configurable={"thread_id": request.session_id})
         )
 
         # Prepare state for execution

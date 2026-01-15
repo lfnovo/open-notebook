@@ -47,7 +47,9 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     response = await chain.ainvoke(payload)
 
     # Clean thinking content from the response
-    response_content = response.content if isinstance(response.content, str) else str(response.content)
+    response_content = (
+        response.content if isinstance(response.content, str) else str(response.content)
+    )
     cleaned_content = clean_thinking_content(response_content)
 
     if source:

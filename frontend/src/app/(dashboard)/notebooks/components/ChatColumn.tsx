@@ -9,6 +9,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 import { ContextSelections } from '../[id]/page'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ChatColumnProps {
   notebookId: string
@@ -16,6 +17,8 @@ interface ChatColumnProps {
 }
 
 export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
+  const { t } = useTranslation()
+
   // Fetch sources and notes for this notebook
   const { data: sources = [], isLoading: sourcesLoading } = useSources(notebookId)
   const { data: notes = [], isLoading: notesLoading } = useNotes(notebookId)
@@ -79,8 +82,8 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">Unable to load chat</p>
-            <p className="text-xs mt-2">Please try refreshing the page</p>
+            <p className="text-sm">{t.chat.unableToLoadChat}</p>
+            <p className="text-xs mt-2">{t.common.refreshPage || 'Please try refreshing the page'}</p>
           </div>
         </CardContent>
       </Card>
@@ -89,7 +92,7 @@ export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
 
   return (
     <ChatPanel
-      title="Chat with Notebook"
+      title={t.chat.chatWithNotebook}
       contextType="notebook"
       messages={chat.messages}
       isStreaming={chat.isSending}

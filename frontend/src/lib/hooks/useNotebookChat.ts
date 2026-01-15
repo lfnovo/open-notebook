@@ -3,6 +3,8 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { useTranslation } from '@/lib/hooks/use-translation'
 import { chatApi } from '@/lib/api/chat'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import {
@@ -22,6 +24,7 @@ interface UseNotebookChatParams {
 }
 
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
@@ -77,10 +80,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
       })
       setCurrentSessionId(newSession.id)
-      toast.success('Chat session created')
+      toast.success(t.chat.sessionCreated)
     },
-    onError: () => {
-      toast.error('Failed to create chat session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToCreateSession')))
     }
   })
 
@@ -97,10 +101,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.notebookChatSession(currentSessionId!)
       })
-      toast.success('Session updated')
+      toast.success(t.chat.sessionUpdated)
     },
-    onError: () => {
-      toast.error('Failed to update session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToUpdateSession')))
     }
   })
 
@@ -116,10 +121,11 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         setCurrentSessionId(null)
         setMessages([])
       }
-      toast.success('Session deleted')
+      toast.success(t.chat.sessionDeleted)
     },
-    onError: () => {
-      toast.error('Failed to delete session')
+    onError: (err: unknown) => {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToDeleteSession')))
     }
   })
 
@@ -189,8 +195,9 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.notebookChatSessions(notebookId)
         })
-      } catch {
-        toast.error('Failed to create chat session')
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { detail?: string } }, message?: string };
+        toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToCreateSession')))
         return
       }
     }
@@ -220,9 +227,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
       // Refetch current session to get updated data
       await refetchCurrentSession()
-    } catch (error) {
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
-      toast.error('Failed to send message')
+      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message, 'apiErrors.failedToSendMessage')))
       // Remove optimistic message on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
@@ -235,7 +243,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     pendingModelOverride,
     buildContext,
     refetchCurrentSession,
-    queryClient
+    queryClient,
+    t
   ])
 
   // Switch session

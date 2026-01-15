@@ -15,7 +15,9 @@ class EmbeddingService:
     def __init__(self):
         logger.info("Using API for embedding operations")
 
-    def embed_content(self, item_id: str, item_type: str) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
+    def embed_content(
+        self, item_id: str, item_type: str
+    ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Embed content for vector search."""
         result = api_client.embed_content(item_id=item_id, item_type=item_type)
         return result

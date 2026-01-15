@@ -33,25 +33,28 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 
-const speakerConfigSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  voice_id: z.string().min(1, 'Voice ID is required'),
-  backstory: z.string().min(1, 'Backstory is required'),
-  personality: z.string().min(1, 'Personality is required'),
+import { TranslationKeys } from '@/lib/locales'
+import { useTranslation } from '@/lib/hooks/use-translation'
+
+const speakerConfigSchema = (t: TranslationKeys) => z.object({
+  name: z.string().min(1, t.common.nameRequired || 'Name is required'),
+  voice_id: z.string().min(1, t.podcasts.voiceIdRequired || 'Voice ID is required'),
+  backstory: z.string().min(1, t.podcasts.backstoryRequired || 'Backstory is required'),
+  personality: z.string().min(1, t.podcasts.personalityRequired || 'Personality is required'),
 })
 
-const speakerProfileSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
+const speakerProfileSchema = (t: TranslationKeys) => z.object({
+  name: z.string().min(1, t.common.nameRequired || 'Name is required'),
   description: z.string().optional(),
-  tts_provider: z.string().min(1, 'Provider is required'),
-  tts_model: z.string().min(1, 'Model is required'),
+  tts_provider: z.string().min(1, t.models.providerRequired || 'Provider is required'),
+  tts_model: z.string().min(1, t.models.modelRequired || 'Model is required'),
   speakers: z
-    .array(speakerConfigSchema)
-    .min(1, 'At least one speaker is required')
-    .max(4, 'You can configure up to 4 speakers'),
+    .array(speakerConfigSchema(t))
+    .min(1, t.podcasts.speakerCountMin || 'At least one speaker is required')
+    .max(4, t.podcasts.speakerCountMax || 'You can configure up to 4 speakers'),
 })
 
-export type SpeakerProfileFormValues = z.infer<typeof speakerProfileSchema>
+export type SpeakerProfileFormValues = z.infer<ReturnType<typeof speakerProfileSchema>>
 
 interface SpeakerProfileFormDialogProps {
   mode: 'create' | 'edit'
@@ -75,6 +78,7 @@ export function SpeakerProfileFormDialog({
   modelOptions,
   initialData,
 }: SpeakerProfileFormDialogProps) {
+  const { t } = useTranslation()
   const createProfile = useCreateSpeakerProfile()
   const updateProfile = useUpdateSpeakerProfile()
 
@@ -112,7 +116,7 @@ export function SpeakerProfileFormDialog({
     watch,
     formState: { errors },
   } = useForm<SpeakerProfileFormValues>({
-    resolver: zodResolver(speakerProfileSchema),
+    resolver: zodResolver(speakerProfileSchema(t)),
     defaultValues: getDefaults(),
   })
 
@@ -184,18 +188,18 @@ export function SpeakerProfileFormDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? 'Edit Speaker Profile' : 'Create Speaker Profile'}
+            {isEdit ? t.podcasts.editSpeakerProfile : t.podcasts.createSpeakerProfile}
           </DialogTitle>
           <DialogDescription>
-            Configure text-to-speech settings and define up to four speakers.
+            {t.podcasts.speakerProfileFormDesc}
           </DialogDescription>
         </DialogHeader>
 
         {providers.length === 0 ? (
-          <Alert className="bg-amber-50 text-amber-900">
-            <AlertTitle>No text-to-speech models available</AlertTitle>
+          <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+            <AlertTitle>{t.podcasts.noTtsModelsAvailable}</AlertTitle>
             <AlertDescription>
-              Add TTS models in the Models section before creating a speaker profile.
+              {t.podcasts.noTtsModelsDesc}
             </AlertDescription>
           </Alert>
         ) : null}
@@ -203,24 +207,24 @@ export function SpeakerProfileFormDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Profile name *</Label>
-              <Input id="name" placeholder="Weekly show host" {...register('name')} />
+              <Label htmlFor="name">{t.podcasts.profileName} *</Label>
+              <Input id="name" placeholder={t.podcasts.profileNamePlaceholder} {...register('name')} />
               {errors.name ? (
                 <p className="text-xs text-red-600">{errors.name.message}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tts_provider">Provider *</Label>
+              <Label htmlFor="tts_provider">{t.models.provider} *</Label>
               <Controller
                 control={control}
                 name="tts_provider"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select provider" />
+                    <SelectTrigger id="tts_provider">
+                      <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent title={t.models.provider}>
                       {providers.map((option) => (
                         <SelectItem key={option} value={option}>
                           <span className="capitalize">{option}</span>
@@ -236,16 +240,16 @@ export function SpeakerProfileFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tts_model">Model *</Label>
+              <Label htmlFor="tts_model">{t.common.model} *</Label>
               <Controller
                 control={control}
                 name="tts_model"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select model" />
+                    <SelectTrigger id="tts_model">
+                      <SelectValue placeholder={t.models.selectModelPlaceholder} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent title={t.common.model}>
                       {availableModels.map((model) => (
                         <SelectItem key={model} value={model}>
                           {model}
@@ -261,11 +265,11 @@ export function SpeakerProfileFormDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">{t.common.description}</Label>
               <Textarea
                 id="description"
                 rows={3}
-                placeholder="Notes about tone, brand, or usage"
+                placeholder={t.podcasts.descriptionPlaceholder}
                 {...register('description')}
               />
             </div>
@@ -275,10 +279,10 @@ export function SpeakerProfileFormDialog({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Speakers
+                  {t.podcasts.speakers}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Configure between one and four voices for this profile.
+                  {t.podcasts.speakersDesc}
                 </p>
               </div>
               <Button
@@ -288,7 +292,7 @@ export function SpeakerProfileFormDialog({
                 onClick={() => append({ ...EMPTY_SPEAKER })}
                 disabled={fields.length >= 4}
               >
-                <Plus className="mr-2 h-4 w-4" /> Add speaker
+                <Plus className="mr-2 h-4 w-4" /> {t.podcasts.addSpeaker}
               </Button>
             </div>
             <Separator />
@@ -296,7 +300,9 @@ export function SpeakerProfileFormDialog({
             {fields.map((field, index) => (
               <div key={field.id} className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold">Speaker {index + 1}</p>
+                  <p className="text-sm font-semibold">
+                    {t.podcasts.speakerNumber.replace('{number}', (index + 1).toString())}
+                  </p>
                   <Button
                     type="button"
                     variant="ghost"
@@ -305,15 +311,17 @@ export function SpeakerProfileFormDialog({
                     disabled={fields.length <= 1}
                     className="text-destructive"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> Remove
+                    <Trash2 className="mr-2 h-4 w-4" /> {t.common.remove}
                   </Button>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>Name *</Label>
+                    <Label htmlFor={`speaker-name-${index}`}>{t.common.name} *</Label>
                     <Input
+                      id={`speaker-name-${index}`}
                       {...register(`speakers.${index}.name` as const)}
-                      placeholder="Host 1"
+                      placeholder={t.podcasts.hostPlaceholder.replace('{number}', (index + 1).toString())}
+                      autoComplete="off"
                     />
                     {errors.speakers?.[index]?.name ? (
                       <p className="text-xs text-red-600">
@@ -322,10 +330,12 @@ export function SpeakerProfileFormDialog({
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label>Voice ID *</Label>
+                    <Label htmlFor={`speaker-voice-${index}`}>{t.podcasts.voiceId} *</Label>
                     <Input
+                      id={`speaker-voice-${index}`}
                       {...register(`speakers.${index}.voice_id` as const)}
                       placeholder="voice_123"
+                      autoComplete="off"
                     />
                     {errors.speakers?.[index]?.voice_id ? (
                       <p className="text-xs text-red-600">
@@ -335,11 +345,13 @@ export function SpeakerProfileFormDialog({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>Backstory *</Label>
+                  <Label htmlFor={`speaker-backstory-${index}`}>{t.podcasts.backstory} *</Label>
                   <Textarea
+                    id={`speaker-backstory-${index}`}
                     rows={3}
-                    placeholder="Short biography or context for the speaker"
+                    placeholder={t.podcasts.backstoryPlaceholder}
                     {...register(`speakers.${index}.backstory` as const)}
+                    autoComplete="off"
                   />
                   {errors.speakers?.[index]?.backstory ? (
                     <p className="text-xs text-red-600">
@@ -348,11 +360,13 @@ export function SpeakerProfileFormDialog({
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label>Personality *</Label>
+                  <Label htmlFor={`speaker-personality-${index}`}>{t.podcasts.personality} *</Label>
                   <Textarea
+                    id={`speaker-personality-${index}`}
                     rows={3}
-                    placeholder="Describe style and tone"
+                    placeholder={t.podcasts.personalityPlaceholder}
                     {...register(`speakers.${index}.personality` as const)}
+                    autoComplete="off"
                   />
                   {errors.speakers?.[index]?.personality ? (
                     <p className="text-xs text-red-600">
@@ -374,16 +388,14 @@ export function SpeakerProfileFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button type="submit" disabled={disableSubmit}>
               {isSubmitting
-                ? isEdit
-                  ? 'Saving…'
-                  : 'Creating…'
+                ? t.common.saving
                 : isEdit
-                  ? 'Save changes'
-                  : 'Create profile'}
+                  ? t.common.saveChanges
+                  : t.podcasts.createProfile}
             </Button>
           </div>
         </form>

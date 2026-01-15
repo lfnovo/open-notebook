@@ -6,12 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, X } from 'lucide-react'
 import { ProviderAvailability } from '@/lib/types/models'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface ProviderStatusProps {
   providers: ProviderAvailability
 }
 
 export function ProviderStatus({ providers }: ProviderStatusProps) {
+  const { t } = useTranslation()
   // Combine all providers, with available ones first
   const allProviders = useMemo(
     () => [
@@ -33,11 +35,13 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>AI Providers</CardTitle>
+        <CardTitle>{t.models.aiProviders}</CardTitle>
         <CardDescription>
-          Configure providers through environment variables to enable their models. 
+          {t.models.providerConfigDesc}
           <span className="ml-1">
-            {providers.available.length} of {allProviders.length} configured
+            {t.models.configuredCount
+              .replace('{count}', providers.available.length.toString())
+              .replace('{total}', allProviders.length.toString())}
           </span>
         </CardDescription>
       </CardHeader>
@@ -74,21 +78,21 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
                     {provider.name}
                   </span>
 
-                  {provider.available ? (
+                   {provider.available ? (
                     <div className="flex flex-wrap items-center justify-end gap-1">
                       {supportedTypes.length > 0 ? (
                         supportedTypes.map((type) => (
                           <Badge key={type} variant="secondary" className="text-xs font-medium">
-                            {type.replace('_', ' ')}
+                            {(t.models as Record<string, string>)[type] || type.replace('_', ' ')}
                           </Badge>
                         ))
                       ) : (
-                        <Badge variant="outline" className="text-xs">No models</Badge>
+                        <Badge variant="outline" className="text-xs">{t.models.noModels}</Badge>
                       )}
                     </div>
                   ) : (
                     <Badge variant="outline" className="text-xs text-muted-foreground border-dashed">
-                      Not configured
+                      {t.models.notConfigured}
                     </Badge>
                   )}
                 </div>
@@ -97,26 +101,28 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
           })}
         </div>
 
-        {allProviders.length > 6 ? (
+         {allProviders.length > 6 ? (
           <div className="mt-4 flex justify-center">
             <button
               type="button"
               onClick={() => setExpanded((prev) => !prev)}
               className="text-sm font-medium text-primary hover:underline"
             >
-              {expanded ? 'See less' : `See all ${allProviders.length} providers`}
+              {expanded 
+                ? t.models.seeLess 
+                : t.models.seeAll.replace('{count}', allProviders.length.toString())}
             </button>
           </div>
         ) : null}
 
-        <div className="mt-6 pt-4 border-t">
+         <div className="mt-6 pt-4 border-t">
           <a
             href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-primary hover:underline"
           >
-            Learn how to configure providers →
+            {t.models.learnMore}
           </a>
         </div>
       </CardContent>

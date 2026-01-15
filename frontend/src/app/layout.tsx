@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { ConnectionGuard } from "@/components/common/ConnectionGuard";
 import { themeScript } from "@/lib/theme-script";
+import { I18nProvider } from "@/components/providers/I18nProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,10 +30,12 @@ export default function RootLayout({
         <ErrorBoundary>
           <ThemeProvider>
             <QueryProvider>
-              <ConnectionGuard>
-                {children}
-                <Toaster />
-              </ConnectionGuard>
+              <I18nProvider>
+                <ConnectionGuard>
+                  {children}
+                  <Toaster />
+                </ConnectionGuard>
+              </I18nProvider>
             </QueryProvider>
           </ThemeProvider>
         </ErrorBoundary>

@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import { Control, FieldErrors, UseFormRegister, useWatch } from "react-hook-form"
 import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
+import { useTranslation } from "@/lib/hooks/use-translation"
 import { FormSection } from "@/components/ui/form-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
@@ -62,24 +63,26 @@ export function parseAndValidateUrls(text: string): {
   return { valid, invalid }
 }
 
-const SOURCE_TYPES = [
+import { TranslationKeys } from '@/lib/locales'
+
+const getSourceTypes = (t: TranslationKeys) => [
   {
     value: 'link' as const,
-    label: 'Link',
+    label: t.sources.addUrl,
     icon: LinkIcon,
-    description: 'Add a web page or URL',
+    description: t.sources.processDescription,
   },
   {
     value: 'upload' as const,
-    label: 'Upload',
+    label: t.sources.uploadFile,
     icon: FileIcon,
-    description: 'Upload a document or file',
+    description: t.sources.processDescription,
   },
   {
     value: 'text' as const,
-    label: 'Text',
+    label: t.sources.enterText,
     icon: FileTextIcon,
-    description: 'Add text content directly',
+    description: t.sources.processDescription,
   },
 ]
 
@@ -94,6 +97,7 @@ interface SourceTypeStepProps {
 const MAX_BATCH_SIZE = 50
 
 export function SourceTypeStep({ control, register, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
+  const { t } = useTranslation()
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
   const urlInput = useWatch({ control, name: 'url' })
@@ -125,8 +129,8 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
   return (
     <div className="space-y-6">
       <FormSection
-        title="Source Type"
-        description="Choose how you want to add your content"
+        title={t.sources.title}
+        description={t.sources.processDescription}
       >
         <Controller
           control={control}
@@ -138,7 +142,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
               className="w-full"
             >
               <TabsList className="grid w-full grid-cols-3">
-                {SOURCE_TYPES.map((type) => {
+                {getSourceTypes(t).map((type) => {
                   const Icon = type.icon
                   return (
                     <TabsTrigger key={type.value} value={type.value} className="gap-2">
@@ -149,7 +153,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                 })}
               </TabsList>
               
-              {SOURCE_TYPES.map((type) => (
+              {getSourceTypes(t).map((type) => (
                 <TabsContent key={type.value} value={type.value} className="mt-4">
                   <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
                   
@@ -157,11 +161,11 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                   {type.value === 'link' && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="url">URL(s) *</Label>
+                        <Label htmlFor="url">{t.sources.urlLabel}</Label>
                         {urlCount > 0 && (
                           <Badge variant={isOverLimit ? "destructive" : "secondary"}>
-                            {urlCount} URL{urlCount !== 1 ? 's' : ''}
-                            {isOverLimit && ` (max ${MAX_BATCH_SIZE})`}
+                            {t.sources.urlsCount.replace('{count}', urlCount.toString())}
+                            {isOverLimit && ` (${t.sources.maxItems.replace('{count}', MAX_BATCH_SIZE.toString())})`}
                           </Badge>
                         )}
                       </div>
@@ -170,12 +174,12 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                         {...register('url', {
                           onChange: () => onClearUrlErrors?.()
                         })}
-                        placeholder="Enter URLs, one per line&#10;https://example.com/article1&#10;https://example.com/article2"
+                        placeholder={t.sources.enterUrlsPlaceholder}
                         rows={urlCount > 1 ? 6 : 2}
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Paste multiple URLs (one per line) to batch import
+                        {t.sources.batchUrlHint}
                       </p>
                       {errors.url && (
                         <p className="text-sm text-destructive mt-1">{errors.url.message}</p>
@@ -183,20 +187,20 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                       {urlValidationErrors && urlValidationErrors.length > 0 && (
                         <div className="mt-2 p-3 bg-destructive/10 rounded-md border border-destructive/20">
                           <p className="text-sm font-medium text-destructive mb-2">
-                            Invalid URLs detected:
+                            {t.sources.invalidUrlsDetected}
                           </p>
                           <ul className="space-y-1">
                             {urlValidationErrors.map((error, idx) => (
                               <li key={idx} className="text-xs text-destructive flex items-start gap-2">
                                 <span className="font-mono bg-destructive/20 px-1 rounded">
-                                  Line {error.line}
+                                  {t.sources.lineLabel.replace('{line}', error.line.toString())}
                                 </span>
                                 <span className="truncate">{error.url}</span>
                               </li>
                             ))}
                           </ul>
                           <p className="text-xs text-muted-foreground mt-2">
-                            Please fix or remove invalid URLs to continue
+                            {t.sources.fixInvalidUrls}
                           </p>
                         </div>
                       )}
@@ -206,11 +210,11 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                   {type.value === 'upload' && (
                     <div>
                       <div className="flex items-center justify-between mb-2">
-                        <Label htmlFor="file">File(s) *</Label>
+                        <Label htmlFor="file">{t.sources.fileLabel}</Label>
                         {fileCount > 0 && (
                           <Badge variant={isOverLimit ? "destructive" : "secondary"}>
-                            {fileCount} file{fileCount !== 1 ? 's' : ''}
-                            {isOverLimit && ` (max ${MAX_BATCH_SIZE})`}
+                            {t.sources.filesCount.replace('{count}', fileCount.toString())}
+                            {isOverLimit && ` (${t.sources.maxItems.replace('{count}', MAX_BATCH_SIZE.toString())})`}
                           </Badge>
                         )}
                       </div>
@@ -222,11 +226,11 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                         accept=".pdf,.doc,.docx,.pptx,.ppt,.xlsx,.xls,.txt,.md,.epub,.mp4,.avi,.mov,.wmv,.mp3,.wav,.m4a,.aac,.jpg,.jpeg,.png,.tiff,.zip,.tar,.gz,.html"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG)
+                        {t.sources.selectMultipleFilesHint}
                       </p>
                       {fileCount > 1 && fileInput instanceof FileList && (
                         <div className="mt-2 p-3 bg-muted rounded-md">
-                          <p className="text-xs font-medium mb-2">Selected files:</p>
+                          <p className="text-xs font-medium mb-2">{t.sources.selectedFiles}</p>
                           <ul className="space-y-1 max-h-32 overflow-y-auto">
                             {Array.from(fileInput).map((file, idx) => (
                               <li key={idx} className="text-xs text-muted-foreground flex items-center gap-2">
@@ -245,7 +249,7 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                       )}
                       {isOverLimit && selectedType === 'upload' && (
                         <p className="text-sm text-destructive mt-1">
-                          Maximum {MAX_BATCH_SIZE} files allowed per batch
+                          {t.sources.maxFilesAllowed.replace('{count}', MAX_BATCH_SIZE.toString())}
                         </p>
                       )}
                     </div>
@@ -253,11 +257,11 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                   
                   {type.value === 'text' && (
                     <div>
-                      <Label htmlFor="content" className="mb-2 block">Text Content *</Label>
+                      <Label htmlFor="content" className="mb-2 block">{t.sources.textContentLabel}</Label>
                       <Textarea
                         id="content"
                         {...register('content')}
-                        placeholder="Paste or type your content here..."
+                        placeholder={t.sources.textPlaceholder}
                         rows={6}
                       />
                       {errors.content && (
@@ -278,16 +282,18 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
       {/* Hide title field in batch mode - titles will be auto-generated */}
       {!isBatchMode && (
         <FormSection
-          title={selectedType === 'text' ? "Title *" : "Title (optional)"}
+          htmlFor="source-title"
+          title={selectedType === 'text' ? `${t.common.title} *` : `${t.common.title} (${t.common.optional})`}
           description={selectedType === 'text'
-            ? "A title is required for text content"
-            : "If left empty, a title will be generated from the content"
+            ? t.sources.titleRequired
+            : t.sources.titleGenerated
           }
         >
           <Input
-            id="title"
+            id="source-title"
             {...register('title')}
-            placeholder="Give your source a descriptive title"
+            placeholder={t.sources.titlePlaceholder}
+            autoComplete="off"
           />
           {errors.title && (
             <p className="text-sm text-destructive mt-1">{errors.title.message}</p>
@@ -299,14 +305,14 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
       {isBatchMode && (
         <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <Badge variant="default">Batch Mode</Badge>
+            <Badge variant="default">{t.common.batchMode}</Badge>
             <span className="text-sm font-medium">
-              {itemCount} {selectedType === 'link' ? 'URLs' : 'files'} will be processed
+              {t.sources.batchCount.replace('{count}', itemCount.toString()).replace('{type}', selectedType === 'link' ? t.sources.addUrl : t.sources.uploadFile)}
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Titles will be automatically generated for each source.
-            The same notebooks and transformations will be applied to all items.
+            {t.sources.batchTitlesAuto}
+            {t.sources.batchCommonSettings}
           </p>
         </div>
       )}

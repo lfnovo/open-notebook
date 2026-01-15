@@ -36,7 +36,9 @@ def consolidate_folder(folder: Path, output_dir: Path) -> None:
     with output_file.open("w", encoding="utf-8") as outf:
         # Write header
         outf.write(f"# {folder.name.replace('-', ' ').title()}\n\n")
-        outf.write(f"This document consolidates all content from the {folder.name} documentation folder.\n\n")
+        outf.write(
+            f"This document consolidates all content from the {folder.name} documentation folder.\n\n"
+        )
         outf.write("---\n\n")
 
         # Process each markdown file
@@ -71,7 +73,9 @@ def main():
     logger.info(f"Output directory: {output_dir.absolute()}")
 
     # Get all subdirectories in docs/
-    subdirs = [d for d in docs_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
+    subdirs = [
+        d for d in docs_dir.iterdir() if d.is_dir() and not d.name.startswith(".")
+    ]
 
     if not subdirs:
         logger.warning("No subdirectories found in docs/")

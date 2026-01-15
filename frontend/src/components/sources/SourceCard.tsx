@@ -26,6 +26,8 @@ import {
   Unlink
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { TranslationKeys } from '@/lib/locales'
 import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
@@ -49,53 +51,53 @@ const SOURCE_TYPE_ICONS = {
   text: FileText,
 } as const
 
-const STATUS_CONFIG = {
+const getStatusConfig = (t: TranslationKeys) => ({
   new: {
     icon: Clock,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    label: 'Processing',
-    description: 'Preparing to process'
+    label: t.sources.statusProcessing,
+    description: t.sources.statusPreparingDesc
   },
   queued: {
     icon: Clock,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    label: 'Queued',
-    description: 'Waiting to be processed'
+    label: t.sources.statusQueued,
+    description: t.sources.statusQueuedDesc
   },
   running: {
     icon: Loader2,
     color: 'text-blue-600',
     bgColor: 'bg-blue-50',
     borderColor: 'border-blue-200',
-    label: 'Processing',
-    description: 'Being processed'
+    label: t.sources.statusProcessing,
+    description: t.sources.statusProcessingDesc
   },
   completed: {
     icon: CheckCircle,
     color: 'text-green-600',
     bgColor: 'bg-green-50',
     borderColor: 'border-green-200',
-    label: 'Completed',
-    description: 'Successfully processed'
+    label: t.sources.statusCompleted,
+    description: t.sources.statusCompletedDesc
   },
   failed: {
     icon: AlertTriangle,
     color: 'text-red-600',
     bgColor: 'bg-red-50',
     borderColor: 'border-red-200',
-    label: 'Failed',
-    description: 'Processing failed'
+    label: t.sources.statusFailed,
+    description: t.sources.statusFailedDesc
   }
-} as const
+} as const)
 
-type SourceStatus = keyof typeof STATUS_CONFIG
+type SourceStatus = 'new' | 'queued' | 'running' | 'completed' | 'failed'
 
 function isSourceStatus(status: unknown): status is SourceStatus {
-  return typeof status === 'string' && status in STATUS_CONFIG
+  return typeof status === 'string' && ['new', 'queued', 'running', 'completed', 'failed'].includes(status)
 }
 
 function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
@@ -107,16 +109,18 @@ function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
 
 export function SourceCard({
   source,
+  onClick,
   onDelete,
   onRetry,
   onRemoveFromNotebook,
-  onClick,
   onRefresh,
   className,
   showRemoveFromNotebook = false,
   contextMode,
   onContextModeChange
 }: SourceCardProps) {
+  const { t } = useTranslation()
+  const statusConfigMap = getStatusConfig(t)
   
   // Only fetch status for sources that might have async processing
   const sourceWithStatus = source as SourceListResponse & { command_id?: string; status?: string }
@@ -163,12 +167,12 @@ export function SourceCard({
     }
   }, [statusData, sourceWithStatus.status, wasProcessing, onRefresh, source.id])
   
-  const statusConfig = STATUS_CONFIG[currentStatus] || STATUS_CONFIG.completed
+  const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
   const sourceType = getSourceType(source)
   const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
   
-  const title = source.title || 'Untitled Source'
+   const title = source.title || t.sources.untitledSource
 
   const handleRetry = () => {
     if (onRetry) {
@@ -222,13 +226,13 @@ export function SourceCard({
                     'h-3 w-3',
                     isProcessing && 'animate-spin'
                   )} />
-                  {statusLoading && shouldFetchStatus ? 'Checking...' : statusConfig.label}
+                  {statusLoading && shouldFetchStatus ? t.sources.checking : statusConfig.label}
                 </div>
 
                 {/* Source type indicator */}
                 <div className="flex items-center gap-1 text-gray-500">
                   <SourceTypeIcon className="h-3 w-3" />
-                  <span className="text-xs capitalize">{sourceType}</span>
+                  <span className="text-xs capitalize">{t.common.source}</span>
                 </div>
               </div>
             )}
@@ -255,12 +259,12 @@ export function SourceCard({
               {/* Source type badge */}
               <Badge variant="secondary" className="text-xs flex items-center gap-1">
                 <SourceTypeIcon className="h-3 w-3" />
-                {sourceType}
+                {sourceType === 'link' ? t.sources.addUrl : sourceType === 'upload' ? t.sources.uploadFile : t.sources.enterText}
               </Badge>
 
               {isCompleted && source.insights_count > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  {source.insights_count} insights
+                  {t.sources.insightsCount.replace('{count}', source.insights_count.toString())}
                 </Badge>
               )}
               {source.topics && source.topics.length > 0 && isCompleted && (
@@ -314,7 +318,7 @@ export function SourceCard({
                     disabled={!onRemoveFromNotebook}
                   >
                     <Unlink className="h-4 w-4 mr-2" />
-                    Remove from Notebook
+                    {t.sources.removeFromNotebook}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -330,7 +334,7 @@ export function SourceCard({
                     disabled={!onRetry}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Retry Processing
+                    {t.sources.retryProcessing}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>
@@ -345,7 +349,7 @@ export function SourceCard({
                 className="text-red-600 focus:text-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Source
+                {t.sources.deleteSource}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -362,7 +366,7 @@ export function SourceCard({
               className="h-7 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
-              Retry
+              {t.sources.retry}
             </Button>
           </div>
         )}
@@ -371,7 +375,7 @@ export function SourceCard({
         {isProcessing && statusData?.processing_info?.progress && (
           <div className="mt-3 pt-2 border-t">
             <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-gray-600">Progress</span>
+            <span className="text-xs text-gray-600">{t.common.progress}</span>
               <span className="text-xs text-gray-600">
                 {Math.round(statusData.processing_info.progress as number)}%
               </span>

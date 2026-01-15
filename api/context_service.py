@@ -16,14 +16,11 @@ class ContextService:
         logger.info("Using API for context operations")
 
     def get_notebook_context(
-        self,
-        notebook_id: str,
-        context_config: Optional[Dict] = None
+        self, notebook_id: str, context_config: Optional[Dict] = None
     ) -> Union[Dict[Any, Any], List[Dict[Any, Any]]]:
         """Get context for a notebook."""
         result = api_client.get_notebook_context(
-            notebook_id=notebook_id,
-            context_config=context_config
+            notebook_id=notebook_id, context_config=context_config
         )
         return result
 

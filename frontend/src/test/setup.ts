@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom'
 import { vi } from 'vitest'
-import { enUS } from '@/lib/locales/en-US'
+import { enUS } from '../lib/locales/en-US'
 
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
@@ -29,7 +29,7 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock @/lib/hooks/use-translation with full locale structure
-vi.mock('@/lib/hooks/use-translation', () => {
+vi.mock('../lib/hooks/use-translation', () => {
   const t = (key: string) => key
   Object.assign(t, enUS)
   

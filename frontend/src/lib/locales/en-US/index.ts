@@ -128,6 +128,7 @@ export const enUS = {
     comingSoon: "Coming soon",
     retry: "Try Again",
     traditionalChinese: "繁體中文",
+    portuguese: "Português",
     completed: "completed",
     saveSuccess: "Saved successfully",
     contextModes: {

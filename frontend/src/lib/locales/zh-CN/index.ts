@@ -128,6 +128,7 @@ export const zhCN = {
     comingSoon: "敬请期待",
     retry: "重试",
     traditionalChinese: "繁体中文",
+    portuguese: "葡萄牙语",
     completed: "已完成",
     saveSuccess: "保存成功",
     contextModes: {

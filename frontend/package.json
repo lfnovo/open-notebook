@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node start-server.js",
-    "lint": "next lint",
+    "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui"

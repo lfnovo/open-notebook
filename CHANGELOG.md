@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-01-15
+
+### Added
+- Internationalization (i18n) support with Chinese (Simplified and Traditional) translations (#371, closes #344, #349, #360)
+- Frontend test infrastructure with Vitest (#371)
+- Language toggle component for switching UI language (#371)
+- Date localization using date-fns locales (#371)
+- Error message translation system (#371)
+
+### Fixed
+- Accessibility improvements: added missing `id`, `name`, and `autoComplete` attributes to form inputs (#371)
+- Added `DialogDescription` to dialogs for Radix UI accessibility compliance (#371)
+- Fixed "Collapsible is changing from uncontrolled to controlled" warning in SettingsForm (#371)
+- Fixed lint command for Next.js 16 compatibility (`eslint` instead of `next lint`)
+
+### Changed
+- Dockerfile optimizations: better layer caching, `--no-install-recommends` for smaller images (#371)
+- Dockerfile.single refactored into 3 separate build stages for better caching (#371)
+
 ## [1.4.0] - 2026-01-14
 
 ### Added

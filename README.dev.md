@@ -244,6 +244,47 @@ uv sync
 cd frontend && npm install package-name
 ```
 
+### Adding a New Language (i18n)
+
+Open Notebook supports internationalization. To add a new language:
+
+1. **Create locale file**: Copy an existing locale as template
+   ```bash
+   cp frontend/src/lib/locales/en-US/index.ts frontend/src/lib/locales/pt-BR/index.ts
+   ```
+
+2. **Translate all strings** in the new file. The structure includes:
+   - `common`: Shared UI elements (buttons, labels)
+   - `notebooks`, `sources`, `notes`: Feature-specific strings
+   - `chat`, `search`, `podcasts`: Module-specific strings
+   - `apiErrors`: Error message translations
+
+3. **Register the locale** in `frontend/src/lib/locales/index.ts`:
+   ```typescript
+   import { ptBR } from './pt-BR'
+
+   export const locales = {
+     'en-US': enUS,
+     'zh-CN': zhCN,
+     'zh-TW': zhTW,
+     'pt-BR': ptBR,  // Add your locale
+   }
+   ```
+
+4. **Add date-fns locale** in `frontend/src/lib/utils/date-locale.ts`:
+   ```typescript
+   import { zhCN, enUS, zhTW, ptBR } from 'date-fns/locale'
+
+   const LOCALE_MAP: Record<string, Locale> = {
+     'zh-CN': zhCN,
+     'zh-TW': zhTW,
+     'en-US': enUS,
+     'pt-BR': ptBR,  // Add your locale
+   }
+   ```
+
+5. **Test**: Switch languages using the language toggle in the UI header.
+
 ### Database Migrations
 
 Database migrations run **automatically** when the API starts.

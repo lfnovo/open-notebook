@@ -15,6 +15,7 @@ from open_notebook.graphs.chat import graph as chat_graph
 
 router = APIRouter()
 
+
 # Request/Response models
 class CreateSessionRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to create session for")

@@ -9,6 +9,9 @@ services:
       - "5055:5055"  # REST API
     env_file:
       - ./docker.env
+    environment:
+      # Override for single-container mode: SurrealDB runs on localhost inside the same container
+      - SURREAL_URL=ws://localhost:8000/rpc
     volumes:
       - ./notebook_data:/app/data          # Application data
       - ./surreal_single_data:/mydata      # SurrealDB data

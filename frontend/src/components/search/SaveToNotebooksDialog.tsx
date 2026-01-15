@@ -15,6 +15,7 @@ import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useCreateNote } from '@/lib/hooks/use-notes'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { toast } from 'sonner'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface SaveToNotebooksDialogProps {
   open: boolean
@@ -29,6 +30,7 @@ export function SaveToNotebooksDialog({
   question,
   answer
 }: SaveToNotebooksDialogProps) {
+  const { t } = useTranslation()
   const [selectedNotebooks, setSelectedNotebooks] = useState<string[]>([])
   const { data: notebooks, isLoading } = useNotebooks(false) // false = not archived
   const createNote = useCreateNote()
@@ -43,7 +45,7 @@ export function SaveToNotebooksDialog({
 
   const handleSave = async () => {
     if (selectedNotebooks.length === 0) {
-      toast.error('Please select at least one notebook')
+      toast.error(t.searchPage.selectNotebook)
       return
     }
 
@@ -58,11 +60,11 @@ export function SaveToNotebooksDialog({
         })
       }
 
-      toast.success(`Answer saved to ${selectedNotebooks.length} notebook${selectedNotebooks.length > 1 ? 's' : ''}`)
+      toast.success(t.searchPage.saveSuccess)
       setSelectedNotebooks([])
       onOpenChange(false)
     } catch {
-      toast.error('Failed to save answer')
+      toast.error(t.searchPage.saveError)
     }
   }
 
@@ -76,9 +78,9 @@ export function SaveToNotebooksDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Save to Notebooks</DialogTitle>
+          <DialogTitle>{t.searchPage.saveToNotebooks}</DialogTitle>
           <DialogDescription>
-            Select one or more notebooks to save this answer
+            {t.searchPage.selectNotebook}
           </DialogDescription>
         </DialogHeader>
 
@@ -92,14 +94,14 @@ export function SaveToNotebooksDialog({
               items={notebookItems}
               selectedIds={selectedNotebooks}
               onToggle={handleToggle}
-              emptyMessage="No notebooks found. Create a notebook first."
+              emptyMessage={t.sources.noNotebooksFound}
             />
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button
             onClick={handleSave}
@@ -108,10 +110,10 @@ export function SaveToNotebooksDialog({
             {createNote.isPending ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                Saving...
+                {t.searchPage.saving}
               </>
             ) : (
-              `Save to ${selectedNotebooks.length || ''} Notebook${selectedNotebooks.length !== 1 ? 's' : ''}`
+              t.searchPage.saveToNotebook
             )}
           </Button>
         </DialogFooter>

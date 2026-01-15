@@ -18,6 +18,7 @@ from open_notebook.graphs.source_chat import source_chat_graph as source_chat_gr
 
 router = APIRouter()
 
+
 # Request/Response models
 class CreateSourceChatSessionRequest(BaseModel):
     source_id: str = Field(..., description="Source ID to create chat session for")
@@ -37,6 +38,7 @@ class ChatMessage(BaseModel):
     type: str = Field(..., description="Message type (human|ai)")
     content: str = Field(..., description="Message content")
     timestamp: Optional[str] = Field(None, description="Message timestamp")
+
 
 class ContextIndicator(BaseModel):
     sources: List[str] = Field(

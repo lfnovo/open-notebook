@@ -110,7 +110,9 @@ def call_model_with_source_context(
     }
 
     # Apply the source_chat prompt template
-    system_prompt = Prompter(prompt_template="source_chat/system").render(data=prompt_data)
+    system_prompt = Prompter(prompt_template="source_chat/system").render(
+        data=prompt_data
+    )
     payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
 
     # Handle async model provisioning from sync context
@@ -156,7 +158,11 @@ def call_model_with_source_context(
     ai_message = model.invoke(payload)
 
     # Clean thinking content from AI response (e.g., <think>...</think> tags)
-    content = ai_message.content if isinstance(ai_message.content, str) else str(ai_message.content)
+    content = (
+        ai_message.content
+        if isinstance(ai_message.content, str)
+        else str(ai_message.content)
+    )
     cleaned_content = clean_thinking_content(content)
     cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
 

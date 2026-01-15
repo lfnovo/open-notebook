@@ -24,6 +24,7 @@ def token_count(input_string: str) -> int:
     """
     try:
         import tiktoken
+
         encoding = tiktoken.get_encoding("o200k_base")
         tokens = encoding.encode(input_string)
         return len(tokens)

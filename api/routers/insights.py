@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 
@@ -16,10 +15,10 @@ async def get_insight(insight_id: str):
         insight = await SourceInsight.get(insight_id)
         if not insight:
             raise HTTPException(status_code=404, detail="Insight not found")
-        
+
         # Get source ID from the insight relationship
         source = await insight.get_source()
-        
+
         return SourceInsightResponse(
             id=insight.id or "",
             source_id=source.id or "",
@@ -32,7 +31,7 @@ async def get_insight(insight_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching insight {insight_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching insight: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching insight")
 
 
 @router.delete("/insights/{insight_id}")
@@ -42,15 +41,15 @@ async def delete_insight(insight_id: str):
         insight = await SourceInsight.get(insight_id)
         if not insight:
             raise HTTPException(status_code=404, detail="Insight not found")
-        
+
         await insight.delete()
-        
+
         return {"message": "Insight deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Error deleting insight {insight_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting insight: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting insight")
 
 
 @router.post("/insights/{insight_id}/save-as-note", response_model=NoteResponse)
@@ -60,10 +59,10 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         insight = await SourceInsight.get(insight_id)
         if not insight:
             raise HTTPException(status_code=404, detail="Insight not found")
-        
+
         # Use the existing save_as_note method from the domain model
         note = await insight.save_as_note(request.notebook_id)
-        
+
         return NoteResponse(
             id=note.id or "",
             title=note.title,
@@ -78,4 +77,6 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error saving insight {insight_id} as note: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error saving insight as note: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Error saving insight as note"
+        )

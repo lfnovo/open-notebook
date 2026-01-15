@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,12 +15,13 @@ import { useCreateTransformation, useUpdateTransformation, useTransformation } f
 import { Transformation } from '@/lib/types/transformations'
 import { useQueryClient } from '@tanstack/react-query'
 import { TRANSFORMATION_QUERY_KEYS } from '@/lib/hooks/use-transformations'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 const transformationSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  title: z.string().optional(),
+  name: z.string().min(1),
+  title: z.string().min(1),
   description: z.string().optional(),
-  prompt: z.string().min(1, 'Prompt is required'),
+  prompt: z.string().min(1),
   apply_default: z.boolean().optional(),
 })
 
@@ -33,6 +34,12 @@ interface TransformationEditorDialogProps {
 }
 
 export function TransformationEditorDialog({ open, onOpenChange, transformation }: TransformationEditorDialogProps) {
+  const { t } = useTranslation()
+  const nameId = useId()
+  const titleId = useId()
+  const defaultId = useId()
+  const descriptionId = useId()
+  const promptId = useId()
   const isEditing = Boolean(transformation)
   const { data: fetchedTransformation, isLoading } = useTransformation(transformation?.id ?? '', {
     enabled: open && Boolean(transformation?.id),
@@ -111,28 +118,32 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-4xl w-full max-h-[90vh] overflow-hidden p-0">
         <DialogTitle className="sr-only">
-          {isEditing ? 'Edit transformation' : 'Create transformation'}
+          {isEditing ? t.common.edit : t.transformations.createNew}
         </DialogTitle>
+        <DialogDescription className="sr-only">
+           {isEditing ? t.common.editTransformation : t.transformations.createNew}
+        </DialogDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">Loading transformation…</span>
+              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
             </div>
           ) : (
             <>
               <div className="border-b px-6 py-4 space-y-4">
                 <div>
-                  <Label htmlFor="transformation-name" className="text-sm font-medium">
-                    Name
+                  <Label htmlFor={nameId} className="text-sm font-medium">
+                    {t.transformations.name}
                   </Label>
                   <Controller
                     control={control}
                     name="name"
                     render={({ field }) => (
-                      <Input
-                        id="transformation-name"
+                        <Input
+                        id={nameId}
                         {...field}
-                        placeholder="Unique identifier, e.g. key_topics"
+                        placeholder={t.transformations.namePlaceholder}
+                        autoComplete="off"
                       />
                     )}
                   />
@@ -143,18 +154,19 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="transformation-title" className="text-sm font-medium">
-                      Title
+                    <Label htmlFor={titleId} className="text-sm font-medium">
+                      {t.common.title}
                     </Label>
                     <Controller
                       control={control}
                       name="title"
                       render={({ field }) => (
                         <Input
-                          id="transformation-title"
-                          {...field}
-                          placeholder="Displayed title, defaults to name"
-                        />
+                           id={titleId}
+                           {...field}
+                           placeholder={t.transformations.titlePlaceholder}
+                           autoComplete="off"
+                         />
                       )}
                     />
                   </div>
@@ -164,31 +176,32 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       name="apply_default"
                       render={({ field }) => (
                         <Checkbox
-                          id="transformation-default"
+                          id={defaultId}
                           checked={field.value}
                           onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                         />
                       )}
                     />
-                    <Label htmlFor="transformation-default" className="text-sm">
-                      Suggest by default on new sources
-                    </Label>
+                     <Label htmlFor={defaultId} className="text-sm">
+                       {t.transformations.suggestDefault}
+                     </Label>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="transformation-description" className="text-sm font-medium">
-                    Description
-                  </Label>
+                   <Label htmlFor={descriptionId} className="text-sm font-medium">
+                     {t.notebooks.addDescription.replace('...', '')}
+                   </Label>
                   <Controller
                     control={control}
                     name="description"
                     render={({ field }) => (
                       <Textarea
-                        id="transformation-description"
-                        {...field}
-                        placeholder="Describe what this transformation does."
-                        rows={2}
+                         id={descriptionId}
+                         {...field}
+                         placeholder={t.transformations.descriptionPlaceholder}
+                         rows={2}
+                         autoComplete="off"
                       />
                     )}
                   />
@@ -196,7 +209,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                <Label className="text-sm font-medium">Prompt</Label>
+                <Label htmlFor={promptId} className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
                 <Controller
                   control={control}
                   name="prompt"
@@ -206,33 +219,34 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       value={field.value}
                       onChange={field.onChange}
                       height={420}
-                      placeholder="Write the prompt that will power this transformation..."
+                      placeholder={t.transformations.promptPlaceholder}
                       className="rounded-md border"
+                      textareaId={promptId}
+                      name={field.name}
                     />
                   )}
                 />
                 {errors.prompt && (
                   <p className="text-sm text-red-600 mt-1">{errors.prompt.message}</p>
                 )}
-                <p className="text-xs text-muted-foreground mt-3">
-                  Prompts should be written with the source content in mind. You can ask the model to
-                  summarise, extract insights, or produce structured outputs such as tables.
-                </p>
+                 <p className="text-xs text-muted-foreground mt-3">
+                   {t.transformations.promptHint}
+                 </p>
               </div>
             </>
           )}
 
           <div className="border-t px-6 py-4 flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
-              {isSaving
-                ? isEditing ? 'Saving…' : 'Creating…'
-                : isEditing
-                  ? 'Save Transformation'
-                  : 'Create Transformation'}
-            </Button>
+             <Button type="button" variant="outline" onClick={handleClose}>
+               {t.common.cancel}
+             </Button>
+              <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
+                {isSaving
+                  ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                  : isEditing
+                    ? t.common.editTransformation
+                    : t.transformations.createNew}
+              </Button>
           </div>
         </form>
       </DialogContent>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -22,6 +22,7 @@ import { MessageActions } from '@/components/source/MessageActions'
 import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -69,11 +70,13 @@ export function ChatPanel({
   onDeleteSession,
   onUpdateSession,
   loadingSessions = false,
-  title = 'Chat with Source',
+  title,
   contextType = 'source',
   notebookContextStats,
   notebookId
 }: ChatPanelProps) {
+  const { t } = useTranslation()
+  const chatInputId = useId()
   const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -89,8 +92,7 @@ export function ChatPanel({
       // The modal component itself will handle displaying "not found" states.
       // This try-catch is here for future enhancements or unexpected errors.
     } catch {
-      const typeLabel = type === 'source_insight' ? 'insight' : type
-      toast.error(`This ${typeLabel} could not be found`)
+      toast.error(t.common.noResults)
     }
   }
 
@@ -128,7 +130,7 @@ export function ChatPanel({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            {title}
+            {title || (contextType === 'source' ? t.chat.chatWith.replace('{name}', t.navigation.sources) : t.chat.chatWith.replace('{name}', t.common.notebook))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
@@ -140,10 +142,10 @@ export function ChatPanel({
                 disabled={loadingSessions}
               >
                 <Clock className="h-4 w-4" />
-                <span className="text-xs">Sessions</span>
+                <span className="text-xs">{t.chat.sessions}</span>
               </Button>
               <DialogContent className="sm:max-w-[420px] p-0 overflow-hidden">
-                <DialogTitle className="sr-only">Chat Sessions</DialogTitle>
+                <DialogTitle className="sr-only">{t.chat.sessionsTitle}</DialogTitle>
                 <SessionManager
                   sessions={sessions}
                   currentSessionId={currentSessionId ?? null}
@@ -168,9 +170,9 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  Start a conversation about this {contextType}
+                  {t.chat.startConversation.replace('{type}', contextType === 'source' ? t.navigation.sources : t.common.notebook)}
                 </p>
-                <p className="text-xs mt-2">Ask questions to understand the content better</p>
+                <p className="text-xs mt-2">{t.chat.askQuestions}</p>
               </div>
             ) : (
               messages.map((message) => (
@@ -244,19 +246,19 @@ export function ChatPanel({
               {contextIndicators.sources?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <FileText className="h-3 w-3" />
-                  {contextIndicators.sources.length} source{contextIndicators.sources.length > 1 ? 's' : ''}
+                  {contextIndicators.sources.length} {t.navigation.sources}
                 </Badge>
               )}
               {contextIndicators.insights?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <Lightbulb className="h-3 w-3" />
-                  {contextIndicators.insights.length} insight{contextIndicators.insights.length > 1 ? 's' : ''}
+                  {contextIndicators.insights.length} {contextIndicators.insights.length === 1 ? t.common.insight : t.common.insights}
                 </Badge>
               )}
               {contextIndicators.notes?.length > 0 && (
                 <Badge variant="outline" className="gap-1">
                   <StickyNote className="h-3 w-3" />
-                  {contextIndicators.notes.length} note{contextIndicators.notes.length > 1 ? 's' : ''}
+                  {contextIndicators.notes.length} {contextIndicators.notes.length === 1 ? t.common.note : t.common.notes}
                 </Badge>
               )}
             </div>
@@ -279,7 +281,7 @@ export function ChatPanel({
           {/* Model selector */}
           {onModelChange && (
             <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">Model</span>
+              <span className="text-xs text-muted-foreground">{t.chat.model}</span>
               <ModelSelector
                 currentModel={modelOverride}
                 onModelChange={onModelChange}
@@ -290,10 +292,13 @@ export function ChatPanel({
 
           <div className="flex gap-2 items-end">
             <Textarea
+              id={chatInputId}
+              name="chat-message"
+              autoComplete="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Ask a question about this ${contextType}... (${keyHint} to send)`}
+              placeholder={`${t.chat.sendPlaceholder} (${t.chat.pressToSend.replace('{key}', keyHint)})`}
               disabled={isStreaming}
               className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3"
               rows={1}
@@ -327,8 +332,9 @@ function AIMessageContent({
   content: string
   onReferenceClick: (type: string, id: string) => void
 }) {
+  const { t } = useTranslation()
   // Convert references to compact markdown with numbered citations
-  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content)
+  const markdownWithCompactRefs = convertReferencesToCompactMarkdown(content, t.common.references)
 
   // Create custom link component for compact references
   const LinkComponent = createCompactReferenceLinkComponent(onReferenceClick)

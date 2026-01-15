@@ -10,31 +10,33 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { TranslationKeys } from '@/lib/locales'
 
-const STATUS_ORDER: Array<{
+const getSTATUS_ORDER = (t: TranslationKeys): Array<{
   key: 'running' | 'completed' | 'failed' | 'pending'
   title: string
   description?: string
-}> = [
+}> => [
   {
     key: 'running',
-    title: 'Currently Processing',
-    description: 'Episodes that are actively generating assets.',
+    title: t.podcasts.statusRunningTitle,
+    description: t.podcasts.statusRunningDesc,
   },
   {
     key: 'pending',
-    title: 'Queued / Pending',
-    description: 'Submitted episodes waiting to start processing.',
+    title: t.podcasts.statusPendingTitle,
+    description: t.podcasts.statusPendingDesc,
   },
   {
     key: 'completed',
-    title: 'Completed Episodes',
-    description: 'Ready to review, download, or publish.',
+    title: t.podcasts.statusCompletedTitle,
+    description: t.podcasts.statusCompletedDesc,
   },
   {
     key: 'failed',
-    title: 'Failed Episodes',
-    description: 'Episodes that encountered issues during generation.',
+    title: t.podcasts.statusFailedTitle,
+    description: t.podcasts.statusFailedDesc,
   },
 ]
 
@@ -48,6 +50,7 @@ function SummaryBadge({ label, value }: { label: string; value: number }) {
 }
 
 export function EpisodesTab() {
+  const { t } = useTranslation()
   const [showGenerateDialog, setShowGenerateDialog] = useState(false)
   const {
     episodes,
@@ -75,14 +78,14 @@ export function EpisodesTab() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold">Episodes overview</h2>
+          <h2 className="text-xl font-semibold">{t.podcasts.overviewTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Monitor podcast generation jobs and review the final artefacts.
+            {t.podcasts.overviewDesc}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={() => setShowGenerateDialog(true)}>
-            Generate Podcast
+            {t.podcasts.generateBtn}
           </Button>
           <Button
             variant="outline"
@@ -95,25 +98,25 @@ export function EpisodesTab() {
             ) : (
               <RefreshCcw className="mr-2 h-4 w-4" />
             )}
-            Refresh
+            {t.common.refresh}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <SummaryBadge label="Total" value={statusCounts.total} />
-        <SummaryBadge label="Processing" value={statusCounts.running} />
-        <SummaryBadge label="Completed" value={statusCounts.completed} />
-        <SummaryBadge label="Failed" value={statusCounts.failed} />
-        <SummaryBadge label="Pending" value={statusCounts.pending} />
+        <SummaryBadge label={t.podcasts.total} value={statusCounts.total} />
+        <SummaryBadge label={t.podcasts.processingLabel} value={statusCounts.running} />
+        <SummaryBadge label={t.podcasts.completedLabel} value={statusCounts.completed} />
+        <SummaryBadge label={t.podcasts.failedLabel} value={statusCounts.failed} />
+        <SummaryBadge label={t.podcasts.pendingLabel} value={statusCounts.pending} />
       </div>
 
       {isError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Failed to load episodes</AlertTitle>
+          <AlertTitle>{t.podcasts.loadErrorTitle}</AlertTitle>
           <AlertDescription>
-            We could not fetch the latest podcast episodes. Try again shortly.
+            {t.podcasts.loadErrorDesc}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -121,20 +124,19 @@ export function EpisodesTab() {
       {isLoading ? (
         <div className="flex items-center gap-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Loading episodes…
+          {t.podcasts.loadingEpisodes}
         </div>
       ) : null}
 
       {emptyState ? (
         <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center">
           <p className="text-sm text-muted-foreground">
-            No podcast episodes yet. Generate your first one from the notebook or source
-            chat interfaces.
+            {t.podcasts.noEpisodesYet}
           </p>
         </div>
       ) : null}
 
-      {STATUS_ORDER.map(({ key, title, description }) => {
+      {getSTATUS_ORDER(t).map(({ key, title, description }) => {
         const data = statusGroups[key]
         if (!data || data.length === 0) {
           return null

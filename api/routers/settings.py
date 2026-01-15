@@ -23,7 +23,9 @@ async def get_settings():
         )
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching settings: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Error fetching settings"
+        )
 
 
 @router.put("/settings", response_model=SettingsResponse)
@@ -36,30 +38,35 @@ async def update_settings(settings_update: SettingsUpdate):
         if settings_update.default_content_processing_engine_doc is not None:
             # Cast to proper literal type
             from typing import Literal, cast
+
             settings.default_content_processing_engine_doc = cast(
                 Literal["auto", "docling", "simple"],
-                settings_update.default_content_processing_engine_doc
+                settings_update.default_content_processing_engine_doc,
             )
         if settings_update.default_content_processing_engine_url is not None:
             from typing import Literal, cast
+
             settings.default_content_processing_engine_url = cast(
                 Literal["auto", "firecrawl", "jina", "simple"],
-                settings_update.default_content_processing_engine_url
+                settings_update.default_content_processing_engine_url,
             )
         if settings_update.default_embedding_option is not None:
             from typing import Literal, cast
+
             settings.default_embedding_option = cast(
                 Literal["ask", "always", "never"],
-                settings_update.default_embedding_option
+                settings_update.default_embedding_option,
             )
         if settings_update.auto_delete_files is not None:
             from typing import Literal, cast
+
             settings.auto_delete_files = cast(
-                Literal["yes", "no"],
-                settings_update.auto_delete_files
+                Literal["yes", "no"], settings_update.auto_delete_files
             )
         if settings_update.youtube_preferred_languages is not None:
-            settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
+            settings.youtube_preferred_languages = (
+                settings_update.youtube_preferred_languages
+            )
 
         await settings.update()
 
@@ -76,4 +83,6 @@ async def update_settings(settings_update: SettingsUpdate):
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error updating settings: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error updating settings: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Error updating settings"
+        )

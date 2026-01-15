@@ -36,6 +36,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface SpeakerProfilesPanelProps {
   speakerProfiles: SpeakerProfile[]
@@ -48,6 +49,7 @@ export function SpeakerProfilesPanel({
   modelOptions,
   usage,
 }: SpeakerProfilesPanelProps) {
+  const { t } = useTranslation()
   const [createOpen, setCreateOpen] = useState(false)
   const [editProfile, setEditProfile] = useState<SpeakerProfile | null>(null)
 
@@ -64,17 +66,17 @@ export function SpeakerProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Speaker profiles</h2>
+          <h2 className="text-lg font-semibold">{t.podcasts.speakerProfilesTitle}</h2>
           <p className="text-sm text-muted-foreground">
-            Configure voices and personalities for generated episodes.
+            {t.podcasts.speakerProfilesDesc}
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Create speaker</Button>
+        <Button onClick={() => setCreateOpen(true)}>{t.podcasts.createSpeaker}</Button>
       </div>
 
       {sortedProfiles.length === 0 ? (
         <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-          No speaker profiles yet. Create one to make episode templates available.
+          {t.podcasts.noSpeakerProfiles}
         </div>
       ) : (
         <div className="space-y-4">
@@ -91,7 +93,7 @@ export function SpeakerProfilesPanel({
                         {profile.name}
                       </CardTitle>
                       <CardDescription className="text-sm text-muted-foreground">
-                        {profile.description || 'No description provided.'}
+                        {profile.description || t.podcasts.noDescription}
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className="text-xs">
@@ -104,8 +106,8 @@ export function SpeakerProfilesPanel({
                       className="text-xs"
                     >
                       {usageCount > 0
-                        ? `Used by ${usageCount} episode${usageCount === 1 ? '' : 's'}`
-                        : 'Unused'}
+                        ? (usageCount === 1 ? t.podcasts.usedByCount_one : t.podcasts.usedByCount_other.replace('{count}', usageCount.toString()))
+                        : t.podcasts.unused}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -125,14 +127,14 @@ export function SpeakerProfilesPanel({
                             </span>
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            Voice ID: {speaker.voice_id}
+                            {t.podcasts.voiceId}: {speaker.voice_id}
                           </span>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">Backstory:</span> {speaker.backstory}
+                          <span className="font-semibold">{t.podcasts.backstory}:</span> {speaker.backstory}
                         </p>
                         <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">Personality:</span> {speaker.personality}
+                          <span className="font-semibold">{t.podcasts.personality}:</span> {speaker.personality}
                         </p>
                       </div>
                     ))}
@@ -144,7 +146,7 @@ export function SpeakerProfilesPanel({
                       size="sm"
                       onClick={() => setEditProfile(profile)}
                     >
-                      <Edit3 className="mr-2 h-4 w-4" /> Edit
+                      <Edit3 className="mr-2 h-4 w-4" /> {t.podcasts.edit}
                     </Button>
                     <AlertDialog>
                       <DropdownMenu>
@@ -168,7 +170,7 @@ export function SpeakerProfilesPanel({
                             disabled={duplicateProfile.isPending}
                           >
                             <Copy className="h-4 w-4 mr-2" />
-                            Duplicate
+                            {t.podcasts.duplicate}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild>
@@ -177,30 +179,30 @@ export function SpeakerProfilesPanel({
                               disabled={deleteDisabled}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
+                              {t.podcasts.delete}
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>Delete speaker profile?</AlertDialogTitle>
+                          <AlertDialogTitle>{t.podcasts.deleteSpeakerProfileTitle}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Deleting “{profile.name}” cannot be undone.
+                            {t.podcasts.deleteSpeakerProfileDesc.replace('{name}', profile.name)}
                           </AlertDialogDescription>
                           {deleteDisabled ? (
                             <p className="mt-2 text-sm text-muted-foreground">
-                              Remove this speaker from episode profiles before deleting it.
+                              {t.podcasts.deleteSpeakerDisabledHint}
                             </p>
                           ) : null}
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => deleteProfile.mutate(profile.id)}
                             disabled={deleteDisabled || deleteProfile.isPending}
                           >
-                            {deleteProfile.isPending ? 'Deleting…' : 'Delete'}
+                            {deleteProfile.isPending ? t.podcasts.deleting : t.podcasts.delete}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

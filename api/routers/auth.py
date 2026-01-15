@@ -20,5 +20,7 @@ async def get_auth_status():
 
     return {
         "auth_enabled": auth_enabled,
-        "message": "Authentication is required" if auth_enabled else "Authentication is disabled"
+        "message": "Authentication is required"
+        if auth_enabled
+        else "Authentication is disabled",
     }

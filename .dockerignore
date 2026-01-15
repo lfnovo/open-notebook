@@ -1,63 +1,52 @@
-notebooks/
-data/
-.uploads/
-.venv/
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+venv
+ENV
+env
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Frontend
+frontend/node_modules
+frontend/.next
+frontend/dist
+frontend/out
+frontend/.env*
+frontend/*.log
+
+# Project data
+.antigravity
+.gemini
+tmp
+data
+mydata
+notebook_data
+surreal_data
+surreal-data
+surreal_single_data
+*.db
+*.log
+docker.env
 .env
-sqlite-db/
-temp/
-google-credentials.json
 docker-compose*
-.docker_data/
-docs/
-surreal_data/
-surreal-data/
-notebook_data/
-temp/
-*.env
-.git/
-.github/
 
-# Frontend build artifacts and dependencies
-frontend/node_modules/
-frontend/.next/
-frontend/.env.local
+# Documentation & CI (not needed in image)
+docs
+.github
 
-# Cache directories (recursive patterns)
-**/__pycache__/
-**/.mypy_cache/
-**/.ruff_cache/
-**/.pytest_cache/
-**/*.pyc
-**/*.pyo
-**/*.pyd
-.coverage
-.coverage.*
-htmlcov/
-.tox/
-.nox/
-.cache/
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-
-# IDE and editor files
-.vscode/
-.idea/
+# IDE and OS files
+.vscode
+.idea
 *.swp
 *.swo
 *~
-
-# OS files
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-
-.quarentena/
-surreal_single_data/

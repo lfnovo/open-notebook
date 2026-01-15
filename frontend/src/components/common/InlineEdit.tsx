@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useRef, useEffect, type RefObject } from 'react'
+import { useState, useRef, useEffect, useId, type RefObject } from 'react'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface InlineEditProps {
   value: string
@@ -11,6 +12,9 @@ interface InlineEditProps {
   placeholder?: string
   multiline?: boolean
   emptyText?: string
+  id?: string
+  name?: string
+  autocomplete?: string
 }
 
 export function InlineEdit({
@@ -20,8 +24,15 @@ export function InlineEdit({
   inputClassName,
   placeholder,
   multiline = false,
-  emptyText = 'Click to edit'
+  emptyText,
+  id: providedId,
+  name,
+  autocomplete = 'off'
 }: InlineEditProps) {
+  const generatedId = useId()
+  const id = providedId || generatedId
+  const { t } = useTranslation()
+  const defaultEmptyText = emptyText || t.common.clickToEdit
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
   const [isSaving, setIsSaving] = useState(false)
@@ -85,7 +96,7 @@ export function InlineEdit({
           setIsEditing(true)
         }}
       >
-        {value || <span className="text-muted-foreground">{emptyText}</span>}
+        {value || <span className="text-muted-foreground">{defaultEmptyText}</span>}
       </button>
     )
   }
@@ -111,6 +122,9 @@ export function InlineEdit({
         )}
         placeholder={placeholder}
         disabled={isSaving}
+        id={id}
+        name={name}
+        autoComplete={autocomplete}
       />
     )
   }
@@ -134,6 +148,9 @@ export function InlineEdit({
       )}
       placeholder={placeholder}
       disabled={isSaving}
+      id={id}
+      name={name}
+      autoComplete={autocomplete}
     />
   )
 }

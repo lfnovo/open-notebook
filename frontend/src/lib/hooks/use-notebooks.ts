@@ -2,6 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { notebooksApi } from '@/lib/api/notebooks'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
+import { useTranslation } from '@/lib/hooks/use-translation'
+import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
 
 export function useNotebooks(archived?: boolean) {
@@ -22,20 +24,21 @@ export function useNotebook(id: string) {
 export function useCreateNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   return useMutation({
     mutationFn: (data: CreateNotebookRequest) => notebooksApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
       toast({
-        title: 'Success',
-        description: 'Notebook created successfully',
+        title: t.common.success,
+        description: t.notebooks.createSuccess,
       })
     },
-    onError: () => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: 'Failed to create notebook',
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -45,6 +48,7 @@ export function useCreateNotebook() {
 export function useUpdateNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateNotebookRequest }) =>
@@ -53,14 +57,14 @@ export function useUpdateNotebook() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebook(id) })
       toast({
-        title: 'Success',
-        description: 'Notebook updated successfully',
+        title: t.common.success,
+        description: t.notebooks.updateSuccess,
       })
     },
-    onError: () => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: 'Failed to update notebook',
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -70,20 +74,21 @@ export function useUpdateNotebook() {
 export function useDeleteNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const { t } = useTranslation()
 
   return useMutation({
     mutationFn: (id: string) => notebooksApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
       toast({
-        title: 'Success',
-        description: 'Notebook deleted successfully',
+        title: t.common.success,
+        description: t.notebooks.deleteSuccess,
       })
     },
-    onError: () => {
+    onError: (error: unknown) => {
       toast({
-        title: 'Error',
-        description: 'Failed to delete notebook',
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },

@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useAddSourcesToNotebook, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
+import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface NotebookAssociationsProps {
   sourceId: string
@@ -20,6 +21,7 @@ export function NotebookAssociations({
   currentNotebookIds,
   onSave,
 }: NotebookAssociationsProps) {
+  const { t } = useTranslation()
   const [selectedNotebookIds, setSelectedNotebookIds] = useState<string[]>(currentNotebookIds)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -108,10 +110,10 @@ export function NotebookAssociations({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Notebooks
+            {t.sources.manageNotebooks}
           </CardTitle>
           <CardDescription>
-            Manage which notebooks contain this source
+            {t.sources.manageNotebooksDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -129,14 +131,14 @@ export function NotebookAssociations({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Notebooks
+            {t.sources.manageNotebooks}
           </CardTitle>
           <CardDescription>
-            Manage which notebooks contain this source
+            {t.sources.manageNotebooksDesc}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">No notebooks available</p>
+          <p className="text-sm text-muted-foreground">{t.sources.noNotebooksAvailable}</p>
         </CardContent>
       </Card>
     )
@@ -147,10 +149,10 @@ export function NotebookAssociations({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
-          Notebooks
+          {t.sources.manageNotebooks}
         </CardTitle>
         <CardDescription>
-          Manage which notebooks contain this source
+          {t.sources.manageNotebooksDesc}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -203,7 +205,7 @@ export function NotebookAssociations({
               onClick={handleCancel}
               disabled={isSaving}
             >
-              Cancel
+              {t.common.cancel}
             </Button>
             <Button
               size="sm"
@@ -213,10 +215,10 @@ export function NotebookAssociations({
               {isSaving ? (
                 <>
                   <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t.common.saving}...
                 </>
               ) : (
-                'Save Changes'
+                t.common.saveChanges
               )}
             </Button>
           </div>

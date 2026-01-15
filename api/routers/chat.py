@@ -202,7 +202,7 @@ async def get_session(session_id: str):
 
         # Get session state from LangGraph to retrieve messages
         thread_state = chat_graph.get_state(
-            config=RunnableConfig(configurable={"thread_id": session_id})
+            config=RunnableConfig(configurable={"thread_id": full_session_id})
         )
 
         # Extract messages from state
@@ -374,7 +374,7 @@ async def execute_chat(request: ExecuteChatRequest):
 
         # Get current state
         current_state = chat_graph.get_state(
-            config=RunnableConfig(configurable={"thread_id": request.session_id})
+            config=RunnableConfig(configurable={"thread_id": full_session_id})
         )
 
         # Prepare state for execution
@@ -394,7 +394,7 @@ async def execute_chat(request: ExecuteChatRequest):
             input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={
-                    "thread_id": request.session_id,
+                    "thread_id": full_session_id,
                     "model_id": model_override,
                 }
             ),

@@ -243,7 +243,7 @@ async def get_source_chat_session(
 
         # Get session state from LangGraph to retrieve messages
         thread_state = source_chat_graph.get_state(
-            config=RunnableConfig(configurable={"thread_id": session_id})
+            config=RunnableConfig(configurable={"thread_id": full_session_id})
         )
 
         # Extract messages from state
@@ -550,7 +550,7 @@ async def send_message_to_source_chat(
         # Return streaming response
         return StreamingResponse(
             stream_source_chat_response(
-                session_id=session_id,
+                session_id=full_session_id,
                 source_id=full_source_id,
                 message=request.message,
                 model_override=model_override,

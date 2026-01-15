@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-8502}",
+    "start": "node start-server.js",
     "lint": "next lint"
   },
   "dependencies": {

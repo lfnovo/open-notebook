@@ -4,14 +4,13 @@ import { describe, it, expect, vi } from 'vitest'
 import { AppSidebar } from '../AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 
-// Need to mock TooltipProvider because it uses Radix UI which might need Portal mock
-vi.mock('@/components/ui/tooltip', async () => {
-  const actual = await vi.importActual('@/components/ui/tooltip')
-  return {
-    ...actual,
-    TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  }
-})
+// Mock Tooltip components to avoid Radix UI async issues in tests
+vi.mock('@/components/ui/tooltip', () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+}))
 // But setup.ts has some basic mocks, let's see.
 
 describe('AppSidebar', () => {

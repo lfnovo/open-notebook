@@ -18,6 +18,7 @@ describe('useTranslation Hook', () => {
     vi.clearAllMocks()
     ;(useI18nTranslation as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
       t: (key: string) => {
+        if (key === 'common') return { appName: 'Open Notebook' }
         if (key === 'common.appName') return 'Open Notebook'
         return key
       },

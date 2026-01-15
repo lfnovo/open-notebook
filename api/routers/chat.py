@@ -104,12 +104,14 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 
         results = []
         for session in sessions_list:
+            # Extract the ID part for LangGraph thread_id
             session_id = (
                 str(session.id).split(":")[-1]
                 if ":" in str(session.id)
                 else str(session.id)
             )
 
+            # Get message count from LangGraph state
             msg_count = 0
             try:
                 thread_state = chat_graph.get_state(
@@ -134,6 +136,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
                     created=str(session.created),
                     updated=str(session.updated),
                     message_count=msg_count,
+                    model_override=getattr(session, "model_override", None),
                 )
             )
 
@@ -295,6 +298,7 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         )
         notebook_id = notebook_query[0]["out"] if notebook_query else None
 
+        # Get message count from LangGraph state
         msg_count = 0
         try:
             session_id_short = (

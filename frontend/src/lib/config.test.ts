@@ -3,7 +3,7 @@ import { getApiUrl, resetConfig } from './config'
 
 describe('Config Priority', () => {
   const originalEnv = process.env
-  // Use a completely fresh mock for each test to avoid URL validation issues with relative paths in Node
+  const originalFetch = global.fetch
   const fetchMock = vi.fn()
 
   beforeEach(() => {
@@ -16,7 +16,7 @@ describe('Config Priority', () => {
 
   afterEach(() => {
     process.env = originalEnv
-    vi.restoreAllMocks()
+    global.fetch = originalFetch
   })
 
   it('should prioritize runtime config over everything else', async () => {

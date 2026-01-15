@@ -18,6 +18,10 @@ export function useTranslation() {
   const languageRef = useRef(i18n.language)
   languageRef.current = i18n.language
   
+  // Loop detection
+  const accessCounts = useRef<Record<string, number>>({})
+  const lastResetTime = useRef(Date.now())
+
   // High-performance Recursive Proxy with strict safety limits
   const t = useMemo(() => {
     const i18nTranslateCopy = i18nTranslate;
@@ -51,6 +55,23 @@ export function useTranslation() {
 
       return new Proxy(proxyTarget, {
         get(target, prop) {
+          // Reset counters every 1s
+          const now = Date.now()
+          if (now - lastResetTime.current > 1000) {
+            accessCounts.current = {}
+            lastResetTime.current = now
+          }
+
+          if (typeof prop === 'string') {
+             const key = path ? `${path}.${prop}` : prop;
+             accessCounts.current[key] = (accessCounts.current[key] || 0) + 1;
+             
+             if (accessCounts.current[key] > 1000) {
+               console.error(`[useTranslation] INFINITE LOOP DETECTED on key: "${key}". Breaking recursion.`);
+               return key; // Force break
+             }
+          }
+
           // Handle Symbol properties immediately
           if (typeof prop === 'symbol') {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

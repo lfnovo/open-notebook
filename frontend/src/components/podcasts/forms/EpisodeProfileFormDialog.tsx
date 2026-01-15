@@ -227,7 +227,6 @@ export function EpisodeProfileFormDialog({
               <Label htmlFor="num_segments">{t.podcasts.segments} *</Label>
               <Input
                 id="num_segments"
-                name="num_segments"
                 type="number"
                 min={3}
                 max={20}
@@ -243,7 +242,6 @@ export function EpisodeProfileFormDialog({
               <Label htmlFor="description">{t.common.description}</Label>
               <Textarea
                 id="description"
-                name="description"
                 rows={3}
                 placeholder={t.podcasts.descriptionPlaceholder}
                 {...register('description')}

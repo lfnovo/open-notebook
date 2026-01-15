@@ -319,7 +319,6 @@ export function SpeakerProfileFormDialog({
                     <Label htmlFor={`speaker-name-${index}`}>{t.common.name} *</Label>
                     <Input
                       id={`speaker-name-${index}`}
-                      name={`speakers.${index}.name`}
                       {...register(`speakers.${index}.name` as const)}
                       placeholder={t.podcasts.hostPlaceholder.replace('{number}', (index + 1).toString())}
                       autoComplete="off"
@@ -334,7 +333,6 @@ export function SpeakerProfileFormDialog({
                     <Label htmlFor={`speaker-voice-${index}`}>{t.podcasts.voiceId} *</Label>
                     <Input
                       id={`speaker-voice-${index}`}
-                      name={`speakers.${index}.voice_id`}
                       {...register(`speakers.${index}.voice_id` as const)}
                       placeholder="voice_123"
                       autoComplete="off"
@@ -350,7 +348,6 @@ export function SpeakerProfileFormDialog({
                   <Label htmlFor={`speaker-backstory-${index}`}>{t.podcasts.backstory} *</Label>
                   <Textarea
                     id={`speaker-backstory-${index}`}
-                    name={`speakers.${index}.backstory`}
                     rows={3}
                     placeholder={t.podcasts.backstoryPlaceholder}
                     {...register(`speakers.${index}.backstory` as const)}
@@ -366,7 +363,6 @@ export function SpeakerProfileFormDialog({
                   <Label htmlFor={`speaker-personality-${index}`}>{t.podcasts.personality} *</Label>
                   <Textarea
                     id={`speaker-personality-${index}`}
-                    name={`speakers.${index}.personality`}
                     rows={3}
                     placeholder={t.podcasts.personalityPlaceholder}
                     {...register(`speakers.${index}.personality` as const)}

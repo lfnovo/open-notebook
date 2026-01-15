@@ -216,12 +216,13 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                   render={({ field }) => (
                     <MarkdownEditor
                       key={transformation?.id ?? 'new-transformation'}
-                       value={field.value}
-                       onChange={field.onChange}
-                       height={420}
-                       placeholder={t.transformations.promptPlaceholder}
-                       className="rounded-md border"
-                       textareaId={promptId}
+                      value={field.value}
+                      onChange={field.onChange}
+                      height={420}
+                      placeholder={t.transformations.promptPlaceholder}
+                      className="rounded-md border"
+                      textareaId={promptId}
+                      name={field.name}
                     />
                   )}
                 />

@@ -16,11 +16,12 @@ export interface MarkdownEditorProps {
   preview?: 'live' | 'edit' | 'preview'
   hideToolbar?: boolean
   textareaId?: string
+  name?: string
   className?: string
 }
 
 export const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
-  ({ value = '', onChange, placeholder, height = 300, preview = 'live', hideToolbar = false, className, textareaId }, ref) => {
+  ({ value = '', onChange, placeholder, height = 300, preview = 'live', hideToolbar = false, className, textareaId, name }, ref) => {
     return (
       <div className={className} ref={ref}>
         <MDEditor
@@ -32,6 +33,7 @@ export const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
           textareaProps={{
             placeholder: placeholder || 'Enter markdown...',
             id: textareaId,
+            name: name,
           }}
           data-color-mode="light"
         />

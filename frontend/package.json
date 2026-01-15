@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "PORT=${PORT:-8502} node .next/standalone/server.js",
+    "start": "cross-env PORT=8502 node .next/standalone/server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -55,6 +55,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
     "tailwindcss": "^4",

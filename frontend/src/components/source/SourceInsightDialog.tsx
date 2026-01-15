@@ -122,7 +122,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
           <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
-                <span className="text-sm text-muted-foreground">{t.common.loading}...</span>
+                <span className="text-sm text-muted-foreground">{t.common.loading}</span>
               </div>
             ) : displayInsight ? (
               <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">

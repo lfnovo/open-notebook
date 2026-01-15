@@ -29,13 +29,18 @@ Object.defineProperty(window, 'matchMedia', {
 })
 
 // Mock @/lib/hooks/use-translation with full locale structure
-vi.mock('@/lib/hooks/use-translation', () => ({
-  useTranslation: () => ({
-    t: enUS,
-    language: 'en-US',
-    setLanguage: vi.fn(),
-  }),
-}))
+vi.mock('@/lib/hooks/use-translation', () => {
+  const t = (key: string) => key
+  Object.assign(t, enUS)
+  
+  return {
+    useTranslation: () => ({
+      t,
+      language: 'en-US',
+      setLanguage: vi.fn(),
+    }),
+  }
+})
 
 // Mock @/lib/hooks/use-auth
 vi.mock('@/lib/hooks/use-auth', () => ({

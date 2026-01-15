@@ -121,7 +121,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">{t.common.loading}...</span>
+              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
             </div>
           ) : (
             <>

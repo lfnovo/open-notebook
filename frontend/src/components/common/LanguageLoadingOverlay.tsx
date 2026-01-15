@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslation as useI18nTranslation } from 'react-i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Loader2 } from 'lucide-react'
@@ -14,13 +14,16 @@ export function LanguageLoadingOverlay() {
   const { t } = useTranslation()
   const [isChanging, setIsChanging] = useState(false)
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
   const handleLanguageChanging = useCallback(() => {
     setIsChanging(true)
   }, [])
 
   const handleLanguageChanged = useCallback(() => {
     // Add a small delay to ensure the UI has fully updated
-    setTimeout(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
       setIsChanging(false)
     }, 150)
   }, [])
@@ -32,6 +35,7 @@ export function LanguageLoadingOverlay() {
     return () => {
       i18n.off('languageChanging', handleLanguageChanging)
       i18n.off('languageChanged', handleLanguageChanged)
+      if (timerRef.current) clearTimeout(timerRef.current)
     }
   }, [i18n, handleLanguageChanging, handleLanguageChanged])
 

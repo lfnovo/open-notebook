@@ -153,7 +153,7 @@ export function SessionManager({
 
             {loadingSessions ? (
               <div className="text-center py-8 text-muted-foreground">
-                {t.common.loading}...
+                {t.common.loading}
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">

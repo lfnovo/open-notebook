@@ -129,7 +129,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">{t.common.loading}...</span>
+              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
             </div>
           ) : (
             <>

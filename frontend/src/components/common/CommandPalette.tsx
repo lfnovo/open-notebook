@@ -214,7 +214,7 @@ export function CommandPalette() {
           {notebooksLoading ? (
             <CommandItem disabled>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>{t.common.loading}...</span>
+              <span>{t.common.loading}</span>
             </CommandItem>
           ) : notebooks && notebooks.length > 0 ? (
             notebooks.map((notebook) => (

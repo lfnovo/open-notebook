@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 /**
  * Runtime Configuration Endpoint
@@ -22,7 +22,7 @@ import { NextResponse } from 'next/server'
  *
  * This allows the same Docker image to work in different deployment scenarios.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   // Priority 1: Check if API_URL is explicitly set
   const envApiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
 
@@ -32,15 +32,37 @@ export async function GET() {
     })
   }
 
-  // Priority 2: Auto-detect - REMOVED
-  // We prefer using relative paths by default to leverage Next.js Rewrites.
-  // The previous auto-detection logic forcing port 5055 causes issues in environments 
-  // where the backend port is not directly exposed or reachable (e.g. remote dev).
-  
-  // Return null/empty to let the frontend use its default (relative path)
+  // Priority 2: Auto-detect from request headers
+  try {
+    // Get the protocol (http or https)
+    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme
+    const proto = request.headers.get('x-forwarded-proto') ||
+                  request.nextUrl.protocol.replace(':', '') ||
+                  'http'
+
+    // Get the host header (includes port if non-standard)
+    const hostHeader = request.headers.get('host')
+
+    if (hostHeader) {
+      // Extract just the hostname (remove port if present)
+      const hostname = hostHeader.split(':')[0]
+
+      // Construct the API URL with port 5055
+      const apiUrl = `${proto}://${hostname}:5055`
+
+      console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+
+      return NextResponse.json({
+        apiUrl,
+      })
+    }
+  } catch (error) {
+    console.error('[runtime-config] Auto-detection failed:', error)
+  }
+
+  // Priority 3: Fallback to localhost
+  console.log('[runtime-config] Using fallback: http://localhost:5055')
   return NextResponse.json({
-    apiUrl: undefined 
+    apiUrl: 'http://localhost:5055',
   })
-
-
 }

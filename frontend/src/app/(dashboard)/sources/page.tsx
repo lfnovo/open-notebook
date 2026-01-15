@@ -13,7 +13,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { zhCN, enUS, zhTW } from 'date-fns/locale'
+import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
@@ -381,7 +381,7 @@ export default function SourcesPage() {
                   <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.created), { 
                       addSuffix: true,
-                      locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
+                      locale: getDateLocale(language)
                     })}
                   </td>
                   <td className="h-12 px-4 text-center hidden md:table-cell">

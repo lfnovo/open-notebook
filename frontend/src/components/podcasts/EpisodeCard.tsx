@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
-import { zhCN, enUS, zhTW } from 'date-fns/locale'
+import { getDateLocale } from '@/lib/utils/date-locale'
 import { InfoIcon, Trash2 } from 'lucide-react'
 
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
@@ -205,7 +205,7 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
   const distance = episode.created
     ? formatDistanceToNow(new Date(episode.created), {
         addSuffix: true,
-        locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS,
+        locale: getDateLocale(language),
       })
     : null
 

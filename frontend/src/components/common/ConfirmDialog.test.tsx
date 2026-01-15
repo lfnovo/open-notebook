@@ -2,16 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ConfirmDialog } from './ConfirmDialog'
 
-vi.mock('@/lib/hooks/use-translation', () => ({
-  useTranslation: () => ({
-    t: {
-      common: {
-        confirm: 'Confirm',
-        cancel: 'Cancel',
-      },
-    },
-  }),
-}))
+// useTranslation is mocked globally in setup.ts
 
 describe('ConfirmDialog', () => {
   const onConfirmMock = vi.fn()

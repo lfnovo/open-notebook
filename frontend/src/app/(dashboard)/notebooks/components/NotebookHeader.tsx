@@ -8,7 +8,7 @@ import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 import { useUpdateNotebook, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { formatDistanceToNow } from 'date-fns'
-import { zhCN as dfZh, enUS as dfEn, zhTW as dfTw } from 'date-fns/locale'
+import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -18,7 +18,7 @@ interface NotebookHeaderProps {
 
 export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   const { t, language } = useTranslation()
-  const dfLocale = language === 'zh-CN' ? dfZh : language === 'zh-TW' ? dfTw : dfEn
+  const dfLocale = getDateLocale(language)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   const updateNotebook = useUpdateNotebook()

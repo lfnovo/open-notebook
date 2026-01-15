@@ -16,7 +16,7 @@ import {
   Clock
 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { zhCN, enUS, zhTW } from 'date-fns/locale'
+import { getDateLocale } from '@/lib/utils/date-locale'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import {
   AlertDialog,
@@ -226,7 +226,7 @@ export function SessionManager({
                           <Clock className="h-3 w-3" />
                           {formatDistanceToNow(new Date(session.created), {
                             addSuffix: true,
-                            locale: language === 'zh-CN' ? zhCN : language === 'zh-TW' ? zhTW : enUS
+                            locale: getDateLocale(language)
                           })}
                         </div>
                         {session.message_count != null && session.message_count > 0 && (

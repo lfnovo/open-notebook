@@ -37,7 +37,6 @@
   ],
   "exclude": [
     "node_modules",
-    "vitest.config.ts",
-    "src/test/setup.ts"
+    "vitest.config.ts"
   ]
 }

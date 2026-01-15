@@ -3,33 +3,33 @@ import { getApiUrl, resetConfig } from './config'
 
 describe('Config Priority', () => {
   const originalEnv = process.env
-  // Spy on global.fetch so we can restore it later and not affect other tests
-  const fetchSpy = vi.spyOn(global, 'fetch')
+  // Use a completely fresh mock for each test to avoid URL validation issues with relative paths in Node
+  const fetchMock = vi.fn()
 
   beforeEach(() => {
     vi.resetModules()
     resetConfig()
     process.env = { ...originalEnv }
-    fetchSpy.mockReset()
+    fetchMock.mockReset()
+    global.fetch = fetchMock
   })
 
   afterEach(() => {
     process.env = originalEnv
-    // Restore original fetch implementation
-    fetchSpy.mockRestore()
+    vi.restoreAllMocks()
   })
 
   it('should prioritize runtime config over everything else', async () => {
     // Setup: Env var set, Runtime config returns explicit value
     process.env.NEXT_PUBLIC_API_URL = 'http://env-url.com'
     
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ apiUrl: 'http://runtime-url.com' }),
     } as Response)
 
     // Mock the second fetch call (api/config check)
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ version: '1.0.0' }),
     } as Response)
@@ -43,13 +43,13 @@ describe('Config Priority', () => {
     process.env.NEXT_PUBLIC_API_URL = 'http://env-url.com'
     
     // First fetch: /config returns empty apiUrl
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ apiUrl: '' }),
     } as Response)
 
     // Second fetch: api/config check using env url
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ version: '1.0.0' }),
     } as Response)
@@ -63,13 +63,13 @@ describe('Config Priority', () => {
     process.env.NEXT_PUBLIC_API_URL = 'http://env-url.com'
     
     // First fetch: /config returns {}
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}), // Missing apiUrl
     } as Response)
 
     // Second fetch: api/config check using env url
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ version: '1.0.0' }),
     } as Response)
@@ -83,13 +83,13 @@ describe('Config Priority', () => {
     delete process.env.NEXT_PUBLIC_API_URL
     
     // First fetch: /config returns empty
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ apiUrl: '' }),
     } as Response)
 
     // Second fetch: api/config check using default relative path
-    fetchSpy.mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ version: '1.0.0' }),
     } as Response)

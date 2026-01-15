@@ -150,12 +150,7 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
         for relation in relations:
             session_id_raw = relation.get("in")
             if session_id_raw:
-                # Extract the ID part for LangGraph thread_id
-                session_id = (
-                    str(session_id_raw).split(":")[-1]
-                    if ":" in str(session_id_raw)
-                    else str(session_id_raw)
-                )
+                session_id = str(session_id_raw)
 
                 session_result = await repo_query(f"SELECT * FROM {session_id_raw}")
                 if session_result and len(session_result) > 0:
@@ -354,7 +349,7 @@ async def update_source_chat_session(
         msg_count = 0
         try:
             thread_state = source_chat_graph.get_state(
-                config=RunnableConfig(configurable={"thread_id": session_id})
+                config=RunnableConfig(configurable={"thread_id": full_session_id})
             )
             if (
                 thread_state

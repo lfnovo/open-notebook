@@ -104,12 +104,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 
         results = []
         for session in sessions_list:
-            # Extract the ID part for LangGraph thread_id
-            session_id = (
-                str(session.id).split(":")[-1]
-                if ":" in str(session.id)
-                else str(session.id)
-            )
+            session_id = str(session.id)
 
             # Get message count from LangGraph state
             msg_count = 0
@@ -301,13 +296,8 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         # Get message count from LangGraph state
         msg_count = 0
         try:
-            session_id_short = (
-                str(session_id).split(":")[-1]
-                if ":" in str(session_id)
-                else str(session_id)
-            )
             thread_state = chat_graph.get_state(
-                config=RunnableConfig(configurable={"thread_id": session_id_short})
+                config=RunnableConfig(configurable={"thread_id": full_session_id})
             )
             if (
                 thread_state

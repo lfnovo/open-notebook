@@ -1,15 +1,15 @@
 # Stage 1: Frontend Builder
-FROM oven/bun:1-slim AS frontend-builder
+FROM node:20-slim AS frontend-builder
 WORKDIR /app/frontend
 
 # Copy dependency files first to leverage cache
-COPY frontend/package.json frontend/bun.lock ./
-RUN bun install --frozen-lockfile
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
 
 # Copy the rest of the frontend source
 COPY frontend/ ./
 # Build the frontend
-RUN bun run build
+RUN npm run build
 
 # Stage 2: Backend Builder
 FROM python:3.12-slim-bookworm AS backend-builder

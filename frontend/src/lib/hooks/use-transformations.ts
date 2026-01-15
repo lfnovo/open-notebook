@@ -49,7 +49,7 @@ export function useCreateTransformation() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -75,7 +75,7 @@ export function useUpdateTransformation() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -99,7 +99,7 @@ export function useDeleteTransformation() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -115,7 +115,7 @@ export function useExecuteTransformation() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },
@@ -146,7 +146,7 @@ export function useUpdateDefaultPrompt() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        description: t(getApiErrorKey(error, t.common.error)),
         variant: 'destructive',
       })
     },

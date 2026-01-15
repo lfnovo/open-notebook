@@ -67,7 +67,7 @@ async def execute_command(request: CommandExecutionRequest):
     except Exception as e:
         logger.error(f"Error submitting command: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to submit command: {str(e)}"
+            status_code=500, detail="Failed to submit command"
         )
 
 
@@ -81,7 +81,7 @@ async def get_command_job_status(job_id: str):
     except Exception as e:
         logger.error(f"Error fetching job status: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to fetch job status: {str(e)}"
+            status_code=500, detail="Failed to fetch job status"
         )
 
 
@@ -101,7 +101,7 @@ async def list_command_jobs(
     except Exception as e:
         logger.error(f"Error listing command jobs: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to list command jobs: {str(e)}"
+            status_code=500, detail="Failed to list command jobs"
         )
 
 
@@ -115,7 +115,7 @@ async def cancel_command_job(job_id: str):
     except Exception as e:
         logger.error(f"Error cancelling command job: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Failed to cancel command job: {str(e)}"
+            status_code=500, detail="Failed to cancel command job"
         )
 
 

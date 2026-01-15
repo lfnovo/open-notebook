@@ -24,7 +24,7 @@ async def get_settings():
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error fetching settings: {str(e)}"
+            status_code=500, detail="Error fetching settings"
         )
 
 
@@ -84,5 +84,5 @@ async def update_settings(settings_update: SettingsUpdate):
     except Exception as e:
         logger.error(f"Error updating settings: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error updating settings: {str(e)}"
+            status_code=500, detail="Error updating settings"
         )

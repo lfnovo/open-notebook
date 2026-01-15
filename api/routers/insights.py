@@ -31,7 +31,7 @@ async def get_insight(insight_id: str):
         raise
     except Exception as e:
         logger.error(f"Error fetching insight {insight_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error fetching insight: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching insight")
 
 
 @router.delete("/insights/{insight_id}")
@@ -49,7 +49,7 @@ async def delete_insight(insight_id: str):
         raise
     except Exception as e:
         logger.error(f"Error deleting insight {insight_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error deleting insight: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error deleting insight")
 
 
 @router.post("/insights/{insight_id}/save-as-note", response_model=NoteResponse)
@@ -78,5 +78,5 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
     except Exception as e:
         logger.error(f"Error saving insight {insight_id} as note: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error saving insight as note: {str(e)}"
+            status_code=500, detail="Error saving insight as note"
         )

@@ -38,8 +38,10 @@ COPY . /app
 # Install frontend dependencies and build
 WORKDIR /app/frontend
 ARG NPM_REGISTRY=https://registry.npmjs.org/
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm config set registry ${NPM_REGISTRY}
 RUN npm ci
+COPY frontend/ ./
 RUN npm run build
 
 # Return to app root
@@ -68,8 +70,8 @@ WORKDIR /app
 # Copy the virtual environment from builder stage
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy the application code
-COPY --from=builder /app /app
+# Copy the source code (the rest)
+COPY . /app
 
 # Ensure uv uses the existing venv without attempting network operations
 ENV UV_NO_SYNC=1

@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
@@ -77,7 +77,7 @@ security = HTTPBearer(auto_error=False)
 
 
 def check_api_password(
-    credentials: Optional[HTTPAuthorizationCredentials] = None,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> bool:
     """
     Utility function to check API password.

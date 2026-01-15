@@ -15,6 +15,7 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 - **`lib/api/CLAUDE.md`**: Axios client, FormData handling, interceptors
 - **`lib/hooks/CLAUDE.md`**: TanStack Query wrappers, SSE streaming, context building
 - **`lib/stores/CLAUDE.md`**: Zustand auth/modal state, localStorage persistence
+- **`lib/locales/CLAUDE.md`**: Internationalization (i18n) system, translation files
 - **`components/ui/CLAUDE.md`**: Radix UI primitives, CVA styling, accessibility
 
 ## Architectural Layers
@@ -59,6 +60,12 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 #### `lib/types/` — TypeScript Definitions
 - API request/response shapes, domain models (Notebook, Source, Note, etc.)
 - Ensures type safety across API calls and store mutations
+
+#### `lib/locales/` — Internationalization (i18n)
+- **Locale files** (`en-US/`, `zh-CN/`, `zh-TW/`): Translation strings organized by feature
+- **`i18n.ts`**: i18next configuration with language detection
+- **`use-translation.ts`**: Custom hook with Proxy-based `t.section.key` access pattern
+- **Pattern**: Components call `useTranslation()` hook; access strings via `t.common.save`, `t.notebooks.title`
 
 ## Data & Control Flow Walkthrough
 
@@ -124,11 +131,12 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 ## Providers & Context Setup
 
 **Root layout** (`app/layout.tsx`) wraps app with:
-1. `ThemeProvider` — next-themes for light/dark mode
-2. `QueryProvider` — TanStack Query client
-3. `ErrorBoundary` — React error boundary
-4. `ConnectionGuard` — checks backend connectivity on startup
-5. `Toaster` — sonner toast notification system
+1. `I18nProvider` — i18next initialization and language loading overlay
+2. `ThemeProvider` — next-themes for light/dark mode
+3. `QueryProvider` — TanStack Query client
+4. `ErrorBoundary` — React error boundary
+5. `ConnectionGuard` — checks backend connectivity on startup
+6. `Toaster` — sonner toast notification system
 
 ## Important Gotchas & Design Decisions
 

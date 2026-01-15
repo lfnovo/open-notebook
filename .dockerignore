@@ -23,13 +23,30 @@ frontend/out
 frontend/.env*
 frontend/*.log
 
-# Project
+# Project data
 .antigravity
 .gemini
 tmp
 data
 mydata
+notebook_data
+surreal_data
+surreal-data
+surreal_single_data
 *.db
 *.log
 docker.env
 .env
+docker-compose*
+
+# Documentation & CI (not needed in image)
+docs
+.github
+
+# IDE and OS files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store

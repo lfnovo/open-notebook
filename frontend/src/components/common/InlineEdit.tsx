@@ -12,6 +12,8 @@ interface InlineEditProps {
   placeholder?: string
   multiline?: boolean
   emptyText?: string
+  id?: string
+  name?: string
 }
 
 export function InlineEdit({
@@ -21,7 +23,9 @@ export function InlineEdit({
   inputClassName,
   placeholder,
   multiline = false,
-  emptyText
+  emptyText,
+  id,
+  name
 }: InlineEditProps) {
   const { t } = useTranslation()
   const defaultEmptyText = emptyText || t.common.clickToEdit
@@ -114,6 +118,8 @@ export function InlineEdit({
         )}
         placeholder={placeholder}
         disabled={isSaving}
+        id={id}
+        name={name}
       />
     )
   }
@@ -137,6 +143,8 @@ export function InlineEdit({
       )}
       placeholder={placeholder}
       disabled={isSaving}
+      id={id}
+      name={name}
     />
   )
 }

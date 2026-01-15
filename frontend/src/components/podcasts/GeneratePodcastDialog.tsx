@@ -583,6 +583,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                         <AccordionItem key={notebook.id} value={notebook.id}>
                           <div className="flex items-start gap-3 px-4 pt-3">
                             <Checkbox
+                              id={`notebook-toggle-${notebook.id}`}
                               checked={isIndeterminate ? 'indeterminate' : notebookChecked}
                               onCheckedChange={(checked) => {
                                 handleNotebookToggle(notebook.id, checked)
@@ -598,7 +599,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                               onClick={(event) => event.stopPropagation()}
                             />
                             <AccordionTrigger className="flex-1 px-0 py-0 hover:no-underline">
-                              <div className="flex w-full items-center justify-between gap-3">
+                              <Label 
+                                htmlFor={`notebook-toggle-${notebook.id}`}
+                                className="flex w-full items-center justify-between gap-3 pointer-events-none"
+                              >
                                 <div className="text-left">
                                   <p className="font-medium text-sm text-foreground">
                                     {notebook.name}
@@ -612,7 +616,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                 <Badge variant="outline" className="text-xs">
                                   {sources.length} {t.podcasts.sources} · {notes.length} {t.podcasts.notes}
                                 </Badge>
-                              </div>
+                              </Label>
                             </AccordionTrigger>
                           </div>
                           <AccordionContent>
@@ -640,6 +644,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                           className="flex items-center gap-3 rounded border bg-background px-3 py-2"
                                         >
                                           <Checkbox
+                                            id={`source-selection-${source.id}`}
                                             checked={mode !== 'off'}
                                             onCheckedChange={(checked) =>
                                               handleSourceModeChange(
@@ -649,7 +654,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                               )
                                             }
                                           />
-                                          <div className="flex flex-1 flex-col gap-1">
+                                          <Label 
+                                            htmlFor={`source-selection-${source.id}`}
+                                            className="flex flex-1 flex-col gap-1 cursor-pointer"
+                                          >
                                             <span className="text-sm font-medium text-foreground">
                                               {source.title || t.podcasts.untitledSource}
                                             </span>
@@ -658,7 +666,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                                <span>•</span>
                                                <span>{source.embedded ? t.podcasts.embedded : t.podcasts.notEmbedded}</span>
                                              </div>
-                                          </div>
+                                          </Label>
                                           <Select
                                             value={mode === 'off' ? 'off' : mode}
                                             onValueChange={(value) =>
@@ -715,6 +723,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                           className="flex items-center gap-3 rounded border bg-background px-3 py-2"
                                         >
                                           <Checkbox
+                                            id={`note-selection-${note.id}`}
                                             checked={mode !== 'off'}
                                             onCheckedChange={(checked) =>
                                               handleNoteToggle(
@@ -724,7 +733,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                               )
                                             }
                                           />
-                                          <div className="flex flex-1 flex-col">
+                                          <Label 
+                                            htmlFor={`note-selection-${note.id}`}
+                                            className="flex flex-1 flex-col cursor-pointer"
+                                          >
                                             <span className="text-sm font-medium text-foreground">
                                               {note.title || t.podcasts.untitledNote}
                                             </span>
@@ -734,7 +746,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                                                 language.startsWith('zh') ? language : 'en-US'
                                               )}
                                             </span>
-                                          </div>
+                                          </Label>
                                         </div>
                                       )
                                     })}

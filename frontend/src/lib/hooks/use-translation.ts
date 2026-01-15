@@ -31,6 +31,11 @@ export function useTranslation() {
 
           if (typeof prop !== 'string') return undefined;
 
+          // Block React internals and other special properties from being proxied further
+          if (prop.startsWith('__') || prop === '$$typeof' || prop === 'toJSON' || prop === 'constructor') {
+            return undefined;
+          }
+
           const currentPath = path ? `${path}.${prop}` : prop;
 
           // Check if currentPath is a direct translation key
@@ -53,8 +58,11 @@ export function useTranslation() {
           }
 
           // If result is undefined/null or just the path string (meaning i18n didn't find it)
+          // We only continue proxying if the results don't clearly indicate a missing leaf
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (result === undefined || result === null || (result as any) === currentPath) {
+             // Stop recursion depth to avoid stack overflow in extreme cases
+             if (currentPath.split('.').length > 10) return currentPath;
              return createProxy(currentPath);
           }
 

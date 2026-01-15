@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronDown, ChevronRight, Settings } from 'lucide-react'
 import { useDefaultPrompt, useUpdateDefaultPrompt } from '@/lib/hooks/use-transformations'
@@ -15,6 +16,7 @@ export function DefaultPromptEditor() {
   const { data: defaultPrompt, isLoading } = useDefaultPrompt()
   const updateDefaultPrompt = useUpdateDefaultPrompt()
   const { t } = useTranslation()
+  const textareaId = useId()
 
   useEffect(() => {
     if (defaultPrompt) {
@@ -51,13 +53,20 @@ export function DefaultPromptEditor() {
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="space-y-4">
-            <Textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={t.transformations.defaultPromptPlaceholder}
-              className="min-h-[200px] font-mono text-sm"
-              disabled={isLoading}
-            />
+            <div className="space-y-2">
+              <Label htmlFor={textareaId} className="sr-only">
+                {t.transformations.defaultPrompt}
+              </Label>
+              <Textarea
+                id={textareaId}
+                name="default-prompt"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                placeholder={t.transformations.defaultPromptPlaceholder}
+                className="min-h-[200px] font-mono text-sm"
+                disabled={isLoading}
+              />
+            </div>
             <div className="flex justify-end">
               <Button 
                 onClick={handleSave}

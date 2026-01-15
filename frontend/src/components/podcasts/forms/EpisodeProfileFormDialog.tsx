@@ -260,12 +260,12 @@ export function EpisodeProfileFormDialog({
               name="speaker_config"
               render={({ field }) => (
                 <div className="space-y-2">
-                  <Label>{t.podcasts.speakerProfile} *</Label>
+                  <Label htmlFor="speaker_config">{t.podcasts.speakerProfile} *</Label>
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger id="speaker_config">
                       <SelectValue placeholder={t.podcasts.selectSpeakerProfile} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent title={t.podcasts.speakerProfile}>
                       {speakerProfiles.map((profile) => (
                         <SelectItem key={profile.id} value={profile.name}>
                           {profile.name}
@@ -296,12 +296,12 @@ export function EpisodeProfileFormDialog({
                 name="outline_provider"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>{t.models.provider} *</Label>
+                    <Label htmlFor="outline_provider">{t.models.provider} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger id="outline_provider">
                         <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent title={t.models.provider}>
                         {providers.map((provider) => (
                           <SelectItem key={provider} value={provider}>
                             <span className="capitalize">{provider}</span>
@@ -323,12 +323,12 @@ export function EpisodeProfileFormDialog({
                 name="outline_model"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>{t.common.model} *</Label>
+                    <Label htmlFor="outline_model">{t.common.model} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger id="outline_model">
                         <SelectValue placeholder={t.models.selectModelPlaceholder} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent title={t.common.model}>
                         {availableOutlineModels.map((model) => (
                           <SelectItem key={model} value={model}>
                             {model}
@@ -360,12 +360,12 @@ export function EpisodeProfileFormDialog({
                 name="transcript_provider"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>{t.models.provider} *</Label>
+                    <Label htmlFor="transcript_provider">{t.models.provider} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger id="transcript_provider">
                         <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent title={t.models.provider}>
                         {providers.map((provider) => (
                           <SelectItem key={provider} value={provider}>
                             <span className="capitalize">{provider}</span>
@@ -387,12 +387,12 @@ export function EpisodeProfileFormDialog({
                 name="transcript_model"
                 render={({ field }) => (
                   <div className="space-y-2">
-                    <Label>{t.common.model} *</Label>
+                    <Label htmlFor="transcript_model">{t.common.model} *</Label>
                     <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger>
+                      <SelectTrigger id="transcript_model">
                         <SelectValue placeholder={t.models.selectModelPlaceholder} />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent title={t.common.model}>
                         {availableTranscriptModels.map((model) => (
                           <SelectItem key={model} value={model}>
                             {model}

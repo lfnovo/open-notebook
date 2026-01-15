@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { CreateModelRequest, ProviderAvailability } from '@/lib/types/models'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,8 @@ interface AddModelFormProps {
 
 export function AddModelForm({ modelType, providers }: AddModelFormProps) {
   const { t } = useTranslation()
+  const providerSelectId = useId()
+  const modelNameInputId = useId()
   const [open, setOpen] = useState(false)
   const createModel = useCreateModel()
   const { register, handleSubmit, formState: { errors }, reset, setValue, watch } = useForm<CreateModelRequest>({
@@ -91,9 +93,9 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="provider">{t.models.provider}</Label>
+            <Label htmlFor={providerSelectId}>{t.models.provider}</Label>
             <Select onValueChange={(value) => setValue('provider', value)} required>
-              <SelectTrigger>
+              <SelectTrigger id={providerSelectId}>
                 <SelectValue placeholder={t.models.selectProviderPlaceholder} />
               </SelectTrigger>
               <SelectContent>
@@ -110,11 +112,12 @@ export function AddModelForm({ modelType, providers }: AddModelFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="name">{t.models.modelName}</Label>
+            <Label htmlFor={modelNameInputId}>{t.models.modelName}</Label>
             <Input
-              id="name"
+              id={modelNameInputId}
               {...register('name', { required: t.models.modelNameRequired })}
               placeholder={getModelPlaceholder()}
+              autoComplete="off"
             />
             {errors.name && (
               <p className="text-sm text-destructive mt-1">{errors.name.message}</p>

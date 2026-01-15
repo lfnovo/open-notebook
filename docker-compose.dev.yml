@@ -20,6 +20,8 @@ services:
       - "5055:5055"
     env_file:
       - ./docker.env
+    environment:
+      - SURREAL_URL=ws://surrealdb:8000/rpc
     depends_on:
       - surrealdb
     volumes:

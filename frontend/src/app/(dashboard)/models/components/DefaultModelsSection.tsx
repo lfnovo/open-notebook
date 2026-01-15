@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useId } from 'react'
 import { useForm } from 'react-hook-form'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -31,7 +31,10 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
     description: string
     modelType: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
     required?: boolean
+    id: string
   }
+
+  const generatedId = useId()
 
   const defaultConfigs: DefaultConfig[] = [
     {
@@ -40,6 +43,7 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
       description: t.models.chatModelDesc,
       modelType: 'language',
       required: true,
+      id: `${generatedId}-chat`,
     },
     {
       key: 'default_transformation_model',
@@ -47,18 +51,21 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
       description: t.models.transformationModelDesc,
       modelType: 'language',
       required: true,
+      id: `${generatedId}-transformation`,
     },
     {
       key: 'default_tools_model',
       label: t.models.toolsModelLabel,
       description: t.models.toolsModelDesc,
       modelType: 'language',
+      id: `${generatedId}-tools`,
     },
     {
       key: 'large_context_model',
       label: t.models.largeContextModelLabel,
       description: t.models.largeContextModelDesc,
       modelType: 'language',
+      id: `${generatedId}-large-context`,
     },
     {
       key: 'default_embedding_model',
@@ -66,18 +73,21 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
       description: t.models.embeddingModelDesc,
       modelType: 'embedding',
       required: true,
+      id: `${generatedId}-embedding`,
     },
     {
       key: 'default_text_to_speech_model',
       label: t.models.ttsModelLabel,
       description: t.models.ttsModelDesc,
       modelType: 'text_to_speech',
+      id: `${generatedId}-tts`,
     },
     {
       key: 'default_speech_to_text_model',
       label: t.models.sttModelLabel,
       description: t.models.sttModelDesc,
       modelType: 'speech_to_text',
+      id: `${generatedId}-stt`,
     },
   ]
 
@@ -180,7 +190,7 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
 
             return (
               <div key={config.key} className="space-y-2">
-                <Label>
+                <Label htmlFor={config.id}>
                   {config.label}
                   {config.required && <span className="text-destructive ml-1">*</span>}
                 </Label>
@@ -189,11 +199,14 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
                     value={currentValue || ""}
                     onValueChange={(value) => handleChange(config.key, value)}
                   >
-                    <SelectTrigger className={
-                      config.required && !isValidModel && availableModels.length > 0
-                        ? 'border-destructive' 
-                        : ''
-                    }>
+                    <SelectTrigger 
+                      id={config.id}
+                      className={
+                        config.required && !isValidModel && availableModels.length > 0
+                          ? 'border-destructive' 
+                          : ''
+                      }
+                    >
                       <SelectValue placeholder={
                         config.required && !isValidModel && availableModels.length > 0 
                           ? t.models.requiredModelPlaceholder

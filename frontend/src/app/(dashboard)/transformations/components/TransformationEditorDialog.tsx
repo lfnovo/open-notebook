@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -35,6 +35,11 @@ interface TransformationEditorDialogProps {
 
 export function TransformationEditorDialog({ open, onOpenChange, transformation }: TransformationEditorDialogProps) {
   const { t } = useTranslation()
+  const nameId = useId()
+  const titleId = useId()
+  const defaultId = useId()
+  const descriptionId = useId()
+  const promptId = useId()
   const isEditing = Boolean(transformation)
   const { data: fetchedTransformation, isLoading } = useTransformation(transformation?.id ?? '', {
     enabled: open && Boolean(transformation?.id),
@@ -127,7 +132,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
             <>
               <div className="border-b px-6 py-4 space-y-4">
                 <div>
-                  <Label htmlFor="transformation-name" className="text-sm font-medium">
+                  <Label htmlFor={nameId} className="text-sm font-medium">
                     {t.transformations.name}
                   </Label>
                   <Controller
@@ -135,7 +140,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                     name="name"
                     render={({ field }) => (
                         <Input
-                        id="transformation-name"
+                        id={nameId}
                         {...field}
                         placeholder={t.transformations.namePlaceholder}
                         autoComplete="off"
@@ -149,7 +154,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="transformation-title" className="text-sm font-medium">
+                    <Label htmlFor={titleId} className="text-sm font-medium">
                       {t.common.title}
                     </Label>
                     <Controller
@@ -157,7 +162,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       name="title"
                       render={({ field }) => (
                         <Input
-                           id="transformation-title"
+                           id={titleId}
                            {...field}
                            placeholder={t.transformations.titlePlaceholder}
                            autoComplete="off"
@@ -171,20 +176,20 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       name="apply_default"
                       render={({ field }) => (
                         <Checkbox
-                          id="transformation-default"
+                          id={defaultId}
                           checked={field.value}
                           onCheckedChange={(checked) => field.onChange(Boolean(checked))}
                         />
                       )}
                     />
-                     <Label htmlFor="transformation-default" className="text-sm">
+                     <Label htmlFor={defaultId} className="text-sm">
                        {t.transformations.suggestDefault}
                      </Label>
                   </div>
                 </div>
 
                 <div>
-                   <Label htmlFor="transformation-description" className="text-sm font-medium">
+                   <Label htmlFor={descriptionId} className="text-sm font-medium">
                      {t.notebooks.addDescription.replace('...', '')}
                    </Label>
                   <Controller
@@ -192,7 +197,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                     name="description"
                     render={({ field }) => (
                       <Textarea
-                         id="transformation-description"
+                         id={descriptionId}
                          {...field}
                          placeholder={t.transformations.descriptionPlaceholder}
                          rows={2}
@@ -204,7 +209,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                <Label htmlFor="transformation-prompt" className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
+                <Label htmlFor={promptId} className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
                 <Controller
                   control={control}
                   name="prompt"
@@ -216,7 +221,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                        height={420}
                        placeholder={t.transformations.promptPlaceholder}
                        className="rounded-md border"
-                       textareaId="transformation-prompt"
+                       textareaId={promptId}
                     />
                   )}
                 />

@@ -135,6 +135,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             <>
               <div className="border-b px-6 py-4">
                 <InlineEdit
+                  id="note-title"
+                  name="title"
                   value={watchTitle ?? ''}
                   onSave={(value) => setValue('title', value || '')}
                   placeholder={t.sources.addTitle}
@@ -154,6 +156,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   render={({ field }) => (
                     <MarkdownEditor
                       key={note?.id ?? 'new'}
+                      textareaId="note-content"
                       value={field.value}
                       onChange={field.onChange}
                       height={420}

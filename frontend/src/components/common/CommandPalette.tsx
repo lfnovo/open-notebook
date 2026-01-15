@@ -171,6 +171,7 @@ export function CommandPalette() {
         placeholder={t.searchPage.enterSearchPlaceholder}
         value={query}
         onValueChange={setQuery}
+        aria-label={t.common.search}
       />
       <CommandList>
         {/* Search/Ask - show FIRST when there's a query with no command match */}

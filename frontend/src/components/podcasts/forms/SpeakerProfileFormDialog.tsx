@@ -221,10 +221,10 @@ export function SpeakerProfileFormDialog({
                 name="tts_provider"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger id="tts_provider">
                       <SelectValue placeholder={t.models.selectProviderPlaceholder} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent title={t.models.provider}>
                       {providers.map((option) => (
                         <SelectItem key={option} value={option}>
                           <span className="capitalize">{option}</span>
@@ -246,10 +246,10 @@ export function SpeakerProfileFormDialog({
                 name="tts_model"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
+                    <SelectTrigger id="tts_model">
                       <SelectValue placeholder={t.models.selectModelPlaceholder} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent title={t.common.model}>
                       {availableModels.map((model) => (
                         <SelectItem key={model} value={model}>
                           {model}
@@ -316,8 +316,9 @@ export function SpeakerProfileFormDialog({
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label>{t.common.name} *</Label>
+                    <Label htmlFor={`speaker-name-${index}`}>{t.common.name} *</Label>
                     <Input
+                      id={`speaker-name-${index}`}
                       {...register(`speakers.${index}.name` as const)}
                       placeholder={t.podcasts.hostPlaceholder.replace('{number}', (index + 1).toString())}
                     />
@@ -328,8 +329,9 @@ export function SpeakerProfileFormDialog({
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label>{t.podcasts.voiceId} *</Label>
+                    <Label htmlFor={`speaker-voice-${index}`}>{t.podcasts.voiceId} *</Label>
                     <Input
+                      id={`speaker-voice-${index}`}
                       {...register(`speakers.${index}.voice_id` as const)}
                       placeholder="voice_123"
                     />
@@ -341,8 +343,9 @@ export function SpeakerProfileFormDialog({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>{t.podcasts.backstory} *</Label>
+                  <Label htmlFor={`speaker-backstory-${index}`}>{t.podcasts.backstory} *</Label>
                   <Textarea
+                    id={`speaker-backstory-${index}`}
                     rows={3}
                     placeholder={t.podcasts.backstoryPlaceholder}
                     {...register(`speakers.${index}.backstory` as const)}
@@ -354,8 +357,9 @@ export function SpeakerProfileFormDialog({
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label>{t.podcasts.personality} *</Label>
+                  <Label htmlFor={`speaker-personality-${index}`}>{t.podcasts.personality} *</Label>
                   <Textarea
+                    id={`speaker-personality-${index}`}
                     rows={3}
                     placeholder={t.podcasts.personalityPlaceholder}
                     {...register(`speakers.${index}.personality` as const)}

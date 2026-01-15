@@ -18,6 +18,13 @@ export function LanguageLoadingOverlay() {
 
   const handleLanguageChanging = useCallback(() => {
     setIsChanging(true)
+    
+    // Safety timeout: ensure we don't get stuck forever
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      setIsChanging(false)
+      console.warn('i18n: Language switch timed out, forcing overlay removal')
+    }, 2000)
   }, [])
 
   const handleLanguageChanged = useCallback(() => {

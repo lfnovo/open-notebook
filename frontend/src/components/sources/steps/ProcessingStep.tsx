@@ -69,8 +69,12 @@ export function ProcessingStep({
               control={control}
               name="embed"
               render={({ field }) => (
-                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-muted">
+                <label 
+                  htmlFor="enable-embedding"
+                  className="flex items-start gap-3 cursor-pointer p-3 rounded-md hover:bg-muted"
+                >
                   <Checkbox
+                    id="enable-embedding"
                     checked={field.value}
                     onCheckedChange={field.onChange}
                     className="mt-0.5"

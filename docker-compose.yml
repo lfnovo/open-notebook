@@ -5,37 +5,21 @@ services:
       - ./surreal_data:/mydata
     environment:
       - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    ports:
+      - "8001:8001"
     command: start --log info --user root --pass root --bind 0.0.0.0:8001 rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root
     restart: always
-
-
-  api:
+  open_notebook:
     image: lfnovo/open_notebook:v1-latest
-    env_file:
-      - ./docker.env
-    environment:
-      - PORT=5055
-      - SURREAL_URL=ws://surrealdb:8001/rpc
-   
-    depends_on:
-      - surrealdb
-    ports:
-      - "5055:5055"
-    volumes:
-      - ./notebook_data:/app/data
-    restart: always
-
-  frontend:
-    image: lfnovo/open_notebook:v1-latest
-    env_file:
-      - ./docker.env
-    environment:
-      - PORT=8502
-      - NEXT_PUBLIC_API_URL=http://cwowsgw80cgoso4wg8sos4ko.77.42.92.20.sslip.io
-    depends_on:
-      - api
     ports:
       - "8502:8502"
+      - "5055:5055"
+    env_file:
+      - ./docker.env
+    depends_on:
+      - surrealdb
+    volumes:
+      - ./notebook_data:/app/data
     restart: always

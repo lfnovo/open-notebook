@@ -74,6 +74,7 @@ ENV VIRTUAL_ENV=/app/.venv
 COPY --from=builder /app/frontend/.next/standalone /app/frontend/
 COPY --from=builder /app/frontend/.next/static /app/frontend/.next/static
 COPY --from=builder /app/frontend/public /app/frontend/public
+COPY --from=builder /app/frontend/start-server.js /app/frontend/start-server.js
 
 # Expose ports for Frontend and API
 EXPOSE 8502 5055

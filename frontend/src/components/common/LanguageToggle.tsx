@@ -42,13 +42,13 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('zh-CN')}
-          className={currentLang === 'zh-CN' ? 'bg-accent' : ''}
+          className={currentLang === 'zh-CN' || currentLang === 'zh-Hans' || currentLang === 'zh' ? 'bg-accent' : ''}
         >
           <span>{t.common.chinese}</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('zh-TW')}
-          className={currentLang === 'zh-TW' ? 'bg-accent' : ''}
+          className={currentLang === 'zh-TW' || currentLang === 'zh-Hant' ? 'bg-accent' : ''}
         >
           <span>{t.common.traditionalChinese}</span>
         </DropdownMenuItem>

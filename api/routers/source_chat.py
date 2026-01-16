@@ -15,6 +15,7 @@ from open_notebook.exceptions import (
     NotFoundError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
+from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
 
@@ -159,23 +160,9 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
                     session_data = session_result[0]
 
                     # Get message count from LangGraph state
-                    msg_count = 0
-                    try:
-                        thread_state = source_chat_graph.get_state(
-                            config=RunnableConfig(
-                                configurable={"thread_id": session_id}
-                            )
-                        )
-                        if (
-                            thread_state
-                            and thread_state.values
-                            and "messages" in thread_state.values
-                        ):
-                            msg_count = len(thread_state.values["messages"])
-                    except Exception as e:
-                        logger.warning(
-                            f"Could not fetch message count for session {session_id}: {e}"
-                        )
+                    msg_count = await get_session_message_count(
+                        source_chat_graph, session_id
+                    )
 
                     sessions.append(
                         SourceChatSessionResponse(
@@ -244,7 +231,7 @@ async def get_source_chat_session(
             )
 
         # Get session state from LangGraph to retrieve messages
-        thread_state = source_chat_graph.get_state(
+        thread_state = await source_chat_graph.aget_state(
             config=RunnableConfig(configurable={"thread_id": full_session_id})
         )
 
@@ -348,21 +335,7 @@ async def update_source_chat_session(
         await session.save()
 
         # Get message count from LangGraph state
-        msg_count = 0
-        try:
-            thread_state = source_chat_graph.get_state(
-                config=RunnableConfig(configurable={"thread_id": full_session_id})
-            )
-            if (
-                thread_state
-                and thread_state.values
-                and "messages" in thread_state.values
-            ):
-                msg_count = len(thread_state.values["messages"])
-        except Exception as e:
-            logger.warning(
-                f"Could not fetch message count for session {session_id}: {e}"
-            )
+        msg_count = await get_session_message_count(source_chat_graph, full_session_id)
 
         return SourceChatSessionResponse(
             id=session.id or "",
@@ -443,7 +416,7 @@ async def stream_source_chat_response(
     """Stream the source chat response as Server-Sent Events."""
     try:
         # Get current state
-        current_state = source_chat_graph.get_state(
+        current_state = await source_chat_graph.aget_state(
             config=RunnableConfig(configurable={"thread_id": session_id})
         )
 

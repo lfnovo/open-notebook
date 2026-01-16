@@ -1,0 +1,6 @@
+-- Migration 10: Add indexes for source_insight and source_embedding source field
+-- These indexes significantly improve performance of source listing queries
+-- that count insights and check embedding existence per source
+
+DEFINE INDEX IF NOT EXISTS idx_source_insight_source ON source_insight FIELDS source CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_source_embedding_source ON source_embedding FIELDS source CONCURRENTLY;

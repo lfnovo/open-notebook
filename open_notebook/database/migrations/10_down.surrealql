@@ -1,0 +1,4 @@
+-- Rollback Migration 10: Remove source field indexes
+
+REMOVE INDEX IF EXISTS idx_source_insight_source ON TABLE source_insight;
+REMOVE INDEX IF EXISTS idx_source_embedding_source ON TABLE source_embedding;

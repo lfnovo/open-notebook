@@ -515,11 +515,6 @@ export const zhTW = {
     processingQuestion: "正在處理您的問題...",
   },
   podcasts: {
-    podcastProfiles: {
-      business_analysis: "商業分析",
-      solo_expert: "獨家專家",
-      tech_discussion: "技術研討",
-    },
     generateEpisode: "生成播客單集",
     generateEpisodeDesc: "在生成新的播客單集之前，選擇要包含的內容並設定單集詳情。",
     content: "內容",

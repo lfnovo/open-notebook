@@ -515,11 +515,6 @@ export const enUS = {
     processingQuestion: "Processing your question...",
   },
   podcasts: {
-    podcastProfiles: {
-      business_analysis: "Business Analysis",
-      solo_expert: "Solo Expert",
-      tech_discussion: "Tech Discussion",
-    },
     generateEpisode: "Generate Podcast Episode",
     generateEpisodeDesc: "Select the content to include and configure the episode details before generating a new podcast episode.",
     content: "Content",

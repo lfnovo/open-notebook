@@ -515,11 +515,6 @@ export const ptBR = {
     processingQuestion: "Processando sua pergunta...",
   },
   podcasts: {
-    podcastProfiles: {
-      business_analysis: "Análise de Negócios",
-      solo_expert: "Especialista Solo",
-      tech_discussion: "Discussão Tech",
-    },
     generateEpisode: "Gerar Episódio de Podcast",
     generateEpisodeDesc: "Selecione o conteúdo a incluir e configure os detalhes do episódio antes de gerar um novo episódio de podcast.",
     content: "Conteúdo",

@@ -515,11 +515,6 @@ export const zhCN = {
     processingQuestion: "正在处理您的问题...",
   },
   podcasts: {
-    podcastProfiles: {
-      business_analysis: "商业分析",
-      solo_expert: "独家专家",
-      tech_discussion: "技术研讨",
-    },
     generateEpisode: "生成播客单集",
     generateEpisodeDesc: "在生成新的播客单集之前，选择要包含的内容并配置单集详情。",
     content: "内容",

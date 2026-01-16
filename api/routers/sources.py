@@ -237,6 +237,10 @@ async def get_sources(
                     "completed_at": execution_metadata.get("completed_at"),
                     "error": command.get("error_message"),
                 }
+            elif command:
+                # Command exists but FETCH failed to resolve it (broken reference)
+                command_id = str(command)
+                status = "unknown"
 
             response_list.append(
                 SourceListResponse(

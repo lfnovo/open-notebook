@@ -454,10 +454,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   // Only changes when actual source/note IDs change, not on every useQueries reference change
   const dataKey = useMemo(() => {
     const sourceIds = sourcesQueries
-      .map((q) => q.data?.map((s) => s.id).join(',') ?? '')
+      .map((q) => q.data?.map((s) => s.id)?.join(',') ?? '')
       .join('|')
     const noteIds = notesQueries
-      .map((q) => q.data?.map((n) => n.id).join(',') ?? '')
+      .map((q) => q.data?.map((n) => n.id)?.join(',') ?? '')
       .join('|')
     return `${sourceIds}::${noteIds}`
   }, [sourcesQueries, notesQueries])

@@ -271,7 +271,7 @@ class Source(ObjectModel):
         This method leverages the job-based architecture to prevent HTTP connection
         pool exhaustion when processing large documents. The embed_source command:
         1. Detects content type from file path
-        2. Chunks text using appropriate splitter (1800 chars)
+        2. Chunks text using content-type aware splitter
         3. Generates all embeddings in a single API call
         4. Bulk inserts source_embedding records
 
@@ -404,24 +404,30 @@ class Note(ObjectModel):
             raise InvalidInputError("Note content cannot be empty")
         return v
 
-    async def save(self) -> None:
+    async def save(self) -> Optional[str]:
         """
         Save the note and submit embedding command.
 
         Overrides ObjectModel.save() to submit an async embed_note command
         after saving, instead of inline embedding.
+
+        Returns:
+            Optional[str]: The command_id if embedding was submitted, None otherwise
         """
         # Call parent save (without embedding)
         await super().save()
 
         # Submit embedding command (fire-and-forget) if note has content
         if self.id and self.content and self.content.strip():
-            submit_command(
+            command_id = submit_command(
                 "open_notebook",
                 "embed_note",
                 {"note_id": str(self.id)},
             )
-            logger.debug(f"Submitted embed_note command for {self.id}")
+            logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
+            return command_id
+
+        return None
 
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:

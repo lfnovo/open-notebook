@@ -354,6 +354,13 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
         logger.debug(f"Generating embeddings for {total_chunks} chunks")
         embeddings = await generate_embeddings(chunks)
 
+        # Verify we got embeddings for all chunks
+        if len(embeddings) != len(chunks):
+            raise ValueError(
+                f"Embedding count mismatch: got {len(embeddings)} embeddings "
+                f"for {len(chunks)} chunks"
+            )
+
         # 6. Bulk INSERT source_embedding records
         records = [
             {

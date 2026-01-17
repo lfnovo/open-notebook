@@ -289,7 +289,7 @@ def _get_markdown_splitter() -> MarkdownHeaderTextSplitter:
 
 
 def _get_plain_splitter() -> RecursiveCharacterTextSplitter:
-    """Get plain text splitter with 1800 char chunks and 270 char overlap."""
+    """Get plain text splitter using CHUNK_SIZE and CHUNK_OVERLAP constants."""
     return RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,

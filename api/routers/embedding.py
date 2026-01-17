@@ -91,8 +91,8 @@ async def embed_content(embed_request: EmbedRequest):
                 if not note_item:
                     raise HTTPException(status_code=404, detail="Note not found")
 
-                # Note.save() internally submits embed_note command
-                await note_item.save()
+                # Note.save() internally submits embed_note command and returns command_id
+                command_id = await note_item.save()
                 message = "Note embedding job submitted"
 
             return EmbedResponse(

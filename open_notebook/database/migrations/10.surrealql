@@ -7,3 +7,7 @@ DEFINE INDEX IF NOT EXISTS idx_source_embedding_source ON source_embedding FIELD
 
 DEFINE FIELD OVERWRITE embedding ON TABLE source_insight TYPE option<array<float>>;
 DEFINE FIELD OVERWRITE embedding ON TABLE note TYPE option<array<float>>;
+
+-- delete orphan records
+DELETE from source_embedding WHERE source.id=NONE;
+DELETE from source_insight WHERE source.id=NONE;

@@ -75,7 +75,10 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **RecordModel singleton**: __new__ returns existing instance; call `clear_instance()` in tests
 - **Source.command field**: Stored as RecordID; auto-parsed from strings via field_validator
 - **Text truncation**: `Note.get_context(short)` hardcodes 100-char limit
-- **Embedding commands**: Note.save() and Source.add_insight() submit embedding commands (fire-and-forget); Source uses vectorize() for bulk embedding
+- **Auto-embedding behavior**:
+  - `Note.save()` → auto-submits `embed_note` command
+  - `Source.save()` → does NOT auto-submit (must call `vectorize()` explicitly)
+  - `Source.add_insight()` → auto-submits `embed_insight` command
 - **Relationship strings**: Must match SurrealDB schema (reference, artifact, refers_to)
 
 ## How to Add New Model

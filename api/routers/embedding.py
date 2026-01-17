@@ -69,10 +69,9 @@ async def embed_content(embed_request: EmbedRequest):
                 )
 
         else:
-            # SYNC PATH: Submit job via domain model methods
-            # NOTE: Both paths now submit commands - this path uses the domain model
-            # convenience methods which internally submit the appropriate command
-            logger.info(f"Using sync processing for {item_type} {item_id}")
+            # DOMAIN MODEL PATH: Submit job via domain model convenience methods
+            # These methods internally call submit_command() - still fire-and-forget
+            logger.info(f"Using domain model path for {item_type} {item_id}")
 
             command_id = None
 

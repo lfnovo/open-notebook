@@ -136,4 +136,5 @@ specs/
 
 
 
+*.local.yml
 **/*.local.md

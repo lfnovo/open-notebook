@@ -443,6 +443,11 @@ export default function SearchPage() {
                       <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
                         {searchMutation.data.results.map((result, index) => {
                           // Parse type from parent_id (format: "source:id" or "note:id" or "source_insight:id")
+                          // Handle null parent_id gracefully (orphaned records)
+                          if (!result.parent_id) {
+                            console.warn('Search result with null parent_id:', result)
+                            return null
+                          }
                           const [type, id] = result.parent_id.split(':')
                           const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 

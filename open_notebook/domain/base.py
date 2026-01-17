@@ -110,33 +110,18 @@ class ObjectModel(BaseModel):
                 return subclass
         return None
 
-    def needs_embedding(self) -> bool:
-        return False
-
-    def get_embedding_content(self) -> Optional[str]:
-        return None
-
     async def save(self) -> None:
-        from open_notebook.ai.models import model_manager
+        """
+        Save the model to the database.
 
+        Note: Embedding is no longer generated inline. Subclasses that need
+        embedding should override save() to submit the appropriate embed_*
+        command after calling super().save().
+        """
         try:
             self.model_validate(self.model_dump(), strict=True)
             data = self._prepare_save_data()
             data["updated"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-            if self.needs_embedding():
-                embedding_content = self.get_embedding_content()
-                if embedding_content:
-                    EMBEDDING_MODEL = await model_manager.get_embedding_model()
-                    if not EMBEDDING_MODEL:
-                        logger.warning(
-                            "No embedding model found. Content will not be searchable."
-                        )
-                    data["embedding"] = (
-                        (await EMBEDDING_MODEL.aembed([embedding_content]))[0]
-                        if EMBEDDING_MODEL
-                        else []
-                    )
 
             repo_result: Union[List[Dict[str, Any]], Dict[str, Any]]
             if self.id is None:

@@ -170,7 +170,7 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 - **Unit tests**: `tests/test_domain.py`, `test_models_api.py`
 - **Graph tests**: `tests/test_graphs.py` (workflow integration)
-- **Utils tests**: `tests/test_utils.py`
+- **Utils tests**: `tests/test_utils.py`, `tests/test_chunking.py`, `tests/test_embedding.py`
 - **Run all**: `uv run pytest tests/`
 - **Coverage**: Check with `pytest --cov`
 

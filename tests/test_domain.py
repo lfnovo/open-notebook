@@ -228,16 +228,18 @@ class TestNoteDomain:
         with pytest.raises(InvalidInputError, match="Note content cannot be empty"):
             Note(title="Test", content="   ")
 
-    def test_note_embedding_enabled(self):
-        """Test notes have embedding enabled by default."""
+    def test_note_content_for_embedding(self):
+        """Test notes can hold content for embedding.
+
+        Note: Embedding is now handled via command submission in Note.save(),
+        not via needs_embedding() method. This test verifies basic content handling.
+        """
         note = Note(title="Test", content="Test content")
+        assert note.content == "Test content"
 
-        assert note.needs_embedding() is True
-        assert note.get_embedding_content() == "Test content"
-
-        # Test with None content
+        # Test with None content - valid, no embedding will be submitted
         note2 = Note(title="Test", content=None)
-        assert note2.get_embedding_content() is None
+        assert note2.content is None
 
 
 # ============================================================================

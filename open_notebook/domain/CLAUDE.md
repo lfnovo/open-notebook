@@ -33,7 +33,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
   - `add_insight()`: Generate and store insights with embeddings
 
 - **Note**: Standalone or linked notes
-  - `needs_embedding()`: Always True (searchable)
+  - `save()`: Submits `embed_note` command after save (fire-and-forget)
   - `add_to_notebook()`: Link to notebook
 
 - **SourceInsight, SourceEmbedding**: Derived content models
@@ -55,7 +55,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 
 - **Async/await**: All DB operations async; always use await
 - **Polymorphic get()**: `ObjectModel.get(id)` determines subclass from ID prefix (table:id format)
-- **Auto-embedding**: `save()` generates embeddings if `needs_embedding()` returns True
+- **Fire-and-forget embedding**: Models submit embed_* commands after save via `submit_command()` (non-blocking)
 - **Nullable fields**: Declare via `nullable_fields` ClassVar to allow None in database
 - **Timestamps**: `created` and `updated` auto-managed as ISO strings
 - **Fire-and-forget jobs**: `source.vectorize()` returns command_id without waiting
@@ -75,14 +75,17 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **RecordModel singleton**: __new__ returns existing instance; call `clear_instance()` in tests
 - **Source.command field**: Stored as RecordID; auto-parsed from strings via field_validator
 - **Text truncation**: `Note.get_context(short)` hardcodes 100-char limit
-- **Embedding async**: Only Note and SourceInsight embed on save; Source too large (uses async job)
+- **Auto-embedding behavior**:
+  - `Note.save()` → auto-submits `embed_note` command
+  - `Source.save()` → does NOT auto-submit (must call `vectorize()` explicitly)
+  - `Source.add_insight()` → auto-submits `embed_insight` command
 - **Relationship strings**: Must match SurrealDB schema (reference, artifact, refers_to)
 
 ## How to Add New Model
 
 1. Inherit from ObjectModel with table_name ClassVar
 2. Define Pydantic fields with validators
-3. Override `needs_embedding()` if searchable
+3. Override `save()` to submit embedding command if searchable (use `submit_command("embed_*", id)`)
 4. Add custom methods for domain logic (get_X, add_to_Y)
 5. Implement `_prepare_save_data()` if custom serialization needed
 

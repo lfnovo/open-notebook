@@ -14,7 +14,6 @@ from open_notebook.utils import (
     parse_thinking_content,
     remove_non_ascii,
     remove_non_printable,
-    split_text,
     token_count,
 )
 from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
@@ -26,11 +25,6 @@ from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
 
 class TestTextUtilities:
     """Test suite for text utility functions."""
-
-    def test_split_text_empty_string(self):
-        """Test splitting empty or very short strings."""
-        assert split_text("") == []
-        assert split_text("short") == ["short"]
 
     def test_remove_non_ascii(self):
         """Test removal of non-ASCII characters."""

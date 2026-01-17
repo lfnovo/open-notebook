@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-01-16
+
+### Added
+- Content-type aware text chunking with automatic HTML, Markdown, and plain text detection (#350, #142)
+- Unified embedding generation with mean pooling for large content that exceeds model context limits
+- Dedicated embedding commands: `embed_note`, `embed_insight`, `embed_source`
+- New utility modules: `chunking.py` and `embedding.py` in `open_notebook/utils/`
+
+### Changed
+- Embedding is now fire-and-forget: domain models submit embedding commands asynchronously after save
+- `rebuild_embeddings_command` now delegates to individual embed_* commands instead of inline processing
+- Chunk size reduced to 1500 characters for better compatibility with Ollama embedding models
+
+### Removed
+- Legacy embedding commands: `embed_single_item_command`, `embed_chunk_command`, `vectorize_source_command`
+- `needs_embedding()` and `get_embedding_content()` methods from domain models
+- `split_text()` function from text_utils (replaced by `chunk_text()` in chunking module)
+
+### Fixed
+- Embedding failures when content exceeds model context limits (#350, #142)
+
 ## [1.5.2] - 2026-01-15
 
 ### Performance

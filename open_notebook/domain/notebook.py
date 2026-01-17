@@ -8,11 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
-from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
-from open_notebook.utils import split_text
 
 
 class Notebook(ObjectModel):
@@ -268,11 +266,14 @@ class Source(ObjectModel):
 
     async def vectorize(self) -> str:
         """
-        Submit vectorization as a background job using the vectorize_source command.
+        Submit vectorization as a background job using the embed_source command.
 
-        This method now leverages the job-based architecture to prevent HTTP connection
-        pool exhaustion when processing large documents. The actual chunk processing
-        happens in the background worker pool, with natural concurrency control.
+        This method leverages the job-based architecture to prevent HTTP connection
+        pool exhaustion when processing large documents. The embed_source command:
+        1. Detects content type from file path
+        2. Chunks text using content-type aware splitter
+        3. Generates all embeddings in a single API call
+        4. Bulk inserts source_embedding records
 
         Returns:
             str: The command/job ID that can be used to track progress via the commands API
@@ -281,27 +282,22 @@ class Source(ObjectModel):
             ValueError: If source has no text to vectorize
             DatabaseOperationError: If job submission fails
         """
-        logger.info(f"Submitting vectorization job for source {self.id}")
+        logger.info(f"Submitting embed_source job for source {self.id}")
 
         try:
             if not self.full_text:
                 raise ValueError(f"Source {self.id} has no text to vectorize")
 
-            # Submit the vectorize_source command which will:
-            # 1. Delete existing embeddings (idempotency)
-            # 2. Split text into chunks
-            # 3. Submit each chunk as an embed_chunk job
+            # Submit the embed_source command
             command_id = submit_command(
-                "open_notebook",  # app name
-                "vectorize_source",  # command name
-                {
-                    "source_id": str(self.id),
-                },
+                "open_notebook",
+                "embed_source",
+                {"source_id": str(self.id)},
             )
 
             command_id_str = str(command_id)
             logger.info(
-                f"Vectorization job submitted for source {self.id}: "
+                f"Embed source job submitted for source {self.id}: "
                 f"command_id={command_id_str}"
             )
 
@@ -309,40 +305,58 @@ class Source(ObjectModel):
 
         except Exception as e:
             logger.error(
-                f"Failed to submit vectorization job for source {self.id}: {e}"
+                f"Failed to submit embed_source job for source {self.id}: {e}"
             )
             logger.exception(e)
             raise DatabaseOperationError(e)
 
     async def add_insight(self, insight_type: str, content: str) -> Any:
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        if not EMBEDDING_MODEL:
-            logger.warning("No embedding model found. Insight will not be searchable.")
+        """
+        Add an insight to this source.
 
+        Creates the insight record without embedding, then submits an async
+        embed_insight command to generate the embedding in the background.
+
+        Args:
+            insight_type: Type/category of the insight
+            content: The insight content text
+
+        Returns:
+            The created insight record(s)
+        """
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
         try:
-            embedding = (
-                (await EMBEDDING_MODEL.aembed([content]))[0] if EMBEDDING_MODEL else []
-            )
-            return await repo_query(
+            # Create insight WITHOUT embedding (fire-and-forget embedding via command)
+            result = await repo_query(
                 """
                 CREATE source_insight CONTENT {
                         "source": $source_id,
                         "insight_type": $insight_type,
                         "content": $content,
-                        "embedding": $embedding,
                 };""",
                 {
                     "source_id": ensure_record_id(self.id),
                     "insight_type": insight_type,
                     "content": content,
-                    "embedding": embedding,
                 },
             )
+
+            # Submit embedding command (fire-and-forget)
+            if result and len(result) > 0:
+                insight_id = str(result[0].get("id", ""))
+                if insight_id:
+                    submit_command(
+                        "open_notebook",
+                        "embed_insight",
+                        {"insight_id": insight_id},
+                    )
+                    logger.debug(f"Submitted embed_insight command for {insight_id}")
+
+            return result
         except Exception as e:
             logger.error(f"Error adding insight to source {self.id}: {str(e)}")
-            raise  # DatabaseOperationError(e)
+            raise
 
     def _prepare_save_data(self) -> dict:
         """Override to ensure command field is always RecordID format for database"""
@@ -355,7 +369,7 @@ class Source(ObjectModel):
         return data
 
     async def delete(self) -> bool:
-        """Delete source and clean up associated file if it exists."""
+        """Delete source and clean up associated file, embeddings, and insights."""
         # Clean up uploaded file if it exists
         if self.asset and self.asset.file_path:
             file_path = Path(self.asset.file_path)
@@ -372,6 +386,24 @@ class Source(ObjectModel):
                 logger.debug(
                     f"File {file_path} not found for source {self.id}, skipping cleanup"
                 )
+
+        # Delete associated embeddings and insights to prevent orphaned records
+        try:
+            source_id = ensure_record_id(self.id)
+            await repo_query(
+                "DELETE source_embedding WHERE source = $source_id",
+                {"source_id": source_id},
+            )
+            await repo_query(
+                "DELETE source_insight WHERE source = $source_id",
+                {"source_id": source_id},
+            )
+            logger.debug(f"Deleted embeddings and insights for source {self.id}")
+        except Exception as e:
+            logger.warning(
+                f"Failed to delete embeddings/insights for source {self.id}: {e}. "
+                "Continuing with source deletion."
+            )
 
         # Call parent delete to remove database record
         return await super().delete()
@@ -390,6 +422,31 @@ class Note(ObjectModel):
             raise InvalidInputError("Note content cannot be empty")
         return v
 
+    async def save(self) -> Optional[str]:
+        """
+        Save the note and submit embedding command.
+
+        Overrides ObjectModel.save() to submit an async embed_note command
+        after saving, instead of inline embedding.
+
+        Returns:
+            Optional[str]: The command_id if embedding was submitted, None otherwise
+        """
+        # Call parent save (without embedding)
+        await super().save()
+
+        # Submit embedding command (fire-and-forget) if note has content
+        if self.id and self.content and self.content.strip():
+            command_id = submit_command(
+                "open_notebook",
+                "embed_note",
+                {"note_id": str(self.id)},
+            )
+            logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
+            return command_id
+
+        return None
+
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
@@ -406,12 +463,6 @@ class Note(ObjectModel):
                 title=self.title,
                 content=self.content[:100] if self.content else None,
             )
-
-    def needs_embedding(self) -> bool:
-        return True
-
-    def get_embedding_content(self) -> Optional[str]:
-        return self.content
 
 
 class ChatSession(ObjectModel):
@@ -461,10 +512,10 @@ async def vector_search(
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        EMBEDDING_MODEL = await model_manager.get_embedding_model()
-        if EMBEDDING_MODEL is None:
-            raise ValueError("EMBEDDING_MODEL is not configured")
-        embed = (await EMBEDDING_MODEL.aembed([keyword]))[0]
+        from open_notebook.utils.embedding import generate_embedding
+
+        # Use unified embedding function (handles chunking if query is very long)
+        embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);

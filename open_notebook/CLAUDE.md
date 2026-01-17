@@ -163,8 +163,8 @@ Model types (language, embedding, speech_to_text, text_to_speech) drive factory 
 ### Fire-and-Forget Jobs
 Time-consuming operations (embedding, podcast generation) return command_id immediately. Caller polls surreal-commands for status; no blocking.
 
-### Embedding on Save
-Domain models with `needs_embedding()=True` auto-generate embeddings in `save()`. Search functions (text_search, vector_search) use embeddings for semantic matching.
+### Fire-and-Forget Embedding
+Domain models submit embedding commands after save via `submit_command()` (non-blocking). Note.save() submits `embed_note`, Source.add_insight() submits `embed_insight`, Source.vectorize() submits `embed_source`. Search functions (text_search, vector_search) use embeddings for semantic matching.
 
 ### Relationship Management
 SurrealDB graph edges link entities: Notebook→Source (has), Source→Note (artifact), Note→Source (refers_to). See `relate()` in domain/base.py.
@@ -203,7 +203,7 @@ SurrealDB graph edges link entities: Notebook→Source (has), Source→Note (art
 **New data model**:
 1. Create class inheriting from `ObjectModel` with `table_name` ClassVar
 2. Define Pydantic fields and validators
-3. Override `needs_embedding()` if searchable
+3. Override `save()` to submit embedding command if searchable (use `submit_command("embed_*", id)`)
 4. Add custom methods for domain logic (get_X, add_to_Y)
 5. Register in domain/__init__.py exports
 

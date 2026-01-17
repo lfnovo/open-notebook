@@ -15,7 +15,7 @@ from loguru import logger
 from open_notebook.domain.notebook import Note, Notebook, Source
 from open_notebook.exceptions import DatabaseOperationError, NotFoundError
 
-from .text_utils import token_count
+from .token_utils import token_count
 
 
 @dataclass

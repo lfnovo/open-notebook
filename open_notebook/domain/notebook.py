@@ -369,7 +369,7 @@ class Source(ObjectModel):
         return data
 
     async def delete(self) -> bool:
-        """Delete source and clean up associated file if it exists."""
+        """Delete source and clean up associated file, embeddings, and insights."""
         # Clean up uploaded file if it exists
         if self.asset and self.asset.file_path:
             file_path = Path(self.asset.file_path)
@@ -386,6 +386,24 @@ class Source(ObjectModel):
                 logger.debug(
                     f"File {file_path} not found for source {self.id}, skipping cleanup"
                 )
+
+        # Delete associated embeddings and insights to prevent orphaned records
+        try:
+            source_id = ensure_record_id(self.id)
+            await repo_query(
+                "DELETE source_embedding WHERE source = $source_id",
+                {"source_id": source_id},
+            )
+            await repo_query(
+                "DELETE source_insight WHERE source = $source_id",
+                {"source_id": source_id},
+            )
+            logger.debug(f"Deleted embeddings and insights for source {self.id}")
+        except Exception as e:
+            logger.warning(
+                f"Failed to delete embeddings/insights for source {self.id}: {e}. "
+                "Continuing with source deletion."
+            )
 
         # Call parent delete to remove database record
         return await super().delete()

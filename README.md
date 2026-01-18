@@ -125,6 +125,7 @@ Choose your installation method:
 - Requires: Python 3.11+, Node.js 18+, Docker, uv
 
 **Quick Start:**
+
 ```bash
 git clone https://github.com/lfnovo/open-notebook.git
 uv sync

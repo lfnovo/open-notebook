@@ -132,36 +132,6 @@ uv sync
 make start-all
 ```
 
-### 🐍 **Conda (Alternative for Local Setup)**
-
-**Recommended for users who prefer Conda environments:**
-
-1. **Create and Activate Environment**:
-
-   ```bash
-   conda create -n open-notebook python=3.11 -y
-   conda activate open-notebook
-   ```
-
-2. **Install Requirements**:
-
-   ```bash
-   # Install uv and nodejs inside the conda environment
-   conda install -c conda-forge uv nodejs -y
-   
-   # Sync Python dependencies using uv
-   uv sync
-   
-   # Install frontend dependencies
-   cd frontend && npm install && cd ..
-   ```
-
-3. **Start Services**: Ensure Docker is running for SurrealDB, then:
-
-   ```bash
-   make start-all
-   ```
-
 Access: http://localhost:3000 (dev) or http://localhost:8502 (production)
 
 ---

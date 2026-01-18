@@ -32,6 +32,24 @@ uv sync
 uv pip install python-magic
 ```
 
+#### 2.1 Alternative: Conda Setup (Optional)
+
+If you prefer using **Conda** to manage your environments, follow these steps instead of the standard `uv sync`:
+
+```bash
+# Create and activate the environment
+conda create -n open-notebook python=3.11 -y
+conda activate open-notebook
+
+# Install uv inside conda to maintain compatibility with the Makefile
+conda install -c conda-forge uv nodejs -y
+
+# Sync dependencies
+uv sync
+```
+
+> **Note**: Installing `uv` inside your Conda environment ensures that commands like `make start-all` and `make api` continue to work seamlessly.
+
 ### 3. Start SurrealDB
 
 ```bash

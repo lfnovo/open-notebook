@@ -130,7 +130,7 @@ See the [Model Providers Guide](../model-providers.md) for detailed setup instru
 ### Core Configuration
 ```bash
 # Database (auto-configured in Docker)
-SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_URL=ws://localhost:8001/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook

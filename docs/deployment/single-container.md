@@ -125,7 +125,7 @@ The single-container deployment uses the same environment variables as the multi
 
 ```bash
 # Database connection (automatically configured)
-SURREAL_URL="ws://localhost:8000/rpc"
+SURREAL_URL="ws://localhost:8001/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
 SURREAL_NAMESPACE="open_notebook"

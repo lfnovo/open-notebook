@@ -265,7 +265,7 @@ Or provide it when logging into the web interface.
    echo $SURREAL_USER
    
    # Test connection
-   curl http://localhost:8000/health
+   curl http://localhost:8001/health
    ```
 
 3. **Restart SurrealDB**:

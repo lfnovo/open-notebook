@@ -124,7 +124,7 @@ def call_model_with_source_context(
                     config.get("configurable", {}).get("model_id")
                     or state.get("model_override"),
                     "chat",
-                    max_tokens=8192,
+                    max_tokens=4096,
                 )
             )
         finally:
@@ -148,7 +148,7 @@ def call_model_with_source_context(
                 config.get("configurable", {}).get("model_id")
                 or state.get("model_override"),
                 "chat",
-                max_tokens=8192,
+                max_tokens=4096,
             )
         )
 

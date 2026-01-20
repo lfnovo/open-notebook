@@ -12,9 +12,7 @@ services:
     user: root
     restart: always
   open_notebook:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -25,4 +23,3 @@ services:
     volumes:
       - ./notebook_data:/app/data
     restart: always
-    

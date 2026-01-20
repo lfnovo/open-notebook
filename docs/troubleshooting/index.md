@@ -86,7 +86,7 @@ docker stats
 4. **Test Basic Connectivity**
    ```bash
    # Database
-   curl http://localhost:8000/health
+   curl http://localhost:8001/health
    
    # API
    curl http://localhost:5055/health

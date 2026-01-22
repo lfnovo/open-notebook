@@ -27,6 +27,7 @@ export const zhTW = {
     language: "語言",
     english: "English",
     chinese: "簡體中文",
+    japanese: "日本語",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",

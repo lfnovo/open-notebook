@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-01-22
+
+### Fixed
+- "Failed to send message" error with unhelpful logs when chat model is not configured (#358)
+  - Added detailed error logging with model selection context and full traceback
+  - Improved error messages to guide users to Settings → Models
+  - Added warnings when default models are not configured
+
+### Docs
+- Ollama troubleshooting: Added "Model Name Configuration" section emphasizing exact model names from `ollama list`
+- Added troubleshooting entry for "Failed to send message" error with step-by-step solutions
+- Updated AI Chat Issues documentation with model configuration guidance
+
 ## [1.6.0] - 2026-01-21
 
 ### Added

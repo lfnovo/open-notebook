@@ -4,6 +4,61 @@ Problems with AI models, chat, and response quality.
 
 ---
 
+## "Failed to send message" Error
+
+**Symptom:** Chat shows "Failed to send message" toast. Logs show:
+```
+Error executing chat: Model is not a LanguageModel: None
+```
+
+**Cause:** No valid language model configured for chat
+
+**Solutions:**
+
+### Solution 1: Check Default Model Configuration
+```
+1. Go to Settings → Models
+2. Scroll to "Default Models" section
+3. Verify "Default Chat Model" has a model selected
+4. If empty, select an available language model
+5. Click Save
+```
+
+### Solution 2: Verify Model Names (Ollama Users)
+```bash
+# Get exact model names
+ollama list
+
+# Example output:
+# NAME                   SIZE      MODIFIED
+# gemma3:12b            8.1 GB    2 months ago
+
+# The model name in Open Notebook must be EXACTLY "gemma3:12b"
+# NOT "gemma3" or "gemma3-12b"
+```
+
+### Solution 3: Re-add Missing Models
+```
+1. Note the exact model names from your provider
+2. Go to Settings → Models
+3. Delete any misconfigured models
+4. Add models with exact names
+5. Set new defaults
+```
+
+### Solution 4: Check Model Still Exists
+```bash
+# For Ollama: verify model is installed
+ollama list
+
+# For cloud providers: verify API key is valid
+# and you have access to the model
+```
+
+> **Tip:** This error often occurs when you delete a model from Ollama but forget to update the default models in Open Notebook. Always re-configure defaults after removing models.
+
+---
+
 ## "Models not available" or "Models not showing"
 
 **Symptom:** Settings → Models shows empty, or "No models configured"

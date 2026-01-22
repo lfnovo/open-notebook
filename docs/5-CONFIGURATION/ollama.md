@@ -233,6 +233,45 @@ ollama pull qwen3
 
 ## Troubleshooting
 
+### Model Name Configuration (Critical)
+
+**⚠️ IMPORTANT: Model names must exactly match the output of `ollama list`**
+
+This is the most common cause of "Failed to send message" errors. Open Notebook requires the **exact model name** as it appears in Ollama.
+
+**Step 1: Get the exact model name**
+```bash
+ollama list
+```
+
+Example output:
+```
+NAME                        ID              SIZE      MODIFIED
+mxbai-embed-large:latest    468836162de7    669 MB    7 minutes ago
+gemma3:12b                  f4031aab637d    8.1 GB    2 months ago
+qwen3:32b                   030ee887880f    20 GB     9 days ago
+```
+
+**Step 2: Use the exact name when adding the model in Open Notebook**
+
+| ✅ Correct | ❌ Wrong |
+|-----------|----------|
+| `gemma3:12b` | `gemma3` (missing tag) |
+| `qwen3:32b` | `qwen3-32b` (wrong format) |
+| `mxbai-embed-large:latest` | `mxbai-embed-large` (missing tag) |
+
+**Note:** Some models use `:latest` as the default tag. If `ollama list` shows `model:latest`, you must use `model:latest` in Open Notebook, not just `model`.
+
+**Step 3: Configure in Open Notebook**
+
+1. Go to **Settings → Models**
+2. Click **Add Model**
+3. Enter the **exact name** from `ollama list`
+4. Select provider: `ollama`
+5. Select type: `language` (for chat) or `embedding` (for search)
+6. Save the model
+7. Set it as the default for the appropriate task (chat, transformation, etc.)
+
 ### Common Issues
 
 **1. "Ollama unavailable" in Open Notebook**
@@ -322,6 +361,50 @@ netstat -tulpn | grep 11434
 ```bash
 OLLAMA_HOST=0.0.0.0:8080 ollama serve
 export OLLAMA_API_BASE=http://localhost:8080
+```
+
+**6. "Failed to send message" in Chat**
+
+**Symptom:** Chat shows "Failed to send message" toast notification. Logs may show:
+```
+Error executing chat: Model is not a LanguageModel: None
+```
+
+**Causes (in order of likelihood):**
+
+1. **Model name mismatch**: The model name in Open Notebook doesn't exactly match `ollama list`
+2. **No default model configured**: You haven't set a default chat model in Settings → Models
+3. **Model was deleted**: You removed the model from Ollama but didn't update Open Notebook's defaults
+4. **Model record deleted**: The model was removed from Open Notebook but is still set as default
+
+**Solutions:**
+
+**Check 1: Verify model names match exactly**
+```bash
+# Get exact model names from Ollama
+ollama list
+
+# Compare with what's configured in Open Notebook
+# Go to Settings → Models and verify the names match EXACTLY
+```
+
+**Check 2: Verify default models are set**
+1. Go to **Settings → Models**
+2. Scroll to **Default Models** section
+3. Ensure **Default Chat Model** has a value selected
+4. If empty, select an available language model
+
+**Check 3: Refresh after changes**
+If you've added/removed models in Ollama:
+1. Refresh the Open Notebook page
+2. Go to Settings → Models
+3. Re-add any missing models with exact names from `ollama list`
+4. Re-select default models if needed
+
+**Check 4: Test the model directly**
+```bash
+# Verify Ollama can use the model
+ollama run gemma3:12b "Hello, world"
 ```
 
 ### Docker-Specific Troubleshooting

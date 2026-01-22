@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -381,7 +382,13 @@ async def execute_chat(request: ExecuteChatRequest):
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
     except Exception as e:
-        logger.error(f"Error executing chat: {str(e)}")
+        # Log detailed error with context for debugging
+        logger.error(
+            f"Error executing chat: {str(e)}\n"
+            f"  Session ID: {request.session_id}\n"
+            f"  Model override: {request.model_override}\n"
+            f"  Traceback:\n{traceback.format_exc()}"
+        )
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
 
 

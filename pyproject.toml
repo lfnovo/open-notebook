@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "1.5.2"
+version = "1.6.0"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -35,10 +35,11 @@ dependencies = [
     "httpx[socks]>=0.27.0",
     "content-core>=1.0.2",
     "ai-prompter>=0.3",
-    "esperanto>=2.13",
+    "esperanto>=2.16",
     "surrealdb>=1.0.4",
     "podcast-creator>=0.7.0",
     "surreal-commands>=1.3.0",
+    "numpy>=2.4.1",
 ]
 
 [tool.setuptools]

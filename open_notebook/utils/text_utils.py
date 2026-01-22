@@ -7,48 +7,11 @@ import re
 import unicodedata
 from typing import Tuple
 
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-from .token_utils import token_count
-
 # Patterns for matching thinking content in AI responses
 # Standard pattern: <think>...</think>
 THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL)
 # Pattern for malformed output: content</think> (missing opening tag)
 THINK_PATTERN_NO_OPEN = re.compile(r"^(.*?)</think>", re.DOTALL)
-
-
-def split_text(txt: str, chunk_size=500):
-    """
-    Split the input text into chunks.
-
-    Args:
-        txt (str): The input text to be split.
-        chunk_size (int): The size of each chunk. Default is 500.
-
-    Returns:
-        list: A list of text chunks.
-    """
-    overlap = int(chunk_size * 0.15)
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size,
-        chunk_overlap=overlap,
-        length_function=token_count,
-        separators=[
-            "\n\n",
-            "\n",
-            ".",
-            ",",
-            " ",
-            "\u200b",  # Zero-width space
-            "\uff0c",  # Fullwidth comma
-            "\u3001",  # Ideographic comma
-            "\uff0e",  # Fullwidth full stop
-            "\u3002",  # Ideographic full stop
-            "",
-        ],
-    )
-    return text_splitter.split_text(txt)
 
 
 def remove_non_ascii(text: str) -> str:

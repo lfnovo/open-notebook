@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added troubleshooting entry for "Failed to send message" error with step-by-step solutions
 - Updated AI Chat Issues documentation with model configuration guidance
 
+
 ## [1.6.0] - 2026-01-21
 
 ### Added

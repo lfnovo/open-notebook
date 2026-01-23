@@ -21,6 +21,8 @@ async def get_settings():
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
             smol_docling_enabled=settings.smol_docling_enabled,
+            document_parser=settings.document_parser,
+            smol_docling_use_gpu=settings.smol_docling_use_gpu,
         )
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
@@ -63,6 +65,14 @@ async def update_settings(settings_update: SettingsUpdate):
             settings.youtube_preferred_languages = settings_update.youtube_preferred_languages
         if settings_update.smol_docling_enabled is not None:
             settings.smol_docling_enabled = settings_update.smol_docling_enabled
+        if settings_update.document_parser is not None:
+            from typing import Literal, cast
+            settings.document_parser = cast(
+                Literal["content_core", "smol_docling"],
+                settings_update.document_parser
+            )
+        if settings_update.smol_docling_use_gpu is not None:
+            settings.smol_docling_use_gpu = settings_update.smol_docling_use_gpu
 
         await settings.update()
 
@@ -73,6 +83,8 @@ async def update_settings(settings_update: SettingsUpdate):
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
             smol_docling_enabled=settings.smol_docling_enabled,
+            document_parser=settings.document_parser,
+            smol_docling_use_gpu=settings.smol_docling_use_gpu,
         )
     except HTTPException:
         raise

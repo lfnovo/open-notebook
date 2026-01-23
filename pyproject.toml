@@ -41,8 +41,9 @@ dependencies = [
     "podcast-creator>=0.7.0",
     "surreal-commands>=1.2.0",
     "transformers>=4.38.0",
-    "docling>=1.0.0",
     "docling-core>=1.0.0",
+    "pdf2image>=1.16.0",
+    "pillow>=10.0.0",
 ]
 
 [tool.setuptools]

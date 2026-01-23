@@ -14,6 +14,10 @@ from open_notebook.domain.models import Model, ModelManager
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
+from open_notebook.graphs.smol_docling_integration import (
+    get_smol_docling_parser,
+    check_smoldocling_available,
+)
 
 
 class SourceState(TypedDict):
@@ -32,15 +36,70 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
-    content_settings = ContentSettings(
-        default_content_processing_engine_doc="auto",
-        default_content_processing_engine_url="auto",
-        default_embedding_option="ask",
-        auto_delete_files="yes",
-        youtube_preferred_languages=["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja"]
-    )
+    """
+    Process source content using either content_core (default) or SmolDocling.
+    
+    The parser is selected based on ContentSettings.document_parser:
+    - "content_core": Traditional extraction using content_core library
+    - "smol_docling": VLM-based extraction using SmolDocling
+    """
+    # Load content settings from database
+    try:
+        content_settings = await ContentSettings.get_instance()  # type: ignore[assignment]
+    except Exception:
+        content_settings = ContentSettings(
+            default_content_processing_engine_doc="auto",
+            default_content_processing_engine_url="auto",
+            default_embedding_option="ask",
+            auto_delete_files="yes",
+            youtube_preferred_languages=["en", "pt", "es", "de", "nl", "en-GB", "fr", "hi", "ja"]
+        )
+    
     content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
-
+    
+    # Check if SmolDocling should be used for this content
+    use_smol_docling = (
+        content_settings.document_parser == "smol_docling" or
+        content_settings.smol_docling_enabled
+    )
+    
+    # SmolDocling is only applicable for PDF and image files
+    file_path = content_state.get("file_path", "")
+    is_pdf_or_image = (
+        file_path and 
+        file_path.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.webp'))
+    )
+    
+    if use_smol_docling and is_pdf_or_image and check_smoldocling_available():
+        logger.info("=" * 60)
+        logger.info(" SMOLDOCLING PARSER ACTIVATED ")
+        logger.info(f"Processing file: {file_path}")
+        logger.info("=" * 60)
+        try:
+            parser = get_smol_docling_parser(
+                use_gpu=content_settings.smol_docling_use_gpu
+            )
+            result = await parser.parse_file(file_path)
+            
+            if result.success:
+                # Update content_state with SmolDocling results
+                content_state["content"] = result.content
+                if result.title:
+                    content_state["title"] = result.title
+                content_state["source_type"] = "pdf" if file_path.lower().endswith('.pdf') else "image"
+                logger.info("=" * 60)
+                logger.info(f" SMOLDOCLING SUCCESS! Processed {result.page_count} pages")
+                logger.info("=" * 60)
+                return {"content_state": ProcessSourceState(**content_state)}
+            else:
+                logger.warning(f"SmolDocling parsing failed: {result.error_message}")
+                logger.info("Falling back to content_core extraction")
+        except Exception as e:
+            logger.warning(f"SmolDocling error: {e}. Falling back to content_core")
+    elif use_smol_docling and is_pdf_or_image and not check_smoldocling_available():
+        logger.warning("SmolDocling is enabled but dependencies are not available. Using content_core.")
+    
+    # Default: use content_core for extraction
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
     )

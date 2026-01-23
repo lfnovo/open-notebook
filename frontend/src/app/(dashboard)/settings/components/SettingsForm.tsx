@@ -21,6 +21,8 @@ const settingsSchema = z.object({
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
   smol_docling_enabled: z.boolean().optional(),
+  document_parser: z.enum(['content_core', 'smol_docling']).optional(),
+  smol_docling_use_gpu: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -45,6 +47,8 @@ export function SettingsForm() {
       default_embedding_option: undefined,
       auto_delete_files: undefined,
       smol_docling_enabled: undefined,
+      document_parser: undefined,
+      smol_docling_use_gpu: undefined,
     }
   })
 
@@ -61,6 +65,8 @@ export function SettingsForm() {
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
         smol_docling_enabled: settings.smol_docling_enabled || false,
+        document_parser: (settings.document_parser as 'content_core' | 'smol_docling') || 'content_core',
+        smol_docling_use_gpu: settings.smol_docling_use_gpu ?? true,
       }
       reset(formData)
       setHasResetForm(true)
@@ -154,10 +160,70 @@ export function SettingsForm() {
                 htmlFor="smol_docling"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Enable Smol Docling Integration (Preview)
+                Enable Smol Docling Integration (Legacy Toggle)
               </Label>
               <p className="text-sm text-muted-foreground">
-                Integration is available but currently disabled.
+                Use the Document Parser setting below instead.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t">
+            <Label htmlFor="document_parser">Document Parser (PDF/Image)</Label>
+            <Controller
+              name="document_parser"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || 'content_core'}
+                  onValueChange={field.onChange}
+                  disabled={field.disabled || isLoading}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select document parser" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="content_core">Content Core (Default)</SelectItem>
+                    <SelectItem value="smol_docling">SmolDocling (VLM-based)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            <Collapsible open={expandedSections.parser} onOpenChange={() => toggleSection('parser')}>
+              <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+                <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.parser ? 'rotate-180' : ''}`} />
+                Help me choose
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
+                <p>Choose how PDF and image files are converted to text:</p>
+                <p>• <strong>Content Core (Default)</strong> uses traditional extraction methods. Fast and reliable for most documents.</p>
+                <p>• <strong>SmolDocling (VLM-based)</strong> uses a vision-language model (256M parameters) to understand document structure. Better for complex documents with tables, formulas, charts, and mixed layouts. Requires more computational resources.</p>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          <div className="flex items-start space-x-2 pt-2">
+            <Controller
+              name="smol_docling_use_gpu"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  id="smol_docling_gpu"
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              )}
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="smol_docling_gpu"
+                className="text-sm font-medium leading-none"
+              >
+                Use GPU Acceleration for SmolDocling
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Enable to use CUDA or Apple Silicon GPU if available. Disable to force CPU-only processing.
               </p>
             </div>
           </div>

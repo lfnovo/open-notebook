@@ -187,9 +187,21 @@ class ModelManager:
             model_id = defaults.large_context_model
 
         if not model_id:
+            logger.warning(
+                f"No default model configured for type '{model_type}'. "
+                f"Please go to Settings → Models and set a default model."
+            )
             return None
 
-        return await self.get_model(model_id, **kwargs)
+        try:
+            return await self.get_model(model_id, **kwargs)
+        except ValueError as e:
+            logger.error(
+                f"Failed to load default model for type '{model_type}': {e}. "
+                f"The configured model_id '{model_id}' may have been deleted or misconfigured. "
+                f"Please go to Settings → Models and reconfigure the default model."
+            )
+            return None
 
 
 model_manager = ModelManager()

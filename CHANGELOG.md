@@ -5,18 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.0] - 2026-01-16
+## [1.6.1] - 2026-01-22
+
+### Fixed
+- "Failed to send message" error with unhelpful logs when chat model is not configured (#358)
+  - Added detailed error logging with model selection context and full traceback
+  - Improved error messages to guide users to Settings → Models
+  - Added warnings when default models are not configured
+
+### Docs
+- Ollama troubleshooting: Added "Model Name Configuration" section emphasizing exact model names from `ollama list`
+- Added troubleshooting entry for "Failed to send message" error with step-by-step solutions
+- Updated AI Chat Issues documentation with model configuration guidance
+
+## [1.6.0] - 2026-01-21
 
 ### Added
 - Content-type aware text chunking with automatic HTML, Markdown, and plain text detection (#350, #142)
 - Unified embedding generation with mean pooling for large content that exceeds model context limits
 - Dedicated embedding commands: `embed_note`, `embed_insight`, `embed_source`
 - New utility modules: `chunking.py` and `embedding.py` in `open_notebook/utils/`
+- Japanese (ja-JP) language support (#450)
 
 ### Changed
 - Embedding is now fire-and-forget: domain models submit embedding commands asynchronously after save
 - `rebuild_embeddings_command` now delegates to individual embed_* commands instead of inline processing
 - Chunk size reduced to 1500 characters for better compatibility with Ollama embedding models
+- Bump Esperanto to 2.16 for increased Ollama context window support
 
 ### Removed
 - Legacy embedding commands: `embed_single_item_command`, `embed_chunk_command`, `vectorize_source_command`
@@ -25,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Embedding failures when content exceeds model context limits (#350, #142)
+- Empty note titles when saving from chat (clean thinking tags from prompt graph output)
+- Orphaned embedding/insight records when deleting sources (cascade delete)
+- Search results crash with null parent_id (defensive frontend check)
+- Database migration 10 cleans up existing orphaned records
 
 ## [1.5.2] - 2026-01-15
 

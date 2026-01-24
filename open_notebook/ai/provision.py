@@ -5,6 +5,9 @@ from loguru import logger
 from open_notebook.ai.models import model_manager
 from open_notebook.utils import token_count
 
+# Keep references to prevent GC from closing the shared httpx client
+_esperanto_model_refs: list = []
+
 
 async def provision_langchain_model(
     content, model_id, default_type, **kwargs
@@ -29,4 +32,10 @@ async def provision_langchain_model(
 
     logger.debug(f"Using model: {model}")
     assert isinstance(model, LanguageModel), f"Model is not a LanguageModel: {model}"
+
+    # Keep a reference to prevent GC from closing the shared httpx client
+    if len(_esperanto_model_refs) > 100:
+        _esperanto_model_refs.clear()  # Prevent unbounded memory growth
+    _esperanto_model_refs.append(model)
+
     return model.to_langchain()

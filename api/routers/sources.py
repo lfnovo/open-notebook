@@ -1,3 +1,4 @@
+import asyncio
 import os
 from pathlib import Path
 from typing import Any, List, Optional
@@ -449,11 +450,15 @@ async def create_source(
                     embed=source_data.embed,
                 )
 
-                result = execute_command_sync(
+                # Run in thread pool to avoid blocking the event loop
+                # execute_command_sync uses asyncio.run() internally which can't
+                # be called from an already-running event loop (FastAPI)
+                result = await asyncio.to_thread(
+                    execute_command_sync,
                     "open_notebook",  # app name
                     "process_source",  # command name
                     command_input.model_dump(),
-                    timeout=300,  # 5 minute timeout for sync processing
+                    300,  # 5 minute timeout for sync processing
                 )
 
                 if not result.is_success():

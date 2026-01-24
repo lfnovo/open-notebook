@@ -1,3 +1,8 @@
+# Remote debugging - remove in production
+import debugpy
+debugpy.listen(("0.0.0.0", 5678))
+# debugpy.wait_for_client()  # Uncomment to pause until debugger attaches
+
 # Load environment variables
 from dotenv import load_dotenv
 

@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "1.6.1"
+version = "1.6.2"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -33,12 +33,12 @@ dependencies = [
     "tomli>=2.0.2",
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",
-    "content-core>=1.0.2",
-    "ai-prompter>=0.3",
-    "esperanto>=2.16",
+    "content-core>=1.0.2,<2",
+    "ai-prompter>=0.3,<1",
+    "esperanto>=2.17.2,<3",
     "surrealdb>=1.0.4",
-    "podcast-creator>=0.7.0",
-    "surreal-commands>=1.3.0",
+    "podcast-creator>=0.7.0,<1",
+    "surreal-commands>=1.3.0,<2",
     "numpy>=2.4.1",
 ]
 

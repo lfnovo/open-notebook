@@ -663,15 +663,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.16.0"
+version = "2.17.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/77/6d527161eee5a562bc80b72b988be35b409ed8d896e701112d513c8511e9/esperanto-2.16.0.tar.gz", hash = "sha256:963034980f6e27e49ecd81ff6193d6b930f74e9fe5570ac189dc8734dc17fbc2", size = 773360, upload-time = "2026-01-22T02:08:14.853Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/0d/1607a3a46421c63d81a56002f489c25424761b8589022289dec64d324efd/esperanto-2.17.2.tar.gz", hash = "sha256:6e96db87f6a4faa1387554be9feefb2d6de761b2368c45ddf0a9967c1d1064cb", size = 850259, upload-time = "2026-01-24T12:32:48.887Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e1/c3/781674895df5355a72aa8259e31624e39ea7cf116320f0db711d65b8d7f1/esperanto-2.16.0-py3-none-any.whl", hash = "sha256:82ca43762673c9738942b7d984f76a754edd085e94ba2ff599fb9f85e5c2c11e", size = 178964, upload-time = "2026-01-22T02:08:16.174Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/43/c83db99f2e24b50cedf05730a229df67cd0720b5bb0bc980a1b1246d19d9/esperanto-2.17.2-py3-none-any.whl", hash = "sha256:db6530794de7dc5be0a1196e9a9444c89934ec0af4a55792fb6daa1bb7a2cb3e", size = 201438, upload-time = "2026-01-24T12:32:50.619Z" },
 ]
 
 [[package]]
@@ -2376,7 +2376,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.6.1"
+version = "1.6.2"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
@@ -2428,9 +2428,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ai-prompter", specifier = ">=0.3" },
-    { name = "content-core", specifier = ">=1.0.2" },
-    { name = "esperanto", specifier = ">=2.16" },
+    { name = "ai-prompter", specifier = ">=0.3,<1" },
+    { name = "content-core", specifier = ">=1.0.2,<2" },
+    { name = "esperanto", specifier = ">=2.17.2,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
@@ -2450,13 +2450,13 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.7.0" },
+    { name = "podcast-creator", specifier = ">=0.7.0,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
-    { name = "surreal-commands", specifier = ">=1.3.0" },
+    { name = "surreal-commands", specifier = ">=1.3.0,<2" },
     { name = "surrealdb", specifier = ">=1.0.4" },
     { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tomli", specifier = ">=2.0.2" },

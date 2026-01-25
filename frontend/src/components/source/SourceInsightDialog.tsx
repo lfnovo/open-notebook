@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { FileText } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { useInsight } from '@/lib/hooks/use-insights'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -127,7 +129,8 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
             ) : displayInsight ? (
               <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
                 <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
+                  remarkPlugins={[remarkGfm, remarkMath]}
+                  rehypePlugins={[rehypeKatex]}
                   components={{
                     table: ({ children }) => (
                       <div className="my-4 overflow-x-auto">

@@ -1,5 +1,11 @@
 import apiClient from './client'
-import { NotebookResponse, CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
+import {
+  NotebookResponse,
+  CreateNotebookRequest,
+  UpdateNotebookRequest,
+  NotebookDeletePreview,
+  NotebookDeleteResponse,
+} from '@/lib/types/api'
 
 export const notebooksApi = {
   list: async (params?: { archived?: boolean; order_by?: string }) => {
@@ -22,8 +28,18 @@ export const notebooksApi = {
     return response.data
   },
 
-  delete: async (id: string) => {
-    await apiClient.delete(`/notebooks/${id}`)
+  deletePreview: async (id: string) => {
+    const response = await apiClient.get<NotebookDeletePreview>(
+      `/notebooks/${id}/delete-preview`
+    )
+    return response.data
+  },
+
+  delete: async (id: string, deleteExclusiveSources: boolean = false) => {
+    const response = await apiClient.delete<NotebookDeleteResponse>(`/notebooks/${id}`, {
+      params: { delete_exclusive_sources: deleteExclusiveSources },
+    })
+    return response.data
   },
 
   addSource: async (notebookId: string, sourceId: string) => {
@@ -34,5 +50,5 @@ export const notebooksApi = {
   removeSource: async (notebookId: string, sourceId: string) => {
     const response = await apiClient.delete(`/notebooks/${notebookId}/sources/${sourceId}`)
     return response.data
-  }
+  },
 }

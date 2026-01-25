@@ -13,8 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { useUpdateNotebook, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
+import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
@@ -27,7 +27,6 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const router = useRouter()
   const updateNotebook = useUpdateNotebook()
-  const deleteNotebook = useDeleteNotebook()
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -35,11 +34,6 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
       id: notebook.id,
       data: { archived: !notebook.archived }
     })
-  }
-
-  const handleDelete = () => {
-    deleteNotebook.mutate(notebook.id)
-    setShowDeleteDialog(false)
   }
 
   const handleCardClick = () => {
@@ -132,14 +126,11 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
           </CardContent>
       </Card>
 
-      <ConfirmDialog
+      <NotebookDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title={t.notebooks.deleteNotebook}
-        description={t.notebooks.deleteNotebookDesc.replace('{name}', notebook.name)}
-        confirmText={t.common.delete}
-        confirmVariant="destructive"
-        onConfirm={handleDelete}
+        notebookId={notebook.id}
+        notebookName={notebook.name}
       />
     </>
   )

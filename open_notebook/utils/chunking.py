@@ -22,8 +22,8 @@ from langchain_text_splitters import (
 from loguru import logger
 
 # Constants
-CHUNK_SIZE = 1500  # characters
-CHUNK_OVERLAP = 225  # 15% of chunk size
+CHUNK_SIZE = 1200  # characters
+CHUNK_OVERLAP = 180  # 15% of chunk size
 HIGH_CONFIDENCE_THRESHOLD = 0.8  # Threshold for heuristics to override extension
 
 
@@ -73,7 +73,9 @@ _EXTENSION_TO_CONTENT_TYPE = {
 }
 
 
-def detect_content_type_from_extension(file_path: Optional[str]) -> Optional[ContentType]:
+def detect_content_type_from_extension(
+    file_path: Optional[str],
+) -> Optional[ContentType]:
     """
     Detect content type from file extension.
 
@@ -220,9 +222,7 @@ def _calculate_markdown_score(text: str) -> float:
     return min(score, 1.0)
 
 
-def detect_content_type(
-    text: str, file_path: Optional[str] = None
-) -> ContentType:
+def detect_content_type(text: str, file_path: Optional[str] = None) -> ContentType:
     """
     Detect content type using file extension (primary) and heuristics (fallback).
 
@@ -352,12 +352,18 @@ def chunk_text(
         splitter = _get_html_splitter()
         # HTML splitter returns Document objects
         docs = splitter.split_text(text)
-        chunks = [doc.page_content if hasattr(doc, "page_content") else str(doc) for doc in docs]
+        chunks = [
+            doc.page_content if hasattr(doc, "page_content") else str(doc)
+            for doc in docs
+        ]
     elif content_type == ContentType.MARKDOWN:
         splitter = _get_markdown_splitter()
         # Markdown splitter returns Document objects
         docs = splitter.split_text(text)
-        chunks = [doc.page_content if hasattr(doc, "page_content") else str(doc) for doc in docs]
+        chunks = [
+            doc.page_content if hasattr(doc, "page_content") else str(doc)
+            for doc in docs
+        ]
     else:
         # Plain text - use recursive splitter directly
         splitter = _get_plain_splitter()

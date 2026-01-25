@@ -71,15 +71,31 @@ export function useUpdateNotebook() {
   })
 }
 
+export function useNotebookDeletePreview(id: string, enabled: boolean = false) {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.notebook(id), 'delete-preview'],
+    queryFn: () => notebooksApi.deletePreview(id),
+    enabled: !!id && enabled,
+  })
+}
+
 export function useDeleteNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
 
   return useMutation({
-    mutationFn: (id: string) => notebooksApi.delete(id),
+    mutationFn: ({
+      id,
+      deleteExclusiveSources = false,
+    }: {
+      id: string
+      deleteExclusiveSources?: boolean
+    }) => notebooksApi.delete(id, deleteExclusiveSources),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      // Also invalidate sources since some may have been deleted
+      queryClient.invalidateQueries({ queryKey: ['sources'] })
       toast({
         title: t.common.success,
         description: t.notebooks.deleteSuccess,

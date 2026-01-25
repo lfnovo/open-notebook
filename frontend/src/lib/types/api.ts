@@ -71,6 +71,21 @@ export interface UpdateNotebookRequest {
   archived?: boolean
 }
 
+export interface NotebookDeletePreview {
+  notebook_id: string
+  notebook_name: string
+  note_count: number
+  exclusive_source_count: number
+  shared_source_count: number
+}
+
+export interface NotebookDeleteResponse {
+  message: string
+  deleted_notes: number
+  deleted_sources: number
+  unlinked_sources: number
+}
+
 export interface CreateNoteRequest {
   title?: string
   content: string

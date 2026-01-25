@@ -39,8 +39,8 @@ Each utility is stateless and can be imported independently.
 
 ### chunking.py
 - **ContentType**: Enum (HTML, MARKDOWN, PLAIN)
-- **CHUNK_SIZE**: 1500 characters (constant)
-- **CHUNK_OVERLAP**: 225 characters (15% overlap)
+- **CHUNK_SIZE**: constant
+- **CHUNK_OVERLAP**: constant
 - **detect_content_type_from_extension(file_path)**: Detect type from file extension
 - **detect_content_type_from_heuristics(text)**: Detect type from content patterns (returns type + confidence)
 - **detect_content_type(text, file_path)**: Combined detection (extension primary, heuristics fallback)

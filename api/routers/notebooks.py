@@ -3,7 +3,13 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import NotebookCreate, NotebookResponse, NotebookUpdate
+from api.models import (
+    NotebookCreate,
+    NotebookDeletePreview,
+    NotebookDeleteResponse,
+    NotebookResponse,
+    NotebookUpdate,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError
@@ -79,6 +85,35 @@ async def create_notebook(notebook: NotebookCreate):
         logger.error(f"Error creating notebook: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error creating notebook: {str(e)}"
+        )
+
+
+@router.get(
+    "/notebooks/{notebook_id}/delete-preview", response_model=NotebookDeletePreview
+)
+async def get_notebook_delete_preview(notebook_id: str):
+    """Get a preview of what will be deleted when this notebook is deleted."""
+    try:
+        notebook = await Notebook.get(notebook_id)
+        if not notebook:
+            raise HTTPException(status_code=404, detail="Notebook not found")
+
+        preview = await notebook.get_delete_preview()
+
+        return NotebookDeletePreview(
+            notebook_id=str(notebook.id),
+            notebook_name=notebook.name,
+            note_count=preview["note_count"],
+            exclusive_source_count=preview["exclusive_source_count"],
+            shared_source_count=preview["shared_source_count"],
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting delete preview for notebook {notebook_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error fetching notebook deletion preview: {str(e)}",
         )
 
 
@@ -255,17 +290,34 @@ async def remove_source_from_notebook(notebook_id: str, source_id: str):
         )
 
 
-@router.delete("/notebooks/{notebook_id}")
-async def delete_notebook(notebook_id: str):
-    """Delete a notebook."""
+@router.delete("/notebooks/{notebook_id}", response_model=NotebookDeleteResponse)
+async def delete_notebook(
+    notebook_id: str,
+    delete_exclusive_sources: bool = Query(
+        False,
+        description="Whether to delete sources that belong only to this notebook",
+    ),
+):
+    """
+    Delete a notebook with cascade deletion.
+
+    Always deletes all notes associated with the notebook.
+    If delete_exclusive_sources is True, also deletes sources that belong only
+    to this notebook (not linked to any other notebooks).
+    """
     try:
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        await notebook.delete()
+        result = await notebook.delete(delete_exclusive_sources=delete_exclusive_sources)
 
-        return {"message": "Notebook deleted successfully"}
+        return NotebookDeleteResponse(
+            message="Notebook deleted successfully",
+            deleted_notes=result["deleted_notes"],
+            deleted_sources=result["deleted_sources"],
+            unlinked_sources=result["unlinked_sources"],
+        )
     except HTTPException:
         raise
     except Exception as e:

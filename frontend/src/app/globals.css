@@ -189,4 +189,28 @@
   .clickable-card * {
     cursor: pointer !important;
   }
+
+  /* KaTeX math formula styling - prevent overflow breaking layouts */
+  .katex-display {
+    @apply overflow-x-auto overflow-y-hidden;
+    max-width: 100%;
+  }
+
+  .katex {
+    @apply text-base;
+  }
+
+  /* Ensure inline math doesn't break words awkwardly */
+  .katex-html {
+    white-space: nowrap;
+  }
+
+  /* Container for math content */
+  .prose .katex-display {
+    @apply my-4 py-2;
+  }
+
+  .prose .katex-display > .katex {
+    @apply text-base;
+  }
 }

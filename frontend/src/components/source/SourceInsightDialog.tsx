@@ -127,7 +127,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                 <span className="text-sm text-muted-foreground">{t.common.loading}</span>
               </div>
             ) : displayInsight ? (
-              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
+              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none overflow-x-auto">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex]}

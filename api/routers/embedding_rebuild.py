@@ -10,7 +10,7 @@ from api.models import (
     RebuildStats,
     RebuildStatusResponse,
 )
-from open_notebook.database.repository import repo_query
+from backpack.database.repository import repo_query
 
 router = APIRouter()
 
@@ -94,7 +94,7 @@ async def start_rebuild(request: RebuildRequest):
 
         # Submit command
         command_id = await CommandService.submit_command_job(
-            "open_notebook",
+            "backpack",
             "rebuild_embeddings",
             {
                 "mode": request.mode,

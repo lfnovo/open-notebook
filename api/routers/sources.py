@@ -27,11 +27,11 @@ from api.models import (
     SourceUpdate,
 )
 from commands.source_commands import SourceProcessingInput
-from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook, Source
-from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
+from backpack.config import UPLOADS_FOLDER
+from backpack.database.repository import ensure_record_id, repo_query
+from backpack.domain.module import Module, Source
+from backpack.domain.transformation import Transformation
+from backpack.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -85,8 +85,8 @@ async def save_uploaded_file(upload_file: UploadFile) -> str:
 
 def parse_source_form_data(
     type: str = Form(...),
-    notebook_id: Optional[str] = Form(None),
-    notebooks: Optional[str] = Form(None),  # JSON string of notebook IDs
+    module_id: Optional[str] = Form(None),
+    modules: Optional[str] = Form(None),  # JSON string of module IDs
     url: Optional[str] = Form(None),
     content: Optional[str] = Form(None),
     title: Optional[str] = Form(None),
@@ -108,13 +108,13 @@ def parse_source_form_data(
     async_processing_bool = str_to_bool(async_processing)
 
     # Parse JSON strings
-    notebooks_list = None
-    if notebooks:
+    modules_list = None
+    if modules:
         try:
-            notebooks_list = json.loads(notebooks)
+            modules_list = json.loads(modules)
         except json.JSONDecodeError:
-            logger.error(f"Invalid JSON in notebooks field: {notebooks}")
-            raise ValueError("Invalid JSON in notebooks field")
+            logger.error(f"Invalid JSON in modules field: {modules}")
+            raise ValueError("Invalid JSON in modules field")
 
     transformations_list = []
     if transformations:
@@ -128,8 +128,8 @@ def parse_source_form_data(
     try:
         source_data = SourceCreate(
             type=type,
-            notebook_id=notebook_id,
-            notebooks=notebooks_list,
+            module_id=module_id,
+            modules=modules_list,
             url=url,
             content=content,
             title=title,
@@ -149,7 +149,7 @@ def parse_source_form_data(
 
 @router.get("/sources", response_model=List[SourceListResponse])
 async def get_sources(
-    notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+    module_id: Optional[str] = Query(None, description="Filter by module ID"),
     limit: int = Query(
         50, ge=1, le=100, description="Number of sources to return (1-100)"
     ),
@@ -175,18 +175,18 @@ async def get_sources(
         order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
 
         # Build the query
-        if notebook_id:
-            # Verify notebook exists first
-            notebook = await Notebook.get(notebook_id)
-            if not notebook:
-                raise HTTPException(status_code=404, detail="Notebook not found")
+        if module_id:
+            # Verify module exists first
+            module = await Module.get(module_id)
+            if not module:
+                raise HTTPException(status_code=404, detail="Module not found")
 
-            # Query sources for specific notebook - include command field with FETCH
+            # Query sources for specific module - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
-                FROM (select value in from reference where out=$notebook_id)
+                FROM (select value in from reference where out=$module_id)
                 {order_clause}
                 LIMIT $limit START $offset
                 FETCH command
@@ -194,7 +194,7 @@ async def get_sources(
             result = await repo_query(
                 query,
                 {
-                    "notebook_id": ensure_record_id(notebook_id),
+                    "module_id": ensure_record_id(module_id),
                     "limit": limit,
                     "offset": offset,
                 },
@@ -285,12 +285,12 @@ async def create_source(
     source_data, upload_file = form_data
 
     try:
-        # Verify all specified notebooks exist (backward compatibility support)
-        for notebook_id in source_data.notebooks or []:
-            notebook = await Notebook.get(notebook_id)
-            if not notebook:
+        # Verify all specified modules exist (backward compatibility support)
+        for module_id in source_data.modules or []:
+            module = await Module.get(module_id)
+            if not module:
                 raise HTTPException(
-                    status_code=404, detail=f"Notebook {notebook_id} not found"
+                    status_code=404, detail=f"Module {module_id} not found"
                 )
 
         # Handle file upload if provided
@@ -356,10 +356,10 @@ async def create_source(
             )
             await source.save()
 
-            # Add source to notebooks immediately so it appears in the UI
+            # Add source to modules immediately so it appears in the UI
             # The source_graph will skip adding duplicates
-            for notebook_id in source_data.notebooks or []:
-                await source.add_to_notebook(notebook_id)
+            for module_id in source_data.modules or []:
+                await source.add_to_module(module_id)
 
             try:
                 # Import command modules to ensure they're registered
@@ -369,13 +369,13 @@ async def create_source(
                 command_input = SourceProcessingInput(
                     source_id=str(source.id),
                     content_state=content_state,
-                    notebook_ids=source_data.notebooks,
+                    module_ids=source_data.modules,
                     transformations=transformation_ids,
                     embed=source_data.embed,
                 )
 
                 command_id = await CommandService.submit_command_job(
-                    "open_notebook",  # app name
+                    "backpack",  # app name
                     "process_source",  # command name
                     command_input.model_dump(),
                 )
@@ -435,22 +435,22 @@ async def create_source(
                 )
                 await source.save()
 
-                # Add source to notebooks immediately so it appears in the UI
+                # Add source to modules immediately so it appears in the UI
                 # The source_graph will skip adding duplicates
-                for notebook_id in source_data.notebooks or []:
-                    await source.add_to_notebook(notebook_id)
+                for module_id in source_data.modules or []:
+                    await source.add_to_module(module_id)
 
                 # Execute command synchronously
                 command_input = SourceProcessingInput(
                     source_id=str(source.id),
                     content_state=content_state,
-                    notebook_ids=source_data.notebooks,
+                    module_ids=source_data.modules,
                     transformations=transformation_ids,
                     embed=source_data.embed,
                 )
 
                 result = execute_command_sync(
-                    "open_notebook",  # app name
+                    "backpack",  # app name
                     "process_source",  # command name
                     command_input.model_dump(),
                     timeout=300,  # 5 minute timeout for sync processing
@@ -611,13 +611,13 @@ async def get_source(source_id: str):
 
         embedded_chunks = await source.get_embedded_chunks()
 
-        # Get associated notebooks
-        notebooks_query = await repo_query(
+        # Get associated modules
+        modules_query = await repo_query(
             "SELECT VALUE out FROM reference WHERE in = $source_id",
             {"source_id": ensure_record_id(source.id or source_id)},
         )
-        notebook_ids = (
-            [str(nb_id) for nb_id in notebooks_query] if notebooks_query else []
+        module_ids = (
+            [str(mod_id) for mod_id in modules_query] if modules_query else []
         )
 
         return SourceResponse(
@@ -640,8 +640,8 @@ async def get_source(source_id: str):
             command_id=str(source.command) if source.command else None,
             status=status,
             processing_info=processing_info,
-            # Notebook associations
-            notebooks=notebook_ids,
+            # Module associations
+            modules=module_ids,
         )
     except HTTPException:
         raise
@@ -808,14 +808,14 @@ async def retry_source_processing(source_id: str):
                 )
                 # Continue with retry if we can't check status
 
-        # Get notebooks that this source belongs to
-        query = "SELECT notebook FROM reference WHERE source = $source_id"
+        # Get modules that this source belongs to
+        query = "SELECT module FROM reference WHERE source = $source_id"
         references = await repo_query(query, {"source_id": source_id})
-        notebook_ids = [str(ref["notebook"]) for ref in references]
+        module_ids = [str(ref["module"]) for ref in references]
 
-        if not notebook_ids:
+        if not module_ids:
             raise HTTPException(
-                status_code=400, detail="Source is not associated with any notebooks"
+                status_code=400, detail="Source is not associated with any modules"
             )
 
         # Prepare content_state based on source asset
@@ -849,13 +849,13 @@ async def retry_source_processing(source_id: str):
             command_input = SourceProcessingInput(
                 source_id=str(source.id),
                 content_state=content_state,
-                notebook_ids=notebook_ids,
+                module_ids=module_ids,
                 transformations=[],  # Use default transformations on retry
                 embed=True,  # Always embed on retry
             )
 
             command_id = await CommandService.submit_command_job(
-                "open_notebook",  # app name
+                "backpack",  # app name
                 "process_source",  # command name
                 command_input.model_dump(),
             )
@@ -971,7 +971,7 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
             raise HTTPException(status_code=404, detail="Transformation not found")
 
         # Run transformation graph
-        from open_notebook.graphs.transformation import graph as transform_graph
+        from backpack.graphs.transformation import graph as transform_graph
 
         await transform_graph.ainvoke(
             input=dict(source=source, transformation=transformation)  # type: ignore[arg-type]

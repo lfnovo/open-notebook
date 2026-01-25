@@ -6,9 +6,9 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.config import DATA_FOLDER
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
+from backpack.config import DATA_FOLDER
+from backpack.database.repository import ensure_record_id, repo_query
+from backpack.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
 
 try:
     from podcast_creator import configure, create_podcast
@@ -46,7 +46,7 @@ class PodcastGenerationOutput(CommandOutput):
     error_message: Optional[str] = None
 
 
-@command("generate_podcast", app="open_notebook")
+@command("generate_podcast", app="backpack")
 async def generate_podcast_command(
     input_data: PodcastGenerationInput,
 ) -> PodcastGenerationOutput:

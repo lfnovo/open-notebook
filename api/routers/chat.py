@@ -6,19 +6,19 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
-from open_notebook.exceptions import (
+from backpack.database.repository import ensure_record_id, repo_query
+from backpack.domain.module import ChatSession, Note, Module, Source
+from backpack.exceptions import (
     NotFoundError,
 )
-from open_notebook.graphs.chat import graph as chat_graph
+from backpack.graphs.chat import graph as chat_graph
 
 router = APIRouter()
 
 
 # Request/Response models
 class CreateSessionRequest(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID to create session for")
+    module_id: str = Field(..., description="Module ID to create session for")
     title: Optional[str] = Field(None, description="Optional session title")
     model_override: Optional[str] = Field(
         None, description="Optional model override for this session"
@@ -42,7 +42,7 @@ class ChatMessage(BaseModel):
 class ChatSessionResponse(BaseModel):
     id: str = Field(..., description="Session ID")
     title: str = Field(..., description="Session title")
-    notebook_id: Optional[str] = Field(None, description="Notebook ID")
+    module_id: Optional[str] = Field(None, description="Module ID")
     created: str = Field(..., description="Creation timestamp")
     updated: str = Field(..., description="Last update timestamp")
     message_count: Optional[int] = Field(
@@ -76,7 +76,7 @@ class ExecuteChatResponse(BaseModel):
 
 
 class BuildContextRequest(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID")
+    module_id: str = Field(..., description="Module ID")
     context_config: Dict[str, Any] = Field(..., description="Context configuration")
 
 
@@ -92,22 +92,22 @@ class SuccessResponse(BaseModel):
 
 
 @router.get("/chat/sessions", response_model=List[ChatSessionResponse])
-async def get_sessions(notebook_id: str = Query(..., description="Notebook ID")):
-    """Get all chat sessions for a notebook."""
+async def get_sessions(module_id: str = Query(..., description="Module ID")):
+    """Get all chat sessions for a module."""
     try:
-        # Get notebook to verify it exists
-        notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
+        # Get module to verify it exists
+        module = await Module.get(module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
 
-        # Get sessions for this notebook
-        sessions = await notebook.get_chat_sessions()
+        # Get sessions for this module
+        sessions = await module.get_chat_sessions()
 
         return [
             ChatSessionResponse(
                 id=session.id or "",
                 title=session.title or "Untitled Session",
-                notebook_id=notebook_id,
+                module_id=module_id,
                 created=str(session.created),
                 updated=str(session.updated),
                 message_count=0,  # TODO: Add message count if needed
@@ -116,7 +116,7 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
             for session in sessions
         ]
     except NotFoundError:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail="Module not found")
     except Exception as e:
         logger.error(f"Error fetching chat sessions: {str(e)}")
         raise HTTPException(
@@ -128,10 +128,10 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 async def create_session(request: CreateSessionRequest):
     """Create a new chat session."""
     try:
-        # Verify notebook exists
-        notebook = await Notebook.get(request.notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
+        # Verify module exists
+        module = await Module.get(request.module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
 
         # Create new session
         session = ChatSession(
@@ -141,20 +141,20 @@ async def create_session(request: CreateSessionRequest):
         )
         await session.save()
 
-        # Relate session to notebook
-        await session.relate_to_notebook(request.notebook_id)
+        # Relate session to module
+        await session.relate_to_module(request.module_id)
 
         return ChatSessionResponse(
             id=session.id or "",
             title=session.title or "",
-            notebook_id=request.notebook_id,
+            module_id=request.module_id,
             created=str(session.created),
             updated=str(session.updated),
             message_count=0,
             model_override=session.model_override,
         )
     except NotFoundError:
-        raise HTTPException(status_code=404, detail="Notebook not found")
+        raise HTTPException(status_code=404, detail="Module not found")
     except Exception as e:
         logger.error(f"Error creating chat session: {str(e)}")
         raise HTTPException(
@@ -197,7 +197,7 @@ async def get_session(session_id: str):
                     )
                 )
 
-        # Find notebook_id (we need to query the relationship)
+        # Find module_id (we need to query the relationship)
         # Ensure session_id has proper table prefix
         full_session_id = (
             session_id
@@ -205,23 +205,23 @@ async def get_session(session_id: str):
             else f"chat_session:{session_id}"
         )
 
-        notebook_query = await repo_query(
+        module_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
         )
 
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
+        module_id = module_query[0]["out"] if module_query else None
 
-        if not notebook_id:
+        if not module_id:
             # This might be an old session created before API migration
             logger.warning(
-                f"No notebook relationship found for session {session_id} - may be an orphaned session"
+                f"No module relationship found for session {session_id} - may be an orphaned session"
             )
 
         return ChatSessionWithMessagesResponse(
             id=session.id or "",
             title=session.title or "Untitled Session",
-            notebook_id=notebook_id,
+            module_id=module_id,
             created=str(session.created),
             updated=str(session.updated),
             message_count=len(messages),
@@ -259,23 +259,23 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
 
         await session.save()
 
-        # Find notebook_id
+        # Find module_id
         # Ensure session_id has proper table prefix
         full_session_id = (
             session_id
             if session_id.startswith("chat_session:")
             else f"chat_session:{session_id}"
         )
-        notebook_query = await repo_query(
+        module_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
         )
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
+        module_id = module_query[0]["out"] if module_query else None
 
         return ChatSessionResponse(
             id=session.id or "",
             title=session.title or "",
-            notebook_id=notebook_id,
+            module_id=module_id,
             created=str(session.created),
             updated=str(session.updated),
             message_count=0,
@@ -387,12 +387,12 @@ async def execute_chat(request: ExecuteChatRequest):
 
 @router.post("/chat/context", response_model=BuildContextResponse)
 async def build_context(request: BuildContextRequest):
-    """Build context for a notebook based on context configuration."""
+    """Build context for a module based on context configuration."""
     try:
-        # Verify notebook exists
-        notebook = await Notebook.get(request.notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
+        # Verify module exists
+        module = await Module.get(request.module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
 
         context_data: dict[str, list[dict[str, str]]] = {"sources": [], "notes": []}
         total_content = ""
@@ -452,7 +452,7 @@ async def build_context(request: BuildContextRequest):
                     continue
         else:
             # Default behavior - include all sources and notes with short context
-            sources = await notebook.get_sources()
+            sources = await module.get_sources()
             for source in sources:
                 try:
                     source_context = await source.get_context(context_size="short")
@@ -462,7 +462,7 @@ async def build_context(request: BuildContextRequest):
                     logger.warning(f"Error processing source {source.id}: {str(e)}")
                     continue
 
-            notes = await notebook.get_notes()
+            notes = await module.get_notes()
             for note in notes:
                 try:
                     note_context = note.get_context(context_size="short")
@@ -476,7 +476,7 @@ async def build_context(request: BuildContextRequest):
         char_count = len(total_content)
         # Use token count utility if available
         try:
-            from open_notebook.utils import token_count
+            from backpack.utils import token_count
 
             estimated_tokens = token_count(total_content) if total_content else 0
         except ImportError:

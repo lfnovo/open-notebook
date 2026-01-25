@@ -79,8 +79,8 @@ export const useAuthStore = create<AuthState>()(
         try {
           const apiUrl = await getApiUrl()
 
-          // Test auth with notebooks endpoint
-          const response = await fetch(`${apiUrl}/api/notebooks`, {
+          // Test auth with modules endpoint
+          const response = await fetch(`${apiUrl}/api/modules`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${password}`,
@@ -172,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
         try {
           const apiUrl = await getApiUrl()
 
-          const response = await fetch(`${apiUrl}/api/notebooks`, {
+          const response = await fetch(`${apiUrl}/api/modules`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,

@@ -1,0 +1,55 @@
+
+-- Migration 11 Down: Revert module back to notebook
+
+-- Step 1: Create the notebook table
+DEFINE TABLE IF NOT EXISTS notebook SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE notebook TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS description ON TABLE notebook TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS archived ON TABLE notebook TYPE option<bool> DEFAULT False;
+
+DEFINE FIELD IF NOT EXISTS created ON notebook DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON notebook DEFAULT time::now() VALUE time::now();
+
+-- Step 2: Copy all data from module to notebook
+INSERT INTO notebook SELECT * FROM module;
+
+-- Step 3: Revert the reference relationship
+DEFINE TABLE OVERWRITE reference
+TYPE RELATION
+FROM source TO notebook;
+
+-- Step 4: Revert the artifact relationship
+DEFINE TABLE OVERWRITE artifact
+TYPE RELATION
+FROM note TO notebook;
+
+-- Step 5: Revert the refers_to relationship
+DEFINE TABLE OVERWRITE refers_to
+TYPE RELATION
+FROM chat_session TO notebook|source;
+
+-- Step 6: Migrate relationship records back to notebook
+LET $refs = (SELECT * FROM reference);
+DELETE reference;
+FOR $ref IN $refs {
+    LET $new_out = type::thing("notebook", record::id($ref.out));
+    RELATE $ref.in->reference->$new_out;
+};
+
+LET $arts = (SELECT * FROM artifact);
+DELETE artifact;
+FOR $art IN $arts {
+    LET $new_out = type::thing("notebook", record::id($art.out));
+    RELATE $art.in->artifact->$new_out;
+};
+
+LET $refers = (SELECT * FROM refers_to WHERE record::table(out) == "module");
+FOR $ref IN $refers {
+    DELETE $ref.id;
+    LET $new_out = type::thing("notebook", record::id($ref.out));
+    RELATE $ref.in->refers_to->$new_out;
+};
+
+-- Step 7: Remove the module table
+REMOVE TABLE module;

@@ -30,17 +30,17 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { TranslationKeys } from '@/lib/locales'
 import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
-import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
+import { ContextMode } from '@/app/(dashboard)/modules/[id]/page'
 
 interface SourceCardProps {
   source: SourceListResponse
   onDelete?: (sourceId: string) => void
   onRetry?: (sourceId: string) => void
-  onRemoveFromNotebook?: (sourceId: string) => void
+  onRemoveFromModule?: (sourceId: string) => void
   onClick?: (sourceId: string) => void
   onRefresh?: () => void
   className?: string
-  showRemoveFromNotebook?: boolean
+  showRemoveFromModule?: boolean
   contextMode?: ContextMode
   onContextModeChange?: (mode: ContextMode) => void
 }
@@ -112,10 +112,10 @@ export function SourceCard({
   onClick,
   onDelete,
   onRetry,
-  onRemoveFromNotebook,
+  onRemoveFromModule,
   onRefresh,
   className,
-  showRemoveFromNotebook = false,
+  showRemoveFromModule = false,
   contextMode,
   onContextModeChange
 }: SourceCardProps) {
@@ -186,9 +186,9 @@ export function SourceCard({
     }
   }
 
-  const handleRemoveFromNotebook = () => {
-    if (onRemoveFromNotebook) {
-      onRemoveFromNotebook(source.id)
+  const handleRemoveFromModule = () => {
+    if (onRemoveFromModule) {
+      onRemoveFromModule(source.id)
     }
   }
 
@@ -308,17 +308,17 @@ export function SourceCard({
                 </Button>
               </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {showRemoveFromNotebook && (
+              {showRemoveFromModule && (
                 <>
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.stopPropagation()
-                      handleRemoveFromNotebook()
+                      handleRemoveFromModule()
                     }}
-                    disabled={!onRemoveFromNotebook}
+                    disabled={!onRemoveFromModule}
                   >
                     <Unlink className="h-4 w-4 mr-2" />
-                    {t.sources.removeFromNotebook}
+                    {t.sources.removeFromModule}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>

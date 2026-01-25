@@ -17,17 +17,17 @@ class ChatService:
         self.base_url = os.getenv("API_BASE_URL", "http://127.0.0.1:5055")
         # Add authentication header if password is set
         self.headers = {}
-        password = os.getenv("OPEN_NOTEBOOK_PASSWORD")
+        password = os.getenv("BACKPACK_PASSWORD")
         if password:
             self.headers["Authorization"] = f"Bearer {password}"
 
-    async def get_sessions(self, notebook_id: str) -> List[Dict[str, Any]]:
-        """Get all chat sessions for a notebook"""
+    async def get_sessions(self, module_id: str) -> List[Dict[str, Any]]:
+        """Get all chat sessions for a module"""
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(
                     f"{self.base_url}/api/chat/sessions",
-                    params={"notebook_id": notebook_id},
+                    params={"module_id": module_id},
                     headers=self.headers,
                 )
                 response.raise_for_status()
@@ -38,13 +38,13 @@ class ChatService:
 
     async def create_session(
         self,
-        notebook_id: str,
+        module_id: str,
         title: Optional[str] = None,
         model_override: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create a new chat session"""
         try:
-            data: Dict[str, Any] = {"notebook_id": notebook_id}
+            data: Dict[str, Any] = {"module_id": module_id}
             if title is not None:
                 data["title"] = title
             if model_override is not None:
@@ -147,11 +147,11 @@ class ChatService:
             raise
 
     async def build_context(
-        self, notebook_id: str, context_config: Dict[str, Any]
+        self, module_id: str, context_config: Dict[str, Any]
     ) -> Dict[str, Any]:
-        """Build context for a notebook"""
+        """Build context for a module"""
         try:
-            data = {"notebook_id": notebook_id, "context_config": context_config}
+            data = {"module_id": module_id, "context_config": context_config}
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(

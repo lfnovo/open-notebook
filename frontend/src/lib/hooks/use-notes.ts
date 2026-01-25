@@ -6,11 +6,11 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { CreateNoteRequest, UpdateNoteRequest } from '@/lib/types/api'
 
-export function useNotes(notebookId?: string) {
+export function useNotes(moduleId?: string) {
   return useQuery({
-    queryKey: QUERY_KEYS.notes(notebookId),
-    queryFn: () => notesApi.list({ notebook_id: notebookId }),
-    enabled: !!notebookId,
+    queryKey: QUERY_KEYS.notes(moduleId),
+    queryFn: () => notesApi.list({ module_id: moduleId }),
+    enabled: !!moduleId,
   })
 }
 
@@ -32,17 +32,17 @@ export function useCreateNote() {
     mutationFn: (data: CreateNoteRequest) => notesApi.create(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.notes(variables.notebook_id) 
+        queryKey: QUERY_KEYS.notes(variables.module_id) 
       })
       toast({
         title: t.common.success,
-        description: t.notebooks.noteCreatedSuccess,
+        description: t.modules.noteCreatedSuccess,
       })
     },
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToCreateNote),
+        description: getApiErrorKey(error, t.modules.failedToCreateNote),
         variant: 'destructive',
       })
     },
@@ -62,13 +62,13 @@ export function useUpdateNote() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.note(id) })
       toast({
         title: t.common.success,
-        description: t.notebooks.noteUpdatedSuccess,
+        description: t.modules.noteUpdatedSuccess,
       })
     },
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToUpdateNote),
+        description: getApiErrorKey(error, t.modules.failedToUpdateNote),
         variant: 'destructive',
       })
     },
@@ -83,17 +83,17 @@ export function useDeleteNote() {
   return useMutation({
     mutationFn: (id: string) => notesApi.delete(id),
     onSuccess: () => {
-      // Invalidate all notes queries (with and without notebook IDs)
+      // Invalidate all notes queries (with and without module IDs)
       queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast({
         title: t.common.success,
-        description: t.notebooks.noteDeletedSuccess,
+        description: t.modules.noteDeletedSuccess,
       })
     },
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToDeleteNote),
+        description: getApiErrorKey(error, t.modules.failedToDeleteNote),
         variant: 'destructive',
       })
     },

@@ -27,7 +27,7 @@ WORKDIR /app
 
 # Copy dependency files and minimal package structure first for better layer caching
 COPY pyproject.toml uv.lock ./
-COPY open_notebook/__init__.py ./open_notebook/__init__.py
+COPY backpack/__init__.py ./backpack/__init__.py
 
 # Install dependencies with optimizations (this layer will be cached unless dependencies change)
 RUN uv sync --frozen --no-dev

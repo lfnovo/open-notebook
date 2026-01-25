@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Startup script for Open Notebook API server.
+Startup script for Backpack API server.
 """
 
 import os
@@ -19,7 +19,7 @@ if __name__ == "__main__":
     port = int(os.getenv("API_PORT", "5055"))
     reload = os.getenv("API_RELOAD", "true").lower() == "true"
 
-    print(f"Starting Open Notebook API server on {host}:{port}")
+    print(f"Starting Backpack API server on {host}:{port}")
     print(f"Reload mode: {reload}")
 
     uvicorn.run(

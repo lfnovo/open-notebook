@@ -1,5 +1,5 @@
 """
-Authentication router for Open Notebook API.
+Authentication router for Backpack API.
 Provides endpoints to check authentication status.
 """
 
@@ -16,7 +16,7 @@ async def get_auth_status():
     Check if authentication is enabled.
     Returns whether a password is required to access the API.
     """
-    auth_enabled = bool(os.environ.get("OPEN_NOTEBOOK_PASSWORD"))
+    auth_enabled = bool(os.environ.get("BACKPACK_PASSWORD"))
 
     return {
         "auth_enabled": auth_enabled,

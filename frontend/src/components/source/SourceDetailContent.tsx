@@ -65,7 +65,7 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
-import { NotebookAssociations } from '@/components/source/NotebookAssociations'
+import { ModuleAssociations } from '@/components/source/ModuleAssociations'
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -776,10 +776,10 @@ export function SourceDetailContent({
               </CardContent>
             </Card>
 
-            {/* Notebook Associations */}
-            <NotebookAssociations
+            {/* Module Associations */}
+            <ModuleAssociations
               sourceId={sourceId}
-              currentNotebookIds={source.notebooks || []}
+              currentModuleIds={source.modules || []}
               onSave={fetchSource}
             />
           </TabsContent>

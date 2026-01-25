@@ -1,12 +1,12 @@
 """
-Unit tests for the open_notebook.utils.chunking module.
+Unit tests for the backpack.utils.chunking module.
 
 Tests content type detection and text chunking functionality.
 """
 
 import pytest
 
-from open_notebook.utils.chunking import (
+from backpack.utils.chunking import (
     CHUNK_SIZE,
     ContentType,
     chunk_text,

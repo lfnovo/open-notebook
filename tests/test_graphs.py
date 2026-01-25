@@ -1,5 +1,5 @@
 """
-Unit tests for the open_notebook.graphs module.
+Unit tests for the backpack.graphs module.
 
 This test suite focuses on testing graph structures, tools, and validation
 without heavy mocking of the actual processing logic.
@@ -9,13 +9,13 @@ from datetime import datetime
 
 import pytest
 
-from open_notebook.graphs.prompt import PatternChainState, graph
-from open_notebook.graphs.tools import get_current_timestamp
-from open_notebook.graphs.transformation import (
+from backpack.graphs.prompt import PatternChainState, graph
+from backpack.graphs.tools import get_current_timestamp
+from backpack.graphs.transformation import (
     TransformationState,
     run_transformation,
 )
-from open_notebook.graphs.transformation import (
+from backpack.graphs.transformation import (
     graph as transformation_graph,
 )
 
@@ -106,8 +106,8 @@ class TestTransformationGraph:
         """Test TransformationState structure and fields."""
         from unittest.mock import MagicMock
 
-        from open_notebook.domain.notebook import Source
-        from open_notebook.domain.transformation import Transformation
+        from backpack.domain.module import Source
+        from backpack.domain.transformation import Transformation
 
         mock_source = MagicMock(spec=Source)
         mock_transformation = MagicMock(spec=Transformation)
@@ -129,7 +129,7 @@ class TestTransformationGraph:
         """Test transformation raises assertion with no content."""
         from unittest.mock import MagicMock
 
-        from open_notebook.domain.transformation import Transformation
+        from backpack.domain.transformation import Transformation
 
         mock_transformation = MagicMock(spec=Transformation)
 

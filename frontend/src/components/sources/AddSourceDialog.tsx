@@ -16,9 +16,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
-import { NotebooksStep } from './steps/NotebooksStep'
+import { ModulesStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { useModules } from '@/lib/hooks/use-modules'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
@@ -33,7 +33,7 @@ const createSourceSchema = z.object({
   url: z.string().optional(),
   content: z.string().optional(),
   file: z.any().optional(),
-  notebooks: z.array(z.string()).optional(),
+  modules: z.array(z.string()).optional(),
   transformations: z.array(z.string()).optional(),
   embed: z.boolean(),
   async_processing: z.boolean(),
@@ -70,7 +70,7 @@ type CreateSourceFormData = z.infer<typeof createSourceSchema>
 interface AddSourceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  defaultNotebookId?: string
+  defaultModuleId?: string
 }
 
 interface ProcessingState {
@@ -88,13 +88,13 @@ interface BatchProgress {
 export function AddSourceDialog({ 
   open, 
   onOpenChange, 
-  defaultNotebookId 
+  defaultModuleId 
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
   const WIZARD_STEPS: readonly WizardStep[] = [
     { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
-    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
+    { number: 2, title: t.navigation.modules, description: t.modules.searchPlaceholder },
     { number: 3, title: t.navigation.process, description: t.sources.processDescription },
   ]
 
@@ -102,8 +102,8 @@ export function AddSourceDialog({
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState<ProcessingState | null>(null)
-  const [selectedNotebooks, setSelectedNotebooks] = useState<string[]>(
-    defaultNotebookId ? [defaultNotebookId] : []
+  const [selectedModules, setSelectedModules] = useState<string[]>(
+    defaultModuleId ? [defaultModuleId] : []
   )
   const [selectedTransformations, setSelectedTransformations] = useState<string[]>([])
 
@@ -116,7 +116,7 @@ export function AddSourceDialog({
 
   // API hooks
   const createSource = useCreateSource()
-  const { data: notebooks = [], isLoading: notebooksLoading } = useNotebooks()
+  const { data: modules = [], isLoading: modulesLoading } = useModules()
   const { data: transformations = [], isLoading: transformationsLoading } = useTransformations()
   const { data: settings } = useSettings()
 
@@ -131,7 +131,7 @@ export function AddSourceDialog({
   } = useForm<CreateSourceFormData>({
     resolver: zodResolver(createSourceSchema),
     defaultValues: {
-      notebooks: defaultNotebookId ? [defaultNotebookId] : [],
+      modules: defaultModuleId ? [defaultModuleId] : [],
       embed: settings?.default_embedding_option === 'always' || settings?.default_embedding_option === 'ask',
       async_processing: true,
       transformations: [],
@@ -152,13 +152,13 @@ export function AddSourceDialog({
                          (settings.default_embedding_option === 'ask')
 
       reset({
-        notebooks: defaultNotebookId ? [defaultNotebookId] : [],
+        modules: defaultModuleId ? [defaultModuleId] : [],
         embed: embedValue,
         async_processing: true,
         transformations: [],
       })
     }
-  }, [settings, transformations, defaultNotebookId, reset])
+  }, [settings, transformations, defaultModuleId, reset])
 
   // Cleanup effect
   useEffect(() => {
@@ -281,11 +281,11 @@ export function AddSourceDialog({
   }
 
   // Selection handlers
-  const handleNotebookToggle = (notebookId: string) => {
-    const updated = selectedNotebooks.includes(notebookId)
-      ? selectedNotebooks.filter(id => id !== notebookId)
-      : [...selectedNotebooks, notebookId]
-    setSelectedNotebooks(updated)
+  const handleModuleToggle = (moduleId: string) => {
+    const updated = selectedModules.includes(moduleId)
+      ? selectedModules.filter(id => id !== moduleId)
+      : [...selectedModules, moduleId]
+    setSelectedModules(updated)
   }
 
   const handleTransformationToggle = (transformationId: string) => {
@@ -299,7 +299,7 @@ export function AddSourceDialog({
   const submitSingleSource = async (data: CreateSourceFormData): Promise<void> => {
     const createRequest: CreateSourceRequest = {
       type: data.type,
-      notebooks: selectedNotebooks,
+      modules: selectedModules,
       url: data.type === 'link' ? data.url : undefined,
       content: data.type === 'text' ? data.content : undefined,
       title: data.title,
@@ -351,7 +351,7 @@ export function AddSourceDialog({
       try {
         const createRequest: CreateSourceRequest = {
           type: item.type === 'url' ? 'link' : 'upload',
-          notebooks: selectedNotebooks,
+          modules: selectedModules,
           url: item.type === 'url' ? item.value as string : undefined,
           transformations: selectedTransformations,
           embed: data.embed,
@@ -432,7 +432,7 @@ export function AddSourceDialog({
     setCurrentStep(1)
     setProcessing(false)
     setProcessingStatus(null)
-    setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
+    setSelectedModules(defaultModuleId ? [defaultModuleId] : [])
     setUrlValidationErrors([])
     setBatchProgress(null)
 
@@ -561,11 +561,11 @@ export function AddSourceDialog({
             )}
             
             {currentStep === 2 && (
-              <NotebooksStep
-                notebooks={notebooks}
-                selectedNotebooks={selectedNotebooks}
-                onToggleNotebook={handleNotebookToggle}
-                loading={notebooksLoading}
+              <ModulesStep
+                modules={modules}
+                selectedModules={selectedModules}
+                onToggleModule={handleModuleToggle}
+                loading={modulesLoading}
               />
             )}
             

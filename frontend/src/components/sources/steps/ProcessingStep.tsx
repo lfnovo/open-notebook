@@ -14,7 +14,7 @@ interface CreateSourceFormData {
   url?: string
   content?: string
   file?: FileList | File
-  notebooks?: string[]
+  modules?: string[]
   transformations?: string[]
   embed: boolean
   async_processing: boolean

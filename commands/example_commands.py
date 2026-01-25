@@ -40,7 +40,7 @@ class DataAnalysisOutput(BaseModel):
     error_message: Optional[str] = None
 
 
-@command("process_text", app="open_notebook")
+@command("process_text", app="backpack")
 async def process_text_command(input_data: TextProcessingInput) -> TextProcessingOutput:
     """
     Example command for text processing. Tests basic command functionality
@@ -91,7 +91,7 @@ async def process_text_command(input_data: TextProcessingInput) -> TextProcessin
         )
 
 
-@command("analyze_data", app="open_notebook")
+@command("analyze_data", app="backpack")
 async def analyze_data_command(input_data: DataAnalysisInput) -> DataAnalysisOutput:
     """
     Example command for data analysis. Tests command with complex input/output

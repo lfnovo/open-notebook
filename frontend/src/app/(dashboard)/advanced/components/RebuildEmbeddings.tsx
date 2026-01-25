@@ -305,7 +305,7 @@ export function RebuildEmbeddings() {
               <div className="text-sm text-muted-foreground space-y-1">
                 <p>{t.common.created.replace('{time}', new Date(status.started_at).toLocaleString())}</p>
                 {status.completed_at && (
-                  <p>{t.notebooks.updated}: {new Date(status.completed_at).toLocaleString()}</p>
+                  <p>{t.modules.updated}: {new Date(status.completed_at).toLocaleString()}</p>
                 )}
               </div>
             )}

@@ -27,7 +27,7 @@ from api.routers import (
     episode_profiles,
     insights,
     models,
-    notebooks,
+    modules,
     notes,
     podcasts,
     search,
@@ -38,7 +38,7 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
-from open_notebook.database.async_migrate import AsyncMigrationManager
+from backpack.database.async_migrate import AsyncMigrationManager
 
 # Import commands to register them in the API process
 try:
@@ -88,8 +88,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Open Notebook API",
-    description="API for Open Notebook - Research Assistant",
+    title="Backpack API",
+    description="API for Backpack - Research Assistant",
     version="0.2.2",
     lifespan=lifespan,
 )
@@ -149,7 +149,7 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(config.router, prefix="/api", tags=["config"])
-app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
+app.include_router(modules.router, prefix="/api", tags=["modules"])
 app.include_router(search.router, prefix="/api", tags=["search"])
 app.include_router(models.router, prefix="/api", tags=["models"])
 app.include_router(transformations.router, prefix="/api", tags=["transformations"])
@@ -172,7 +172,7 @@ app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 
 @app.get("/")
 async def root():
-    return {"message": "Open Notebook API is running"}
+    return {"message": "Backpack API is running"}
 
 
 @app.get("/health")

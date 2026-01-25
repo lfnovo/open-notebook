@@ -5,11 +5,11 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command, submit_command
 
-from open_notebook.ai.models import model_manager
-from open_notebook.database.repository import ensure_record_id, repo_insert, repo_query
-from open_notebook.domain.notebook import Note, Source, SourceInsight
-from open_notebook.utils.chunking import ContentType, chunk_text, detect_content_type
-from open_notebook.utils.embedding import generate_embedding, generate_embeddings
+from backpack.ai.models import model_manager
+from backpack.database.repository import ensure_record_id, repo_insert, repo_query
+from backpack.domain.module import Note, Source, SourceInsight
+from backpack.utils.chunking import ContentType, chunk_text, detect_content_type
+from backpack.utils.embedding import generate_embedding, generate_embeddings
 
 
 def full_model_dump(model):
@@ -95,7 +95,7 @@ class EmbedSourceOutput(CommandOutput):
 
 @command(
     "embed_note",
-    app="open_notebook",
+    app="backpack",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -186,7 +186,7 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
 
 @command(
     "embed_insight",
-    app="open_notebook",
+    app="backpack",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -279,7 +279,7 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
 
 @command(
     "embed_source",
-    app="open_notebook",
+    app="backpack",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -479,7 +479,7 @@ async def collect_items_for_rebuild(
     return items
 
 
-@command("rebuild_embeddings", app="open_notebook", retry=None)
+@command("rebuild_embeddings", app="backpack", retry=None)
 async def rebuild_embeddings_command(
     input_data: RebuildEmbeddingsInput,
 ) -> RebuildEmbeddingsOutput:
@@ -552,7 +552,7 @@ async def rebuild_embeddings_command(
         for idx, source_id in enumerate(items["sources"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "backpack",
                     "embed_source",
                     {"source_id": source_id},
                 )
@@ -572,7 +572,7 @@ async def rebuild_embeddings_command(
         for idx, note_id in enumerate(items["notes"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "backpack",
                     "embed_note",
                     {"note_id": note_id},
                 )
@@ -592,7 +592,7 @@ async def rebuild_embeddings_command(
         for idx, insight_id in enumerate(items["insights"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "backpack",
                     "embed_insight",
                     {"insight_id": insight_id},
                 )

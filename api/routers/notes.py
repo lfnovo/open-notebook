@@ -4,26 +4,26 @@ from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
-from open_notebook.domain.notebook import Note
-from open_notebook.exceptions import InvalidInputError
+from backpack.domain.module import Note
+from backpack.exceptions import InvalidInputError
 
 router = APIRouter()
 
 
 @router.get("/notes", response_model=List[NoteResponse])
 async def get_notes(
-    notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+    module_id: Optional[str] = Query(None, description="Filter by module ID"),
 ):
-    """Get all notes with optional notebook filtering."""
+    """Get all notes with optional module filtering."""
     try:
-        if notebook_id:
-            # Get notes for a specific notebook
-            from open_notebook.domain.notebook import Notebook
+        if module_id:
+            # Get notes for a specific module
+            from backpack.domain.module import Module
 
-            notebook = await Notebook.get(notebook_id)
-            if not notebook:
-                raise HTTPException(status_code=404, detail="Notebook not found")
-            notes = await notebook.get_notes()
+            module = await Module.get(module_id)
+            if not module:
+                raise HTTPException(status_code=404, detail="Module not found")
+            notes = await module.get_notes()
         else:
             # Get all notes
             notes = await Note.get_all(order_by="updated desc")
@@ -53,7 +53,7 @@ async def create_note(note_data: NoteCreate):
         # Auto-generate title if not provided and it's an AI note
         title = note_data.title
         if not title and note_data.note_type == "ai" and note_data.content:
-            from open_notebook.graphs.prompt import graph as prompt_graph
+            from backpack.graphs.prompt import graph as prompt_graph
 
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
             result = await prompt_graph.ainvoke(
@@ -80,14 +80,14 @@ async def create_note(note_data: NoteCreate):
         )
         await new_note.save()
 
-        # Add to notebook if specified
-        if note_data.notebook_id:
-            from open_notebook.domain.notebook import Notebook
+        # Add to module if specified
+        if note_data.module_id:
+            from backpack.domain.module import Module
 
-            notebook = await Notebook.get(note_data.notebook_id)
-            if not notebook:
-                raise HTTPException(status_code=404, detail="Notebook not found")
-            await new_note.add_to_notebook(note_data.notebook_id)
+            module = await Module.get(note_data.module_id)
+            if not module:
+                raise HTTPException(status_code=404, detail="Module not found")
+            await new_note.add_to_module(note_data.module_id)
 
         return NoteResponse(
             id=new_note.id or "",

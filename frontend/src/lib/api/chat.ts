@@ -1,27 +1,27 @@
 import apiClient from './client'
 import {
-  NotebookChatSession,
-  NotebookChatSessionWithMessages,
-  CreateNotebookChatSessionRequest,
-  UpdateNotebookChatSessionRequest,
-  SendNotebookChatMessageRequest,
-  NotebookChatMessage,
+  ModuleChatSession,
+  ModuleChatSessionWithMessages,
+  CreateModuleChatSessionRequest,
+  UpdateModuleChatSessionRequest,
+  SendModuleChatMessageRequest,
+  ModuleChatMessage,
   BuildContextRequest,
   BuildContextResponse,
 } from '@/lib/types/api'
 
 export const chatApi = {
   // Session management
-  listSessions: async (notebookId: string) => {
-    const response = await apiClient.get<NotebookChatSession[]>(
+  listSessions: async (moduleId: string) => {
+    const response = await apiClient.get<ModuleChatSession[]>(
       `/chat/sessions`,
-      { params: { notebook_id: notebookId } }
+      { params: { module_id: moduleId } }
     )
     return response.data
   },
 
-  createSession: async (data: CreateNotebookChatSessionRequest) => {
-    const response = await apiClient.post<NotebookChatSession>(
+  createSession: async (data: CreateModuleChatSessionRequest) => {
+    const response = await apiClient.post<ModuleChatSession>(
       `/chat/sessions`,
       data
     )
@@ -29,14 +29,14 @@ export const chatApi = {
   },
 
   getSession: async (sessionId: string) => {
-    const response = await apiClient.get<NotebookChatSessionWithMessages>(
+    const response = await apiClient.get<ModuleChatSessionWithMessages>(
       `/chat/sessions/${sessionId}`
     )
     return response.data
   },
 
-  updateSession: async (sessionId: string, data: UpdateNotebookChatSessionRequest) => {
-    const response = await apiClient.put<NotebookChatSession>(
+  updateSession: async (sessionId: string, data: UpdateModuleChatSessionRequest) => {
+    const response = await apiClient.put<ModuleChatSession>(
       `/chat/sessions/${sessionId}`,
       data
     )
@@ -48,10 +48,10 @@ export const chatApi = {
   },
 
   // Messaging (synchronous, no streaming)
-  sendMessage: async (data: SendNotebookChatMessageRequest) => {
+  sendMessage: async (data: SendModuleChatMessageRequest) => {
     const response = await apiClient.post<{
       session_id: string
-      messages: NotebookChatMessage[]
+      messages: ModuleChatMessage[]
     }>(
       `/chat/execute`,
       data

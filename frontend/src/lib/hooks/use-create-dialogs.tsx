@@ -2,12 +2,12 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
-import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
+import { CreateModuleDialog } from '@/components/modules/CreateModuleDialog'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
 
 interface CreateDialogsContextType {
   openSourceDialog: () => void
-  openNotebookDialog: () => void
+  openModuleDialog: () => void
   openPodcastDialog: () => void
 }
 
@@ -15,24 +15,24 @@ const CreateDialogsContext = createContext<CreateDialogsContextType | null>(null
 
 export function CreateDialogsProvider({ children }: { children: ReactNode }) {
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
-  const [notebookDialogOpen, setNotebookDialogOpen] = useState(false)
+  const [moduleDialogOpen, setModuleDialogOpen] = useState(false)
   const [podcastDialogOpen, setPodcastDialogOpen] = useState(false)
 
   const openSourceDialog = useCallback(() => setSourceDialogOpen(true), [])
-  const openNotebookDialog = useCallback(() => setNotebookDialogOpen(true), [])
+  const openModuleDialog = useCallback(() => setModuleDialogOpen(true), [])
   const openPodcastDialog = useCallback(() => setPodcastDialogOpen(true), [])
 
   return (
     <CreateDialogsContext.Provider
       value={{
         openSourceDialog,
-        openNotebookDialog,
+        openModuleDialog,
         openPodcastDialog,
       }}
     >
       {children}
       <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
-      <CreateNotebookDialog open={notebookDialogOpen} onOpenChange={setNotebookDialogOpen} />
+      <CreateModuleDialog open={moduleDialogOpen} onOpenChange={setModuleDialogOpen} />
       <GeneratePodcastDialog open={podcastDialogOpen} onOpenChange={setPodcastDialogOpen} />
     </CreateDialogsContext.Provider>
   )

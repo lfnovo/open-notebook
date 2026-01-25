@@ -190,7 +190,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
 
                 <div>
                    <Label htmlFor={descriptionId} className="text-sm font-medium">
-                     {t.notebooks.addDescription.replace('...', '')}
+                     {t.modules.addDescription.replace('...', '')}
                    </Label>
                   <Controller
                     control={control}

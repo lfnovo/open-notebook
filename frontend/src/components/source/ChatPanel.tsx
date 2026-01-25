@@ -24,7 +24,7 @@ import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
-interface NotebookContextStats {
+interface ModuleContextStats {
   sourcesInsights: number
   sourcesFull: number
   notesCount: number
@@ -49,11 +49,11 @@ interface ChatPanelProps {
   loadingSessions?: boolean
   // Generic props for reusability
   title?: string
-  contextType?: 'source' | 'notebook'
-  // Notebook context stats (for notebook chat)
-  notebookContextStats?: NotebookContextStats
-  // Notebook ID for saving notes
-  notebookId?: string
+  contextType?: 'source' | 'module'
+  // Module context stats (for module chat)
+  moduleContextStats?: ModuleContextStats
+  // Module ID for saving notes
+  moduleId?: string
 }
 
 export function ChatPanel({
@@ -72,8 +72,8 @@ export function ChatPanel({
   loadingSessions = false,
   title,
   contextType = 'source',
-  notebookContextStats,
-  notebookId
+  moduleContextStats,
+  moduleId
 }: ChatPanelProps) {
   const { t } = useTranslation()
   const chatInputId = useId()
@@ -130,7 +130,7 @@ export function ChatPanel({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            {title || (contextType === 'source' ? t.chat.chatWith.replace('{name}', t.navigation.sources) : t.chat.chatWith.replace('{name}', t.common.notebook))}
+            {title || (contextType === 'source' ? t.chat.chatWith.replace('{name}', t.navigation.sources) : t.chat.chatWith.replace('{name}', t.common.module))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
@@ -170,7 +170,7 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  {t.chat.startConversation.replace('{type}', contextType === 'source' ? t.navigation.sources : t.common.notebook)}
+                  {t.chat.startConversation.replace('{type}', contextType === 'source' ? t.navigation.sources : t.common.module)}
                 </p>
                 <p className="text-xs mt-2">{t.chat.askQuestions}</p>
               </div>
@@ -209,7 +209,7 @@ export function ChatPanel({
                     {message.type === 'ai' && (
                       <MessageActions
                         content={message.content}
-                        notebookId={notebookId}
+                        moduleId={moduleId}
                       />
                     )}
                   </div>
@@ -265,14 +265,14 @@ export function ChatPanel({
           </div>
         )}
 
-        {/* Notebook Context Indicator */}
-        {notebookContextStats && (
+        {/* Module Context Indicator */}
+        {moduleContextStats && (
           <ContextIndicator
-            sourcesInsights={notebookContextStats.sourcesInsights}
-            sourcesFull={notebookContextStats.sourcesFull}
-            notesCount={notebookContextStats.notesCount}
-            tokenCount={notebookContextStats.tokenCount}
-            charCount={notebookContextStats.charCount}
+            sourcesInsights={moduleContextStats.sourcesInsights}
+            sourcesFull={moduleContextStats.sourcesFull}
+            notesCount={moduleContextStats.notesCount}
+            tokenCount={moduleContextStats.tokenCount}
+            charCount={moduleContextStats.charCount}
           />
         )}
 

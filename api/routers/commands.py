@@ -14,7 +14,7 @@ class CommandExecutionRequest(BaseModel):
     command: str = Field(
         ..., description="Command function name (e.g., 'process_text')"
     )
-    app: str = Field(..., description="Application name (e.g., 'open_notebook')")
+    app: str = Field(..., description="Application name (e.g., 'backpack')")
     input: Dict[str, Any] = Field(..., description="Arguments to pass to the command")
 
 
@@ -43,7 +43,7 @@ async def execute_command(request: CommandExecutionRequest):
     Example request:
     {
         "command": "process_text",
-        "app": "open_notebook",
+        "app": "backpack",
         "input": {
             "text": "Hello world",
             "operation": "uppercase"
@@ -53,7 +53,7 @@ async def execute_command(request: CommandExecutionRequest):
     try:
         # Submit command using app name (not module name)
         job_id = await CommandService.submit_command_job(
-            module_name=request.app,  # This should be "open_notebook"
+            module_name=request.app,  # This should be "backpack"
             command_name=request.command,
             command_args=request.input,
         )

@@ -18,11 +18,11 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
     
     // Check for logo or app name (using actual locale value)
-    expect(screen.getByText(/Open Notebook/i)).toBeDefined()
+    expect(screen.getByText(/Backpack/i)).toBeDefined()
     
     // Check for navigation items (using actual locale values)
     expect(screen.getByText(/Sources/i)).toBeDefined()
-    expect(screen.getByText(/Notebooks/i)).toBeDefined()
+    expect(screen.getByText(/Modules/i)).toBeDefined()
   })
 
   it('toggles collapse state when clicking handle', () => {
@@ -55,6 +55,6 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
     
     // In collapsed mode, app name shouldn't be visible (as text)
-    expect(screen.queryByText(/Open Notebook/i)).toBeNull()
+    expect(screen.queryByText(/Backpack/i)).toBeNull()
   })
 })

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2 } from 'lucide-react'
 import { useQueries, useQueryClient } from '@tanstack/react-query'
 
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { useModules } from '@/lib/hooks/use-modules'
 import { useEpisodeProfiles, useGeneratePodcast } from '@/lib/hooks/use-podcasts'
 import { chatApi } from '@/lib/api/chat'
 import { sourcesApi } from '@/lib/api/sources'
@@ -34,7 +34,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 
 type SourceMode = 'off' | 'insights' | 'full'
 
-interface NotebookSelection {
+interface ModuleSelection {
   sources: Record<string, SourceMode>
   notes: Record<string, SourceMode>
 }
@@ -50,7 +50,7 @@ function formatNumber(num: number): string {
   return num.toString()
 }
 
-function hasSelections(selection?: NotebookSelection): boolean {
+function hasSelections(selection?: ModuleSelection): boolean {
   if (!selection) {
     return false
   }
@@ -71,18 +71,18 @@ interface GeneratePodcastDialogProps {
 
 // Extracted component for content selection panel
 function ContentSelectionPanel({
-  notebooks,
+  modules,
   isLoading,
-  selectedNotebookSummaries,
+  selectedModuleSummaries,
   tokenCount,
   charCount,
-  expandedNotebooks,
-  setExpandedNotebooks,
+  expandedModules,
+  setExpandedModules,
   selections,
-  sourcesByNotebook,
-  notesByNotebook,
-  fetchingNotebookIds,
-  handleNotebookToggle,
+  sourcesByModule,
+  notesByModule,
+  fetchingModuleIds,
+  handleModuleToggle,
   handleSourceModeChange,
   handleNoteToggle,
   queryClient,
@@ -97,8 +97,8 @@ function ContentSelectionPanel({
     itemsSelected: t.podcasts.itemsSelected,
     tokens: t.podcasts.tokens,
     chars: t.podcasts.chars,
-    loadingNotebooks: t.podcasts.loadingNotebooks,
-    noNotebooksFoundInPodcasts: t.podcasts.noNotebooksFoundInPodcasts,
+    loadingModules: t.podcasts.loadingModules,
+    noModulesFoundInPodcasts: t.podcasts.noModulesFoundInPodcasts,
     sources: t.podcasts.sources,
     notes: t.podcasts.notes,
     noContentSelected: t.podcasts.noContentSelected,
@@ -129,18 +129,15 @@ function ContentSelectionPanel({
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
             {tr.content}
           </h3>
-          <p className="text-xs text-muted-foreground">
-            {tr.contentDesc}
-          </p>
+          <p className="text-xs text-muted-foreground">{tr.contentDesc}</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
             {tr.itemsSelected.replace(
               '{count}',
-              selectedNotebookSummaries.reduce(
-                (acc: number, summary: any) => acc + summary.sources + summary.notes,
-                0
-              ).toString()
+              selectedModuleSummaries
+                .reduce((acc: number, summary: any) => acc + summary.sources + summary.notes, 0)
+                .toString()
             )}
           </Badge>
           {(tokenCount > 0 || charCount > 0) && (
@@ -156,60 +153,56 @@ function ContentSelectionPanel({
       <div className="rounded-lg border bg-muted/30">
         {isLoading ? (
           <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {tr.loadingNotebooks}
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" /> {tr.loadingModules}
           </div>
-        ) : notebooks.length === 0 ? (
-          <div className="p-6 text-sm text-muted-foreground">
-            {tr.noNotebooksFoundInPodcasts}
-          </div>
+        ) : modules.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground">{tr.noModulesFoundInPodcasts}</div>
         ) : (
           <ScrollArea className="h-[60vh]">
             <Accordion
               type="multiple"
-              value={expandedNotebooks}
-              onValueChange={(value) => setExpandedNotebooks(value as string[])}
+              value={expandedModules}
+              onValueChange={(value) => setExpandedModules(value as string[])}
               className="w-full"
             >
-              {notebooks.map((notebook: any, index: number) => {
-                const sources = sourcesByNotebook[notebook.id] ?? []
-                const notes = notesByNotebook[notebook.id] ?? []
-                const selection = selections[notebook.id]
-                const summary = selectedNotebookSummaries[index]
-                const notebookChecked = summary.sources + summary.notes > 0
+              {modules.map((module: any, index: number) => {
+                const sources = sourcesByModule[module.id] ?? []
+                const notes = notesByModule[module.id] ?? []
+                const selection = selections[module.id]
+                const summary = selectedModuleSummaries[index]
+                const moduleChecked = summary.sources + summary.notes > 0
                 const totalItems = sources.length + notes.length
                 const isIndeterminate =
-                  notebookChecked &&
+                  moduleChecked &&
                   summary.sources + summary.notes > 0 &&
                   summary.sources + summary.notes < totalItems
 
                 return (
-                  <AccordionItem key={notebook.id} value={notebook.id}>
+                  <AccordionItem key={module.id} value={module.id}>
                     <div className="flex items-start gap-3 px-4 pt-3">
                       <Checkbox
-                        id={`notebook-toggle-${notebook.id}`}
-                        checked={isIndeterminate ? 'indeterminate' : notebookChecked}
+                        id={`module-toggle-${module.id}`}
+                        checked={isIndeterminate ? 'indeterminate' : moduleChecked}
                         onCheckedChange={(checked) => {
-                          handleNotebookToggle(notebook.id, checked)
+                          handleModuleToggle(module.id, checked)
                           queryClient.prefetchQuery({
-                            queryKey: QUERY_KEYS.sources(notebook.id),
-                            queryFn: () => sourcesApi.list({ notebook_id: notebook.id }),
+                            queryKey: QUERY_KEYS.sources(module.id),
+                            queryFn: () => sourcesApi.list({ module_id: module.id }),
                           })
                           queryClient.prefetchQuery({
-                            queryKey: QUERY_KEYS.notes(notebook.id),
-                            queryFn: () => notesApi.list({ notebook_id: notebook.id }),
+                            queryKey: QUERY_KEYS.notes(module.id),
+                            queryFn: () => notesApi.list({ module_id: module.id }),
                           })
                         }}
                         onClick={(event) => event.stopPropagation()}
                       />
                       <AccordionTrigger className="flex-1 px-0 py-0 hover:no-underline">
                         <Label
-                          htmlFor={`notebook-toggle-${notebook.id}`}
+                          htmlFor={`module-toggle-${module.id}`}
                           className="flex w-full items-center justify-between gap-3 pointer-events-none"
                         >
                           <div className="text-left">
-                            <p className="font-medium text-sm text-foreground">
-                              {notebook.name}
-                            </p>
+                            <p className="font-medium text-sm text-foreground">{module.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {summary.sources + summary.notes > 0
                                 ? `${summary.sources} ${tr.sources}, ${summary.notes} ${tr.notes}`
@@ -229,14 +222,12 @@ function ContentSelectionPanel({
                             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               {tr.sources}
                             </h4>
-                            {fetchingNotebookIds.has(notebook.id) && (
+                            {fetchingModuleIds.has(module.id) && (
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             )}
                           </div>
                           {sources.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
-                              {tr.noSources}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{tr.noSources}</p>
                           ) : (
                             <div className="space-y-2">
                               {sources.map((source: any) => {
@@ -251,7 +242,7 @@ function ContentSelectionPanel({
                                       checked={mode !== 'off'}
                                       onCheckedChange={(checked) =>
                                         handleSourceModeChange(
-                                          notebook.id,
+                                          module.id,
                                           source.id,
                                           checked ? getSourceDefaultMode(source) : 'off'
                                         )
@@ -273,11 +264,7 @@ function ContentSelectionPanel({
                                     <Select
                                       value={mode === 'off' ? 'off' : mode}
                                       onValueChange={(value) =>
-                                        handleSourceModeChange(
-                                          notebook.id,
-                                          source.id,
-                                          value as SourceMode
-                                        )
+                                        handleSourceModeChange(module.id, source.id, value as SourceMode)
                                       }
                                       disabled={mode === 'off'}
                                     >
@@ -313,9 +300,7 @@ function ContentSelectionPanel({
                             {tr.notes}
                           </h4>
                           {notes.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
-                              {tr.noNotes}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{tr.noNotes}</p>
                           ) : (
                             <div className="space-y-2">
                               {notes.map((note: any) => {
@@ -329,11 +314,7 @@ function ContentSelectionPanel({
                                       id={`note-selection-${note.id}`}
                                       checked={mode !== 'off'}
                                       onCheckedChange={(checked) =>
-                                        handleNoteToggle(
-                                          notebook.id,
-                                          note.id,
-                                          Boolean(checked)
-                                        )
+                                        handleNoteToggle(module.id, note.id, Boolean(checked))
                                       }
                                     />
                                     <Label
@@ -370,11 +351,11 @@ function ContentSelectionPanel({
 }
 
 export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDialogProps) {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const { toast } = useToast()
   const queryClient = useQueryClient()
-  const [expandedNotebooks, setExpandedNotebooks] = useState<string[]>([])
-  const [selections, setSelections] = useState<Record<string, NotebookSelection>>({})
+  const [expandedModules, setExpandedModules] = useState<string[]>([])
+  const [selections, setSelections] = useState<Record<string, ModuleSelection>>({})
   const [episodeProfileId, setEpisodeProfileId] = useState<string>('')
   const [episodeName, setEpisodeName] = useState('')
   const [instructions, setInstructions] = useState('')
@@ -383,72 +364,67 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
 
-  const notebooksQuery = useNotebooks()
+  const modulesQuery = useModules()
   const episodeProfilesQuery = useEpisodeProfiles()
   const generatePodcast = useGeneratePodcast()
 
-  const notebooks = useMemo(
-    () => notebooksQuery.data ?? [],
-    [notebooksQuery.data]
-  )
+  const modules = useMemo(() => modulesQuery.data ?? [], [modulesQuery.data])
   const episodeProfiles = useMemo(
     () => episodeProfilesQuery.episodeProfiles ?? [],
     [episodeProfilesQuery.episodeProfiles]
   )
 
-  // Fetch sources and notes for notebooks using useQueries
+  // Fetch sources and notes for modules using useQueries
   const sourcesQueries = useQueries({
-    queries: notebooks.map((notebook) => ({
-      queryKey: QUERY_KEYS.sources(notebook.id),
-      queryFn: () => sourcesApi.list({ notebook_id: notebook.id }),
+    queries: modules.map((module) => ({
+      queryKey: QUERY_KEYS.sources(module.id),
+      queryFn: () => sourcesApi.list({ module_id: module.id }),
       enabled:
-        open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        open && (expandedModules.includes(module.id) || hasSelections(selections[module.id])),
     })),
   })
 
   const notesQueries = useQueries({
-    queries: notebooks.map((notebook) => ({
-      queryKey: QUERY_KEYS.notes(notebook.id),
-      queryFn: () => notesApi.list({ notebook_id: notebook.id }),
+    queries: modules.map((module) => ({
+      queryKey: QUERY_KEYS.notes(module.id),
+      queryFn: () => notesApi.list({ module_id: module.id }),
       enabled:
-        open &&
-        (expandedNotebooks.includes(notebook.id) || hasSelections(selections[notebook.id])),
+        open && (expandedModules.includes(module.id) || hasSelections(selections[module.id])),
     })),
   })
 
-  const sourcesByNotebook = useMemo<Record<string, SourceListResponse[]>>(() => {
+  const sourcesByModule = useMemo<Record<string, SourceListResponse[]>>(() => {
     const map: Record<string, SourceListResponse[]> = {}
-    notebooks.forEach((notebook, index) => {
-      map[notebook.id] = sourcesQueries[index]?.data ?? []
+    modules.forEach((module, index) => {
+      map[module.id] = sourcesQueries[index]?.data ?? []
     })
     return map
-  }, [notebooks, sourcesQueries])
+  }, [modules, sourcesQueries])
 
-  const notesByNotebook = useMemo<Record<string, NoteResponse[]>>(() => {
+  const notesByModule = useMemo<Record<string, NoteResponse[]>>(() => {
     const map: Record<string, NoteResponse[]> = {}
-    notebooks.forEach((notebook, index) => {
-      map[notebook.id] = notesQueries[index]?.data ?? []
+    modules.forEach((module, index) => {
+      map[module.id] = notesQueries[index]?.data ?? []
     })
     return map
-  }, [notebooks, notesQueries])
+  }, [modules, notesQueries])
 
   // Stable key for fetching state - only changes when actual fetching states change
   const fetchingKey = useMemo(
-    () => sourcesQueries.map((q) => q.isFetching ? '1' : '0').join(''),
+    () => sourcesQueries.map((q) => (q.isFetching ? '1' : '0')).join(''),
     [sourcesQueries]
   )
 
-  // Stable set of notebook IDs that are currently fetching sources
-  const fetchingNotebookIds = useMemo(() => {
+  // Stable set of module IDs that are currently fetching sources
+  const fetchingModuleIds = useMemo(() => {
     const ids = new Set<string>()
-    notebooks.forEach((notebook, index) => {
+    modules.forEach((module, index) => {
       if (sourcesQueries[index]?.isFetching) {
-        ids.add(notebook.id)
+        ids.add(module.id)
       }
     })
     return ids
-  }, [notebooks, fetchingKey])
+  }, [modules, fetchingKey])
 
   // Create a stable key based on actual data to prevent effect running on every render
   // Only changes when actual source/note IDs change, not on every useQueries reference change
@@ -473,7 +449,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       let changed = false
       const next = { ...prev }
 
-      notebooks.forEach((notebook, index) => {
+      modules.forEach((module, index) => {
         const sources = sourcesQueries[index]?.data
         const notes = notesQueries[index]?.data
 
@@ -481,13 +457,13 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           return
         }
 
-        if (!next[notebook.id]) {
-          next[notebook.id] = { sources: {}, notes: {} }
+        if (!next[module.id]) {
+          next[module.id] = { sources: {}, notes: {} }
           changed = true
         }
 
         if (sources) {
-          const currentSources = next[notebook.id].sources
+          const currentSources = next[module.id].sources
           sources.forEach((source) => {
             if (!(source.id in currentSources)) {
               currentSources[source.id] = getSourceDefaultMode(source)
@@ -497,7 +473,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         }
 
         if (notes) {
-          const currentNotes = next[notebook.id].notes
+          const currentNotes = next[module.id].notes
           notes.forEach((note) => {
             if (!(note.id in currentNotes)) {
               currentNotes[note.id] = 'full'
@@ -510,10 +486,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       return changed ? next : prev
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, notebooks, dataKey])
+  }, [open, modules, dataKey])
 
   const resetState = useCallback(() => {
-    setExpandedNotebooks([])
+    setExpandedModules([])
     setSelections({})
     setEpisodeProfileId('')
     setEpisodeName('')
@@ -536,9 +512,10 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
     const updateContextCounts = async () => {
       // Check if there are any selections
-      const hasAnySelections = Object.values(selections).some((selection) =>
-        Object.values(selection.sources).some((mode) => mode !== 'off') ||
-        Object.values(selection.notes).some((mode) => mode !== 'off')
+      const hasAnySelections = Object.values(selections).some(
+        (selection) =>
+          Object.values(selection.sources).some((mode) => mode !== 'off') ||
+          Object.values(selection.notes).some((mode) => mode !== 'off')
       )
 
       if (!hasAnySelections) {
@@ -551,8 +528,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         let totalTokens = 0
         let totalChars = 0
 
-        // Build context for each notebook and sum up counts
-        for (const [notebookId, selection] of Object.entries(selections)) {
+        // Build context for each module and sum up counts
+        for (const [moduleId, selection] of Object.entries(selections)) {
           const sourcesConfig = Object.entries(selection.sources)
             .filter(([, mode]) => mode !== 'off')
             .reduce<Record<string, string>>((acc, [sourceId, mode]) => {
@@ -574,7 +551,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           }
 
           const response = await chatApi.buildContext({
-            notebook_id: notebookId,
+            module_id: moduleId,
             context_config: {
               sources: sourcesConfig,
               notes: notesConfig,
@@ -603,27 +580,23 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     return episodeProfiles.find((profile) => profile.id === episodeProfileId)
   }, [episodeProfileId, episodeProfiles])
 
-  const selectedNotebookSummaries = useMemo(() => {
-    return notebooks.map((notebook) => {
-      const selection = selections[notebook.id]
+  const selectedModuleSummaries = useMemo(() => {
+    return modules.map((module) => {
+      const selection = selections[module.id]
       if (!selection) {
-        return { notebookId: notebook.id, sources: 0, notes: 0 }
+        return { moduleId: module.id, sources: 0, notes: 0 }
       }
-      const sourcesCount = Object.values(selection.sources).filter(
-        (mode) => mode !== 'off'
-      ).length
-      const notesCount = Object.values(selection.notes).filter(
-        (mode) => mode !== 'off'
-      ).length
-      return { notebookId: notebook.id, sources: sourcesCount, notes: notesCount }
+      const sourcesCount = Object.values(selection.sources).filter((mode) => mode !== 'off').length
+      const notesCount = Object.values(selection.notes).filter((mode) => mode !== 'off').length
+      return { moduleId: module.id, sources: sourcesCount, notes: notesCount }
     })
-  }, [notebooks, selections])
+  }, [modules, selections])
 
-  const handleNotebookToggle = useCallback(
-    (notebookId: string, checked: boolean | 'indeterminate') => {
+  const handleModuleToggle = useCallback(
+    (moduleId: string, checked: boolean | 'indeterminate') => {
       const shouldCheck = checked === 'indeterminate' ? true : checked
-      const sources = sourcesByNotebook[notebookId] ?? []
-      const notes = notesByNotebook[notebookId] ?? []
+      const sources = sourcesByModule[moduleId] ?? []
+      const notes = notesByModule[moduleId] ?? []
       setSelections((prev) => {
         if (shouldCheck) {
           const nextSources: Record<string, SourceMode> = {}
@@ -636,7 +609,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           })
           return {
             ...prev,
-            [notebookId]: {
+            [moduleId]: {
               sources: nextSources,
               notes: nextNotes,
             },
@@ -654,40 +627,37 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
         return {
           ...prev,
-          [notebookId]: {
+          [moduleId]: {
             sources: clearedSources,
             notes: clearedNotes,
           },
         }
       })
     },
-    [notesByNotebook, sourcesByNotebook]
+    [notesByModule, sourcesByModule]
   )
 
-  const handleSourceModeChange = useCallback(
-    (notebookId: string, sourceId: string, mode: SourceMode) => {
-      setSelections((prev) => ({
-        ...prev,
-        [notebookId]: {
-          sources: {
-            ...(prev[notebookId]?.sources ?? {}),
-            [sourceId]: mode,
-          },
-          notes: prev[notebookId]?.notes ?? {},
+  const handleSourceModeChange = useCallback((moduleId: string, sourceId: string, mode: SourceMode) => {
+    setSelections((prev) => ({
+      ...prev,
+      [moduleId]: {
+        sources: {
+          ...(prev[moduleId]?.sources ?? {}),
+          [sourceId]: mode,
         },
-      }))
-    },
-    []
-  )
+        notes: prev[moduleId]?.notes ?? {},
+      },
+    }))
+  }, [])
 
   const handleNoteToggle = useCallback(
-    (notebookId: string, noteId: string, checked: boolean | 'indeterminate') => {
+    (moduleId: string, noteId: string, checked: boolean | 'indeterminate') => {
       setSelections((prev) => ({
         ...prev,
-        [notebookId]: {
-          sources: prev[notebookId]?.sources ?? {},
+        [moduleId]: {
+          sources: prev[moduleId]?.sources ?? {},
           notes: {
-            ...(prev[notebookId]?.notes ?? {}),
+            ...(prev[moduleId]?.notes ?? {}),
             [noteId]: checked ? 'full' : 'off',
           },
         },
@@ -699,9 +669,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const buildContentFromSelections = useCallback(async () => {
     const parts: string[] = []
 
-    const tasks: Array<{ notebookId: string; payload: BuildContextRequest }> = []
+    const tasks: Array<{ moduleId: string; payload: BuildContextRequest }> = []
 
-    Object.entries(selections).forEach(([notebookId, selection]) => {
+    Object.entries(selections).forEach(([moduleId, selection]) => {
       const sourcesConfig = Object.entries(selection.sources)
         .filter(([, mode]) => mode !== 'off')
         .reduce<Record<string, string>>((acc, [sourceId, mode]) => {
@@ -723,9 +693,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       }
 
       tasks.push({
-        notebookId,
+        moduleId,
         payload: {
-          notebook_id: notebookId,
+          module_id: moduleId,
           context_config: {
             sources: sourcesConfig,
             notes: notesConfig,
@@ -741,18 +711,18 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     for (const task of tasks) {
       try {
         const response = await chatApi.buildContext(task.payload)
-        const notebookName = notebooks.find((nb) => nb.id === task.notebookId)?.name ?? task.notebookId
+        const moduleName = modules.find((m) => m.id === task.moduleId)?.name ?? task.moduleId
         const contextString = JSON.stringify(response.context, null, 2)
-        const snippet = `${t.common.notebookLabel.replace('{name}', notebookName)}\n${contextString}`
+        const snippet = `${t.common.moduleLabel.replace('{name}', moduleName)}\n${contextString}`
         parts.push(snippet)
       } catch (error) {
-        console.error('Failed to build context for notebook', task.notebookId, error)
+        console.error('Failed to build context for module', task.moduleId, error)
         throw new Error(t.podcasts.buildContextFailed)
       }
     }
 
     return parts.join('\n\n')
-  }, [notebooks, selections, t])
+  }, [modules, selections, t])
 
   const handleSubmit = useCallback(async () => {
     if (!selectedEpisodeProfile) {
@@ -830,34 +800,35 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const isSubmitting = generatePodcast.isPending || isBuildingContext
 
   return (
-    <Dialog open={open} onOpenChange={(value) => {
-      onOpenChange(value)
-      if (!value) {
-        resetState()
-      }
-    }}>
+    <Dialog
+      open={open}
+      onOpenChange={(value) => {
+        onOpenChange(value)
+        if (!value) {
+          resetState()
+        }
+      }}
+    >
       <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>{t.podcasts.generateEpisode}</DialogTitle>
-          <DialogDescription>
-            {t.podcasts.generateEpisodeDesc}
-          </DialogDescription>
+          <DialogDescription>{t.podcasts.generateEpisodeDesc}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-6 md:grid-cols-[2fr_1fr] xl:grid-cols-[3fr_1fr]">
           <ContentSelectionPanel
-            notebooks={notebooks}
-            isLoading={notebooksQuery.isLoading}
-            selectedNotebookSummaries={selectedNotebookSummaries}
+            modules={modules}
+            isLoading={modulesQuery.isLoading}
+            selectedModuleSummaries={selectedModuleSummaries}
             tokenCount={tokenCount}
             charCount={charCount}
-            expandedNotebooks={expandedNotebooks}
-            setExpandedNotebooks={setExpandedNotebooks}
+            expandedModules={expandedModules}
+            setExpandedModules={setExpandedModules}
             selections={selections}
-            sourcesByNotebook={sourcesByNotebook}
-            notesByNotebook={notesByNotebook}
-            fetchingNotebookIds={fetchingNotebookIds}
-            handleNotebookToggle={handleNotebookToggle}
+            sourcesByModule={sourcesByModule}
+            notesByModule={notesByModule}
+            fetchingModuleIds={fetchingModuleIds}
+            handleModuleToggle={handleModuleToggle}
             handleSourceModeChange={handleSourceModeChange}
             handleNoteToggle={handleNoteToggle}
             queryClient={queryClient}
@@ -916,7 +887,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                     />
                   </div>
 
-                   <div className="space-y-2">
+                  <div className="space-y-2">
                     <Label htmlFor="instructions">{t.podcasts.additionalInstructions}</Label>
                     <Textarea
                       id="instructions"
@@ -933,11 +904,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
             </div>
 
             <div className="flex flex-col gap-3">
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="w-full"
-              >
+              <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full">
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {isSubmitting ? t.podcasts.generating : t.podcasts.generate}
               </Button>

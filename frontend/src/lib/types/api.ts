@@ -1,4 +1,4 @@
-export interface NotebookResponse {
+export interface ModuleResponse {
   id: string
   name: string
   description: string
@@ -40,7 +40,7 @@ export interface SourceListResponse {
 
 export interface SourceDetailResponse extends SourceListResponse {
   full_text: string
-  notebooks?: string[]  // List of notebook IDs this source is linked to
+  modules?: string[]  // List of module IDs this source is linked to
 }
 
 export type SourceResponse = SourceDetailResponse
@@ -60,12 +60,12 @@ export interface SettingsResponse {
   youtube_preferred_languages?: string[]
 }
 
-export interface CreateNotebookRequest {
+export interface CreateModuleRequest {
   name: string
   description?: string
 }
 
-export interface UpdateNotebookRequest {
+export interface UpdateModuleRequest {
   name?: string
   description?: string
   archived?: boolean
@@ -75,14 +75,14 @@ export interface CreateNoteRequest {
   title?: string
   content: string
   note_type?: string
-  notebook_id?: string
+  module_id?: string
 }
 
 export interface CreateSourceRequest {
-  // Backward compatibility: support old single notebook_id
-  notebook_id?: string
-  // New multi-notebook support
-  notebooks?: string[]
+  // Backward compatibility: support old single module_id
+  module_id?: string
+  // New multi-module support
+  modules?: string[]
   // Required fields
   type: 'link' | 'upload' | 'text'
   url?: string
@@ -171,34 +171,34 @@ export interface SourceChatStreamEvent {
   timestamp?: string
 }
 
-// Notebook Chat Types
-export interface NotebookChatSession extends BaseChatSession {
-  notebook_id: string
+// Module Chat Types
+export interface ModuleChatSession extends BaseChatSession {
+  module_id: string
 }
 
-export interface NotebookChatMessage {
+export interface ModuleChatMessage {
   id: string
   type: 'human' | 'ai'
   content: string
   timestamp?: string
 }
 
-export interface NotebookChatSessionWithMessages extends NotebookChatSession {
-  messages: NotebookChatMessage[]
+export interface ModuleChatSessionWithMessages extends ModuleChatSession {
+  messages: ModuleChatMessage[]
 }
 
-export interface CreateNotebookChatSessionRequest {
-  notebook_id: string
+export interface CreateModuleChatSessionRequest {
+  module_id: string
   title?: string
   model_override?: string
 }
 
-export interface UpdateNotebookChatSessionRequest {
+export interface UpdateModuleChatSessionRequest {
   title?: string
   model_override?: string | null
 }
 
-export interface SendNotebookChatMessageRequest {
+export interface SendModuleChatMessageRequest {
   session_id: string
   message: string
   context: {
@@ -209,7 +209,7 @@ export interface SendNotebookChatMessageRequest {
 }
 
 export interface BuildContextRequest {
-  notebook_id: string
+  module_id: string
   context_config: {
     sources: Record<string, string>
     notes: Record<string, string>

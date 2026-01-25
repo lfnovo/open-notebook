@@ -90,7 +90,11 @@ async def repo_create(table: str, data: Dict[str, Any]) -> Dict[str, Any]:
     data["updated"] = datetime.now(timezone.utc)
     try:
         async with db_connection() as connection:
-            return parse_record_ids(await connection.insert(table, data))
+            result = parse_record_ids(await connection.insert(table, data))
+            # SurrealDB may return a string error message instead of the expected record
+            if isinstance(result, str):
+                raise RuntimeError(result)
+            return result
     except RuntimeError as e:
         logger.error(str(e))
         raise
@@ -168,7 +172,16 @@ async def repo_insert(
     """Create a new record in the specified table"""
     try:
         async with db_connection() as connection:
-            return parse_record_ids(await connection.insert(table, data))
+            result = parse_record_ids(await connection.insert(table, data))
+            # SurrealDB may return a string error message instead of the expected records
+            if isinstance(result, str):
+                raise RuntimeError(result)
+            return result
+    except RuntimeError as e:
+        if ignore_duplicates and "already contains" in str(e):
+            return []
+        logger.error(str(e))
+        raise
     except Exception as e:
         if ignore_duplicates and "already contains" in str(e):
             return []

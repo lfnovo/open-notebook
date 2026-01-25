@@ -177,6 +177,11 @@ async def repo_insert(
             if isinstance(result, str):
                 raise RuntimeError(result)
             return result
+    except RuntimeError as e:
+        if ignore_duplicates and "already contains" in str(e):
+            return []
+        logger.error(str(e))
+        raise
     except Exception as e:
         if ignore_duplicates and "already contains" in str(e):
             return []

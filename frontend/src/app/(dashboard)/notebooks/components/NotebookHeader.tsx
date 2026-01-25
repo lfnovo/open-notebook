@@ -5,8 +5,8 @@ import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
-import { useUpdateNotebook, useDeleteNotebook } from '@/lib/hooks/use-notebooks'
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
+import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
@@ -22,7 +22,6 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
   const updateNotebook = useUpdateNotebook()
-  const deleteNotebook = useDeleteNotebook()
 
   const handleUpdateName = async (name: string) => {
     if (!name || name === notebook.name) return
@@ -47,11 +46,6 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
       id: notebook.id,
       data: { archived: !notebook.archived }
     })
-  }
-
-  const handleDelete = () => {
-    deleteNotebook.mutate(notebook.id)
-    setShowDeleteDialog(false)
   }
 
   return (
@@ -122,14 +116,12 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
         </div>
       </div>
 
-      <ConfirmDialog
+      <NotebookDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title={t.notebooks.deleteNotebook}
-        description={t.notebooks.deleteNotebookDesc.replace('{name}', notebook.name)}
-        confirmText={t.common.deleteForever}
-        confirmVariant="destructive"
-        onConfirm={handleDelete}
+        notebookId={notebook.id}
+        notebookName={notebook.name}
+        redirectAfterDelete
       />
     </>
   )

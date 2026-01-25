@@ -25,6 +25,8 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 ### notebook.py
 - **Notebook**: Research project container
   - `get_sources()`, `get_notes()`, `get_chat_sessions()`: Navigate relationships
+  - `get_delete_preview()`: Returns counts of notes, exclusive sources, and shared sources that would be affected by deletion
+  - `delete(delete_exclusive_sources)`: Cascade deletion - always deletes notes, optionally deletes exclusive sources, always unlinks all sources
 
 - **Source**: Content item (file/URL)
   - `vectorize()`: Submit async embedding job (returns command_id, fire-and-forget)

@@ -85,6 +85,150 @@ class Notebook(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
+    async def get_delete_preview(self) -> Dict[str, Any]:
+        """
+        Get counts of items that would be affected by deleting this notebook.
+
+        Returns a dict with:
+        - note_count: Number of notes that will be deleted
+        - exclusive_source_count: Sources only in this notebook (can be deleted)
+        - shared_source_count: Sources in other notebooks (will be unlinked only)
+        """
+        try:
+            notebook_id = ensure_record_id(self.id)
+
+            # Count notes
+            note_result = await repo_query(
+                "SELECT count() as count FROM artifact WHERE out = $notebook_id GROUP ALL",
+                {"notebook_id": notebook_id},
+            )
+            note_count = note_result[0]["count"] if note_result else 0
+
+            # Get sources with count of references to OTHER notebooks
+            # If assigned_others = 0, source is exclusive to this notebook
+            # If assigned_others > 0, source is shared with other notebooks
+            source_counts = await repo_query(
+                """
+                SELECT
+                    id,
+                    count(->reference[WHERE out != $notebook_id].out) as assigned_others
+                FROM (SELECT VALUE <-reference.in AS sources FROM $notebook_id)[0]
+                """,
+                {"notebook_id": notebook_id},
+            )
+
+            exclusive_count = 0
+            shared_count = 0
+            for src in source_counts:
+                if src.get("assigned_others", 0) == 0:
+                    exclusive_count += 1
+                else:
+                    shared_count += 1
+
+            return {
+                "note_count": note_count,
+                "exclusive_source_count": exclusive_count,
+                "shared_source_count": shared_count,
+            }
+        except Exception as e:
+            logger.error(f"Error getting delete preview for notebook {self.id}: {e}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
+
+    async def delete(self, delete_exclusive_sources: bool = False) -> Dict[str, int]:
+        """
+        Delete notebook with cascade deletion of notes and optional source deletion.
+
+        Args:
+            delete_exclusive_sources: If True, also delete sources that belong
+                                     only to this notebook. Default is False.
+
+        Returns:
+            Dict with counts: deleted_notes, deleted_sources, unlinked_sources
+        """
+        if self.id is None:
+            raise InvalidInputError("Cannot delete notebook without an ID")
+
+        try:
+            notebook_id = ensure_record_id(self.id)
+            deleted_notes = 0
+            deleted_sources = 0
+            unlinked_sources = 0
+
+            # 1. Get and delete all notes linked to this notebook
+            notes = await self.get_notes()
+            for note in notes:
+                await note.delete()
+                deleted_notes += 1
+            logger.info(f"Deleted {deleted_notes} notes for notebook {self.id}")
+
+            # Delete artifact relationships
+            await repo_query(
+                "DELETE artifact WHERE out = $notebook_id",
+                {"notebook_id": notebook_id},
+            )
+
+            # 2. Handle sources
+            if delete_exclusive_sources:
+                # Find sources with count of references to OTHER notebooks
+                # If assigned_others = 0, source is exclusive to this notebook
+                source_counts = await repo_query(
+                    """
+                    SELECT
+                        id,
+                        count(->reference[WHERE out != $notebook_id].out) as assigned_others
+                    FROM (SELECT VALUE <-reference.in AS sources FROM $notebook_id)[0]
+                    """,
+                    {"notebook_id": notebook_id},
+                )
+
+                for src in source_counts:
+                    source_id = src.get("id")
+                    if source_id and src.get("assigned_others", 0) == 0:
+                        # Exclusive source - delete it
+                        try:
+                            source = await Source.get(str(source_id))
+                            await source.delete()
+                            deleted_sources += 1
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to delete exclusive source {source_id}: {e}"
+                            )
+                    else:
+                        unlinked_sources += 1
+            else:
+                # Just count sources that will be unlinked
+                source_result = await repo_query(
+                    "SELECT count() as count FROM reference WHERE out = $notebook_id GROUP ALL",
+                    {"notebook_id": notebook_id},
+                )
+                unlinked_sources = source_result[0]["count"] if source_result else 0
+
+            # Delete reference relationships (unlink all sources)
+            await repo_query(
+                "DELETE reference WHERE out = $notebook_id",
+                {"notebook_id": notebook_id},
+            )
+            logger.info(
+                f"Unlinked {unlinked_sources} sources, deleted {deleted_sources} "
+                f"exclusive sources for notebook {self.id}"
+            )
+
+            # 3. Delete the notebook record itself
+            await super().delete()
+            logger.info(f"Deleted notebook {self.id}")
+
+            return {
+                "deleted_notes": deleted_notes,
+                "deleted_sources": deleted_sources,
+                "unlinked_sources": unlinked_sources,
+            }
+
+        except Exception as e:
+            logger.error(f"Error deleting notebook {self.id}: {e}")
+            logger.exception(e)
+            raise DatabaseOperationError(f"Failed to delete notebook: {e}")
+
 
 class Asset(BaseModel):
     file_path: Optional[str] = None

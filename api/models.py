@@ -422,3 +422,25 @@ class SourceStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     message: str
+
+
+# Notebook delete cascade models
+class NotebookDeletePreview(BaseModel):
+    notebook_id: str = Field(..., description="ID of the notebook")
+    notebook_name: str = Field(..., description="Name of the notebook")
+    note_count: int = Field(..., description="Number of notes that will be deleted")
+    exclusive_source_count: int = Field(
+        ..., description="Number of sources only in this notebook"
+    )
+    shared_source_count: int = Field(
+        ..., description="Number of sources shared with other notebooks"
+    )
+
+
+class NotebookDeleteResponse(BaseModel):
+    message: str = Field(..., description="Success message")
+    deleted_notes: int = Field(..., description="Number of notes deleted")
+    deleted_sources: int = Field(..., description="Number of exclusive sources deleted")
+    unlinked_sources: int = Field(
+        ..., description="Number of sources unlinked from notebook"
+    )

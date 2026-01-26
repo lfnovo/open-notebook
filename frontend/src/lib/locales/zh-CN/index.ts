@@ -402,6 +402,7 @@ export const zhCN = {
     selectMultipleFilesHint: '选择多个文件进行批量导入。支持：文档 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒体 (MP4, MP3, WAV, M4A)，图片 (JPG, PNG)，归档 (ZIP)',
     selectedFiles: '已选择文件：',
     textPlaceholder: '在此处粘贴或输入您的内容...',
+    htmlDetected: '检测到 HTML 内容。处理后将转换为 Markdown。',
     titlePlaceholder: '为您的来源起一个描述性的标题',
     batchTitlesAuto: '将为每个来源自动生成标题。',
     batchCommonSettings: '同样的笔记本和转换将应用于所有项目。',

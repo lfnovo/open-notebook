@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import { Control, FieldErrors, UseFormRegister, useWatch } from "react-hook-form"
+import { useMemo, useState } from "react"
+import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
 import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
 import { FormSection } from "@/components/ui/form-section"
@@ -89,6 +89,7 @@ const getSourceTypes = (t: TranslationKeys) => [
 interface SourceTypeStepProps {
   control: Control<CreateSourceFormData>
   register: UseFormRegister<CreateSourceFormData>
+  setValue: UseFormSetValue<CreateSourceFormData>
   errors: FieldErrors<CreateSourceFormData>
   urlValidationErrors?: { url: string; line: number }[]
   onClearUrlErrors?: () => void
@@ -96,12 +97,38 @@ interface SourceTypeStepProps {
 
 const MAX_BATCH_SIZE = 50
 
-export function SourceTypeStep({ control, register, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
+export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
   const { t } = useTranslation()
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
   const urlInput = useWatch({ control, name: 'url' })
   const fileInput = useWatch({ control, name: 'file' })
+
+  // Track if HTML content was pasted
+  const [hasHtmlContent, setHasHtmlContent] = useState(false)
+
+  // Handle paste event to check for HTML content in clipboard
+  const handleTextPaste = (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const htmlContent = event.clipboardData.getData('text/html')
+
+    // If HTML content is available, use it instead of plain text
+    if (htmlContent) {
+      event.preventDefault()
+      // Get current content and cursor position
+      const textarea = event.currentTarget
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const currentValue = textarea.value
+
+      // Insert HTML content at cursor position (replacing selection if any)
+      const newValue = currentValue.substring(0, start) + htmlContent + currentValue.substring(end)
+      setValue('content', newValue, { shouldValidate: true })
+      setHasHtmlContent(true)
+    } else {
+      // Plain text paste - clear the HTML indicator
+      setHasHtmlContent(false)
+    }
+  }
 
   // Batch mode detection
   const { isBatchMode, itemCount, urlCount, fileCount } = useMemo(() => {
@@ -258,11 +285,19 @@ export function SourceTypeStep({ control, register, errors, urlValidationErrors,
                   {type.value === 'text' && (
                     <div>
                       <Label htmlFor="content" className="mb-2 block">{t.sources.textContentLabel}</Label>
+                      {hasHtmlContent && (
+                        <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
+                            {t.sources.htmlDetected}
+                          </p>
+                        </div>
+                      )}
                       <Textarea
                         id="content"
                         {...register('content')}
                         placeholder={t.sources.textPlaceholder}
                         rows={6}
+                        onPaste={handleTextPaste}
                       />
                       {errors.content && (
                         <p className="text-sm text-destructive mt-1">{errors.content.message}</p>

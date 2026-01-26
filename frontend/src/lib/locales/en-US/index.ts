@@ -379,6 +379,7 @@ export const enUS = {
     selectMultipleFilesHint: 'Select multiple files to batch import. Supported: Documents (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Media (MP4, MP3, WAV, M4A), Images (JPG, PNG), Archives (ZIP)',
     selectedFiles: 'Selected files:',
     textPlaceholder: 'Paste or type your content here...',
+    htmlDetected: 'HTML content detected. It will be converted to Markdown after processing.',
     titlePlaceholder: 'Give your source a descriptive title',
     batchTitlesAuto: 'Titles will be automatically generated for each source.',
     batchCommonSettings: 'The same notebooks and transformations will be applied to all items.',

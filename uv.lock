@@ -432,7 +432,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "1.10.0"
+version = "1.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -447,6 +447,7 @@ dependencies = [
     { name = "langdetect" },
     { name = "langgraph" },
     { name = "loguru" },
+    { name = "markdownify" },
     { name = "moviepy" },
     { name = "openpyxl" },
     { name = "pandas" },
@@ -461,9 +462,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/4a/b5/1322ad0b3d9eb86bbc8efe76e3e569ad32caaf7769973ad166b21468857f/content_core-1.10.0.tar.gz", hash = "sha256:e8f83b5675b24b0b8a38dad0dff5a878b9efe2d5e00b4d71ea3e3073d2eff000", size = 20737121, upload-time = "2026-01-16T20:12:51.308Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/0d/53f37e46550d2a75ded08b1eccb2fccdd982fa7250b9da32e67d2592abf7/content_core-1.13.0.tar.gz", hash = "sha256:e101114517e6d4b6356f8ae5ca2ab88cd2acc0e20fe3944d470440e338e5550a", size = 20744666, upload-time = "2026-01-26T00:00:34.576Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3c/bc/1573354487143af2f3d401454f5801ccbd8a9e426e3d7b5095453ddbb6da/content_core-1.10.0-py3-none-any.whl", hash = "sha256:e8c4ef011224a376b719a73243f9a432e7e4694049e77129eae62370e7e93152", size = 183303, upload-time = "2026-01-16T20:12:49.116Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/06/7303eafde48316fde34822e8cd750d9f93a281a0cef13b26ac07b026dbf2/content_core-1.13.0-py3-none-any.whl", hash = "sha256:5c8d3a21e62c0dd1b001bdc3caf29449298fb493243659401bf4bc13f46be59b", size = 188220, upload-time = "2026-01-26T00:00:37.434Z" },
 ]
 
 [[package]]
@@ -2068,6 +2069,19 @@ wheels = [
 ]
 
 [[package]]
+name = "markdownify"
+version = "1.2.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "six" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3f/bc/c8c8eea5335341306b0fa7e1cb33c5e1c8d24ef70ddd684da65f41c49c92/markdownify-1.2.2.tar.gz", hash = "sha256:b274f1b5943180b031b699b199cbaeb1e2ac938b75851849a31fd0c3d6603d09", size = 18816, upload-time = "2025-11-16T19:21:18.565Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/ce/f1e3e9d959db134cedf06825fae8d5b294bd368aacdd0831a3975b7c4d55/markdownify-1.2.2-py3-none-any.whl", hash = "sha256:3f02d3cc52714084d6e589f70397b6fc9f2f3a8531481bf35e8cc39f975e186a", size = 15724, upload-time = "2025-11-16T19:21:17.622Z" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2429,7 +2443,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3,<1" },
-    { name = "content-core", specifier = ">=1.0.2,<2" },
+    { name = "content-core", specifier = ">=1.13,<2" },
     { name = "esperanto", specifier = ">=2.17.2,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },

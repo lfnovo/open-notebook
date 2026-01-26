@@ -402,6 +402,7 @@ export const zhTW = {
     selectMultipleFilesHint: '選擇多個檔案進行批次導入。支援：文件 (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD)，媒體 (MP4, MP3, WAV, M4A)，圖片 (JPG, PNG)，歸檔 (ZIP)',
     selectedFiles: '已選擇檔案：',
     textPlaceholder: '在此處貼上或輸入您的內容...',
+    htmlDetected: '偵測到 HTML 內容。處理後將轉換為 Markdown。',
     titlePlaceholder: '為您的來源取一個描述性的標題',
     batchTitlesAuto: '將為每個來源自動生成標題。',
     batchCommonSettings: '相同的筆記本和轉換將應用於所有項目。',

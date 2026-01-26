@@ -379,6 +379,7 @@ export const jaJP = {
     selectMultipleFilesHint: '複数ファイルを選択して一括インポート。対応形式：ドキュメント（PDF、DOC、DOCX、PPT、XLS、EPUB、TXT、MD）、メディア（MP4、MP3、WAV、M4A）、画像（JPG、PNG）、アーカイブ（ZIP）',
     selectedFiles: '選択されたファイル:',
     textPlaceholder: 'コンテンツを貼り付けまたは入力...',
+    htmlDetected: 'HTMLコンテンツが検出されました。処理後にMarkdownに変換されます。',
     titlePlaceholder: 'ソースにわかりやすいタイトルを付けてください',
     batchTitlesAuto: 'タイトルは各ソースごとに自動生成されます。',
     batchCommonSettings: '同じノートブックとトランスフォーメーションがすべてのアイテムに適用されます。',

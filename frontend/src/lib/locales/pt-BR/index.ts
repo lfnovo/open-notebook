@@ -379,6 +379,7 @@ export const ptBR = {
     selectMultipleFilesHint: "Selecione múltiplos arquivos para importação em lote. Suportados: Documentos (PDF, DOC, DOCX, PPT, XLS, EPUB, TXT, MD), Mídia (MP4, MP3, WAV, M4A), Imagens (JPG, PNG), Arquivos (ZIP)",
     selectedFiles: "Arquivos selecionados:",
     textPlaceholder: "Cole ou digite seu conteúdo aqui...",
+    htmlDetected: "Conteúdo HTML detectado. Será convertido para Markdown após o processamento.",
     titlePlaceholder: "Dê um título descritivo para sua fonte",
     batchTitlesAuto: "Os títulos serão gerados automaticamente para cada fonte.",
     batchCommonSettings: "Os mesmos cadernos e transformações serão aplicados a todos os itens.",

@@ -126,6 +126,7 @@ export function AddSourceDialog({
     handleSubmit,
     control,
     watch,
+    setValue,
     formState: { errors },
     reset,
   } = useForm<CreateSourceFormData>({
@@ -553,6 +554,7 @@ export function AddSourceDialog({
                 // @ts-expect-error - Type inference issue with zod schema
                 control={control}
                 register={register}
+                setValue={setValue}
                 // @ts-expect-error - Type inference issue with zod schema
                 errors={errors}
                 urlValidationErrors={urlValidationErrors}

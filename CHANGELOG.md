@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- HTML clipboard detection for text sources (#426)
+  - When pasting content, automatically detects HTML format (e.g., from Word, web pages)
+  - Shows info message when HTML is detected, informing user it will be converted to Markdown
+  - Preserves formatting that would be lost with plain text paste
+  - Bump content-core to 0.11.0 for HTML to Markdown conversion support
+
 ## [1.6.2] - 2026-01-24
 
 ### Fixed

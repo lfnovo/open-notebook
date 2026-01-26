@@ -124,8 +124,10 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
       const newValue = currentValue.substring(0, start) + htmlContent + currentValue.substring(end)
       setValue('content', newValue, { shouldValidate: true })
       setHasHtmlContent(true)
+    } else {
+      // Plain text paste - clear the HTML indicator
+      setHasHtmlContent(false)
     }
-    // If no HTML, let the default paste behavior happen (uses text/plain)
   }
 
   // Batch mode detection

@@ -22,15 +22,21 @@ on:
           - linux/arm64
           - linux/amd64,linux/arm64
 
+permissions:
+  contents: read
+  packages: write
+
 env:
-  REGISTRY: docker.io
-  IMAGE_NAME: lfnovo/open_notebook
+  GHCR_IMAGE: ghcr.io/lfnovo/open-notebook
+  DOCKERHUB_IMAGE: lfnovo/open_notebook
 
 jobs:
   extract-version:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      has_dockerhub_secrets: ${{ steps.check.outputs.has_dockerhub_secrets }}
+      is_push_to_main: ${{ steps.check.outputs.is_push_to_main }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -42,15 +48,64 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
 
-  test-build:
+      - name: Check environment
+        id: check
+        env:
+          SECRET_DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          SECRET_DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          # Check for Docker Hub credentials
+          if [[ -n "$SECRET_DOCKER_USERNAME" && -n "$SECRET_DOCKER_PASSWORD" ]]; then
+            echo "has_dockerhub_secrets=true" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials available"
+          else
+            echo "has_dockerhub_secrets=false" >> $GITHUB_OUTPUT
+            echo "Docker Hub credentials not available"
+          fi
+
+          # Check if this is a push to main (not a PR)
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_push_to_main=true" >> $GITHUB_OUTPUT
+            echo "This is a push to main - will publish v1-dev tags"
+          else
+            echo "is_push_to_main=false" >> $GITHUB_OUTPUT
+            echo "This is a PR or manual run - test build only"
+          fi
+
+  build-regular:
     needs: extract-version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Free up disk space
+        if: needs.extract-version.outputs.is_push_to_main == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: needs.extract-version.outputs.is_push_to_main == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: needs.extract-version.outputs.is_push_to_main == 'true' && needs.extract-version.outputs.has_dockerhub_secrets == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -60,14 +115,33 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-dev-
 
-      - name: Build image (test only)
+      - name: Prepare Docker tags
+        id: tags
+        run: |
+          if [[ "${{ needs.extract-version.outputs.is_push_to_main }}" == "true" ]]; then
+            # Push to main: build and push v1-dev tags
+            TAGS="${{ env.GHCR_IMAGE }}:v1-dev"
+            if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
+              TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-dev"
+            fi
+            echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+            echo "push=true" >> $GITHUB_OUTPUT
+            echo "platforms=linux/amd64,linux/arm64" >> $GITHUB_OUTPUT
+          else
+            # PR or manual: test build only
+            echo "tags=${{ env.DOCKERHUB_IMAGE }}:${{ needs.extract-version.outputs.version }}-dev" >> $GITHUB_OUTPUT
+            echo "push=false" >> $GITHUB_OUTPUT
+            echo "platforms=${{ github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push regular image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: ${{ github.event.inputs.platform || 'linux/amd64' }}
-          push: false
-          tags: ${{ env.IMAGE_NAME }}:${{ needs.extract-version.outputs.version }}-dev
+          platforms: ${{ steps.tags.outputs.platforms }}
+          push: ${{ steps.tags.outputs.push }}
+          tags: ${{ steps.tags.outputs.tags }}
           cache-from: type=local,src=/tmp/.buildx-cache-dev
           cache-to: type=local,dest=/tmp/.buildx-cache-dev-new,mode=max
 
@@ -76,8 +150,76 @@ jobs:
           rm -rf /tmp/.buildx-cache-dev
           mv /tmp/.buildx-cache-dev-new /tmp/.buildx-cache-dev
 
+  build-single:
+    needs: extract-version
+    # Only build single image on push to main
+    if: needs.extract-version.outputs.is_push_to_main == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          df -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Docker Hub
+        if: needs.extract-version.outputs.has_dockerhub_secrets == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache-dev-single
+          key: ${{ runner.os }}-buildx-dev-single-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-dev-single-
+
+      - name: Prepare Docker tags
+        id: tags
+        run: |
+          TAGS="${{ env.GHCR_IMAGE }}:v1-dev-single"
+          if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
+            TAGS="${TAGS},${{ env.DOCKERHUB_IMAGE }}:v1-dev-single"
+          fi
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+
+      - name: Build and push single-container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.single
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=local,src=/tmp/.buildx-cache-dev-single
+          cache-to: type=local,dest=/tmp/.buildx-cache-dev-single-new,mode=max
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache-dev-single
+          mv /tmp/.buildx-cache-dev-single-new /tmp/.buildx-cache-dev-single
+
   summary:
-    needs: [extract-version, test-build]
+    needs: [extract-version, build-regular, build-single]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -85,19 +227,47 @@ jobs:
         run: |
           echo "## Development Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "**Version:** ${{ needs.extract-version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Platform:** ${{ github.event.inputs.platform || 'linux/amd64' }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Push to Main:** ${{ needs.extract-version.outputs.is_push_to_main }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Results:" >> $GITHUB_STEP_SUMMARY
 
-          if [[ "${{ needs.test-build.result }}" == "success" ]]; then
-            echo "✅ **Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
-          elif [[ "${{ needs.test-build.result }}" == "skipped" ]]; then
-            echo "⏭️ **Dockerfile:** Skipped" >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ needs.extract-version.outputs.is_push_to_main }}" == "true" ]]; then
+            echo "### Published Tags:" >> $GITHUB_STEP_SUMMARY
+
+            if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
+              echo "✅ **Regular:** \`${{ env.GHCR_IMAGE }}:v1-dev\`" >> $GITHUB_STEP_SUMMARY
+              if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
+                echo "✅ **Regular (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-dev\`" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "❌ **Regular:** Build failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            if [[ "${{ needs.build-single.result }}" == "success" ]]; then
+              echo "✅ **Single:** \`${{ env.GHCR_IMAGE }}:v1-dev-single\`" >> $GITHUB_STEP_SUMMARY
+              if [[ "${{ needs.extract-version.outputs.has_dockerhub_secrets }}" == "true" ]]; then
+                echo "✅ **Single (Docker Hub):** \`${{ env.DOCKERHUB_IMAGE }}:v1-dev-single\`" >> $GITHUB_STEP_SUMMARY
+              fi
+            elif [[ "${{ needs.build-single.result }}" == "skipped" ]]; then
+              echo "⏭️ **Single:** Skipped" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Single:** Build failed" >> $GITHUB_STEP_SUMMARY
+            fi
+
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Platforms:" >> $GITHUB_STEP_SUMMARY
+            echo "- linux/amd64" >> $GITHUB_STEP_SUMMARY
+            echo "- linux/arm64" >> $GITHUB_STEP_SUMMARY
           else
-            echo "❌ **Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
+            echo "### Test Build Results:" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ needs.build-regular.result }}" == "success" ]]; then
+              echo "✅ **Dockerfile:** Build successful" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ **Dockerfile:** Build failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Notes:" >> $GITHUB_STEP_SUMMARY
+            echo "- This is a test build (no images pushed to registry)" >> $GITHUB_STEP_SUMMARY
+            echo "- Merge to main to publish \`v1-dev\` tags" >> $GITHUB_STEP_SUMMARY
+            echo "- For stable releases, use the 'Build and Release' workflow" >> $GITHUB_STEP_SUMMARY
           fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Notes:" >> $GITHUB_STEP_SUMMARY
-          echo "- This is a development build (no images pushed to registry)" >> $GITHUB_STEP_SUMMARY
-          echo "- For production releases, use the 'Build and Release' workflow" >> $GITHUB_STEP_SUMMARY

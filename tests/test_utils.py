@@ -1,5 +1,5 @@
 """
-Unit tests for the open_notebook.utils module.
+Unit tests for the backpack.utils module.
 
 This test suite focuses on testing utility functions that perform actual logic
 without heavy mocking - string processing, validation, and algorithms.
@@ -7,7 +7,7 @@ without heavy mocking - string processing, validation, and algorithms.
 
 import pytest
 
-from open_notebook.utils import (
+from backpack.utils import (
     clean_thinking_content,
     compare_versions,
     get_installed_version,
@@ -16,7 +16,7 @@ from open_notebook.utils import (
     remove_non_printable,
     token_count,
 )
-from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
+from backpack.utils.context_builder import ContextBuilder, ContextConfig
 
 # ============================================================================
 # TEST SUITE 1: Text Utilities
@@ -213,7 +213,7 @@ class TestVersionUtilities:
 
     def test_get_version_from_github_invalid_url(self):
         """Test GitHub version fetch with invalid URL."""
-        from open_notebook.utils.version_utils import get_version_from_github
+        from backpack.utils.version_utils import get_version_from_github
 
         with pytest.raises(ValueError, match="Not a GitHub URL"):
             get_version_from_github("https://example.com/repo")
@@ -247,13 +247,13 @@ class TestContextBuilder:
         """Test ContextBuilder initialization with various params."""
         builder = ContextBuilder(
             source_id="source:123",
-            notebook_id="notebook:456",
+            module_id="module:456",
             max_tokens=1000,
             include_insights=False,
         )
 
         assert builder.source_id == "source:123"
-        assert builder.notebook_id == "notebook:456"
+        assert builder.module_id == "module:456"
         assert builder.max_tokens == 1000
         assert builder.include_insights is False
 

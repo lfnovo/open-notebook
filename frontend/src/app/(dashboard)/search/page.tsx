@@ -22,7 +22,7 @@ import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
-import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
+import { SaveToModulesDialog } from '@/components/search/SaveToModulesDialog'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -54,7 +54,7 @@ export default function SearchPage() {
     finalAnswer: string
   } | null>(null)
 
-  // Save to notebooks dialog
+  // Save to modules dialog
   const [showSaveDialog, setShowSaveDialog] = useState(false)
 
   // Hooks
@@ -268,7 +268,7 @@ export default function SearchPage() {
                           className="w-full"
                         >
                           <Save className="h-4 w-4 mr-2" />
-                          {t.searchPage.saveToNotebooks}
+                          {t.searchPage.saveToModules}
                         </Button>
                       )}
                     </div>
@@ -295,9 +295,9 @@ export default function SearchPage() {
                   onSave={setCustomModels}
                 />
 
-                {/* Save to Notebooks Dialog */}
+                {/* Save to Modules Dialog */}
                 {ask.finalAnswer && (
-                  <SaveToNotebooksDialog
+                  <SaveToModulesDialog
                     open={showSaveDialog}
                     onOpenChange={setShowSaveDialog}
                     question={askQuestion}

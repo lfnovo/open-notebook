@@ -53,7 +53,7 @@ const getNavigation = (t: TranslationKeys) => [
   {
     title: t.navigation.process,
     items: [
-      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
+      { name: t.navigation.modules, href: '/modules', icon: Book },
       { name: t.navigation.askAndSearch, href: '/search', icon: Search },
     ],
   },
@@ -74,7 +74,7 @@ const getNavigation = (t: TranslationKeys) => [
   },
 ] as const
 
-type CreateTarget = 'source' | 'notebook' | 'podcast'
+type CreateTarget = 'source' | 'module' | 'podcast'
 
 export function AppSidebar() {
   const { t } = useTranslation()
@@ -82,7 +82,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { openSourceDialog, openModuleDialog, openPodcastDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
@@ -97,8 +97,8 @@ export function AppSidebar() {
 
     if (target === 'source') {
       openSourceDialog()
-    } else if (target === 'notebook') {
-      openNotebookDialog()
+    } else if (target === 'module') {
+      openModuleDialog()
     } else if (target === 'podcast') {
       openPodcastDialog()
     }
@@ -122,7 +122,7 @@ export function AppSidebar() {
             <div className="relative flex items-center justify-center w-full">
               <Image
                 src="/logo.svg"
-                alt="Open Notebook"
+                alt="Backpack"
                 width={32}
                 height={32}
                 className="transition-opacity group-hover:opacity-0"
@@ -219,12 +219,12 @@ export function AppSidebar() {
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault()
-                    handleCreateSelection('notebook')
+                    handleCreateSelection('module')
                   }}
                   className="gap-2"
                 >
                    <Book className="h-4 w-4" />
-                  {t.common.notebook}
+                  {t.common.module}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {

@@ -26,7 +26,7 @@ class CommandService:
 
             # surreal-commands expects: submit_command(app_name, command_name, args)
             cmd_id = submit_command(
-                module_name,  # This is actually the app name (e.g., "open_notebook")
+                module_name,  # This is actually the app name (e.g., "backpack")
                 command_name,  # Command name (e.g., "process_text")
                 command_args,  # Input data
             )

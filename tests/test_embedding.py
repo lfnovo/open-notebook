@@ -1,12 +1,12 @@
 """
-Unit tests for the open_notebook.utils.embedding module.
+Unit tests for the backpack.utils.embedding module.
 
 Tests embedding generation and mean pooling functionality.
 """
 
 import pytest
 
-from open_notebook.utils.embedding import (
+from backpack.utils.embedding import (
     generate_embedding,
     generate_embeddings,
     mean_pool_embeddings,
@@ -118,7 +118,7 @@ class TestGenerateEmbeddings:
         from unittest.mock import AsyncMock, patch
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "backpack.utils.embedding.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -134,7 +134,7 @@ class TestGenerateEmbeddings:
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "backpack.utils.embedding.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -171,7 +171,7 @@ class TestGenerateEmbedding:
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "backpack.utils.embedding.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -198,7 +198,7 @@ class TestGenerateEmbedding:
         )
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "backpack.utils.embedding.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -213,13 +213,13 @@ class TestGenerateEmbedding:
         """Test that content type parameter is passed through."""
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from open_notebook.utils.chunking import ContentType
+        from backpack.utils.chunking import ContentType
 
         mock_model = MagicMock()
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "backpack.utils.embedding.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):

@@ -211,6 +211,106 @@ wheels = [
 ]
 
 [[package]]
+name = "backpack"
+version = "1.6.0"
+source = { editable = "." }
+dependencies = [
+    { name = "ai-prompter" },
+    { name = "content-core" },
+    { name = "debugpy" },
+    { name = "esperanto" },
+    { name = "fastapi" },
+    { name = "httpx", extra = ["socks"] },
+    { name = "langchain" },
+    { name = "langchain-anthropic" },
+    { name = "langchain-community" },
+    { name = "langchain-deepseek" },
+    { name = "langchain-google-genai" },
+    { name = "langchain-google-vertexai" },
+    { name = "langchain-groq" },
+    { name = "langchain-mistralai" },
+    { name = "langchain-ollama" },
+    { name = "langchain-openai" },
+    { name = "langgraph" },
+    { name = "langgraph-checkpoint-sqlite" },
+    { name = "loguru" },
+    { name = "numpy" },
+    { name = "podcast-creator" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "surreal-commands" },
+    { name = "surrealdb" },
+    { name = "tiktoken" },
+    { name = "tomli" },
+    { name = "uvicorn" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "mypy" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "types-requests" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pre-commit" },
+    { name = "pytest-asyncio" },
+    { name = "types-requests" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "ai-prompter", specifier = ">=0.3" },
+    { name = "content-core", specifier = ">=1.0.2" },
+    { name = "debugpy", specifier = ">=1.8.19" },
+    { name = "esperanto", specifier = ">=2.16" },
+    { name = "fastapi", specifier = ">=0.104.0" },
+    { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
+    { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
+    { name = "ipywidgets", marker = "extra == 'dev'", specifier = ">=8.1.5" },
+    { name = "langchain", specifier = ">=1.2.0" },
+    { name = "langchain-anthropic", specifier = ">=1.3.0" },
+    { name = "langchain-community", specifier = ">=0.4.1" },
+    { name = "langchain-deepseek", specifier = ">=1.0.0" },
+    { name = "langchain-google-genai", specifier = ">=4.1.2" },
+    { name = "langchain-google-vertexai", specifier = ">=3.2.0" },
+    { name = "langchain-groq", specifier = ">=1.1.1" },
+    { name = "langchain-mistralai", specifier = ">=1.1.1" },
+    { name = "langchain-ollama", specifier = ">=1.0.1" },
+    { name = "langchain-openai", specifier = ">=1.1.6" },
+    { name = "langgraph", specifier = ">=1.0.5" },
+    { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.1" },
+    { name = "loguru", specifier = ">=0.7.2" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
+    { name = "numpy", specifier = ">=2.4.1" },
+    { name = "podcast-creator", specifier = ">=0.7.0" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "pydantic", specifier = ">=2.9.2" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "python-dotenv", specifier = ">=1.0.1" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
+    { name = "surreal-commands", specifier = ">=1.3.0" },
+    { name = "surrealdb", specifier = ">=1.0.4" },
+    { name = "tiktoken", specifier = ">=0.12.0" },
+    { name = "tomli", specifier = ">=2.0.2" },
+    { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.32.0.20241016" },
+    { name = "uvicorn", specifier = ">=0.24.0" },
+]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pre-commit", specifier = ">=4.1.0" },
+    { name = "pytest-asyncio", specifier = ">=1.2.0" },
+    { name = "types-requests", specifier = ">=2.32.4.20250913" },
+]
+
+[[package]]
 name = "backports-tarfile"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2370,106 +2470,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9d/5a/652dac4b7affc2b37b95386f8ae78f22808af09d720689e3d7a86b6ed98e/ollama-0.6.1.tar.gz", hash = "sha256:478c67546836430034b415ed64fa890fd3d1ff91781a9d548b3325274e69d7c6", size = 51620, upload-time = "2025-11-13T23:02:17.416Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/4f/4a617ee93d8208d2bcf26b2d8b9402ceaed03e3853c754940e2290fed063/ollama-0.6.1-py3-none-any.whl", hash = "sha256:fc4c984b345735c5486faeee67d8a265214a31cbb828167782dc642ce0a2bf8c", size = 14354, upload-time = "2025-11-13T23:02:16.292Z" },
-]
-
-[[package]]
-name = "open-notebook"
-version = "1.6.0"
-source = { editable = "." }
-dependencies = [
-    { name = "ai-prompter" },
-    { name = "content-core" },
-    { name = "debugpy" },
-    { name = "esperanto" },
-    { name = "fastapi" },
-    { name = "httpx", extra = ["socks"] },
-    { name = "langchain" },
-    { name = "langchain-anthropic" },
-    { name = "langchain-community" },
-    { name = "langchain-deepseek" },
-    { name = "langchain-google-genai" },
-    { name = "langchain-google-vertexai" },
-    { name = "langchain-groq" },
-    { name = "langchain-mistralai" },
-    { name = "langchain-ollama" },
-    { name = "langchain-openai" },
-    { name = "langgraph" },
-    { name = "langgraph-checkpoint-sqlite" },
-    { name = "loguru" },
-    { name = "numpy" },
-    { name = "podcast-creator" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "surreal-commands" },
-    { name = "surrealdb" },
-    { name = "tiktoken" },
-    { name = "tomli" },
-    { name = "uvicorn" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "ipywidgets" },
-    { name = "mypy" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "ruff" },
-    { name = "types-requests" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pre-commit" },
-    { name = "pytest-asyncio" },
-    { name = "types-requests" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "ai-prompter", specifier = ">=0.3" },
-    { name = "content-core", specifier = ">=1.0.2" },
-    { name = "debugpy", specifier = ">=1.8.19" },
-    { name = "esperanto", specifier = ">=2.16" },
-    { name = "fastapi", specifier = ">=0.104.0" },
-    { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
-    { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
-    { name = "ipywidgets", marker = "extra == 'dev'", specifier = ">=8.1.5" },
-    { name = "langchain", specifier = ">=1.2.0" },
-    { name = "langchain-anthropic", specifier = ">=1.3.0" },
-    { name = "langchain-community", specifier = ">=0.4.1" },
-    { name = "langchain-deepseek", specifier = ">=1.0.0" },
-    { name = "langchain-google-genai", specifier = ">=4.1.2" },
-    { name = "langchain-google-vertexai", specifier = ">=3.2.0" },
-    { name = "langchain-groq", specifier = ">=1.1.1" },
-    { name = "langchain-mistralai", specifier = ">=1.1.1" },
-    { name = "langchain-ollama", specifier = ">=1.0.1" },
-    { name = "langchain-openai", specifier = ">=1.1.6" },
-    { name = "langgraph", specifier = ">=1.0.5" },
-    { name = "langgraph-checkpoint-sqlite", specifier = ">=3.0.1" },
-    { name = "loguru", specifier = ">=0.7.2" },
-    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
-    { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.7.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
-    { name = "pydantic", specifier = ">=2.9.2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "python-dotenv", specifier = ">=1.0.1" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
-    { name = "surreal-commands", specifier = ">=1.3.0" },
-    { name = "surrealdb", specifier = ">=1.0.4" },
-    { name = "tiktoken", specifier = ">=0.12.0" },
-    { name = "tomli", specifier = ">=2.0.2" },
-    { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.32.0.20241016" },
-    { name = "uvicorn", specifier = ">=0.24.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pre-commit", specifier = ">=4.1.0" },
-    { name = "pytest-asyncio", specifier = ">=1.2.0" },
-    { name = "types-requests", specifier = ">=2.32.4.20250913" },
 ]
 
 [[package]]

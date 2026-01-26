@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Union
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.transformation import Transformation
+from backpack.domain.transformation import Transformation
 
 
 class TransformationsService:

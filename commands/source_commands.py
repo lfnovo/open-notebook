@@ -5,12 +5,12 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.database.repository import ensure_record_id
-from open_notebook.domain.notebook import Source
-from open_notebook.domain.transformation import Transformation
+from backpack.database.repository import ensure_record_id
+from backpack.domain.module import Source
+from backpack.domain.transformation import Transformation
 
 try:
-    from open_notebook.graphs.source import source_graph
+    from backpack.graphs.source import source_graph
 except ImportError as e:
     logger.error(f"Failed to import source_graph: {e}")
     raise ValueError("source_graph not available")
@@ -30,7 +30,7 @@ def full_model_dump(model):
 class SourceProcessingInput(CommandInput):
     source_id: str
     content_state: Dict[str, Any]
-    notebook_ids: List[str]
+    module_ids: List[str]
     transformations: List[str]
     embed: bool
 
@@ -46,7 +46,7 @@ class SourceProcessingOutput(CommandOutput):
 
 @command(
     "process_source",
-    app="open_notebook",
+    app="backpack",
     retry={
         "max_attempts": 15,  # Increased from 5 to handle deep queues (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
@@ -66,7 +66,7 @@ async def process_source_command(
 
     try:
         logger.info(f"Starting source processing for source: {input_data.source_id}")
-        logger.info(f"Notebook IDs: {input_data.notebook_ids}")
+        logger.info(f"Module IDs: {input_data.module_ids}")
         logger.info(f"Transformations: {input_data.transformations}")
         logger.info(f"Embed: {input_data.embed}")
 
@@ -96,14 +96,14 @@ async def process_source_command(
 
         logger.info(f"Updated source {source.id} with command reference")
 
-        # 3. Process source with all notebooks
-        logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
+        # 3. Process source with all modules
+        logger.info(f"Processing source with {len(input_data.module_ids)} modules")
 
-        # Execute source_graph with all notebooks
+        # Execute source_graph with all modules
         result = await source_graph.ainvoke(
             {  # type: ignore[arg-type]
                 "content_state": input_data.content_state,
-                "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
+                "module_ids": input_data.module_ids,  # Use module_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,
                 "embed": input_data.embed,
                 "source_id": input_data.source_id,  # Add the source_id to the state
@@ -112,7 +112,7 @@ async def process_source_command(
 
         processed_source = result["source"]
 
-        # 4. Gather processing results (notebook associations handled by source_graph)
+        # 4. Gather processing results (module associations handled by source_graph)
         embedded_chunks = (
             await processed_source.get_embedded_chunks() if input_data.embed else 0
         )

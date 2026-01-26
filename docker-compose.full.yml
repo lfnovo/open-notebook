@@ -11,8 +11,8 @@ services:
     pull_policy: always
     user: root
     restart: always
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  backpack:
+    image: lfnovo/backpack:v1-latest
     # build:
     #   context: .
     #   dockerfile: Dockerfile

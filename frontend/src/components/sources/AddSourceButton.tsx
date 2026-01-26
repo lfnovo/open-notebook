@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { AddSourceDialog } from './AddSourceDialog'
 
 interface AddSourceButtonProps {
-  defaultNotebookId?: string
+  defaultModuleId?: string
   variant?: 'default' | 'outline' | 'ghost'
   size?: 'sm' | 'default' | 'lg'
   className?: string
@@ -14,7 +14,7 @@ interface AddSourceButtonProps {
 }
 
 export function AddSourceButton({ 
-  defaultNotebookId, 
+  defaultModuleId, 
   variant = 'default',
   size = 'default',
   className,
@@ -37,7 +37,7 @@ export function AddSourceButton({
       <AddSourceDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        defaultNotebookId={defaultNotebookId}
+        defaultModuleId={defaultModuleId}
       />
     </>
   )

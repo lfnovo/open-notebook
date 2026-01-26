@@ -11,8 +11,8 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.ai.models import DefaultModels, Model
-from open_notebook.exceptions import InvalidInputError
+from backpack.ai.models import DefaultModels, Model
+from backpack.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -99,7 +99,7 @@ async def create_model(model_data: ModelCreate):
             )
 
         # Check for duplicate model name under the same provider and type (case-insensitive)
-        from open_notebook.database.repository import repo_query
+        from backpack.database.repository import repo_query
 
         existing = await repo_query(
             "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND string::lowercase(name) = $name AND string::lowercase(type) = $type LIMIT 1",

@@ -24,7 +24,7 @@ on:
 
 env:
   REGISTRY: docker.io
-  IMAGE_NAME: lfnovo/open_notebook
+  IMAGE_NAME: lfnovo/backpack
 
 jobs:
   extract-version:

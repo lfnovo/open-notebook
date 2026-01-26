@@ -10,12 +10,12 @@ from starlette.responses import JSONResponse
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
     """
     Middleware to check password authentication for all API requests.
-    Only active when OPEN_NOTEBOOK_PASSWORD environment variable is set.
+    Only active when BACKPACK_PASSWORD environment variable is set.
     """
 
     def __init__(self, app, excluded_paths: Optional[list] = None):
         super().__init__(app)
-        self.password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
+        self.password = os.environ.get("BACKPACK_PASSWORD")
         self.excluded_paths = excluded_paths or [
             "/",
             "/health",
@@ -83,7 +83,7 @@ def check_api_password(
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.
     """
-    password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
+    password = os.environ.get("BACKPACK_PASSWORD")
 
     # No password set, allow access
     if not password:

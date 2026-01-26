@@ -1,5 +1,5 @@
 """
-Unit tests for the open_notebook.domain module.
+Unit tests for the backpack.domain module.
 
 This test suite focuses on validation logic, business rules, and data structures
 that can be tested without database mocking.
@@ -12,13 +12,13 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import ValidationError
 
-from open_notebook.ai.models import ModelManager
-from open_notebook.domain.base import RecordModel
-from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Note, Notebook, Source
-from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
-from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
+from backpack.ai.models import ModelManager
+from backpack.domain.base import RecordModel
+from backpack.domain.content_settings import ContentSettings
+from backpack.domain.module import Asset, Module, Note, Source
+from backpack.domain.transformation import Transformation
+from backpack.exceptions import InvalidInputError
+from backpack.podcasts.models import EpisodeProfile, SpeakerProfile
 
 # ============================================================================
 # TEST SUITE 1: RecordModel Singleton Pattern
@@ -70,34 +70,34 @@ class TestModelManager:
 
 
 # ============================================================================
-# TEST SUITE 3: Notebook Domain Logic
+# TEST SUITE 3: Module Domain Logic
 # ============================================================================
 
 
-class TestNotebookDomain:
-    """Test suite for Notebook validation and business rules."""
+class TestModuleDomain:
+    """Test suite for Module validation and business rules."""
 
-    def test_notebook_name_validation(self):
+    def test_module_name_validation(self):
         """Test empty/whitespace names are rejected."""
         # Empty name should raise error
-        with pytest.raises(InvalidInputError, match="Notebook name cannot be empty"):
-            Notebook(name="", description="Test")
+        with pytest.raises(InvalidInputError, match="Module name cannot be empty"):
+            Module(name="", description="Test")
 
         # Whitespace-only name should raise error
-        with pytest.raises(InvalidInputError, match="Notebook name cannot be empty"):
-            Notebook(name="   ", description="Test")
+        with pytest.raises(InvalidInputError, match="Module name cannot be empty"):
+            Module(name="   ", description="Test")
 
         # Valid name should work
-        notebook = Notebook(name="Valid Name", description="Test")
-        assert notebook.name == "Valid Name"
+        module = Module(name="Valid Name", description="Test")
+        assert module.name == "Valid Name"
 
-    def test_notebook_archived_flag(self):
+    def test_module_archived_flag(self):
         """Test archived flag defaults to False."""
-        notebook = Notebook(name="Test", description="Test")
-        assert notebook.archived is False
+        module = Module(name="Test", description="Test")
+        assert module.archived is False
 
-        notebook_archived = Notebook(name="Test", description="Test", archived=True)
-        assert notebook_archived.archived is True
+        module_archived = Module(name="Test", description="Test", archived=True)
+        assert module_archived.archived is True
 
 
 # ============================================================================
@@ -333,7 +333,7 @@ class TestContentSettings:
         """Test ContentSettings has proper defaults."""
         settings = ContentSettings()
 
-        assert settings.record_id == "open_notebook:content_settings"
+        assert settings.record_id == "backpack:content_settings"
         assert settings.default_content_processing_engine_doc == "auto"
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"

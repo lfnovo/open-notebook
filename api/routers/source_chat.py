@@ -9,12 +9,12 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import ChatSession, Source
-from open_notebook.exceptions import (
+from backpack.database.repository import ensure_record_id, repo_query
+from backpack.domain.module import ChatSession, Source
+from backpack.exceptions import (
     NotFoundError,
 )
-from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
+from backpack.graphs.source_chat import source_chat_graph as source_chat_graph
 
 router = APIRouter()
 
@@ -428,7 +428,7 @@ async def stream_source_chat_response(
         user_event = {"type": "user_message", "content": message, "timestamp": None}
         yield f"data: {json.dumps(user_event)}\n\n"
 
-        # Execute source chat graph synchronously (like notebook chat does)
+        # Execute source chat graph synchronously (like module chat does)
         result = source_chat_graph.invoke(
             input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(

@@ -16,7 +16,7 @@ class TestModelCreation:
     """Test suite for Model Creation endpoint."""
 
     @pytest.mark.asyncio
-    @patch("open_notebook.database.repository.repo_query")
+    @patch("backpack.database.repository.repo_query")
     @patch("api.routers.models.Model.save")
     async def test_create_duplicate_model_same_case(
         self, mock_save, mock_repo_query, client
@@ -45,7 +45,7 @@ class TestModelCreation:
         )
 
     @pytest.mark.asyncio
-    @patch("open_notebook.database.repository.repo_query")
+    @patch("backpack.database.repository.repo_query")
     @patch("api.routers.models.Model.save")
     async def test_create_duplicate_model_different_case(
         self, mock_save, mock_repo_query, client
@@ -74,12 +74,12 @@ class TestModelCreation:
         )
 
     @pytest.mark.asyncio
-    @patch("open_notebook.database.repository.repo_query")
+    @patch("backpack.database.repository.repo_query")
     async def test_create_same_model_name_different_provider(
         self, mock_repo_query, client
     ):
         """Test that creating a model with same name but different provider is allowed."""
-        from open_notebook.ai.models import Model
+        from backpack.ai.models import Model
 
         # Mock repo_query to return empty (no duplicate found for different provider)
         mock_repo_query.return_value = []
@@ -96,10 +96,10 @@ class TestModelCreation:
             assert response.status_code == 200
 
     @pytest.mark.asyncio
-    @patch("open_notebook.database.repository.repo_query")
+    @patch("backpack.database.repository.repo_query")
     async def test_create_same_model_name_different_type(self, mock_repo_query, client):
         """Test that creating a model with same name but different type is allowed."""
-        from open_notebook.ai.models import Model
+        from backpack.ai.models import Model
 
         # Mock repo_query to return empty (no duplicate found for different type)
         mock_repo_query.return_value = []

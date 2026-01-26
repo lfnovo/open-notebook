@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
-from open_notebook.domain.notebook import SourceInsight
-from open_notebook.exceptions import InvalidInputError
+from backpack.domain.module import SourceInsight
+from backpack.exceptions import InvalidInputError
 
 router = APIRouter()
 
@@ -61,7 +61,7 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
             raise HTTPException(status_code=404, detail="Insight not found")
 
         # Use the existing save_as_note method from the domain model
-        note = await insight.save_as_note(request.notebook_id)
+        note = await insight.save_as_note(request.module_id)
 
         return NoteResponse(
             id=note.id or "",

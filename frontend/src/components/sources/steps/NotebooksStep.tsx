@@ -3,40 +3,40 @@
 import { FormSection } from "@/components/ui/form-section"
 import { useTranslation } from "@/lib/hooks/use-translation"
 import { CheckboxList } from "@/components/ui/checkbox-list"
-import { NotebookResponse } from "@/lib/types/api"
+import { ModuleResponse } from "@/lib/types/api"
 
-interface NotebooksStepProps {
-  notebooks: NotebookResponse[]
-  selectedNotebooks: string[]
-  onToggleNotebook: (notebookId: string) => void
+interface ModulesStepProps {
+  modules: ModuleResponse[]
+  selectedModules: string[]
+  onToggleModule: (moduleId: string) => void
   loading?: boolean
 }
 
-export function NotebooksStep({
-  notebooks,
-  selectedNotebooks,
-  onToggleNotebook,
+export function ModulesStep({
+  modules,
+  selectedModules,
+  onToggleModule,
   loading = false
-}: NotebooksStepProps) {
+}: ModulesStepProps) {
   const { t } = useTranslation()
-  const notebookItems = notebooks.map((notebook) => ({
-    id: notebook.id,
-    title: notebook.name,
-    description: notebook.description || undefined
+  const moduleItems = modules.map((module) => ({
+    id: module.id,
+    title: module.name,
+    description: module.description || undefined
   }))
 
   return (
     <div className="space-y-6">
       <FormSection
-        title={`${t.notebooks.title} (${t.common.optional})`}
+        title={`${t.modules.title} (${t.common.optional})`}
         description={t.sources.addExistingDesc}
       >
         <CheckboxList
-          items={notebookItems}
-          selectedIds={selectedNotebooks}
-          onToggle={onToggleNotebook}
+          items={moduleItems}
+          selectedIds={selectedModules}
+          onToggle={onToggleModule}
           loading={loading}
-          emptyMessage={t.sources.noNotebooksFound}
+          emptyMessage={t.sources.noModulesFound}
         />
       </FormSection>
     </div>

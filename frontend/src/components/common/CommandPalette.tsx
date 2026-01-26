@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useId } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { useModules } from '@/lib/hooks/use-modules'
 import { useTheme } from '@/lib/stores/theme-store'
 import {
   CommandDialog,
@@ -34,7 +34,7 @@ import { TranslationKeys } from '@/lib/locales'
 
 const getNavigationItems = (t: TranslationKeys) => [
   { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
-  { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
+  { name: t.navigation.modules, href: '/modules', icon: Book, keywords: ['notes', 'research', 'projects'] },
   { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
   { name: t.navigation.podcasts, href: '/podcasts', icon: Mic, keywords: ['audio', 'episodes', 'generate'] },
   { name: t.navigation.models, href: '/models', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
@@ -45,7 +45,7 @@ const getNavigationItems = (t: TranslationKeys) => [
 
 const getCreateItems = (t: TranslationKeys) => [
   { name: t.common.newSource, action: 'source', icon: FileText },
-  { name: t.common.newNotebook, action: 'notebook', icon: Book },
+  { name: t.common.newModule, action: 'module', icon: Book },
   { name: t.common.newPodcast, action: 'podcast', icon: Mic },
 ]
 
@@ -61,13 +61,14 @@ export function CommandPalette() {
   const navigationItems = useMemo(() => getNavigationItems(t), [t])
   const createItems = useMemo(() => getCreateItems(t), [t])
   const themeItems = useMemo(() => getThemeItems(t), [t])
-  
+
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const router = useRouter()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+
+  const { openSourceDialog, openModuleDialog, openPodcastDialog } = useCreateDialogs()
   const { setTheme } = useTheme()
-  const { data: notebooks, isLoading: notebooksLoading } = useNotebooks(false)
+  const { data: modules, isLoading: modulesLoading } = useModules(false)
 
   // Global keyboard listener for ⌘K / Ctrl+K
   useEffect(() => {
@@ -125,16 +126,16 @@ export function CommandPalette() {
   const handleCreate = useCallback((action: string) => {
     handleSelect(() => {
       if (action === 'source') openSourceDialog()
-      else if (action === 'notebook') openNotebookDialog()
+      else if (action === 'module') openModuleDialog()
       else if (action === 'podcast') openPodcastDialog()
     })
-  }, [handleSelect, openSourceDialog, openNotebookDialog, openPodcastDialog])
+  }, [handleSelect, openSourceDialog, openModuleDialog, openPodcastDialog])
 
   const handleTheme = useCallback((theme: 'light' | 'dark' | 'system') => {
     handleSelect(() => setTheme(theme))
   }, [handleSelect, setTheme])
 
-  // Check if query matches any command (navigation, create, theme, or notebook)
+  // Check if query matches any command (navigation, create, theme, or module)
   const queryLower = query.toLowerCase().trim()
   const hasCommandMatch = useMemo(() => {
     if (!queryLower) return false
@@ -150,12 +151,12 @@ export function CommandPalette() {
         item.name.toLowerCase().includes(queryLower) ||
         item.keywords.some(k => k.includes(queryLower))
       ) ||
-      (notebooks?.some(nb =>
-        nb.name.toLowerCase().includes(queryLower) ||
-        (nb.description && nb.description.toLowerCase().includes(queryLower))
+      (modules?.some(m =>
+        m.name.toLowerCase().includes(queryLower) ||
+        (m.description && m.description.toLowerCase().includes(queryLower))
       ) ?? false)
     )
-  }, [queryLower, notebooks, navigationItems, createItems, themeItems])
+  }, [queryLower, modules, navigationItems, createItems, themeItems])
 
   // Determine if we should show the Search/Ask section at the top
   const showSearchFirst = query.trim() && !hasCommandMatch
@@ -214,22 +215,22 @@ export function CommandPalette() {
           ))}
         </CommandGroup>
 
-        {/* Notebooks */}
-        <CommandGroup heading={t.notebooks.title}>
-          {notebooksLoading ? (
+        {/* Modules */}
+        <CommandGroup heading={t.modules.title}>
+          {modulesLoading ? (
             <CommandItem disabled>
               <Loader2 className="h-4 w-4 animate-spin" />
               <span>{t.common.loading}</span>
             </CommandItem>
-          ) : notebooks && notebooks.length > 0 ? (
-            notebooks.map((notebook) => (
+          ) : modules && modules.length > 0 ? (
+            modules.map((m) => (
               <CommandItem
-                key={notebook.id}
-                value={`notebook ${notebook.name} ${notebook.description || ''}`}
-                onSelect={() => handleNavigate(`/notebooks/${notebook.id}`)}
+                key={m.id}
+                value={`module ${m.name} ${m.description || ''}`}
+                onSelect={() => handleNavigate(`/modules/${encodeURIComponent(m.id)}`)}
               >
                 <Book className="h-4 w-4" />
-                <span>{notebook.name}</span>
+                <span>{m.name}</span>
               </CommandItem>
             ))
           ) : null}

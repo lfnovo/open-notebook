@@ -5,7 +5,7 @@ Axios-based client and resource-specific API modules for backend communication w
 ## Key Components
 
 - **`client.ts`**: Central Axios instance with request/response interceptors, auth headers, base URL resolution
-- **Resource modules** (`sources.ts`, `notebooks.ts`, `chat.ts`, `search.ts`, etc.): Endpoint-specific functions returning typed responses
+- **Resource modules** (`sources.ts`, `modules.ts`, `chat.ts`, `search.ts`, etc.): Endpoint-specific functions returning typed responses
 - **`query-client.ts`**: TanStack Query client configuration with default options
 - **`models.ts`, `notes.ts`, `embeddings.ts`, `settings.ts`**: Additional resource APIs
 
@@ -40,7 +40,7 @@ Axios-based client and resource-specific API modules for backend communication w
 ## Important Quirks & Gotchas
 
 - **Base URL delay**: First request waits for `getApiUrl()` to resolve; can be slow on startup
-- **FormData fields as JSON strings**: Nested objects (arrays, objects) must be JSON stringified in FormData (e.g., `notebooks`, `transformations`)
+- **FormData fields as JSON strings**: Nested objects (arrays, objects) must be JSON stringified in FormData (e.g., `modules`, `transformations`)
 - **Timeout for streaming**: 10-minute timeout may not cover very long-running LLM operations; consider extending if needed
 - **Auth token management**: Token stored in localStorage `auth-storage` key; uses Zustand persist middleware
 - **Headers mutation in interceptor**: Mutating `config.headers` directly; be careful with middleware order
@@ -51,13 +51,13 @@ Axios-based client and resource-specific API modules for backend communication w
 
 ```typescript
 // Basic list
-const sources = await sourcesApi.list({ notebook_id: notebookId })
+const sources = await sourcesApi.list({ module_id: moduleId })
 
 // File upload with FormData
 const response = await sourcesApi.create({
   type: 'upload',
   file: fileObj,
-  notebook_id: notebookId,
+  module_id: moduleId,
   async_processing: true
 })
 

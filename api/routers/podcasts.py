@@ -48,7 +48,7 @@ async def generate_podcast(request: PodcastGenerationRequest):
             episode_profile_name=request.episode_profile,
             speaker_profile_name=request.speaker_profile,
             episode_name=request.episode_name,
-            notebook_id=request.notebook_id,
+            module_id=request.module_id,
             content=request.content,
             briefing_suffix=request.briefing_suffix,
         )

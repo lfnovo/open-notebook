@@ -3,21 +3,21 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-# Notebook models
-class NotebookCreate(BaseModel):
-    name: str = Field(..., description="Name of the notebook")
-    description: str = Field(default="", description="Description of the notebook")
+# Module models
+class ModuleCreate(BaseModel):
+    name: str = Field(..., description="Name of the module")
+    description: str = Field(default="", description="Description of the module")
 
 
-class NotebookUpdate(BaseModel):
-    name: Optional[str] = Field(None, description="Name of the notebook")
-    description: Optional[str] = Field(None, description="Description of the notebook")
+class ModuleUpdate(BaseModel):
+    name: Optional[str] = Field(None, description="Name of the module")
+    description: Optional[str] = Field(None, description="Description of the module")
     archived: Optional[bool] = Field(
-        None, description="Whether the notebook is archived"
+        None, description="Whether the module is archived"
     )
 
 
-class NotebookResponse(BaseModel):
+class ModuleResponse(BaseModel):
     id: str
     name: str
     description: str
@@ -171,8 +171,8 @@ class NoteCreate(BaseModel):
     title: Optional[str] = Field(None, description="Note title")
     content: str = Field(..., description="Note content")
     note_type: Optional[str] = Field("human", description="Type of note (human, ai)")
-    notebook_id: Optional[str] = Field(
-        None, description="Notebook ID to add the note to"
+    module_id: Optional[str] = Field(
+        None, description="Module ID to add the note to"
     )
 
 
@@ -274,13 +274,13 @@ class AssetModel(BaseModel):
 
 
 class SourceCreate(BaseModel):
-    # Backward compatibility: support old single notebook_id
-    notebook_id: Optional[str] = Field(
-        None, description="Notebook ID to add the source to (deprecated, use notebooks)"
+    # Backward compatibility: support old single module_id
+    module_id: Optional[str] = Field(
+        None, description="Module ID to add the source to (deprecated, use modules)"
     )
-    # New multi-notebook support
-    notebooks: Optional[List[str]] = Field(
-        None, description="List of notebook IDs to add the source to"
+    # New multi-module support
+    modules: Optional[List[str]] = Field(
+        None, description="List of module IDs to add the source to"
     )
     # Required fields
     type: str = Field(..., description="Source type: link, upload, or text")
@@ -301,21 +301,21 @@ class SourceCreate(BaseModel):
     )
 
     @model_validator(mode="after")
-    def validate_notebook_fields(self):
-        # Ensure only one of notebook_id or notebooks is provided
-        if self.notebook_id is not None and self.notebooks is not None:
+    def validate_module_fields(self):
+        # Ensure only one of module_id or modules is provided
+        if self.module_id is not None and self.modules is not None:
             raise ValueError(
-                "Cannot specify both 'notebook_id' and 'notebooks'. Use 'notebooks' for multi-notebook support."
+                "Cannot specify both 'module_id' and 'modules'. Use 'modules' for multi-module support."
             )
 
-        # Convert single notebook_id to notebooks array for internal processing
-        if self.notebook_id is not None:
-            self.notebooks = [self.notebook_id]
-            # Keep notebook_id for backward compatibility in response
+        # Convert single module_id to modules array for internal processing
+        if self.module_id is not None:
+            self.modules = [self.module_id]
+            # Keep module_id for backward compatibility in response
 
-        # Set empty array if no notebooks specified (allow sources without notebooks)
-        if self.notebooks is None:
-            self.notebooks = []
+        # Set empty array if no modules specified (allow sources without modules)
+        if self.modules is None:
+            self.modules = []
 
         return self
 
@@ -340,8 +340,8 @@ class SourceResponse(BaseModel):
     command_id: Optional[str] = None
     status: Optional[str] = None
     processing_info: Optional[Dict] = None
-    # Notebook associations
-    notebooks: Optional[List[str]] = None
+    # Module associations
+    modules: Optional[List[str]] = None
 
 
 class SourceListResponse(BaseModel):
@@ -372,14 +372,14 @@ class ContextConfig(BaseModel):
 
 
 class ContextRequest(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID to get context for")
+    module_id: str = Field(..., description="Module ID to get context for")
     context_config: Optional[ContextConfig] = Field(
         None, description="Context configuration"
     )
 
 
 class ContextResponse(BaseModel):
-    notebook_id: str
+    module_id: str
     sources: List[Dict[str, Any]] = Field(..., description="Source context data")
     notes: List[Dict[str, Any]] = Field(..., description="Note context data")
     total_tokens: Optional[int] = Field(None, description="Estimated token count")
@@ -396,7 +396,7 @@ class SourceInsightResponse(BaseModel):
 
 
 class SaveAsNoteRequest(BaseModel):
-    notebook_id: Optional[str] = Field(None, description="Notebook ID to add note to")
+    module_id: Optional[str] = Field(None, description="Module ID to add note to")
 
 
 class CreateSourceInsightRequest(BaseModel):

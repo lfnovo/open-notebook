@@ -1,0 +1,63 @@
+
+-- Migration 11: Rename notebook to module
+-- This migration renames the notebook table to module and updates all relationships
+
+-- Step 1: Create the new module table with same schema as notebook
+DEFINE TABLE IF NOT EXISTS module SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE module TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS description ON TABLE module TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS archived ON TABLE module TYPE option<bool> DEFAULT False;
+
+DEFINE FIELD IF NOT EXISTS created ON module DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON module DEFAULT time::now() VALUE time::now();
+
+-- Step 2: Copy all data from notebook to module
+-- Using INSERT ... SELECT to preserve IDs
+INSERT INTO module SELECT * FROM notebook;
+
+-- Step 3: Update the reference relationship (source -> module)
+DEFINE TABLE OVERWRITE reference
+TYPE RELATION
+FROM source TO module;
+
+-- Step 4: Update the artifact relationship (note -> module)
+DEFINE TABLE OVERWRITE artifact
+TYPE RELATION
+FROM note TO module;
+
+-- Step 5: Update the refers_to relationship (chat_session -> module|source)
+DEFINE TABLE OVERWRITE refers_to
+TYPE RELATION
+FROM chat_session TO module|source;
+
+-- Step 6: Migrate relationship records - recreate them pointing to module
+-- For reference relationships
+LET $refs = (SELECT * FROM reference);
+DELETE reference;
+FOR $ref IN $refs {
+    LET $in_record = $ref.in;
+    LET $new_out = type::thing("module", record::id($ref.out));
+    RELATE $in_record->reference->$new_out;
+};
+
+-- For artifact relationships
+LET $arts = (SELECT * FROM artifact);
+DELETE artifact;
+FOR $art IN $arts {
+    LET $in_record = $art.in;
+    LET $new_out = type::thing("module", record::id($art.out));
+    RELATE $in_record->artifact->$new_out;
+};
+
+-- For refers_to relationships (only those pointing to notebooks, not sources)
+LET $refers = (SELECT * FROM refers_to WHERE record::table(out) == "notebook");
+FOR $ref IN $refers {
+    DELETE $ref.id;
+    LET $in_record = $ref.in;
+    LET $new_out = type::thing("module", record::id($ref.out));
+    RELATE $in_record->refers_to->$new_out;
+};
+
+-- Step 7: Remove the old notebook table
+REMOVE TABLE notebook;

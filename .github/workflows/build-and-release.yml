@@ -16,8 +16,8 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/lfnovo/open-notebook
-  DOCKERHUB_IMAGE: lfnovo/open_notebook
+  GHCR_IMAGE: ghcr.io/lfnovo/backpack
+  DOCKERHUB_IMAGE: lfnovo/backpack
 
 jobs:
   extract-version:

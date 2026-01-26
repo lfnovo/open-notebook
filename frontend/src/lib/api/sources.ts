@@ -12,7 +12,7 @@ import {
 
 export const sourcesApi = {
   list: async (params?: {
-    notebook_id?: string
+    module_id?: string
     limit?: number
     offset?: number
     sort_by?: 'created' | 'updated'
@@ -34,11 +34,11 @@ export const sourcesApi = {
     // Add basic fields
     formData.append('type', data.type)
     
-    if (data.notebooks !== undefined) {
-      formData.append('notebooks', JSON.stringify(data.notebooks))
+    if (data.modules !== undefined) {
+      formData.append('modules', JSON.stringify(data.modules))
     }
-    if (data.notebook_id) {
-      formData.append('notebook_id', data.notebook_id)
+    if (data.module_id) {
+      formData.append('module_id', data.module_id)
     }
     if (data.title) {
       formData.append('title', data.title)
@@ -80,10 +80,10 @@ export const sourcesApi = {
     return response.data
   },
 
-  upload: async (file: File, notebook_id: string) => {
+  upload: async (file: File, module_id: string) => {
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('notebook_id', notebook_id)
+    formData.append('module_id', module_id)
     formData.append('type', 'upload')
     formData.append('async_processing', 'true')
     

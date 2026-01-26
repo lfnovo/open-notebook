@@ -1,5 +1,5 @@
 services:
-  open_notebook_single:
+  backpack_single:
     # image: lfnovo/open_notebook:v1-latest-single
     build:
       context: .

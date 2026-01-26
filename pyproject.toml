@@ -1,7 +1,7 @@
 [project]
-name = "open-notebook"
+name = "backpack"
 version = "1.6.0"
-description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
+description = "An open source research assistant for organizing and synthesizing information"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
 ]
@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"open_notebook" = "open_notebook"}
+package-dir = {"backpack" = "backpack"}
 
 
 [project.optional-dependencies]

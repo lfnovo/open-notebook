@@ -83,7 +83,7 @@ export function SystemInfo() {
           {config?.hasUpdate && (
             <div className="pt-2 border-t">
               <a
-                href="https://github.com/lfnovo/open-notebook"
+                href="https://github.com/parkerjstewart/backpack"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sm text-primary hover:underline inline-flex items-center gap-1"

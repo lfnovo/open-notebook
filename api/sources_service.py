@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.notebook import Asset, Source
+from backpack.domain.module import Asset, Source
 
 
 @dataclass
@@ -70,10 +70,10 @@ class SourcesService:
         logger.info("Using API for sources operations")
 
     def get_all_sources(
-        self, notebook_id: Optional[str] = None
+        self, module_id: Optional[str] = None
     ) -> List[SourceWithMetadata]:
-        """Get all sources with optional notebook filtering."""
-        sources_data = api_client.get_sources(notebook_id=notebook_id)
+        """Get all sources with optional module filtering."""
+        sources_data = api_client.get_sources(module_id=module_id)
         # Convert API response to SourceWithMetadata objects
         sources = []
         for source_data in sources_data:
@@ -127,7 +127,7 @@ class SourcesService:
 
     def create_source(
         self,
-        notebook_id: Optional[str] = None,
+        module_id: Optional[str] = None,
         source_type: str = "text",
         url: Optional[str] = None,
         file_path: Optional[str] = None,
@@ -136,14 +136,14 @@ class SourcesService:
         transformations: Optional[List[str]] = None,
         embed: bool = False,
         delete_source: bool = False,
-        notebooks: Optional[List[str]] = None,
+        modules: Optional[List[str]] = None,
         async_processing: bool = False,
     ) -> Union[Source, SourceProcessingResult]:
         """
         Create a new source with support for async processing.
 
         Args:
-            notebook_id: Single notebook ID (deprecated, use notebooks parameter)
+            module_id: Single module ID (deprecated, use modules parameter)
             source_type: Type of source (link, upload, text)
             url: URL for link sources
             file_path: File path for upload sources
@@ -152,7 +152,7 @@ class SourcesService:
             transformations: List of transformation IDs to apply
             embed: Whether to embed content for vector search
             delete_source: Whether to delete uploaded file after processing
-            notebooks: List of notebook IDs to add source to (preferred over notebook_id)
+            modules: List of module IDs to add source to (preferred over module_id)
             async_processing: Whether to process source asynchronously
 
         Returns:
@@ -160,8 +160,8 @@ class SourcesService:
             SourceProcessingResult for async processing (contains additional metadata)
         """
         source_data = api_client.create_source(
-            notebook_id=notebook_id,
-            notebooks=notebooks,
+            module_id=module_id,
+            modules=modules,
             source_type=source_type,
             url=url,
             file_path=file_path,
@@ -223,7 +223,7 @@ class SourcesService:
 
     def create_source_async(
         self,
-        notebook_id: Optional[str] = None,
+        module_id: Optional[str] = None,
         source_type: str = "text",
         url: Optional[str] = None,
         file_path: Optional[str] = None,
@@ -232,7 +232,7 @@ class SourcesService:
         transformations: Optional[List[str]] = None,
         embed: bool = False,
         delete_source: bool = False,
-        notebooks: Optional[List[str]] = None,
+        modules: Optional[List[str]] = None,
     ) -> SourceProcessingResult:
         """
         Create a new source with async processing enabled.
@@ -241,8 +241,8 @@ class SourcesService:
         Returns a SourceProcessingResult with processing status information.
         """
         result = self.create_source(
-            notebook_id=notebook_id,
-            notebooks=notebooks,
+            module_id=module_id,
+            modules=modules,
             source_type=source_type,
             url=url,
             file_path=file_path,

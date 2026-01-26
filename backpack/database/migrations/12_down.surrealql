@@ -1,0 +1,39 @@
+-- ============================================
+-- Migration 12 Down: Remove LMS Schema Extension
+-- Reverts Migration 12, keeps Migration 11 (module table remains)
+-- ============================================
+
+-- Remove functions first (they depend on tables)
+REMOVE FUNCTION IF EXISTS fn::lms_vector_search;
+REMOVE FUNCTION IF EXISTS fn::get_module_prerequisites;
+REMOVE FUNCTION IF EXISTS fn::get_modules_requiring;
+
+-- Remove events
+REMOVE EVENT IF EXISTS module_lms_delete ON TABLE module;
+REMOVE EVENT IF EXISTS course_delete ON TABLE course;
+REMOVE EVENT IF EXISTS module_document_delete ON TABLE module_document;
+REMOVE EVENT IF EXISTS document_chunk_delete ON TABLE document_chunk;
+REMOVE EVENT IF EXISTS learning_goal_delete ON TABLE learning_goal;
+
+-- Remove tables (order matters due to foreign keys)
+REMOVE TABLE IF EXISTS student_progress;
+REMOVE TABLE IF EXISTS chunk_embedding;
+REMOVE TABLE IF EXISTS document_chunk;
+REMOVE TABLE IF EXISTS module_document;
+REMOVE TABLE IF EXISTS learning_goal;
+REMOVE TABLE IF EXISTS course_membership;
+REMOVE TABLE IF EXISTS module_prerequisite;
+REMOVE TABLE IF EXISTS embedding_model_config;
+REMOVE TABLE IF EXISTS course;
+REMOVE TABLE IF EXISTS user;
+
+-- Remove added fields from module table (keep base module fields from migration 11)
+REMOVE FIELD IF EXISTS course ON TABLE module;
+REMOVE FIELD IF EXISTS overview ON TABLE module;
+REMOVE FIELD IF EXISTS order ON TABLE module;
+REMOVE FIELD IF EXISTS due_date ON TABLE module;
+
+-- Remove indexes
+REMOVE INDEX IF EXISTS idx_module_course ON TABLE module;
+REMOVE INDEX IF EXISTS idx_module_due_date ON TABLE module;
+

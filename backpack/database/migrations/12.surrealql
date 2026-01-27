@@ -1,0 +1,182 @@
+-- ============================================
+-- Migration 12: LMS Schema Extension
+-- Builds on Migration 11 (notebook -> module rename)
+-- ============================================
+
+-- 1. USER MANAGEMENT (role-based, course-scoped)
+DEFINE TABLE IF NOT EXISTS user SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS email ON TABLE user TYPE string;
+DEFINE FIELD IF NOT EXISTS name ON TABLE user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS role ON TABLE user TYPE string DEFAULT 'student';
+DEFINE FIELD IF NOT EXISTS external_id ON TABLE user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE user TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE user TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_user_email ON TABLE user COLUMNS email UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_user_external ON TABLE user COLUMNS external_id;
+
+-- 2. COURSE TABLE
+DEFINE TABLE IF NOT EXISTS course SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS title ON TABLE course TYPE string;
+DEFINE FIELD IF NOT EXISTS description ON TABLE course TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS instructor_id ON TABLE course TYPE option<record<user>>;
+DEFINE FIELD IF NOT EXISTS archived ON TABLE course TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS created ON TABLE course TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE course TYPE datetime DEFAULT time::now();
+
+-- 2b. EXTEND MODULE TABLE (already exists from migration 11)
+-- Adding LMS-specific fields to the renamed notebook->module table
+-- course is OPTIONAL - modules without a course work like standalone notebooks
+DEFINE FIELD IF NOT EXISTS course ON TABLE module TYPE option<record<course>>;
+DEFINE FIELD IF NOT EXISTS overview ON TABLE module TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS order ON TABLE module TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS due_date ON TABLE module TYPE option<datetime>;
+DEFINE INDEX IF NOT EXISTS idx_module_course ON TABLE module COLUMNS course;
+DEFINE INDEX IF NOT EXISTS idx_module_due_date ON TABLE module COLUMNS due_date;
+
+-- 3. MODULE PREREQUISITES (optional, self-referential within/across courses)
+DEFINE TABLE IF NOT EXISTS module_prerequisite TYPE RELATION FROM module TO module;
+DEFINE FIELD IF NOT EXISTS is_required ON TABLE module_prerequisite TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS notes ON TABLE module_prerequisite TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE module_prerequisite TYPE datetime DEFAULT time::now();
+
+-- 4. COURSE MEMBERSHIP (student/instructor enrollment)
+DEFINE TABLE IF NOT EXISTS course_membership TYPE RELATION FROM user TO course;
+DEFINE FIELD IF NOT EXISTS role ON TABLE course_membership TYPE string DEFAULT 'student';
+DEFINE FIELD IF NOT EXISTS enrolled_at ON TABLE course_membership TYPE datetime DEFAULT time::now();
+
+-- 5. LEARNING GOALS
+DEFINE TABLE IF NOT EXISTS learning_goal SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS module ON TABLE learning_goal TYPE record<module>;
+DEFINE FIELD IF NOT EXISTS description ON TABLE learning_goal TYPE string;
+DEFINE FIELD IF NOT EXISTS mastery_criteria ON TABLE learning_goal TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS order ON TABLE learning_goal TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS created ON TABLE learning_goal TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_goal_module ON TABLE learning_goal COLUMNS module;
+
+-- 6. MODULE DOCUMENTS (links to existing source table)
+DEFINE TABLE IF NOT EXISTS module_document SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS module ON TABLE module_document TYPE record<module>;
+DEFINE FIELD IF NOT EXISTS source ON TABLE module_document TYPE record<source>;
+DEFINE FIELD IF NOT EXISTS title ON TABLE module_document TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS order ON TABLE module_document TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS created ON TABLE module_document TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_moddoc_module ON TABLE module_document COLUMNS module;
+DEFINE INDEX IF NOT EXISTS idx_moddoc_source ON TABLE module_document COLUMNS source;
+
+-- 7. DOCUMENT CHUNK LINEAGE (separate from source_embedding for flexibility)
+DEFINE TABLE IF NOT EXISTS document_chunk SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS document ON TABLE document_chunk TYPE record<module_document>;
+DEFINE FIELD IF NOT EXISTS chunk_order ON TABLE document_chunk TYPE int;
+DEFINE FIELD IF NOT EXISTS content ON TABLE document_chunk TYPE string;
+DEFINE FIELD IF NOT EXISTS content_hash ON TABLE document_chunk TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS char_start ON TABLE document_chunk TYPE option<int>;
+DEFINE FIELD IF NOT EXISTS char_end ON TABLE document_chunk TYPE option<int>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE document_chunk TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_chunk_doc ON TABLE document_chunk COLUMNS document;
+DEFINE INDEX IF NOT EXISTS idx_chunk_hash ON TABLE document_chunk COLUMNS content_hash;
+
+-- 8. EMBEDDING MODEL CONFIGURATION (multi-model support)
+DEFINE TABLE IF NOT EXISTS embedding_model_config SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS name ON TABLE embedding_model_config TYPE string;
+DEFINE FIELD IF NOT EXISTS provider ON TABLE embedding_model_config TYPE string;
+DEFINE FIELD IF NOT EXISTS model_name ON TABLE embedding_model_config TYPE string;
+DEFINE FIELD IF NOT EXISTS dimensions ON TABLE embedding_model_config TYPE int;
+DEFINE FIELD IF NOT EXISTS is_active ON TABLE embedding_model_config TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS created ON TABLE embedding_model_config TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_emb_config_active ON TABLE embedding_model_config COLUMNS is_active;
+
+-- 9. CHUNK EMBEDDINGS (with model lineage)
+DEFINE TABLE IF NOT EXISTS chunk_embedding SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS chunk ON TABLE chunk_embedding TYPE record<document_chunk>;
+DEFINE FIELD IF NOT EXISTS model_config ON TABLE chunk_embedding TYPE record<embedding_model_config>;
+DEFINE FIELD IF NOT EXISTS embedding ON TABLE chunk_embedding TYPE array<float>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE chunk_embedding TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_chunk_emb_chunk ON TABLE chunk_embedding COLUMNS chunk;
+DEFINE INDEX IF NOT EXISTS idx_chunk_emb_model ON TABLE chunk_embedding COLUMNS model_config;
+
+-- 10. STUDENT PROGRESS TRACKING
+DEFINE TABLE IF NOT EXISTS student_progress SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS user ON TABLE student_progress TYPE record<user>;
+DEFINE FIELD IF NOT EXISTS learning_goal ON TABLE student_progress TYPE record<learning_goal>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE student_progress TYPE string DEFAULT 'not_started';
+DEFINE FIELD IF NOT EXISTS confidence_score ON TABLE student_progress TYPE option<float>;
+DEFINE FIELD IF NOT EXISTS notes ON TABLE student_progress TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS last_activity ON TABLE student_progress TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS created ON TABLE student_progress TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_progress_user ON TABLE student_progress COLUMNS user;
+DEFINE INDEX IF NOT EXISTS idx_progress_goal ON TABLE student_progress COLUMNS learning_goal;
+
+-- 11. CASCADE DELETE EVENTS
+DEFINE EVENT IF NOT EXISTS module_lms_delete ON TABLE module WHEN ($after == NONE) THEN {
+    DELETE learning_goal WHERE module == $before.id;
+    DELETE module_document WHERE module == $before.id;
+    DELETE module_prerequisite WHERE in == $before.id OR out == $before.id;
+};
+
+DEFINE EVENT IF NOT EXISTS course_delete ON TABLE course WHEN ($after == NONE) THEN {
+    UPDATE module SET course = NONE WHERE course == $before.id;
+    DELETE course_membership WHERE out == $before.id;
+};
+
+DEFINE EVENT IF NOT EXISTS module_document_delete ON TABLE module_document WHEN ($after == NONE) THEN {
+    DELETE document_chunk WHERE document == $before.id;
+};
+
+DEFINE EVENT IF NOT EXISTS document_chunk_delete ON TABLE document_chunk WHEN ($after == NONE) THEN {
+    DELETE chunk_embedding WHERE chunk == $before.id;
+};
+
+DEFINE EVENT IF NOT EXISTS learning_goal_delete ON TABLE learning_goal WHEN ($after == NONE) THEN {
+    DELETE student_progress WHERE learning_goal == $before.id;
+};
+
+-- 12. VECTOR SEARCH FUNCTION FOR LMS (course-scoped)
+DEFINE FUNCTION IF NOT EXISTS fn::lms_vector_search(
+    $query: array<float>, 
+    $course_id: record<course>,
+    $model_config_id: record<embedding_model_config>,
+    $match_count: int, 
+    $min_similarity: float
+) {
+    RETURN (
+        SELECT 
+            chunk.id as chunk_id,
+            chunk.document.source.title as source_title,
+            chunk.content,
+            chunk.document.module.name as module_name,
+            vector::similarity::cosine(embedding, $query) as similarity
+        FROM chunk_embedding 
+        WHERE model_config == $model_config_id
+          AND chunk.document.module.course == $course_id
+          AND vector::similarity::cosine(embedding, $query) >= $min_similarity
+        ORDER BY similarity DESC
+        LIMIT $match_count
+    );
+};
+
+-- 13. PREREQUISITE HELPER FUNCTIONS
+DEFINE FUNCTION IF NOT EXISTS fn::get_module_prerequisites($module_id: record<module>) {
+    RETURN (
+        SELECT 
+            out as prerequisite_module,
+            out.name as name,
+            out.course.title as course_title,
+            is_required,
+            notes
+        FROM module_prerequisite 
+        WHERE in == $module_id
+    );
+};
+
+DEFINE FUNCTION IF NOT EXISTS fn::get_modules_requiring($module_id: record<module>) {
+    RETURN (
+        SELECT 
+            in as dependent_module,
+            in.name as name,
+            in.course.title as course_title,
+            is_required
+        FROM module_prerequisite 
+        WHERE out == $module_id
+    );
+};
+

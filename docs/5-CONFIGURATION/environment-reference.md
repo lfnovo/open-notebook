@@ -223,6 +223,39 @@ For self-hosted LLMs, LM Studio, or OpenAI-compatible endpoints:
 
 ---
 
+## Network / Proxy
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_PROXY` | No | None | HTTP/HTTPS proxy URL for all external requests |
+
+Route all outbound HTTP requests through a proxy server. Useful for corporate/firewalled environments.
+
+**Affects:**
+- AI provider API calls (OpenAI, Anthropic, Google, Groq, etc.)
+- Content extraction from URLs (web scraping, YouTube transcripts)
+- Podcast generation (LLM and TTS provider calls)
+
+**Format:** `http://[user:pass@]host:port` or `https://[user:pass@]host:port`
+
+**Examples:**
+```bash
+# Basic proxy
+OPEN_NOTEBOOK_PROXY=http://proxy.corp.com:8080
+
+# Authenticated proxy
+OPEN_NOTEBOOK_PROXY=http://user:password@proxy.corp.com:8080
+
+# HTTPS proxy
+OPEN_NOTEBOOK_PROXY=https://secure-proxy.corp.com:443
+```
+
+**Notes:**
+- Proxy credentials are automatically redacted from logs
+- If your proxy intercepts HTTPS traffic (corporate SSL inspection, mitmproxy, etc.), you'll get `SSL: CERTIFICATE_VERIFY_FAILED` errors. Configure `ESPERANTO_SSL_CA_BUNDLE` with your proxy's CA certificate, or set `ESPERANTO_SSL_VERIFY=false` for testing (not recommended for production)
+
+---
+
 ## Debugging & Monitoring
 
 | Variable | Required? | Default | Description |
@@ -260,6 +293,12 @@ SURREAL_PASSWORD=secure_password
 ```
 OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
 API_URL=https://mynotebook.example.com
+```
+
+### Corporate Environment (Behind Proxy)
+```
+OPENAI_API_KEY=sk-proj-...
+OPEN_NOTEBOOK_PROXY=http://proxy.corp.com:8080
 ```
 
 ### High-Performance Deployment

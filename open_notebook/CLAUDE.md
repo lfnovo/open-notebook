@@ -73,8 +73,18 @@ All components communicate through async/await patterns and use Pydantic for val
 
 ### Configuration & Exceptions
 
-- **`config.py`**: Paths for data folder, uploads, LangGraph checkpoints, and tiktoken cache. Auto-creates directories.
+- **`config.py`**: Paths for data folder, uploads, LangGraph checkpoints, and tiktoken cache. Auto-creates directories. Also reads `OPEN_NOTEBOOK_PROXY` for HTTP/HTTPS proxy configuration.
 - **`exceptions.py`**: Hierarchy of OpenNotebookError subclasses for database, file, network, authentication, and rate-limit failures.
+
+### Proxy Configuration
+
+All external HTTP requests (AI providers, content extraction, podcast generation) can be routed through a proxy by setting `OPEN_NOTEBOOK_PROXY` environment variable. The proxy URL is:
+- Read once at startup in `config.py` as `PROXY` constant
+- Injected into AI model calls via `ModelManager.get_model()` (passed to Esperanto)
+- Injected into content extraction via `source.py` graph (passed to content-core)
+- Passed to podcast generation in `podcast_commands.py` (passed to podcast-creator)
+
+**Note**: If using an HTTPS-intercepting proxy (corporate SSL inspection, mitmproxy), configure `ESPERANTO_SSL_CA_BUNDLE` with the proxy's CA certificate, or set `ESPERANTO_SSL_VERIFY=false` for testing.
 
 ## Data Flow: Content Ingestion
 

@@ -14,7 +14,7 @@
 ### Other Commands
 
 - **`process_source_command`**: Ingests content through `source_graph`, creates embeddings (optional), and generates insights. Retries on transaction conflicts (exp. jitter, max 5×).
-- **`generate_podcast_command`**: Creates podcasts via `podcast-creator` library using stored episode/speaker profiles.
+- **`generate_podcast_command`**: Creates podcasts via `podcast-creator` library using stored episode/speaker profiles. **Automatically passes proxy** from `config.PROXY` if set.
 - **`process_text_command`** (example): Test fixture for text operations (uppercase, lowercase, reverse, word_count).
 - **`analyze_data_command`** (example): Test fixture for numeric aggregations.
 

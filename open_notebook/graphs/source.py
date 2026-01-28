@@ -10,6 +10,7 @@ from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.ai.models import Model, ModelManager
+from open_notebook.config import PROXY
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
@@ -58,6 +59,10 @@ async def content_process(state: SourceState) -> dict:
         content_settings.default_content_processing_engine_doc or "auto"
     )
     content_state["output_format"] = "markdown"
+
+    # Inject proxy configuration if set
+    if PROXY:
+        content_state["proxy"] = PROXY
 
     # Add speech-to-text model configuration from Default Models
     try:

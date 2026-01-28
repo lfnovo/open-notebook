@@ -19,7 +19,7 @@ LangGraph-based workflow orchestration for content processing, chat interactions
 - **Prompt templating**: `ai_prompter.Prompter` with Jinja2 templates referenced by path ("chat/system", "ask/entry", etc.)
 - **Model provisioning via context**: Config dict passed to node via `RunnableConfig`; defaults fall back to state overrides
 - **Checkpointing**: `chat.py` and `source_chat.py` use SqliteSaver for message history (LangGraph's built-in persistence)
-- **Content extraction**: `source.py` uses content-core library with provider/model from DefaultModels; URLs and files both supported
+- **Content extraction**: `source.py` uses content-core library with provider/model from DefaultModels; URLs and files both supported. **Automatically injects proxy** from `config.PROXY` into content_state if set.
 
 ## Quirks & Edge Cases
 

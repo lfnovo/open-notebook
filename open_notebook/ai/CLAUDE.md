@@ -31,11 +31,12 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 
 #### ModelManager
 - Stateless factory for instantiating AI models
-- `get_model(model_id)`: Retrieves Model by ID, creates via AIFactory.create_* based on type
+- `get_model(model_id)`: Retrieves Model by ID, creates via AIFactory.create_* based on type. **Automatically injects proxy configuration** from `config.PROXY` if set.
 - `get_defaults()`: Fetches DefaultModels configuration
 - `get_default_model(model_type)`: Smart lookup (e.g., "chat" → default_chat_model, "transformation" → default_transformation_model with fallback to chat)
 - `get_speech_to_text()`, `get_text_to_speech()`, `get_embedding_model()`: Type-specific convenience methods with assertions
 - **Global instance**: `model_manager` singleton exported for use throughout app
+- **Proxy support**: When `OPEN_NOTEBOOK_PROXY` env var is set, all AI provider calls are routed through the proxy
 
 ### provision.py
 
@@ -75,6 +76,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Esperanto caching**: Actual model instances cached by Esperanto (not by ModelManager); ModelManager stateless
 - **Fallback chain specificity**: "transformation" type falls back to default_chat_model if not explicitly set (convention-based)
 - **kwargs passed through**: provision_langchain_model() passes kwargs to AIFactory but doesn't validate what's accepted
+- **Proxy injection**: Proxy from `config.PROXY` is injected in `get_model()` before kwargs, so explicit `proxy=` in kwargs would override the global setting
 
 ## How to Extend
 

@@ -9,6 +9,7 @@ from esperanto import (
 )
 from loguru import logger
 
+from open_notebook.config import PROXY
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 
@@ -86,6 +87,10 @@ class ModelManager:
             "text_to_speech",
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
+
+        # Inject proxy configuration if set
+        if PROXY:
+            kwargs["proxy"] = PROXY
 
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":

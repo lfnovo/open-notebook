@@ -15,3 +15,7 @@ os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 # TIKTOKEN CACHE FOLDER
 TIKTOKEN_CACHE_DIR = f"{DATA_FOLDER}/tiktoken-cache"
 os.makedirs(TIKTOKEN_CACHE_DIR, exist_ok=True)
+
+# PROXY CONFIGURATION
+# Optional HTTP/HTTPS proxy for all external requests (AI providers, content extraction, etc.)
+PROXY = os.getenv("OPEN_NOTEBOOK_PROXY")

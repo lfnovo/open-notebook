@@ -34,5 +34,13 @@ export const modulesApi = {
   removeSource: async (moduleId: string, sourceId: string) => {
     const response = await apiClient.delete(`/modules/${moduleId}/sources/${sourceId}`)
     return response.data
+  },
+
+  generateOverview: async (moduleId: string, modelId?: string) => {
+    const response = await apiClient.post<ModuleResponse>(
+      `/modules/${moduleId}/generate-overview`,
+      modelId ? { model_id: modelId } : {}
+    )
+    return response.data
   }
 }

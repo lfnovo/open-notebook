@@ -94,3 +94,16 @@ export function useDeleteModule() {
     },
   })
 }
+
+export function useGenerateOverview() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
+      modulesApi.generateOverview(id, modelId),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.modules })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.module(id) })
+    },
+  })
+}

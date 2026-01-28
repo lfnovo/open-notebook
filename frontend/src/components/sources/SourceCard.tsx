@@ -141,7 +141,7 @@ export function SourceCard({
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
     wasProcessing || // Keep polling if we were processing to catch the completion
-    (sourceWithStatus.command_id && !sourceWithStatus.status) // Command exists but no status - need to check
+    !!(sourceWithStatus.command_id && !sourceWithStatus.status) // Command exists but no status - need to check
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,

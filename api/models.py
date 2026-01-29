@@ -37,6 +37,40 @@ class GenerateOverviewRequest(BaseModel):
     )
 
 
+# Learning Goals models
+class LearningGoalCreate(BaseModel):
+    description: str = Field(..., description="Learning goal description")
+    mastery_criteria: Optional[str] = Field(
+        None, description="Criteria for mastering this goal"
+    )
+    order: Optional[int] = Field(None, description="Display order (auto-assigned if not provided)")
+
+
+class LearningGoalUpdate(BaseModel):
+    description: Optional[str] = Field(None, description="Learning goal description")
+    mastery_criteria: Optional[str] = Field(
+        None, description="Criteria for mastering this goal"
+    )
+    order: Optional[int] = Field(None, description="Display order")
+
+
+class LearningGoalResponse(BaseModel):
+    id: str
+    module: str
+    description: str
+    mastery_criteria: Optional[str] = None
+    order: int
+    created: str
+    updated: str
+
+
+class GenerateLearningGoalsRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use for generation"
+    )
+
+
 # Search models
 class SearchRequest(BaseModel):
     query: str = Field(..., description="Search query")

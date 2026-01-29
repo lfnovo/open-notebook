@@ -73,6 +73,29 @@ export interface UpdateModuleRequest {
   overview?: string
 }
 
+// Learning Goals Types
+export interface LearningGoalResponse {
+  id: string
+  module: string
+  description: string
+  mastery_criteria: string | null
+  order: number
+  created: string
+  updated: string
+}
+
+export interface CreateLearningGoalRequest {
+  description: string
+  mastery_criteria?: string
+  order?: number
+}
+
+export interface UpdateLearningGoalRequest {
+  description?: string
+  mastery_criteria?: string
+  order?: number
+}
+
 export interface CreateNoteRequest {
   title?: string
   content: string

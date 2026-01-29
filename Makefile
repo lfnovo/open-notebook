@@ -178,13 +178,13 @@ stop-all:
 	@pkill -f "surreal-commands-worker" || true
 	@pkill -f "run_api.py" || true
 	@pkill -f "uvicorn api.main:app" || true
-	@docker compose down
+	@docker compose -f docker-compose.dev.yml down
 	@echo "✅ All services stopped!"
 
 status:
 	@echo "📊 Backpack Service Status:"
 	@echo "Database (SurrealDB):"
-	@docker compose ps surrealdb 2>/dev/null || echo "  ❌ Not running"
+	@docker compose -f docker-compose.dev.yml ps surrealdb 2>/dev/null || echo "  ❌ Not running"
 	@echo "API Backend:"
 	@pgrep -f "run_api.py\|uvicorn api.main:app" >/dev/null && echo "  ✅ Running" || echo "  ❌ Not running"
 	@echo "Background Worker:"

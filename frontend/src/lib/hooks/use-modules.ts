@@ -4,7 +4,12 @@ import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
-import { CreateModuleRequest, UpdateModuleRequest } from '@/lib/types/api'
+import {
+  CreateModuleRequest,
+  UpdateModuleRequest,
+  CreateLearningGoalRequest,
+  UpdateLearningGoalRequest,
+} from '@/lib/types/api'
 
 export function useModules(archived?: boolean) {
   return useQuery({
@@ -104,6 +109,110 @@ export function useGenerateOverview() {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.modules })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.module(id) })
+    },
+  })
+}
+
+// Learning Goals Hooks
+
+export function useLearningGoals(moduleId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.learningGoals(moduleId),
+    queryFn: () => modulesApi.getLearningGoals(moduleId),
+    enabled: !!moduleId,
+  })
+}
+
+export function useCreateLearningGoal() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({
+      moduleId,
+      data,
+    }: {
+      moduleId: string
+      data: CreateLearningGoalRequest
+    }) => modulesApi.createLearningGoal(moduleId, data),
+    onSuccess: (_, { moduleId }) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.learningGoals(moduleId),
+      })
+      toast({
+        title: t.common.success,
+        description: 'Learning goal created',
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.common.error)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useUpdateLearningGoal() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({
+      goalId,
+      moduleId,
+      data,
+    }: {
+      goalId: string
+      moduleId: string
+      data: UpdateLearningGoalRequest
+    }) => modulesApi.updateLearningGoal(goalId, data),
+    onSuccess: (_, { moduleId }) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.learningGoals(moduleId),
+      })
+    },
+  })
+}
+
+export function useDeleteLearningGoal() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ goalId, moduleId }: { goalId: string; moduleId: string }) =>
+      modulesApi.deleteLearningGoal(goalId),
+    onSuccess: (_, { moduleId }) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.learningGoals(moduleId),
+      })
+      toast({
+        title: t.common.success,
+        description: 'Learning goal deleted',
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.common.error)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useGenerateLearningGoals() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, modelId }: { id: string; modelId?: string }) =>
+      modulesApi.generateLearningGoals(id, modelId),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.learningGoals(id),
+      })
     },
   })
 }

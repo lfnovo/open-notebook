@@ -4,10 +4,19 @@ from ai_prompter import Prompter
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
-from api.models import GenerateOverviewRequest, ModuleCreate, ModuleResponse, ModuleUpdate
+from api.models import (
+    GenerateLearningGoalsRequest,
+    GenerateOverviewRequest,
+    LearningGoalCreate,
+    LearningGoalResponse,
+    LearningGoalUpdate,
+    ModuleCreate,
+    ModuleResponse,
+    ModuleUpdate,
+)
 from backpack.ai.provision import provision_langchain_model
 from backpack.database.repository import ensure_record_id, repo_query
-from backpack.domain.module import Module, Source
+from backpack.domain.module import LearningGoal, Module, Source
 from backpack.exceptions import InvalidInputError
 from backpack.utils import clean_thinking_content
 
@@ -403,4 +412,274 @@ async def generate_module_overview(
         logger.error(f"Error generating overview for module {module_id}: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error generating overview: {str(e)}"
+        )
+
+
+# ============================================
+# Learning Goals Endpoints
+# ============================================
+
+
+@router.get(
+    "/modules/{module_id}/learning-goals", response_model=List[LearningGoalResponse]
+)
+async def get_module_learning_goals(module_id: str):
+    """Get all learning goals for a module."""
+    try:
+        module = await Module.get(module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+
+        goals = await module.get_learning_goals()
+        return [
+            LearningGoalResponse(
+                id=str(goal.id),
+                module=str(goal.module),
+                description=goal.description,
+                mastery_criteria=goal.mastery_criteria,
+                order=goal.order,
+                created=str(goal.created),
+                updated=str(goal.updated),
+            )
+            for goal in goals
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching learning goals for module {module_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching learning goals: {str(e)}"
+        )
+
+
+@router.post(
+    "/modules/{module_id}/learning-goals", response_model=LearningGoalResponse
+)
+async def create_learning_goal(module_id: str, request: LearningGoalCreate):
+    """Create a new learning goal for a module."""
+    try:
+        module = await Module.get(module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+
+        # Get current max order for this module if order not provided
+        order = request.order
+        if order is None:
+            existing_goals = await module.get_learning_goals()
+            order = max([g.order for g in existing_goals], default=-1) + 1
+
+        goal = LearningGoal(
+            module=str(ensure_record_id(module_id)),
+            description=request.description,
+            mastery_criteria=request.mastery_criteria,
+            order=order,
+        )
+        await goal.save()
+
+        return LearningGoalResponse(
+            id=str(goal.id),
+            module=str(goal.module),
+            description=goal.description,
+            mastery_criteria=goal.mastery_criteria,
+            order=goal.order,
+            created=str(goal.created),
+            updated=str(goal.updated),
+        )
+    except HTTPException:
+        raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating learning goal: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error creating learning goal: {str(e)}"
+        )
+
+
+@router.put("/learning-goals/{goal_id}", response_model=LearningGoalResponse)
+async def update_learning_goal(goal_id: str, request: LearningGoalUpdate):
+    """Update a learning goal."""
+    try:
+        goal = await LearningGoal.get(goal_id)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Learning goal not found")
+
+        if request.description is not None:
+            goal.description = request.description
+        if request.mastery_criteria is not None:
+            goal.mastery_criteria = request.mastery_criteria
+        if request.order is not None:
+            goal.order = request.order
+
+        await goal.save()
+
+        return LearningGoalResponse(
+            id=str(goal.id),
+            module=str(goal.module),
+            description=goal.description,
+            mastery_criteria=goal.mastery_criteria,
+            order=goal.order,
+            created=str(goal.created),
+            updated=str(goal.updated),
+        )
+    except HTTPException:
+        raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating learning goal {goal_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error updating learning goal: {str(e)}"
+        )
+
+
+@router.delete("/learning-goals/{goal_id}")
+async def delete_learning_goal(goal_id: str):
+    """Delete a learning goal."""
+    try:
+        goal = await LearningGoal.get(goal_id)
+        if not goal:
+            raise HTTPException(status_code=404, detail="Learning goal not found")
+
+        await goal.delete()
+        return {"message": "Learning goal deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting learning goal {goal_id}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting learning goal: {str(e)}"
+        )
+
+
+@router.post(
+    "/modules/{module_id}/generate-learning-goals",
+    response_model=List[LearningGoalResponse],
+)
+async def generate_module_learning_goals(
+    module_id: str, request: Optional[GenerateLearningGoalsRequest] = None
+):
+    """Generate AI-powered learning goals for a module based on its sources and notes."""
+    try:
+        # Get the module
+        module = await Module.get(module_id)
+        if not module:
+            raise HTTPException(status_code=404, detail="Module not found")
+
+        # Get sources and notes for context
+        sources = await module.get_sources()
+        notes = await module.get_notes()
+
+        # Build context for prompt
+        sources_context = []
+        for source in sources:
+            source_data = {
+                "title": source.title,
+                "full_text": source.full_text,
+                "insights": [],
+            }
+            try:
+                insights = await source.get_insights()
+                for insight in insights:
+                    source_data["insights"].append(
+                        {
+                            "insight_type": insight.insight_type,
+                            "content": insight.content,
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"Error getting insights for source {source.id}: {e}")
+            sources_context.append(source_data)
+
+        notes_context = []
+        for note in notes:
+            notes_context.append(
+                {
+                    "title": note.title,
+                    "content": note.content,
+                }
+            )
+
+        # Render prompt
+        prompt_data = {
+            "name": module.name,
+            "description": module.description,
+            "sources": sources_context,
+            "notes": notes_context,
+        }
+        system_prompt = Prompter(prompt_template="module/learning_goals").render(
+            data=prompt_data
+        )
+
+        # Get model ID from request or use default
+        model_id = request.model_id if request else None
+
+        # Provision and invoke LLM
+        model = await provision_langchain_model(
+            system_prompt,
+            model_id,
+            "transformation",
+            max_tokens=2000,
+        )
+        ai_message = await model.ainvoke(system_prompt)
+
+        # Extract content
+        goals_content = (
+            ai_message.content
+            if isinstance(ai_message.content, str)
+            else str(ai_message.content)
+        )
+        goals_content = clean_thinking_content(goals_content)
+
+        # Parse the generated goals (expecting one goal per line)
+        goal_lines = [
+            line.strip()
+            for line in goals_content.strip().split("\n")
+            if line.strip() and not line.strip().startswith("#")
+        ]
+
+        # Clean up goal lines (remove leading numbers, bullets, etc.)
+        cleaned_goals = []
+        for line in goal_lines:
+            # Remove common prefixes like "1.", "- ", "* ", etc.
+            cleaned = line.lstrip("0123456789.-*) ").strip()
+            if cleaned:
+                cleaned_goals.append(cleaned)
+
+        # Delete existing learning goals for this module
+        existing_goals = await module.get_learning_goals()
+        for existing in existing_goals:
+            await existing.delete()
+
+        # Create new learning goals
+        created_goals = []
+        for i, goal_text in enumerate(cleaned_goals):
+            goal = LearningGoal(
+                module=str(ensure_record_id(module_id)),
+                description=goal_text,
+                order=i,
+            )
+            await goal.save()
+            created_goals.append(
+                LearningGoalResponse(
+                    id=str(goal.id),
+                    module=str(goal.module),
+                    description=goal.description,
+                    mastery_criteria=goal.mastery_criteria,
+                    order=goal.order,
+                    created=str(goal.created),
+                    updated=str(goal.updated),
+                )
+            )
+
+        return created_goals
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Error generating learning goals for module {module_id}: {str(e)}"
+        )
+        raise HTTPException(
+            status_code=500, detail=f"Error generating learning goals: {str(e)}"
         )

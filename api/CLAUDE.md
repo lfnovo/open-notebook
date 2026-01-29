@@ -115,3 +115,120 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **Direct service tests**: Import service, call methods directly with test data
 - **Mock graphs**: Replace graph.ainvoke() with mock for testing service logic
 - **Database: Use test database** (separate SurrealDB instance or mock repo_query)
+
+---
+
+## API Key Management (API Configuration UI)
+
+The API Key Management system enables users to configure AI provider credentials through the UI instead of environment variables. Keys are stored securely in SurrealDB with database-first fallback to environment variables.
+
+### Router: `routers/api_keys.py`
+
+**Endpoints**:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api-keys/status` | Get configuration status for all providers (configured, source) |
+| GET | `/api-keys/env-status` | Check what's configured via environment variables |
+| POST | `/api-keys/{provider}` | Set API key(s) for a provider |
+| DELETE | `/api-keys/{provider}` | Remove configuration for a provider |
+| POST | `/api-keys/{provider}/test` | Test connection for a provider |
+| POST | `/api-keys/migrate` | Migrate keys from environment variables to database |
+
+**Supported Providers** (13 total):
+- Simple API key: `openai`, `anthropic`, `google`, `groq`, `mistral`, `deepseek`, `xai`, `openrouter`, `voyage`, `elevenlabs`
+- URL-based: `ollama`
+- Multi-field: `azure`, `vertex`, `openai_compatible`
+
+**Request Body Variations by Provider**:
+```python
+# Simple providers (openai, anthropic, etc.)
+{"api_key": "sk-..."}
+
+# Ollama (URL-based)
+{"base_url": "http://localhost:11434"}
+
+# Azure OpenAI
+{"api_key": "...", "endpoint": "...", "api_version": "...",
+ "endpoint_llm": "...", "endpoint_embedding": "...", "endpoint_stt": "...", "endpoint_tts": "..."}
+
+# OpenAI-Compatible (generic or service-specific)
+{"api_key": "...", "base_url": "...", "service_type": "llm|embedding|stt|tts"}
+
+# Vertex AI
+{"vertex_project": "...", "vertex_location": "...", "vertex_credentials_path": "..."}
+```
+
+**Security Features**:
+- NEVER returns actual API key values (only status information)
+- URL validation blocks link-local addresses (169.254.x.x) to prevent cloud metadata exposure
+- Allows private IPs and localhost for self-hosted services (Ollama, LM Studio)
+
+### Pydantic Models (in `models.py`)
+
+**Request Models**:
+- `SetApiKeyRequest`: Unified request for all provider types with optional fields (api_key, base_url, endpoint, api_version, service_type, vertex_project, vertex_location, vertex_credentials_path)
+
+**Response Models**:
+- `ApiKeyStatusResponse`: `{configured: {provider: bool}, source: {provider: "database"|"environment"|"none"}}`
+- `TestConnectionResponse`: `{provider: str, success: bool, message: str}`
+- `MigrationResult`: `{message: str, migrated: [providers], skipped: [providers], errors: [messages]}`
+
+### Integration with Key Provider (`open_notebook/ai/key_provider.py`)
+
+The router delegates key storage to `APIKeyConfig` domain model, while runtime key provisioning uses the `key_provider` module:
+
+**Database-first Pattern**:
+1. API endpoint saves keys to `APIKeyConfig` (SurrealDB singleton)
+2. Before model provisioning, `provision_provider_keys(provider)` checks DB, then env vars
+3. Keys from DB are set as environment variables for Esperanto compatibility
+4. Existing env vars remain unchanged if no DB config exists
+
+**Key Functions**:
+- `get_api_key(provider)`: Get API key (DB first, env fallback)
+- `provision_provider_keys(provider)`: Set env vars from DB for a provider
+- `provision_all_keys()`: Load all provider keys from DB into env vars
+
+### Authentication
+
+No changes to authentication. The `api_keys` router uses the same `PasswordAuthMiddleware` as all other endpoints. Keys are protected by the same password-based auth.
+
+**Auth Flow** (unchanged from `api/auth.py`):
+- `PasswordAuthMiddleware`: Global middleware checking `Authorization: Bearer {password}` header
+- Default password: `open-notebook-change-me` (set `OPEN_NOTEBOOK_PASSWORD` in production)
+- Docker secrets support via `OPEN_NOTEBOOK_PASSWORD_FILE`
+
+### Connection Testing (`open_notebook/ai/connection_tester.py`)
+
+The `/api-keys/{provider}/test` endpoint uses minimal API calls to verify credentials:
+- Uses cheapest/smallest models per provider
+- Returns success status and descriptive message
+- Catches exceptions and returns failure details
+
+### Migration Workflow
+
+The `/api-keys/migrate` endpoint helps users transition from `.env` to database storage:
+1. Checks each provider for env var presence
+2. Skips providers already configured in DB (unless `force=True`)
+3. Migrates env values to `APIKeyConfig` fields
+4. Returns summary: migrated, skipped, errors
+
+### Example Usage
+
+```python
+# Check status
+GET /api-keys/status
+# Response: {"configured": {"openai": true, "anthropic": false}, "source": {"openai": "environment", "anthropic": "none"}}
+
+# Set OpenAI key
+POST /api-keys/openai
+{"api_key": "sk-proj-..."}
+
+# Test connection
+POST /api-keys/openai/test
+# Response: {"provider": "openai", "success": true, "message": "Connection successful"}
+
+# Migrate from env
+POST /api-keys/migrate?force=false
+# Response: {"message": "Migration complete. Migrated 3 providers.", "migrated": ["openai", "anthropic", "groq"], "skipped": [], "errors": []}
+```

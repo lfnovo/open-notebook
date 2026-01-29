@@ -168,3 +168,41 @@ context_items = await builder.build()
 for item in context_items:
     print(f"{item.type}:{item.id} ({item.token_count} tokens)")
 ```
+
+### encryption.py
+- **get_secret_from_env(var_name)**: Retrieve secret from environment with Docker secrets support (checks VAR_FILE first, then VAR)
+- **get_fernet()**: Get Fernet instance if valid encryption key is configured; returns None otherwise
+- **encrypt_value(value)**: Encrypt a string using Fernet symmetric encryption; returns original value if encryption unavailable
+- **decrypt_value(value)**: Decrypt a Fernet-encrypted string; gracefully falls back to original value for legacy/unencrypted data
+- **generate_key()**: Generate a new Fernet encryption key for use as OPEN_NOTEBOOK_ENCRYPTION_KEY
+
+**Purpose**: Provides field-level encryption for sensitive data (API keys) stored in the database. Uses Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256) for authenticated encryption.
+
+**Key behavior**:
+- Key derivation priority: OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE (Docker secrets) → OPEN_NOTEBOOK_ENCRYPTION_KEY (env var) → default key (development only)
+- Default key is NOT secure for production; always set your own key in production deployments
+- Graceful fallback on decryption: InvalidToken errors (legacy unencrypted data) return the original value
+- Encryption failure returns original value with error logging (never blocks operations)
+- Module-level key initialization: `_ENCRYPTION_KEY` is set once at import time
+
+**Security considerations**:
+- Default key is derived from a known passphrase; provides no real security (development convenience only)
+- Production deployments MUST set OPEN_NOTEBOOK_ENCRYPTION_KEY explicitly
+- Docker secrets pattern supported for secure key injection in containerized environments
+- Key rotation would require re-encrypting all stored keys (not currently implemented)
+- Encryption is transparent to callers; unencrypted legacy data continues to work
+
+**Usage Example**:
+```python
+from open_notebook.utils.encryption import encrypt_value, decrypt_value, generate_key
+
+# Encrypt before storing in database
+encrypted_api_key = encrypt_value(api_key)
+
+# Decrypt when reading from database
+decrypted_api_key = decrypt_value(encrypted_api_key)
+
+# Generate a new key for OPEN_NOTEBOOK_ENCRYPTION_KEY
+new_key = generate_key()
+print(f"Add to .env: OPEN_NOTEBOOK_ENCRYPTION_KEY={new_key}")
+```

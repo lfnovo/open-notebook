@@ -10,14 +10,17 @@ All embedding operations in the application should use these functions
 to ensure consistent behavior and proper handling of large content.
 """
 
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 from loguru import logger
 
-from open_notebook.ai.models import model_manager
-
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
+
+# Lazy import to avoid circular dependency:
+# utils -> embedding -> models -> key_provider -> api_key_config -> utils
+if TYPE_CHECKING:
+    from open_notebook.ai.models import ModelManager
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
@@ -95,6 +98,9 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
     """
     if not texts:
         return []
+
+    # Lazy import to avoid circular dependency
+    from open_notebook.ai.models import model_manager
 
     embedding_model = await model_manager.get_embedding_model()
     if not embedding_model:

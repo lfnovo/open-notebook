@@ -13,6 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
 from api.routers import (
+    api_keys,
     auth,
     chat,
     config,
@@ -42,14 +43,52 @@ except Exception as e:
     logger.error(f"Failed to import commands in API process: {e}")
 
 
+def _get_secret_from_env(var_name: str):
+    """Get a secret supporting Docker secrets pattern (_FILE suffix)."""
+    import os
+    from pathlib import Path
+
+    file_path = os.environ.get(f"{var_name}_FILE")
+    if file_path:
+        try:
+            path = Path(file_path)
+            if path.exists() and path.is_file():
+                secret = path.read_text().strip()
+                if secret:
+                    return secret
+        except Exception:
+            pass
+    return os.environ.get(var_name)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Lifespan event handler for the FastAPI application.
     Runs database migrations automatically on startup.
     """
-    # Startup: Run database migrations
+    import os
+
+    # Startup: Security checks
     logger.info("Starting API initialization...")
+
+    # Security check: Encryption key
+    # Note: encryption.py uses default key derived from "0p3n-N0t3b0ok" if not set
+    if not _get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY"):
+        logger.warning(
+            "⚠️  OPEN_NOTEBOOK_ENCRYPTION_KEY not set - using default key. "
+            "For production, set OPEN_NOTEBOOK_ENCRYPTION_KEY explicitly."
+        )
+
+    # Security warning: Password protection (supports Docker secrets via _FILE suffix)
+    # Note: auth.py uses default password "open-notebook-change-me" if not set
+    if not _get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"):
+        logger.warning(
+            "⚠️  OPEN_NOTEBOOK_PASSWORD not set - using default password 'open-notebook-change-me'. "
+            "For production, set OPEN_NOTEBOOK_PASSWORD explicitly."
+        )
+
+    # Run database migrations
 
     try:
         migration_manager = AsyncMigrationManager()
@@ -162,6 +201,7 @@ app.include_router(episode_profiles.router, prefix="/api", tags=["episode-profil
 app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profiles"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
+app.include_router(api_keys.router, prefix="/api", tags=["api-keys"])
 
 
 @app.get("/")

@@ -1,0 +1,3 @@
+-- Rollback Migration 11: Remove API key configuration record
+
+DELETE open_notebook:api_key_config;

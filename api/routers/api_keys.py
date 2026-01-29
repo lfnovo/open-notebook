@@ -1,0 +1,716 @@
+"""
+API Key Management Router
+
+Provides endpoints for managing API keys for AI providers.
+Keys are stored in the database via APIKeyConfig singleton.
+NEVER returns actual API key values - only status information.
+"""
+
+import ipaddress
+import os
+from typing import Dict, Literal
+from urllib.parse import urlparse
+
+from fastapi import APIRouter, HTTPException
+from loguru import logger
+from pydantic import SecretStr
+
+from api.models import (
+    ApiKeyStatusResponse,
+    MigrationResult,
+    SetApiKeyRequest,
+    TestConnectionResponse,
+)
+from open_notebook.ai.connection_tester import test_provider_connection
+from open_notebook.domain.api_key_config import APIKeyConfig
+
+router = APIRouter()
+
+
+def _validate_url(url: str, provider: str) -> None:
+    """
+    Validate URL format for API endpoints.
+
+    This is a self-hosted application, so we allow:
+    - Private IPs (10.x, 172.16-31.x, 192.168.x) for self-hosted services
+    - Localhost for local services (Ollama, LM Studio, etc.)
+
+    We only block:
+    - Invalid schemes (must be http or https)
+    - Malformed URLs
+    - Link-local addresses (169.254.x - cloud metadata endpoints)
+
+    Args:
+        url: The URL to validate
+        provider: The provider name (for logging/context)
+
+    Raises:
+        HTTPException: If the URL is invalid
+    """
+    if not url or not url.strip():
+        return  # Empty URLs handled elsewhere
+
+    try:
+        parsed = urlparse(url.strip())
+
+        # Validate scheme - only http/https allowed
+        if parsed.scheme not in ("http", "https"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid URL scheme: '{parsed.scheme}'. Only http and https are allowed.",
+            )
+
+        # Extract hostname
+        hostname = parsed.hostname
+        if not hostname:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid URL: hostname could not be determined.",
+            )
+
+        # Try to parse as IP address to check for dangerous addresses
+        try:
+            ip = ipaddress.ip_address(hostname)
+
+            # Block link-local addresses (169.254.x.x) - used for cloud metadata
+            # These are dangerous as they can expose cloud instance credentials
+            if ip.is_link_local:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Link-local addresses (169.254.x.x) are not allowed for security reasons. "
+                    "These addresses are used for cloud metadata endpoints.",
+                )
+
+        except ValueError:
+            # Not an IP address, it's a hostname - this is fine
+            pass
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid URL format: {str(e)}",
+        )
+
+
+def _has_value(val) -> bool:
+    """Check if a config value is set and non-empty.
+
+    Handles both SecretStr and regular strings.
+    Returns False for None, empty string, or whitespace-only.
+    """
+    if val is None:
+        return False
+    # Handle SecretStr
+    if hasattr(val, "get_secret_value"):
+        actual = val.get_secret_value()
+        return bool(actual and actual.strip())
+    # Handle regular strings
+    if isinstance(val, str):
+        return bool(val.strip())
+    # Other types (shouldn't happen, but be safe)
+    return bool(val)
+
+
+# Provider to environment variable mapping
+# Maps provider names to the environment variables that configure them
+PROVIDER_ENV_MAPPING: Dict[str, list[str]] = {
+    "openai": ["OPENAI_API_KEY"],
+    "anthropic": ["ANTHROPIC_API_KEY"],
+    "google": ["GOOGLE_API_KEY", "GEMINI_API_KEY"],
+    "groq": ["GROQ_API_KEY"],
+    "mistral": ["MISTRAL_API_KEY"],
+    "deepseek": ["DEEPSEEK_API_KEY"],
+    "xai": ["XAI_API_KEY"],
+    "openrouter": ["OPENROUTER_API_KEY"],
+    "voyage": ["VOYAGE_API_KEY"],
+    "elevenlabs": ["ELEVENLABS_API_KEY"],
+    "ollama": ["OLLAMA_API_BASE"],
+    "vertex": ["VERTEX_PROJECT", "VERTEX_LOCATION", "GOOGLE_APPLICATION_CREDENTIALS"],
+    "azure": [
+        "AZURE_OPENAI_API_KEY",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+    ],
+    "openai_compatible": ["OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"],
+}
+
+# Provider to database field mapping
+# Maps provider names to the APIKeyConfig field names
+PROVIDER_DB_FIELD_MAPPING: Dict[str, list[str]] = {
+    "openai": ["openai_api_key"],
+    "anthropic": ["anthropic_api_key"],
+    "google": ["google_api_key"],
+    "groq": ["groq_api_key"],
+    "mistral": ["mistral_api_key"],
+    "deepseek": ["deepseek_api_key"],
+    "xai": ["xai_api_key"],
+    "openrouter": ["openrouter_api_key"],
+    "voyage": ["voyage_api_key"],
+    "elevenlabs": ["elevenlabs_api_key"],
+    "ollama": ["ollama_api_base"],
+    "vertex": ["vertex_project", "vertex_location", "google_application_credentials"],
+    "azure": [
+        "azure_openai_api_key",
+        "azure_openai_endpoint",
+        "azure_openai_api_version",
+        "azure_openai_endpoint_llm",
+        "azure_openai_endpoint_embedding",
+        "azure_openai_endpoint_stt",
+        "azure_openai_endpoint_tts",
+    ],
+    "openai_compatible": [
+        "openai_compatible_api_key",
+        "openai_compatible_base_url",
+        "openai_compatible_api_key_llm",
+        "openai_compatible_base_url_llm",
+        "openai_compatible_api_key_embedding",
+        "openai_compatible_base_url_embedding",
+        "openai_compatible_api_key_stt",
+        "openai_compatible_base_url_stt",
+        "openai_compatible_api_key_tts",
+        "openai_compatible_base_url_tts",
+    ],
+}
+
+# Valid provider names (for validation)
+VALID_PROVIDERS = set(PROVIDER_DB_FIELD_MAPPING.keys())
+
+
+def _check_env_configured(provider: str) -> bool:
+    """Check if a provider is configured via environment variables."""
+    env_vars = PROVIDER_ENV_MAPPING.get(provider, [])
+    if not env_vars:
+        return False
+
+    # For providers that need multiple vars (vertex, azure), check if all required are set
+    if provider == "vertex":
+        return all(os.environ.get(var) is not None for var in env_vars)
+    elif provider == "azure":
+        # Azure needs at least the key, endpoint, and version
+        return (
+            os.environ.get("AZURE_OPENAI_API_KEY") is not None
+            and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
+            and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+        )
+    elif provider == "google":
+        # Google can use either GOOGLE_API_KEY or GEMINI_API_KEY
+        return any(os.environ.get(var) is not None for var in env_vars)
+    elif provider == "openai_compatible":
+        # OpenAI-compatible needs at least a base URL
+        return os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+    else:
+        # Simple providers just need their single env var
+        return os.environ.get(env_vars[0]) is not None
+
+
+async def _check_db_configured(config: APIKeyConfig, provider: str) -> bool:
+    """Check if a provider is configured in the database.
+
+    Uses _has_value() to check for non-empty values (handles empty strings).
+    """
+    fields = PROVIDER_DB_FIELD_MAPPING.get(provider, [])
+    if not fields:
+        return False
+
+    # For simple providers, check if the main field is set and non-empty
+    if provider in [
+        "openai",
+        "anthropic",
+        "google",
+        "groq",
+        "mistral",
+        "deepseek",
+        "xai",
+        "openrouter",
+        "voyage",
+        "elevenlabs",
+    ]:
+        value = getattr(config, fields[0], None)
+        return _has_value(value)
+
+    # For ollama, check base URL
+    if provider == "ollama":
+        return _has_value(config.ollama_api_base)
+
+    # For vertex, check all three required fields
+    if provider == "vertex":
+        return (
+            _has_value(config.vertex_project)
+            and _has_value(config.vertex_location)
+            and _has_value(config.google_application_credentials)
+        )
+
+    # For azure, check key, endpoint, and version
+    if provider == "azure":
+        return (
+            _has_value(config.azure_openai_api_key)
+            and _has_value(config.azure_openai_endpoint)
+            and _has_value(config.azure_openai_api_version)
+        )
+
+    # For openai_compatible, check if generic or any service-specific is configured
+    if provider == "openai_compatible":
+        # Check generic configuration
+        if _has_value(config.openai_compatible_base_url) or _has_value(
+            config.openai_compatible_api_key
+        ):
+            return True
+        # Check service-specific configurations
+        for suffix in ["_llm", "_embedding", "_stt", "_tts"]:
+            base_url = getattr(config, f"openai_compatible_base_url{suffix}", None)
+            api_key = getattr(config, f"openai_compatible_api_key{suffix}", None)
+            if _has_value(base_url) or _has_value(api_key):
+                return True
+        return False
+
+    return False
+
+
+def _get_source(
+    config: APIKeyConfig, provider: str, env_configured: bool, db_configured: bool
+) -> Literal["database", "environment", "none"]:
+    """Determine the configuration source for a provider."""
+    # Database takes precedence over environment
+    if db_configured:
+        return "database"
+    elif env_configured:
+        return "environment"
+    else:
+        return "none"
+
+
+@router.get("/api-keys/status", response_model=ApiKeyStatusResponse)
+async def get_api_keys_status():
+    """
+    Get the configuration status of all API providers.
+
+    Returns which providers are configured and their configuration source
+    (database, environment, or none). NEVER returns actual key values.
+    """
+    try:
+        config = await APIKeyConfig.get_instance()
+
+        configured: Dict[str, bool] = {}
+        source: Dict[str, Literal["database", "environment", "none"]] = {}
+
+        for provider in VALID_PROVIDERS:
+            env_configured = _check_env_configured(provider)
+            db_configured = await _check_db_configured(config, provider)
+
+            # Provider is configured if either source has it
+            configured[provider] = db_configured or env_configured
+            source[provider] = _get_source(config, provider, env_configured, db_configured)
+
+        return ApiKeyStatusResponse(configured=configured, source=source)
+    except Exception as e:
+        logger.error(f"Error fetching API key status: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching API key status: {str(e)}"
+        )
+
+
+@router.get("/api-keys/env-status")
+async def get_env_status():
+    """
+    Check what's configured via environment variables.
+
+    Used by the migration UI to show which providers can be migrated
+    from environment variables to database storage.
+    """
+    try:
+        env_status: Dict[str, bool] = {}
+        for provider in VALID_PROVIDERS:
+            env_status[provider] = _check_env_configured(provider)
+
+        return env_status
+    except Exception as e:
+        logger.error(f"Error checking environment status: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error checking environment status: {str(e)}"
+        )
+
+
+@router.post("/api-keys/{provider}")
+async def set_api_key(provider: str, request: SetApiKeyRequest):
+    """
+    Set API key(s) for a provider.
+
+    Body varies by provider:
+    - Simple providers: {"api_key": "sk-..."}
+    - Azure: {"api_key": "...", "endpoint": "...", "api_version": "..."}
+    - OpenAI-Compatible: {"api_key": "...", "base_url": "...", "service_type": "llm|embedding|stt|tts"}
+    - Ollama: {"base_url": "http://localhost:11434"}
+    - Vertex: Pass via separate endpoint or use environment variables
+    """
+    if provider not in VALID_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid provider: {provider}. Valid providers: {', '.join(sorted(VALID_PROVIDERS))}",
+        )
+
+    try:
+        config = await APIKeyConfig.get_instance()
+
+        # Handle different provider types
+        if provider in [
+            "openai",
+            "anthropic",
+            "google",
+            "groq",
+            "mistral",
+            "deepseek",
+            "xai",
+            "openrouter",
+            "voyage",
+            "elevenlabs",
+        ]:
+            # Simple providers - just need api_key
+            if not request.api_key:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"api_key is required for {provider}",
+                )
+            field_name = PROVIDER_DB_FIELD_MAPPING[provider][0]
+            setattr(config, field_name, SecretStr(request.api_key))
+
+        elif provider == "ollama":
+            # Ollama just needs base URL
+            if not request.base_url:
+                raise HTTPException(
+                    status_code=400,
+                    detail="base_url is required for ollama (e.g., http://localhost:11434)",
+                )
+            # Validate URL (allows localhost for Ollama)
+            _validate_url(request.base_url, provider)
+            config.ollama_api_base = request.base_url
+
+        elif provider == "vertex":
+            # Vertex needs project, location, and credentials path
+            if (
+                not request.vertex_project
+                or not request.vertex_location
+                or not request.vertex_credentials_path
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Vertex requires vertex_project, vertex_location, and vertex_credentials_path",
+                )
+            config.vertex_project = request.vertex_project
+            config.vertex_location = request.vertex_location
+            config.google_application_credentials = request.vertex_credentials_path
+
+        elif provider == "azure":
+            # Azure needs key, endpoint, and api_version
+            if not request.api_key or not request.endpoint or not request.api_version:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Azure requires api_key, endpoint, and api_version",
+                )
+            # Validate endpoint URLs
+            _validate_url(request.endpoint, provider)
+            if request.endpoint_llm:
+                _validate_url(request.endpoint_llm, provider)
+            if request.endpoint_embedding:
+                _validate_url(request.endpoint_embedding, provider)
+            if request.endpoint_stt:
+                _validate_url(request.endpoint_stt, provider)
+            if request.endpoint_tts:
+                _validate_url(request.endpoint_tts, provider)
+
+            # Set main Azure configuration
+            config.azure_openai_api_key = SecretStr(request.api_key)
+            config.azure_openai_endpoint = request.endpoint
+            config.azure_openai_api_version = request.api_version
+
+            # Set service-specific endpoints if provided
+            if request.endpoint_llm:
+                config.azure_openai_endpoint_llm = request.endpoint_llm
+            if request.endpoint_embedding:
+                config.azure_openai_endpoint_embedding = request.endpoint_embedding
+            if request.endpoint_stt:
+                config.azure_openai_endpoint_stt = request.endpoint_stt
+            if request.endpoint_tts:
+                config.azure_openai_endpoint_tts = request.endpoint_tts
+
+        elif provider == "openai_compatible":
+            # OpenAI-compatible can be generic or service-specific
+            service_type = request.service_type
+
+            # Validate base_url if provided
+            if request.base_url:
+                _validate_url(request.base_url, provider)
+
+            if service_type:
+                # Service-specific configuration
+                suffix = f"_{service_type}"
+                if request.api_key:
+                    setattr(
+                        config,
+                        f"openai_compatible_api_key{suffix}",
+                        SecretStr(request.api_key),
+                    )
+                if request.base_url:
+                    setattr(config, f"openai_compatible_base_url{suffix}", request.base_url)
+
+                if not request.api_key and not request.base_url:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"At least api_key or base_url is required for openai_compatible ({service_type})",
+                    )
+            else:
+                # Generic configuration
+                if request.api_key:
+                    config.openai_compatible_api_key = SecretStr(request.api_key)
+                if request.base_url:
+                    config.openai_compatible_base_url = request.base_url
+
+                if not request.api_key and not request.base_url:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="At least api_key or base_url is required for openai_compatible",
+                    )
+
+        # Save the configuration
+        await config.save()
+
+        return {"message": f"API key for {provider} saved successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting API key for {provider}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error setting API key: {str(e)}"
+        )
+
+
+@router.delete("/api-keys/{provider}")
+async def delete_api_key(provider: str, service_type: str | None = None):
+    """
+    Remove configuration for a provider.
+
+    For openai_compatible, optionally specify service_type to delete
+    only that service's configuration (llm, embedding, stt, tts).
+    Without service_type, deletes all openai_compatible configurations.
+    """
+    if provider not in VALID_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid provider: {provider}. Valid providers: {', '.join(sorted(VALID_PROVIDERS))}",
+        )
+
+    try:
+        config = await APIKeyConfig.get_instance()
+
+        # Handle different provider types
+        if provider in [
+            "openai",
+            "anthropic",
+            "google",
+            "groq",
+            "mistral",
+            "deepseek",
+            "xai",
+            "openrouter",
+            "voyage",
+            "elevenlabs",
+        ]:
+            field_name = PROVIDER_DB_FIELD_MAPPING[provider][0]
+            setattr(config, field_name, None)
+
+        elif provider == "ollama":
+            config.ollama_api_base = None
+
+        elif provider == "vertex":
+            config.vertex_project = None
+            config.vertex_location = None
+            config.google_application_credentials = None
+
+        elif provider == "azure":
+            config.azure_openai_api_key = None
+            config.azure_openai_endpoint = None
+            config.azure_openai_api_version = None
+            config.azure_openai_endpoint_llm = None
+            config.azure_openai_endpoint_embedding = None
+            config.azure_openai_endpoint_stt = None
+            config.azure_openai_endpoint_tts = None
+
+        elif provider == "openai_compatible":
+            if service_type:
+                # Delete only specific service type
+                if service_type not in ["llm", "embedding", "stt", "tts"]:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid service_type: {service_type}. Must be one of: llm, embedding, stt, tts",
+                    )
+                suffix = f"_{service_type}"
+                setattr(config, f"openai_compatible_api_key{suffix}", None)
+                setattr(config, f"openai_compatible_base_url{suffix}", None)
+            else:
+                # Delete all openai_compatible configurations
+                config.openai_compatible_api_key = None
+                config.openai_compatible_base_url = None
+                for suffix in ["_llm", "_embedding", "_stt", "_tts"]:
+                    setattr(config, f"openai_compatible_api_key{suffix}", None)
+                    setattr(config, f"openai_compatible_base_url{suffix}", None)
+
+        # Save the configuration
+        await config.save()
+
+        return {"message": f"API key for {provider} removed successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting API key for {provider}: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error deleting API key: {str(e)}"
+        )
+
+
+@router.post("/api-keys/{provider}/test", response_model=TestConnectionResponse)
+async def test_provider(provider: str):
+    """
+    Test connection for a provider using configured API key.
+
+    Makes a minimal API call to verify the API key is valid.
+    Uses the cheapest/smallest model available for each provider.
+
+    Returns success status and a descriptive message.
+    """
+    if provider not in VALID_PROVIDERS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid provider: {provider}. Valid providers: {', '.join(sorted(VALID_PROVIDERS))}",
+        )
+
+    try:
+        success, message = await test_provider_connection(provider)
+
+        return TestConnectionResponse(
+            provider=provider,
+            success=success,
+            message=message,
+        )
+
+    except Exception as e:
+        logger.error(f"Error testing connection for {provider}: {str(e)}")
+        return TestConnectionResponse(
+            provider=provider,
+            success=False,
+            message=f"Test failed: {str(e)[:100]}",
+        )
+
+
+@router.post("/api-keys/migrate", response_model=MigrationResult)
+async def migrate_from_env(force: bool = False):
+    """
+    Migrate API keys from environment variables to database.
+
+    By default, only migrates providers that have environment variables set
+    but don't have database configuration yet. This preserves any existing
+    database configurations.
+
+    Set force=True to overwrite existing database configurations with
+    environment variable values.
+    """
+    try:
+        config = await APIKeyConfig.get_instance()
+        migrated: list[str] = []
+        skipped: list[str] = []
+        errors: list[str] = []
+
+        for provider in VALID_PROVIDERS:
+            env_configured = _check_env_configured(provider)
+            db_configured = await _check_db_configured(config, provider)
+
+            # Skip if not in env
+            if not env_configured:
+                continue
+            # Skip if already in DB (unless force=True)
+            if db_configured and not force:
+                skipped.append(provider)
+                continue
+
+            try:
+                # Migrate based on provider type
+                if provider == "openai":
+                    config.openai_api_key = SecretStr(os.environ["OPENAI_API_KEY"])
+                elif provider == "anthropic":
+                    config.anthropic_api_key = SecretStr(os.environ["ANTHROPIC_API_KEY"])
+                elif provider == "google":
+                    # Prefer GOOGLE_API_KEY, fall back to GEMINI_API_KEY
+                    key = os.environ.get("GOOGLE_API_KEY") or os.environ.get(
+                        "GEMINI_API_KEY"
+                    )
+                    if key:
+                        config.google_api_key = SecretStr(key)
+                elif provider == "groq":
+                    config.groq_api_key = SecretStr(os.environ["GROQ_API_KEY"])
+                elif provider == "mistral":
+                    config.mistral_api_key = SecretStr(os.environ["MISTRAL_API_KEY"])
+                elif provider == "deepseek":
+                    config.deepseek_api_key = SecretStr(os.environ["DEEPSEEK_API_KEY"])
+                elif provider == "xai":
+                    config.xai_api_key = SecretStr(os.environ["XAI_API_KEY"])
+                elif provider == "openrouter":
+                    config.openrouter_api_key = SecretStr(os.environ["OPENROUTER_API_KEY"])
+                elif provider == "voyage":
+                    config.voyage_api_key = SecretStr(os.environ["VOYAGE_API_KEY"])
+                elif provider == "elevenlabs":
+                    config.elevenlabs_api_key = SecretStr(os.environ["ELEVENLABS_API_KEY"])
+                elif provider == "ollama":
+                    base_url = os.environ["OLLAMA_API_BASE"]
+                    _validate_url(base_url, provider)
+                    config.ollama_api_base = base_url
+                elif provider == "vertex":
+                    config.vertex_project = os.environ["VERTEX_PROJECT"]
+                    config.vertex_location = os.environ["VERTEX_LOCATION"]
+                    config.google_application_credentials = os.environ[
+                        "GOOGLE_APPLICATION_CREDENTIALS"
+                    ]
+                elif provider == "azure":
+                    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
+                    _validate_url(endpoint, provider)
+                    config.azure_openai_api_key = SecretStr(
+                        os.environ["AZURE_OPENAI_API_KEY"]
+                    )
+                    config.azure_openai_endpoint = endpoint
+                    config.azure_openai_api_version = os.environ[
+                        "AZURE_OPENAI_API_VERSION"
+                    ]
+                elif provider == "openai_compatible":
+                    base_url = os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
+                    if base_url:
+                        _validate_url(base_url, provider)
+                        config.openai_compatible_base_url = base_url
+                    if os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
+                        config.openai_compatible_api_key = SecretStr(
+                            os.environ["OPENAI_COMPATIBLE_API_KEY"]
+                        )
+
+                migrated.append(provider)
+
+            except KeyError as e:
+                errors.append(f"{provider}: missing env var {e}")
+            except Exception as e:
+                errors.append(f"{provider}: {str(e)}")
+
+        # Save all changes at once
+        if migrated:
+            await config.save()
+
+        return MigrationResult(
+            message=f"Migration complete. Migrated {len(migrated)} providers.",
+            migrated=migrated,
+            skipped=skipped,
+            errors=errors,
+        )
+
+    except Exception as e:
+        logger.error(f"Error during migration: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error during migration: {str(e)}"
+        )

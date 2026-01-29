@@ -113,3 +113,44 @@ export function useProviders() {
     queryFn: () => modelsApi.getProviders(),
   })
 }
+
+export function useAutoAssignDefaults() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: () => modelsApi.autoAssign(),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.defaults })
+
+      const assignedCount = Object.keys(result.assigned).length
+      const missingCount = result.missing.length
+
+      if (assignedCount > 0) {
+        toast({
+          title: t.common.success,
+          description: t.models.autoAssignSuccess.replace('{count}', assignedCount.toString()),
+        })
+      } else if (missingCount > 0) {
+        toast({
+          title: t.common.warning,
+          description: t.models.autoAssignNoModels,
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: t.common.success,
+          description: t.models.autoAssignAlreadySet,
+        })
+      }
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}

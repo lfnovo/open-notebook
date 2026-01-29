@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # Notebook models
@@ -422,6 +422,107 @@ class SourceStatusResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     message: str
+
+
+# API Key Configuration models
+class SetApiKeyRequest(BaseModel):
+    """Request to set an API key for a provider."""
+
+    api_key: Optional[str] = Field(None, description="API key for the provider")
+    base_url: Optional[str] = Field(
+        None, description="Base URL for URL-based providers (Ollama, OpenAI-compatible)"
+    )
+    endpoint: Optional[str] = Field(
+        None, description="Endpoint URL for Azure OpenAI"
+    )
+    api_version: Optional[str] = Field(
+        None, description="API version for Azure OpenAI"
+    )
+    endpoint_llm: Optional[str] = Field(
+        None, description="Service-specific endpoint for LLM (Azure)"
+    )
+    endpoint_embedding: Optional[str] = Field(
+        None, description="Service-specific endpoint for embedding (Azure)"
+    )
+    endpoint_stt: Optional[str] = Field(
+        None, description="Service-specific endpoint for STT (Azure)"
+    )
+    endpoint_tts: Optional[str] = Field(
+        None, description="Service-specific endpoint for TTS (Azure)"
+    )
+    service_type: Optional[Literal["llm", "embedding", "stt", "tts"]] = Field(
+        None,
+        description="Service type for OpenAI-compatible providers (llm, embedding, stt, tts)",
+    )
+    # Vertex AI specific fields
+    vertex_project: Optional[str] = Field(
+        None, description="Google Cloud Project ID for Vertex AI"
+    )
+    vertex_location: Optional[str] = Field(
+        None, description="Google Cloud Region for Vertex AI (e.g., us-central1)"
+    )
+    vertex_credentials_path: Optional[str] = Field(
+        None, description="Path to Google Cloud service account JSON file"
+    )
+
+    @field_validator(
+        "api_key",
+        "base_url",
+        "endpoint",
+        "api_version",
+        "endpoint_llm",
+        "endpoint_embedding",
+        "endpoint_stt",
+        "endpoint_tts",
+        "vertex_project",
+        "vertex_location",
+        "vertex_credentials_path",
+        mode="before",
+    )
+    @classmethod
+    def validate_not_empty_string(cls, v: Optional[str]) -> Optional[str]:
+        """Reject empty strings - convert to None or raise error."""
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                return None  # Treat empty/whitespace-only as None
+            return stripped
+        return v
+
+
+class ApiKeyStatusResponse(BaseModel):
+    """Response showing which providers are configured and their source."""
+
+    configured: Dict[str, bool] = Field(
+        ..., description="Map of provider name to whether it is configured"
+    )
+    source: Dict[str, Literal["database", "environment", "none"]] = Field(
+        ...,
+        description="Map of provider name to configuration source (database, environment, or none)",
+    )
+
+
+class TestConnectionResponse(BaseModel):
+    """Response from testing a provider connection."""
+
+    provider: str = Field(..., description="Provider name that was tested")
+    success: bool = Field(..., description="Whether the connection test succeeded")
+    message: str = Field(..., description="Result message with details")
+
+
+class MigrationResult(BaseModel):
+    """Response from migrating API keys from environment to database."""
+
+    message: str = Field(..., description="Summary message")
+    migrated: List[str] = Field(
+        default_factory=list, description="Providers successfully migrated"
+    )
+    skipped: List[str] = Field(
+        default_factory=list, description="Providers skipped (already in DB)"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="Migration errors by provider"
+    )
 
 
 # Notebook delete cascade models

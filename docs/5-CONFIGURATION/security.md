@@ -4,6 +4,71 @@ Protect your Open Notebook deployment with password authentication and productio
 
 ---
 
+## API Key Encryption
+
+Open Notebook encrypts API keys stored in the database using Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256).
+
+### Configuration Methods
+
+| Method | Documentation |
+|--------|---------------|
+| **Settings UI** | [API Configuration Guide](../3-USER-GUIDE/api-configuration.md) |
+| **Environment Variables** | This page (below) |
+
+### Setup
+
+Generate an encryption key:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+Add to your environment:
+
+```bash
+# .env or docker.env
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-generated-key-here
+```
+
+### Default Credentials
+
+For quick setup, Open Notebook provides defaults:
+
+| Setting | Default | Security Level |
+|---------|---------|----------------|
+| Password | `open-notebook-change-me` | Development only |
+| Encryption Key | Derived from `0p3n-N0t3b0ok` | Development only |
+
+**For production, always set custom credentials.**
+
+### Docker Secrets Support
+
+Both settings support Docker secrets via `_FILE` suffix:
+
+```yaml
+environment:
+  - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
+  - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
+```
+
+### Security Notes
+
+| Scenario | Behavior |
+|----------|----------|
+| Custom key configured | API keys encrypted with your key |
+| No key configured | API keys encrypted with default key (warning logged) |
+| Key changed | Old encrypted keys become unreadable |
+| Legacy data | Unencrypted keys still work (graceful fallback) |
+
+### Key Management
+
+- **Keep secret**: Never commit the encryption key to version control
+- **Backup securely**: Store the key separately from database backups
+- **No rotation yet**: Changing the key requires re-saving all API keys
+- **Per-deployment**: Each instance should have its own encryption key
+
+---
+
 ## When to Use Password Protection
 
 ### Use it for:

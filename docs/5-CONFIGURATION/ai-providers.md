@@ -4,6 +4,17 @@ Complete setup instructions for each AI provider. Pick the one you're using.
 
 ---
 
+## Configuration Methods
+
+| Method | Best For | Guide |
+|--------|----------|-------|
+| **Settings UI** | Most users | [API Configuration](../3-USER-GUIDE/api-configuration.md) |
+| **Environment Variables** | DevOps, automation | This page |
+
+**Recommended**: Use the Settings UI for quick setup. Environment variables are better for automated deployments.
+
+---
+
 ## Cloud Providers (Recommended for Most)
 
 ### OpenAI

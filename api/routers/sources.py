@@ -285,6 +285,9 @@ async def create_source(
     """Create a new source with support for both JSON and multipart form data."""
     source_data, upload_file = form_data
 
+    # Initialize file_path before try block so exception handlers can reference it
+    file_path = None
+
     try:
         # Verify all specified notebooks exist (backward compatibility support)
         for notebook_id in source_data.notebooks or []:
@@ -295,7 +298,6 @@ async def create_source(
                 )
 
         # Handle file upload if provided
-        file_path = None
         if upload_file and source_data.type == "upload":
             try:
                 file_path = await save_uploaded_file(upload_file)

@@ -3,6 +3,7 @@ export interface ModuleResponse {
   name: string
   description: string
   archived: boolean
+  overview: string | null
   created: string
   updated: string
   source_count: number
@@ -69,6 +70,30 @@ export interface UpdateModuleRequest {
   name?: string
   description?: string
   archived?: boolean
+  overview?: string
+}
+
+// Learning Goals Types
+export interface LearningGoalResponse {
+  id: string
+  module: string
+  description: string
+  mastery_criteria: string | null
+  order: number
+  created: string
+  updated: string
+}
+
+export interface CreateLearningGoalRequest {
+  description: string
+  mastery_criteria?: string
+  order?: number
+}
+
+export interface UpdateLearningGoalRequest {
+  description?: string
+  mastery_criteria?: string
+  order?: number
 }
 
 export interface CreateNoteRequest {

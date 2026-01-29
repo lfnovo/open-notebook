@@ -31,6 +31,8 @@ import { TranslationKeys } from '@/lib/locales'
 import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/modules/[id]/page'
+import { useQueryClient } from '@tanstack/react-query'
+import { QUERY_KEYS } from '@/lib/api/query-client'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -120,6 +122,7 @@ export function SourceCard({
   onContextModeChange
 }: SourceCardProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const statusConfigMap = getStatusConfig(t)
   
   // Only fetch status for sources that might have async processing
@@ -128,11 +131,17 @@ export function SourceCard({
   // Track processing state to continue polling until we detect completion
   const [wasProcessing, setWasProcessing] = useState(false)
 
+  // Always fetch status if:
+  // 1. Source has a command_id (might be processing)
+  // 2. Source status indicates processing (from list)
+  // 3. We were previously processing (to catch completion)
+  // 4. Status is unknown/null but command_id exists (need to check actual status)
   const shouldFetchStatus = !!sourceWithStatus.command_id ||
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
-    wasProcessing // Keep polling if we were processing to catch the completion
+    wasProcessing || // Keep polling if we were processing to catch the completion
+    !!(sourceWithStatus.command_id && !sourceWithStatus.status) // Command exists but no status - need to check
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,
@@ -140,16 +149,43 @@ export function SourceCard({
   )
 
   // Determine current status
-  // If source has a command_id but no status, treat as "new" (just created)
-  const rawStatus = statusData?.status || sourceWithStatus.status
+  // Priority: statusData (from status API) > source.status (from list) > inferred from command_id/embedded state
+  // If status API returns null/undefined but we have statusData.message, check if it's a legacy source
+  let rawStatus: string | undefined = undefined
+  
+  if (statusData?.status) {
+    // Status API returned a status - use it (most reliable)
+    rawStatus = statusData.status
+  } else if (statusData?.message && statusData.message.includes('Legacy source')) {
+    // Status API explicitly says it's a legacy source (completed)
+    rawStatus = 'completed'
+  } else if (statusData && !statusData.status && source.embedded_chunks > 0) {
+    // Status API returned but status is null/undefined, but source has embeddings - likely completed
+    rawStatus = 'completed'
+  } else if (sourceWithStatus.status) {
+    // Fall back to status from source list
+    rawStatus = sourceWithStatus.status
+  } else if (sourceWithStatus.command_id && !statusData) {
+    // Has command_id but status API hasn't responded yet - likely just created, treat as 'new'
+    rawStatus = 'new'
+  } else if (source.embedded_chunks > 0 || source.embedded) {
+    // Source has embeddings - definitely completed
+    rawStatus = 'completed'
+  } else if (sourceWithStatus.command_id) {
+    // Has command_id but no embeddings - might be processing
+    rawStatus = 'new'
+  } else {
+    // No command_id and no status - assume completed (legacy source)
+    rawStatus = 'completed'
+  }
+
   const currentStatus: SourceStatus = isSourceStatus(rawStatus)
     ? rawStatus
-    : (sourceWithStatus.command_id ? 'new' : 'completed')
-
+    : 'completed'
 
   // Track processing state and detect completion
   useEffect(() => {
-    const currentStatusFromData = statusData?.status || sourceWithStatus.status
+    const currentStatusFromData = statusData?.status || sourceWithStatus.status || rawStatus
 
     // If we're currently processing, mark that we were processing
     if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
@@ -161,11 +197,18 @@ export function SourceCard({
         (currentStatusFromData === 'completed' || currentStatusFromData === 'failed')) {
       setWasProcessing(false) // Stop polling
 
+      // Invalidate sources queries to refresh the list with updated status
+      queryClient.invalidateQueries({ queryKey: ['sources'] })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources() })
+      
       if (onRefresh) {
-        setTimeout(() => onRefresh(), 500) // Small delay to ensure API is updated
+        // Also call the manual refresh callback if provided
+        setTimeout(() => {
+          onRefresh()
+        }, 500) // Small delay to ensure API is updated
       }
     }
-  }, [statusData, sourceWithStatus.status, wasProcessing, onRefresh, source.id])
+  }, [statusData, sourceWithStatus.status, wasProcessing, onRefresh, source.id, rawStatus, queryClient])
   
   const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
@@ -251,6 +294,13 @@ export function SourceCard({
             {statusData?.message && (isProcessing || isFailed) && (
               <p className="text-xs text-gray-600 mb-2 italic">
                 {statusData.message}
+              </p>
+            )}
+            
+            {/* Debug info - show actual status being used (can be removed in production) */}
+            {process.env.NODE_ENV === 'development' && (
+              <p className="text-xs text-gray-400 mt-1">
+                Status: {currentStatus} | API: {statusData?.status || 'none'} | Source: {sourceWithStatus.status || 'none'} | Command: {sourceWithStatus.command_id || 'none'}
               </p>
             )}
 

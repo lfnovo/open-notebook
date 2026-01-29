@@ -1,4 +1,3 @@
-import asyncio
 import os
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
@@ -13,11 +12,47 @@ from backpack.domain.base import ObjectModel
 from backpack.exceptions import DatabaseOperationError, InvalidInputError
 
 
+class LearningGoal(ObjectModel):
+    """Represents a learning goal for a module."""
+
+    table_name: ClassVar[str] = "learning_goal"
+    module: str  # record<module> reference
+    description: str
+    mastery_criteria: Optional[str] = None
+    order: int = 0
+
+    @field_validator("module", mode="before")
+    @classmethod
+    def parse_module(cls, value):
+        """Parse module field to ensure string format from RecordID."""
+        if value is None:
+            return value
+        if isinstance(value, RecordID):
+            return str(value)
+        return str(value) if value else None
+
+    @field_validator("description")
+    @classmethod
+    def description_must_not_be_empty(cls, v):
+        if not v.strip():
+            raise InvalidInputError("Learning goal description cannot be empty")
+        return v
+
+    def _prepare_save_data(self) -> dict:
+        """Override to ensure module field is always RecordID format for database."""
+        data = super()._prepare_save_data()
+        # Ensure module field is RecordID format for database
+        if data.get("module") is not None:
+            data["module"] = ensure_record_id(data["module"])
+        return data
+
+
 class Module(ObjectModel):
     table_name: ClassVar[str] = "module"
     name: str
     description: str
     archived: Optional[bool] = False
+    overview: Optional[str] = None
 
     @field_validator("name")
     @classmethod
@@ -25,6 +60,21 @@ class Module(ObjectModel):
         if not v.strip():
             raise InvalidInputError("Module name cannot be empty")
         return v
+
+    async def get_learning_goals(self) -> List["LearningGoal"]:
+        """Get all learning goals for this module, ordered by order field."""
+        try:
+            goals = await repo_query(
+                """
+                SELECT * FROM learning_goal WHERE module = $id ORDER BY order ASC
+                """,
+                {"id": ensure_record_id(self.id)},
+            )
+            return [LearningGoal(**goal) for goal in goals] if goals else []
+        except Exception as e:
+            logger.error(f"Error fetching learning goals for module {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError(e)
 
     async def get_sources(self) -> List["Source"]:
         try:

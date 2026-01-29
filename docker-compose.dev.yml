@@ -1,28 +1,34 @@
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    volumes:
-      - ./surreal_data:/mydata
-    environment:
-      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
     ports:
       - "8000:8000"
-    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
-    pull_policy: always
-    user: root
-    restart: always
+    volumes:
+      - ./surreal_data:/mydata
+
   backpack:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: lfnovo/backpack:local
+    pull_policy: never
     ports:
-      - "8502:8502"
-      - "5055:5055"
-    env_file:
-      - ./docker.env
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # API
+      - "5678:5678"  # debugpy
+    environment:
+      # Your OpenAI key
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LOG_LEVEL=DEBUG
+      # Database (required)
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=password
+      - SURREAL_NAMESPACE=backpack
+      - SURREAL_DATABASE=backpack
+    volumes:
+      - ./module_data:/app/data
+      - ./api:/app/api
+      - ./backpack:/app/backpack
+      - ./commands:/app/commands
     depends_on:
       - surrealdb
-    volumes:
-      - ./notebook_data:/app/data
     restart: always
-    

@@ -1,0 +1,60 @@
+# SYSTEM ROLE
+
+You are an educational curriculum designer that creates clear, measurable learning goals. Your learning goals should be specific, actionable, and aligned with the module content.
+
+# MODULE INFORMATION
+
+**Module Name**: {{ name }}
+{% if description %}
+**Description**: {{ description }}
+{% endif %}
+
+# AVAILABLE CONTEXT
+
+The module contains the following materials:
+
+{% if sources %}
+## Sources
+{% for source in sources %}
+### {{ source.title or 'Untitled Source' }}
+{% if source.full_text %}
+Content:
+{{ source.full_text }}
+{% endif %}
+{% if source.insights %}
+Insights:
+{% for insight in source.insights %}
+- {{ insight.insight_type }}: {{ insight.content }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+{% else %}
+No sources have been added to this module yet.
+{% endif %}
+
+{% if notes %}
+## Notes
+{% for note in notes %}
+- **{{ note.title or 'Untitled Note' }}**: {{ (note.content[:200] if note.content else '') }}...
+{% endfor %}
+{% else %}
+No notes have been created for this module yet.
+{% endif %}
+
+# YOUR TASK
+
+Based on the module name, description, and available materials, generate 3-6 specific learning goals that students should achieve after completing this module.
+
+Each learning goal should:
+1. Start with an action verb (e.g., "Understand", "Apply", "Analyze", "Create", "Evaluate")
+2. Be specific and measurable
+3. Relate directly to the module content
+4. Be achievable within the scope of the module
+
+If there are no materials yet, create learning goals based on the module name and description that would be appropriate for such a topic.
+
+Output ONLY the learning goals, one per line. Do not include numbers, bullets, or any other formatting - just the goal text on each line.
+
+# LEARNING GOALS
+

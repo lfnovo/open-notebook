@@ -107,4 +107,9 @@ RUN mkdir -p /var/log/supervisor
 #
 # Example: docker run -e API_URL=https://your-domain.com/api ...
 
+# Add non-root user for security best practices
+RUN adduser --disabled-password --gecos "" --uid 65532 appuser && \
+    chown -R appuser:appuser /app /var/log/supervisor
+USER appuser
+
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]

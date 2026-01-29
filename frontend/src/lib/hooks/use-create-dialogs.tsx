@@ -23,6 +23,7 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
       value={{
         openSourceDialog,
         openModuleDialog,
+      
       }}
     >
       {children}

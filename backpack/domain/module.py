@@ -18,6 +18,7 @@ class Module(ObjectModel):
     name: str
     description: str
     archived: Optional[bool] = False
+    overview: Optional[str] = None
 
     @field_validator("name")
     @classmethod

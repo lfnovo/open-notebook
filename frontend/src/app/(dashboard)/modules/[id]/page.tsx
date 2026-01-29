@@ -50,7 +50,7 @@ export default function ModulePage() {
 
   // Context selection state
   const [contextSelections, setContextSelections] = useState<ContextSelections>({
-    sources: {}
+    sources: {},
   })
 
   // Initialize default selections when sources load

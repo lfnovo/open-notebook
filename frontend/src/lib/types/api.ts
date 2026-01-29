@@ -3,6 +3,7 @@ export interface ModuleResponse {
   name: string
   description: string
   archived: boolean
+  overview: string | null
   created: string
   updated: string
   source_count: number
@@ -69,6 +70,7 @@ export interface UpdateModuleRequest {
   name?: string
   description?: string
   archived?: boolean
+  overview?: string
 }
 
 export interface CreateNoteRequest {

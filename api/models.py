@@ -15,6 +15,7 @@ class ModuleUpdate(BaseModel):
     archived: Optional[bool] = Field(
         None, description="Whether the module is archived"
     )
+    overview: Optional[str] = Field(None, description="AI-generated overview of the module")
 
 
 class ModuleResponse(BaseModel):
@@ -22,10 +23,18 @@ class ModuleResponse(BaseModel):
     name: str
     description: str
     archived: bool
+    overview: Optional[str] = None
     created: str
     updated: str
     source_count: int
     note_count: int
+
+
+class GenerateOverviewRequest(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use for generation"
+    )
 
 
 # Search models

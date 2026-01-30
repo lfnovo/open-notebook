@@ -432,7 +432,7 @@ wheels = [
 
 [[package]]
 name = "content-core"
-version = "1.13.0"
+version = "1.14.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -462,9 +462,9 @@ dependencies = [
     { name = "validators" },
     { name = "youtube-transcript-api" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/0d/53f37e46550d2a75ded08b1eccb2fccdd982fa7250b9da32e67d2592abf7/content_core-1.13.0.tar.gz", hash = "sha256:e101114517e6d4b6356f8ae5ca2ab88cd2acc0e20fe3944d470440e338e5550a", size = 20744666, upload-time = "2026-01-26T00:00:34.576Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/b3/7b2d7b8d4e0023b537dc74b4157b1c0c40656d2d79832d132296fdd1e2b6/content_core-1.14.1.tar.gz", hash = "sha256:5e2598d78dc4f1be601b4009a3a300c37d252f490b2719841b351cae28ab701b", size = 20737743, upload-time = "2026-01-30T01:48:31.472Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/06/7303eafde48316fde34822e8cd750d9f93a281a0cef13b26ac07b026dbf2/content_core-1.13.0-py3-none-any.whl", hash = "sha256:5c8d3a21e62c0dd1b001bdc3caf29449298fb493243659401bf4bc13f46be59b", size = 188220, upload-time = "2026-01-26T00:00:37.434Z" },
+    { url = "https://files.pythonhosted.org/packages/d2/d1/017d7f5a74a10471d327ace5d0e2cc11bc30400b0e2a01feaf5dad92a113/content_core-1.14.1-py3-none-any.whl", hash = "sha256:14df9b8b819376f7b9c25658368532367b453e21feb86ae77a43ae9a07161006", size = 186377, upload-time = "2026-01-30T01:48:29.872Z" },
 ]
 
 [[package]]
@@ -664,15 +664,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.17.2"
+version = "2.18.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/95/0d/1607a3a46421c63d81a56002f489c25424761b8589022289dec64d324efd/esperanto-2.17.2.tar.gz", hash = "sha256:6e96db87f6a4faa1387554be9feefb2d6de761b2368c45ddf0a9967c1d1064cb", size = 850259, upload-time = "2026-01-24T12:32:48.887Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/f1/1b34dc08a293b6f00291611799fc04074e3c7cadf9578b26f2329c20b91d/esperanto-2.18.0.tar.gz", hash = "sha256:8743fdaeb810b0354ae127a8ca875947c4e57db4d0336543a862f2dd213735fd", size = 849402, upload-time = "2026-01-30T00:40:09.038Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/43/c83db99f2e24b50cedf05730a229df67cd0720b5bb0bc980a1b1246d19d9/esperanto-2.17.2-py3-none-any.whl", hash = "sha256:db6530794de7dc5be0a1196e9a9444c89934ec0af4a55792fb6daa1bb7a2cb3e", size = 201438, upload-time = "2026-01-24T12:32:50.619Z" },
+    { url = "https://files.pythonhosted.org/packages/21/9b/163225ef2b723a8edf06003c82888a73b8ad3fbb97bc12aed62867f4381d/esperanto-2.18.0-py3-none-any.whl", hash = "sha256:dfcec77ed81a195aa222636f7b70024c73c4282f3bcad13edb000ad1f4224903", size = 201374, upload-time = "2026-01-30T00:40:10.607Z" },
 ]
 
 [[package]]
@@ -1058,7 +1058,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1f/cb/48e964c452ca2b92175a9b2dca037a553036cb053ba69e284650ce755f13/greenlet-3.3.0-cp311-cp311-macosx_11_0_universal2.whl", hash = "sha256:e29f3018580e8412d6aaf5641bb7745d38c85228dacf51a73bd4e26ddf2a6a8e", size = 274908, upload-time = "2025-12-04T14:23:26.435Z" },
     { url = "https://files.pythonhosted.org/packages/28/da/38d7bff4d0277b594ec557f479d65272a893f1f2a716cad91efeb8680953/greenlet-3.3.0-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:a687205fb22794e838f947e2194c0566d3812966b41c78709554aa883183fb62", size = 577113, upload-time = "2025-12-04T14:50:05.493Z" },
     { url = "https://files.pythonhosted.org/packages/3c/f2/89c5eb0faddc3ff014f1c04467d67dee0d1d334ab81fadbf3744847f8a8a/greenlet-3.3.0-cp311-cp311-manylinux_2_24_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:4243050a88ba61842186cb9e63c7dfa677ec146160b0efd73b855a3d9c7fcf32", size = 590338, upload-time = "2025-12-04T14:57:41.136Z" },
-    { url = "https://files.pythonhosted.org/packages/80/d7/db0a5085035d05134f8c089643da2b44cc9b80647c39e93129c5ef170d8f/greenlet-3.3.0-cp311-cp311-manylinux_2_24_s390x.manylinux_2_28_s390x.whl", hash = "sha256:670d0f94cd302d81796e37299bcd04b95d62403883b24225c6b5271466612f45", size = 601098, upload-time = "2025-12-04T15:07:11.898Z" },
     { url = "https://files.pythonhosted.org/packages/dc/a6/e959a127b630a58e23529972dbc868c107f9d583b5a9f878fb858c46bc1a/greenlet-3.3.0-cp311-cp311-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:6cb3a8ec3db4a3b0eb8a3c25436c2d49e3505821802074969db017b87bc6a948", size = 590206, upload-time = "2025-12-04T14:26:01.254Z" },
     { url = "https://files.pythonhosted.org/packages/48/60/29035719feb91798693023608447283b266b12efc576ed013dd9442364bb/greenlet-3.3.0-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:2de5a0b09eab81fc6a382791b995b1ccf2b172a9fec934747a7a23d2ff291794", size = 1550668, upload-time = "2025-12-04T15:04:22.439Z" },
     { url = "https://files.pythonhosted.org/packages/0a/5f/783a23754b691bfa86bd72c3033aa107490deac9b2ef190837b860996c9f/greenlet-3.3.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:4449a736606bd30f27f8e1ff4678ee193bc47f6ca810d705981cfffd6ce0d8c5", size = 1615483, upload-time = "2025-12-04T14:27:28.083Z" },
@@ -1066,7 +1065,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f8/0a/a3871375c7b9727edaeeea994bfff7c63ff7804c9829c19309ba2e058807/greenlet-3.3.0-cp312-cp312-macosx_11_0_universal2.whl", hash = "sha256:b01548f6e0b9e9784a2c99c5651e5dc89ffcbe870bc5fb2e5ef864e9cc6b5dcb", size = 276379, upload-time = "2025-12-04T14:23:30.498Z" },
     { url = "https://files.pythonhosted.org/packages/43/ab/7ebfe34dce8b87be0d11dae91acbf76f7b8246bf9d6b319c741f99fa59c6/greenlet-3.3.0-cp312-cp312-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:349345b770dc88f81506c6861d22a6ccd422207829d2c854ae2af8025af303e3", size = 597294, upload-time = "2025-12-04T14:50:06.847Z" },
     { url = "https://files.pythonhosted.org/packages/a4/39/f1c8da50024feecd0793dbd5e08f526809b8ab5609224a2da40aad3a7641/greenlet-3.3.0-cp312-cp312-manylinux_2_24_ppc64le.manylinux_2_28_ppc64le.whl", hash = "sha256:e8e18ed6995e9e2c0b4ed264d2cf89260ab3ac7e13555b8032b25a74c6d18655", size = 607742, upload-time = "2025-12-04T14:57:42.349Z" },
-    { url = "https://files.pythonhosted.org/packages/77/cb/43692bcd5f7a0da6ec0ec6d58ee7cddb606d055ce94a62ac9b1aa481e969/greenlet-3.3.0-cp312-cp312-manylinux_2_24_s390x.manylinux_2_28_s390x.whl", hash = "sha256:c024b1e5696626890038e34f76140ed1daf858e37496d33f2af57f06189e70d7", size = 622297, upload-time = "2025-12-04T15:07:13.552Z" },
     { url = "https://files.pythonhosted.org/packages/75/b0/6bde0b1011a60782108c01de5913c588cf51a839174538d266de15e4bf4d/greenlet-3.3.0-cp312-cp312-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:047ab3df20ede6a57c35c14bf5200fcf04039d50f908270d3f9a7a82064f543b", size = 609885, upload-time = "2025-12-04T14:26:02.368Z" },
     { url = "https://files.pythonhosted.org/packages/49/0e/49b46ac39f931f59f987b7cd9f34bfec8ef81d2a1e6e00682f55be5de9f4/greenlet-3.3.0-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:2d9ad37fc657b1102ec880e637cccf20191581f75c64087a549e66c57e1ceb53", size = 1567424, upload-time = "2025-12-04T15:04:23.757Z" },
     { url = "https://files.pythonhosted.org/packages/05/f5/49a9ac2dff7f10091935def9165c90236d8f175afb27cbed38fb1d61ab6b/greenlet-3.3.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:83cd0e36932e0e7f36a64b732a6f60c2fc2df28c351bae79fbaf4f8092fe7614", size = 1636017, upload-time = "2025-12-04T14:27:29.688Z" },
@@ -2437,14 +2435,15 @@ dev = [
 dev = [
     { name = "pre-commit" },
     { name = "pytest-asyncio" },
+    { name = "ruff" },
     { name = "types-requests" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3,<1" },
-    { name = "content-core", specifier = ">=1.13,<2" },
-    { name = "esperanto", specifier = ">=2.17.2,<3" },
+    { name = "content-core", specifier = ">=1.14.1,<2" },
+    { name = "esperanto", specifier = ">=2.18,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
@@ -2464,7 +2463,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.7.0,<1" },
+    { name = "podcast-creator", specifier = ">=0.9,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -2483,6 +2482,7 @@ provides-extras = ["dev"]
 dev = [
     { name = "pre-commit", specifier = ">=4.1.0" },
     { name = "pytest-asyncio", specifier = ">=1.2.0" },
+    { name = "ruff", specifier = ">=0.14.13" },
     { name = "types-requests", specifier = ">=2.32.4.20250913" },
 ]
 
@@ -2814,14 +2814,13 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.7.3"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
     { name = "click" },
     { name = "content-core" },
     { name = "esperanto" },
-    { name = "langchain-openai" },
     { name = "langgraph" },
     { name = "loguru" },
     { name = "moviepy" },
@@ -2831,9 +2830,9 @@ dependencies = [
     { name = "requests" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/ed/d2586b7420d5afa227817e7cb0c63eaef6a825012271e1ec32beb353c30b/podcast_creator-0.7.3.tar.gz", hash = "sha256:5b8a9db1b5ba7d0e413579bb24b68a8166e7526579ff77dc748d4d7d82ab388d", size = 443918, upload-time = "2025-10-25T13:45:04.898Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/2a/b965715040e9295bc5bfb8aa30869ef26f25815e3bfd0a05dba1d98eb10e/podcast_creator-0.9.0.tar.gz", hash = "sha256:9fd706e616a3ee6b71f34eafa284ed272b8fd24c857db2b4970dc85f646329bf", size = 469820, upload-time = "2026-01-30T01:59:19.509Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/00/47c3157298519b084d1210d90e0d492f7942469c8f5304a088626482888f/podcast_creator-0.7.3-py3-none-any.whl", hash = "sha256:b0545bf942426ac9ab5f9579a02f0471d905e328b83f95d49840b9e7eeac1a51", size = 73995, upload-time = "2025-10-25T13:45:03.969Z" },
+    { url = "https://files.pythonhosted.org/packages/41/6d/d576690f1fd8ac5e2d1a830fb799ec848de425c65b401b402e5579c02a9d/podcast_creator-0.9.0-py3-none-any.whl", hash = "sha256:c1a3c36c77fc1c86edb45217d085f96f10ddd83a1fab7c4e5e17c21253af1e16", size = 74109, upload-time = "2026-01-30T01:59:18.355Z" },
 ]
 
 [[package]]

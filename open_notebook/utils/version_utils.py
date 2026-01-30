@@ -16,6 +16,7 @@ async def get_version_from_github_async(repo_url: str, branch: str = "main") -> 
     Fetch and parse the version from pyproject.toml in a public GitHub repository (async).
     """
     from urllib.parse import urlparse
+
     import httpx
     import tomli
 

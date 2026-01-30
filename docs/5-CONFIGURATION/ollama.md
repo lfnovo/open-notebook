@@ -81,10 +81,30 @@ export OLLAMA_HOST=0.0.0.0:11434
 ollama serve
 ```
 
+**⚠️ LINUX USERS: Extra configuration required!**
+
+On Linux, `host.docker.internal` doesn't resolve automatically like it does on macOS/Windows. You must add `extra_hosts` to your docker-compose.yml:
+
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    # ... other settings ...
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - OLLAMA_API_BASE=http://host.docker.internal:11434
+```
+
+Without this, you'll get connection errors like:
+```
+httpcore.ConnectError: [Errno -2] Name or service not known
+```
+
 **Why `host.docker.internal`?**
 - Docker containers can't reach `localhost` on the host
 - `host.docker.internal` is Docker's special hostname for the host machine
-- Available on Docker Desktop for Mac/Windows and recent Linux versions
+- Available on Docker Desktop for Mac/Windows; **requires `extra_hosts` on Linux**
 
 **Why `OLLAMA_HOST=0.0.0.0:11434`?**
 - By default, Ollama only binds to localhost and rejects external connections
@@ -317,6 +337,8 @@ docker exec -it open-notebook bash
 curl http://host.docker.internal:11434/api/tags
 ```
 
+**If this fails on Linux** with "Name or service not known", you need to add `extra_hosts` to your docker-compose.yml. See the [Docker-Specific Troubleshooting](#docker-specific-troubleshooting) section below.
+
 **3. Models not downloading**
 
 **Check disk space:**
@@ -409,14 +431,31 @@ ollama run gemma3:12b "Hello, world"
 
 ### Docker-Specific Troubleshooting
 
-**1. Host networking on Linux:**
+**1. Linux: `host.docker.internal` not resolving (Most Common)**
+
+If you see `Name or service not known` errors on Linux, add `extra_hosts` to your docker-compose.yml:
+
+```yaml
+services:
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest-single
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - OLLAMA_API_BASE=http://host.docker.internal:11434
+    # ... rest of your config
+```
+
+This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker Desktop does this automatically, but Linux requires explicit configuration.
+
+**2. Host networking on Linux (alternative):**
 ```bash
 # Use host networking if host.docker.internal doesn't work
 docker run --network host lfnovo/open_notebook:v1-latest-single
 export OLLAMA_API_BASE=http://localhost:11434
 ```
 
-**2. Custom bridge network:**
+**3. Custom bridge network:**
 ```yaml
 version: '3.8'
 networks:

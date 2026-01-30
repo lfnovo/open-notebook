@@ -136,7 +136,7 @@ full:
 api:
 	uv run --env-file .env run_api.py
 
-# === Worker Management ===
+
 .PHONY: worker worker-start worker-stop worker-restart
 
 worker: worker-start

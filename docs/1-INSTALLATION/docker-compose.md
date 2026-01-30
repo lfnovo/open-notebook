@@ -37,6 +37,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v2
     command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
+    user: root  # Required for bind mounts on Linux (SurrealDB runs as non-root by default)
     ports:
       - "8000:8000"
     volumes:
@@ -282,6 +283,29 @@ docker compose logs surrealdb
 ```
 
 Reset database:
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+### Database Permission Denied (Linux)
+
+If you see `Permission denied` or `Failed to create RocksDB directory` in SurrealDB logs:
+
+```bash
+docker compose logs surrealdb | grep -i permission
+```
+
+This happens because SurrealDB runs as a non-root user but Docker creates bind mount directories as root. Add `user: root` to the surrealdb service:
+
+```yaml
+surrealdb:
+  image: surrealdb/surrealdb:v2
+  user: root  # Fix for Linux bind mount permissions
+  # ... rest of config
+```
+
+Then restart:
 ```bash
 docker compose down -v
 docker compose up -d

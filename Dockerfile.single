@@ -59,6 +59,9 @@ COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
 COPY --from=frontend-builder /app/frontend/public /app/frontend/public
 
+# Bind Next.js to all interfaces (required for Docker networking and reverse proxies)
+ENV HOSTNAME=0.0.0.0
+
 # Setup directories and permissions
 RUN mkdir -p /app/data /mydata
 

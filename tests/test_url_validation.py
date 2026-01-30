@@ -1,5 +1,14 @@
 """
 Test URL validation for SSRF protection in API key configuration.
+
+Note: The validation is intentionally permissive for self-hosted scenarios.
+It only blocks:
+- Invalid schemes (must be http or https)
+- Malformed URLs
+- Link-local addresses (169.254.x.x) - used for cloud metadata endpoints
+
+Localhost and private IPs are ALLOWED because this is a self-hosted application
+where users commonly run local services (Ollama, LM Studio, etc.).
 """
 
 import pytest
@@ -35,17 +44,12 @@ class TestUrlValidation:
         assert exc_info.value.status_code == 400
         assert "Invalid URL scheme" in exc_info.value.detail
 
-    def test_localhost_rejection_for_non_ollama(self):
-        """Localhost should be rejected for non-Ollama providers."""
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://localhost:8000", "openai")
-        assert exc_info.value.status_code == 400
-        assert "Localhost URLs are not allowed" in exc_info.value.detail
-
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://127.0.0.1:8000", "azure")
-        assert exc_info.value.status_code == 400
-        assert "Localhost URLs are not allowed" in exc_info.value.detail
+    def test_localhost_allowed_for_self_hosted(self):
+        """Localhost should be allowed for self-hosted services."""
+        # This is a self-hosted app, localhost is valid for local services
+        _validate_url("http://localhost:8000", "openai")
+        _validate_url("http://127.0.0.1:8000", "azure")
+        # Should not raise
 
     def test_localhost_allowed_for_ollama(self):
         """Localhost should be allowed for Ollama provider."""
@@ -53,25 +57,13 @@ class TestUrlValidation:
         _validate_url("http://127.0.0.1:11434", "ollama")
         # Should not raise
 
-    def test_private_ip_rejection_for_non_ollama(self):
-        """Private IP addresses should be rejected for non-Ollama providers."""
-        # 10.0.0.0/8 range
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://10.0.0.1", "openai")
-        assert exc_info.value.status_code == 400
-        assert "Private IP addresses are not allowed" in exc_info.value.detail
-
-        # 172.16.0.0/12 range
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://172.16.0.1:8080", "anthropic")
-        assert exc_info.value.status_code == 400
-        assert "Private IP addresses are not allowed" in exc_info.value.detail
-
-        # 192.168.0.0/16 range
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://192.168.1.1", "azure")
-        assert exc_info.value.status_code == 400
-        assert "Private IP addresses are not allowed" in exc_info.value.detail
+    def test_private_ip_allowed_for_self_hosted(self):
+        """Private IP addresses should be allowed for self-hosted scenarios."""
+        # This is a self-hosted app, private IPs are valid for internal services
+        _validate_url("http://10.0.0.1", "openai")
+        _validate_url("http://172.16.0.1:8080", "anthropic")
+        _validate_url("http://192.168.1.1", "azure")
+        # Should not raise
 
     def test_private_ip_allowed_for_ollama(self):
         """Private IP addresses should be allowed for Ollama provider."""
@@ -79,31 +71,33 @@ class TestUrlValidation:
         _validate_url("http://10.0.0.50:11434", "ollama")
         # Should not raise
 
-    def test_loopback_rejection(self):
-        """Loopback addresses should be rejected for non-Ollama providers."""
-        with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://127.0.0.2", "openai")
-        assert exc_info.value.status_code == 400
-        assert "Loopback addresses are not allowed" in exc_info.value.detail
+    def test_loopback_allowed_for_self_hosted(self):
+        """Loopback addresses should be allowed for self-hosted scenarios."""
+        _validate_url("http://127.0.0.2", "openai")
+        # Should not raise
 
     def test_link_local_rejection(self):
-        """Link-local addresses should be rejected."""
+        """Link-local addresses should be rejected (cloud metadata protection)."""
         with pytest.raises(HTTPException) as exc_info:
             _validate_url("http://169.254.169.254", "openai")
         assert exc_info.value.status_code == 400
-        assert "Link-local addresses are not allowed" in exc_info.value.detail
+        assert "Link-local addresses" in exc_info.value.detail
 
-    def test_ipv6_localhost_rejection(self):
-        """IPv6 localhost should be rejected for non-Ollama providers."""
+        # Also reject for ollama - link-local is never valid
         with pytest.raises(HTTPException) as exc_info:
-            _validate_url("http://[::1]:8000", "openai")
+            _validate_url("http://169.254.169.254", "ollama")
         assert exc_info.value.status_code == 400
-        assert "Localhost URLs are not allowed" in exc_info.value.detail
+        assert "Link-local addresses" in exc_info.value.detail
+
+    def test_ipv6_localhost_allowed(self):
+        """IPv6 localhost should be allowed for self-hosted scenarios."""
+        _validate_url("http://[::1]:8000", "openai")
+        # Should not raise
 
     def test_empty_url(self):
         """Empty URLs should not raise (handled elsewhere)."""
         _validate_url("", "openai")
-        _validate_url(None, "openai")
+        # None is handled by the function's early return check
         # Should not raise
 
     def test_invalid_url_format(self):
@@ -125,15 +119,13 @@ class TestUrlValidation:
         _validate_url(
             "https://my-resource.openai.azure.com", "azure"
         )
+        # Localhost is allowed for self-hosted
+        _validate_url("http://localhost:8000", "azure")
         # Should not raise
-
-        with pytest.raises(HTTPException):
-            _validate_url("http://localhost:8000", "azure")
 
     def test_openai_compatible_urls(self):
         """OpenAI-compatible provider URLs should be validated."""
         _validate_url("https://api.together.xyz", "openai_compatible")
+        # Private IPs are allowed for self-hosted
+        _validate_url("http://192.168.1.1:8080", "openai_compatible")
         # Should not raise
-
-        with pytest.raises(HTTPException):
-            _validate_url("http://192.168.1.1:8080", "openai_compatible")

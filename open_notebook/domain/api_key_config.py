@@ -240,7 +240,7 @@ class APIKeyConfig(RecordModel):
         # Create new instance with fresh data (bypass singleton cache)
         instance = object.__new__(cls)
         object.__setattr__(instance, "__dict__", {})
-        super(RecordModel, instance).__init__(**data)
+        super(APIKeyConfig, instance).__init__(**data)
         return instance
 
     def _prepare_save_data(self) -> dict:

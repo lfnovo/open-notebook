@@ -118,18 +118,18 @@ const PROVIDER_SUPPORTED_TYPES: Record<string, ModelType[]> = {
 export default function ApiKeysPage() {
   const { t } = useTranslation()
   const { data: status, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useApiKeysStatus()
-  const { data: envStatus, isLoading: envLoading, refetch: refetchEnv } = useEnvStatus()
+  const { data: envStatus, isLoading: envLoading, error: envError, refetch: refetchEnv } = useEnvStatus()
 
   const handleRefresh = () => {
     refetchStatus()
     refetchEnv()
   }
 
-  // Count environment variables that could be migrated
+  // Count environment variables that could be migrated (only if no error)
   const envKeysCount = useMemo(() => {
-    if (!envStatus) return 0
+    if (!envStatus || envError) return 0
     return Object.values(envStatus).filter(Boolean).length
-  }, [envStatus])
+  }, [envStatus, envError])
 
   if (statusLoading || envLoading) {
     return (

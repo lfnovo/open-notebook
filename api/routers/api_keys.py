@@ -179,30 +179,38 @@ VALID_PROVIDERS = set(PROVIDER_DB_FIELD_MAPPING.keys())
 
 
 def _check_env_configured(provider: str) -> bool:
-    """Check if a provider is configured via environment variables."""
+    """Check if a provider is configured via environment variables.
+    
+    Env vars must be set AND non-empty to count as configured.
+    """
     env_vars = PROVIDER_ENV_MAPPING.get(provider, [])
     if not env_vars:
         return False
 
+    def _env_has_value(var: str) -> bool:
+        """Check if env var is set and non-empty."""
+        value = os.environ.get(var)
+        return value is not None and value.strip() != ""
+
     # For providers that need multiple vars (vertex, azure), check if all required are set
     if provider == "vertex":
-        return all(os.environ.get(var) is not None for var in env_vars)
+        return all(_env_has_value(var) for var in env_vars)
     elif provider == "azure":
         # Azure needs at least the key, endpoint, and version
         return (
-            os.environ.get("AZURE_OPENAI_API_KEY") is not None
-            and os.environ.get("AZURE_OPENAI_ENDPOINT") is not None
-            and os.environ.get("AZURE_OPENAI_API_VERSION") is not None
+            _env_has_value("AZURE_OPENAI_API_KEY")
+            and _env_has_value("AZURE_OPENAI_ENDPOINT")
+            and _env_has_value("AZURE_OPENAI_API_VERSION")
         )
     elif provider == "google":
         # Google can use either GOOGLE_API_KEY or GEMINI_API_KEY
-        return any(os.environ.get(var) is not None for var in env_vars)
+        return any(_env_has_value(var) for var in env_vars)
     elif provider == "openai_compatible":
         # OpenAI-compatible needs at least a base URL
-        return os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+        return _env_has_value("OPENAI_COMPATIBLE_BASE_URL")
     else:
         # Simple providers just need their single env var
-        return os.environ.get(env_vars[0]) is not None
+        return _env_has_value(env_vars[0])
 
 
 async def _check_db_configured(config: APIKeyConfig, provider: str) -> bool:

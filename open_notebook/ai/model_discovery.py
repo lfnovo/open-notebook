@@ -648,13 +648,14 @@ async def get_provider_model_count(provider: str) -> Dict[str, int]:
     Get count of registered models for a provider, grouped by type.
 
     Args:
-        provider: Provider name
+        provider: Provider name (case-insensitive)
 
     Returns:
         Dict mapping model type to count
     """
+    # Use case-insensitive comparison by lowercasing the provider
     result = await repo_query(
-        "SELECT type, count() as count FROM model WHERE provider = $provider GROUP BY type",
+        "SELECT type, count() as count FROM model WHERE string::lowercase(provider) = string::lowercase($provider) GROUP BY type",
         {"provider": provider},
     )
 

@@ -137,23 +137,26 @@ async def test_provider_connection(
         # Ensure keys are provisioned from DB (with env var fallback)
         await provision_provider_keys(provider)
 
-        # Get test model for provider
-        if provider not in TEST_MODELS:
-            return False, f"Unknown provider: {provider}"
-
-        model_name, test_model_type = TEST_MODELS[provider]
+        # Normalize provider name (handle hyphenated aliases)
+        normalized_provider = provider.replace("-", "_")
 
         # Special handling for URL-based providers (no API key, just connectivity)
-        if provider == "ollama":
+        if normalized_provider == "ollama":
             base_url = os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
             return await _test_ollama_connection(base_url)
 
-        if provider in ("openai_compatible", "openai-compatible"):
+        if normalized_provider == "openai_compatible":
             base_url = os.environ.get("OPENAI_COMPATIBLE_API_BASE")
             api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY")
             if not base_url:
                 return False, "No base URL configured for OpenAI-compatible provider"
             return await _test_openai_compatible_connection(base_url, api_key)
+
+        # Get test model for provider
+        if normalized_provider not in TEST_MODELS:
+            return False, f"Unknown provider: {provider}"
+
+        model_name, test_model_type = TEST_MODELS[normalized_provider]
 
         # For providers with specific test models
         if model_name is None:
@@ -164,7 +167,7 @@ async def test_provider_connection(
             model = AIFactory.create_language(model_name=model_name, provider=provider)
             # Convert to LangChain and make a minimal call
             lc_model = model.to_langchain()
-            response = await lc_model.ainvoke("Hi")
+            await lc_model.ainvoke("Hi")
             return True, "Connection successful"
 
         elif test_model_type == "embedding":
@@ -177,11 +180,13 @@ async def test_provider_connection(
             # For TTS, we just verify the model can be created
             # Making an actual TTS call would be more expensive
             # This at least validates the API key format
-            model = AIFactory.create_text_to_speech(
-                model_name=model_name, provider=provider
-            )
+            # For TTS, we just verify the model can be created
+            # Making an actual TTS call would be more expensive
             # Most TTS providers validate the key on model creation
             # If we get here without exception, key is likely valid
+            AIFactory.create_text_to_speech(
+                model_name=model_name, provider=provider
+            )
             return True, "Connection successful (key format valid)"
 
         else:

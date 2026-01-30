@@ -26,6 +26,7 @@ def _get_secret_from_env(var_name: str) -> Optional[str]:
                 if secret:
                     return secret
         except Exception:
+            # Failed to read from file, fall back to environment variable
             pass
     return os.environ.get(var_name)
 

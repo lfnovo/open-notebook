@@ -49,12 +49,12 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
               </span>
             </CardDescription>
           </div>
-          <Link href="/settings/api-keys">
-            <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/settings/api-keys">
               <Settings className="h-4 w-4 mr-2" />
               {t.models.configure}
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </CardHeader>
       <CardContent>

@@ -61,11 +61,16 @@ server {
 
 ```caddy
 notebook.example.com {
-    reverse_proxy open-notebook:8502
+    reverse_proxy open-notebook:8502 {
+        transport http {
+            read_timeout 600s
+            write_timeout 600s
+        }
+    }
 }
 ```
 
-That's it! Caddy handles HTTPS automatically.
+Caddy handles HTTPS automatically. The timeout settings ensure long-running operations (transformations, podcast generation) don't fail.
 
 ### Traefik
 
@@ -82,8 +87,21 @@ services:
       - "traefik.http.routers.notebook.entrypoints=websecure"
       - "traefik.http.routers.notebook.tls.certresolver=myresolver"
       - "traefik.http.services.notebook.loadbalancer.server.port=8502"
+      # Timeout for long-running operations (transformations, podcasts)
+      - "traefik.http.services.notebook.loadbalancer.responseforwarding.flushinterval=100ms"
     networks:
       - traefik-network
+```
+
+**Note**: For Traefik v2+, you may also need to configure `serversTransport` timeouts in your static configuration:
+
+```yaml
+# traefik.yml (static configuration)
+serversTransport:
+  forwardingTimeouts:
+    dialTimeout: 30s
+    responseHeaderTimeout: 600s
+    idleConnTimeout: 90s
 ```
 
 ### Coolify
@@ -225,10 +243,11 @@ http {
             proxy_set_header Connection 'upgrade';
             proxy_cache_bypass $http_upgrade;
 
-            # Timeouts for long-running operations (podcasts, etc.)
-            proxy_read_timeout 300s;
+            # Timeouts for long-running operations (transformations, podcasts, etc.)
+            # 600s matches the frontend timeout for slow LLM operations
+            proxy_read_timeout 600s;
             proxy_connect_timeout 60s;
-            proxy_send_timeout 300s;
+            proxy_send_timeout 600s;
         }
     }
 }
@@ -525,12 +544,49 @@ proxy_set_header Connection 'upgrade';
 
 ### Timeout Errors
 
-Increase timeouts for long operations (podcast generation):
+**Symptoms:**
+- `socket hang up` or `ECONNRESET` errors
+- `Timeout after 30000ms` errors
+- Operations fail after exactly 30 seconds
 
+**Cause:** Your reverse proxy has a default timeout (often 30s) that's shorter than Open Notebook's operations.
+
+**Solutions by proxy:**
+
+**Nginx:**
 ```nginx
-proxy_read_timeout 300s;
-proxy_send_timeout 300s;
+proxy_read_timeout 600s;
+proxy_send_timeout 600s;
 ```
+
+**Caddy:**
+```caddy
+reverse_proxy open-notebook:8502 {
+    transport http {
+        read_timeout 600s
+        write_timeout 600s
+    }
+}
+```
+
+**Traefik (static config):**
+```yaml
+serversTransport:
+  forwardingTimeouts:
+    responseHeaderTimeout: 600s
+```
+
+**Application-level timeouts:**
+
+If you still experience timeouts after configuring your proxy, you can also adjust the application timeouts:
+
+```bash
+# In .env file:
+API_CLIENT_TIMEOUT=600      # API client timeout (default: 300s)
+ESPERANTO_LLM_TIMEOUT=180   # LLM inference timeout (default: 60s)
+```
+
+See [Advanced Configuration](advanced.md) for more timeout options.
 
 ---
 
@@ -687,7 +743,12 @@ When uploading files, your reverse proxy may reject the request due to body size
        request_body {
            max_size 100MB
        }
-       reverse_proxy open-notebook:8502
+       reverse_proxy open-notebook:8502 {
+           transport http {
+               read_timeout 600s
+               write_timeout 600s
+           }
+       }
    }
    ```
 

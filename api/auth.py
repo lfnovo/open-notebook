@@ -6,11 +6,44 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+import bcrypt
+from loguru import logger
+
+
+def verify_password(provided: str, stored: str) -> bool:
+    """
+    Verify a provided plaintext password against the stored value.
+
+    - If `stored` looks like a bcrypt hash (starts with "$2"), use bcrypt.checkpw.
+    - Otherwise treat `stored` as a plaintext secret and compare directly.
+
+    Returns True if the password is valid, False otherwise.
+    """
+    if not stored:
+        return False
+
+    # bcrypt-style hashes begin with "$2b$", "$2a$", "$2y$", etc.
+    if isinstance(stored, str) and stored.startswith("$2"):
+        try:
+            return bcrypt.checkpw(provided.encode("utf-8"), stored.encode("utf-8"))
+        except Exception as e:
+            # Any error in bcrypt verification should be treated as an invalid password
+            logger.error(f"bcrypt verification failed: {e}")
+            return False
+
+    # Plaintext comparison
+    return secrets.compare_digest(provided, stored)
+
 
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
     """
     Middleware to check password authentication for all API requests.
-    Only active when OPEN_NOTEBOOK_PASSWORD environment variable is set.
+    Active when OPEN_NOTEBOOK_PASSWORD environment variable is set.
+
+    Behavior:
+    - If OPEN_NOTEBOOK_PASSWORD starts with "$2" it's treated as a bcrypt hash and
+      incoming Bearer tokens are verified using verify_password().
+    - Otherwise the value is treated as a plaintext secret and compared directly.
     """
 
     def __init__(self, app, excluded_paths: Optional[list] = None):
@@ -25,7 +58,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         ]
 
     async def dispatch(self, request: Request, call_next):
-        # Skip authentication if no password is set
+        # No auth configured
         if not self.password:
             return await call_next(request)
 
@@ -51,7 +84,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         try:
             scheme, credentials = auth_header.split(" ", 1)
             if scheme.lower() != "bearer":
-                raise ValueError("Invalid authentication scheme")
+                raise ValueError()
         except ValueError:
             return JSONResponse(
                 status_code=401,
@@ -59,8 +92,8 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Check password
-        if credentials != self.password:
+        # Verify password via helper
+        if not verify_password(credentials, self.password):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid password"},
@@ -80,16 +113,13 @@ def check_api_password(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> bool:
     """
-    Utility function to check API password.
-    Can be used as a dependency in individual routes if needed.
+    Dependency utility to verify the API password for individual routes.
+    Uses verify_password() for the actual check.
     """
-    password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
-
-    # No password set, allow access
-    if not password:
+    password_env = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
+    if not password_env:
         return True
 
-    # No credentials provided
     if not credentials:
         raise HTTPException(
             status_code=401,
@@ -97,8 +127,7 @@ def check_api_password(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check password
-    if credentials.credentials != password:
+    if not verify_password(credentials.credentials, password_env):
         raise HTTPException(
             status_code=401,
             detail="Invalid password",

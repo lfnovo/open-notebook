@@ -64,6 +64,29 @@ OPEN_NOTEBOOK_PASSWORD=Notebook$Dev$2024$Strong!
 OPEN_NOTEBOOK_PASSWORD=$(openssl rand -base64 24)
 ```
 
+### Hashed password (optional)
+You can store a bcrypt hash in the OPEN_NOTEBOOK_PASSWORD environment variable instead of the plaintext secret. The server will detect a bcrypt-style hash (strings beginning with `$2`) and verify incoming Bearer tokens against that hash.
+
+To generate a bcrypt hash locally (example using Python and the bcrypt package):
+
+```bash
+# Install bcrypt locally
+pip install bcrypt
+
+# Generate bcrypt hash (prints the hash)
+python -c "import bcrypt,sys;print(bcrypt.hashpw(sys.argv[1].encode(),bcrypt.gensalt()).decode())" yourpassword
+```
+
+Then set the environment variable to the printed hash:
+
+```bash
+OPEN_NOTEBOOK_PASSWORD='$2b$12$K1...' (paste the generated hash)
+```
+
+Notes:
+- The frontend and API clients still send the plaintext password in `Authorization: Bearer <password>`.
+- The server compares that plaintext password against the stored bcrypt hash.
+
 ### Bad Passwords
 
 ```bash

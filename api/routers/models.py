@@ -115,7 +115,7 @@ async def _check_azure_support_db() -> bool:
 
 
 async def _check_openai_compatible_support_db() -> bool:
-    """Check if OpenAI-compatible is configured in database."""
+    """Check if OpenAI-compatible is configured in database (any mode)."""
     from open_notebook.domain.api_key_config import APIKeyConfig
     try:
         config = await APIKeyConfig.get_instance()
@@ -133,6 +133,66 @@ async def _check_openai_compatible_support_db() -> bool:
                 return True
             if api_key_suffix and hasattr(api_key_suffix, "get_secret_value") and api_key_suffix.get_secret_value():
                 return True
+    except Exception:
+        pass
+    return False
+
+
+async def _check_azure_support_db_mode(mode: str) -> bool:
+    """Check if Azure is configured in database for a specific mode."""
+    from open_notebook.domain.api_key_config import APIKeyConfig
+    suffix_map = {"LLM": "", "EMBEDDING": "_embedding", "STT": "_stt", "TTS": "_tts"}
+    suffix = suffix_map.get(mode, "")
+
+    try:
+        config = await APIKeyConfig.get_instance()
+        # Check mode-specific config first
+        if suffix:
+            key = getattr(config, f"azure_openai_api_key{suffix}", None)
+            endpoint = getattr(config, f"azure_openai_endpoint{suffix}", None)
+            api_version = getattr(config, f"azure_openai_api_version{suffix}", None)
+            if key and endpoint and api_version:
+                if hasattr(key, "get_secret_value"):
+                    key = key.get_secret_value()
+                if key and endpoint and api_version:
+                    return True
+        # Check generic config
+        key = getattr(config, "azure_openai_api_key", None)
+        endpoint = getattr(config, "azure_openai_endpoint", None)
+        api_version = getattr(config, "azure_openai_api_version", None)
+        if key and endpoint and api_version:
+            if hasattr(key, "get_secret_value"):
+                key = key.get_secret_value()
+            if key and endpoint and api_version:
+                return True
+    except Exception:
+        pass
+    return False
+
+
+async def _check_openai_compatible_support_db_mode(mode: str) -> bool:
+    """Check if OpenAI-compatible is configured in database for a specific mode."""
+    from open_notebook.domain.api_key_config import APIKeyConfig
+    suffix_map = {"LLM": "_llm", "EMBEDDING": "_embedding", "STT": "_stt", "TTS": "_tts"}
+    suffix = suffix_map.get(mode, "")
+
+    try:
+        config = await APIKeyConfig.get_instance()
+        # Check mode-specific config first
+        if suffix:
+            base_url = getattr(config, f"openai_compatible_base_url{suffix}", None)
+            api_key = getattr(config, f"openai_compatible_api_key{suffix}", None)
+            if base_url:
+                return True
+            if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
+                return True
+        # Check generic config
+        base_url = getattr(config, "openai_compatible_base_url", None)
+        api_key = getattr(config, "openai_compatible_api_key", None)
+        if base_url:
+            return True
+        if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
+            return True
     except Exception:
         pass
     return False
@@ -422,7 +482,10 @@ async def get_provider_availability():
                         model_type in esperanto_available
                         and provider in esperanto_available[model_type]
                     ):
-                        if _check_openai_compatible_support(mode):
+                        # Check both DB config and env vars
+                        db_mode = await _check_openai_compatible_support_db_mode(mode)
+                        env_mode = _check_openai_compatible_support(mode)
+                        if db_mode or env_mode:
                             supported_types[provider].append(model_type)
             # Special handling for azure to check mode-specific availability
             elif provider == "azure":
@@ -431,7 +494,10 @@ async def get_provider_availability():
                         model_type in esperanto_available
                         and provider in esperanto_available[model_type]
                     ):
-                        if _check_azure_support(mode):
+                        # Check both DB config and env vars
+                        db_mode = await _check_azure_support_db_mode(mode)
+                        env_mode = _check_azure_support(mode)
+                        if db_mode or env_mode:
                             supported_types[provider].append(model_type)
             else:
                 # Standard provider detection

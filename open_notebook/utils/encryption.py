@@ -131,17 +131,43 @@ def decrypt_value(value: str) -> str:
         Decrypted plain text string, or original value if not encrypted.
 
     Raises:
-        ValueError: If encryption key is not configured.
+        ValueError: If encryption is not configured or if decryption fails
+            for what appears to be encrypted data (wrong key).
     """
     fernet = get_fernet()
     if not fernet:
         raise ValueError("Encryption is not configured. Set OPEN_NOTEBOOK_ENCRYPTION_KEY.")
+
+    # Check if value appears to be encrypted (Fernet token format)
+    # Fernet tokens are URL-safe base64, 56 bytes after decoding
+    # They contain only URL-safe base64 chars: A-Za-z0-9_-
+    import base64
+
+    def looks_like_fernet_token(s: str) -> bool:
+        """Check if string looks like a Fernet encrypted token."""
+        if len(s) < 40:  # Minimum length for Fernet token
+            return False
+        # Fernet tokens use URL-safe base64
+        try:
+            decoded = base64.urlsafe_b64decode(s)
+            return len(decoded) == 56  # Fernet token is always 56 bytes
+        except Exception:
+            return False
+
     try:
         return fernet.decrypt(value.encode()).decode()
     except InvalidToken:
-        # Value might not be encrypted (legacy data)
-        # Return as-is for backward compatibility
+        if looks_like_fernet_token(value):
+            # Looks like encrypted data but failed to decrypt - likely wrong key
+            raise ValueError(
+                "Decryption failed: data appears to be encrypted but key is incorrect. "
+                "Check OPEN_NOTEBOOK_ENCRYPTION_KEY configuration."
+            )
+        # Not a valid token - treat as legacy plaintext
         return value
+    except Exception as e:
+        logger.error(f"Decryption failed: {e}")
+        raise ValueError(f"Decryption failed: {str(e)}")
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
         return value

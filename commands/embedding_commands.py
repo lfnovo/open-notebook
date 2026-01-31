@@ -125,7 +125,7 @@ class EmbedSourceOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -142,9 +142,9 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
     3. UPSERT note embedding in database
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -186,34 +186,27 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
             processing_time=processing_time,
         )
 
-    except RuntimeError as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Temporary conflict embedding note {input_data.note_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Network issue embedding note {input_data.note_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
         cmd_id = get_command_id(input_data)
         logger.error(
             f"Failed to embed note {input_data.note_id} (command: {cmd_id}): {e}"
         )
-        logger.exception(e)
-
         return EmbedNoteOutput(
             success=False,
             note_id=input_data.note_id,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding note {input_data.note_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 @command(
@@ -224,7 +217,7 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -241,9 +234,9 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
     3. UPSERT insight embedding in database
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -287,34 +280,27 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
             processing_time=processing_time,
         )
 
-    except RuntimeError as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Temporary conflict embedding insight {input_data.insight_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Network issue embedding insight {input_data.insight_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
         cmd_id = get_command_id(input_data)
         logger.error(
             f"Failed to embed insight {input_data.insight_id} (command: {cmd_id}): {e}"
         )
-        logger.exception(e)
-
         return EmbedInsightOutput(
             success=False,
             insight_id=input_data.insight_id,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding insight {input_data.insight_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 @command(
@@ -325,7 +311,7 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -345,9 +331,9 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
     6. Bulk INSERT source_embedding records
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -429,28 +415,13 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             processing_time=processing_time,
         )
 
-    except RuntimeError as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Temporary conflict embedding source {input_data.source_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Network issue embedding source {input_data.source_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
         cmd_id = get_command_id(input_data)
         logger.error(
             f"Failed to embed source {input_data.source_id} (command: {cmd_id}): {e}"
         )
-        logger.exception(e)
-
         return EmbedSourceOutput(
             success=False,
             source_id=input_data.source_id,
@@ -458,6 +429,14 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 @command(
@@ -468,7 +447,7 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -488,9 +467,9 @@ async def create_insight_command(
     3. Return the insight_id
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -543,34 +522,27 @@ async def create_insight_command(
             processing_time=processing_time,
         )
 
-    except RuntimeError as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Temporary conflict creating insight for source {input_data.source_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        cmd_id = get_command_id(input_data)
-        logger.info(
-            f"Network issue creating insight for source {input_data.source_id} "
-            f"(command: {cmd_id}). This will be retried automatically."
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
         cmd_id = get_command_id(input_data)
         logger.error(
             f"Failed to create insight for source {input_data.source_id} "
             f"(command: {cmd_id}): {e}"
         )
-        logger.exception(e)
-
         return CreateInsightOutput(
             success=False,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error creating insight for source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 async def collect_items_for_rebuild(

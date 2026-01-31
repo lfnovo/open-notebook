@@ -49,12 +49,12 @@ class SourceProcessingOutput(CommandOutput):
     "process_source",
     app="open_notebook",
     retry={
-        "max_attempts": 15,  # Increased from 5 to handle deep queues (workaround for SurrealDB v2 transaction conflicts)
+        "max_attempts": 15,  # Handle deep queues (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 120,  # Increased from 30s to 120s to allow queue to drain
-        "retry_on": [RuntimeError],
-        "retry_log_level": "debug",  # Use debug level to avoid log noise during transaction conflicts
+        "wait_max": 120,  # Allow queue to drain
+        "stop_on": [ValueError],  # Don't retry validation errors
+        "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
 )
 async def process_source_command(
@@ -136,22 +136,22 @@ async def process_source_command(
             processing_time=processing_time,
         )
 
-    except RuntimeError as e:
-        # Transaction conflicts should be retried by surreal-commands
-        logger.debug(f"Transaction conflict, will retry: {e}")
-        raise
-
-    except Exception as e:
-        # Other errors are permanent failures
+    except ValueError as e:
+        # Validation errors are permanent failures - don't retry
         processing_time = time.time() - start_time
         logger.error(f"Source processing failed: {e}")
-
         return SourceProcessingOutput(
             success=False,
             source_id=input_data.source_id,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        logger.debug(
+            f"Transient error processing source {input_data.source_id}: {e}"
+        )
+        raise
 
 
 # =============================================================================
@@ -184,7 +184,7 @@ class RunTransformationOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -203,8 +203,9 @@ async def run_transformation_command(
     the HTTP request while the LLM processes.
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -244,25 +245,13 @@ async def run_transformation_command(
             processing_time=processing_time,
         )
 
-    except RuntimeError:
-        logger.debug(
-            f"Transaction conflict running transformation - will retry"
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        logger.debug(
-            f"Network/timeout error running transformation "
-            f"({type(e).__name__}: {e}) - will retry"
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Validation errors are permanent failures - don't retry
         processing_time = time.time() - start_time
         logger.error(
             f"Failed to run transformation {input_data.transformation_id} "
             f"on source {input_data.source_id}: {e}"
         )
-        logger.exception(e)
-
         return RunTransformationOutput(
             success=False,
             source_id=input_data.source_id,
@@ -270,3 +259,10 @@ async def run_transformation_command(
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        logger.debug(
+            f"Transient error running transformation {input_data.transformation_id} "
+            f"on source {input_data.source_id}: {e}"
+        )
+        raise

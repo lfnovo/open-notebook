@@ -1,0 +1,27 @@
+apiVersion: v2
+name: open-notebook
+description:  An Open Source implementation of Notebook LM with more flexibility and features
+type: application
+version: 1.0.0
+appVersion: "0.0.1"
+keywords:
+  - notebook
+  - notebooklm
+  - knowledge-management
+  - surrealdb
+home: https://github.com/lfnovo/open-notebook
+sources:
+  - https://github.com/lfnovo/open-notebook
+maintainers:
+  - name: lfnovo
+    url: https://github.com/lfnovo
+  - name: thuanpham582002
+    url: https://github.com/thuanpham582002
+annotations:
+  category: Analytics
+  licenses: MIT
+
+dependencies:
+  - name: common
+    repository: oci://registry-1.docker.io/bitnamicharts
+    version: 2.x.x

@@ -13,71 +13,43 @@ from loguru import logger
 
 from open_notebook.ai.key_provider import provision_provider_keys
 
-# Test models for each provider - uses minimal/cheapest models for testing
-# Format: (model_name, model_type)
-TEST_MODELS = {
-    "openai": ("gpt-3.5-turbo", "language"),
-    "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-1.5-flash", "language"),
-    "groq": ("llama-3.1-8b-instant", "language"),
-    "mistral": ("mistral-small-latest", "language"),
-    "deepseek": ("deepseek-chat", "language"),
-    "xai": ("grok-beta", "language"),
-    "openrouter": ("openai/gpt-3.5-turbo", "language"),
-    "voyage": ("voyage-3-lite", "embedding"),
-    "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
-    "ollama": (None, "language"),  # Dynamic - will use first available model
-    # Complex providers with additional configuration
-    "vertex": ("gemini-1.5-flash", "language"),  # Uses Google Vertex AI
-    "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
-    "openai_compatible": (None, "language"),  # Dynamic - will use first available model
-}
 
+async def _get_azure_deployment() -> Optional[str]:
+    """
+    Attempt to get an Azure OpenAI deployment name.
 
-async def _get_ollama_models(base_url: str) -> List[str]:
-    """Fetch list of available models from Ollama server."""
+    Azure requires a deployment name which varies by user configuration.
+    This function tries to list available deployments via the API.
+
+    Returns:
+        Deployment name if found, None otherwise.
+    """
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{base_url}/api/tags")
-            if response.status_code == 200:
-                data = response.json()
-                models = data.get("models", [])
-                return [m.get("name", "").split(":")[0] for m in models if m.get("name")]
-            return []
-    except Exception as e:
-        logger.debug(f"Failed to fetch Ollama models: {e}")
-        return []
+        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+        api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+        api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2023-05-15")
 
+        if not endpoint or not api_key:
+            return None
 
-async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
-    """Test Ollama server connectivity and return available model info."""
-    try:
-        # First check if server is reachable
+        # Try to list deployments
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{base_url}/api/tags")
+            # Azure OpenAI uses a different endpoint pattern for listing deployments
+            response = await client.get(
+                f"{endpoint}/openai/deployments?api-version={api_version}",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
 
             if response.status_code == 200:
                 data = response.json()
-                models = data.get("models", [])
-                model_count = len(models)
-
-                if model_count > 0:
-                    model_names = [m.get("name", "unknown") for m in models[:3]]
-                    model_list = ", ".join(model_names)
-                    if model_count > 3:
-                        model_list += f" (+{model_count - 3} more)"
-                    return True, f"Connected. {model_count} models available: {model_list}"
-                else:
-                    return True, "Connected, but no models installed. Run 'ollama pull <model>' to add models."
-            else:
-                return False, f"Server returned status {response.status_code}"
-
-    except httpx.ConnectError:
-        return False, "Cannot connect to Ollama. Is the server running? Check the URL."
-    except httpx.TimeoutException:
-        return False, "Connection timed out. Check if Ollama is running and accessible."
+                deployments = data.get("data", [])
+                if deployments:
+                    # Return the first deployment
+                    return deployments[0].get("id")
     except Exception as e:
-        return False, f"Connection error: {str(e)[:100]}"
+        logger.debug(f"Failed to get Azure deployments: {e}")
+
+    return None
 
 
 async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
@@ -119,6 +91,44 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
         return False, f"Connection error: {str(e)[:100]}"
 
 
+async def _get_azure_deployment() -> Optional[str]:
+    """
+    Attempt to get an Azure OpenAI deployment name.
+
+    Azure requires a deployment name which varies by user configuration.
+    This function tries to list available deployments via the API.
+
+    Returns:
+        Deployment name if found, None otherwise.
+    """
+    try:
+        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
+        api_key = os.environ.get("AZURE_OPENAI_API_KEY")
+        api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2023-05-15")
+
+        if not endpoint or not api_key:
+            return None
+
+        # Try to list deployments
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Azure OpenAI uses a different endpoint pattern for listing deployments
+            response = await client.get(
+                f"{endpoint}/openai/deployments?api-version={api_version}",
+                headers={"Authorization": f"Bearer {api_key}"},
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                deployments = data.get("data", [])
+                if deployments:
+                    # Return the first deployment
+                    return deployments[0].get("id")
+    except Exception as e:
+        logger.debug(f"Failed to get Azure deployments: {e}")
+
+    return None
+
+
 async def test_provider_connection(
     provider: str, model_type: str = "language"
 ) -> Tuple[bool, str]:
@@ -158,9 +168,22 @@ async def test_provider_connection(
 
         model_name, test_model_type = TEST_MODELS[normalized_provider]
 
-        # For providers with specific test models
+        # For providers with dynamic model detection (azure, openai_compatible)
         if model_name is None:
-            return False, f"No test model configured for {provider}"
+            if normalized_provider == "azure":
+                # Try to list Azure deployments via the API
+                deployment_name = await _get_azure_deployment()
+                if not deployment_name:
+                    return False, "Could not determine Azure deployment name. Please check your configuration."
+                model_name = deployment_name
+            elif normalized_provider == "openai_compatible":
+                # OpenAI-compatible servers should already be tested via _test_openai_compatible_connection
+                return await _test_openai_compatible_connection(
+                    os.environ.get("OPENAI_COMPATIBLE_API_BASE", ""),
+                    os.environ.get("OPENAI_COMPATIBLE_API_KEY")
+                )
+            else:
+                return False, f"No test model configured for {provider}"
 
         # Try to create the model and make a minimal call
         if test_model_type == "language":

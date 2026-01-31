@@ -235,7 +235,7 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 ## How to Add Configuration
 
-### Method 1: Settings UI (Recommended)
+### Method 1: Settings UI (Recommended for API Keys)
 
 The easiest way to configure API keys:
 
@@ -249,6 +249,8 @@ The easiest way to configure API keys:
 ```
 
 No file editing, no restarts. Keys stored securely in database.
+
+**Note:** While the Settings UI is recommended for API keys, some settings (like SurrealDB connection, server ports) still require environment variables or docker-compose configuration.
 
 → **[Full Guide: API Configuration](../3-USER-GUIDE/api-configuration.md)**
 

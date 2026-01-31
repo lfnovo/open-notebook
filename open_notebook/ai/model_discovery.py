@@ -232,10 +232,10 @@ async def discover_google_models() -> List[DiscoveredModel]:
     models = []
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"https://generativelanguage.googleapis.com/v1/models?key={api_key}",
-                timeout=30.0,
-            )
+            # Build URL without logging the key to avoid exposure
+            url = "https://generativelanguage.googleapis.com/v1/models"
+            headers = {"X-Goog-Api-Key": api_key}
+            response = await client.get(url, headers=headers, timeout=30.0)
             response.raise_for_status()
             data = response.json()
 
@@ -260,7 +260,8 @@ async def discover_google_models() -> List[DiscoveredModel]:
                         )
                     )
     except Exception as e:
-        logger.warning(f"Failed to discover Google models: {e}")
+        # Log without exposing the API key in the message
+        logger.warning(f"Failed to discover Google models: {type(e).__name__}")
 
     return models
 
@@ -579,19 +580,29 @@ async def sync_provider_models(
     if not auto_register:
         return discovered_count, 0, 0
 
-    for model in discovered:
-        # Check if model already exists
-        existing = await repo_query(
-            "SELECT * FROM model WHERE string::lowercase(provider) = $provider "
-            "AND string::lowercase(name) = $name AND string::lowercase(type) = $type LIMIT 1",
-            {
-                "provider": model.provider.lower(),
-                "name": model.name.lower(),
-                "type": model.model_type.lower(),
-            },
-        )
+    if not discovered:
+        return 0, 0, 0
 
-        if existing:
+    # Batch fetch existing models to avoid N+1 query pattern
+    try:
+        existing_models = await repo_query(
+            "SELECT string::lowercase(name) as name, string::lowercase(type) as type FROM model "
+            "WHERE string::lowercase(provider) = $provider",
+            {"provider": provider.lower()},
+        )
+        # Create a set of (name, type) tuples for O(1) lookup
+        existing_keys = set()
+        for m in existing_models:
+            existing_keys.add((m.get("name", ""), m.get("type", "")))
+    except Exception as e:
+        logger.warning(f"Failed to fetch existing models for {provider}: {e}")
+        existing_keys = set()
+
+    for model in discovered:
+        model_key = (model.name.lower(), model.model_type.lower())
+
+        # Check if model already exists using pre-fetched data
+        if model_key in existing_keys:
             existing_count += 1
             continue
 

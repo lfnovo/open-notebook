@@ -12,7 +12,7 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.ai.key_provider import provision_all_keys
+from open_notebook.ai.key_provider import get_api_key, get_provider_config
 from open_notebook.ai.model_discovery import (
     discover_provider_models,
     get_provider_model_count,
@@ -313,37 +313,34 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
 async def get_provider_availability():
     """Get provider availability based on database config and environment variables."""
     try:
-        # First, provision all keys from database to environment variables
-        # This ensures we check both DB and env vars for availability
-        await provision_all_keys()
+        # Check which providers have API keys configured (check both DB and env vars)
+        # Use get_api_key() which checks DB first, then falls back to env var
+        # This avoids mutating global os.environ state
 
-        # Check which providers have API keys configured (now includes DB keys)
         provider_status = {
-            "ollama": os.environ.get("OLLAMA_API_BASE") is not None,
-            "openai": os.environ.get("OPENAI_API_KEY") is not None,
-            "groq": os.environ.get("GROQ_API_KEY") is not None,
-            "xai": os.environ.get("XAI_API_KEY") is not None,
+            "ollama": os.environ.get("OLLAMA_API_BASE") is not None or await get_api_key("ollama") is not None,
+            "openai": await get_api_key("openai") is not None,
+            "groq": await get_api_key("groq") is not None,
+            "xai": await get_api_key("xai") is not None,
             "vertex": (
-                os.environ.get("VERTEX_PROJECT") is not None
-                and os.environ.get("VERTEX_LOCATION") is not None
-                and os.environ.get("GOOGLE_APPLICATION_CREDENTIALS") is not None
+                await get_api_key("vertex") is not None  # This checks all vertex fields
             ),
             "google": (
-                os.environ.get("GOOGLE_API_KEY") is not None
+                await get_api_key("google") is not None
                 or os.environ.get("GEMINI_API_KEY") is not None
             ),
-            "openrouter": os.environ.get("OPENROUTER_API_KEY") is not None,
-            "anthropic": os.environ.get("ANTHROPIC_API_KEY") is not None,
-            "elevenlabs": os.environ.get("ELEVENLABS_API_KEY") is not None,
-            "voyage": os.environ.get("VOYAGE_API_KEY") is not None,
+            "openrouter": await get_api_key("openrouter") is not None,
+            "anthropic": await get_api_key("anthropic") is not None,
+            "elevenlabs": await get_api_key("elevenlabs") is not None,
+            "voyage": await get_api_key("voyage") is not None,
             "azure": (
                 _check_azure_support("LLM")
                 or _check_azure_support("EMBEDDING")
                 or _check_azure_support("STT")
                 or _check_azure_support("TTS")
             ),
-            "mistral": os.environ.get("MISTRAL_API_KEY") is not None,
-            "deepseek": os.environ.get("DEEPSEEK_API_KEY") is not None,
+            "mistral": await get_api_key("mistral") is not None,
+            "deepseek": await get_api_key("deepseek") is not None,
             "openai-compatible": (
                 _check_openai_compatible_support("LLM")
                 or _check_openai_compatible_support("EMBEDDING")
@@ -424,8 +421,9 @@ async def discover_models(provider: str):
     to both discover and register models.
     """
     try:
-        # Provision keys from database first
-        await provision_all_keys()
+        # Provision keys for this specific provider (not all keys)
+        from open_notebook.ai.key_provider import provision_provider_keys
+        await provision_provider_keys(provider)
 
         discovered = await discover_provider_models(provider)
         return [
@@ -440,7 +438,7 @@ async def discover_models(provider: str):
     except Exception as e:
         logger.error(f"Error discovering models for {provider}: {str(e)}")
         raise HTTPException(
-            status_code=500, detail=f"Error discovering models: {str(e)}"
+            status_code=500, detail="Error discovering models. Check server logs for details."
         )
 
 
@@ -455,8 +453,9 @@ async def sync_models(provider: str):
     Returns counts of discovered, new, and existing models.
     """
     try:
-        # Provision keys from database first
-        await provision_all_keys()
+        # Provision keys for this specific provider (not all keys)
+        from open_notebook.ai.key_provider import provision_provider_keys
+        await provision_provider_keys(provider)
 
         discovered, new, existing = await sync_provider_models(
             provider, auto_register=True
@@ -469,7 +468,7 @@ async def sync_models(provider: str):
         )
     except Exception as e:
         logger.error(f"Error syncing models for {provider}: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error syncing models: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error syncing models. Check server logs for details.")
 
 
 @router.post("/models/sync", response_model=AllProvidersSyncResponse)
@@ -482,7 +481,8 @@ async def sync_all_models():
     or periodic refresh of available models.
     """
     try:
-        # Provision keys from database first
+        # Provision all keys from database to environment variables
+        from open_notebook.ai.key_provider import provision_all_keys
         await provision_all_keys()
 
         results = await sync_all_providers()

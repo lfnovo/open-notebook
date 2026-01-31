@@ -8,6 +8,7 @@ NEVER returns actual API key values - only status information.
 
 import ipaddress
 import os
+import socket
 from typing import Dict, Literal
 from urllib.parse import urlparse
 
@@ -38,7 +39,8 @@ def _validate_url(url: str, provider: str) -> None:
     We only block:
     - Invalid schemes (must be http or https)
     - Malformed URLs
-    - Link-local addresses (169.254.x - cloud metadata endpoints)
+    - Link-local addresses (169.254.x.x) - used for cloud metadata endpoints
+    - Hostnames that resolve to link-local addresses
 
     Args:
         url: The URL to validate
@@ -82,15 +84,33 @@ def _validate_url(url: str, provider: str) -> None:
                 )
 
         except ValueError:
-            # Not an IP address, it's a hostname - this is fine
-            pass
+            # Not an IP address, it's a hostname - need to resolve and check
+            try:
+                # Resolve hostname to IP address
+                resolved_ips = socket.getaddrinfo(hostname, None)
+                for family, _, _, _, sockaddr in resolved_ips:
+                    ip_addr = sockaddr[0]
+                    try:
+                        parsed_ip = ipaddress.ip_address(ip_addr)
+                        if parsed_ip.is_link_local:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Hostname '{hostname}' resolves to a link-local address (169.254.x.x) which is not allowed for security reasons. "
+                                "These addresses are used for cloud metadata endpoints.",
+                            )
+                    except ValueError:
+                        # Skip non-IP addresses (e.g., IPv6 zones)
+                        continue
+            except socket.gaierror:
+                # Could not resolve hostname - allow it but log a warning
+                logger.warning(f"Could not resolve hostname '{hostname}' for SSRF check")
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid URL format: {str(e)}",
+            detail="Invalid URL format. Check server logs for details.",
         )
 
 

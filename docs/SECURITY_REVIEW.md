@@ -18,7 +18,7 @@ Security review of the API key management implementation for Open Notebook. The 
 | Fernet encryption implemented | PASS | `open_notebook/utils/encryption.py` uses AES-128-CBC + HMAC-SHA256 |
 | Keys encrypted before DB storage | PASS | `encrypt_value()` applied on save |
 | Keys decrypted only when needed | PASS | `decrypt_value()` called when reading |
-| Default key for easy setup | PASS | Derived from "0p3n-N0t3b0ok" when not configured |
+| Encryption key required | PASS | No default key; ValueError if not configured |
 | Docker secrets support | PASS | `_FILE` suffix pattern supported |
 | Documented in .env.example | PASS | Encryption key documented |
 
@@ -88,10 +88,9 @@ Security review of the API key management implementation for Open Notebook. The 
 
 The API Configuration UI implementation meets security requirements:
 
-- API keys encrypted at rest using Fernet
+- API keys encrypted at rest using Fernet (key must be explicitly configured)
 - Keys never returned to frontend
 - URL validation prevents SSRF attacks
-- Default credentials provided for easy setup with warnings
 - Docker secrets supported for production deployments
 
 **Review Status: PASS**

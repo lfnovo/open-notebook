@@ -363,6 +363,10 @@ async def provision_all_keys() -> dict[str, bool]:
     """
     Provision environment variables from database for all providers.
 
+    NOTE: This function is deprecated for request-time use because it can leave
+    stale env vars after key deletion. Keys should only be provisioned at startup
+    or via provision_provider_keys() for specific providers.
+
     Useful at application startup to load all DB-stored keys into environment.
 
     Returns:
@@ -380,3 +384,76 @@ async def provision_all_keys() -> dict[str, bool]:
     results["openai_compatible"] = await provision_provider_keys("openai_compatible")
 
     return results
+
+
+# Alternative function that uses fresh DB values instead of modifying os.environ
+async def get_provider_config(provider: str) -> Optional[dict]:
+    """
+    Get provider configuration directly from database.
+
+    This is a cleaner alternative to provision_provider_keys() that doesn't
+    modify global state. Returns the configuration values without setting env vars.
+
+    Args:
+        provider: Provider name
+
+    Returns:
+        Dict with configuration values, or None if not configured
+    """
+    provider_lower = provider.lower()
+
+    try:
+        api_config = await APIKeyConfig.get_instance()
+
+        if provider_lower == "vertex":
+            config = {}
+            for key, cfg in VERTEX_CONFIG.items():
+                db_value = getattr(api_config, cfg["config_field"], None)
+                if db_value:
+                    config[key] = db_value
+            return config if config else None
+
+        elif provider_lower == "azure":
+            config = {}
+            for key, cfg in AZURE_CONFIG.items():
+                db_value = getattr(api_config, cfg["config_field"], None)
+                if db_value:
+                    if hasattr(db_value, "get_secret_value"):
+                        value = db_value.get_secret_value()
+                    else:
+                        value = db_value
+                    if value:
+                        config[key] = value
+            return config if config else None
+
+        elif provider_lower in ("openai-compatible", "openai_compatible"):
+            config = {}
+            for key, cfg in OPENAI_COMPATIBLE_CONFIG.items():
+                db_value = getattr(api_config, cfg["config_field"], None)
+                if db_value:
+                    if hasattr(db_value, "get_secret_value"):
+                        value = db_value.get_secret_value()
+                    else:
+                        value = db_value
+                    if value:
+                        config[key] = value
+            return config if config else None
+
+        else:
+            config_info = PROVIDER_CONFIG.get(provider_lower)
+            if not config_info:
+                return None
+
+            db_value = getattr(api_config, config_info["config_field"], None)
+            if db_value:
+                if hasattr(db_value, "get_secret_value"):
+                    value = db_value.get_secret_value()
+                else:
+                    value = db_value
+                if value:
+                    return {config_info["env_var"]: value}
+
+    except Exception as e:
+        logger.debug(f"Could not load provider config from database for {provider}: {e}")
+
+    return None

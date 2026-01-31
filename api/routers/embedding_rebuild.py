@@ -149,21 +149,21 @@ async def get_rebuild_status(command_id: str):
             result = status.result
 
             # Build progress info
-            if "total_items" in result and "processed_items" in result:
+            if "total_items" in result and "jobs_submitted" in result:
                 total = result["total_items"]
-                processed = result["processed_items"]
+                submitted = result["jobs_submitted"]
                 response.progress = RebuildProgress(
-                    processed=processed,
+                    processed=submitted,
                     total=total,
-                    percentage=round((processed / total * 100) if total > 0 else 0, 2),
+                    percentage=round((submitted / total * 100) if total > 0 else 0, 2),
                 )
 
             # Build stats
             response.stats = RebuildStats(
-                sources=result.get("sources_processed", 0),
-                notes=result.get("notes_processed", 0),
-                insights=result.get("insights_processed", 0),
-                failed=result.get("failed_items", 0),
+                sources=result.get("sources_submitted", 0),
+                notes=result.get("notes_submitted", 0),
+                insights=result.get("insights_submitted", 0),
+                failed=result.get("failed_submissions", 0),
             )
 
         # Add timestamps

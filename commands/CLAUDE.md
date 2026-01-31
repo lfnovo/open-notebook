@@ -23,8 +23,8 @@
 ## Important Patterns
 
 - **Pydantic I/O**: All commands use `CommandInput`/`CommandOutput` subclasses for type safety and serialization.
-- **Error handling**: Permanent errors return failure output; `RuntimeError` exceptions auto-retry via surreal-commands.
-- **Retry configuration**: Embedding commands use moderate retry settings (5 attempts, 1-60s backoff). Retries handle transient failures (RuntimeError, ConnectionError, TimeoutError).
+- **Error handling**: Permanent errors (ValueError) return failure output; all other exceptions auto-retry via surreal-commands.
+- **Retry configuration**: Uses `stop_on: [ValueError]` (blocklist approach) - retries all exceptions EXCEPT ValueError. This is more resilient than allowlist as new exception types auto-retry.
 - **Fire-and-forget embedding**: Domain models submit embed_* commands via `submit_command()` without waiting. Commands process asynchronously.
 - **Content-type aware chunking**: `embed_source_command` uses `chunk_text()` with automatic content type detection (HTML, Markdown, plain text) for optimal text splitting. Default: 1500 char chunks with 225 char overlap.
 - **Batch embedding**: `embed_source_command` uses `generate_embeddings()` for single API call efficiency instead of per-chunk calls.
@@ -40,8 +40,8 @@
 
 ## Quirks & Edge Cases
 
-- **source_commands**: `ensure_record_id()` wraps command IDs for DB storage; transaction conflicts trigger exponential backoff retry. Non-`RuntimeError` exceptions are permanent.
-- **embedding_commands**: Content type detection uses file extension as primary source, heuristics as fallback. Chunks >1800 chars trigger secondary splitting. Empty/whitespace-only content returns early.
+- **source_commands**: `ensure_record_id()` wraps command IDs for DB storage; transaction conflicts trigger exponential backoff retry. ValueError exceptions are permanent (not retried).
+- **embedding_commands**: Content type detection uses file extension as primary source, heuristics as fallback. Chunks >1800 chars trigger secondary splitting. Empty/whitespace-only content returns ValueError (not retried).
 - **rebuild_embeddings_command**: Returns "jobs_submitted" not "processed_items" - embedding is async. Individual commands handle failures with their own retries.
 - **podcast_commands**: Profiles loaded from SurrealDB by name (must exist); briefing can be extended with suffix. Episode records created mid-execution.
 - **Example commands**: Accept optional `delay_seconds` for testing async behavior; not for production.
@@ -49,7 +49,11 @@
 ## Code Example
 
 ```python
-@command("process_source", app="open_notebook", retry={...})
+@command("process_source", app="open_notebook", retry={
+    "max_attempts": 5,
+    "wait_strategy": "exponential_jitter",
+    "stop_on": [ValueError],  # Don't retry validation errors
+})
 async def process_source_command(input_data: SourceProcessingInput) -> SourceProcessingOutput:
     start_time = time.time()
     try:
@@ -57,8 +61,8 @@ async def process_source_command(input_data: SourceProcessingInput) -> SourcePro
         source = await Source.get(input_data.source_id)
         result = await source_graph.ainvoke({...})
         return SourceProcessingOutput(success=True, ...)
-    except RuntimeError as e:
-        raise  # Retry this
+    except ValueError as e:
+        return SourceProcessingOutput(success=False, error_message=str(e))  # No retry
     except Exception as e:
-        return SourceProcessingOutput(success=False, error_message=str(e))
+        raise  # Retry all other exceptions
 ```

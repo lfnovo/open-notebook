@@ -97,19 +97,45 @@ MODEL_PREFERENCES = {
 }
 
 
-def _check_openai_compatible_support(mode: str) -> bool:
-    """
-    Check if OpenAI-compatible provider is available for a specific mode.
+async def _check_azure_support_db() -> bool:
+    """Check if Azure is configured in database."""
+    from open_notebook.domain.api_key_config import APIKeyConfig
+    try:
+        config = await APIKeyConfig.get_instance()
+        key = getattr(config, "azure_openai_api_key", None)
+        endpoint = getattr(config, "azure_openai_endpoint", None)
+        api_version = getattr(config, "azure_openai_api_version", None)
+        if key and endpoint and api_version:
+            if hasattr(key, "get_secret_value"):
+                key = key.get_secret_value()
+            return bool(key and endpoint and api_version)
+    except Exception:
+        pass
+    return False
 
-    Args:
-        mode: One of 'LLM', 'EMBEDDING', 'STT', 'TTS'
 
-    Returns:
-        bool: True if either generic or mode-specific env var is set
-    """
-    generic = os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
-    specific = os.environ.get(f"OPENAI_COMPATIBLE_BASE_URL_{mode}") is not None
-    return generic or specific
+async def _check_openai_compatible_support_db() -> bool:
+    """Check if OpenAI-compatible is configured in database."""
+    from open_notebook.domain.api_key_config import APIKeyConfig
+    try:
+        config = await APIKeyConfig.get_instance()
+        base_url = getattr(config, "openai_compatible_base_url", None)
+        api_key = getattr(config, "openai_compatible_api_key", None)
+        if base_url:
+            return True
+        if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
+            return True
+        # Check mode-specific
+        for suffix in ["_llm", "_embedding", "_stt", "_tts"]:
+            base_url_suffix = getattr(config, f"openai_compatible_base_url{suffix}", None)
+            api_key_suffix = getattr(config, f"openai_compatible_api_key{suffix}", None)
+            if base_url_suffix:
+                return True
+            if api_key_suffix and hasattr(api_key_suffix, "get_secret_value") and api_key_suffix.get_secret_value():
+                return True
+    except Exception:
+        pass
+    return False
 
 
 def _check_azure_support(mode: str) -> bool:
@@ -137,6 +163,23 @@ def _check_azure_support(mode: str) -> bool:
     )
 
     return generic or specific
+
+
+def _check_openai_compatible_support(mode: str) -> bool:
+    """
+    Check if OpenAI-compatible provider is available for a specific mode.
+
+    Args:
+        mode: One of 'LLM', 'EMBEDDING', 'STT', 'TTS'
+
+    Returns:
+        bool: True if either generic or mode-specific env var is set
+    """
+    generic = os.environ.get("OPENAI_COMPATIBLE_BASE_URL") is not None
+    specific = os.environ.get(f"OPENAI_COMPATIBLE_BASE_URL_{mode}") is not None
+    generic_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY") is not None
+    specific_key = os.environ.get(f"OPENAI_COMPATIBLE_API_KEY_{mode}") is not None
+    return generic or specific or generic_key or specific_key
 
 
 @router.get("/models", response_model=List[ModelResponse])
@@ -313,6 +356,10 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
 async def get_provider_availability():
     """Get provider availability based on database config and environment variables."""
     try:
+        # Check DB configuration for azure and openai-compatible first
+        azure_db = await _check_azure_support_db()
+        openai_compatible_db = await _check_openai_compatible_support_db()
+
         # Check which providers have API keys configured (check both DB and env vars)
         # Use get_api_key() which checks DB first, then falls back to env var
         # This avoids mutating global os.environ state
@@ -333,7 +380,7 @@ async def get_provider_availability():
             "anthropic": await get_api_key("anthropic") is not None,
             "elevenlabs": await get_api_key("elevenlabs") is not None,
             "voyage": await get_api_key("voyage") is not None,
-            "azure": (
+            "azure": azure_db or (
                 _check_azure_support("LLM")
                 or _check_azure_support("EMBEDDING")
                 or _check_azure_support("STT")
@@ -341,7 +388,7 @@ async def get_provider_availability():
             ),
             "mistral": await get_api_key("mistral") is not None,
             "deepseek": await get_api_key("deepseek") is not None,
-            "openai-compatible": (
+            "openai-compatible": openai_compatible_db or (
                 _check_openai_compatible_support("LLM")
                 or _check_openai_compatible_support("EMBEDDING")
                 or _check_openai_compatible_support("STT")

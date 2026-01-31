@@ -122,15 +122,16 @@ def decrypt_value(value: str) -> str:
     """
     Decrypt a Fernet-encrypted string value.
 
+    Handles graceful fallback for legacy unencrypted data.
+
     Args:
         value: The encrypted string (or plain text for legacy data).
 
     Returns:
-        Decrypted plain text string.
+        Decrypted plain text string, or original value if not encrypted.
 
     Raises:
-        ValueError: If decryption fails or encryption is not configured.
-        InvalidToken: If the value is not valid encrypted data.
+        ValueError: If encryption key is not configured.
     """
     fernet = get_fernet()
     if not fernet:
@@ -139,14 +140,11 @@ def decrypt_value(value: str) -> str:
         return fernet.decrypt(value.encode()).decode()
     except InvalidToken:
         # Value might not be encrypted (legacy data)
-        # This is expected for existing unencrypted keys
-        raise ValueError(
-            "Decryption failed: value is not encrypted or uses a different key. "
-            "If this is legacy unencrypted data, you may need to manually migrate it."
-        )
+        # Return as-is for backward compatibility
+        return value
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
-        raise ValueError(f"Decryption failed: {str(e)}")
+        return value
 
 
 def generate_key() -> str:

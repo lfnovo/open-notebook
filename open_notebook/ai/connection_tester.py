@@ -90,45 +90,6 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
     except Exception as e:
         return False, f"Connection error: {str(e)[:100]}"
 
-
-async def _get_azure_deployment() -> Optional[str]:
-    """
-    Attempt to get an Azure OpenAI deployment name.
-
-    Azure requires a deployment name which varies by user configuration.
-    This function tries to list available deployments via the API.
-
-    Returns:
-        Deployment name if found, None otherwise.
-    """
-    try:
-        endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT")
-        api_key = os.environ.get("AZURE_OPENAI_API_KEY")
-        api_version = os.environ.get("AZURE_OPENAI_API_VERSION", "2023-05-15")
-
-        if not endpoint or not api_key:
-            return None
-
-        # Try to list deployments
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            # Azure OpenAI uses a different endpoint pattern for listing deployments
-            response = await client.get(
-                f"{endpoint}/openai/deployments?api-version={api_version}",
-                headers={"Authorization": f"Bearer {api_key}"},
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                deployments = data.get("data", [])
-                if deployments:
-                    # Return the first deployment
-                    return deployments[0].get("id")
-    except Exception as e:
-        logger.debug(f"Failed to get Azure deployments: {e}")
-
-    return None
-
-
 async def test_provider_connection(
     provider: str, model_type: str = "language"
 ) -> Tuple[bool, str]:

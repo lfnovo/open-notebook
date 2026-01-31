@@ -570,8 +570,10 @@ async def collect_items_for_rebuild(
             else:
                 items["sources"] = []
         else:  # mode == "all"
-            # Query all sources with content
-            result = await repo_query("SELECT id FROM source WHERE full_text != none")
+            # Query all sources with non-empty content
+            result = await repo_query(
+                "SELECT id FROM source WHERE full_text != none AND string::trim(full_text) != ''"
+            )
             items["sources"] = [str(item["id"]) for item in result] if result else []
 
         logger.info(f"Collected {len(items['sources'])} sources for rebuild")
@@ -583,8 +585,10 @@ async def collect_items_for_rebuild(
                 "SELECT id FROM note WHERE embedding != none AND array::len(embedding) > 0"
             )
         else:  # mode == "all"
-            # Query all notes (with content)
-            result = await repo_query("SELECT id FROM note WHERE content != none")
+            # Query all notes with non-empty content
+            result = await repo_query(
+                "SELECT id FROM note WHERE content != none AND string::trim(content) != ''"
+            )
 
         items["notes"] = [str(item["id"]) for item in result] if result else []
         logger.info(f"Collected {len(items['notes'])} notes for rebuild")
@@ -596,8 +600,10 @@ async def collect_items_for_rebuild(
                 "SELECT id FROM source_insight WHERE embedding != none AND array::len(embedding) > 0"
             )
         else:  # mode == "all"
-            # Query all insights
-            result = await repo_query("SELECT id FROM source_insight")
+            # Query all insights with non-empty content
+            result = await repo_query(
+                "SELECT id FROM source_insight WHERE content != none AND string::trim(content) != ''"
+            )
 
         items["insights"] = [str(item["id"]) for item in result] if result else []
         logger.info(f"Collected {len(items['insights'])} insights for rebuild")

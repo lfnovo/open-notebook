@@ -28,6 +28,7 @@ export const zhCN = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    french: "Français",
     source: "来源",
     notebook: "笔记本",
     podcast: "播客",
@@ -128,8 +129,6 @@ export const zhCN = {
     editTransformation: "编辑转换规则",
     comingSoon: "敬请期待",
     retry: "重试",
-    traditionalChinese: "繁体中文",
-    portuguese: "葡萄牙语",
     completed: "已完成",
     saveSuccess: "保存成功",
     contextModes: {

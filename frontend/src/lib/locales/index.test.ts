@@ -3,6 +3,7 @@ import { enUS } from './en-US'
 import { zhCN } from './zh-CN'
 import { zhTW } from './zh-TW'
 import { jaJP } from './ja-JP'
+import { frFR } from './fr-FR'
 
 describe('Internationalization Locales Integrity', () => {
   const getKeys = (obj: Record<string, unknown>, prefix = ''): string[] => {
@@ -19,6 +20,7 @@ describe('Internationalization Locales Integrity', () => {
   const zhCNKeys = getKeys(zhCN)
   const zhTWKeys = getKeys(zhTW)
   const jaJPKeys = getKeys(jaJP)
+  const frFRKeys = getKeys(frFR)
 
   it('zh-CN should have the same keys as en-US', () => {
     const missingInZhCN = enKeys.filter(key => !zhCNKeys.includes(key))
@@ -43,4 +45,14 @@ describe('Internationalization Locales Integrity', () => {
     expect(missingInJaJP, `Missing keys in ja-JP: ${missingInJaJP.join(', ')}`).toEqual([])
     expect(extraInJaJP, `Extra keys in ja-JP: ${extraInJaJP.join(', ')}`).toEqual([])
   })
+
+
+  it('fr-FR should have the same keys as en-US', () => {
+    const missingInFrFR = enKeys.filter(key => !frFRKeys.includes(key))
+    const extraInFrFR = frFRKeys.filter(key => !enKeys.includes(key))
+
+    expect(missingInFrFR, `Missing keys in fr-FR: ${missingInFrFR.join(', ')}`).toEqual([])
+    expect(extraInFrFR, `Extra keys in fr-FR: ${extraInFrFR.join(', ')}`).toEqual([])
+  })
+  
 })

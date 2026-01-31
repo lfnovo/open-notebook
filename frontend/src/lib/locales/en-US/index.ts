@@ -23,6 +23,7 @@ export const enUS = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    french: "Français",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",

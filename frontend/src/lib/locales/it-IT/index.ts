@@ -911,7 +911,7 @@ export const itIT = {
     showMore: "Mostra altri {count}",
     deleteModel: "Elimina modello",
     deleteModelDesc: "Sei sicuro di voler eliminare \"{name}\"? Questa azione non può essere annullata.",
-    defaultAssignments: "Assegnazioni modellipPredefiniti",
+    defaultAssignments: "Assegnazioni modelli predefiniti",
     defaultAssignmentsDesc: "Configura quali modelli usare per diversi scopi in Open Notebook",
     missingRequiredModels: "Modelli richiesti mancanti: {models}. Open Notebook potrebbe non funzionare correttamente senza questi.",
     selectModelPlaceholder: "Seleziona un modello",

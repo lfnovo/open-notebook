@@ -2469,7 +2469,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5.5" },
-    { name = "surreal-commands", specifier = ">=1.3.0,<2" },
+    { name = "surreal-commands", specifier = ">=1.3.1,<2" },
     { name = "surrealdb", specifier = ">=1.0.4" },
     { name = "tiktoken", specifier = ">=0.12.0" },
     { name = "tomli", specifier = ">=2.0.2" },
@@ -3808,7 +3808,7 @@ wheels = [
 
 [[package]]
 name = "surreal-commands"
-version = "1.3.0"
+version = "1.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "humanize" },
@@ -3821,9 +3821,9 @@ dependencies = [
     { name = "tenacity" },
     { name = "typer" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2f/0b/0acea0ee41d2fe815cefdd2948b1bc49e50e9697e74f0f85069c22cc9bbe/surreal_commands-1.3.0.tar.gz", hash = "sha256:86984b8572ece504f3261a65e655977f91689203320a9f6ada0749ada35d1158", size = 209567, upload-time = "2026-01-05T13:48:41.55Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bb/be/771de2c596f63765b16f0e3d88dae6122757b2dcc7879157bbd7f0c15db9/surreal_commands-1.3.1.tar.gz", hash = "sha256:fef18d7b99cb3ac8724b0928cf8f4b034c9ff11610576311c3246ee52913579e", size = 209745, upload-time = "2026-01-31T21:56:13.852Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/5c/6ca879072f576f611a78ba761610e3787422b7a96feb25c6c33c72b0bcdf/surreal_commands-1.3.0-py3-none-any.whl", hash = "sha256:c0787f0111788b8e1852e816865f1ca51e5498d42b4216f3daefd53e30a2cffc", size = 38640, upload-time = "2026-01-05T13:48:43.021Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/77/c04722dc08e65ee98b4e74002b142ce12c34f170c1c557744c7c1acddd07/surreal_commands-1.3.1-py3-none-any.whl", hash = "sha256:45422eae761f106e4e71ffdcb4848eb2e365b10a2dc6040d032ab1ee2a0472e8", size = 38821, upload-time = "2026-01-31T21:56:12.939Z" },
 ]
 
 [[package]]

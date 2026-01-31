@@ -7,8 +7,13 @@ Supports HTML, Markdown, and plain text with appropriate splitters for each type
 Key functions:
 - detect_content_type(): Detects content type from file extension or content heuristics
 - chunk_text(): Splits text into chunks using appropriate splitter for content type
+
+Environment Variables:
+    OPEN_NOTEBOOK_CHUNK_SIZE: Maximum chunk size in characters (default: 1200)
+    OPEN_NOTEBOOK_CHUNK_OVERLAP: Overlap between chunks in characters (default: 15% of CHUNK_SIZE)
 """
 
+import os
 import re
 from enum import Enum
 from pathlib import Path
@@ -21,10 +26,70 @@ from langchain_text_splitters import (
 )
 from loguru import logger
 
-# Constants
-CHUNK_SIZE = 1200  # characters
-CHUNK_OVERLAP = 180  # 15% of chunk size
+
+def _get_chunk_size() -> int:
+    """Get chunk size from environment variable or use default."""
+    chunk_size_str = os.getenv("OPEN_NOTEBOOK_CHUNK_SIZE")
+    if chunk_size_str:
+        try:
+            chunk_size = int(chunk_size_str)
+            if chunk_size < 100:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_CHUNK_SIZE ({chunk_size}) is too small. "
+                    f"Using minimum value of 100."
+                )
+                return 100
+            if chunk_size > 8192:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_CHUNK_SIZE ({chunk_size}) is very large. "
+                    f"This may cause issues with some embedding models."
+                )
+            logger.info(f"Using custom chunk size: {chunk_size} characters")
+            return chunk_size
+        except ValueError:
+            logger.warning(
+                f"Invalid OPEN_NOTEBOOK_CHUNK_SIZE value: '{chunk_size_str}'. "
+                f"Using default: 1200"
+            )
+    return 1200
+
+
+def _get_chunk_overlap(chunk_size: int) -> int:
+    """Get chunk overlap from environment variable or calculate default (15% of chunk size)."""
+    overlap_str = os.getenv("OPEN_NOTEBOOK_CHUNK_OVERLAP")
+    if overlap_str:
+        try:
+            overlap = int(overlap_str)
+            if overlap < 0:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_CHUNK_OVERLAP ({overlap}) cannot be negative. "
+                    f"Using 0."
+                )
+                return 0
+            if overlap >= chunk_size:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_CHUNK_OVERLAP ({overlap}) cannot be >= chunk size ({chunk_size}). "
+                    f"Using 15% of chunk size: {int(chunk_size * 0.15)}"
+                )
+                return int(chunk_size * 0.15)
+            logger.info(f"Using custom chunk overlap: {overlap} characters")
+            return overlap
+        except ValueError:
+            logger.warning(
+                f"Invalid OPEN_NOTEBOOK_CHUNK_OVERLAP value: '{overlap_str}'. "
+                f"Using default: 15% of chunk size"
+            )
+    return int(chunk_size * 0.15)
+
+
+# Constants (computed at import time from environment variables)
+CHUNK_SIZE = _get_chunk_size()
+CHUNK_OVERLAP = _get_chunk_overlap(CHUNK_SIZE)
 HIGH_CONFIDENCE_THRESHOLD = 0.8  # Threshold for heuristics to override extension
+
+logger.debug(
+    f"Chunking configuration: CHUNK_SIZE={CHUNK_SIZE}, CHUNK_OVERLAP={CHUNK_OVERLAP}"
+)
 
 
 class ContentType(Enum):

@@ -47,6 +47,23 @@ class RebuildEmbeddingsOutput(CommandOutput):
 # =============================================================================
 
 
+class CreateInsightInput(CommandInput):
+    """Input for creating a source insight with automatic retry on conflicts."""
+
+    source_id: str
+    insight_type: str
+    content: str
+
+
+class CreateInsightOutput(CommandOutput):
+    """Output from insight creation command."""
+
+    success: bool
+    insight_id: Optional[str] = None
+    processing_time: float
+    error_message: Optional[str] = None
+
+
 class EmbedNoteInput(CommandInput):
     """Input for embedding a single note."""
 
@@ -407,6 +424,115 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             success=False,
             source_id=input_data.source_id,
             chunks_created=0,
+            processing_time=processing_time,
+            error_message=str(e),
+        )
+
+
+@command(
+    "create_insight",
+    app="open_notebook",
+    retry={
+        "max_attempts": 5,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 60,
+        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "retry_log_level": "debug",
+    },
+)
+async def create_insight_command(
+    input_data: CreateInsightInput,
+) -> CreateInsightOutput:
+    """
+    Create a source insight with automatic retry on transaction conflicts.
+
+    This command wraps the CREATE source_insight operation with retry logic
+    to handle SurrealDB transaction conflicts that occur during batch imports
+    when multiple parallel transformations try to create insights concurrently.
+
+    Flow:
+    1. CREATE source_insight record in database
+    2. Submit embed_insight command (fire-and-forget) for async embedding
+    3. Return the insight_id
+
+    Retry Strategy:
+    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Uses exponential-jitter backoff (1-60s)
+    - Does NOT retry permanent failures (ValueError, authentication errors)
+    """
+    start_time = time.time()
+
+    try:
+        logger.info(
+            f"Creating insight for source {input_data.source_id}: "
+            f"type={input_data.insight_type}"
+        )
+
+        # 1. Create insight record in database
+        result = await repo_query(
+            """
+            CREATE source_insight CONTENT {
+                "source": $source_id,
+                "insight_type": $insight_type,
+                "content": $content
+            };
+            """,
+            {
+                "source_id": ensure_record_id(input_data.source_id),
+                "insight_type": input_data.insight_type,
+                "content": input_data.content,
+            },
+        )
+
+        if not result or len(result) == 0:
+            raise ValueError("Failed to create insight - no result returned")
+
+        insight_id = str(result[0].get("id", ""))
+        if not insight_id:
+            raise ValueError("Failed to create insight - no ID in result")
+
+        # 2. Submit embedding command (fire-and-forget)
+        submit_command(
+            "open_notebook",
+            "embed_insight",
+            {"insight_id": insight_id},
+        )
+        logger.debug(f"Submitted embed_insight command for {insight_id}")
+
+        processing_time = time.time() - start_time
+        logger.info(
+            f"Successfully created insight {insight_id} for source "
+            f"{input_data.source_id} in {processing_time:.2f}s"
+        )
+
+        return CreateInsightOutput(
+            success=True,
+            insight_id=insight_id,
+            processing_time=processing_time,
+        )
+
+    except RuntimeError:
+        logger.debug(
+            f"Transaction conflict creating insight for source "
+            f"{input_data.source_id} - will retry"
+        )
+        raise
+    except (ConnectionError, TimeoutError) as e:
+        logger.debug(
+            f"Network/timeout error creating insight for source "
+            f"{input_data.source_id} ({type(e).__name__}: {e}) - will retry"
+        )
+        raise
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(
+            f"Failed to create insight for source {input_data.source_id}: {e}"
+        )
+        logger.exception(e)
+
+        return CreateInsightOutput(
+            success=False,
             processing_time=processing_time,
             error_message=str(e),
         )

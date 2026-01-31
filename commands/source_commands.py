@@ -11,9 +11,10 @@ from open_notebook.domain.transformation import Transformation
 
 try:
     from open_notebook.graphs.source import source_graph
+    from open_notebook.graphs.transformation import graph as transform_graph
 except ImportError as e:
-    logger.error(f"Failed to import source_graph: {e}")
-    raise ValueError("source_graph not available")
+    logger.error(f"Failed to import graphs: {e}")
+    raise ValueError("graphs not available")
 
 
 def full_model_dump(model):
@@ -148,6 +149,124 @@ async def process_source_command(
         return SourceProcessingOutput(
             success=False,
             source_id=input_data.source_id,
+            processing_time=processing_time,
+            error_message=str(e),
+        )
+
+
+# =============================================================================
+# RUN TRANSFORMATION COMMAND
+# =============================================================================
+
+
+class RunTransformationInput(CommandInput):
+    """Input for running a transformation on an existing source."""
+
+    source_id: str
+    transformation_id: str
+
+
+class RunTransformationOutput(CommandOutput):
+    """Output from transformation command."""
+
+    success: bool
+    source_id: str
+    transformation_id: str
+    processing_time: float
+    error_message: Optional[str] = None
+
+
+@command(
+    "run_transformation",
+    app="open_notebook",
+    retry={
+        "max_attempts": 5,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 60,
+        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "retry_log_level": "debug",
+    },
+)
+async def run_transformation_command(
+    input_data: RunTransformationInput,
+) -> RunTransformationOutput:
+    """
+    Run a transformation on an existing source to generate an insight.
+
+    This command runs the transformation graph which:
+    1. Loads the source and transformation
+    2. Calls the LLM to generate insight content
+    3. Creates the insight via create_insight command (fire-and-forget)
+
+    Use this command for UI-triggered insight generation to avoid blocking
+    the HTTP request while the LLM processes.
+
+    Retry Strategy:
+    - Retries up to 5 times for transient failures
+    - Uses exponential-jitter backoff (1-60s)
+    """
+    start_time = time.time()
+
+    try:
+        logger.info(
+            f"Running transformation {input_data.transformation_id} "
+            f"on source {input_data.source_id}"
+        )
+
+        # Load source
+        source = await Source.get(input_data.source_id)
+        if not source:
+            raise ValueError(f"Source '{input_data.source_id}' not found")
+
+        # Load transformation
+        transformation = await Transformation.get(input_data.transformation_id)
+        if not transformation:
+            raise ValueError(
+                f"Transformation '{input_data.transformation_id}' not found"
+            )
+
+        # Run transformation graph (includes LLM call + insight creation)
+        await transform_graph.ainvoke(
+            input=dict(source=source, transformation=transformation)
+        )
+
+        processing_time = time.time() - start_time
+        logger.info(
+            f"Successfully ran transformation {input_data.transformation_id} "
+            f"on source {input_data.source_id} in {processing_time:.2f}s"
+        )
+
+        return RunTransformationOutput(
+            success=True,
+            source_id=input_data.source_id,
+            transformation_id=input_data.transformation_id,
+            processing_time=processing_time,
+        )
+
+    except RuntimeError:
+        logger.debug(
+            f"Transaction conflict running transformation - will retry"
+        )
+        raise
+    except (ConnectionError, TimeoutError) as e:
+        logger.debug(
+            f"Network/timeout error running transformation "
+            f"({type(e).__name__}: {e}) - will retry"
+        )
+        raise
+    except Exception as e:
+        processing_time = time.time() - start_time
+        logger.error(
+            f"Failed to run transformation {input_data.transformation_id} "
+            f"on source {input_data.source_id}: {e}"
+        )
+        logger.exception(e)
+
+        return RunTransformationOutput(
+            success=False,
+            source_id=input_data.source_id,
+            transformation_id=input_data.transformation_id,
             processing_time=processing_time,
             error_message=str(e),
         )

@@ -363,6 +363,7 @@ export const zhCN = {
     noNotebooksAvailable: "暂无可用笔记本",
     deleteInsight: "删除见解",
     deleteInsightConfirm: "确定要删除此见解吗？此操作无法撤销。",
+    insightGenerationStarted: "见解生成已开始，稍后将显示。",
     notEmbeddedAlert: "内容未嵌入向量",
     notEmbeddedDesc: "此内容尚未为了向量搜索进行嵌入。嵌入可以启用高级搜索功能并更好地发现内容。",
     openOnYoutube: "在 YouTube 上打开",

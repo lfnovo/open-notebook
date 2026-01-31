@@ -454,53 +454,52 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def add_insight(self, insight_type: str, content: str) -> Any:
+    async def add_insight(self, insight_type: str, content: str) -> Optional[str]:
         """
-        Add an insight to this source.
+        Submit insight creation as an async command (fire-and-forget).
 
-        Creates the insight record without embedding, then submits an async
-        embed_insight command to generate the embedding in the background.
+        Submits a create_insight command that handles database operations with
+        automatic retry logic for transaction conflicts. The command also submits
+        an embed_insight command for async embedding.
+
+        This method returns immediately after submitting the command - it does NOT
+        wait for the insight to be created. Use this for batch operations where
+        throughput is more important than immediate confirmation.
 
         Args:
             insight_type: Type/category of the insight
             content: The insight content text
 
         Returns:
-            The created insight record(s)
+            command_id for optional tracking, or None if submission failed
+
+        Raises:
+            InvalidInputError: If insight_type or content is empty
         """
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
+
         try:
-            # Create insight WITHOUT embedding (fire-and-forget embedding via command)
-            result = await repo_query(
-                """
-                CREATE source_insight CONTENT {
-                        "source": $source_id,
-                        "insight_type": $insight_type,
-                        "content": $content,
-                };""",
+            # Submit create_insight command (fire-and-forget)
+            # Command handles retries internally for transaction conflicts
+            command_id = submit_command(
+                "open_notebook",
+                "create_insight",
                 {
-                    "source_id": ensure_record_id(self.id),
+                    "source_id": str(self.id),
                     "insight_type": insight_type,
                     "content": content,
                 },
             )
+            logger.info(
+                f"Submitted create_insight command {command_id} for source {self.id} "
+                f"(type={insight_type})"
+            )
+            return str(command_id)
 
-            # Submit embedding command (fire-and-forget)
-            if result and len(result) > 0:
-                insight_id = str(result[0].get("id", ""))
-                if insight_id:
-                    submit_command(
-                        "open_notebook",
-                        "embed_insight",
-                        {"insight_id": insight_id},
-                    )
-                    logger.debug(f"Submitted embed_insight command for {insight_id}")
-
-            return result
         except Exception as e:
-            logger.error(f"Error adding insight to source {self.id}: {str(e)}")
-            raise
+            logger.error(f"Error submitting create_insight for source {self.id}: {e}")
+            return None
 
     def _prepare_save_data(self) -> dict:
         """Override to ensure command field is always RecordID format for database"""

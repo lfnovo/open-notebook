@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -81,6 +82,7 @@ export function SourceDetailContent({
   onClose
 }: SourceDetailContentProps) {
   const { t, language } = useTranslation()
+  const queryClient = useQueryClient()
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
   const [insights, setInsights] = useState<SourceInsightResponse[]>([])
   const [transformations, setTransformations] = useState<Transformation[]>([])
@@ -154,12 +156,36 @@ export function SourceDetailContent({
 
     try {
       setCreatingInsight(true)
-      await insightsApi.create(sourceId, {
+      const response = await insightsApi.create(sourceId, {
         transformation_id: selectedTransformation
       })
-      toast.success(t.common.success)
-      await fetchInsights()
+      // Show toast for async operation
+      toast.success(t.sources.insightGenerationStarted)
       setSelectedTransformation('')
+
+      // Poll for command completion if we have a command_id
+      if (response.command_id) {
+        // Poll in background (don't block UI)
+        insightsApi.waitForCommand(response.command_id, {
+          maxAttempts: 120, // Up to 4 minutes (120 * 2s)
+          intervalMs: 2000
+        }).then(success => {
+          if (success) {
+            void fetchInsights()
+            // Invalidate sources queries so notebook page refreshes with updated insights_count
+            queryClient.invalidateQueries({ queryKey: ['sources'] })
+          }
+        }).catch(err => {
+          console.error('Error waiting for insight command:', err)
+        })
+      } else {
+        // Fallback: refresh after delay if no command_id
+        setTimeout(() => {
+          void fetchInsights()
+          // Also invalidate sources queries
+          queryClient.invalidateQueries({ queryKey: ['sources'] })
+        }, 5000)
+      }
     } catch (err) {
       console.error('Failed to create insight:', err)
       toast.error(t.common.error)

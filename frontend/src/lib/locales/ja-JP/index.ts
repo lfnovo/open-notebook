@@ -357,6 +357,7 @@ export const jaJP = {
     viewInsight: "インサイトを表示",
     deleteInsight: "インサイトを削除",
     deleteInsightConfirm: "このインサイトを削除しますか？この操作は元に戻せません。",
+    insightGenerationStarted: "インサイトの生成が開始されました。まもなく表示されます。",
     deleteNoteConfirm: 'このノートを削除しますか？この操作は元に戻せません。',
     editNote: 'ノートを編集',
     createNote: 'ノートを作成',

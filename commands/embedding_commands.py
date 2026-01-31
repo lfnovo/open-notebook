@@ -23,6 +23,13 @@ def full_model_dump(model):
         return model
 
 
+def get_command_id(input_data: CommandInput) -> str:
+    """Extract command_id from input_data's execution context, or return 'unknown'."""
+    if input_data.execution_context:
+        return str(input_data.execution_context.command_id)
+    return "unknown"
+
+
 class RebuildEmbeddingsInput(CommandInput):
     mode: Literal["existing", "all"]
     include_sources: bool = True
@@ -190,7 +197,10 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
         raise
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed note {input_data.note_id}: {e}")
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed note {input_data.note_id} (command: {cmd_id}): {e}"
+        )
         logger.exception(e)
 
         return EmbedNoteOutput(
@@ -283,7 +293,10 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
         raise
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed insight {input_data.insight_id}: {e}")
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed insight {input_data.insight_id} (command: {cmd_id}): {e}"
+        )
         logger.exception(e)
 
         return EmbedInsightOutput(
@@ -417,7 +430,10 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
         raise
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed source {input_data.source_id}: {e}")
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed source {input_data.source_id} (command: {cmd_id}): {e}"
+        )
         logger.exception(e)
 
         return EmbedSourceOutput(
@@ -526,8 +542,10 @@ async def create_insight_command(
         raise
     except Exception as e:
         processing_time = time.time() - start_time
+        cmd_id = get_command_id(input_data)
         logger.error(
-            f"Failed to create insight for source {input_data.source_id}: {e}"
+            f"Failed to create insight for source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
         )
         logger.exception(e)
 

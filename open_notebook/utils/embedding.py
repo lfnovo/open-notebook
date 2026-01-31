@@ -76,7 +76,9 @@ async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
     return mean.tolist()
 
 
-async def generate_embeddings(texts: List[str]) -> List[List[float]]:
+async def generate_embeddings(
+    texts: List[str], command_id: Optional[str] = None
+) -> List[List[float]]:
     """
     Generate embeddings for multiple texts in a single API call.
 
@@ -85,6 +87,7 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
 
     Args:
         texts: List of text strings to embed
+        command_id: Optional command ID for error logging context
 
     Returns:
         List of embedding vectors, one per input text
@@ -102,6 +105,8 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
             "No embedding model configured. Please configure one in the Models section."
         )
 
+    model_name = getattr(embedding_model, "model_name", "unknown")
+
     # Log text sizes for debugging
     text_sizes = [len(t) for t in texts]
     logger.debug(
@@ -116,17 +121,24 @@ async def generate_embeddings(texts: List[str]) -> List[List[float]]:
         logger.debug(f"Generated {len(embeddings)} embeddings")
         return embeddings
     except Exception as e:
-        logger.error(
-            f"Failed to generate embeddings: {e} "
-            f"(tried {len(texts)} texts, max size: {max(text_sizes)} chars)"
+        # Log at debug level - the calling command will log at appropriate level
+        # based on whether retries are exhausted
+        cmd_context = f" (command: {command_id})" if command_id else ""
+        logger.debug(
+            f"Embedding API error using model '{model_name}' "
+            f"for {len(texts)} texts (sizes: {min(text_sizes)}-{max(text_sizes)} chars)"
+            f"{cmd_context}: {e}"
         )
-        raise RuntimeError(f"Failed to generate embeddings: {e}") from e
+        raise RuntimeError(
+            f"Failed to generate embeddings using model '{model_name}': {e}"
+        ) from e
 
 
 async def generate_embedding(
     text: str,
     content_type: Optional[ContentType] = None,
     file_path: Optional[str] = None,
+    command_id: Optional[str] = None,
 ) -> List[float]:
     """
     Generate a single embedding for text, handling large content via chunking and mean pooling.
@@ -143,6 +155,7 @@ async def generate_embedding(
         text: The text to embed
         content_type: Optional explicit content type for chunking
         file_path: Optional file path for content type detection
+        command_id: Optional command ID for error logging context
 
     Returns:
         Single embedding vector (list of floats)
@@ -160,7 +173,7 @@ async def generate_embedding(
     if len(text) <= CHUNK_SIZE:
         # Short text - embed directly
         logger.debug(f"Embedding short text ({len(text)} chars) directly")
-        embeddings = await generate_embeddings([text])
+        embeddings = await generate_embeddings([text], command_id=command_id)
         return embeddings[0]
 
     # Long text - chunk and mean pool
@@ -173,13 +186,13 @@ async def generate_embedding(
 
     if len(chunks) == 1:
         # Single chunk after splitting
-        embeddings = await generate_embeddings(chunks)
+        embeddings = await generate_embeddings(chunks, command_id=command_id)
         return embeddings[0]
 
     logger.debug(f"Embedding {len(chunks)} chunks and mean pooling")
 
     # Embed all chunks in single API call
-    embeddings = await generate_embeddings(chunks)
+    embeddings = await generate_embeddings(chunks, command_id=command_id)
 
     # Mean pool to get single embedding
     pooled = await mean_pool_embeddings(embeddings)

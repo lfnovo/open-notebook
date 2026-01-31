@@ -9,6 +9,7 @@ from esperanto import (
 )
 from loguru import logger
 
+from open_notebook.ai.key_provider import provision_provider_keys
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 
@@ -86,6 +87,10 @@ class ModelManager:
             "text_to_speech",
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
+
+        # Provision API keys from database (with env var fallback)
+        # This sets environment variables that Esperanto will read
+        await provision_provider_keys(model.provider)
 
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":

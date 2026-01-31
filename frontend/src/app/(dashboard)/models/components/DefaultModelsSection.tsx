@@ -8,8 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ModelDefaults, Model } from '@/lib/types/models'
-import { useUpdateModelDefaults } from '@/lib/hooks/use-models'
-import { AlertCircle, X } from 'lucide-react'
+import { useUpdateModelDefaults, useAutoAssignDefaults } from '@/lib/hooks/use-models'
+import { AlertCircle, X, Wand2, Loader2 } from 'lucide-react'
 import { EmbeddingModelChangeDialog } from './EmbeddingModelChangeDialog'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -21,6 +21,7 @@ interface DefaultModelsSectionProps {
 export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionProps) {
   const { t } = useTranslation()
   const updateDefaults = useUpdateModelDefaults()
+  const autoAssign = useAutoAssignDefaults()
   const { setValue, watch } = useForm<ModelDefaults>({
     defaultValues: defaults
   })
@@ -174,8 +175,22 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {t.models.missingRequiredModels.replace('{models}', missingRequired.join(', '))}
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <span>{t.models.missingRequiredModels.replace('{models}', missingRequired.join(', '))}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => autoAssign.mutate()}
+                disabled={autoAssign.isPending}
+                className="shrink-0 gap-1.5"
+              >
+                {autoAssign.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Wand2 className="h-3.5 w-3.5" />
+                )}
+                {autoAssign.isPending ? t.models.autoAssigning : t.models.autoAssign}
+              </Button>
             </AlertDescription>
           </Alert>
         )}

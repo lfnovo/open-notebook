@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:latest
+    command: start --user root --pass root
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  open-notebook:
+    image: devsecsols/open-notebook-ui-api:v0.1.1
+    ports:
+      - "3000:3000"
+      - "5055:5055"
+    environment:
+      # Database
+      - SURREAL_ADDRESS=ws://surrealdb:8000
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=open_notebook
+      # Encryption (generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=
+      # Optional: Set API keys via env (will be migrated to DB via UI)
+      # - OPENAI_API_KEY=sk-...
+      # - ANTHROPIC_API_KEY=sk-...
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+    volumes:
+      - notebook-data:/app/data
+
+volumes:
+  surreal-data:
+  notebook-data:

@@ -97,6 +97,18 @@ Verify AI claims by tracing them back to source material. Understand the citatio
 
 ---
 
+### 8. [API Configuration](api-configuration.md)
+Configure AI provider API keys directly through the Settings UI.
+
+**Quick links:**
+- Add API keys without editing files
+- Test provider connections
+- Migrate from environment variables
+- Manage Azure and OpenAI-compatible providers
+- Understand key storage and encryption
+
+---
+
 ## Which Feature for Which Task?
 
 ```
@@ -120,6 +132,9 @@ Task: "I want to find that quote I remember"
 
 Task: "I'm exploring a concept without knowing exact words"
 → Use: Search / Vector Search (semantic similarity)
+
+Task: "I need to add or change my AI provider API keys"
+→ Use: Settings / API Keys (configure providers without editing files)
 ```
 
 ---

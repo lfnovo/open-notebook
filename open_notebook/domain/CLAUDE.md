@@ -53,6 +53,21 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Transformation**: Reusable prompts for content transformation
 - **DefaultPrompts**: Singleton with transformation instructions
 
+### api_key_config.py
+- **APIKeyConfig**: Singleton configuration for API keys and provider credentials
+  - **33+ configuration fields** organized by provider type:
+    - **Simple Providers**: `openai_api_key`, `anthropic_api_key`, `google_api_key`, `groq_api_key`, `mistral_api_key`, `deepseek_api_key`, `xai_api_key`, `openrouter_api_key`, `voyage_api_key`, `elevenlabs_api_key`
+    - **URL-based Providers**: `ollama_api_base`
+    - **Google Vertex AI**: `vertex_project`, `vertex_location`, `google_application_credentials`
+    - **Azure OpenAI**: `azure_openai_api_key`, `azure_openai_api_version`, `azure_openai_endpoint`, plus service-specific endpoints (LLM, embedding, STT, TTS)
+    - **OpenAI-Compatible**: Generic (`openai_compatible_api_key`, `openai_compatible_base_url`) and service-specific variants (LLM, embedding, STT, TTS)
+  - **SecretStr protection**: API key fields use Pydantic's `SecretStr` (values masked in logs/repr)
+  - **Encryption integration**: Uses `encrypt_value()`/`decrypt_value()` from `open_notebook.utils.encryption`
+    - Keys encrypted with Fernet before database storage
+    - Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` environment variable (warns if not set)
+  - **Fresh fetch pattern**: `get_instance()` always queries database (no caching) to ensure latest values
+  - **Custom serialization**: `_prepare_save_data()` extracts SecretStr values and encrypts before storage
+
 ## Important Patterns
 
 - **Async/await**: All DB operations async; always use await

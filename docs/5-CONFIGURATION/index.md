@@ -235,7 +235,26 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 
 ## How to Add Configuration
 
-### Method 1: Edit `.env` File (Development)
+### Method 1: Settings UI (Recommended for API Keys)
+
+The easiest way to configure API keys:
+
+```
+1. Open Open Notebook in your browser
+2. Go to Settings → API Keys
+3. Find your provider
+4. Enter API key
+5. Click Save
+6. Click Test Connection to verify
+```
+
+No file editing, no restarts. Keys stored securely in database.
+
+**Note:** While the Settings UI is recommended for API keys, some settings (like SurrealDB connection, server ports) still require environment variables or docker-compose configuration.
+
+→ **[Full Guide: API Configuration](../3-USER-GUIDE/api-configuration.md)**
+
+### Method 2: Edit `.env` File (Development)
 
 ```bash
 1. Open .env in your editor
@@ -245,7 +264,7 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 5. Restart services
 ```
 
-### Method 2: Set Docker Environment (Deployment)
+### Method 3: Set Docker Environment (Deployment)
 
 ```bash
 # In docker-compose.yml:
@@ -256,7 +275,7 @@ services:
       - API_URL=https://your-domain.com
 ```
 
-### Method 3: Export Environment Variables
+### Method 4: Export Environment Variables
 
 ```bash
 # In your terminal:
@@ -267,7 +286,7 @@ export API_URL=https://your-domain.com
 docker compose up
 ```
 
-### Method 4: Use docker.env File
+### Method 5: Use docker.env File
 
 ```bash
 1. Create/edit docker.env

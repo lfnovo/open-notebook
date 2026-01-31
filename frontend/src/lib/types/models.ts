@@ -28,3 +28,36 @@ export interface ProviderAvailability {
   unavailable: string[]
   supported_types: Record<string, string[]>
 }
+
+// Model Discovery Types
+export interface DiscoveredModel {
+  name: string
+  provider: string
+  model_type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+  description?: string
+}
+
+export interface ProviderSyncResult {
+  provider: string
+  discovered: number
+  new: number
+  existing: number
+}
+
+export interface AllProvidersSyncResult {
+  results: Record<string, ProviderSyncResult>
+  total_discovered: number
+  total_new: number
+}
+
+export interface ProviderModelCount {
+  provider: string
+  counts: Record<string, number>
+  total: number
+}
+
+export interface AutoAssignResult {
+  assigned: Record<string, string>  // slot_name -> model_id
+  skipped: string[]  // slots already assigned
+  missing: string[]  // slots with no available models
+}

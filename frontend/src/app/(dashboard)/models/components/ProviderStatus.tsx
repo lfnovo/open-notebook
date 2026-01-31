@@ -1,10 +1,12 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import Link from 'next/link'
 
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Check, X } from 'lucide-react'
+import { Check, X, Settings } from 'lucide-react'
 import { ProviderAvailability } from '@/lib/types/models'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -35,15 +37,25 @@ export function ProviderStatus({ providers }: ProviderStatusProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t.models.aiProviders}</CardTitle>
-        <CardDescription>
-          {t.models.providerConfigDesc}
-          <span className="ml-1">
-            {t.models.configuredCount
-              .replace('{count}', providers.available.length.toString())
-              .replace('{total}', allProviders.length.toString())}
-          </span>
-        </CardDescription>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle>{t.models.aiProviders}</CardTitle>
+            <CardDescription>
+              {t.models.providerConfigDesc}
+              <span className="ml-1">
+                {t.models.configuredCount
+                  .replace('{count}', providers.available.length.toString())
+                  .replace('{total}', allProviders.length.toString())}
+              </span>
+            </CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/settings/api-keys">
+              <Settings className="h-4 w-4 mr-2" />
+              {t.models.configure}
+            </Link>
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid gap-2 sm:grid-cols-2">

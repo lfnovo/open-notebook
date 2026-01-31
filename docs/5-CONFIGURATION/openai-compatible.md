@@ -392,5 +392,6 @@ Use OpenAI-compatible when:
 ## Related
 
 - **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
+- **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches
 - **[AI Providers](ai-providers.md)** - All provider options
 - **[Ollama Setup](ollama.md)** - Native Ollama integration

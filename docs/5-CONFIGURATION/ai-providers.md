@@ -460,7 +460,7 @@ Use OpenAI
 - Ollama: Free, but local
 - OpenRouter: many open source models very accessible
 
-**For privacy-first:** Ollama or LM Studio and [Speaches](local-tts.md)
+**For privacy-first:** Ollama or LM Studio and Speaches ([TTS](local-tts.md), [STT](local-stt.md))
 - Everything stays local
 - Works offline
 - No API keys sent anywhere
@@ -491,4 +491,6 @@ Done!
 - **[Advanced Configuration](advanced.md)** - Timeouts, SSL, performance tuning
 - **[Ollama Setup](ollama.md)** - Detailed Ollama configuration guide
 - **[OpenAI-Compatible](openai-compatible.md)** - LM Studio and other compatible providers
+- **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
+- **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches
 - **[Troubleshooting](../6-TROUBLESHOOTING/quick-fixes.md)** - Common issues and fixes

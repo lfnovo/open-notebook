@@ -357,6 +357,7 @@ export const enUS = {
     viewInsight: "View Insight",
     deleteInsight: "Delete Insight",
     deleteInsightConfirm: "Are you sure you want to delete this insight? This action cannot be undone.",
+    insightGenerationStarted: "Insight generation started. It will appear shortly.",
     deleteNoteConfirm: 'Are you sure you want to delete this note? This action cannot be undone.',
     editNote: 'Edit note',
     createNote: 'Create note',

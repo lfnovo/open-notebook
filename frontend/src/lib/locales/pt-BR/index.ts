@@ -357,6 +357,7 @@ export const ptBR = {
     viewInsight: "Ver Insight",
     deleteInsight: "Excluir Insight",
     deleteInsightConfirm: "Tem certeza que deseja excluir este insight? Esta ação não pode ser desfeita.",
+    insightGenerationStarted: "Geração de insight iniciada. Aparecerá em breve.",
     deleteNoteConfirm: "Tem certeza que deseja excluir esta nota? Esta ação não pode ser desfeita.",
     editNote: "Editar nota",
     createNote: "Criar nota",

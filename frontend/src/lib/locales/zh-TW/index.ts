@@ -363,6 +363,7 @@ export const zhTW = {
     noNotebooksAvailable: "暫無可用筆記本",
     deleteInsight: "刪除見解",
     deleteInsightConfirm: "確定要刪除此見解嗎？此操作無法撤銷。",
+    insightGenerationStarted: "見解生成已開始，稍後將顯示。",
     notEmbeddedAlert: "內容未嵌入向量",
     notEmbeddedDesc: "此內容尚未為了向量搜尋進行嵌入。嵌入可以啟用進階搜尋功能並更好地發現內容。",
     openOnYoutube: "在 YouTube 上開啟",

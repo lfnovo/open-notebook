@@ -27,6 +27,8 @@ export const zhCN = {
     language: "语言",
     english: "English",
     chinese: "简体中文",
+    traditionalChinese: "繁体中文",
+    portuguese: "葡萄牙语",
     japanese: "日本語",
     french: "Français",
     source: "来源",

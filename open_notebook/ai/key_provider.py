@@ -2,8 +2,8 @@
 API Key Provider - Database-first with environment fallback.
 
 This module provides a unified interface for retrieving API keys and provider
-configuration. It checks the database (APIKeyConfig) first, then falls back
-to environment variables for backward compatibility.
+configuration. It reads from ProviderConfig (single source of truth) and
+falls back to environment variables for backward compatibility.
 
 Usage:
     from open_notebook.ai.key_provider import provision_provider_keys
@@ -17,158 +17,50 @@ from typing import Optional
 
 from loguru import logger
 
-from open_notebook.domain.api_key_config import APIKeyConfig
+from open_notebook.domain.provider_config import ProviderConfig
+
 
 # =============================================================================
 # Provider Configuration Mapping
 # =============================================================================
-# Maps provider names to their environment variable names and APIKeyConfig fields.
+# Maps provider names to their environment variable names.
 # This is the single source of truth for provider-to-env-var mapping.
 
 PROVIDER_CONFIG = {
     # Simple providers (just API key)
     "openai": {
         "env_var": "OPENAI_API_KEY",
-        "config_field": "openai_api_key",
     },
     "anthropic": {
         "env_var": "ANTHROPIC_API_KEY",
-        "config_field": "anthropic_api_key",
     },
     "google": {
         "env_var": "GOOGLE_API_KEY",
-        "config_field": "google_api_key",
     },
     "groq": {
         "env_var": "GROQ_API_KEY",
-        "config_field": "groq_api_key",
     },
     "mistral": {
         "env_var": "MISTRAL_API_KEY",
-        "config_field": "mistral_api_key",
     },
     "deepseek": {
         "env_var": "DEEPSEEK_API_KEY",
-        "config_field": "deepseek_api_key",
     },
     "xai": {
         "env_var": "XAI_API_KEY",
-        "config_field": "xai_api_key",
     },
     "openrouter": {
         "env_var": "OPENROUTER_API_KEY",
-        "config_field": "openrouter_api_key",
     },
     "voyage": {
         "env_var": "VOYAGE_API_KEY",
-        "config_field": "voyage_api_key",
     },
     "elevenlabs": {
         "env_var": "ELEVENLABS_API_KEY",
-        "config_field": "elevenlabs_api_key",
     },
     # URL-based providers
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
-        "config_field": "ollama_api_base",
-    },
-}
-
-# Vertex AI configuration (multiple fields)
-VERTEX_CONFIG = {
-    "project": {
-        "env_var": "VERTEX_PROJECT",
-        "config_field": "vertex_project",
-    },
-    "location": {
-        "env_var": "VERTEX_LOCATION",
-        "config_field": "vertex_location",
-    },
-    "credentials": {
-        "env_var": "GOOGLE_APPLICATION_CREDENTIALS",
-        "config_field": "google_application_credentials",
-    },
-}
-
-# Azure OpenAI configuration (generic + mode-specific)
-AZURE_CONFIG = {
-    "api_key": {
-        "env_var": "AZURE_OPENAI_API_KEY",
-        "config_field": "azure_openai_api_key",
-    },
-    "api_version": {
-        "env_var": "AZURE_OPENAI_API_VERSION",
-        "config_field": "azure_openai_api_version",
-    },
-    "endpoint": {
-        "env_var": "AZURE_OPENAI_ENDPOINT",
-        "config_field": "azure_openai_endpoint",
-    },
-    # Mode-specific endpoints (LLM, EMBEDDING, STT, TTS)
-    "endpoint_llm": {
-        "env_var": "AZURE_OPENAI_ENDPOINT_LLM",
-        "config_field": "azure_openai_endpoint_llm",
-    },
-    "endpoint_embedding": {
-        "env_var": "AZURE_OPENAI_ENDPOINT_EMBEDDING",
-        "config_field": "azure_openai_endpoint_embedding",
-    },
-    "endpoint_stt": {
-        "env_var": "AZURE_OPENAI_ENDPOINT_STT",
-        "config_field": "azure_openai_endpoint_stt",
-    },
-    "endpoint_tts": {
-        "env_var": "AZURE_OPENAI_ENDPOINT_TTS",
-        "config_field": "azure_openai_endpoint_tts",
-    },
-}
-
-# OpenAI-Compatible configuration (generic + mode-specific)
-OPENAI_COMPATIBLE_CONFIG = {
-    # Generic
-    "api_key": {
-        "env_var": "OPENAI_COMPATIBLE_API_KEY",
-        "config_field": "openai_compatible_api_key",
-    },
-    "base_url": {
-        "env_var": "OPENAI_COMPATIBLE_BASE_URL",
-        "config_field": "openai_compatible_base_url",
-    },
-    # Mode-specific: LLM
-    "api_key_llm": {
-        "env_var": "OPENAI_COMPATIBLE_API_KEY_LLM",
-        "config_field": "openai_compatible_api_key_llm",
-    },
-    "base_url_llm": {
-        "env_var": "OPENAI_COMPATIBLE_BASE_URL_LLM",
-        "config_field": "openai_compatible_base_url_llm",
-    },
-    # Mode-specific: Embedding
-    "api_key_embedding": {
-        "env_var": "OPENAI_COMPATIBLE_API_KEY_EMBEDDING",
-        "config_field": "openai_compatible_api_key_embedding",
-    },
-    "base_url_embedding": {
-        "env_var": "OPENAI_COMPATIBLE_BASE_URL_EMBEDDING",
-        "config_field": "openai_compatible_base_url_embedding",
-    },
-    # Mode-specific: STT
-    "api_key_stt": {
-        "env_var": "OPENAI_COMPATIBLE_API_KEY_STT",
-        "config_field": "openai_compatible_api_key_stt",
-    },
-    "base_url_stt": {
-        "env_var": "OPENAI_COMPATIBLE_BASE_URL_STT",
-        "config_field": "openai_compatible_base_url_stt",
-    },
-    # Mode-specific: TTS
-    "api_key_tts": {
-        "env_var": "OPENAI_COMPATIBLE_API_KEY_TTS",
-        "config_field": "openai_compatible_api_key_tts",
-    },
-    "base_url_tts": {
-        "env_var": "OPENAI_COMPATIBLE_BASE_URL_TTS",
-        "config_field": "openai_compatible_base_url_tts",
     },
 }
 
@@ -183,32 +75,100 @@ async def get_api_key(provider: str) -> Optional[str]:
     Returns:
         API key string or None if not configured
     """
-    config_info = PROVIDER_CONFIG.get(provider)
-    if not config_info:
-        return None
-
-    # Try database first
     try:
-        api_config = await APIKeyConfig.get_instance()
-        db_value = getattr(api_config, config_info["config_field"], None)
-        if db_value:
-            # Handle SecretStr (API keys) vs regular strings (URLs)
-            if hasattr(db_value, "get_secret_value"):
-                key_value = db_value.get_secret_value()
-            else:
-                key_value = db_value
-
-            if key_value:
-                logger.debug(f"Using {provider} API key from database")
-                return key_value
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config(provider)
+        if default_cred and default_cred.api_key:
+            logger.debug(f"Using {provider} API key from ProviderConfig")
+            return default_cred.api_key.get_secret_value()
     except Exception as e:
-        logger.debug(f"Could not load API key from database for {provider}: {e}")
+        logger.debug(f"Could not load API key from ProviderConfig for {provider}: {e}")
 
     # Fall back to environment variable
-    env_value = os.environ.get(config_info["env_var"])
-    if env_value:
-        logger.debug(f"Using {provider} API key from environment variable")
-    return env_value
+    config_info = PROVIDER_CONFIG.get(provider.lower())
+    if config_info:
+        env_value = os.environ.get(config_info["env_var"])
+        if env_value:
+            logger.debug(f"Using {provider} API key from environment variable")
+        return env_value
+
+    return None
+
+
+async def get_provider_configs(provider: str) -> list[dict]:
+    """
+    Get all configurations for a provider from ProviderConfig.
+
+    Args:
+        provider: Provider name (openai, anthropic, etc.)
+
+    Returns:
+        List of configuration dicts, each containing id, name, is_default, etc.
+        Does NOT include api_key for security.
+    """
+    provider_lower = provider.lower()
+
+    try:
+        config = await ProviderConfig.get_instance()
+        credentials = config.credentials.get(provider_lower, [])
+
+        result = []
+        for cred in credentials:
+            config_data = {
+                "id": cred.id,
+                "name": cred.name,
+                "provider": cred.provider,
+                "is_default": cred.is_default,
+            }
+            if cred.base_url:
+                config_data["base_url"] = cred.base_url
+            if cred.model:
+                config_data["model"] = cred.model
+            if cred.api_version:
+                config_data["api_version"] = cred.api_version
+            if cred.endpoint:
+                config_data["endpoint"] = cred.endpoint
+            if cred.endpoint_llm:
+                config_data["endpoint_llm"] = cred.endpoint_llm
+            if cred.endpoint_embedding:
+                config_data["endpoint_embedding"] = cred.endpoint_embedding
+            if cred.endpoint_stt:
+                config_data["endpoint_stt"] = cred.endpoint_stt
+            if cred.endpoint_tts:
+                config_data["endpoint_tts"] = cred.endpoint_tts
+            if cred.project:
+                config_data["project"] = cred.project
+            if cred.location:
+                config_data["location"] = cred.location
+            if cred.credentials_path:
+                config_data["credentials_path"] = cred.credentials_path
+            result.append(config_data)
+
+        return result
+    except Exception as e:
+        logger.debug(f"Could not load provider configs from database for {provider}: {e}")
+        return []
+
+
+async def get_default_api_key(provider: str) -> Optional[str]:
+    """
+    Get the default API key for a provider from ProviderConfig.
+
+    Args:
+        provider: Provider name (openai, anthropic, etc.)
+
+    Returns:
+        API key string or None if not configured
+    """
+    try:
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config(provider)
+        if default_cred and default_cred.api_key:
+            return default_cred.api_key.get_secret_value()
+    except Exception as e:
+        logger.debug(f"Could not load API key from ProviderConfig for {provider}: {e}")
+
+    return None
 
 
 async def _provision_simple_provider(provider: str) -> bool:
@@ -218,26 +178,33 @@ async def _provision_simple_provider(provider: str) -> bool:
     Returns:
         True if key was set from database, False otherwise
     """
-    config_info = PROVIDER_CONFIG.get(provider)
+    provider_lower = provider.lower()
+    config_info = PROVIDER_CONFIG.get(provider_lower)
     if not config_info:
         return False
 
-    try:
-        api_config = await APIKeyConfig.get_instance()
-        db_value = getattr(api_config, config_info["config_field"], None)
-        if db_value:
-            # Handle SecretStr (API keys) vs regular strings (URLs)
-            if hasattr(db_value, "get_secret_value"):
-                key_value = db_value.get_secret_value()
-            else:
-                key_value = db_value
+    provider_upper = provider_lower.upper()
 
-            if key_value:
-                os.environ[config_info["env_var"]] = key_value
-                logger.debug(f"Set {config_info['env_var']} from database")
-                return True
+    try:
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config(provider_lower)
+
+        if default_cred:
+            # Set API key
+            if default_cred.api_key:
+                os.environ[f"{provider_upper}_API_KEY"] = (
+                    default_cred.api_key.get_secret_value()
+                )
+                logger.debug(f"Set {provider_upper}_API_KEY from ProviderConfig")
+
+            # Set base URL if present
+            if default_cred.base_url:
+                os.environ[f"{provider_upper}_API_BASE"] = default_cred.base_url
+                logger.debug(f"Set {provider_upper}_API_BASE from ProviderConfig")
+
+            return True
     except Exception as e:
-        logger.debug(f"Could not provision {provider} from database: {e}")
+        logger.debug(f"Could not provision {provider} from ProviderConfig: {e}")
 
     return False
 
@@ -250,16 +217,28 @@ async def _provision_vertex() -> bool:
         True if any keys were set from database
     """
     any_set = False
+
     try:
-        api_config = await APIKeyConfig.get_instance()
-        for key, config in VERTEX_CONFIG.items():
-            db_value = getattr(api_config, config["config_field"], None)
-            if db_value:
-                os.environ[config["env_var"]] = db_value
-                logger.debug(f"Set {config['env_var']} from database")
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config("vertex")
+
+        if default_cred:
+            if default_cred.project:
+                os.environ["VERTEX_PROJECT"] = default_cred.project
+                logger.debug("Set VERTEX_PROJECT from ProviderConfig")
+                any_set = True
+            if default_cred.location:
+                os.environ["VERTEX_LOCATION"] = default_cred.location
+                logger.debug("Set VERTEX_LOCATION from ProviderConfig")
+                any_set = True
+            if default_cred.credentials_path:
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
+                    default_cred.credentials_path
+                )
+                logger.debug("Set GOOGLE_APPLICATION_CREDENTIALS from ProviderConfig")
                 any_set = True
     except Exception as e:
-        logger.debug(f"Could not provision vertex from database: {e}")
+        logger.debug(f"Could not provision vertex from ProviderConfig: {e}")
 
     return any_set
 
@@ -272,23 +251,46 @@ async def _provision_azure() -> bool:
         True if any keys were set from database
     """
     any_set = False
-    try:
-        api_config = await APIKeyConfig.get_instance()
-        for key, config in AZURE_CONFIG.items():
-            db_value = getattr(api_config, config["config_field"], None)
-            if db_value:
-                # Handle SecretStr for api_key
-                if hasattr(db_value, "get_secret_value"):
-                    value = db_value.get_secret_value()
-                else:
-                    value = db_value
 
-                if value:
-                    os.environ[config["env_var"]] = value
-                    logger.debug(f"Set {config['env_var']} from database")
-                    any_set = True
+    try:
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config("azure")
+
+        if default_cred:
+            if default_cred.api_key:
+                os.environ["AZURE_OPENAI_API_KEY"] = (
+                    default_cred.api_key.get_secret_value()
+                )
+                logger.debug("Set AZURE_OPENAI_API_KEY from ProviderConfig")
+                any_set = True
+            if default_cred.api_version:
+                os.environ["AZURE_OPENAI_API_VERSION"] = default_cred.api_version
+                logger.debug("Set AZURE_OPENAI_API_VERSION from ProviderConfig")
+                any_set = True
+            if default_cred.endpoint:
+                os.environ["AZURE_OPENAI_ENDPOINT"] = default_cred.endpoint
+                logger.debug("Set AZURE_OPENAI_ENDPOINT from ProviderConfig")
+                any_set = True
+            if default_cred.endpoint_llm:
+                os.environ["AZURE_OPENAI_ENDPOINT_LLM"] = default_cred.endpoint_llm
+                logger.debug("Set AZURE_OPENAI_ENDPOINT_LLM from ProviderConfig")
+                any_set = True
+            if default_cred.endpoint_embedding:
+                os.environ["AZURE_OPENAI_ENDPOINT_EMBEDDING"] = (
+                    default_cred.endpoint_embedding
+                )
+                logger.debug("Set AZURE_OPENAI_ENDPOINT_EMBEDDING from ProviderConfig")
+                any_set = True
+            if default_cred.endpoint_stt:
+                os.environ["AZURE_OPENAI_ENDPOINT_STT"] = default_cred.endpoint_stt
+                logger.debug("Set AZURE_OPENAI_ENDPOINT_STT from ProviderConfig")
+                any_set = True
+            if default_cred.endpoint_tts:
+                os.environ["AZURE_OPENAI_ENDPOINT_TTS"] = default_cred.endpoint_tts
+                logger.debug("Set AZURE_OPENAI_ENDPOINT_TTS from ProviderConfig")
+                any_set = True
     except Exception as e:
-        logger.debug(f"Could not provision azure from database: {e}")
+        logger.debug(f"Could not provision azure from ProviderConfig: {e}")
 
     return any_set
 
@@ -301,23 +303,26 @@ async def _provision_openai_compatible() -> bool:
         True if any keys were set from database
     """
     any_set = False
-    try:
-        api_config = await APIKeyConfig.get_instance()
-        for key, config in OPENAI_COMPATIBLE_CONFIG.items():
-            db_value = getattr(api_config, config["config_field"], None)
-            if db_value:
-                # Handle SecretStr for api_key fields
-                if hasattr(db_value, "get_secret_value"):
-                    value = db_value.get_secret_value()
-                else:
-                    value = db_value
 
-                if value:
-                    os.environ[config["env_var"]] = value
-                    logger.debug(f"Set {config['env_var']} from database")
-                    any_set = True
+    try:
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config("openai_compatible")
+
+        if default_cred:
+            if default_cred.api_key:
+                os.environ["OPENAI_COMPATIBLE_API_KEY"] = (
+                    default_cred.api_key.get_secret_value()
+                )
+                logger.debug("Set OPENAI_COMPATIBLE_API_KEY from ProviderConfig")
+                any_set = True
+            if default_cred.base_url:
+                os.environ["OPENAI_COMPATIBLE_BASE_URL"] = default_cred.base_url
+                logger.debug("Set OPENAI_COMPATIBLE_BASE_URL from ProviderConfig")
+                any_set = True
     except Exception as e:
-        logger.debug(f"Could not provision openai-compatible from database: {e}")
+        logger.debug(
+            f"Could not provision openai_compatible from ProviderConfig: {e}"
+        )
 
     return any_set
 
@@ -403,55 +408,43 @@ async def get_provider_config(provider: str) -> Optional[dict]:
     provider_lower = provider.lower()
 
     try:
-        api_config = await APIKeyConfig.get_instance()
+        provider_config = await ProviderConfig.get_instance()
+        default_cred = provider_config.get_default_config(provider_lower)
 
-        if provider_lower == "vertex":
-            config = {}
-            for key, cfg in VERTEX_CONFIG.items():
-                db_value = getattr(api_config, cfg["config_field"], None)
-                if db_value:
-                    config[key] = db_value
-            return config if config else None
+        if not default_cred:
+            return None
 
-        elif provider_lower == "azure":
-            config = {}
-            for key, cfg in AZURE_CONFIG.items():
-                db_value = getattr(api_config, cfg["config_field"], None)
-                if db_value:
-                    if hasattr(db_value, "get_secret_value"):
-                        value = db_value.get_secret_value()
-                    else:
-                        value = db_value
-                    if value:
-                        config[key] = value
-            return config if config else None
+        config = {}
 
-        elif provider_lower in ("openai-compatible", "openai_compatible"):
-            config = {}
-            for key, cfg in OPENAI_COMPATIBLE_CONFIG.items():
-                db_value = getattr(api_config, cfg["config_field"], None)
-                if db_value:
-                    if hasattr(db_value, "get_secret_value"):
-                        value = db_value.get_secret_value()
-                    else:
-                        value = db_value
-                    if value:
-                        config[key] = value
-            return config if config else None
+        # Extract api_key (handle SecretStr)
+        if default_cred.api_key:
+            config["api_key"] = default_cred.api_key.get_secret_value()
 
-        else:
-            config_info = PROVIDER_CONFIG.get(provider_lower)
-            if not config_info:
-                return None
+        # Add all other fields if present
+        if default_cred.base_url:
+            config["base_url"] = default_cred.base_url
+        if default_cred.model:
+            config["model"] = default_cred.model
+        if default_cred.api_version:
+            config["api_version"] = default_cred.api_version
+        if default_cred.endpoint:
+            config["endpoint"] = default_cred.endpoint
+        if default_cred.endpoint_llm:
+            config["endpoint_llm"] = default_cred.endpoint_llm
+        if default_cred.endpoint_embedding:
+            config["endpoint_embedding"] = default_cred.endpoint_embedding
+        if default_cred.endpoint_stt:
+            config["endpoint_stt"] = default_cred.endpoint_stt
+        if default_cred.endpoint_tts:
+            config["endpoint_tts"] = default_cred.endpoint_tts
+        if default_cred.project:
+            config["project"] = default_cred.project
+        if default_cred.location:
+            config["location"] = default_cred.location
+        if default_cred.credentials_path:
+            config["credentials_path"] = default_cred.credentials_path
 
-            db_value = getattr(api_config, config_info["config_field"], None)
-            if db_value:
-                if hasattr(db_value, "get_secret_value"):
-                    value = db_value.get_secret_value()
-                else:
-                    value = db_value
-                if value:
-                    return {config_info["env_var"]: value}
+        return config if config else None
 
     except Exception as e:
         logger.debug(f"Could not load provider config from database for {provider}: {e}")

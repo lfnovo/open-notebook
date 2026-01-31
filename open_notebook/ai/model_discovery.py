@@ -518,6 +518,73 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     ]
 
 
+async def discover_openai_compatible_models() -> List[DiscoveredModel]:
+    """
+    Fetch available models from an OpenAI-compatible API endpoint.
+    Uses the configured base_url from the database or environment variable.
+    """
+    from open_notebook.domain.provider_config import ProviderConfig
+
+    api_key = None
+    base_url = None
+
+    # Try to get config from ProviderConfig database first
+    try:
+        config = await ProviderConfig.get_instance()
+        default_cred = config.get_default_config("openai_compatible")
+        if default_cred:
+            if default_cred.api_key:
+                api_key = default_cred.api_key.get_secret_value()
+            if default_cred.base_url:
+                base_url = default_cred.base_url.rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read openai_compatible config from ProviderConfig: {e}")
+
+    # Fall back to environment variables
+    if not api_key:
+        api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY")
+    if not base_url:
+        base_url = os.environ.get("OPENAI_COMPATIBLE_BASE_URL", "").rstrip("/")
+
+    if not base_url:
+        logger.warning("No base_url configured for openai_compatible provider")
+        return []
+
+    models = []
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            response = await client.get(
+                f"{base_url}/models",
+                headers=headers,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    # Classify based on model name patterns
+                    model_type = classify_model_type(model_id, "openai")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="openai_compatible",
+                            model_type=model_type,
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"Failed to discover openai_compatible models: HTTP {e.response.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to discover openai_compatible models: {e}")
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -535,6 +602,9 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "openrouter": discover_openrouter_models,
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
+    "openai_compatible": discover_openai_compatible_models,
+    "azure": discover_openai_models,  # Azure uses OpenAI-compatible API
+    "vertex": discover_google_models,  # Vertex uses Google API
 }
 
 

@@ -1,7 +1,0 @@
--- Rollback Migration 11: Remove API key and provider configuration records
-
--- Remove provider configs singleton
-DELETE open_notebook:provider_configs;
-
--- Remove API key config singleton
-DELETE open_notebook:api_key_config;

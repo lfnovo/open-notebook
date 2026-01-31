@@ -220,19 +220,13 @@ class ProviderConfig(RecordModel):
         else:
             data = {}
 
-        # Create new instance with fresh data (bypass singleton cache)
-        instance = object.__new__(cls)
-        object.__setattr__(instance, "__dict__", {})
-        object.__setattr__(instance, "_initialized", True)
-        object.__setattr__(instance, "_db_loaded", True)
-
         # Initialize credentials from database data
+        credentials: Dict[str, List[ProviderCredential]] = {}
         creds_data = data.get("credentials")
         if creds_data and isinstance(creds_data, dict):
-            instance.credentials = {}
             for provider, provider_creds in creds_data.items():
                 if isinstance(provider_creds, list):
-                    instance.credentials[provider] = []
+                    credentials[provider] = []
                     for cred_data in provider_creds:
                         try:
                             # Decrypt api_key if it's a string
@@ -247,7 +241,7 @@ class ProviderConfig(RecordModel):
                                 else:
                                     cred_data["api_key"] = None
 
-                            instance.credentials[provider].append(
+                            credentials[provider].append(
                                 ProviderCredential(
                                     id=cred_data.get("id", ""),
                                     name=cred_data.get("name", "Default"),
@@ -274,8 +268,12 @@ class ProviderConfig(RecordModel):
                         except Exception:
                             # Skip invalid credentials
                             continue
-        else:
-            instance.credentials = {}
+
+        # Create instance using model_validate to properly initialize Pydantic model
+        instance = cls.model_validate({"credentials": credentials})
+
+        # Mark as loaded from database
+        object.__setattr__(instance, "_db_loaded", True)
 
         return instance
 

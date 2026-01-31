@@ -98,101 +98,53 @@ MODEL_PREFERENCES = {
 
 
 async def _check_azure_support_db() -> bool:
-    """Check if Azure is configured in database."""
-    from open_notebook.domain.api_key_config import APIKeyConfig
+    """Check if Azure is configured in ProviderConfig."""
+    from open_notebook.domain.provider_config import ProviderConfig
     try:
-        config = await APIKeyConfig.get_instance()
-        key = getattr(config, "azure_openai_api_key", None)
-        endpoint = getattr(config, "azure_openai_endpoint", None)
-        api_version = getattr(config, "azure_openai_api_version", None)
-        if key and endpoint and api_version:
-            if hasattr(key, "get_secret_value"):
-                key = key.get_secret_value()
-            return bool(key and endpoint and api_version)
+        config = await ProviderConfig.get_instance()
+        default_cred = config.get_default_config("azure")
+        if default_cred:
+            return bool(default_cred.api_key and default_cred.endpoint and default_cred.api_version)
     except Exception:
         pass
     return False
 
 
 async def _check_openai_compatible_support_db() -> bool:
-    """Check if OpenAI-compatible is configured in database (any mode)."""
-    from open_notebook.domain.api_key_config import APIKeyConfig
+    """Check if OpenAI-compatible is configured in ProviderConfig."""
+    from open_notebook.domain.provider_config import ProviderConfig
     try:
-        config = await APIKeyConfig.get_instance()
-        base_url = getattr(config, "openai_compatible_base_url", None)
-        api_key = getattr(config, "openai_compatible_api_key", None)
-        if base_url:
-            return True
-        if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
-            return True
-        # Check mode-specific
-        for suffix in ["_llm", "_embedding", "_stt", "_tts"]:
-            base_url_suffix = getattr(config, f"openai_compatible_base_url{suffix}", None)
-            api_key_suffix = getattr(config, f"openai_compatible_api_key{suffix}", None)
-            if base_url_suffix:
-                return True
-            if api_key_suffix and hasattr(api_key_suffix, "get_secret_value") and api_key_suffix.get_secret_value():
-                return True
+        config = await ProviderConfig.get_instance()
+        default_cred = config.get_default_config("openai_compatible")
+        if default_cred:
+            return bool(default_cred.base_url or (default_cred.api_key and default_cred.api_key.get_secret_value()))
     except Exception:
         pass
     return False
 
 
 async def _check_azure_support_db_mode(mode: str) -> bool:
-    """Check if Azure is configured in database for a specific mode."""
-    from open_notebook.domain.api_key_config import APIKeyConfig
-    suffix_map = {"LLM": "", "EMBEDDING": "_embedding", "STT": "_stt", "TTS": "_tts"}
-    suffix = suffix_map.get(mode, "")
-
+    """Check if Azure is configured in ProviderConfig for a specific mode."""
+    from open_notebook.domain.provider_config import ProviderConfig
     try:
-        config = await APIKeyConfig.get_instance()
-        # Check mode-specific config first
-        if suffix:
-            key = getattr(config, f"azure_openai_api_key{suffix}", None)
-            endpoint = getattr(config, f"azure_openai_endpoint{suffix}", None)
-            api_version = getattr(config, f"azure_openai_api_version{suffix}", None)
-            if key and endpoint and api_version:
-                if hasattr(key, "get_secret_value"):
-                    key = key.get_secret_value()
-                if key and endpoint and api_version:
-                    return True
-        # Check generic config
-        key = getattr(config, "azure_openai_api_key", None)
-        endpoint = getattr(config, "azure_openai_endpoint", None)
-        api_version = getattr(config, "azure_openai_api_version", None)
-        if key and endpoint and api_version:
-            if hasattr(key, "get_secret_value"):
-                key = key.get_secret_value()
-            if key and endpoint and api_version:
-                return True
+        config = await ProviderConfig.get_instance()
+        default_cred = config.get_default_config("azure")
+        if default_cred:
+            # For now, just check if the provider has any config
+            return bool(default_cred.api_key and default_cred.endpoint and default_cred.api_version)
     except Exception:
         pass
     return False
 
 
 async def _check_openai_compatible_support_db_mode(mode: str) -> bool:
-    """Check if OpenAI-compatible is configured in database for a specific mode."""
-    from open_notebook.domain.api_key_config import APIKeyConfig
-    suffix_map = {"LLM": "_llm", "EMBEDDING": "_embedding", "STT": "_stt", "TTS": "_tts"}
-    suffix = suffix_map.get(mode, "")
-
+    """Check if OpenAI-compatible is configured in ProviderConfig for a specific mode."""
+    from open_notebook.domain.provider_config import ProviderConfig
     try:
-        config = await APIKeyConfig.get_instance()
-        # Check mode-specific config first
-        if suffix:
-            base_url = getattr(config, f"openai_compatible_base_url{suffix}", None)
-            api_key = getattr(config, f"openai_compatible_api_key{suffix}", None)
-            if base_url:
-                return True
-            if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
-                return True
-        # Check generic config
-        base_url = getattr(config, "openai_compatible_base_url", None)
-        api_key = getattr(config, "openai_compatible_api_key", None)
-        if base_url:
-            return True
-        if api_key and hasattr(api_key, "get_secret_value") and api_key.get_secret_value():
-            return True
+        config = await ProviderConfig.get_instance()
+        default_cred = config.get_default_config("openai_compatible")
+        if default_cred:
+            return bool(default_cred.base_url or (default_cred.api_key and default_cred.api_key.get_secret_value()))
     except Exception:
         pass
     return False

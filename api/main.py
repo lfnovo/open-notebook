@@ -26,6 +26,7 @@ from api.routers import (
     notebooks,
     notes,
     podcasts,
+    provider_configs,
     search,
     settings,
     source_chat,
@@ -79,14 +80,6 @@ async def lifespan(app: FastAPI):
         logger.warning(
             "⚠️  OPEN_NOTEBOOK_ENCRYPTION_KEY not set - using default key. "
             "For production, set OPEN_NOTEBOOK_ENCRYPTION_KEY explicitly."
-        )
-
-    # Security warning: Password protection (supports Docker secrets via _FILE suffix)
-    # Note: auth.py uses default password "open-notebook-change-me" if not set
-    if not _get_secret_from_env("OPEN_NOTEBOOK_PASSWORD"):
-        logger.warning(
-            "⚠️  OPEN_NOTEBOOK_PASSWORD not set - using default password 'open-notebook-change-me'. "
-            "For production, set OPEN_NOTEBOOK_PASSWORD explicitly."
         )
 
     # Run database migrations
@@ -203,6 +196,7 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(api_keys.router, prefix="/api", tags=["api-keys"])
+app.include_router(provider_configs.router, prefix="/api", tags=["provider-configs"])
 
 
 @app.get("/")

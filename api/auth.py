@@ -10,12 +10,6 @@ from starlette.responses import JSONResponse
 
 from loguru import logger
 
-# Default password for development/quick-start
-# This allows users to run Open Notebook out-of-the-box without configuration
-# IMPORTANT: Change this in production by setting OPEN_NOTEBOOK_PASSWORD or OPEN_NOTEBOOK_PASSWORD_FILE
-DEFAULT_PASSWORD = "open-notebook-change-me"
-
-
 def _get_secret_from_env(var_name: str) -> Optional[str]:
     """
     Get a secret from environment, supporting Docker secrets pattern.
@@ -25,43 +19,14 @@ def _get_secret_from_env(var_name: str) -> Optional[str]:
     # Check for _FILE variant first (Docker secrets)
     file_path = os.environ.get(f"{var_name}_FILE")
     if file_path:
-        try:
-            path = Path(file_path)
-            if path.exists() and path.is_file():
-                secret = path.read_text().strip()
-                if secret:
-                    return secret
-        except Exception:
-            # Failed to read from file, fall back to environment variable
-            pass
+        path = Path(file_path)
+        if path.exists() and path.is_file():
+            secret = path.read_text().strip()
+            if secret:
+                return secret
 
     # Fall back to direct environment variable
     return os.environ.get(var_name)
-
-
-def _get_password() -> str:
-    """
-    Get password from environment, or use default if not set.
-
-    Priority:
-    1. OPEN_NOTEBOOK_PASSWORD_FILE (Docker secrets)
-    2. OPEN_NOTEBOOK_PASSWORD (environment variable)
-    3. Default password "open-notebook-change-me" (for easy setup)
-
-    For production deployments, always set OPEN_NOTEBOOK_PASSWORD explicitly!
-
-    Returns:
-        Password string.
-    """
-    password = _get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
-    if password:
-        return password
-
-    logger.warning(
-        "⚠️  OPEN_NOTEBOOK_PASSWORD not set - using default password 'open-notebook-change-me'. "
-        "This is NOT secure for production! Set your own password."
-    )
-    return DEFAULT_PASSWORD
 
 
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
@@ -73,7 +38,7 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app, excluded_paths: Optional[list] = None):
         super().__init__(app)
-        self.password = _get_password()
+        self.password = _get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
         self.excluded_paths = excluded_paths or [
             "/",
             "/health",
@@ -143,7 +108,7 @@ def check_api_password(
     Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
     Uses default password if not configured.
     """
-    password = _get_password()
+    password = _get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
 
     # No credentials provided
     if not credentials:

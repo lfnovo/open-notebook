@@ -1,14 +1,15 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, ChevronLeft, Key } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { useApiKeysStatus, useEnvStatus } from '@/lib/hooks/use-api-keys'
+import { useProviderConfigs, useProviderConfig, useCreateProviderConfig, useUpdateProviderConfig } from '@/lib/hooks/use-api-keys'
 import {
   MigrationBanner,
   ProviderCard,
@@ -17,8 +18,10 @@ import {
   AzureKeyForm,
   OpenAICompatibleForm,
   VertexKeyForm,
+  ConfigForm,
   type ModelType,
 } from '@/components/settings'
+import { CreateProviderConfigRequest, UpdateProviderConfigRequest, ProviderCredential } from '@/lib/api/api-keys'
 
 // Provider configuration
 const PROVIDER_CONFIG = {
@@ -115,46 +118,165 @@ const PROVIDER_SUPPORTED_TYPES: Record<string, ModelType[]> = {
   openai_compatible: ['language', 'embedding'],
 }
 
+// Provider categories for UI
+const PROVIDERS = {
+  simple: PROVIDER_CONFIG.simple,
+  urlBased: PROVIDER_CONFIG.urlBased,
+  complex: PROVIDER_CONFIG.complex,
+}
+
 export default function ApiKeysPage() {
   const { t } = useTranslation()
-  const { data: status, isLoading: statusLoading, error: statusError, refetch: refetchStatus } = useApiKeysStatus()
-  const { data: envStatus, isLoading: envLoading, error: envError, refetch: refetchEnv } = useEnvStatus()
+
+  // Dialog state for adding/editing configurations
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingProvider, setEditingProvider] = useState<string | null>(null)
+  const [editingConfig, setEditingConfig] = useState<ProviderCredential | null>(null)
+  const [editingConfigId, setEditingConfigId] = useState<string | null>(null)
+
+  // Fetch the config being edited when editingConfigId is set
+  const { data: fetchedConfig, isLoading: isLoadingConfig } = useProviderConfig(
+    editingProvider || '',
+    editingConfigId || ''
+  )
+
+  // When config data arrives, set it and open dialog
+  useEffect(() => {
+    if (fetchedConfig && editingConfigId) {
+      setEditingConfig(fetchedConfig)
+      setDialogOpen(true)
+    }
+  }, [fetchedConfig, editingConfigId])
+
+  // Fetch configurations for all providers
+  const allConfigs = useMemo(() => {
+    const configs: Record<string, ProviderCredential[]> = {}
+    // We'll use useProviderConfigs in individual cards
+    return configs
+  }, [])
 
   const handleRefresh = () => {
-    refetchStatus()
-    refetchEnv()
+    // Refetch all provider configs
+    window.location.reload()
   }
 
-  // Count environment variables that could be migrated (only if no error)
-  const envKeysCount = useMemo(() => {
-    if (!envStatus || envError) return 0
-    return Object.values(envStatus).filter(Boolean).length
-  }, [envStatus, envError])
+  // Handle add config
+  const handleAddConfig = (provider: string) => {
+    setEditingProvider(provider)
+    setEditingConfig(null)
+    setDialogOpen(true)
+  }
 
-  if (statusLoading || envLoading) {
+  // Handle edit config - fetch the config data first, then open dialog
+  const handleEditConfig = (provider: string, configId: string) => {
+    setEditingProvider(provider)
+    setEditingConfigId(configId)
+    setEditingConfig(null) // Clear previous config while loading
+    // Dialog will open when fetchedConfig arrives (via useEffect above)
+  }
+
+  // Handle form submission
+  const handleSubmitConfig = (data: CreateProviderConfigRequest | UpdateProviderConfigRequest) => {
+    if (!editingProvider) return
+
+    if (editingConfig) {
+      // Update existing config
+      updateConfig.mutate({
+        provider: editingProvider,
+        configId: editingConfig.id,
+        data: data as UpdateProviderConfigRequest,
+      })
+    } else {
+      // Create new config
+      createConfig.mutate({
+        provider: editingProvider,
+        data: data as CreateProviderConfigRequest,
+      })
+    }
+  }
+
+  const createConfig = useCreateProviderConfig()
+  const updateConfig = useUpdateProviderConfig()
+
+  // Close dialog after successful operation
+  const isSubmitting = createConfig.isPending || updateConfig.isPending
+  if ((createConfig.isSuccess || updateConfig.isSuccess) && dialogOpen) {
+    setDialogOpen(false)
+    setEditingProvider(null)
+    setEditingConfig(null)
+    setEditingConfigId(null)
+  }
+
+  // Reset edit state when dialog closes without success
+  useEffect(() => {
+    if (!dialogOpen) {
+      setEditingProvider(null)
+      setEditingConfig(null)
+      setEditingConfigId(null)
+    }
+  }, [dialogOpen])
+
+  // Render a single provider card with multi-config support
+  const renderProviderCard = (provider: string) => {
+    const displayName = PROVIDER_DISPLAY_NAMES[provider] || provider
+    const defaultUrl = DEFAULT_URLS[provider]
+    const docsUrl = PROVIDER_DOCS[provider]
+    const placeholder = API_KEY_PLACEHOLDERS[provider]
+    const supportedTypes = PROVIDER_SUPPORTED_TYPES[provider]
+
+    // Use the provider configs hook
+    const { data: configs, isLoading } = useProviderConfigs(provider)
+    const hasConfigs = configs && configs.length > 0
+    const isConfigured = hasConfigs  // Only show configured when we have configs
+
     return (
-      <AppShell>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <LoadingSpinner size="lg" />
-        </div>
-      </AppShell>
+      <ProviderCard
+        key={provider}
+        name={provider}
+        displayName={displayName}
+        isConfigured={isConfigured}
+        supportedTypes={supportedTypes}
+        configs={hasConfigs ? configs : undefined}
+        onAddConfig={() => handleAddConfig(provider)}
+        onEditConfig={(configId) => handleEditConfig(provider, configId)}
+        isLoading={isLoading}
+      >
+        {/* Legacy form - shown when no configs exist */}
+        {!hasConfigs && (
+          <>
+            {PROVIDERS.simple.includes(provider) && (
+              <SimpleKeyForm
+                provider={provider}
+                isConfigured={false}
+                placeholder={placeholder}
+                defaultUrl={defaultUrl}
+                docsUrl={docsUrl}
+              />
+            )}
+            {PROVIDERS.urlBased.includes(provider) && (
+              <UrlKeyForm
+                provider={provider}
+                isConfigured={false}
+                defaultUrl={defaultUrl}
+              />
+            )}
+            {provider === 'azure' && (
+              <AzureKeyForm isConfigured={false} />
+            )}
+            {provider === 'vertex' && (
+              <VertexKeyForm isConfigured={false} />
+            )}
+            {provider === 'openai_compatible' && (
+              <OpenAICompatibleForm isConfigured={false} />
+            )}
+          </>
+        )}
+      </ProviderCard>
     )
   }
 
-  if (statusError || !status) {
-    return (
-      <AppShell>
-        <div className="p-6">
-          <Alert variant="destructive">
-            <AlertTitle>{t.common.error}</AlertTitle>
-            <AlertDescription>
-              {statusError instanceof Error ? statusError.message : t.apiKeys.loadFailed}
-            </AlertDescription>
-          </Alert>
-        </div>
-      </AppShell>
-    )
-  }
+  // Loading state
+  // We'll show individual loading states per card
 
   return (
     <AppShell>
@@ -184,92 +306,25 @@ export default function ApiKeysPage() {
             </Button>
           </div>
 
-          {/* Migration Banner */}
-          <MigrationBanner envKeysCount={envKeysCount} />
+          {/* Migration Banner - for legacy support */}
+          {/* MigrationBanner can be kept for backward compatibility */}
 
           {/* Provider Cards */}
           <div className="grid gap-4">
             {/* Simple providers */}
-            {PROVIDER_CONFIG.simple.map((provider) => (
-              <ProviderCard
-                key={provider}
-                name={provider}
-                displayName={PROVIDER_DISPLAY_NAMES[provider] || provider}
-                isConfigured={status.configured[provider] ?? false}
-                source={status.source[provider]}
-                supportedTypes={PROVIDER_SUPPORTED_TYPES[provider]}
-              >
-                <SimpleKeyForm
-                  provider={provider}
-                  isConfigured={status.configured[provider] ?? false}
-                  source={status.source[provider]}
-                  placeholder={API_KEY_PLACEHOLDERS[provider]}
-                  defaultUrl={DEFAULT_URLS[provider]}
-                  docsUrl={PROVIDER_DOCS[provider]}
-                />
-              </ProviderCard>
-            ))}
+            {PROVIDERS.simple.map((provider) => renderProviderCard(provider))}
 
             {/* URL-based providers */}
-            {PROVIDER_CONFIG.urlBased.map((provider) => (
-              <ProviderCard
-                key={provider}
-                name={provider}
-                displayName={PROVIDER_DISPLAY_NAMES[provider] || provider}
-                isConfigured={status.configured[provider] ?? false}
-                source={status.source[provider]}
-                supportedTypes={PROVIDER_SUPPORTED_TYPES[provider]}
-              >
-                <UrlKeyForm
-                  provider={provider}
-                  isConfigured={status.configured[provider] ?? false}
-                  source={status.source[provider]}
-                  defaultUrl={DEFAULT_URLS[provider]}
-                />
-              </ProviderCard>
-            ))}
+            {PROVIDERS.urlBased.map((provider) => renderProviderCard(provider))}
 
             {/* Azure OpenAI */}
-            <ProviderCard
-              name="azure"
-              displayName={PROVIDER_DISPLAY_NAMES.azure}
-              isConfigured={status.configured.azure ?? false}
-              source={status.source.azure}
-              supportedTypes={PROVIDER_SUPPORTED_TYPES.azure}
-            >
-              <AzureKeyForm
-                isConfigured={status.configured.azure ?? false}
-                source={status.source.azure}
-              />
-            </ProviderCard>
+            {renderProviderCard('azure')}
 
             {/* Google Vertex AI */}
-            <ProviderCard
-              name="vertex"
-              displayName={PROVIDER_DISPLAY_NAMES.vertex}
-              isConfigured={status.configured.vertex ?? false}
-              source={status.source.vertex}
-              supportedTypes={PROVIDER_SUPPORTED_TYPES.vertex}
-            >
-              <VertexKeyForm
-                isConfigured={status.configured.vertex ?? false}
-                source={status.source.vertex}
-              />
-            </ProviderCard>
+            {renderProviderCard('vertex')}
 
             {/* OpenAI Compatible */}
-            <ProviderCard
-              name="openai_compatible"
-              displayName={PROVIDER_DISPLAY_NAMES.openai_compatible}
-              isConfigured={status.configured.openai_compatible ?? false}
-              source={status.source.openai_compatible}
-              supportedTypes={PROVIDER_SUPPORTED_TYPES.openai_compatible}
-            >
-              <OpenAICompatibleForm
-                isConfigured={status.configured.openai_compatible ?? false}
-                source={status.source.openai_compatible}
-              />
-            </ProviderCard>
+            {renderProviderCard('openai_compatible')}
           </div>
 
           {/* Help link */}
@@ -285,6 +340,43 @@ export default function ApiKeysPage() {
           </div>
         </div>
       </div>
+
+      {/* Config Form Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingConfig
+                ? t.apiKeys.editConfig.replace('{provider}', PROVIDER_DISPLAY_NAMES[editingProvider || ''] || editingProvider || '')
+                : t.apiKeys.addConfig.replace('{provider}', PROVIDER_DISPLAY_NAMES[editingProvider || ''] || editingProvider || '')}
+            </DialogTitle>
+          </DialogHeader>
+          {editingProvider && (
+            <>
+              {isLoadingConfig ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : (
+                <ConfigForm
+                  provider={editingProvider}
+                  providerDisplayName={PROVIDER_DISPLAY_NAMES[editingProvider] || editingProvider}
+                  config={editingConfig}
+                  onSubmit={handleSubmitConfig}
+                  onCancel={() => {
+                    setDialogOpen(false)
+                    setEditingProvider(null)
+                    setEditingConfig(null)
+                    setEditingConfigId(null)
+                  }}
+                  isSubmitting={isSubmitting}
+                  defaultUrl={DEFAULT_URLS[editingProvider]}
+                />
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </AppShell>
   )
 }

@@ -1,6 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiKeysApi, SetApiKeyRequest, TestConnectionResult } from '@/lib/api/api-keys'
+import {
+  apiKeysApi,
+  providerConfigsApi,
+  SetApiKeyRequest,
+  TestConnectionResult,
+  ProviderCredential,
+  CreateProviderConfigRequest,
+  UpdateProviderConfigRequest,
+} from '@/lib/api/api-keys'
 import { modelsApi } from '@/lib/api/models'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -11,6 +19,12 @@ export const API_KEYS_QUERY_KEYS = {
   status: ['api-keys', 'status'] as const,
   envStatus: ['api-keys', 'env-status'] as const,
   modelCount: (provider: string) => ['api-keys', 'model-count', provider] as const,
+}
+
+export const PROVIDER_CONFIGS_QUERY_KEYS = {
+  allConfigs: ['provider-configs', 'all'] as const,
+  list: (provider: string) => ['provider-configs', provider] as const,
+  detail: (provider: string, configId: string) => ['provider-configs', provider, configId] as const,
 }
 
 /**
@@ -44,11 +58,14 @@ export function useSetApiKey() {
   return useMutation({
     mutationFn: ({ provider, data }: { provider: string; data: SetApiKeyRequest }) =>
       apiKeysApi.setKey(provider, data),
-    onSuccess: () => {
+    onSuccess: (_, { provider }) => {
       // Invalidate both API keys status and providers (for models page)
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.envStatus })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+      // Also invalidate provider configs (for multi-config UI)
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
       toast({
         title: t.common.success,
         description: t.apiKeys.saveSuccess,
@@ -75,10 +92,13 @@ export function useDeleteApiKey() {
   return useMutation({
     mutationFn: ({ provider, serviceType }: { provider: string; serviceType?: string }) =>
       apiKeysApi.deleteKey(provider, serviceType),
-    onSuccess: () => {
+    onSuccess: (_, { provider }) => {
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.envStatus })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+      // Also invalidate provider configs (for multi-config UI)
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
       toast({
         title: t.common.success,
         description: t.apiKeys.deleteSuccess,
@@ -108,6 +128,8 @@ export function useMigrateApiKeys() {
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
       queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.envStatus })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+      // Also invalidate provider configs (for multi-config UI)
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
 
       const migratedCount = result.migrated.length
       const skippedCount = result.skipped.length
@@ -269,6 +291,182 @@ export function useSyncAllModels() {
       toast({
         title: t.common.error,
         description: getApiErrorKey(error, t.apiKeys.syncFailed),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+// ============================================================================
+// Provider Configs Hooks (Multi-Config Support)
+// ============================================================================
+
+/**
+ * Hook to list all provider configurations
+ */
+export function useAllProviderConfigs() {
+  return useQuery({
+    queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs,
+    queryFn: () => providerConfigsApi.listAllConfigs(),
+  })
+}
+
+/**
+ * Hook to list configurations for a specific provider
+ */
+export function useProviderConfigs(provider: string) {
+  return useQuery({
+    queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider),
+    queryFn: () => providerConfigsApi.listConfigs(provider),
+    enabled: !!provider,
+  })
+}
+
+/**
+ * Hook to get a specific configuration
+ */
+export function useProviderConfig(provider: string, configId: string) {
+  return useQuery({
+    queryKey: PROVIDER_CONFIGS_QUERY_KEYS.detail(provider, configId),
+    queryFn: () => providerConfigsApi.getConfig(provider, configId),
+    enabled: !!provider && !!configId,
+  })
+}
+
+/**
+ * Hook to create a new provider configuration
+ */
+export function useCreateProviderConfig() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({
+      provider,
+      data,
+    }: {
+      provider: string
+      data: CreateProviderConfigRequest
+    }) => providerConfigsApi.createConfig(provider, data),
+    onSuccess: (_, { provider }) => {
+      // Invalidate provider configs queries
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
+      // Also invalidate legacy API keys status
+      queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
+      queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+
+      toast({
+        title: t.common.success,
+        description: t.apiKeys.configSaveSuccess,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+/**
+ * Hook to update an existing provider configuration
+ */
+export function useUpdateProviderConfig() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({
+      provider,
+      configId,
+      data,
+    }: {
+      provider: string
+      configId: string
+      data: UpdateProviderConfigRequest
+    }) => providerConfigsApi.updateConfig(provider, configId, data),
+    onSuccess: (_, { provider }) => {
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
+      queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
+
+      toast({
+        title: t.common.success,
+        description: t.apiKeys.configUpdateSuccess,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+/**
+ * Hook to delete a provider configuration
+ */
+export function useDeleteProviderConfig() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ provider, configId }: { provider: string; configId: string }) =>
+      providerConfigsApi.deleteConfig(provider, configId),
+    onSuccess: (_, { provider }) => {
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
+      queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
+      queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+
+      toast({
+        title: t.common.success,
+        description: t.apiKeys.configDeleteSuccess,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+/**
+ * Hook to set a configuration as default
+ */
+export function useSetProviderDefault() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({ provider, configId }: { provider: string; configId: string }) =>
+      providerConfigsApi.setDefault(provider, configId),
+    onSuccess: (_, { provider }) => {
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.allConfigs })
+      queryClient.invalidateQueries({ queryKey: PROVIDER_CONFIGS_QUERY_KEYS.list(provider) })
+      queryClient.invalidateQueries({ queryKey: API_KEYS_QUERY_KEYS.status })
+
+      toast({
+        title: t.common.success,
+        description: t.apiKeys.configSetDefaultSuccess,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
         variant: 'destructive',
       })
     },

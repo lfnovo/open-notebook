@@ -1,9 +1,16 @@
--- Migration 11: Create API key configuration singleton record
+-- Migration 11: Create API key and provider configuration singleton records
 -- This record stores encrypted API keys for various AI providers
 -- The data is managed by the ApiKeyConfig RecordModel class
 
--- Create the singleton record with empty provider configs
+-- Create the API key config singleton record with empty provider configs
 -- Using UPSERT ensures we don't fail if record already exists
 UPSERT open_notebook:api_key_config CONTENT {
     providers: {}
+};
+
+-- Create the provider configs singleton record for multi-config support
+-- This record stores multiple API key configurations per provider
+-- The data is managed by the ProviderConfig RecordModel class
+UPSERT open_notebook:provider_configs CONTENT {
+    credentials: {}
 };

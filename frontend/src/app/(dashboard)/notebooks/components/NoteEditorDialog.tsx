@@ -162,7 +162,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                       height={420}
                       placeholder={t.sources.writeNotePlaceholder}
                       className={cn(
-                          "w-full h-full min-h-[420px] [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full",
+                          "w-full h-full min-h-[420px] max-h-[500px] overflow-hidden [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full [&_.w-md-editor-content]:overflow-y-auto",
                           !isEditorFullscreen && "rounded-md border"
                       )}
                     />

@@ -190,8 +190,10 @@ async def get_session(session_id: str):
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Get session state from LangGraph to retrieve messages
-        thread_state = await chat_graph.aget_state(
-            config=RunnableConfig(configurable={"thread_id": full_session_id})
+        # Используем sync get_state() в потоке, т.к. SqliteSaver не поддерживает async
+        thread_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
         )
 
         # Extract messages from state
@@ -348,8 +350,10 @@ async def execute_chat(request: ExecuteChatRequest):
         )
 
         # Get current state
-        current_state = await chat_graph.aget_state(
-            config=RunnableConfig(configurable={"thread_id": full_session_id})
+        # Используем sync get_state() в потоке, т.к. SqliteSaver не поддерживает async
+        current_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
         )
 
         # Prepare state for execution

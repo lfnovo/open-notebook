@@ -231,8 +231,10 @@ async def get_source_chat_session(
             )
 
         # Get session state from LangGraph to retrieve messages
-        thread_state = await source_chat_graph.aget_state(
-            config=RunnableConfig(configurable={"thread_id": full_session_id})
+        # Используем sync get_state() в потоке, т.к. SqliteSaver не поддерживает async
+        thread_state = await asyncio.to_thread(
+            source_chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
         )
 
         # Extract messages from state
@@ -416,8 +418,10 @@ async def stream_source_chat_response(
     """Stream the source chat response as Server-Sent Events."""
     try:
         # Get current state
-        current_state = await source_chat_graph.aget_state(
-            config=RunnableConfig(configurable={"thread_id": session_id})
+        # Используем sync get_state() в потоке, т.к. SqliteSaver не поддерживает async
+        current_state = await asyncio.to_thread(
+            source_chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": session_id}),
         )
 
         # Prepare state for execution

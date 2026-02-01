@@ -23,6 +23,7 @@ export const ptBR = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    russian: "Русский",
     source: "Fonte",
     notebook: "Caderno",
     podcast: "Podcast",

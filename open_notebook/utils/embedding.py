@@ -18,6 +18,16 @@ from loguru import logger
 from open_notebook.ai.models import model_manager
 
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
+from .token_utils import (
+    DEFAULT_CONTEXT_LIMIT,
+    SAFETY_BUFFER,
+    batch_by_token_limit,
+    calculate_batch_token_limit,
+    get_context_limit_from_error,
+    is_context_limit_error,
+    parse_context_limit_error,
+    token_count,
+)
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
@@ -80,10 +90,12 @@ async def generate_embeddings(
     texts: List[str], command_id: Optional[str] = None
 ) -> List[List[float]]:
     """
-    Generate embeddings for multiple texts in a single API call.
+    Generate embeddings with automatic retry and batching on context errors.
 
-    This is more efficient than calling generate_embedding() multiple times
-    when you have multiple texts to embed (e.g., source chunks).
+    Strategy:
+    1. Try embedding all texts in one call (optimistic)
+    2. On context limit error, parse the limit from the error
+    3. Re-batch based on extracted limit and retry
 
     Args:
         texts: List of text strings to embed
@@ -93,8 +105,8 @@ async def generate_embeddings(
         List of embedding vectors, one per input text
 
     Raises:
-        ValueError: If no embedding model is configured
-        RuntimeError: If embedding generation fails
+        ValueError: If no embedding model configured
+        RuntimeError: If embedding fails after retries
     """
     if not texts:
         return []
@@ -115,23 +127,110 @@ async def generate_embeddings(
         f"total={sum(text_sizes)} chars)"
     )
 
+    # Optimistic: try all at once
     try:
-        # Single API call for all texts
         embeddings = await embedding_model.aembed(texts)
-        logger.debug(f"Generated {len(embeddings)} embeddings")
+        logger.debug(f"Generated {len(embeddings)} embeddings in single batch")
         return embeddings
     except Exception as e:
-        # Log at debug level - the calling command will log at appropriate level
-        # based on whether retries are exhausted
         cmd_context = f" (command: {command_id})" if command_id else ""
-        logger.debug(
-            f"Embedding API error using model '{model_name}' "
-            f"for {len(texts)} texts (sizes: {min(text_sizes)}-{max(text_sizes)} chars)"
-            f"{cmd_context}: {e}"
+
+        if not is_context_limit_error(e):
+            # Log at debug level - the calling command will log at appropriate level
+            logger.debug(
+                f"Embedding API error using model '{model_name}' "
+                f"for {len(texts)} texts (sizes: {min(text_sizes)}-{max(text_sizes)} chars)"
+                f"{cmd_context}: {e}"
+            )
+            raise RuntimeError(
+                f"Failed to generate embeddings using model '{model_name}': {e}"
+            ) from e
+
+        # Parse error to get limit info using centralized helper
+        tokens_sent, context_limit = get_context_limit_from_error(e, DEFAULT_CONTEXT_LIMIT)
+        if tokens_sent:
+            logger.info(
+                f"Context limit error using model '{model_name}'{cmd_context}: "
+                f"{tokens_sent} tokens sent, limit is {context_limit}. Retrying with batching."
+            )
+        else:
+            tokens_sent = sum(token_count(t) for t in texts)
+            logger.warning(
+                f"Could not parse token count from error{cmd_context}, using limit {context_limit}. "
+                f"Estimated {tokens_sent} tokens in {len(texts)} texts."
+            )
+
+        # Calculate batch size
+        if not tokens_sent:
+            tokens_sent = sum(token_count(t) for t in texts)
+
+        batch_limit = calculate_batch_token_limit(
+            tokens_sent, context_limit, len(texts)
         )
-        raise RuntimeError(
-            f"Failed to generate embeddings using model '{model_name}': {e}"
-        ) from e
+        logger.info(f"Batching with token limit {batch_limit}")
+
+        # Retry with batching
+        return await _generate_embeddings_batched(
+            embedding_model, texts, batch_limit
+        )
+
+
+async def _generate_embeddings_batched(
+    model, texts: List[str], token_limit: int
+) -> List[List[float]]:
+    """Generate embeddings in batches with adaptive retry."""
+    all_embeddings = []
+
+    for i, batch in enumerate(batch_by_token_limit(texts, token_limit)):
+        logger.debug(f"Processing batch {i+1}: {len(batch)} texts")
+        try:
+            batch_embeddings = await _embed_with_adaptive_retry(
+                model, batch, token_limit
+            )
+            all_embeddings.extend(batch_embeddings)
+        except Exception as e:
+            logger.error(f"Batch {i+1} failed: {e}")
+            raise RuntimeError(f"Failed to embed batch {i+1}: {e}") from e
+
+    logger.debug(f"Generated {len(all_embeddings)} embeddings in batches")
+    return all_embeddings
+
+
+async def _embed_with_adaptive_retry(
+    model, texts: List[str], token_limit: int, max_splits: int = 3
+) -> List[List[float]]:
+    """
+    Embed texts with adaptive splitting on context errors.
+
+    If a batch still fails, splits in half and retries recursively.
+    """
+    try:
+        return await model.aembed(texts)
+    except Exception as e:
+        if not is_context_limit_error(e) or len(texts) == 1 or max_splits <= 0:
+            raise
+
+        # Try to parse a more specific limit from this error
+        parsed = parse_context_limit_error(e)
+        if parsed and parsed[1]:
+            new_limit = int(parsed[1] * SAFETY_BUFFER)
+            if new_limit < token_limit:
+                token_limit = new_limit
+                logger.info(f"Adjusted batch limit to {token_limit} from error")
+
+        logger.warning(
+            f"Batch of {len(texts)} texts still too large, "
+            f"splitting (retries left: {max_splits})"
+        )
+
+        mid = len(texts) // 2
+        first = await _embed_with_adaptive_retry(
+            model, texts[:mid], token_limit, max_splits - 1
+        )
+        second = await _embed_with_adaptive_retry(
+            model, texts[mid:], token_limit, max_splits - 1
+        )
+        return first + second
 
 
 async def generate_embedding(

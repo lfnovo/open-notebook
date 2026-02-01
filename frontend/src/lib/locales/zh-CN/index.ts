@@ -28,6 +28,7 @@ export const zhCN = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    russian: "Русский",
     source: "来源",
     notebook: "笔记本",
     podcast: "播客",

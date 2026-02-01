@@ -23,6 +23,7 @@ export const jaJP = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    russian: "Русский",
     source: "ソース",
     notebook: "ノートブック",
     podcast: "ポッドキャスト",

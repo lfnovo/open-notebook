@@ -306,9 +306,9 @@ def chunk_text_by_tokens(text: str, max_tokens: int) -> List[str]:
                             word_tokens = 0
                         word_chunk.append(word)
                         word_tokens += w_tokens
+                    # Finalize leftover words immediately to avoid mixing with paragraphs
                     if word_chunk:
-                        current_chunk = word_chunk
-                        current_tokens = word_tokens
+                        chunks.append(' '.join(word_chunk))
                     continue
 
                 if current_tokens + sent_tokens > max_tokens and current_chunk:

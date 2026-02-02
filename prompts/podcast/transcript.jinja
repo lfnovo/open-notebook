@@ -41,7 +41,11 @@ Here is the current transcript so far:
 {% endif %}
 
 {% if is_final %}
+{% if speakers|length == 1 %}
+This is the final segment of the podcast. Make sure to wrap up the presentation and provide a conclusion.
+{% else %}
 This is the final segment of the podcast. Make sure to wrap up the conversation and provide a conclusion.
+{% endif %}
 {% endif %}
 
 
@@ -50,12 +54,24 @@ You will focus on creating the dialogue for the following segment ONLY:
 {{ segment }}
 </segment>
 
+{% if speakers|length == 1 %}
+IMPORTANT: This is a SOLO podcast with only ONE speaker ({{ speaker_names[0] }}). Do NOT invent or add any other speakers.
+All dialogue entries must use "{{ speaker_names[0] }}" as the speaker name.
+
+Follow these format requirements strictly:
+   - Use ONLY the speaker name "{{ speaker_names[0] }}" for all dialogue entries.
+   - Do NOT create or invent any additional speakers.
+   - Stick to the segment, do not go further than what's requested. Other agents will do the rest of the podcast.
+   - The transcript must have at least {{ turns }} dialogue segments from the speaker.
+   - The speaker should present the content in an engaging, educational manner.
+{% else %}
 Follow these format requirements strictly:
    - Use the actual speaker names ({{ speaker_names|join(', ') }}) to denote speakers.
    - Choose which speaker should speak based on their personality, backstory, and the content being discussed.
    - Stick to the segment, do not go further than what's requested. Other agents will do the rest of the podcast.
    - The transcript must have at least {{ turns }} turns of messages between the speakers.
    - Each speaker should contribute meaningfully based on their expertise and personality.
+{% endif %}
 
 
 ```json
@@ -74,6 +90,18 @@ Formatting instructions:
 {{ format_instructions}}
 
 
+{% if speakers|length == 1 %}
+Guidelines for creating the transcript:
+   - Ensure the presentation flows naturally and covers all points in the outline.
+   - Ensure you return the root "transcript" key in your response.
+   - Make the content sound engaging and educational.
+   - Include relevant details from the briefing.
+   - Break up the content into digestible segments with natural transitions.
+   - Use appropriate transitions between topics.
+   - Match the speaker's dialogue to their personality and expertise.
+   - This is a whole podcast so no need to reintroduce the speaker or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
+   - CRITICAL: There is only ONE speaker. Use ONLY: {{ speaker_names[0] }}. Do NOT invent additional speakers.
+{% else %}
 Guidelines for creating the transcript:
    - Ensure the conversation flows naturally and covers all points in the outline.
    - Ensure you return the root "transcript" key in your response.
@@ -85,6 +113,7 @@ Guidelines for creating the transcript:
    - Choose speakers strategically based on who would naturally contribute to each topic.
    - This is a whole podcast so no need to reintroduce speakers or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
    - IMPORTANT: Only use the provided speaker names: {{ speaker_names|join(', ') }}
+{% endif %}
 
 IMPORTANT OUTPUT FORMAT:
 - If you use extended thinking with <think> tags, put ALL your reasoning inside <think></think> tags
@@ -95,5 +124,11 @@ IMPORTANT OUTPUT FORMAT:
   {"transcript": [...]}
 
 When you're ready, provide the transcript.
+{% if speakers|length == 1 %}
+Remember, you are creating a realistic solo podcast presentation based on the given information.
+Make it informative, engaging, and natural-sounding while adhering to the format requirements.
+There is only ONE speaker - do not add any other speakers.
+{% else %}
 Remember, you are creating a realistic podcast conversation based on the given information.
 Make it informative, engaging, and natural-sounding while adhering to the format requirements.
+{% endif %}

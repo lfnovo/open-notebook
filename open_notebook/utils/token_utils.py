@@ -148,18 +148,38 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[int, int]]:
 
 
 def is_context_limit_error(error: Exception) -> bool:
-    """Check if error is a context/token limit error."""
+    """
+    Check if error is a context/token limit error.
+
+    Uses specific patterns to avoid false positives from rate limit errors
+    or other unrelated errors containing words like "limit" or "exceeded".
+    """
     error_str = str(error).lower()
-    indicators = [
-        "context",
-        "token",
-        "limit",
-        "exceeded",
-        "maximum",
-        "too long",
-        "too many",
+
+    # Exclude rate limit errors explicitly
+    if "rate limit" in error_str or "rate_limit" in error_str:
+        return False
+
+    # Specific context-limit indicators (phrases, not single words)
+    context_indicators = [
+        "context length",
+        "context_length",
+        "context limit",
+        "context window",
+        "token limit",
+        "token_limit",
+        "maximum context",
+        "max context",
+        "too many tokens",
+        "tokens exceeded",
+        "exceeded limit",  # "estimated tokens (X) exceeded limit (Y)"
+        "input too long",
+        "prompt too long",
+        "exceeds the model",
+        "exceeded this model",
     ]
-    return any(ind in error_str for ind in indicators)
+
+    return any(ind in error_str for ind in context_indicators)
 
 
 def batch_by_token_limit(texts: List[str], token_limit: int) -> Iterator[List[str]]:
@@ -266,6 +286,31 @@ def chunk_text_by_tokens(text: str, max_tokens: int) -> List[str]:
             sentences = para.replace('. ', '.\n').split('\n')
             for sentence in sentences:
                 sent_tokens = token_count(sentence)
+
+                # Handle oversized sentences by splitting on whitespace
+                if sent_tokens > max_tokens:
+                    if current_chunk:
+                        chunks.append(' '.join(current_chunk))
+                        current_chunk = []
+                        current_tokens = 0
+
+                    # Split long sentence into smaller pieces
+                    words = sentence.split()
+                    word_chunk: List[str] = []
+                    word_tokens = 0
+                    for word in words:
+                        w_tokens = token_count(word)
+                        if word_tokens + w_tokens > max_tokens and word_chunk:
+                            chunks.append(' '.join(word_chunk))
+                            word_chunk = []
+                            word_tokens = 0
+                        word_chunk.append(word)
+                        word_tokens += w_tokens
+                    if word_chunk:
+                        current_chunk = word_chunk
+                        current_tokens = word_tokens
+                    continue
+
                 if current_tokens + sent_tokens > max_tokens and current_chunk:
                     chunks.append(' '.join(current_chunk))
                     current_chunk = []

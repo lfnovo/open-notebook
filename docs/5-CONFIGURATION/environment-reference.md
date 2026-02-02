@@ -12,6 +12,7 @@ Comprehensive list of all environment variables available in Open Notebook.
 | `INTERNAL_API_URL` | No | http://localhost:5055 | Internal API URL for Next.js server-side proxying |
 | `API_CLIENT_TIMEOUT` | No | 300 | Client timeout in seconds (how long to wait for API response) |
 | `OPEN_NOTEBOOK_PASSWORD` | No | None | Password to protect Open Notebook instance |
+| `HOSTNAME` | No | `0.0.0.0` (in Docker) | Network interface for Next.js to bind to. Default `0.0.0.0` ensures accessibility from reverse proxies |
 
 ---
 
@@ -223,6 +224,41 @@ For self-hosted LLMs, LM Studio, or OpenAI-compatible endpoints:
 
 ---
 
+## Network / Proxy
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `HTTP_PROXY` | No | None | HTTP proxy URL for outbound HTTP requests |
+| `HTTPS_PROXY` | No | None | HTTPS proxy URL for outbound HTTPS requests |
+| `NO_PROXY` | No | None | Comma-separated list of hosts to bypass proxy |
+
+Route all outbound HTTP requests through a proxy server. Useful for corporate/firewalled environments.
+
+The underlying libraries (esperanto, content-core, podcast-creator) automatically detect proxy settings from these standard environment variables.
+
+**Affects:**
+- AI provider API calls (OpenAI, Anthropic, Google, Groq, etc.)
+- Content extraction from URLs (web scraping, YouTube transcripts)
+- Podcast generation (LLM and TTS provider calls)
+
+**Format:** `http://[user:pass@]host:port` or `https://[user:pass@]host:port`
+
+**Examples:**
+```bash
+# Basic proxy
+HTTP_PROXY=http://proxy.corp.com:8080
+HTTPS_PROXY=http://proxy.corp.com:8080
+
+# Authenticated proxy
+HTTP_PROXY=http://user:password@proxy.corp.com:8080
+HTTPS_PROXY=http://user:password@proxy.corp.com:8080
+
+# Bypass proxy for local hosts
+NO_PROXY=localhost,127.0.0.1,.local
+```
+
+---
+
 ## Debugging & Monitoring
 
 | Variable | Required? | Default | Description |
@@ -260,6 +296,14 @@ SURREAL_PASSWORD=secure_password
 ```
 OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
 API_URL=https://mynotebook.example.com
+```
+
+### Corporate Environment (Behind Proxy)
+```
+OPENAI_API_KEY=sk-proj-...
+HTTP_PROXY=http://proxy.corp.com:8080
+HTTPS_PROXY=http://proxy.corp.com:8080
+NO_PROXY=localhost,127.0.0.1
 ```
 
 ### High-Performance Deployment

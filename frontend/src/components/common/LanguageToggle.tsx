@@ -70,6 +70,12 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         >
           <span>{t.common.french}</span>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('ru-RU')}
+          className={currentLang === 'ru-RU' || currentLang.startsWith('ru') ? 'bg-accent' : ''}
+        >
+          <span>{t.common.russian}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

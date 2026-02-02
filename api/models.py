@@ -395,6 +395,16 @@ class SourceInsightResponse(BaseModel):
     updated: str
 
 
+class InsightCreationResponse(BaseModel):
+    """Response for async insight creation."""
+
+    status: Literal["pending"] = "pending"
+    message: str = "Insight generation started"
+    source_id: str
+    transformation_id: str
+    command_id: Optional[str] = None
+
+
 class SaveAsNoteRequest(BaseModel):
     notebook_id: Optional[str] = Field(None, description="Notebook ID to add note to")
 

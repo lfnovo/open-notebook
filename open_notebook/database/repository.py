@@ -180,7 +180,12 @@ async def repo_insert(
     except RuntimeError as e:
         if ignore_duplicates and "already contains" in str(e):
             return []
-        logger.error(str(e))
+        # Log transaction conflicts at debug level (they are expected during concurrent operations)
+        error_str = str(e).lower()
+        if "transaction" in error_str or "conflict" in error_str:
+            logger.debug(str(e))
+        else:
+            logger.error(str(e))
         raise
     except Exception as e:
         if ignore_duplicates and "already contains" in str(e):

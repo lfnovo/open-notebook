@@ -23,6 +23,13 @@ def full_model_dump(model):
         return model
 
 
+def get_command_id(input_data: CommandInput) -> str:
+    """Extract command_id from input_data's execution context, or return 'unknown'."""
+    if input_data.execution_context:
+        return str(input_data.execution_context.command_id)
+    return "unknown"
+
+
 class RebuildEmbeddingsInput(CommandInput):
     mode: Literal["existing", "all"]
     include_sources: bool = True
@@ -45,6 +52,23 @@ class RebuildEmbeddingsOutput(CommandOutput):
 # =============================================================================
 # NEW EMBEDDING COMMANDS (Phase 3)
 # =============================================================================
+
+
+class CreateInsightInput(CommandInput):
+    """Input for creating a source insight with automatic retry on conflicts."""
+
+    source_id: str
+    insight_type: str
+    content: str
+
+
+class CreateInsightOutput(CommandOutput):
+    """Output from insight creation command."""
+
+    success: bool
+    insight_id: Optional[str] = None
+    processing_time: float
+    error_message: Optional[str] = None
 
 
 class EmbedNoteInput(CommandInput):
@@ -101,7 +125,7 @@ class EmbedSourceOutput(CommandOutput):
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -118,9 +142,9 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
     3. UPSERT note embedding in database
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -137,8 +161,9 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
 
         # 2. Generate embedding (auto-chunks + mean pools if needed)
         # Notes are typically markdown content
+        cmd_id = get_command_id(input_data)
         embedding = await generate_embedding(
-            note.content, content_type=ContentType.MARKDOWN
+            note.content, content_type=ContentType.MARKDOWN, command_id=cmd_id
         )
 
         # 3. UPSERT embedding into note record
@@ -161,27 +186,27 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
             processing_time=processing_time,
         )
 
-    except RuntimeError:
-        logger.debug(
-            f"Transaction conflict for note {input_data.note_id} - will be retried"
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        logger.debug(
-            f"Network/timeout error for note {input_data.note_id} ({type(e).__name__}: {e}) - will be retried"
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed note {input_data.note_id}: {e}")
-        logger.exception(e)
-
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed note {input_data.note_id} (command: {cmd_id}): {e}"
+        )
         return EmbedNoteOutput(
             success=False,
             note_id=input_data.note_id,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding note {input_data.note_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 @command(
@@ -192,7 +217,7 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -209,9 +234,9 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
     3. UPSERT insight embedding in database
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -230,8 +255,9 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
 
         # 2. Generate embedding (auto-chunks + mean pools if needed)
         # Insights are typically markdown content (generated by LLM)
+        cmd_id = get_command_id(input_data)
         embedding = await generate_embedding(
-            insight.content, content_type=ContentType.MARKDOWN
+            insight.content, content_type=ContentType.MARKDOWN, command_id=cmd_id
         )
 
         # 3. UPSERT embedding into insight record
@@ -254,27 +280,27 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
             processing_time=processing_time,
         )
 
-    except RuntimeError:
-        logger.debug(
-            f"Transaction conflict for insight {input_data.insight_id} - will be retried"
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        logger.debug(
-            f"Network/timeout error for insight {input_data.insight_id} ({type(e).__name__}: {e}) - will be retried"
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed insight {input_data.insight_id}: {e}")
-        logger.exception(e)
-
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed insight {input_data.insight_id} (command: {cmd_id}): {e}"
+        )
         return EmbedInsightOutput(
             success=False,
             insight_id=input_data.insight_id,
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding insight {input_data.insight_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 @command(
@@ -285,7 +311,7 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
         "wait_max": 60,
-        "retry_on": [RuntimeError, ConnectionError, TimeoutError],
+        "stop_on": [ValueError],  # Don't retry validation errors
         "retry_log_level": "debug",
     },
 )
@@ -305,9 +331,9 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
     6. Bulk INSERT source_embedding records
 
     Retry Strategy:
-    - Retries up to 5 times for transient failures (RuntimeError, ConnectionError, TimeoutError)
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
     - Uses exponential-jitter backoff (1-60s)
-    - Does NOT retry permanent failures (ValueError, authentication errors)
+    - Does NOT retry permanent failures (ValueError for validation errors)
     """
     start_time = time.time()
 
@@ -351,8 +377,9 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             raise ValueError("No chunks created after splitting text")
 
         # 5. Generate embeddings for all chunks in single API call
+        cmd_id = get_command_id(input_data)
         logger.debug(f"Generating embeddings for {total_chunks} chunks")
-        embeddings = await generate_embeddings(chunks)
+        embeddings = await generate_embeddings(chunks, command_id=cmd_id)
 
         # Verify we got embeddings for all chunks
         if len(embeddings) != len(chunks):
@@ -388,21 +415,13 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             processing_time=processing_time,
         )
 
-    except RuntimeError:
-        logger.debug(
-            f"Transaction conflict for source {input_data.source_id} - will be retried"
-        )
-        raise
-    except (ConnectionError, TimeoutError) as e:
-        logger.debug(
-            f"Network/timeout error for source {input_data.source_id} ({type(e).__name__}: {e}) - will be retried"
-        )
-        raise
-    except Exception as e:
+    except ValueError as e:
+        # Permanent failure - don't retry
         processing_time = time.time() - start_time
-        logger.error(f"Failed to embed source {input_data.source_id}: {e}")
-        logger.exception(e)
-
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to embed source {input_data.source_id} (command: {cmd_id}): {e}"
+        )
         return EmbedSourceOutput(
             success=False,
             source_id=input_data.source_id,
@@ -410,6 +429,120 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
             processing_time=processing_time,
             error_message=str(e),
         )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error embedding source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
+
+
+@command(
+    "create_insight",
+    app="open_notebook",
+    retry={
+        "max_attempts": 5,
+        "wait_strategy": "exponential_jitter",
+        "wait_min": 1,
+        "wait_max": 60,
+        "stop_on": [ValueError],  # Don't retry validation errors
+        "retry_log_level": "debug",
+    },
+)
+async def create_insight_command(
+    input_data: CreateInsightInput,
+) -> CreateInsightOutput:
+    """
+    Create a source insight with automatic retry on transaction conflicts.
+
+    This command wraps the CREATE source_insight operation with retry logic
+    to handle SurrealDB transaction conflicts that occur during batch imports
+    when multiple parallel transformations try to create insights concurrently.
+
+    Flow:
+    1. CREATE source_insight record in database
+    2. Submit embed_insight command (fire-and-forget) for async embedding
+    3. Return the insight_id
+
+    Retry Strategy:
+    - Retries up to 5 times for transient failures (network, timeout, etc.)
+    - Uses exponential-jitter backoff (1-60s)
+    - Does NOT retry permanent failures (ValueError for validation errors)
+    """
+    start_time = time.time()
+
+    try:
+        logger.info(
+            f"Creating insight for source {input_data.source_id}: "
+            f"type={input_data.insight_type}"
+        )
+
+        # 1. Create insight record in database
+        result = await repo_query(
+            """
+            CREATE source_insight CONTENT {
+                "source": $source_id,
+                "insight_type": $insight_type,
+                "content": $content
+            };
+            """,
+            {
+                "source_id": ensure_record_id(input_data.source_id),
+                "insight_type": input_data.insight_type,
+                "content": input_data.content,
+            },
+        )
+
+        if not result or len(result) == 0:
+            raise ValueError("Failed to create insight - no result returned")
+
+        insight_id = str(result[0].get("id", ""))
+        if not insight_id:
+            raise ValueError("Failed to create insight - no ID in result")
+
+        # 2. Submit embedding command (fire-and-forget)
+        submit_command(
+            "open_notebook",
+            "embed_insight",
+            {"insight_id": insight_id},
+        )
+        logger.debug(f"Submitted embed_insight command for {insight_id}")
+
+        processing_time = time.time() - start_time
+        logger.info(
+            f"Successfully created insight {insight_id} for source "
+            f"{input_data.source_id} in {processing_time:.2f}s"
+        )
+
+        return CreateInsightOutput(
+            success=True,
+            insight_id=insight_id,
+            processing_time=processing_time,
+        )
+
+    except ValueError as e:
+        # Permanent failure - don't retry
+        processing_time = time.time() - start_time
+        cmd_id = get_command_id(input_data)
+        logger.error(
+            f"Failed to create insight for source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        return CreateInsightOutput(
+            success=False,
+            processing_time=processing_time,
+            error_message=str(e),
+        )
+    except Exception as e:
+        # Transient failure - will be retried (surreal-commands logs final failure)
+        cmd_id = get_command_id(input_data)
+        logger.debug(
+            f"Transient error creating insight for source {input_data.source_id} "
+            f"(command: {cmd_id}): {e}"
+        )
+        raise
 
 
 async def collect_items_for_rebuild(
@@ -444,8 +577,10 @@ async def collect_items_for_rebuild(
             else:
                 items["sources"] = []
         else:  # mode == "all"
-            # Query all sources with content
-            result = await repo_query("SELECT id FROM source WHERE full_text != none")
+            # Query all sources with non-empty content
+            result = await repo_query(
+                "SELECT id FROM source WHERE full_text != none AND string::trim(full_text) != ''"
+            )
             items["sources"] = [str(item["id"]) for item in result] if result else []
 
         logger.info(f"Collected {len(items['sources'])} sources for rebuild")
@@ -457,8 +592,10 @@ async def collect_items_for_rebuild(
                 "SELECT id FROM note WHERE embedding != none AND array::len(embedding) > 0"
             )
         else:  # mode == "all"
-            # Query all notes (with content)
-            result = await repo_query("SELECT id FROM note WHERE content != none")
+            # Query all notes with non-empty content
+            result = await repo_query(
+                "SELECT id FROM note WHERE content != none AND string::trim(content) != ''"
+            )
 
         items["notes"] = [str(item["id"]) for item in result] if result else []
         logger.info(f"Collected {len(items['notes'])} notes for rebuild")
@@ -470,8 +607,10 @@ async def collect_items_for_rebuild(
                 "SELECT id FROM source_insight WHERE embedding != none AND array::len(embedding) > 0"
             )
         else:  # mode == "all"
-            # Query all insights
-            result = await repo_query("SELECT id FROM source_insight")
+            # Query all insights with non-empty content
+            result = await repo_query(
+                "SELECT id FROM source_insight WHERE content != none AND string::trim(content) != ''"
+            )
 
         items["insights"] = [str(item["id"]) for item in result] if result else []
         logger.info(f"Collected {len(items['insights'])} insights for rebuild")

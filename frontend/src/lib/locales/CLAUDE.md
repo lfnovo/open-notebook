@@ -20,6 +20,7 @@ lib/
     ├── zh-TW/index.ts   # Traditional Chinese translations
     ├── ja-JP/index.ts   # Japanese translations
     └── fr-FR/index.ts   # French translations
+    └── ru-RU/index.ts   # Russian translations
 ```
 
 ## Key Components

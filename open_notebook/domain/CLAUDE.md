@@ -32,7 +32,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
   - `vectorize()`: Submit async embedding job (returns command_id, fire-and-forget)
   - `get_status()`, `get_processing_progress()`: Track job via surreal_commands
   - `get_context()`: Returns summary for LLM context
-  - `add_insight()`: Generate and store insights with embeddings
+  - `add_insight()`: Submit async insight creation via `create_insight_command` (fire-and-forget, returns command_id)
 
 - **Note**: Standalone or linked notes
   - `save()`: Submits `embed_note` command after save (fire-and-forget)
@@ -80,7 +80,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Auto-embedding behavior**:
   - `Note.save()` → auto-submits `embed_note` command
   - `Source.save()` → does NOT auto-submit (must call `vectorize()` explicitly)
-  - `Source.add_insight()` → auto-submits `embed_insight` command
+  - `Source.add_insight()` → submits `create_insight_command` which handles DB insert + `embed_insight` command (all fire-and-forget)
 - **Relationship strings**: Must match SurrealDB schema (reference, artifact, refers_to)
 
 ## How to Add New Model

@@ -18,6 +18,30 @@ Provides cross-cutting concerns: building LLM context from sources/insights, con
 
 Each utility is stateless and can be imported independently.
 
+## Configuration
+
+### Chunking Configuration (chunking.py)
+
+The chunking behavior can be configured via environment variables:
+
+- **OPEN_NOTEBOOK_CHUNK_SIZE**: Maximum chunk size in characters (default: 1200)
+  - Minimum: 100 characters
+  - Warnings: Values > 8192 characters or invalid values
+  - Use case: Smaller models (e.g., mxbai-embed-large with limited context window)
+
+- **OPEN_NOTEBOOK_CHUNK_OVERLAP**: Overlap between chunks in characters (default: 15% of CHUNK_SIZE)
+  - Must be: >= 0 and < CHUNK_SIZE
+  - Warnings: Invalid values or values >= CHUNK_SIZE
+  - Use case: Control how much context is shared between adjacent chunks
+
+Example for models with small context windows:
+```bash
+export OPEN_NOTEBOOK_CHUNK_SIZE=512
+export OPEN_NOTEBOOK_CHUNK_OVERLAP=50
+```
+
+Note: Changes require restart of the application.
+
 ## Component Catalog
 
 ### context_builder.py
@@ -39,8 +63,8 @@ Each utility is stateless and can be imported independently.
 
 ### chunking.py
 - **ContentType**: Enum (HTML, MARKDOWN, PLAIN)
-- **CHUNK_SIZE**: constant
-- **CHUNK_OVERLAP**: constant
+- **CHUNK_SIZE**: Configurable via `OPEN_NOTEBOOK_CHUNK_SIZE` env var (default: 1200)
+- **CHUNK_OVERLAP**: Configurable via `OPEN_NOTEBOOK_CHUNK_OVERLAP` env var (default: 15% of CHUNK_SIZE)
 - **detect_content_type_from_extension(file_path)**: Detect type from file extension
 - **detect_content_type_from_heuristics(text)**: Detect type from content patterns (returns type + confidence)
 - **detect_content_type(text, file_path)**: Combined detection (extension primary, heuristics fallback)
@@ -125,7 +149,7 @@ Each utility is stateless and can be imported independently.
 
 1. **Add new context source type**: Create fetch method in ContextBuilder; update ContextConfig.sources dict
 2. **Add content type**: Add to ContentType enum; create splitter getter; update chunk_text()
-3. **Change chunk size**: Modify CHUNK_SIZE and CHUNK_OVERLAP constants in chunking.py
+3. **Change chunk size**: Set OPEN_NOTEBOOK_CHUNK_SIZE and OPEN_NOTEBOOK_CHUNK_OVERLAP environment variables
 4. **Add text preprocessing**: Add new function to text_utils (e.g., remove_urls, extract_keywords)
 5. **Change tokenization**: Replace tiktoken with alternative library in token_utils; update all calls
 6. **Add context filtering**: Extend ContextConfig with filter_by_date, filter_by_topic fields

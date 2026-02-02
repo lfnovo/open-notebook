@@ -214,6 +214,12 @@ AZURE_OPENAI_API_VERSION=2024-12-01-preview
 - Voice options
 - Docker networking
 
+### [Local STT](local-stt.md)
+- Speaches setup for local speech-to-text
+- Whisper model options
+- GPU acceleration
+- Docker networking
+
 ### [Ollama](ollama.md)
 - Setting up and pointing to an Ollama server
 - Downloading models

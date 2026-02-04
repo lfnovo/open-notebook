@@ -2,6 +2,8 @@
 
 Configure AI provider API keys directly through the Settings UI. No file editing required.
 
+> 💡 **New Feature**: You can now create **multiple configurations** per provider (e.g., different API keys for different projects). See [Multi-Config Support](#multi-config-support) for details.
+
 ---
 
 ## Overview
@@ -130,6 +132,48 @@ Google Cloud's enterprise AI platform:
 
 ---
 
+## Multi-Config Support
+
+Each provider can now have **multiple configurations**. This is useful when:
+- You have different API keys for different projects
+- You want to test with different models/endpoints
+- Multiple team members need separate credentials
+
+### Creating Multiple Configs
+
+1. On a provider's card, click **Add Configuration**
+2. Fill in the configuration details
+3. Click **Save**
+4. Use the star icon to set a default configuration
+
+```
+Example: OpenAI with multiple configs
+┌─────────────────────────────────────────────────┐
+│ OpenAI                              [+ Add Config] │
+├─────────────────────────────────────────────────┤
+│ ★ Default (api.openai.com)           [Edit] [Delete] │
+│ ✦ Work Key (work.openai.com)         [Edit] [Delete] │
+└─────────────────────────────────────────────────┘
+```
+
+### Managing Configurations
+
+| Action | How |
+|--------|-----|
+| Add new config | Click **[+ Add Configuration]** on provider card |
+| Edit config | Click **[Edit]** on the config |
+| Delete config | Click **[Delete]** on the config |
+| Set default | Click **star icon** on the config |
+| Test config | Click **[Test Connection]** on the config |
+
+### Priority When Multiple Configs Exist
+
+When a provider has multiple configurations:
+1. The **default** configuration is used
+2. You can override per-request in the Models page
+
+---
+
 ## Testing Connections
 
 Click **Test Connection** to verify your configuration:
@@ -168,6 +212,13 @@ If you have existing API keys in `.env` or `docker.env`:
 - Database keys take priority
 - Environment variables serve as fallback
 - Remove env vars if no longer needed
+
+### Migration Banner Visibility
+
+The migration banner only appears when:
+- You have environment variables configured
+- Those providers are **not** already in the database
+- If all env providers are already migrated, the banner won't show
 
 ---
 

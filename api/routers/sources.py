@@ -461,7 +461,7 @@ async def create_source(
                     "open_notebook",  # app name
                     "process_source",  # command name
                     command_input.model_dump(),
-                    300,  # 5 minute timeout for sync processing
+                    timeout=300,  # 5 minute timeout for sync processing
                 )
 
                 if not result.is_success():

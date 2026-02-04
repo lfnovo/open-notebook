@@ -258,5 +258,70 @@ class TestContextBuilder:
         assert builder.include_insights is False
 
 
+# ============================================================================
+# TEST SUITE 5: Video Utilities
+# ============================================================================
+
+
+class TestVideoUtilities:
+    """Test suite for video processing utility functions."""
+
+    def test_calculate_frame_params_short_video(self):
+        """Test frame params for short videos (≤60s)."""
+        from open_notebook.utils.video import calculate_frame_params
+
+        # Boundary: exactly 60 seconds
+        fps, max_frames = calculate_frame_params(60)
+        assert fps == 1.0
+        assert max_frames == 60
+
+        # Under threshold
+        fps, max_frames = calculate_frame_params(30)
+        assert fps == 1.0
+        assert max_frames == 60
+
+    def test_calculate_frame_params_medium_video(self):
+        """Test frame params for medium videos (61s-5min)."""
+        from open_notebook.utils.video import calculate_frame_params
+
+        # Just over 60s
+        fps, max_frames = calculate_frame_params(61)
+        assert fps == 0.5
+        assert max_frames == 150
+
+        # At 5 minute boundary
+        fps, max_frames = calculate_frame_params(300)
+        assert fps == 0.5
+        assert max_frames == 150
+
+    def test_calculate_frame_params_long_video(self):
+        """Test frame params for long videos (5min-15min)."""
+        from open_notebook.utils.video import calculate_frame_params
+
+        # Just over 5 min
+        fps, max_frames = calculate_frame_params(301)
+        assert fps == 0.2
+        assert max_frames == 180
+
+        # At 15 minute boundary
+        fps, max_frames = calculate_frame_params(900)
+        assert fps == 0.2
+        assert max_frames == 180
+
+    def test_calculate_frame_params_very_long_video(self):
+        """Test frame params for very long videos (>15min)."""
+        from open_notebook.utils.video import calculate_frame_params
+
+        # Just over 15 min
+        fps, max_frames = calculate_frame_params(901)
+        assert fps == 0.1
+        assert max_frames == 180
+
+        # Very long video (1 hour)
+        fps, max_frames = calculate_frame_params(3600)
+        assert fps == 0.1
+        assert max_frames == 180
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

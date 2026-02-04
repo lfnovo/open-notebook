@@ -926,6 +926,8 @@ export const ptBR = {
     toolsModelDesc: "Usado para chamadas de função - OpenAI ou Anthropic recomendado",
     largeContextModelLabel: "Modelo de Contexto Grande",
     largeContextModelDesc: "Usado para processar documentos grandes - Gemini recomendado",
+    visionModelLabel: "Modelo de Visão",
+    visionModelDesc: "Para analisar imagens e quadros de vídeo (qualquer modelo multimodal: GPT-4V, Claude 3, Gemini, etc.)",
     embeddingModelLabel: "Modelo de Embedding",
     embeddingModelDesc: "Usado para busca semântica e embeddings vetoriais",
     ttsModelLabel: "Modelo Text-to-Speech",

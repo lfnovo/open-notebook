@@ -68,6 +68,13 @@ export function DefaultModelsSection({ models, defaults }: DefaultModelsSectionP
       id: `${generatedId}-large-context`,
     },
     {
+      key: 'default_vision_model',
+      label: t.models.visionModelLabel,
+      description: t.models.visionModelDesc,
+      modelType: 'language',
+      id: `${generatedId}-vision`,
+    },
+    {
       key: 'default_embedding_model',
       label: t.models.embeddingModelLabel,
       description: t.models.embeddingModelDesc,

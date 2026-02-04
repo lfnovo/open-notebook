@@ -926,6 +926,8 @@ export const enUS = {
     toolsModelDesc: "Used for function calling - OpenAI or Anthropic recommended",
     largeContextModelLabel: "Large Context Model",
     largeContextModelDesc: "Used for processing large documents - Gemini recommended",
+    visionModelLabel: "Vision Model",
+    visionModelDesc: "For analyzing images and video frames (any multimodal model: GPT-4V, Claude 3, Gemini, etc.)",
     embeddingModelLabel: "Embedding Model",
     embeddingModelDesc: "Used for semantic search and vector embeddings",
     ttsModelLabel: "Text-to-Speech Model",

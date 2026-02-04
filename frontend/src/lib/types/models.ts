@@ -19,6 +19,7 @@ export interface ModelDefaults {
   large_context_model?: string | null
   default_text_to_speech_model?: string | null
   default_speech_to_text_model?: string | null
+  default_vision_model?: string | null
   default_embedding_model?: string | null
   default_tools_model?: string | null
 }

@@ -926,6 +926,8 @@ export const zhCN = {
     toolsModelDesc: "用于函数调用 - 推荐 OpenAI 或 Anthropic",
     largeContextModelLabel: "大上下文模型",
     largeContextModelDesc: "用于处理大文档 - 推荐 Gemini",
+    visionModelLabel: "视觉模型",
+    visionModelDesc: "用于分析图像和视频帧（任何多模态模型：GPT-4V、Claude 3、Gemini 等）",
     embeddingModelLabel: "嵌入模型",
     embeddingModelDesc: "用于语义搜索和向量嵌入",
     ttsModelLabel: "文字转语音模型",

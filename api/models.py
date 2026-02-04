@@ -506,8 +506,16 @@ class TestConnectionResponse(BaseModel):
     """Response from testing a provider connection."""
 
     provider: str = Field(..., description="Provider name that was tested")
-    success: bool = Field(..., description="Whether the connection test succeeded")
+    success: bool = Field(..., description="Whether connection test succeeded")
     message: str = Field(..., description="Result message with details")
+
+
+class MigrateFromEnvRequest(BaseModel):
+    """Request to migrate API keys from environment variables to database."""
+
+    force: bool = Field(
+        False, description="Force overwrite existing database configurations"
+    )
 
 
 class MigrationResult(BaseModel):
@@ -516,6 +524,12 @@ class MigrationResult(BaseModel):
     message: str = Field(..., description="Summary message")
     migrated: List[str] = Field(
         default_factory=list, description="Providers successfully migrated"
+    )
+    skipped: List[str] = Field(
+        default_factory=list, description="Providers skipped (already in DB)"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="Migration errors by provider"
     )
     skipped: List[str] = Field(
         default_factory=list, description="Providers skipped (already in DB)"

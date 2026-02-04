@@ -165,8 +165,8 @@ export const apiKeysApi = {
   /**
    * Migrate API keys from environment variables to database
    */
-  migrate: async (): Promise<MigrationResult> => {
-    const response = await apiClient.post<MigrationResult>('/api-keys/migrate')
+  migrate: async (force: boolean = false): Promise<MigrationResult> => {
+    const response = await apiClient.post<MigrationResult>('/api-keys/migrate', { force })
     return response.data
   },
 

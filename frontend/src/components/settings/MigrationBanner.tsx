@@ -7,14 +7,14 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { useMigrateApiKeys } from '@/lib/hooks/use-api-keys'
 
 interface MigrationBannerProps {
-  envKeysCount: number
+  providersToMigrate: string[]
 }
 
-export function MigrationBanner({ envKeysCount }: MigrationBannerProps) {
+export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
   const { t } = useTranslation()
   const migrate = useMigrateApiKeys()
 
-  if (envKeysCount === 0) {
+  if (providersToMigrate.length === 0) {
     return null
   }
 
@@ -26,7 +26,7 @@ export function MigrationBanner({ envKeysCount }: MigrationBannerProps) {
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-amber-700 dark:text-amber-300">
-          {t.apiKeys.migrationDescription.replace('{count}', envKeysCount.toString())}
+          {t.apiKeys.migrationDescription.replace('{count}', providersToMigrate.length.toString())}
         </span>
         <Button
           variant="outline"

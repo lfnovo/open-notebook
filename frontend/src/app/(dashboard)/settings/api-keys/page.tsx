@@ -9,7 +9,7 @@ import { RefreshCw, ChevronLeft, Key } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import Link from 'next/link'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { useProviderConfigs, useProviderConfig, useCreateProviderConfig, useUpdateProviderConfig } from '@/lib/hooks/use-api-keys'
+import { useProviderConfigs, useProviderConfig, useCreateProviderConfig, useUpdateProviderConfig, useEnvStatus, useApiKeysStatus } from '@/lib/hooks/use-api-keys'
 import {
   MigrationBanner,
   ProviderCard,
@@ -198,6 +198,39 @@ export default function ApiKeysPage() {
   const createConfig = useCreateProviderConfig()
   const updateConfig = useUpdateProviderConfig()
 
+  // Fetch environment variable status for migration banner
+  const { data: envStatus } = useEnvStatus()
+  const { data: apiKeysStatus } = useApiKeysStatus()
+
+  // Calculate which providers need migration
+  // A provider needs migration if:
+  // 1. It has environment variables configured
+  // 2. It's NOT already configured in the database (source === 'environment')
+  const providersToMigrate = useMemo(() => {
+    if (!envStatus || !apiKeysStatus) {
+      return []
+    }
+
+    const providers: string[] = []
+
+    for (const provider in envStatus) {
+      if (envStatus[provider]) {
+        // Provider has env vars, check if it's in database
+        const dbSource = apiKeysStatus.source[provider]
+
+        // Only add to migration list if source is 'environment'
+        // This means it's configured via env vars but NOT in database
+        if (dbSource === 'environment') {
+          providers.push(provider)
+        }
+      }
+    }
+
+    return providers
+  }, [envStatus, apiKeysStatus])
+
+  const envKeysCount = envStatus ? Object.values(envStatus).filter(Boolean).length : 0
+
   // Close dialog after successful operation
   const isSubmitting = createConfig.isPending || updateConfig.isPending
   if ((createConfig.isSuccess || updateConfig.isSuccess) && dialogOpen) {
@@ -306,8 +339,8 @@ export default function ApiKeysPage() {
             </Button>
           </div>
 
-          {/* Migration Banner - for legacy support */}
-          {/* MigrationBanner can be kept for backward compatibility */}
+          {/* Migration Banner - Show when env vars have provider configurations that are not in database */}
+          <MigrationBanner providersToMigrate={providersToMigrate} />
 
           {/* Provider Cards */}
           <div className="grid gap-4">

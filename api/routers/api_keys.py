@@ -20,6 +20,7 @@ from pydantic import SecretStr
 
 from api.models import (
     ApiKeyStatusResponse,
+    MigrateFromEnvRequest,
     MigrationResult,
     SetApiKeyRequest,
     TestConnectionResponse,
@@ -257,6 +258,126 @@ async def get_env_status():
         )
 
 
+@router.post("/api-keys/migrate", response_model=MigrationResult)
+async def migrate_from_env(request: MigrateFromEnvRequest):
+    """
+    Migrate API keys from environment variables to database.
+
+    By default, only migrates providers that have environment variables set
+    but don't have database configuration yet. This preserves any existing
+    database configurations.
+
+    Set force=True to overwrite existing database configurations with
+    environment variable values.
+    """
+    force = request.force
+    try:
+        provider_config = await ProviderConfig.get_instance()
+        migrated: list[str] = []
+        skipped: list[str] = []
+        errors: list[str] = []
+
+        for provider in VALID_PROVIDERS:
+            env_configured = _check_env_configured(provider)
+            # Check DB configuration directly from the current provider_config instance
+            # Don't use _check_db_configured() which would reload from DB and lose our changes
+            default_cred = provider_config.get_default_config(provider)
+            db_configured = default_cred is not None
+
+            # Skip if not in env
+            if not env_configured:
+                continue
+            # Skip if already in DB (unless force=True)
+            if db_configured and not force:
+                skipped.append(provider)
+                continue
+
+            try:
+                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                config_id = f"{provider}:{uuid.uuid4().hex[:8]}"
+
+                # Build credential from environment
+                cred = ProviderCredential(
+                    id=config_id,
+                    name="Default (Migrated)",
+                    provider=provider,
+                    is_default=True,
+                    created=now,
+                    updated=now,
+                )
+
+                # Migrate based on provider type
+                if provider == "openai":
+                    cred.api_key = SecretStr(os.environ["OPENAI_API_KEY"])
+                elif provider == "anthropic":
+                    cred.api_key = SecretStr(os.environ["ANTHROPIC_API_KEY"])
+                elif provider == "google":
+                    key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+                    if key:
+                        cred.api_key = SecretStr(key)
+                elif provider == "groq":
+                    cred.api_key = SecretStr(os.environ["GROQ_API_KEY"])
+                elif provider == "mistral":
+                    cred.api_key = SecretStr(os.environ["MISTRAL_API_KEY"])
+                elif provider == "deepseek":
+                    cred.api_key = SecretStr(os.environ["DEEPSEEK_API_KEY"])
+                elif provider == "xai":
+                    cred.api_key = SecretStr(os.environ["XAI_API_KEY"])
+                elif provider == "openrouter":
+                    cred.api_key = SecretStr(os.environ["OPENROUTER_API_KEY"])
+                elif provider == "voyage":
+                    cred.api_key = SecretStr(os.environ["VOYAGE_API_KEY"])
+                elif provider == "elevenlabs":
+                    cred.api_key = SecretStr(os.environ["ELEVENLABS_API_KEY"])
+                elif provider == "ollama":
+                    base_url = os.environ["OLLAMA_API_BASE"]
+                    _validate_url(base_url, provider)
+                    cred.base_url = base_url
+                elif provider == "vertex":
+                    cred.project = os.environ["VERTEX_PROJECT"]
+                    cred.location = os.environ["VERTEX_LOCATION"]
+                    cred.credentials_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
+                elif provider == "azure":
+                    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
+                    _validate_url(endpoint, provider)
+                    cred.api_key = SecretStr(os.environ["AZURE_OPENAI_API_KEY"])
+                    cred.endpoint = endpoint
+                    cred.api_version = os.environ["AZURE_OPENAI_API_VERSION"]
+                elif provider == "openai_compatible":
+                    base_url = os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
+                    if base_url:
+                        _validate_url(base_url, provider)
+                        cred.base_url = base_url
+                    if os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
+                        cred.api_key = SecretStr(os.environ["OPENAI_COMPATIBLE_API_KEY"])
+
+                # Unset other defaults and add new
+                existing = provider_config.credentials.get(provider, [])
+                for existing_cred in existing:
+                    existing_cred.is_default = False
+
+                provider_config.add_config(provider, cred)
+                migrated.append(provider)
+
+            except Exception as e:
+                errors.append(f"{provider}: {str(e)}")
+
+        # Save all migrated configs
+        if migrated:
+            await provider_config.save()
+
+        return MigrationResult(
+            message=f"Migration complete. Migrated {len(migrated)} providers.",
+            migrated=migrated,
+            skipped=skipped,
+            errors=errors,
+        )
+
+    except Exception as e:
+        logger.error(f"Error during migration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")
+
+
 @router.post("/api-keys/{provider}")
 async def set_api_key(provider: str, request: SetApiKeyRequest):
     """
@@ -423,118 +544,3 @@ async def test_provider(provider: str):
             message=f"Test failed: {str(e)[:100]}",
         )
 
-
-@router.post("/api-keys/migrate", response_model=MigrationResult)
-async def migrate_from_env(force: bool = False):
-    """
-    Migrate API keys from environment variables to database.
-
-    By default, only migrates providers that have environment variables set
-    but don't have database configuration yet. This preserves any existing
-    database configurations.
-
-    Set force=True to overwrite existing database configurations with
-    environment variable values.
-    """
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        migrated: list[str] = []
-        skipped: list[str] = []
-        errors: list[str] = []
-
-        for provider in VALID_PROVIDERS:
-            env_configured = _check_env_configured(provider)
-            db_configured = await _check_db_configured(provider)
-
-            # Skip if not in env
-            if not env_configured:
-                continue
-            # Skip if already in DB (unless force=True)
-            if db_configured and not force:
-                skipped.append(provider)
-                continue
-
-            try:
-                now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                config_id = f"{provider}:{uuid.uuid4().hex[:8]}"
-
-                # Build credential from environment
-                cred = ProviderCredential(
-                    id=config_id,
-                    name="Default (Migrated)",
-                    provider=provider,
-                    is_default=True,
-                    created=now,
-                    updated=now,
-                )
-
-                # Migrate based on provider type
-                if provider == "openai":
-                    cred.api_key = SecretStr(os.environ["OPENAI_API_KEY"])
-                elif provider == "anthropic":
-                    cred.api_key = SecretStr(os.environ["ANTHROPIC_API_KEY"])
-                elif provider == "google":
-                    key = os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
-                    if key:
-                        cred.api_key = SecretStr(key)
-                elif provider == "groq":
-                    cred.api_key = SecretStr(os.environ["GROQ_API_KEY"])
-                elif provider == "mistral":
-                    cred.api_key = SecretStr(os.environ["MISTRAL_API_KEY"])
-                elif provider == "deepseek":
-                    cred.api_key = SecretStr(os.environ["DEEPSEEK_API_KEY"])
-                elif provider == "xai":
-                    cred.api_key = SecretStr(os.environ["XAI_API_KEY"])
-                elif provider == "openrouter":
-                    cred.api_key = SecretStr(os.environ["OPENROUTER_API_KEY"])
-                elif provider == "voyage":
-                    cred.api_key = SecretStr(os.environ["VOYAGE_API_KEY"])
-                elif provider == "elevenlabs":
-                    cred.api_key = SecretStr(os.environ["ELEVENLABS_API_KEY"])
-                elif provider == "ollama":
-                    base_url = os.environ["OLLAMA_API_BASE"]
-                    _validate_url(base_url, provider)
-                    cred.base_url = base_url
-                elif provider == "vertex":
-                    cred.project = os.environ["VERTEX_PROJECT"]
-                    cred.location = os.environ["VERTEX_LOCATION"]
-                    cred.credentials_path = os.environ["GOOGLE_APPLICATION_CREDENTIALS"]
-                elif provider == "azure":
-                    endpoint = os.environ["AZURE_OPENAI_ENDPOINT"]
-                    _validate_url(endpoint, provider)
-                    cred.api_key = SecretStr(os.environ["AZURE_OPENAI_API_KEY"])
-                    cred.endpoint = endpoint
-                    cred.api_version = os.environ["AZURE_OPENAI_API_VERSION"]
-                elif provider == "openai_compatible":
-                    base_url = os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
-                    if base_url:
-                        _validate_url(base_url, provider)
-                        cred.base_url = base_url
-                    if os.environ.get("OPENAI_COMPATIBLE_API_KEY"):
-                        cred.api_key = SecretStr(os.environ["OPENAI_COMPATIBLE_API_KEY"])
-
-                # Unset other defaults and add new
-                existing = provider_config.credentials.get(provider, [])
-                for existing_cred in existing:
-                    existing_cred.is_default = False
-
-                provider_config.add_config(provider, cred)
-                migrated.append(provider)
-
-            except Exception as e:
-                errors.append(f"{provider}: {str(e)}")
-
-        # Save all migrated configs
-        if migrated:
-            await provider_config.save()
-
-        return MigrationResult(
-            message=f"Migration complete. Migrated {len(migrated)} providers.",
-            migrated=migrated,
-            skipped=skipped,
-            errors=errors,
-        )
-
-    except Exception as e:
-        logger.error(f"Error during migration: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Migration failed: {str(e)}")

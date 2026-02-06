@@ -21,7 +21,7 @@ services:
       # Database (required)
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
-      - SURREAL_PASSWORD=password
+      - SURREAL_PASSWORD=${SURREAL_PASSWORD}
       - SURREAL_NAMESPACE=backpack
       - SURREAL_DATABASE=backpack
     volumes:

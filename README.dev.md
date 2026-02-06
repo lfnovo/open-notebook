@@ -1,13 +1,13 @@
 # Developer Guide
 
-This guide is for developers working on Open Notebook. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
+This guide is for developers working on Backpack. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
 
 ## Quick Start for Development
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/lfnovo/open-notebook.git
-cd open-notebook
+git clone https://github.com/parkerjstewart/backpack.git
+cd backpack
 
 # 2. Copy environment files
 cp .env.example .env
@@ -29,7 +29,7 @@ make start-all
 | **Local Services** (`make start-all`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
 | **Docker Compose** (`make dev`) | Testing containerized setup | ⚡⚡ Medium | High |
 | **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
-| **Multi-platform Build** (`make docker-push`) | Publishing releases | 🐌 Very Slow | Exact |
+| **Multi-platform Build** (`make docker-push`) | Publishing releases (not yet supported) | 🐌 Very Slow | Exact |
 
 ---
 
@@ -125,6 +125,8 @@ make full
 
 ## 3. Testing Production Docker Images
 
+> **Note:** Remote Docker registry publishing is not yet supported for Backpack. The commands below are for local testing only. Remote registry support is planned for a future release.
+
 **Best for:** Verifying Dockerfile changes before publishing
 
 ### Build Locally
@@ -134,18 +136,7 @@ make full
 make docker-build-local
 ```
 
-This creates two tags:
-- `lfnovo/open_notebook:<version>` (from pyproject.toml)
-- `lfnovo/open_notebook:local`
-
-### Run Locally
-
-```bash
-docker run -p 5055:5055 -p 3000:3000 lfnovo/open_notebook:local
-```
-
 ### When to Use
-- ✅ Before pushing to registry
 - ✅ Testing Dockerfile changes
 - ✅ Debugging production-specific issues
 - ✅ Verifying build process
@@ -154,7 +145,9 @@ docker run -p 5055:5055 -p 3000:3000 lfnovo/open_notebook:local
 
 ## 4. Publishing Docker Images
 
-### Workflow
+> **Note:** Remote Docker registry publishing is not yet supported for Backpack. The commands below are inherited from the upstream project and will not work until a Backpack Docker registry is configured. This section is kept as a reference for when remote publishing is set up in a future release.
+
+### Workflow (Future)
 
 ```bash
 # 1. Test locally first
@@ -171,18 +164,17 @@ make docker-push-latest
 
 ### Available Commands
 
-| Command | What It Does | Updates Latest? |
-|---------|--------------|-----------------|
-| `make docker-build-local` | Build for current platform only | No registry push |
-| `make docker-push` | Push version tags to registries | ❌ No |
-| `make docker-push-latest` | Push version + update v1-latest | ✅ Yes |
-| `make docker-release` | Full release (same as docker-push-latest) | ✅ Yes |
+| Command | What It Does | Status |
+|---------|--------------|--------|
+| `make docker-build-local` | Build for current platform only | ✅ Works now |
+| `make docker-push` | Push version tags to registries | ⚠️ Not yet supported |
+| `make docker-push-latest` | Push version + update v1-latest | ⚠️ Not yet supported |
+| `make docker-release` | Full release (same as docker-push-latest) | ⚠️ Not yet supported |
 
-### Publishing Details
+### Publishing Details (Future)
 
 - **Platforms:** `linux/amd64`, `linux/arm64`
-- **Registries:** Docker Hub + GitHub Container Registry
-- **Image Variants:** Regular + Single-container (`-single`)
+- **Registries:** TBD — Docker Hub and/or GitHub Container Registry
 - **Version Source:** `pyproject.toml`
 
 ### Creating Git Tags
@@ -243,47 +235,6 @@ uv sync
 # Frontend dependencies
 cd frontend && npm install package-name
 ```
-
-### Adding a New Language (i18n)
-
-Open Notebook supports internationalization. To add a new language:
-
-1. **Create locale file**: Copy an existing locale as template
-   ```bash
-   cp frontend/src/lib/locales/en-US/index.ts frontend/src/lib/locales/pt-BR/index.ts
-   ```
-
-2. **Translate all strings** in the new file. The structure includes:
-   - `common`: Shared UI elements (buttons, labels)
-   - `notebooks`, `sources`, `notes`: Feature-specific strings
-   - `chat`, `search`, `podcasts`: Module-specific strings
-   - `apiErrors`: Error message translations
-
-3. **Register the locale** in `frontend/src/lib/locales/index.ts`:
-   ```typescript
-   import { ptBR } from './pt-BR'
-
-   export const locales = {
-     'en-US': enUS,
-     'zh-CN': zhCN,
-     'zh-TW': zhTW,
-     'pt-BR': ptBR,  // Add your locale
-   }
-   ```
-
-4. **Add date-fns locale** in `frontend/src/lib/utils/date-locale.ts`:
-   ```typescript
-   import { zhCN, enUS, zhTW, ptBR } from 'date-fns/locale'
-
-   const LOCALE_MAP: Record<string, Locale> = {
-     'zh-CN': zhCN,
-     'zh-TW': zhTW,
-     'en-US': enUS,
-     'pt-BR': ptBR,  // Add your locale
-   }
-   ```
-
-5. **Test**: Switch languages using the language toggle in the UI header.
 
 ### Database Migrations
 
@@ -355,24 +306,24 @@ make docker-build-local
 ## Project Structure
 
 ```
-open-notebook/
+backpack/
 ├── api/                    # FastAPI backend
 ├── frontend/               # Next.js React frontend
-├── open_notebook/          # Python core library
-│   ├── domain/            # Domain models
-│   ├── graphs/            # LangGraph workflows
-│   ├── ai/                # AI provider integration
-│   └── database/          # SurrealDB operations
+├── backpack/               # Python core library
+│   ├── domain/             # Domain models
+│   ├── graphs/             # LangGraph workflows
+│   ├── ai/                 # AI provider integration
+│   └── database/           # SurrealDB operations
 ├── migrations/             # Database migrations
 ├── tests/                  # Test suite
 ├── docs/                   # User documentation
-└── Makefile               # Development commands
+└── Makefile                # Development commands
 ```
 
 See component-specific CLAUDE.md files for detailed architecture:
 - [frontend/CLAUDE.md](frontend/CLAUDE.md)
 - [api/CLAUDE.md](api/CLAUDE.md)
-- [open_notebook/CLAUDE.md](open_notebook/CLAUDE.md)
+- [backpack/CLAUDE.md](backpack/CLAUDE.md)
 
 ---
 
@@ -439,11 +390,10 @@ make clean-cache
 ## Resources
 
 - **Documentation:** https://open-notebook.ai
-- **Discord:** https://discord.gg/37XJPXfz2w
-- **Issues:** https://github.com/lfnovo/open-notebook/issues
+- **Issues:** https://github.com/parkerjstewart/backpack/issues
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Maintainer Guide:** [MAINTAINER_GUIDE.md](MAINTAINER_GUIDE.md)
 
 ---
 
-**Last Updated:** January 2025
+**Last Updated:** February 2026

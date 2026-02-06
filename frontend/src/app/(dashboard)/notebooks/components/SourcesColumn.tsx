@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { AddExistingSourceDialog } from '@/components/sources/AddExistingSourceDialog'
+import { ResearchDialog } from '@/components/notebooks/ResearchDialog'
 import { SourceCard } from '@/components/sources/SourceCard'
 import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/lib/hooks/use-sources'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -53,6 +54,7 @@ export function SourcesColumn({
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addExistingDialogOpen, setAddExistingDialogOpen] = useState(false)
+  const [researchDialogOpen, setResearchDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
@@ -175,6 +177,10 @@ export function SourcesColumn({
                       <Link2 className="h-4 w-4 mr-2" />
                       {t.sources.addExistingTitle}
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setResearchDialogOpen(true); }}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Research Papers
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
                 {collapseButton}
@@ -233,6 +239,13 @@ export function SourcesColumn({
       <AddExistingSourceDialog
         open={addExistingDialogOpen}
         onOpenChange={setAddExistingDialogOpen}
+        notebookId={notebookId}
+        onSuccess={onRefresh}
+      />
+
+      <ResearchDialog
+        open={researchDialogOpen}
+        onOpenChange={setResearchDialogOpen}
         notebookId={notebookId}
         onSuccess={onRefresh}
       />

@@ -606,6 +606,7 @@ async def delete_credential(
 @router.post("/{credential_id}/test")
 async def test_credential(credential_id: str):
     """Test connection using this credential's configuration."""
+    provider = "unknown"
     try:
         cred = await Credential.get(credential_id)
         config = cred.to_esperanto_config()

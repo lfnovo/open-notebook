@@ -7,17 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0-rc1] - 2026-02-07
+
 ### Added
-- **API Configuration UI** (#477)
-  - New Settings page for configuring AI provider API keys directly in the UI
+- **Credential-Based Provider Management** (#477)
+  - New Settings → API Keys page for managing AI provider credentials via the UI
   - Support for 14 providers: OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter, Voyage AI, ElevenLabs, Ollama, Azure OpenAI, OpenAI-Compatible, and Vertex AI
   - Secure storage of API keys in SurrealDB with field-level encryption (Fernet AES-128-CBC + HMAC-SHA256)
-  - Dynamic fallback: checks database first, then environment variables
-  - Connection testing for each provider with "Test Connection" button
-  - Migration tool to transfer existing environment variable keys to database
+  - One-click connection testing, model discovery, and model registration per credential
+  - Migration tool to import existing environment variable keys into the credential system
   - Azure OpenAI support with service-specific endpoints (LLM, Embedding, STT, TTS)
-  - OpenAI-Compatible support with service-specific configurations
+  - OpenAI-Compatible support with per-service URL configurations
   - Vertex AI support with project, location, and credentials path
+  - Environment variable API keys deprecated in favor of Settings UI
 
 - **Security Enhancements**
   - Docker secrets support via `_FILE` suffix pattern (e.g., `OPEN_NOTEBOOK_PASSWORD_FILE`)
@@ -41,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - API keys are encrypted at rest using Fernet symmetric encryption
 - Keys are never returned to the frontend, only configuration status
 - SSRF protection prevents internal network access via URL validation
+
+### Docs
+- Complete documentation update for credential-based system across 25 files
+- All quick-start, installation, and configuration guides now use Settings UI workflow
+- Environment variable API key instructions moved to deprecated/legacy sections
+- Fixed broken links in installation docs
 
 ## [1.6.2] - 2026-01-24
 

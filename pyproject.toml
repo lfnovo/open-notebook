@@ -29,7 +29,6 @@ dependencies = [
     "langchain-groq>=1.1.1",
     "langchain_mistralai>=1.1.1",
     "langchain_deepseek>=1.0.0",
-    "langchain-google-vertexai>=3.2.0",
     "tomli>=2.0.2",
     "python-dotenv>=1.0.1",
     "httpx[socks]>=0.27.0",

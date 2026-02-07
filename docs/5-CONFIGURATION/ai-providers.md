@@ -2,6 +2,19 @@
 
 Complete setup instructions for each AI provider. Pick the one you're using.
 
+> 💡 **Recommended**: Use the [Settings UI](../3-USER-GUIDE/api-configuration.md) for quick setup. The UI supports multiple configurations per provider and includes connection testing.
+
+---
+
+## Configuration Methods
+
+| Method | Best For | Guide |
+|--------|----------|-------|
+| **Settings UI** | Most users, quick setup | [API Configuration](../3-USER-GUIDE/api-configuration.md) |
+| **Environment Variables** | DevOps, automation | This page |
+
+**Recommended**: Use the Settings UI for quick setup. Environment variables are better for automated deployments.
+
 ---
 
 ## Cloud Providers (Recommended for Most)
@@ -125,8 +138,6 @@ GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com/v1beta/models
 **Available Models:**
 - `gemini-2.0-flash-exp` — Latest experimental, fastest (recommended)
 - `gemini-2.0-flash` — Stable version, fast, cheap
-- `gemini-1.5-pro-latest` — More capable, longer context
-- `gemini-1.5-flash` — Previous generation, very cheap
 
 **Recommended:**
 - For general use: `gemini-2.0-flash-exp` (best value, latest)
@@ -476,10 +487,14 @@ Use OpenAI
 
 1. **Choose your provider** from above
 2. **Get API key** (if cloud) or install locally (if Ollama)
-3. **Add to .env**
-4. **Restart services**
+3. **Add credentials**:
+   - **Recommended**: Use [Settings UI](../3-USER-GUIDE/api-configuration.md) for quick setup
+   - **Automation**: Add to `.env` (below)
+4. **Restart services** (if using environment variables)
 5. **Go to Settings → Models** in Open Notebook
 6. **Verify it works** with a test chat
+
+> 💡 **New**: The Settings UI now supports **multiple configurations** per provider - create separate credentials for different projects or team members.
 
 Done!
 

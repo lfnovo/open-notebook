@@ -64,3 +64,92 @@ const response = await sourcesApi.create({
 // With auth token (auto-added by interceptor)
 const notes = await notesApi.list()
 ```
+
+## API Keys Module (`api-keys.ts`)
+
+Client functions for managing API provider configurations (keys, base URLs, endpoints) stored in SurrealDB.
+
+### Type Definitions
+
+```typescript
+// Status of all configured API keys
+interface ApiKeyStatus {
+  configured: Record<string, boolean>  // provider -> is configured
+  source: Record<string, string>       // provider -> 'database' | 'environment'
+}
+
+// Environment variable status
+interface EnvStatus {
+  [provider: string]: boolean  // provider -> has env var set
+}
+
+// Request payload for setting API key
+interface SetApiKeyRequest {
+  api_key?: string
+  base_url?: string
+  endpoint?: string
+  api_version?: string
+  endpoint_llm?: string
+  endpoint_embedding?: string
+  endpoint_stt?: string
+  endpoint_tts?: string
+  service_type?: 'llm' | 'embedding' | 'stt' | 'tts'
+  // Vertex AI specific
+  vertex_project?: string
+  vertex_location?: string
+  vertex_credentials_path?: string
+}
+
+// Migration result from env to database
+interface MigrationResult {
+  message: string
+  migrated: string[]
+  skipped: string[]
+  errors: string[]
+}
+
+// Connection test result
+interface TestConnectionResult {
+  provider: string
+  success: boolean
+  message: string
+}
+```
+
+### API Functions
+
+| Function | Description | Endpoint |
+|----------|-------------|----------|
+| `getStatus()` | Get configuration status of all providers | `GET /api-keys/status` |
+| `getEnvStatus()` | Get which providers have env vars set | `GET /api-keys/env-status` |
+| `setKey(provider, data)` | Set/update API key configuration | `POST /api-keys/{provider}` |
+| `deleteKey(provider, serviceType?)` | Delete API key configuration | `DELETE /api-keys/{provider}` |
+| `migrate()` | Migrate keys from env vars to database | `POST /api-keys/migrate` |
+| `testConnection(provider)` | Test provider connectivity | `POST /api-keys/{provider}/test` |
+
+### Usage Example
+
+```typescript
+import { apiKeysApi } from '@/lib/api/api-keys'
+
+// Check which providers are configured
+const status = await apiKeysApi.getStatus()
+if (status.configured['openai']) {
+  console.log(`OpenAI configured via ${status.source['openai']}`)
+}
+
+// Set a new API key
+await apiKeysApi.setKey('anthropic', {
+  api_key: 'sk-ant-...',
+  base_url: 'https://api.anthropic.com'
+})
+
+// Test the connection
+const result = await apiKeysApi.testConnection('anthropic')
+if (result.success) {
+  console.log('Connection successful!')
+}
+
+// Delete a key (optionally for specific service type)
+await apiKeysApi.deleteKey('openai', 'embedding')
+```

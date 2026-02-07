@@ -192,3 +192,39 @@ context_items = await builder.build()
 for item in context_items:
     print(f"{item.type}:{item.id} ({item.token_count} tokens)")
 ```
+
+### encryption.py
+- **get_secret_from_env(var_name)**: Retrieve secret from environment with Docker secrets support (checks VAR_FILE first, then VAR)
+- **get_fernet()**: Get Fernet instance if encryption key is configured
+- **encrypt_value(value)**: Encrypt a string using Fernet symmetric encryption
+- **decrypt_value(value)**: Decrypt a Fernet-encrypted string; gracefully falls back to original value for legacy/unencrypted data
+- **generate_key()**: Generate a strong random encryption key (optional; any string works as key)
+
+**Purpose**: Provides field-level encryption for sensitive data (API keys) stored in the database. Uses Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256) for authenticated encryption.
+
+**Key behavior**:
+- Key source: OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE (Docker secrets) → OPEN_NOTEBOOK_ENCRYPTION_KEY (env var)
+- Accepts **any string**: valid Fernet keys are used directly; arbitrary strings are converted to a Fernet key via SHA-256
+- No default key — encryption is unavailable until the env var is set
+- Graceful fallback on decryption: InvalidToken errors (legacy unencrypted data) return the original value
+- Lazy-loaded key: initialized on first use, not at import time
+
+**Security considerations**:
+- OPEN_NOTEBOOK_ENCRYPTION_KEY must be set explicitly (no default)
+- Docker secrets pattern supported for secure key injection in containerized environments
+- Key rotation would require re-encrypting all stored keys (not currently implemented)
+- Encryption is transparent to callers; unencrypted legacy data continues to work
+
+**Usage Example**:
+```python
+from open_notebook.utils.encryption import encrypt_value, decrypt_value
+
+# Encrypt before storing in database
+encrypted_api_key = encrypt_value(api_key)
+
+# Decrypt when reading from database
+decrypted_api_key = decrypt_value(encrypted_api_key)
+
+# Set any string as encryption key:
+# OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
+```

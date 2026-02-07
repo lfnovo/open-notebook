@@ -1,21 +1,24 @@
-import os
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+from open_notebook.utils.encryption import get_secret_from_env
 
 
 class PasswordAuthMiddleware(BaseHTTPMiddleware):
     """
     Middleware to check password authentication for all API requests.
-    Only active when OPEN_NOTEBOOK_PASSWORD environment variable is set.
+    Always active with default password if OPEN_NOTEBOOK_PASSWORD is not set.
+    Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
     """
 
     def __init__(self, app, excluded_paths: Optional[list] = None):
         super().__init__(app)
-        self.password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
+        self.password = get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
         self.excluded_paths = excluded_paths or [
             "/",
             "/health",
@@ -82,12 +85,10 @@ def check_api_password(
     """
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.
+    Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
+    Uses default password if not configured.
     """
-    password = os.environ.get("OPEN_NOTEBOOK_PASSWORD")
-
-    # No password set, allow access
-    if not password:
-        return True
+    password = get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
 
     # No credentials provided
     if not credentials:

@@ -1,0 +1,7 @@
+-- Rollback Migration 12: Remove credential table and credential field from model
+
+REMOVE FIELD credential ON TABLE model;
+REMOVE TABLE credential;
+
+REMOVE INDEX idx_credential_provider ON credential;
+REMOVE FIELD credential ON model;

@@ -8,11 +8,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **API Configuration UI** (#477)
+  - New Settings page for configuring AI provider API keys directly in the UI
+  - Support for 14 providers: OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter, Voyage AI, ElevenLabs, Ollama, Azure OpenAI, OpenAI-Compatible, and Vertex AI
+  - Secure storage of API keys in SurrealDB with field-level encryption (Fernet AES-128-CBC + HMAC-SHA256)
+  - Dynamic fallback: checks database first, then environment variables
+  - Connection testing for each provider with "Test Connection" button
+  - Migration tool to transfer existing environment variable keys to database
+  - Azure OpenAI support with service-specific endpoints (LLM, Embedding, STT, TTS)
+  - OpenAI-Compatible support with service-specific configurations
+  - Vertex AI support with project, location, and credentials path
+
+- **Security Enhancements**
+  - Docker secrets support via `_FILE` suffix pattern (e.g., `OPEN_NOTEBOOK_PASSWORD_FILE`)
+  - Default encryption key derived from "0p3n-N0t3b0ok" for easy setup (change in production!)
+  - Default password "open-notebook-change-me" for out-of-box experience (change in production!)
+  - URL validation for SSRF protection - blocks private IPs and localhost (except for Ollama which runs locally)
+  - Security warnings logged when using default credentials
+
 - HTML clipboard detection for text sources (#426)
   - When pasting content, automatically detects HTML format (e.g., from Word, web pages)
   - Shows info message when HTML is detected, informing user it will be converted to Markdown
   - Preserves formatting that would be lost with plain text paste
   - Bump content-core to 0.11.0 for HTML to Markdown conversion support
+
+### Fixed
+- Azure form race condition: all configuration now saved in single atomic request
+- Migration API "error error" display: added proper MigrationResult model with message field
+- Connection tester for Ollama providers: improved error handling and URL validation
+
+### Security
+- API keys are encrypted at rest using Fernet symmetric encryption
+- Keys are never returned to the frontend, only configuration status
+- SSRF protection prevents internal network access via URL validation
 
 ## [1.6.2] - 2026-01-24
 

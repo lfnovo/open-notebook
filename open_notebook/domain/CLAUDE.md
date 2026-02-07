@@ -53,6 +53,17 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Transformation**: Reusable prompts for content transformation
 - **DefaultPrompts**: Singleton with transformation instructions
 
+### provider_config.py
+- **ProviderConfig**: Per-provider configuration for API keys and credentials (replaces the former singleton APIKeyConfig)
+  - **One record per provider**: Each provider (openai, anthropic, google, etc.) gets its own ProviderConfig record in SurrealDB
+  - **Dynamic field storage**: Provider-specific fields stored as a dict (api_key, base_url, endpoint, etc.)
+  - **SecretStr protection**: API key fields use Pydantic's `SecretStr` (values masked in logs/repr)
+  - **Encryption integration**: Uses `encrypt_value()`/`decrypt_value()` from `open_notebook.utils.encryption`
+    - Keys encrypted with Fernet before database storage
+    - Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` environment variable (warns if not set)
+  - **Multi-credential support**: Multiple configs per provider with a default flag
+  - **Custom serialization**: `_prepare_save_data()` extracts SecretStr values and encrypts before storage
+
 ## Important Patterns
 
 - **Async/await**: All DB operations async; always use await

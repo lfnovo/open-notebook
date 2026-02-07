@@ -12,7 +12,10 @@ Comprehensive list of all environment variables available in Open Notebook.
 | `INTERNAL_API_URL` | No | http://localhost:5055 | Internal API URL for Next.js server-side proxying |
 | `API_CLIENT_TIMEOUT` | No | 300 | Client timeout in seconds (how long to wait for API response) |
 | `OPEN_NOTEBOOK_PASSWORD` | No | None | Password to protect Open Notebook instance |
+| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | No | None | Secret string to encrypt API keys stored in database (any string works). Supports Docker secrets via `_FILE` suffix. |
 | `HOSTNAME` | No | `0.0.0.0` (in Docker) | Network interface for Next.js to bind to. Default `0.0.0.0` ensures accessibility from reverse proxies |
+
+> 💡 **Tip**: For API key configuration, we recommend using the [Settings UI](../3-USER-GUIDE/api-configuration.md) instead of environment variables. The UI supports multiple configurations per provider.
 
 ---
 
@@ -347,6 +350,8 @@ env | grep -E "^[A-Z_]+=" | sort
 - **Quote values:** Use quotes for values with spaces: `API_URL="http://my server:5055"`
 - **Restart required:** Changes take effect after restarting services
 - **Secrets:** Don't commit API keys to git
+- **Priority:** Database configurations (via Settings UI) take priority over environment variables
+- **Migration:** Use Settings UI to migrate existing env vars to database. See [API Configuration](../3-USER-GUIDE/api-configuration.md#migrating-from-environment-variables)
 
 ---
 
@@ -354,7 +359,8 @@ env | grep -E "^[A-Z_]+=" | sort
 
 - [ ] Choose AI provider (OpenAI, Anthropic, Ollama, etc.)
 - [ ] Get API key if cloud provider
-- [ ] Add to .env or docker.env
+- [ ] **Recommended**: Configure in [Settings UI](../3-USER-GUIDE/api-configuration.md) (supports multiple configs)
+- [ ] **Alternative**: Add to .env or docker.env
 - [ ] Set `API_URL` if behind reverse proxy
 - [ ] Change `SURREAL_PASSWORD` in production
 - [ ] Verify with: `docker compose logs api | grep -i "error"`

@@ -48,6 +48,12 @@ export function getApiErrorKey(errorOrMessage: unknown, fallbackKey?: string): s
     }
   }
 
+  // Return the original API message if it's descriptive enough,
+  // otherwise fall back to the generic key
+  if (message && message !== "An unexpected error occurred") {
+    return message;
+  }
+
   return fallbackKey || "apiErrors.genericError";
 }
 

@@ -51,12 +51,13 @@ export function useCredentials(provider?: string) {
 }
 
 /**
- * Hook to list credentials for a specific provider
+ * Hook to list credentials for a specific provider.
+ * Uses the same list endpoint with provider filter for cache consistency.
  */
 export function useCredentialsByProvider(provider: string) {
   return useQuery({
     queryKey: CREDENTIAL_QUERY_KEYS.byProvider(provider),
-    queryFn: () => credentialsApi.listByProvider(provider),
+    queryFn: () => credentialsApi.list(provider),
     enabled: !!provider,
   })
 }

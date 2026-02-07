@@ -434,6 +434,7 @@ function DiscoverModelsDialog({
       setCustomModelSelected(false)
       setSelectedType((credential.modalities[0] as ModelType) || 'language')
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only fires on open/close
   }, [open])
 
   // Reset custom selection when search changes

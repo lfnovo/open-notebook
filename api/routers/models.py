@@ -15,6 +15,7 @@ from api.models import (
 )
 from open_notebook.domain.credential import Credential
 from open_notebook.ai.connection_tester import test_individual_model
+from open_notebook.ai.key_provider import provision_provider_keys
 from open_notebook.ai.model_discovery import (
     discover_provider_models,
     get_provider_model_count,
@@ -278,11 +279,10 @@ async def test_model(model_id: str):
         success, message = await test_individual_model(model)
         return ModelTestResponse(success=success, message=message)
     except Exception as e:
-        logger.error(f"Error testing model {model_id}: {str(e)}")
+        logger.error(f"Error testing model {model_id}: {traceback.format_exc()}")
         return ModelTestResponse(
             success=False,
             message=str(e)[:200],
-            details=traceback.format_exc(),
         )
 
 
@@ -490,6 +490,8 @@ async def discover_models(provider: str):
     to both discover and register models.
     """
     try:
+        # Provision DB-stored credentials into env vars before discovery
+        await provision_provider_keys(provider)
         discovered = await discover_provider_models(provider)
         return [
             DiscoveredModelResponse(
@@ -518,6 +520,8 @@ async def sync_models(provider: str):
     Returns counts of discovered, new, and existing models.
     """
     try:
+        # Provision DB-stored credentials into env vars before discovery
+        await provision_provider_keys(provider)
         discovered, new, existing = await sync_provider_models(
             provider, auto_register=True
         )

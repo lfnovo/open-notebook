@@ -26,4 +26,4 @@ DEFINE FIELD updated ON credential TYPE option<datetime> DEFAULT time::now();
 DEFINE INDEX idx_credential_provider ON credential FIELDS provider;
 
 -- Add optional credential link to model table
-DEFINE FIELD credential ON model TYPE record<credential>;
+DEFINE FIELD credential ON model TYPE option<record<credential>>;

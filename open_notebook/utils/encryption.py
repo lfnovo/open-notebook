@@ -119,7 +119,7 @@ def _ensure_fernet_key(key: str) -> str:
     try:
         Fernet(key.encode())
         return key
-    except Exception:
+    except ValueError:
         derived = hashlib.sha256(key.encode()).digest()
         return base64.urlsafe_b64encode(derived).decode()
 

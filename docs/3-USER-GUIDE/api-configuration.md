@@ -170,7 +170,7 @@ Example: OpenAI with multiple configs
 
 When a provider has multiple configurations:
 1. The **default** configuration is used
-2. You can override per-request in the Models page
+2. You can override per-request in the model selectors throughout the app
 
 ---
 
@@ -350,7 +350,7 @@ If an environment variable exists for that provider, it becomes active again aft
 ### Azure OpenAI
 - Endpoint format: `https://{resource-name}.openai.azure.com`
 - API version format: `YYYY-MM-DD` or `YYYY-MM-DD-preview`
-- Deployment names configured separately in Models page
+- Deployment names configured separately when registering models via the credential's Discover Models dialog
 
 ---
 

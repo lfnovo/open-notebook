@@ -86,9 +86,14 @@ def check_api_password(
     Utility function to check API password.
     Can be used as a dependency in individual routes if needed.
     Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
-    Uses default password if not configured.
+    Returns True without checking credentials if OPEN_NOTEBOOK_PASSWORD is not configured.
+    Raises 401 if credentials are missing or don't match the configured password.
     """
     password = get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
+
+    # No password configured - skip authentication
+    if not password:
+        return True
 
     # No credentials provided
     if not credentials:

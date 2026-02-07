@@ -1031,7 +1031,7 @@ export const ptBR = {
     vertexCredentialsHint: "Caminho para o arquivo JSON da conta de serviço do Google Cloud dentro do contêiner.",
 
     // Multi-config translations
-    configsCount: "{count} configs",
+    configsCount: "{count} configurações",
     configuredMultiple: "Configurado",
     addConfig: "Adicionar Configuração",
     editConfig: "Editar Configuração",

@@ -214,7 +214,7 @@ async def test_provider_connection(
 
         if normalized_provider == "openai_compatible":
             # Use base_url from specific config, or environment variable
-            test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_API_BASE")
+            test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
             test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
             if not test_base_url:
                 return False, "No base URL configured for OpenAI-compatible provider"
@@ -236,7 +236,7 @@ async def test_provider_connection(
         if model_to_use is None:
             if normalized_provider == "openai_compatible":
                 # OpenAI-compatible servers should already be tested via _test_openai_compatible_connection
-                test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_API_BASE", "")
+                test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_BASE_URL", "")
                 test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
                 return await _test_openai_compatible_connection(test_base_url, test_api_key)
             else:

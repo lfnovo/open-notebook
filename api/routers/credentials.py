@@ -444,6 +444,14 @@ async def create_credential(request: CreateCredentialRequest):
     """Create a new credential."""
     _require_encryption_key()
 
+    # Validate all URL fields
+    for url_field in [
+        request.base_url, request.endpoint, request.endpoint_llm,
+        request.endpoint_embedding, request.endpoint_stt, request.endpoint_tts,
+    ]:
+        if url_field:
+            _validate_url(url_field, request.provider)
+
     try:
         cred = Credential(
             name=request.name,
@@ -485,6 +493,14 @@ async def get_credential(credential_id: str):
 async def update_credential(credential_id: str, request: UpdateCredentialRequest):
     """Update an existing credential."""
     _require_encryption_key()
+
+    # Validate all URL fields being updated
+    for url_field in [
+        request.base_url, request.endpoint, request.endpoint_llm,
+        request.endpoint_embedding, request.endpoint_stt, request.endpoint_tts,
+    ]:
+        if url_field:
+            _validate_url(url_field, "update")
 
     try:
         cred = await Credential.get(credential_id)
@@ -682,17 +698,17 @@ async def test_credential(credential_id: str):
     except Exception as e:
         error_msg = str(e)
         if "401" in error_msg or "unauthorized" in error_msg.lower():
-            return {"provider": credential_id, "success": False, "message": "Invalid API key"}
+            return {"provider": provider, "success": False, "message": "Invalid API key"}
         elif "403" in error_msg or "forbidden" in error_msg.lower():
-            return {"provider": credential_id, "success": False, "message": "API key lacks required permissions"}
+            return {"provider": provider, "success": False, "message": "API key lacks required permissions"}
         elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
-            return {"provider": credential_id, "success": True, "message": "Rate limited - but connection works"}
+            return {"provider": provider, "success": True, "message": "Rate limited - but connection works"}
         elif "not found" in error_msg.lower() and "model" in error_msg.lower():
-            return {"provider": credential_id, "success": True, "message": "API key valid (test model not available)"}
+            return {"provider": provider, "success": True, "message": "API key valid (test model not available)"}
         else:
             logger.debug(f"Test connection error for credential {credential_id}: {e}")
             truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
-            return {"provider": credential_id, "success": False, "message": f"Error: {truncated}"}
+            return {"provider": provider, "success": False, "message": f"Error: {truncated}"}
 
 
 @router.post("/{credential_id}/discover", response_model=DiscoverModelsResponse)

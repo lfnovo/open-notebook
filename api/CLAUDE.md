@@ -118,68 +118,51 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 
 ---
 
-## API Key Management (API Configuration UI)
+## Credential Management (API Configuration UI)
 
-The API Key Management system enables users to configure AI provider credentials through the UI instead of environment variables. Keys are stored securely in SurrealDB with database-first fallback to environment variables.
+The Credential Management system enables users to configure AI provider credentials through the UI instead of environment variables. Keys are stored securely in SurrealDB (encrypted via Fernet) with database-first fallback to environment variables.
 
-### Router: `routers/api_keys.py`
+### Router: `routers/credentials.py`
 
 **Endpoints**:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api-keys/status` | Get configuration status for all providers (configured, source) |
-| GET | `/api-keys/env-status` | Check what's configured via environment variables |
-| POST | `/api-keys/{provider}` | Set API key(s) for a provider |
-| DELETE | `/api-keys/{provider}` | Remove configuration for a provider |
-| POST | `/api-keys/{provider}/test` | Test connection for a provider |
-| POST | `/api-keys/migrate` | Migrate keys from environment variables to database |
+| GET | `/credentials` | List all credentials (optional `?provider=` filter) |
+| GET | `/credentials/by-provider/{provider}` | List credentials for a provider |
+| POST | `/credentials` | Create a new credential |
+| GET | `/credentials/{credential_id}` | Get a specific credential |
+| PUT | `/credentials/{credential_id}` | Update a credential |
+| DELETE | `/credentials/{credential_id}` | Delete a credential |
+| POST | `/credentials/{credential_id}/test` | Test connection using credential |
+| POST | `/credentials/{credential_id}/discover` | Discover available models |
+| POST | `/credentials/{credential_id}/register-models` | Register discovered models |
+| POST | `/credentials/migrate-from-provider-config` | Migrate from legacy ProviderConfig |
 
 **Supported Providers** (13 total):
 - Simple API key: `openai`, `anthropic`, `google`, `groq`, `mistral`, `deepseek`, `xai`, `openrouter`, `voyage`, `elevenlabs`
 - URL-based: `ollama`
 - Multi-field: `azure`, `vertex`, `openai_compatible`
 
-**Request Body Variations by Provider**:
-```python
-# Simple providers (openai, anthropic, etc.)
-{"api_key": "sk-..."}
-
-# Ollama (URL-based)
-{"base_url": "http://localhost:11434"}
-
-# Azure OpenAI
-{"api_key": "...", "endpoint": "...", "api_version": "...",
- "endpoint_llm": "...", "endpoint_embedding": "...", "endpoint_stt": "...", "endpoint_tts": "..."}
-
-# OpenAI-Compatible (generic or service-specific)
-{"api_key": "...", "base_url": "...", "service_type": "llm|embedding|stt|tts"}
-
-# Vertex AI
-{"vertex_project": "...", "vertex_location": "...", "vertex_credentials_path": "..."}
-```
-
 **Security Features**:
-- NEVER returns actual API key values (only status information)
-- URL validation blocks link-local addresses (169.254.x.x) to prevent cloud metadata exposure
+- NEVER returns actual API key values (only metadata)
+- URL validation (SSRF protection) on all URL fields via `_validate_url()`
 - Allows private IPs and localhost for self-hosted services (Ollama, LM Studio)
+- Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` to be set for storing credentials
 
-### Pydantic Models (in `models.py`)
+### Domain Model: `Credential` (`open_notebook/domain/credential.py`)
 
-**Request Models**:
-- `SetApiKeyRequest`: Unified request for all provider types with optional fields (api_key, base_url, endpoint, api_version, service_type, vertex_project, vertex_location, vertex_credentials_path)
-
-**Response Models**:
-- `ApiKeyStatusResponse`: `{configured: {provider: bool}, source: {provider: "database"|"environment"|"none"}}`
-- `TestConnectionResponse`: `{provider: str, success: bool, message: str}`
-- `MigrationResult`: `{message: str, migrated: [providers], skipped: [providers], errors: [messages]}`
+Individual credential records replacing the old `ProviderConfig` singleton. Each credential stores:
+- Provider name, display name, modalities
+- Encrypted API key (via Fernet)
+- Provider-specific config (base_url, endpoint, api_version, etc.)
 
 ### Integration with Key Provider (`open_notebook/ai/key_provider.py`)
 
-The router delegates key storage to `ProviderConfig` domain model, while runtime key provisioning uses the `key_provider` module:
+The `key_provider` module provisions DB-stored credentials into environment variables for Esperanto compatibility:
 
 **Database-first Pattern**:
-1. API endpoint saves keys to `ProviderConfig` (SurrealDB singleton)
+1. API endpoint saves keys to `Credential` records (encrypted in SurrealDB)
 2. Before model provisioning, `provision_provider_keys(provider)` checks DB, then env vars
 3. Keys from DB are set as environment variables for Esperanto compatibility
 4. Existing env vars remain unchanged if no DB config exists
@@ -191,7 +174,7 @@ The router delegates key storage to `ProviderConfig` domain model, while runtime
 
 ### Authentication
 
-No changes to authentication. The `api_keys` router uses the same `PasswordAuthMiddleware` as all other endpoints. Keys are protected by the same password-based auth.
+No changes to authentication. The `credentials` router uses the same `PasswordAuthMiddleware` as all other endpoints. Keys are protected by the same password-based auth.
 
 **Auth Flow** (unchanged from `api/auth.py`):
 - `PasswordAuthMiddleware`: Global middleware checking `Authorization: Bearer {password}` header

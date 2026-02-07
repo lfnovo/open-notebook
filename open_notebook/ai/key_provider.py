@@ -183,22 +183,23 @@ async def _provision_simple_provider(provider: str) -> bool:
     if not config_info:
         return False
 
-    provider_upper = provider_lower.upper()
+    env_var = config_info["env_var"]
 
     try:
         provider_config = await ProviderConfig.get_instance()
         default_cred = provider_config.get_default_config(provider_lower)
 
         if default_cred:
-            # Set API key
+            # Set API key / primary env var
             if default_cred.api_key:
-                os.environ[f"{provider_upper}_API_KEY"] = (
+                os.environ[env_var] = (
                     default_cred.api_key.get_secret_value()
                 )
-                logger.debug(f"Set {provider_upper}_API_KEY from ProviderConfig")
+                logger.debug(f"Set {env_var} from ProviderConfig")
 
             # Set base URL if present
             if default_cred.base_url:
+                provider_upper = provider_lower.upper()
                 os.environ[f"{provider_upper}_API_BASE"] = default_cred.base_url
                 logger.debug(f"Set {provider_upper}_API_BASE from ProviderConfig")
 

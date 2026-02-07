@@ -39,31 +39,23 @@ docker compose restart
 
 **Symptom:** Settings → Models shows "No models available"
 
-**Cause:** API key missing, wrong, or not set
+**Cause:** No credential configured, or credential has invalid API key
 
 **Solution (1 minute):**
 
-```bash
-# Step 1: Check your .env has API key
-cat .env | grep OPENAI_API_KEY
-
-# Step 2: Verify it's correct (from https://platform.openai.com/api-keys)
-# Should look like: sk-proj-xxx...
-
-# Step 3: Restart services
-docker compose restart api
-
-# Step 4: Wait 10 seconds, then refresh browser
-# Go to Settings → Models
-
-# If still no models:
-# Check logs for error
-docker compose logs api | grep -i "api key\|error"
+```
+1. Go to Settings → API Keys
+2. If no credential exists, click "Add Credential" and add one
+3. If a credential exists, click "Test Connection"
+4. If test fails, delete and re-create with correct key
+5. After test passes, click "Discover Models" → "Register Models"
+6. Go to Settings → Models to verify models appear
 ```
 
 **If still broken:**
 - Make sure key has no extra spaces
 - Generate a fresh key from provider dashboard
+- Check that `OPEN_NOTEBOOK_ENCRYPTION_KEY` is set in docker-compose.yml
 - See [AI & Chat Issues](ai-chat-issues.md)
 
 ---

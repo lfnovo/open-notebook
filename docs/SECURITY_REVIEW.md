@@ -63,8 +63,8 @@ Security review of the API key management implementation for Open Notebook. The 
 | Component | Path | Status |
 |-----------|------|--------|
 | Encryption | `open_notebook/utils/encryption.py` | PASS |
-| API Key Config | `open_notebook/domain/api_key_config.py` | PASS |
-| API Keys router | `api/routers/api_keys.py` | PASS |
+| Credential model | `open_notebook/domain/credential.py` | PASS |
+| Credentials router | `api/routers/credentials.py` | PASS |
 | Key provider | `open_notebook/ai/key_provider.py` | PASS |
 | Connection tester | `open_notebook/ai/connection_tester.py` | PASS |
 | Auth middleware | `api/auth.py` | PASS |
@@ -77,7 +77,7 @@ Security review of the API key management implementation for Open Notebook. The 
 
 ### Future Improvements
 
-1. **Rate limiting** - Add rate limiting on `/api-keys/*` endpoints
+1. **Rate limiting** - Add rate limiting on `/credentials/*` endpoints
 2. **Autocomplete attributes** - Add `autocomplete="new-password"` to all password inputs
 3. **Show last 4 characters** - Display `********xxxx` format for key identification
 4. **Audit logging** - Log API key changes with timestamps

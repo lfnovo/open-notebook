@@ -12,163 +12,10 @@ Comprehensive list of all environment variables available in Open Notebook.
 | `INTERNAL_API_URL` | No | http://localhost:5055 | Internal API URL for Next.js server-side proxying |
 | `API_CLIENT_TIMEOUT` | No | 300 | Client timeout in seconds (how long to wait for API response) |
 | `OPEN_NOTEBOOK_PASSWORD` | No | None | Password to protect Open Notebook instance |
-| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | No | None | Secret string to encrypt API keys stored in database (any string works). Supports Docker secrets via `_FILE` suffix. |
+| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | **Yes** | None | Secret string to encrypt credentials stored in database (any string works). **Required** for the credential system. Supports Docker secrets via `_FILE` suffix. |
 | `HOSTNAME` | No | `0.0.0.0` (in Docker) | Network interface for Next.js to bind to. Default `0.0.0.0` ensures accessibility from reverse proxies |
 
-> 💡 **Tip**: For API key configuration, we recommend using the [Settings UI](../3-USER-GUIDE/api-configuration.md) instead of environment variables. The UI supports multiple configurations per provider.
-
----
-
-## AI Provider: OpenAI
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `OPENAI_API_KEY` | If using OpenAI | None | OpenAI API key (starts with `sk-`) |
-
-**Setup:** Get from https://platform.openai.com/api-keys
-
----
-
-## AI Provider: Anthropic (Claude)
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `ANTHROPIC_API_KEY` | If using Anthropic | None | Claude API key (starts with `sk-ant-`) |
-
-**Setup:** Get from https://console.anthropic.com/
-
----
-
-## AI Provider: Google Gemini
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `GOOGLE_API_KEY` | If using Google | None | Google API key for Gemini |
-| `GEMINI_API_BASE_URL` | No | Default endpoint | Override Gemini API endpoint |
-| `VERTEX_PROJECT` | If using Vertex AI | None | Google Cloud project ID |
-| `VERTEX_LOCATION` | If using Vertex AI | us-east5 | Vertex AI location |
-| `GOOGLE_APPLICATION_CREDENTIALS` | If using Vertex AI | None | Path to service account JSON |
-
-**Setup:** Get from https://aistudio.google.com/app/apikey
-
----
-
-## AI Provider: Groq
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `GROQ_API_KEY` | If using Groq | None | Groq API key (starts with `gsk_`) |
-
-**Setup:** Get from https://console.groq.com/keys
-
----
-
-## AI Provider: Mistral
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `MISTRAL_API_KEY` | If using Mistral | None | Mistral API key |
-
-**Setup:** Get from https://console.mistral.ai/
-
----
-
-## AI Provider: DeepSeek
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `DEEPSEEK_API_KEY` | If using DeepSeek | None | DeepSeek API key |
-
-**Setup:** Get from https://platform.deepseek.com/
-
----
-
-## AI Provider: xAI
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `XAI_API_KEY` | If using xAI | None | xAI API key |
-
-**Setup:** Get from https://console.x.ai/
-
----
-
-## AI Provider: Ollama (Local)
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `OLLAMA_API_BASE` | If using Ollama | None | Ollama endpoint (e.g., http://localhost:11434) |
-
-**Setup:** Install from https://ollama.ai
-
----
-
-## AI Provider: OpenRouter
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `OPENROUTER_API_KEY` | If using OpenRouter | None | OpenRouter API key |
-| `OPENROUTER_BASE_URL` | No | https://openrouter.ai/api/v1 | OpenRouter endpoint |
-
-**Setup:** Get from https://openrouter.ai/
-
----
-
-## AI Provider: OpenAI-Compatible
-
-For self-hosted LLMs, LM Studio, or OpenAI-compatible endpoints:
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `OPENAI_COMPATIBLE_BASE_URL` | If using compatible | None | Base URL for OpenAI-compatible endpoint |
-| `OPENAI_COMPATIBLE_API_KEY` | If using compatible | None | API key for endpoint |
-| `OPENAI_COMPATIBLE_BASE_URL_LLM` | No | Uses generic | Language model endpoint (overrides generic) |
-| `OPENAI_COMPATIBLE_API_KEY_LLM` | No | Uses generic | Language model API key (overrides generic) |
-| `OPENAI_COMPATIBLE_BASE_URL_EMBEDDING` | No | Uses generic | Embedding endpoint (overrides generic) |
-| `OPENAI_COMPATIBLE_API_KEY_EMBEDDING` | No | Uses generic | Embedding API key (overrides generic) |
-| `OPENAI_COMPATIBLE_BASE_URL_STT` | No | Uses generic | Speech-to-text endpoint (overrides generic) |
-| `OPENAI_COMPATIBLE_API_KEY_STT` | No | Uses generic | STT API key (overrides generic) |
-| `OPENAI_COMPATIBLE_BASE_URL_TTS` | No | Uses generic | Text-to-speech endpoint (overrides generic) |
-| `OPENAI_COMPATIBLE_API_KEY_TTS` | No | Uses generic | TTS API key (overrides generic) |
-
-**Setup:** For LM Studio, typically: `OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1`
-
----
-
-## AI Provider: Azure OpenAI
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `AZURE_OPENAI_API_KEY` | If using Azure | None | Azure OpenAI API key |
-| `AZURE_OPENAI_ENDPOINT` | If using Azure | None | Azure OpenAI endpoint URL |
-| `AZURE_OPENAI_API_VERSION` | No | 2024-12-01-preview | Azure OpenAI API version |
-| `AZURE_OPENAI_API_KEY_LLM` | No | Uses generic | LLM-specific API key |
-| `AZURE_OPENAI_ENDPOINT_LLM` | No | Uses generic | LLM-specific endpoint |
-| `AZURE_OPENAI_API_VERSION_LLM` | No | Uses generic | LLM-specific API version |
-| `AZURE_OPENAI_API_KEY_EMBEDDING` | No | Uses generic | Embedding-specific API key |
-| `AZURE_OPENAI_ENDPOINT_EMBEDDING` | No | Uses generic | Embedding-specific endpoint |
-| `AZURE_OPENAI_API_VERSION_EMBEDDING` | No | Uses generic | Embedding-specific API version |
-
----
-
-## AI Provider: VoyageAI (Embeddings)
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `VOYAGE_API_KEY` | If using Voyage | None | Voyage AI API key (for embeddings) |
-
-**Setup:** Get from https://www.voyageai.com/
-
----
-
-## Text-to-Speech (TTS)
-
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `ELEVENLABS_API_KEY` | If using ElevenLabs TTS | None | ElevenLabs API key for voice generation |
-| `TTS_BATCH_SIZE` | No | 5 | Concurrent TTS requests (1-5, depends on provider) |
-
-**Setup:** Get from https://elevenlabs.io/
+> **Important**: `OPEN_NOTEBOOK_ENCRYPTION_KEY` is required for storing AI provider credentials via the Settings UI. Without it, you cannot save credentials. If you change or lose this key, all stored credentials become unreadable.
 
 ---
 
@@ -211,6 +58,14 @@ For self-hosted LLMs, LM Studio, or OpenAI-compatible endpoints:
 | `ESPERANTO_LLM_TIMEOUT` | No | 60 | LLM inference timeout in seconds |
 | `ESPERANTO_SSL_VERIFY` | No | true | Verify SSL certificates (false = development only) |
 | `ESPERANTO_SSL_CA_BUNDLE` | No | None | Path to custom CA certificate bundle |
+
+---
+
+## Text-to-Speech (TTS)
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `TTS_BATCH_SIZE` | No | 5 | Concurrent TTS requests (1-5, depends on provider) |
 
 ---
 
@@ -277,19 +132,21 @@ NO_PROXY=localhost,127.0.0.1,.local
 
 ## Environment Variables by Use Case
 
-### Minimal Setup (Cloud Provider)
+### Minimal Setup (New Installation)
 ```
-OPENAI_API_KEY (or ANTHROPIC_API_KEY, etc.)
+OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
+SURREAL_URL=ws://surrealdb:8000/rpc
+SURREAL_USER=root
+SURREAL_PASSWORD=password
+SURREAL_NAMESPACE=open_notebook
+SURREAL_DATABASE=open_notebook
 ```
+Then configure AI providers via **Settings → API Keys** in the browser.
 
-### Local Development (Ollama)
+### Production Deployment
 ```
-OLLAMA_API_BASE=http://localhost:11434
-```
-
-### Production (OpenAI + Custom Domain)
-```
-OPENAI_API_KEY=sk-proj-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-strong-secret-key
+OPEN_NOTEBOOK_PASSWORD=your-secure-password
 API_URL=https://mynotebook.example.com
 SURREAL_USER=production_user
 SURREAL_PASSWORD=secure_password
@@ -297,13 +154,13 @@ SURREAL_PASSWORD=secure_password
 
 ### Self-Hosted Behind Reverse Proxy
 ```
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 API_URL=https://mynotebook.example.com
 ```
 
 ### Corporate Environment (Behind Proxy)
 ```
-OPENAI_API_KEY=sk-proj-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 HTTP_PROXY=http://proxy.corp.com:8080
 HTTPS_PROXY=http://proxy.corp.com:8080
 NO_PROXY=localhost,127.0.0.1
@@ -311,7 +168,7 @@ NO_PROXY=localhost,127.0.0.1
 
 ### High-Performance Deployment
 ```
-OPENAI_API_KEY=sk-proj-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 SURREAL_COMMANDS_MAX_TASKS=10
 TTS_BATCH_SIZE=5
 API_CLIENT_TIMEOUT=600
@@ -319,7 +176,7 @@ API_CLIENT_TIMEOUT=600
 
 ### Debugging
 ```
-OPENAI_API_KEY=sk-proj-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your-key
 ```
@@ -332,10 +189,10 @@ Check if a variable is set:
 
 ```bash
 # Check single variable
-echo $OPENAI_API_KEY
+echo $OPEN_NOTEBOOK_ENCRYPTION_KEY
 
 # Check multiple
-env | grep -E "OPENAI|API_URL"
+env | grep -E "OPEN_NOTEBOOK|API_URL"
 
 # Print all config
 env | grep -E "^[A-Z_]+=" | sort
@@ -345,26 +202,73 @@ env | grep -E "^[A-Z_]+=" | sort
 
 ## Notes
 
-- **Case-sensitive:** `OPENAI_API_KEY` ≠ `openai_api_key`
-- **No spaces:** `OPENAI_API_KEY=sk-proj-...` not `OPENAI_API_KEY = sk-proj-...`
+- **Case-sensitive:** `OPEN_NOTEBOOK_ENCRYPTION_KEY` ≠ `open_notebook_encryption_key`
+- **No spaces:** `OPEN_NOTEBOOK_ENCRYPTION_KEY=my-key` not `OPEN_NOTEBOOK_ENCRYPTION_KEY = my-key`
 - **Quote values:** Use quotes for values with spaces: `API_URL="http://my server:5055"`
 - **Restart required:** Changes take effect after restarting services
-- **Secrets:** Don't commit API keys to git
-- **Priority:** Database configurations (via Settings UI) take priority over environment variables
-- **Migration:** Use Settings UI to migrate existing env vars to database. See [API Configuration](../3-USER-GUIDE/api-configuration.md#migrating-from-environment-variables)
+- **Secrets:** Don't commit encryption keys or passwords to git
+- **AI Providers:** Configure via **Settings → API Keys** in the browser (not via env vars)
+- **Migration:** Use Settings UI to migrate existing env vars to the credential system. See [API Configuration](../3-USER-GUIDE/api-configuration.md#migrating-from-environment-variables)
 
 ---
 
 ## Quick Setup Checklist
 
-- [ ] Choose AI provider (OpenAI, Anthropic, Ollama, etc.)
-- [ ] Get API key if cloud provider
-- [ ] **Recommended**: Configure in [Settings UI](../3-USER-GUIDE/api-configuration.md) (supports multiple configs)
-- [ ] **Alternative**: Add to .env or docker.env
+- [ ] Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in docker-compose.yml
+- [ ] Set database credentials (`SURREAL_*`)
+- [ ] Start services
+- [ ] Open browser → Go to **Settings → API Keys**
+- [ ] **Add Credential** for your AI provider
+- [ ] **Test Connection** to verify
+- [ ] **Discover & Register Models**
 - [ ] Set `API_URL` if behind reverse proxy
 - [ ] Change `SURREAL_PASSWORD` in production
-- [ ] Verify with: `docker compose logs api | grep -i "error"`
-- [ ] Test in browser: Go to Settings → Models
 - [ ] Try a test chat
 
 Done!
+
+---
+
+## Legacy: AI Provider Environment Variables (Deprecated)
+
+> **Deprecated**: The following AI provider API key environment variables are deprecated. Configure providers via the Settings UI instead. These variables may still work as a fallback but are no longer recommended.
+
+If you have these variables configured from a previous installation, click the **Migrate to Database** button in **Settings → API Keys** to import them into the credential system, then remove them from your configuration.
+
+| Variable | Provider | Replacement |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | OpenAI | Settings → API Keys → Add OpenAI Credential |
+| `ANTHROPIC_API_KEY` | Anthropic | Settings → API Keys → Add Anthropic Credential |
+| `GOOGLE_API_KEY` | Google Gemini | Settings → API Keys → Add Google Credential |
+| `GEMINI_API_BASE_URL` | Google Gemini | Configure in Google Gemini credential |
+| `VERTEX_PROJECT` | Vertex AI | Settings → API Keys → Add Vertex AI Credential |
+| `VERTEX_LOCATION` | Vertex AI | Configure in Vertex AI credential |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Vertex AI | Configure in Vertex AI credential |
+| `GROQ_API_KEY` | Groq | Settings → API Keys → Add Groq Credential |
+| `MISTRAL_API_KEY` | Mistral | Settings → API Keys → Add Mistral Credential |
+| `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
+| `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
+| `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
+| `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |
+| `OPENROUTER_BASE_URL` | OpenRouter | Configure in OpenRouter credential |
+| `VOYAGE_API_KEY` | Voyage AI | Settings → API Keys → Add Voyage AI Credential |
+| `ELEVENLABS_API_KEY` | ElevenLabs | Settings → API Keys → Add ElevenLabs Credential |
+| `OPENAI_COMPATIBLE_BASE_URL` | OpenAI-Compatible | Settings → API Keys → Add OpenAI-Compatible Credential |
+| `OPENAI_COMPATIBLE_API_KEY` | OpenAI-Compatible | Configure in OpenAI-Compatible credential |
+| `OPENAI_COMPATIBLE_BASE_URL_LLM` | OpenAI-Compatible | Configure per-service URL in credential |
+| `OPENAI_COMPATIBLE_API_KEY_LLM` | OpenAI-Compatible | Configure per-service key in credential |
+| `OPENAI_COMPATIBLE_BASE_URL_EMBEDDING` | OpenAI-Compatible | Configure per-service URL in credential |
+| `OPENAI_COMPATIBLE_API_KEY_EMBEDDING` | OpenAI-Compatible | Configure per-service key in credential |
+| `OPENAI_COMPATIBLE_BASE_URL_STT` | OpenAI-Compatible | Configure per-service URL in credential |
+| `OPENAI_COMPATIBLE_API_KEY_STT` | OpenAI-Compatible | Configure per-service key in credential |
+| `OPENAI_COMPATIBLE_BASE_URL_TTS` | OpenAI-Compatible | Configure per-service URL in credential |
+| `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → API Keys → Add Azure OpenAI Credential |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI | Configure in Azure OpenAI credential |
+| `AZURE_OPENAI_API_VERSION` | Azure OpenAI | Configure in Azure OpenAI credential |
+| `AZURE_OPENAI_API_KEY_LLM` | Azure OpenAI | Configure per-service in credential |
+| `AZURE_OPENAI_ENDPOINT_LLM` | Azure OpenAI | Configure per-service in credential |
+| `AZURE_OPENAI_API_VERSION_LLM` | Azure OpenAI | Configure per-service in credential |
+| `AZURE_OPENAI_API_KEY_EMBEDDING` | Azure OpenAI | Configure per-service in credential |
+| `AZURE_OPENAI_ENDPOINT_EMBEDDING` | Azure OpenAI | Configure per-service in credential |
+| `AZURE_OPENAI_API_VERSION_EMBEDDING` | Azure OpenAI | Configure per-service in credential |

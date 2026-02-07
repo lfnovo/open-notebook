@@ -1,29 +1,82 @@
 # API Configuration
 
-Configure AI provider API keys directly through the Settings UI. No file editing required.
+Configure AI provider credentials through the Settings UI. No file editing required.
 
-> 💡 **New Feature**: You can now create **multiple configurations** per provider (e.g., different API keys for different projects). See [Multi-Config Support](#multi-config-support) for details.
+> **Credential System**: Open Notebook uses encrypted credentials stored in the database. Each credential connects to a provider and allows you to discover, register, and test models.
 
 ---
 
 ## Overview
 
-Open Notebook supports two methods for configuring API keys:
+Open Notebook manages AI provider access through a **credential-based system**:
 
-| Method | Best For | Requires |
-|--------|----------|----------|
-| **Settings UI** | Most users, quick setup | Browser access |
-| **Environment Variables** | DevOps, automation, CI/CD | File access |
-
-Both methods work together. Database-stored keys take priority over environment variables.
+1. You create a **credential** for each provider (API key + settings)
+2. Credentials are **encrypted** and stored in the database
+3. You **test connections** to verify credentials work
+4. You **discover and register models** from each credential
+5. Models are linked to credentials for direct configuration
 
 ---
 
-## Accessing API Configuration
+## Encryption Setup
+
+Before storing credentials, you must configure an encryption key.
+
+### Setting the Encryption Key
+
+Add `OPEN_NOTEBOOK_ENCRYPTION_KEY` to your docker-compose.yml:
+
+```yaml
+environment:
+  - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
+```
+
+Any string works as a key. If you prefer a strong random key:
+
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+
+> **Warning**: If you change or lose the encryption key, **all stored credentials become unreadable**. Back up your encryption key securely and separately from your database backups.
+
+### Docker Secrets Support
+
+Both password and encryption key support Docker secrets:
+
+```yaml
+# docker-compose.yml
+services:
+  open_notebook:
+    environment:
+      - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
+    secrets:
+      - app_password
+      - encryption_key
+
+secrets:
+  app_password:
+    file: ./secrets/password.txt
+  encryption_key:
+    file: ./secrets/encryption_key.txt
+```
+
+### Encryption Details
+
+API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-SHA256).
+
+| Configuration | Behavior |
+|---------------|----------|
+| Encryption key set | Keys encrypted with your key |
+| No encryption key set | Storing credentials is disabled |
+
+---
+
+## Accessing Credential Configuration
 
 1. Click **Settings** in the navigation bar
 2. Select **API Keys** tab
-3. Find your provider in the list
+3. You'll see existing credentials and an **Add Credential** button
 
 ```
 Navigation: Settings → API Keys
@@ -52,7 +105,7 @@ Navigation: Settings → API Keys
 
 | Provider | Required Fields | Notes |
 |----------|-----------------|-------|
-| Ollama | Base URL | Typically `http://localhost:11434` |
+| Ollama | Base URL | Typically `http://localhost:11434` or `http://ollama:11434` |
 
 ### Enterprise
 
@@ -64,31 +117,96 @@ Navigation: Settings → API Keys
 
 ---
 
-## Configuring a Provider
+## Creating a Credential
+
+### Step 1: Add Credential
+
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select your provider
+4. Give it a descriptive name (e.g., "My OpenAI Key", "Work Anthropic")
+5. Fill in the required fields (API key, base URL, etc.)
+6. Click **Save**
+
+### Step 2: Test Connection
+
+1. On your new credential card, click **Test Connection**
+2. Wait for the result:
+
+| Result | Meaning |
+|--------|---------|
+| Success | Key is valid, provider accessible |
+| Invalid API key | Check key format and value |
+| Connection failed | Check URL, network, firewall |
+
+### Step 3: Discover Models
+
+1. Click **Discover Models** on the credential card
+2. The system queries the provider for available models
+3. Review the discovered models
+
+### Step 4: Register Models
+
+1. Select the models you want to use
+2. Click **Register Models**
+3. The models are now available throughout Open Notebook
+
+---
+
+## Multi-Credential Support
+
+Each provider can have **multiple credentials**. This is useful when:
+- You have different API keys for different projects
+- You want to test with different endpoints
+- Multiple team members need separate credentials
+
+### Creating Multiple Credentials
+
+1. Click **Add Credential** again
+2. Select the same provider
+3. Fill in different credentials
+4. Each credential can discover and register its own models
+
+### How Models Link to Credentials
+
+When you register models from a credential, those models are linked to that specific credential. This means:
+- Each model knows which API key to use
+- You can have models from different credentials for the same provider
+- Deleting a credential removes its linked models
+
+---
+
+## Testing Connections
+
+Click **Test Connection** to verify your credential:
+
+| Result | Meaning |
+|--------|---------|
+| Success | Key is valid, provider accessible |
+| Invalid API key | Check key format and value |
+| Connection failed | Check URL, network, firewall |
+| Model not available | Key valid but model access restricted |
+
+Test uses inexpensive models (e.g., `gpt-3.5-turbo`, `claude-3-haiku`) to minimize cost.
+
+---
+
+## Configuring Specific Providers
 
 ### Simple Providers (API Key Only)
 
-1. Locate the provider card
-2. Enter your API key
-3. Click **Save**
-4. Click **Test Connection** to verify
+For OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter:
 
-```
-Example: OpenAI
-┌─────────────────────────────────────┐
-│ OpenAI                    [Status]  │
-├─────────────────────────────────────┤
-│ API Key: ●●●●●●●●●●●●              │
-│                                     │
-│ [Test Connection]  [Save]  [Delete] │
-└─────────────────────────────────────┘
-```
+1. Add credential with your API key
+2. Test connection
+3. Discover and register models
 
-### URL-Based Providers (Ollama)
+### Ollama (URL-Based)
 
-1. Enter the base URL (e.g., `http://localhost:11434`)
-2. Click **Save**
-3. Click **Test Connection**
+1. Add credential with provider **Ollama**
+2. Enter the base URL (e.g., `http://ollama:11434`)
+3. Test connection
+4. Discover and register models
 
 Ollama allows localhost and private IPs since it runs locally.
 
@@ -110,9 +228,10 @@ Service-specific endpoints override the main endpoint for that service type.
 
 For custom OpenAI-compatible servers (LM Studio, vLLM, etc.):
 
-1. Enter the base URL
-2. Enter API key (if required)
-3. Optionally configure per-service URLs
+1. Add credential with provider **OpenAI-Compatible**
+2. Enter the base URL
+3. Enter API key (if required)
+4. Optionally configure per-service URLs
 
 Supports separate configurations for:
 - LLM (language models)
@@ -132,66 +251,9 @@ Google Cloud's enterprise AI platform:
 
 ---
 
-## Multi-Config Support
-
-Each provider can now have **multiple configurations**. This is useful when:
-- You have different API keys for different projects
-- You want to test with different models/endpoints
-- Multiple team members need separate credentials
-
-### Creating Multiple Configs
-
-1. On a provider's card, click **Add Configuration**
-2. Fill in the configuration details
-3. Click **Save**
-4. Use the star icon to set a default configuration
-
-```
-Example: OpenAI with multiple configs
-┌─────────────────────────────────────────────────┐
-│ OpenAI                              [+ Add Config] │
-├─────────────────────────────────────────────────┤
-│ ★ Default (api.openai.com)           [Edit] [Delete] │
-│ ✦ Work Key (work.openai.com)         [Edit] [Delete] │
-└─────────────────────────────────────────────────┘
-```
-
-### Managing Configurations
-
-| Action | How |
-|--------|-----|
-| Add new config | Click **[+ Add Configuration]** on provider card |
-| Edit config | Click **[Edit]** on the config |
-| Delete config | Click **[Delete]** on the config |
-| Set default | Click **star icon** on the config |
-| Test config | Click **[Test Connection]** on the config |
-
-### Priority When Multiple Configs Exist
-
-When a provider has multiple configurations:
-1. The **default** configuration is used
-2. You can override per-request in the model selectors throughout the app
-
----
-
-## Testing Connections
-
-Click **Test Connection** to verify your configuration:
-
-| Result | Meaning |
-|--------|---------|
-| ✓ Success | Key is valid, provider accessible |
-| ✗ Invalid API key | Check key format and value |
-| ✗ Connection failed | Check URL, network, firewall |
-| ✗ Model not available | Key valid but model access restricted |
-
-Test uses inexpensive models (e.g., `gpt-3.5-turbo`, `claude-3-haiku`) to minimize cost.
-
----
-
 ## Migrating from Environment Variables
 
-If you have existing API keys in `.env` or `docker.env`:
+If you have existing API keys in environment variables (from a previous version):
 
 1. Open **Settings → API Keys**
 2. A banner appears: "Environment variables detected"
@@ -209,9 +271,9 @@ If you have existing API keys in `.env` or `docker.env`:
 
 ### After Migration
 
-- Database keys take priority
-- Environment variables serve as fallback
-- Remove env vars if no longer needed
+- Database credentials are used for all operations
+- You can remove the API key environment variables from your docker-compose.yml
+- Keep `OPEN_NOTEBOOK_ENCRYPTION_KEY` — it's still required
 
 ### Migration Banner Visibility
 
@@ -219,6 +281,17 @@ The migration banner only appears when:
 - You have environment variables configured
 - Those providers are **not** already in the database
 - If all env providers are already migrated, the banner won't show
+
+---
+
+## Migrating from ProviderConfig (v1.1 → v1.2)
+
+If you're upgrading from an older version that used the ProviderConfig system:
+
+- The migration happens automatically on first startup
+- Your existing configurations are converted to credentials
+- Check **Settings → API Keys** to verify the migration succeeded
+- If you see issues, check the API logs for migration messages
 
 ---
 
@@ -242,65 +315,25 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 **For production deployments, always set custom credentials.**
 
-### Docker Secrets
-
-Both password and encryption key support Docker secrets:
-
-```yaml
-# docker-compose.yml
-services:
-  open_notebook:
-    environment:
-      - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
-    secrets:
-      - app_password
-      - encryption_key
-
-secrets:
-  app_password:
-    file: ./secrets/password.txt
-  encryption_key:
-    file: ./secrets/encryption_key.txt
-```
-
 ---
 
-## Key Priority Order
+## Deleting Credentials
 
-When provisioning AI models, Open Notebook checks:
-
-```
-1. Database (highest priority)
-      ↓
-2. Environment variable
-      ↓
-3. Not configured (model unavailable)
-```
-
-This allows database keys to override environment variables without removing them.
-
----
-
-## Deleting Keys
-
-1. Click the **Delete** button on the provider card
+1. Click the **Delete** button on the credential card
 2. Confirm deletion
-3. Key is removed from database
-
-If an environment variable exists for that provider, it becomes active again after deletion.
+3. Credential and all its linked models are removed from the database
 
 ---
 
 ## Troubleshooting
 
-### Key Not Saving
+### Credential Not Saving
 
 | Symptom | Cause | Solution |
 |---------|-------|----------|
 | Save button disabled | Empty or invalid input | Enter a valid key |
+| Error on save | Encryption key not set | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` in docker-compose.yml |
 | Error on save | Database connection issue | Check database status |
-| Key not persisting | Browser storage issue | Clear cache, retry |
 
 ### Test Connection Fails
 
@@ -321,10 +354,10 @@ If an environment variable exists for that provider, it becomes active again aft
 
 ### Provider Shows "Not Configured"
 
-1. Check if key was saved (status indicator)
-2. Check if environment variable exists
+1. Check if a credential exists for this provider (Settings → API Keys)
+2. Test the credential connection
 3. Verify key format matches provider requirements
-4. Test connection to diagnose
+4. Re-discover and register models if needed
 
 ---
 
@@ -344,7 +377,7 @@ If an environment variable exists for that provider, it becomes active again aft
 
 ### Ollama
 - No API key required
-- Default URL: `http://localhost:11434`
+- Default URL: `http://localhost:11434` (local) or `http://ollama:11434` (Docker)
 - Ensure Ollama server is running
 
 ### Azure OpenAI
@@ -356,6 +389,6 @@ If an environment variable exists for that provider, it becomes active again aft
 
 ## Related
 
-- **[AI Providers](../5-CONFIGURATION/ai-providers.md)** — Detailed provider setup via environment variables
+- **[AI Providers](../5-CONFIGURATION/ai-providers.md)** — Provider setup instructions and recommendations
 - **[Security](../5-CONFIGURATION/security.md)** — Password and encryption configuration
 - **[Environment Reference](../5-CONFIGURATION/environment-reference.md)** — All configuration options

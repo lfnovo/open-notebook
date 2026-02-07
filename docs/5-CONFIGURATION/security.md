@@ -92,7 +92,7 @@ services:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
     environment:
-      - OPENAI_API_KEY=sk-...
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
       - OPEN_NOTEBOOK_PASSWORD=your_secure_password
     # ... rest of config
 ```
@@ -101,9 +101,11 @@ Or using environment file:
 
 ```bash
 # docker.env
-OPENAI_API_KEY=sk-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
 OPEN_NOTEBOOK_PASSWORD=your_secure_password
 ```
+
+> **Important**: The encryption key is **required** for credential storage. Without it, you cannot save AI provider credentials via the Settings UI. If you change or lose the encryption key, all stored credentials become unreadable.
 
 ### Development Setup
 

@@ -67,15 +67,21 @@ You should see the transcribed text in the response.
 
 ### Step 4: Configure Open Notebook
 
-**Docker deployment:**
+**Via Settings UI (Recommended):**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **OpenAI-Compatible**
+3. Enter base URL for STT: `http://host.docker.internal:8969/v1` (Docker) or `http://localhost:8969/v1` (local)
+4. Click **Save**, then **Test Connection**
+
+**Legacy (Deprecated) — Environment variables:**
 ```yaml
 # In your Open Notebook docker-compose.yml
 environment:
   - OPENAI_COMPATIBLE_BASE_URL_STT=http://host.docker.internal:8969/v1
 ```
 
-**Local development:**
 ```bash
+# Local development
 export OPENAI_COMPATIBLE_BASE_URL_STT=http://localhost:8969/v1
 ```
 
@@ -162,31 +168,23 @@ This is recommended if you have enough RAM/VRAM, as loading the model can take a
 
 ## Docker Networking
 
+When configuring your OpenAI-Compatible credential in **Settings → API Keys**, use the appropriate STT base URL for your setup:
+
 ### Open Notebook in Docker (macOS/Windows)
 
-```bash
-OPENAI_COMPATIBLE_BASE_URL_STT=http://host.docker.internal:8969/v1
-```
+**STT Base URL:** `http://host.docker.internal:8969/v1`
 
 ### Open Notebook in Docker (Linux)
 
-```bash
-# Option 1: Docker bridge IP
-OPENAI_COMPATIBLE_BASE_URL_STT=http://172.17.0.1:8969/v1
+**STT Base URL (Option 1 — Docker bridge IP):** `http://172.17.0.1:8969/v1`
 
-# Option 2: Host networking
-docker run --network host ...
-```
+**Option 2:** Use host networking mode (`docker run --network host ...`), then use: `http://localhost:8969/v1`
 
 ### Remote Server
 
 Run Speaches on a different machine:
 
-```bash
-# On server, bind to all interfaces
-# Then in Open Notebook:
-OPENAI_COMPATIBLE_BASE_URL_STT=http://server-ip:8969/v1
-```
+**STT Base URL:** `http://server-ip:8969/v1` (replace with your server's IP)
 
 ---
 
@@ -330,13 +328,7 @@ docker stats speaches
 
 ## Using Both TTS and STT
 
-Speaches supports both TTS and STT in one server. Configure both:
-
-```bash
-# Same server for both
-OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
-OPENAI_COMPATIBLE_BASE_URL_STT=http://localhost:8969/v1
-```
+Speaches supports both TTS and STT in one server. In **Settings → API Keys**, add a single **OpenAI-Compatible** credential and configure both the TTS and STT base URLs to point to the same Speaches server (e.g., `http://localhost:8969/v1`).
 
 See **[Local TTS Setup](local-tts.md)** for TTS configuration.
 
@@ -356,7 +348,7 @@ Any OpenAI-compatible STT server works:
 The key requirements:
 
 1. Server implements `/v1/audio/transcriptions` endpoint
-2. Set `OPENAI_COMPATIBLE_BASE_URL_STT` to server URL
+2. Add an OpenAI-Compatible credential in **Settings → API Keys** with the STT base URL
 3. Add model with provider `openai_compatible`
 
 ---

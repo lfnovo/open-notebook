@@ -24,11 +24,7 @@ Set the encryption key to any secret string:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
 ```
 
-Any string works. If you prefer a strong random key, you can optionally generate one:
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
+Any string works — it will be securely derived via SHA-256 internally. Use a strong passphrase for production deployments.
 
 ### Default Credentials
 

@@ -31,11 +31,7 @@ environment:
   - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
 ```
 
-Any string works as a key. If you prefer a strong random key:
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
+Any string works as a key — it will be securely derived via SHA-256 internally.
 
 > **Warning**: If you change or lose the encryption key, **all stored credentials become unreadable**. Back up your encryption key securely and separately from your database backups.
 

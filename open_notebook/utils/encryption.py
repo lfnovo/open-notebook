@@ -4,10 +4,9 @@ Field-level encryption for sensitive data using API keys.
 This module provides encryption/decryption for API keys stored in the database.
 Fernet uses AES-128-CBC with HMAC-SHA256 for authenticated encryption.
 
-OPEN_NOTEBOOK_ENCRYPTION_KEY accepts **any string**. If the value is already a
-valid Fernet key (URL-safe base64, 32 bytes) it is used directly; otherwise a
-Fernet key is derived from it via SHA-256. This means users can set a simple
-passphrase like ``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will work.
+OPEN_NOTEBOOK_ENCRYPTION_KEY accepts **any string**. A Fernet key is derived
+from it via SHA-256, so users can set a simple passphrase like
+``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will work.
 
 Usage:
     # Encrypt before storing
@@ -15,9 +14,6 @@ Usage:
 
     # Decrypt when reading
     decrypted = decrypt_value(encrypted)
-
-    # Generate a new key for OPEN_NOTEBOOK_ENCRYPTION_KEY
-    new_key = generate_key()
 """
 
 import base64
@@ -107,21 +103,13 @@ def _get_encryption_key() -> str:
 
 def _ensure_fernet_key(key: str) -> str:
     """
-    Ensure *key* is a valid Fernet key, deriving one if necessary.
+    Derive a valid Fernet key from an arbitrary string via SHA-256.
 
-    If *key* is already a URL-safe base64-encoded 32-byte string (i.e. a valid
-    Fernet key), it is returned as-is.  Otherwise a Fernet key is derived from
-    the arbitrary string via SHA-256.
-
-    This keeps backward compatibility for users who already generated a Fernet
-    key while allowing new users to set any passphrase they like.
+    Any string is accepted as input. The key is derived by hashing it with
+    SHA-256 and encoding the result as URL-safe base64.
     """
-    try:
-        Fernet(key.encode())
-        return key
-    except ValueError:
-        derived = hashlib.sha256(key.encode()).digest()
-        return base64.urlsafe_b64encode(derived).decode()
+    derived = hashlib.sha256(key.encode()).digest()
+    return base64.urlsafe_b64encode(derived).decode()
 
 
 def get_fernet() -> Fernet:
@@ -208,20 +196,3 @@ def decrypt_value(value: str) -> str:
     except Exception as e:
         logger.error(f"Decryption failed: {e}")
         raise ValueError(f"Decryption failed: {str(e)}")
-
-
-def generate_key() -> str:
-    """
-    Generate a new Fernet encryption key.
-
-    Use this to create a value for OPEN_NOTEBOOK_ENCRYPTION_KEY.
-
-    Returns:
-        Base64-encoded Fernet key suitable for use as OPEN_NOTEBOOK_ENCRYPTION_KEY.
-
-    Example:
-        >>> from open_notebook.utils.encryption import generate_key
-        >>> print(generate_key())
-        'your-generated-key-here'
-    """
-    return Fernet.generate_key().decode()

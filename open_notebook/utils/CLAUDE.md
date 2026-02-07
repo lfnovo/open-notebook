@@ -198,13 +198,11 @@ for item in context_items:
 - **get_fernet()**: Get Fernet instance if encryption key is configured
 - **encrypt_value(value)**: Encrypt a string using Fernet symmetric encryption
 - **decrypt_value(value)**: Decrypt a Fernet-encrypted string; gracefully falls back to original value for legacy/unencrypted data
-- **generate_key()**: Generate a strong random encryption key (optional; any string works as key)
-
 **Purpose**: Provides field-level encryption for sensitive data (API keys) stored in the database. Uses Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256) for authenticated encryption.
 
 **Key behavior**:
 - Key source: OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE (Docker secrets) → OPEN_NOTEBOOK_ENCRYPTION_KEY (env var)
-- Accepts **any string**: valid Fernet keys are used directly; arbitrary strings are converted to a Fernet key via SHA-256
+- Accepts **any string**: always derived to a Fernet key via SHA-256
 - No default key — encryption is unavailable until the env var is set
 - Graceful fallback on decryption: InvalidToken errors (legacy unencrypted data) return the original value
 - Lazy-loaded key: initialized on first use, not at import time

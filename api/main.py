@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
         logger.warning(
             "OPEN_NOTEBOOK_ENCRYPTION_KEY not set. "
             "API key encryption will fail until this is configured. "
-            "Generate one with: python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+            "Set OPEN_NOTEBOOK_ENCRYPTION_KEY to any secret string."
         )
 
     # Run database migrations

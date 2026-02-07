@@ -293,12 +293,26 @@ export function useMigrateFromEnv() {
     mutationFn: () => credentialsApi.migrateFromEnv(),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.status })
+      queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.envStatus })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.models })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
 
       const migratedCount = result.migrated.length
+      const errorCount = result.errors?.length ?? 0
 
-      if (migratedCount > 0) {
+      if (errorCount > 0 && migratedCount === 0) {
+        toast({
+          title: t.common.error,
+          description: t.apiKeys.migrationErrors.replace('{count}', errorCount.toString()),
+          variant: 'destructive',
+        })
+      } else if (migratedCount > 0 && errorCount > 0) {
+        toast({
+          title: t.common.success,
+          description: `${t.apiKeys.migrationSuccess.replace('{count}', migratedCount.toString())}. ${t.apiKeys.migrationErrors.replace('{count}', errorCount.toString())}`,
+        })
+      } else if (migratedCount > 0) {
         toast({
           title: t.common.success,
           description: t.apiKeys.migrationSuccess.replace('{count}', migratedCount.toString()),
@@ -332,12 +346,26 @@ export function useMigrateFromProviderConfig() {
     mutationFn: () => credentialsApi.migrateFromProviderConfig(),
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.status })
+      queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.envStatus })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.models })
       queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
 
       const migratedCount = result.migrated.length
+      const errorCount = result.errors?.length ?? 0
 
-      if (migratedCount > 0) {
+      if (errorCount > 0 && migratedCount === 0) {
+        toast({
+          title: t.common.error,
+          description: t.apiKeys.migrationErrors.replace('{count}', errorCount.toString()),
+          variant: 'destructive',
+        })
+      } else if (migratedCount > 0 && errorCount > 0) {
+        toast({
+          title: t.common.success,
+          description: `${t.apiKeys.migrationSuccess.replace('{count}', migratedCount.toString())}. ${t.apiKeys.migrationErrors.replace('{count}', errorCount.toString())}`,
+        })
+      } else if (migratedCount > 0) {
         toast({
           title: t.common.success,
           description: t.apiKeys.migrationSuccess.replace('{count}', migratedCount.toString()),

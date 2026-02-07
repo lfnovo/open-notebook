@@ -805,12 +805,19 @@ async def migrate_from_provider_config():
     Reads from the ProviderConfig singleton and creates individual
     Credential records for each provider configuration found.
     """
+    logger.info("=== Starting ProviderConfig migration ===")
+
     _require_encryption_key()
+    logger.info("Encryption key verified")
 
     try:
         from open_notebook.domain.provider_config import ProviderConfig
 
         config = await ProviderConfig.get_instance()
+        logger.info(
+            f"Found ProviderConfig with {len(config.credentials)} provider(s): "
+            f"{', '.join(config.credentials.keys())}"
+        )
 
         migrated = []
         skipped = []
@@ -823,12 +830,16 @@ async def migrate_from_provider_config():
                     existing = await Credential.get_by_provider(provider)
                     names = [c.name for c in existing]
                     if old_cred.name in names:
+                        logger.info(
+                            f"[{provider}/{old_cred.name}] Already exists in DB, skipping"
+                        )
                         skipped.append(f"{provider}/{old_cred.name}")
                         continue
 
                     # Determine modalities from the provider type
                     modalities = _get_default_modalities(provider)
 
+                    logger.info(f"[{provider}/{old_cred.name}] Creating credential")
                     new_cred = Credential(
                         name=old_cred.name,
                         provider=provider,
@@ -846,6 +857,9 @@ async def migrate_from_provider_config():
                         credentials_path=old_cred.credentials_path,
                     )
                     await new_cred.save()
+                    logger.info(
+                        f"[{provider}/{old_cred.name}] Credential saved (id={new_cred.id})"
+                    )
 
                     # Link existing models for this provider to the new credential
                     from open_notebook.ai.models import Model
@@ -855,15 +869,36 @@ async def migrate_from_provider_config():
                         "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND credential IS NONE",
                         {"provider": provider.lower()},
                     )
-                    for model_data in provider_models:
-                        model = Model(**model_data)
-                        model.credential = new_cred.id
-                        await model.save()
+                    if provider_models:
+                        logger.info(
+                            f"[{provider}/{old_cred.name}] Linking {len(provider_models)} "
+                            f"unassigned model(s)"
+                        )
+                        for model_data in provider_models:
+                            model = Model(**model_data)
+                            model.credential = new_cred.id
+                            await model.save()
 
                     migrated.append(f"{provider}/{old_cred.name}")
 
                 except Exception as e:
+                    logger.error(
+                        f"[{provider}/{old_cred.name}] Migration FAILED: "
+                        f"{type(e).__name__}: {e}",
+                        exc_info=True,
+                    )
                     errors.append(f"{provider}/{old_cred.name}: {e}")
+
+        logger.info(
+            f"=== ProviderConfig migration complete === "
+            f"migrated={len(migrated)} skipped={len(skipped)} errors={len(errors)}"
+        )
+        if migrated:
+            logger.info(f"  Migrated: {', '.join(migrated)}")
+        if skipped:
+            logger.info(f"  Skipped: {', '.join(skipped)}")
+        if errors:
+            logger.error(f"  Errors: {'; '.join(errors)}")
 
         return {
             "message": f"Migration complete. Migrated {len(migrated)} credentials.",
@@ -872,8 +907,10 @@ async def migrate_from_provider_config():
             "errors": errors,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Migration error: {e}")
+        logger.error(f"ProviderConfig migration FAILED: {type(e).__name__}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Migration failed: {e}")
 
 
@@ -886,7 +923,14 @@ async def migrate_from_env():
     Uses PROVIDER_ENV_CONFIG as single source of truth for which env vars
     to check and what's required for each provider.
     """
+    logger.info("=== Starting environment variable migration ===")
+    logger.info(
+        f"Checking {len(PROVIDER_ENV_CONFIG)} providers: "
+        f"{', '.join(PROVIDER_ENV_CONFIG.keys())}"
+    )
+
     _require_encryption_key()
+    logger.info("Encryption key verified")
 
     from open_notebook.ai.models import Model
     from open_notebook.database.repository import repo_query
@@ -899,32 +943,62 @@ async def migrate_from_env():
     for provider in PROVIDER_ENV_CONFIG:
         try:
             if not _check_env_configured(provider):
+                logger.debug(f"[{provider}] No env vars configured, skipping")
                 not_configured.append(provider)
                 continue
 
+            logger.info(f"[{provider}] Env vars detected, checking for existing credentials")
+
             existing = await Credential.get_by_provider(provider)
             if existing:
+                logger.info(
+                    f"[{provider}] Already has {len(existing)} credential(s) in DB, skipping"
+                )
                 skipped.append(provider)
                 continue
 
+            logger.info(f"[{provider}] Creating credential from env vars")
             cred = _create_credential_from_env(provider)
             await cred.save()
+            logger.info(f"[{provider}] Credential saved successfully (id={cred.id})")
 
             # Link unassigned models to this credential
             provider_models = await repo_query(
                 "SELECT * FROM model WHERE string::lowercase(provider) = $provider AND credential IS NONE",
                 {"provider": provider.lower()},
             )
-            for model_data in provider_models:
-                model = Model(**model_data)
-                model.credential = cred.id
-                await model.save()
+            if provider_models:
+                logger.info(
+                    f"[{provider}] Linking {len(provider_models)} unassigned model(s) "
+                    f"to credential {cred.id}"
+                )
+                for model_data in provider_models:
+                    model = Model(**model_data)
+                    model.credential = cred.id
+                    await model.save()
+            else:
+                logger.info(f"[{provider}] No unassigned models to link")
 
             migrated.append(provider)
 
         except Exception as e:
-            logger.error(f"Migration error for {provider}: {e}")
+            logger.error(
+                f"[{provider}] Migration FAILED: {type(e).__name__}: {e}",
+                exc_info=True,
+            )
             errors.append(f"{provider}: {e}")
+
+    logger.info(
+        f"=== Environment variable migration complete === "
+        f"migrated={len(migrated)} skipped={len(skipped)} "
+        f"not_configured={len(not_configured)} errors={len(errors)}"
+    )
+    if migrated:
+        logger.info(f"  Migrated: {', '.join(migrated)}")
+    if skipped:
+        logger.info(f"  Skipped (already in DB): {', '.join(skipped)}")
+    if errors:
+        logger.error(f"  Errors: {'; '.join(errors)}")
 
     return {
         "message": f"Migration complete. Migrated {len(migrated)} providers.",

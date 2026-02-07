@@ -19,8 +19,10 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 ### models.py
 
 #### Model (ObjectModel)
-- Database record: name, provider, type (language/embedding/speech_to_text/text_to_speech)
+- Database record: name, provider, type (language/embedding/speech_to_text/text_to_speech), credential (optional link to Credential record)
 - `get_models_by_type()`: Async query to fetch all models of a specific type
+- `get_credential_obj()`: Fetches linked Credential object (if credential field set)
+- `get_by_credential(credential_id)`: Class method to find all models linked to a credential
 - Stores provider-model pairs for AI factory instantiation
 
 #### DefaultModels (RecordModel)
@@ -31,7 +33,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 
 #### ModelManager
 - Stateless factory for instantiating AI models
-- `get_model(model_id)`: Retrieves Model by ID, creates via AIFactory.create_* based on type
+- `get_model(model_id)`: Retrieves Model by ID; if model has linked credential, uses `credential.to_esperanto_config()` for provider config; otherwise falls back to env var provisioning via `key_provider`
 - `get_defaults()`: Fetches DefaultModels configuration
 - `get_default_model(model_type)`: Smart lookup (e.g., "chat" → default_chat_model, "transformation" → default_transformation_model with fallback to chat)
 - `get_speech_to_text()`, `get_text_to_speech()`, `get_embedding_model()`: Type-specific convenience methods with assertions
@@ -50,10 +52,10 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 
 ### key_provider.py
 
-#### API Key Provider (DB→Env Fallback)
+#### API Key Provider (Credential→Env Fallback)
 - **Purpose**: Provides API keys from database first, falls back to environment variables
-- **Pattern**: Before Esperanto creates a model, keys are loaded from `ProviderConfig` and set as environment variables
-- **Integration point**: Called automatically by `ModelManager.get_model()` before `AIFactory.create_*`
+- **Pattern**: Before Esperanto creates a model, keys are loaded from `Credential` records and set as environment variables
+- **Integration point**: Called by `ModelManager.get_model()` as fallback when model has no linked credential
 
 #### Key Functions
 - `get_api_key(provider)`: Get single API key (DB first, then env var)
@@ -74,14 +76,14 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Config override**: provision_langchain_model() accepts kwargs passed to AIFactory.create_* methods
 - **Token-based selection**: provision_langchain_model() detects large contexts and upgrades model automatically
 - **Type assertions**: get_speech_to_text(), get_embedding_model() assert returned type (safety check)
-- **DB→Env fallback**: API keys checked in database (ProviderConfig) first, then environment variables; enables UI-based key management while maintaining backward compatibility
+- **Credential→Env fallback**: If model has linked credential, config from `credential.to_esperanto_config()` is used directly; otherwise keys checked in database via key_provider, then environment variables; enables UI-based key management while maintaining backward compatibility
 
 ## Key Dependencies
 
 - `esperanto`: AIFactory.create_language(), create_embedding(), create_speech_to_text(), create_text_to_speech()
 - `open_notebook.database.repository`: repo_query, ensure_record_id
 - `open_notebook.domain.base`: ObjectModel, RecordModel base classes
-- `open_notebook.domain.provider_config`: ProviderConfig for database-stored API keys
+- `open_notebook.domain.credential`: Credential for database-stored API keys
 - `open_notebook.utils`: token_count() for context size detection
 - `loguru`: Logging for model selection decisions
 
@@ -95,7 +97,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Esperanto caching**: Actual model instances cached by Esperanto (not by ModelManager); ModelManager stateless
 - **Fallback chain specificity**: "transformation" type falls back to default_chat_model if not explicitly set (convention-based)
 - **kwargs passed through**: provision_langchain_model() passes kwargs to AIFactory but doesn't validate what's accepted
-- **Key provider sets env vars**: `provision_provider_keys()` modifies `os.environ` to inject DB-stored keys (from `ProviderConfig`); Esperanto reads from env vars
+- **Key provider sets env vars**: `provision_provider_keys()` modifies `os.environ` to inject DB-stored keys (from `Credential` records); Esperanto reads from env vars (only used as fallback when model has no linked credential)
 
 ## How to Extend
 
@@ -143,18 +145,24 @@ Main entry point for testing provider connectivity.
 
 ```python
 async def test_provider_connection(
-    provider: str, model_type: str = "language"
+    provider: str, model_type: str = "language",
+    config_id: Optional[str] = None
 ) -> Tuple[bool, str]
 ```
 
 **Returns**: `(success: bool, message: str)` - Success status and human-readable message.
 
 **Flow**:
-1. Calls `provision_provider_keys(provider)` to load DB keys into env vars
+1. If `config_id` provided: Loads credential via `Credential.get(config_id)`, uses `credential.to_esperanto_config()` for provider config
 2. Looks up test model from `TEST_MODELS` dict
 3. For URL-based providers (ollama, openai_compatible): Tests server connectivity
-4. For API-based providers: Creates minimal model via Esperanto and makes test call
-5. Returns user-friendly error messages for common failures
+4. For Azure: Tests `/openai/models` endpoint with api_version
+5. For API-based providers: Creates minimal model via Esperanto and makes test call
+6. Returns user-friendly error messages for common failures
+
+### test_individual_model()
+
+Tests a specific Model instance by loading its linked credential (if any) and making a minimal API call.
 
 ### TEST_MODELS Configuration
 
@@ -194,7 +202,7 @@ The tester normalizes error messages for user-friendly display:
 
 ### Purpose
 
-Unified interface for retrieving API keys with database-first, environment-fallback strategy. Enables UI-based key management while maintaining backward compatibility with `.env` files.
+Unified interface for retrieving API keys with database-first, environment-fallback strategy. Enables UI-based key management while maintaining backward compatibility with `.env` files. Used as fallback when models don't have a directly linked credential.
 
 ### Core Functions
 
@@ -204,11 +212,11 @@ Unified interface for retrieving API keys with database-first, environment-fallb
 async def get_api_key(provider: str) -> Optional[str]
 ```
 
-Gets API key for a provider. Checks database (`ProviderConfig`) first, then environment variable.
+Gets API key for a provider. Checks database (`Credential` records) first, then environment variable.
 
 **Fallback Chain**:
-1. Query `ProviderConfig` from database for the given provider
-2. Get field value from provider config
+1. Query `Credential` records from database for the given provider
+2. Get api_key from default credential
 3. Handle `SecretStr` (call `.get_secret_value()`) vs regular strings
 4. If DB value exists and is non-empty, return it
 5. Otherwise, return `os.environ.get(env_var)`
@@ -314,11 +322,10 @@ OPENAI_COMPATIBLE_CONFIG = {
 
 ### Integration with ModelManager
 
-The key provider integrates with the existing model provisioning flow:
+The credential system integrates with model provisioning in two ways:
 
-1. **API endpoint** calls `provision_provider_keys(provider)` before model operations
-2. **ConnectionTester** calls `provision_provider_keys()` before testing
-3. **Keys are set** in `os.environ` where Esperanto reads them
-4. **Esperanto** creates models using standard env var lookup
+1. **Credential-linked models** (preferred): Model has `credential` field pointing to a Credential record. `ModelManager.get_model()` calls `credential.to_esperanto_config()` and passes config directly to Esperanto's `AIFactory.create_*` methods
+2. **Env var fallback**: If model has no linked credential, `provision_provider_keys(provider)` sets env vars from DB credentials; Esperanto reads from env vars
+3. **ConnectionTester** loads Credential directly via `Credential.get(config_id)` for testing
 
-This approach requires no changes to Esperanto or existing model creation code - keys are transparently injected into the environment before Esperanto needs them.
+The credential-linked approach is preferred as it allows multiple credentials per provider and avoids env var mutation.

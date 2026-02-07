@@ -53,16 +53,22 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Transformation**: Reusable prompts for content transformation
 - **DefaultPrompts**: Singleton with transformation instructions
 
-### provider_config.py
-- **ProviderConfig**: Per-provider configuration for API keys and credentials (replaces the former singleton APIKeyConfig)
-  - **One record per provider**: Each provider (openai, anthropic, google, etc.) gets its own ProviderConfig record in SurrealDB
-  - **Dynamic field storage**: Provider-specific fields stored as a dict (api_key, base_url, endpoint, etc.)
-  - **SecretStr protection**: API key fields use Pydantic's `SecretStr` (values masked in logs/repr)
+### credential.py
+- **Credential**: Individual credential records for API keys and provider configuration
+  - **One record per credential**: Each credential (e.g., "My OpenAI Key", "Work Anthropic") is a separate `Credential` record in SurrealDB
+  - **Fields**: name, provider, modalities (list), api_key (SecretStr), base_url, endpoint, api_version, endpoint_llm/embedding/stt/tts, project, location, credentials_path
+  - **SecretStr protection**: API key field uses Pydantic's `SecretStr` (values masked in logs/repr)
   - **Encryption integration**: Uses `encrypt_value()`/`decrypt_value()` from `open_notebook.utils.encryption`
     - Keys encrypted with Fernet before database storage
     - Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` environment variable (warns if not set)
-  - **Multi-credential support**: Multiple configs per provider with a default flag
+  - **Key methods**:
+    - `to_esperanto_config()`: Builds config dict for Esperanto's AIFactory methods
+    - `get_by_provider(provider)`: Class method to fetch all credentials for a provider
+    - `get_linked_models()`: Returns all Model records linked to this credential
   - **Custom serialization**: `_prepare_save_data()` extracts SecretStr values and encrypts before storage
+  - **Decryption on read**: `get()` and `get_all()` overridden to decrypt api_key after fetch
+
+- **Note**: `provider_config.py` still exists for legacy migration support (migrating old ProviderConfig records to Credential)
 
 ## Important Patterns
 

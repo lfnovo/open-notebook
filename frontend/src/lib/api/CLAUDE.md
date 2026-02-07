@@ -65,91 +65,94 @@ const response = await sourcesApi.create({
 const notes = await notesApi.list()
 ```
 
-## API Keys Module (`api-keys.ts`)
+## Credentials Module (`credentials.ts`)
 
-Client functions for managing API provider configurations (keys, base URLs, endpoints) stored in SurrealDB.
+Client functions for managing AI provider credentials (API keys, base URLs, endpoints) stored encrypted in SurrealDB.
 
 ### Type Definitions
 
 ```typescript
-// Status of all configured API keys
-interface ApiKeyStatus {
-  configured: Record<string, boolean>  // provider -> is configured
-  source: Record<string, string>       // provider -> 'database' | 'environment'
-}
-
-// Environment variable status
-interface EnvStatus {
-  [provider: string]: boolean  // provider -> has env var set
-}
-
-// Request payload for setting API key
-interface SetApiKeyRequest {
-  api_key?: string
+// Full credential object (api_key never exposed)
+interface Credential {
+  id: string
+  name: string
+  provider: string
+  modalities: string[]
+  has_api_key: boolean
+  model_count: number
   base_url?: string
   endpoint?: string
   api_version?: string
-  endpoint_llm?: string
-  endpoint_embedding?: string
-  endpoint_stt?: string
-  endpoint_tts?: string
-  service_type?: 'llm' | 'embedding' | 'stt' | 'tts'
-  // Vertex AI specific
-  vertex_project?: string
-  vertex_location?: string
-  vertex_credentials_path?: string
+  // ... endpoint_llm, endpoint_embedding, endpoint_stt, endpoint_tts, project, location, credentials_path
 }
 
-// Migration result from env to database
-interface MigrationResult {
-  message: string
-  migrated: string[]
-  skipped: string[]
-  errors: string[]
-}
-
-// Connection test result
-interface TestConnectionResult {
+// Request payload for creating/updating credential
+interface CreateCredentialRequest {
+  name: string
   provider: string
-  success: boolean
-  message: string
+  modalities: string[]
+  api_key?: string
+  base_url?: string
+  // ... other provider-specific fields
 }
+
+// Model discovery and registration
+interface DiscoverModelsResponse { provider: string; models: DiscoveredModel[]; credential_id: string }
+interface RegisterModelsRequest { models: RegisterModelData[] }
+
+// Status and migration
+interface CredentialStatus { configured: Record<string, boolean>; source: Record<string, string>; encryption_configured: boolean }
+interface EnvStatus { [provider: string]: boolean }
+interface MigrationResult { message: string; migrated: string[]; skipped: string[]; errors: string[] }
+interface TestConnectionResult { provider: string; success: boolean; message: string }
 ```
 
 ### API Functions
 
 | Function | Description | Endpoint |
 |----------|-------------|----------|
-| `getStatus()` | Get configuration status of all providers | `GET /api-keys/status` |
-| `getEnvStatus()` | Get which providers have env vars set | `GET /api-keys/env-status` |
-| `setKey(provider, data)` | Set/update API key configuration | `POST /api-keys/{provider}` |
-| `deleteKey(provider, serviceType?)` | Delete API key configuration | `DELETE /api-keys/{provider}` |
-| `migrate()` | Migrate keys from env vars to database | `POST /api-keys/migrate` |
-| `testConnection(provider)` | Test provider connectivity | `POST /api-keys/{provider}/test` |
+| `getStatus()` | Get configuration status of all providers | `GET /credentials/status` |
+| `getEnvStatus()` | Get which providers have env vars set | `GET /credentials/env-status` |
+| `list(provider?)` | List all credentials (optional filter) | `GET /credentials` |
+| `listByProvider(provider)` | List credentials for a provider | `GET /credentials/by-provider/{provider}` |
+| `get(credentialId)` | Get a specific credential | `GET /credentials/{credentialId}` |
+| `create(data)` | Create a new credential | `POST /credentials` |
+| `update(credentialId, data)` | Update a credential | `PUT /credentials/{credentialId}` |
+| `delete(credentialId, options?)` | Delete a credential | `DELETE /credentials/{credentialId}` |
+| `test(credentialId)` | Test connection using credential | `POST /credentials/{credentialId}/test` |
+| `discover(credentialId)` | Discover available models | `POST /credentials/{credentialId}/discover` |
+| `registerModels(credentialId, data)` | Register discovered models | `POST /credentials/{credentialId}/register-models` |
+| `migrateFromProviderConfig()` | Migrate from legacy ProviderConfig | `POST /credentials/migrate-from-provider-config` |
+| `migrateFromEnv()` | Migrate from env vars | `POST /credentials/migrate-from-env` |
 
 ### Usage Example
 
 ```typescript
-import { apiKeysApi } from '@/lib/api/api-keys'
+import { credentialsApi } from '@/lib/api/credentials'
 
 // Check which providers are configured
-const status = await apiKeysApi.getStatus()
+const status = await credentialsApi.getStatus()
 if (status.configured['openai']) {
   console.log(`OpenAI configured via ${status.source['openai']}`)
 }
 
-// Set a new API key
-await apiKeysApi.setKey('anthropic', {
-  api_key: 'sk-ant-...',
-  base_url: 'https://api.anthropic.com'
+// Create a new credential
+const cred = await credentialsApi.create({
+  name: 'My OpenAI Key',
+  provider: 'openai',
+  modalities: ['language', 'embedding'],
+  api_key: 'sk-proj-...'
 })
 
 // Test the connection
-const result = await apiKeysApi.testConnection('anthropic')
+const result = await credentialsApi.test(cred.id)
 if (result.success) {
   console.log('Connection successful!')
 }
 
-// Delete a key (optionally for specific service type)
-await apiKeysApi.deleteKey('openai', 'embedding')
+// Discover and register models
+const discovered = await credentialsApi.discover(cred.id)
+await credentialsApi.registerModels(cred.id, {
+  models: discovered.models.map(m => ({ model_id: m.model_id, name: m.name, type: 'language' }))
+})
 ```

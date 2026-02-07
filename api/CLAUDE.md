@@ -58,6 +58,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **routers/notes.py**: POST /notes, GET /notes/{id}
 - **routers/sources.py**: POST /sources, GET /sources/{id}, DELETE /sources/{id}
 - **routers/models.py**: GET /models, POST /models/config
+- **routers/credentials.py**: CRUD + test + discover + migrate for credential management
 - **routers/transformations.py**: POST /transformations
 - **routers/insights.py**: GET /sources/{source_id}/insights
 - **routers/auth.py**: POST /auth/password (password-based auth)
@@ -183,35 +184,46 @@ No changes to authentication. The `credentials` router uses the same `PasswordAu
 
 ### Connection Testing (`open_notebook/ai/connection_tester.py`)
 
-The `/api-keys/{provider}/test` endpoint uses minimal API calls to verify credentials:
-- Uses cheapest/smallest models per provider
+The `/credentials/{credential_id}/test` endpoint uses minimal API calls to verify credentials:
+- Loads Credential via `Credential.get(config_id)`, uses `credential.to_esperanto_config()`
+- Uses cheapest/smallest models per provider (TEST_MODELS map)
 - Returns success status and descriptive message
-- Catches exceptions and returns failure details
+- Special handlers for ollama, openai_compatible, and azure providers
 
-### Migration Workflow
+### Migration Workflows
 
-The `/api-keys/migrate` endpoint helps users transition from `.env` to database storage:
+Two migration endpoints help users transition to the credential system:
+
+**From environment variables** (`POST /credentials/migrate-from-env`):
 1. Checks each provider for env var presence
-2. Skips providers already configured in DB (unless `force=True`)
-3. Migrates env values to `ProviderConfig` fields
-4. Returns summary: migrated, skipped, errors
+2. Creates Credential records from env var values
+3. Returns summary: migrated, skipped, errors
+
+**From legacy ProviderConfig** (`POST /credentials/migrate-from-provider-config`):
+1. Reads old ProviderConfig records from database
+2. Converts each to individual Credential records
+3. Returns summary: migrated, skipped, errors
 
 ### Example Usage
 
 ```python
 # Check status
-GET /api-keys/status
-# Response: {"configured": {"openai": true, "anthropic": false}, "source": {"openai": "environment", "anthropic": "none"}}
+GET /credentials/status
+# Response: {"configured": {"openai": true, "anthropic": false}, "source": {"openai": "database", "anthropic": "none"}, "encryption_configured": true}
 
-# Set OpenAI key
-POST /api-keys/openai
-{"api_key": "sk-proj-..."}
+# Create credential
+POST /credentials
+{"name": "My OpenAI Key", "provider": "openai", "modalities": ["language", "embedding"], "api_key": "sk-proj-..."}
 
 # Test connection
-POST /api-keys/openai/test
+POST /credentials/{credential_id}/test
 # Response: {"provider": "openai", "success": true, "message": "Connection successful"}
 
+# Discover models
+POST /credentials/{credential_id}/discover
+# Response: {"provider": "openai", "models": [{"model_id": "gpt-4", "name": "gpt-4", ...}], "credential_id": "..."}
+
 # Migrate from env
-POST /api-keys/migrate?force=false
+POST /credentials/migrate-from-env
 # Response: {"message": "Migration complete. Migrated 3 providers.", "migrated": ["openai", "anthropic", "groq"], "skipped": [], "errors": []}
 ```

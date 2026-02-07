@@ -67,17 +67,19 @@ render(<Component />, { wrapper: QueryClientProvider })
 await waitFor(() => expect(queryClient.invalidateQueries).toHaveBeenCalled())
 ```
 
-## API Keys Hooks (`use-api-keys.ts`)
+## Credentials Hooks (`use-credentials.ts`)
 
-Hooks for managing API provider configurations with TanStack Query integration, toast notifications, and cache invalidation.
+Hooks for managing AI provider credentials with TanStack Query integration, toast notifications, and cache invalidation.
 
 ### Query Keys
 
 ```typescript
-export const API_KEYS_QUERY_KEYS = {
-  status: ['api-keys', 'status'] as const,
-  envStatus: ['api-keys', 'env-status'] as const,
-  modelCount: (provider: string) => ['api-keys', 'model-count', provider] as const,
+export const CREDENTIAL_QUERY_KEYS = {
+  all: ['credentials'] as const,
+  status: ['credentials', 'status'] as const,
+  envStatus: ['credentials', 'env-status'] as const,
+  byProvider: (provider: string) => ['credentials', 'provider', provider] as const,
+  detail: (id: string) => ['credentials', id] as const,
 }
 ```
 
@@ -85,85 +87,97 @@ export const API_KEYS_QUERY_KEYS = {
 
 | Hook | Description | Returns |
 |------|-------------|---------|
-| `useApiKeysStatus()` | Get configuration status of all providers | `{ configured, source }` |
+| `useCredentialStatus()` | Get configuration status of all providers | `{ configured, source, encryption_configured }` |
 | `useEnvStatus()` | Get which providers have env vars set | `{ [provider]: boolean }` |
-| `useProviderModelCount(provider)` | Get model count for a provider | `number` |
+| `useCredentials(provider?)` | List all credentials (optional filter) | `Credential[]` |
+| `useCredentialsByProvider(provider)` | List credentials for a specific provider | `Credential[]` |
+| `useCredential(credentialId)` | Get a specific credential | `Credential` |
 
 ### Mutation Hooks
 
 | Hook | Description | Cache Invalidation |
 |------|-------------|-------------------|
-| `useSetApiKey()` | Set/update API key configuration | `status`, `envStatus`, `providers` |
-| `useDeleteApiKey()` | Delete API key configuration | `status`, `envStatus`, `providers` |
-| `useMigrateApiKeys()` | Migrate keys from env to database | `status`, `envStatus`, `providers` |
-| `useTestConnection()` | Test provider connectivity | None (stores result locally) |
-| `useSyncModels()` | Sync models for a single provider | `models`, `modelCount` |
-| `useSyncAllModels()` | Sync models for all providers | `models`, all `modelCount` |
+| `useCreateCredential()` | Create new credential | `all`, `providers` |
+| `useUpdateCredential()` | Update credential | `all`, `providers` |
+| `useDeleteCredential()` | Delete credential | `all`, `models`, `providers` |
+| `useTestCredential()` | Test credential connection | None (stores result locally) |
+| `useDiscoverModels()` | Discover models for credential | None |
+| `useRegisterModels()` | Register discovered models | `models`, `all` |
+| `useMigrateFromEnv()` | Migrate from env vars | `status`, `envStatus`, `models`, `providers` |
+| `useMigrateFromProviderConfig()` | Migrate from legacy ProviderConfig | `status`, `envStatus`, `models`, `providers` |
 
-### useTestConnection Details
+### useTestCredential Details
 
 Returns extended interface with local state management for test results:
 
 ```typescript
 const {
-  testConnection,        // (provider: string) => void
-  testConnectionAsync,   // (provider: string) => Promise<TestConnectionResult>
+  testCredential,        // (credentialId: string) => void
+  testCredentialAsync,   // (credentialId: string) => Promise<TestConnectionResult>
   isPending,             // boolean
   testResults,           // Record<string, TestConnectionResult>
-  clearResult,           // (provider: string) => void
-} = useTestConnection()
+  clearResult,           // (credentialId: string) => void
+} = useTestCredential()
 ```
 
 ### Cache Invalidation Strategy
 
 All mutation hooks invalidate:
-- `API_KEYS_QUERY_KEYS.status` — refreshes configured/source info
-- `API_KEYS_QUERY_KEYS.envStatus` — refreshes env var status
-- `MODEL_QUERY_KEYS.providers` — refreshes provider list on Models page
+- `CREDENTIAL_QUERY_KEYS.all` — refreshes all credential queries (cascades to filtered queries)
+- `MODEL_QUERY_KEYS.providers` — refreshes provider list
 
-Model sync hooks additionally invalidate:
-- `MODEL_QUERY_KEYS.models` — refreshes full model list
-- `API_KEYS_QUERY_KEYS.modelCount(provider)` — refreshes specific provider count
+Delete hook additionally invalidates:
+- `MODEL_QUERY_KEYS.models` — refreshes full model list (linked models may be deleted)
+
+Migration hooks additionally invalidate:
+- `CREDENTIAL_QUERY_KEYS.status` — refreshes configured/source info
+- `CREDENTIAL_QUERY_KEYS.envStatus` — refreshes env var status
 
 ### Usage Example
 
 ```typescript
 import {
-  useApiKeysStatus,
-  useSetApiKey,
-  useTestConnection,
-  useMigrateApiKeys
-} from '@/lib/hooks/use-api-keys'
+  useCredentialStatus,
+  useCredentials,
+  useCreateCredential,
+  useTestCredential,
+  useMigrateFromEnv
+} from '@/lib/hooks/use-credentials'
 
-function ApiKeySettings() {
-  const { data: status, isLoading } = useApiKeysStatus()
-  const setApiKey = useSetApiKey()
-  const { testConnection, testResults, isPending } = useTestConnection()
-  const migrateKeys = useMigrateApiKeys()
+function CredentialSettings() {
+  const { data: status, isLoading } = useCredentialStatus()
+  const { data: credentials } = useCredentials()
+  const createCredential = useCreateCredential()
+  const { testCredential, testResults, isPending } = useTestCredential()
+  const migrateFromEnv = useMigrateFromEnv()
 
-  const handleSave = () => {
-    setApiKey.mutate({
+  const handleCreate = () => {
+    createCredential.mutate({
+      name: 'My OpenAI Key',
       provider: 'openai',
-      data: { api_key: 'sk-...', base_url: 'https://api.openai.com' }
+      modalities: ['language', 'embedding'],
+      api_key: 'sk-...'
     })
   }
 
-  const handleTest = () => {
-    testConnection('openai')
+  const handleTest = (credentialId: string) => {
+    testCredential(credentialId)
   }
 
   const handleMigrate = () => {
-    migrateKeys.mutate()
+    migrateFromEnv.mutate()
   }
 
   return (
     <div>
-      {status?.configured['openai'] && (
-        <span>Source: {status.source['openai']}</span>
-      )}
-      <button onClick={handleSave} disabled={setApiKey.isPending}>Save</button>
-      <button onClick={handleTest} disabled={isPending}>Test</button>
-      {testResults['openai']?.success && <span>Connected!</span>}
+      {credentials?.map(cred => (
+        <div key={cred.id}>
+          <span>{cred.name} ({cred.provider})</span>
+          <button onClick={() => handleTest(cred.id)} disabled={isPending}>Test</button>
+          {testResults[cred.id]?.success && <span>Connected!</span>}
+        </div>
+      ))}
+      <button onClick={handleCreate}>Add Credential</button>
       <button onClick={handleMigrate}>Migrate from .env</button>
     </div>
   )
@@ -172,8 +186,8 @@ function ApiKeySettings() {
 
 ### Important Notes
 
-- **Toast notifications**: All mutations show success/error toasts automatically via `useToast()`
+- **Toast notifications**: All mutations show success/error toasts automatically
 - **i18n integration**: Toast messages use translation keys from `t.apiKeys.*` and `t.common.*`
 - **Error handling**: Uses `getApiErrorKey()` utility to extract error messages from API responses
-- **Local test results**: `useTestConnection` stores results in local state (not cached in TanStack Query)
-- **Migration feedback**: `useMigrateApiKeys` shows different toasts based on migrated/skipped/error counts
+- **Local test results**: `useTestCredential` stores results in local state (not cached in TanStack Query)
+- **Migration feedback**: Migration hooks show different toasts based on migrated/skipped/error counts

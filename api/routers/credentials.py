@@ -112,11 +112,10 @@ def _validate_url(url: str, provider: str) -> None:
                         # Skip non-IP addresses (e.g., IPv6 zones)
                         continue
             except socket.gaierror:
-                # Could not resolve hostname - reject it for security
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Hostname '{hostname}' could not be resolved. For security reasons, only valid resolvable hostnames are allowed.",
-                )
+                # Could not resolve hostname - allow it since the URL may be
+                # valid in the deployment environment (e.g., Azure endpoints,
+                # internal DNS names). We only block link-local addresses.
+                pass
 
     except HTTPException:
         raise

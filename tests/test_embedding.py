@@ -117,7 +117,7 @@ class TestGenerateEmbeddings:
         from unittest.mock import AsyncMock, patch
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "open_notebook.ai.models.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=None,
         ):
@@ -133,7 +133,7 @@ class TestGenerateEmbeddings:
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "open_notebook.ai.models.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -170,7 +170,7 @@ class TestGenerateEmbedding:
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "open_notebook.ai.models.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -197,7 +197,7 @@ class TestGenerateEmbedding:
         )
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "open_notebook.ai.models.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):
@@ -218,7 +218,7 @@ class TestGenerateEmbedding:
         mock_model.aembed = AsyncMock(return_value=[[0.1, 0.2, 0.3]])
 
         with patch(
-            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            "open_notebook.ai.models.model_manager.get_embedding_model",
             new_callable=AsyncMock,
             return_value=mock_model,
         ):

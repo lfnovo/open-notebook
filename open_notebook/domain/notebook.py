@@ -630,6 +630,16 @@ async def text_search(
     note: bool = True,
     notebook_id: Optional[str] = None,
 ):
+    """Full-text keyword search across sources and notes.
+
+    Args:
+        keyword: Search query string.
+        results: Maximum number of results to return.
+        source: Include sources in search results.
+        note: Include notes in search results.
+        notebook_id: Optional notebook ID to scope search to. When provided,
+            only sources/notes belonging to that notebook are returned.
+    """
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
@@ -662,6 +672,17 @@ async def vector_search(
     minimum_score=0.2,
     notebook_id: Optional[str] = None,
 ):
+    """Semantic search using vector embeddings across sources and notes.
+
+    Args:
+        keyword: Search query string (converted to embedding).
+        results: Maximum number of results to return.
+        source: Include sources in search results.
+        note: Include notes in search results.
+        minimum_score: Minimum cosine similarity threshold (0-1).
+        notebook_id: Optional notebook ID to scope search to. When provided,
+            only sources/notes belonging to that notebook are returned.
+    """
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:

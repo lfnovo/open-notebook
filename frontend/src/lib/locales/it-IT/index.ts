@@ -1048,5 +1048,13 @@ export const itIT = {
     configSetDefaultSuccess: "Configurazione predefinita aggiornata",
     apiKeyHint: "Inserisci la chiave API per questa configurazione",
     apiKeyEditHint: "Lascia vuoto per mantenere la chiave API esistente",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "Chiave di crittografia non configurata",
+    encryptionRequiredDescription: "Imposta la variabile d'ambiente OPEN_NOTEBOOK_ENCRYPTION_KEY per abilitare l'archiviazione sicura delle credenziali.",
+    migrationAvailable: "Migrazione chiavi API disponibile",
+    migrationDescription: "{count} provider hanno chiavi API impostate tramite variabili d'ambiente. Migrale nel database per una gestione più semplice.",
+    goToSettings: "Vai alle Impostazioni",
+    viewDocs: "Vedi documentazione",
+  },
 }

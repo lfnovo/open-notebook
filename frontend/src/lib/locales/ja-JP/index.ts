@@ -1055,5 +1055,13 @@ export const jaJP = {
     configSetDefaultSuccess: "デフォルト設定が更新されました",
     apiKeyHint: "この設定のAPIキーを入力してください",
     apiKeyEditHint: "既存のAPIキーを維持するには空白のままにしてください",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "暗号化キーが設定されていません",
+    encryptionRequiredDescription: "OPEN_NOTEBOOK_ENCRYPTION_KEY 環境変数を設定して、安全な認証情報の保存を有効にしてください。",
+    migrationAvailable: "APIキーの移行が可能です",
+    migrationDescription: "{count} 個のプロバイダーのAPIキーが環境変数で設定されています。管理を容易にするためにデータベースに移行してください。",
+    goToSettings: "設定へ移動",
+    viewDocs: "ドキュメントを見る",
+  },
 }

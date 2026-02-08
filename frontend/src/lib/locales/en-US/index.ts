@@ -1055,5 +1055,13 @@ export const enUS = {
     configSetDefaultSuccess: "Default configuration updated",
     apiKeyHint: "Enter your API key for this configuration",
     apiKeyEditHint: "Leave blank to keep the existing API key",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "Encryption key not configured",
+    encryptionRequiredDescription: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to enable secure credential storage.",
+    migrationAvailable: "API key migration available",
+    migrationDescription: "{count} provider(s) have API keys set via environment variables. Migrate them to the database for easier management.",
+    goToSettings: "Go to Settings",
+    viewDocs: "View docs",
+  },
 }

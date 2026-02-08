@@ -1055,5 +1055,13 @@ export const zhCN = {
     configSetDefaultSuccess: "默认配置已更新",
     apiKeyHint: "输入此配置的 API 密钥",
     apiKeyEditHint: "留空以保留现有 API 密钥",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "未配置加密密钥",
+    encryptionRequiredDescription: "请设置 OPEN_NOTEBOOK_ENCRYPTION_KEY 环境变量以启用安全凭据存储。",
+    migrationAvailable: "API 密钥迁移可用",
+    migrationDescription: "{count} 个服务商的 API 密钥通过环境变量设置。将它们迁移到数据库以便于管理。",
+    goToSettings: "前往设置",
+    viewDocs: "查看文档",
+  },
 }

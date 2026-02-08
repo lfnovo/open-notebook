@@ -1049,5 +1049,13 @@ export const ruRU = {
     configSetDefaultSuccess: "Конфигурация по умолчанию обновлена",
     apiKeyHint: "Введите API-ключ для этой конфигурации",
     apiKeyEditHint: "Оставьте пустым, чтобы сохранить текущий API-ключ",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "Ключ шифрования не настроен",
+    encryptionRequiredDescription: "Установите переменную окружения OPEN_NOTEBOOK_ENCRYPTION_KEY для безопасного хранения учётных данных.",
+    migrationAvailable: "Доступна миграция API-ключей",
+    migrationDescription: "{count} провайдер(ов) имеют API-ключи, заданные через переменные окружения. Перенесите их в базу данных для удобного управления.",
+    goToSettings: "Перейти к настройкам",
+    viewDocs: "Документация",
+  },
 }

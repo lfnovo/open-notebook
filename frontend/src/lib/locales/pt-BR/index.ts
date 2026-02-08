@@ -1055,5 +1055,13 @@ export const ptBR = {
     configSetDefaultSuccess: "Configuração padrão atualizada",
     apiKeyHint: "Digite sua chave de API para esta configuração",
     apiKeyEditHint: "Deixe em branco para manter a chave de API existente",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "Chave de criptografia não configurada",
+    encryptionRequiredDescription: "Configure a variável de ambiente OPEN_NOTEBOOK_ENCRYPTION_KEY para habilitar o armazenamento seguro de credenciais.",
+    migrationAvailable: "Migração de chaves de API disponível",
+    migrationDescription: "{count} provedor(es) possuem chaves de API definidas por variáveis de ambiente. Migre-as para o banco de dados para facilitar o gerenciamento.",
+    goToSettings: "Ir para Configurações",
+    viewDocs: "Ver documentação",
+  },
 }

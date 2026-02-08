@@ -1055,5 +1055,13 @@ export const zhTW = {
     configSetDefaultSuccess: "預設設定已更新",
     apiKeyHint: "輸入此設定的 API 金鑰",
     apiKeyEditHint: "留空以保留現有 API 金鑰",
-  }
+  },
+  setupBanner: {
+    encryptionRequired: "未設定加密金鑰",
+    encryptionRequiredDescription: "請設定 OPEN_NOTEBOOK_ENCRYPTION_KEY 環境變數以啟用安全憑據儲存。",
+    migrationAvailable: "API 金鑰遷移可用",
+    migrationDescription: "{count} 個供應商的 API 金鑰透過環境變數設定。將它們遷移到資料庫以便於管理。",
+    goToSettings: "前往設定",
+    viewDocs: "查看文件",
+  },
 }

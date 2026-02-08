@@ -209,8 +209,9 @@ async def process_video_content(content_state: dict, file_path: str) -> dict:
             logger.warning("No vision model configured, skipping frame analysis")
 
         # 6. Synthesize all content
+        # Get synthesis model if we have any content to synthesize (frames OR transcript)
         synthesis_model = None
-        if frame_descriptions and transcript:
+        if frame_descriptions or transcript:
             chat_model = await model_manager.get_default_model("chat")
             if chat_model:
                 synthesis_model = chat_model.to_langchain()

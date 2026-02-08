@@ -149,9 +149,11 @@ async def extract_audio(video_path: str, output_path: Optional[str] = None) -> s
     Raises:
         RuntimeError: If audio extraction fails
     """
+    created_temp_file = False
     if output_path is None:
         fd, output_path = tempfile.mkstemp(suffix=".wav", prefix="video_audio_")
         os.close(fd)
+        created_temp_file = True
 
     cmd = [
         "ffmpeg",
@@ -174,6 +176,12 @@ async def extract_audio(video_path: str, output_path: Optional[str] = None) -> s
     _, stderr = await proc.communicate()
 
     if proc.returncode != 0:
+        # Clean up temp file on failure
+        if created_temp_file and os.path.exists(output_path):
+            try:
+                os.unlink(output_path)
+            except Exception as e:
+                logger.warning(f"Failed to cleanup temp audio file: {e}")
         raise RuntimeError(f"Audio extraction failed: {stderr.decode()}")
 
     logger.info(f"Extracted audio to {output_path}")

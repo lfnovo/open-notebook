@@ -84,8 +84,11 @@ async def convert_pdf_to_images(
     Returns:
         List of (image_path, page_number) tuples for selected pages
     """
+    # Track whether we created the temp directory (so we only clean up our own)
+    created_temp_dir = False
     if output_dir is None:
         output_dir = tempfile.mkdtemp(prefix="pdf_pages_")
+        created_temp_dir = True
 
     try:
         # Get total page count
@@ -139,12 +142,18 @@ async def convert_pdf_to_images(
                 results.append((str(output_files[0]), page_num))
 
         logger.info(f"Successfully converted {len(results)} PDF pages to images")
+
+        # Clean up temp directory if we created it and no results were produced
+        if not results and created_temp_dir and os.path.isdir(output_dir):
+            shutil.rmtree(output_dir, ignore_errors=True)
+            logger.debug(f"Cleaned up empty temp directory: {output_dir}")
+
         return results
 
     except Exception as e:
         logger.error(f"PDF conversion failed: {e}")
-        # Cleanup on failure
-        if output_dir and os.path.isdir(output_dir):
+        # Only cleanup directories we created, not caller-provided ones
+        if created_temp_dir and output_dir and os.path.isdir(output_dir):
             shutil.rmtree(output_dir, ignore_errors=True)
         raise
 

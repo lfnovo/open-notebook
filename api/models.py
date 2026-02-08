@@ -189,6 +189,7 @@ class NoteResponse(BaseModel):
     note_type: Optional[str]
     created: str
     updated: str
+    command_id: Optional[str] = None
 
 
 # Embedding API models

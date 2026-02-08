@@ -16,6 +16,11 @@ from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
+from open_notebook.utils.pdf import (
+    cleanup_pdf_temp_files,
+    convert_office_to_pdf,
+    convert_pdf_to_images,
+)
 from open_notebook.utils.video import (
     calculate_frame_params,
     cleanup_temp_files,
@@ -29,15 +34,21 @@ from open_notebook.utils.vision import analyze_image, format_timestamp
 # File extensions for visual content detection
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".tiff"}
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v"}
+PDF_EXTENSIONS = {".pdf"}
+OFFICE_EXTENSIONS = {".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".odt", ".odp", ".ods"}
 
 
 def detect_content_type(file_path: str) -> str:
-    """Detect if file is image, video, or other based on extension."""
+    """Detect if file is image, video, pdf, office, or other based on extension."""
     ext = Path(file_path).suffix.lower()
     if ext in IMAGE_EXTENSIONS:
         return "image"
     elif ext in VIDEO_EXTENSIONS:
         return "video"
+    elif ext in PDF_EXTENSIONS:
+        return "pdf"
+    elif ext in OFFICE_EXTENSIONS:
+        return "office"
     return "other"
 
 
@@ -227,6 +238,209 @@ async def process_video_content(content_state: dict, file_path: str) -> dict:
         cleanup_temp_files(temp_files)
 
 
+async def analyze_pages_parallel(
+    pages: List[Tuple[str, int]],
+    langchain_model,
+    max_concurrent: int = 5,
+) -> List[Tuple[int, str]]:
+    """
+    Analyze multiple PDF pages in parallel with controlled concurrency.
+
+    Args:
+        pages: List of (image_path, page_number) tuples
+        langchain_model: LangChain vision model
+        max_concurrent: Maximum concurrent API calls (default 5)
+
+    Returns:
+        List of (page_number, description) tuples for successful analyses
+    """
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def analyze_single_page(
+        image_path: str, page_num: int
+    ) -> Tuple[int, str]:
+        async with semaphore:
+            logger.info(f"Analyzing page {page_num}...")
+            prompt = f"""Analyze this PDF page (page {page_num}) in detail. Extract and describe:
+1. All text content (transcribe key text verbatim when important)
+2. Any tables, charts, or figures (describe their content and meaning)
+3. Images or diagrams (describe what they show)
+4. Document structure and formatting
+5. Key information and insights
+
+Provide a comprehensive analysis that captures the full content of this page."""
+            try:
+                desc = await analyze_image(image_path, langchain_model, prompt)
+                return (page_num, desc)
+            except Exception as e:
+                logger.warning(f"Page analysis failed for page {page_num}: {e}")
+                return (page_num, f"[Analysis failed: {e}]")
+
+    # Create tasks for all pages
+    tasks = [analyze_single_page(path, page_num) for path, page_num in pages]
+
+    # Execute in parallel with semaphore limiting concurrency
+    results = await asyncio.gather(*tasks)
+
+    logger.info(f"Completed analysis of {len(results)} pages")
+
+    # Filter out failed analyses
+    return [r for r in results if r[1] and not r[1].startswith("[Analysis failed")]
+
+
+async def synthesize_pdf_content(
+    page_descriptions: List[Tuple[int, str]],
+    model=None,
+) -> str:
+    """
+    Synthesize PDF page descriptions into a coherent document summary.
+
+    Args:
+        page_descriptions: List of (page_number, description) tuples
+        model: Optional LangChain model for synthesis
+
+    Returns:
+        Synthesized content string
+    """
+    if not page_descriptions:
+        return "[No PDF content could be extracted]"
+
+    # Sort by page number
+    page_descriptions.sort(key=lambda x: x[0])
+
+    # Build raw content
+    content_parts = ["# PDF Document Analysis\n"]
+
+    for page_num, description in page_descriptions:
+        content_parts.append(f"## Page {page_num}\n\n{description}\n")
+
+    raw_content = "\n".join(content_parts)
+
+    # If no synthesis model or few pages, return raw content
+    if not model or len(page_descriptions) <= 3:
+        return raw_content
+
+    # Synthesize with LLM for longer documents
+    try:
+        from langchain_core.messages import HumanMessage
+
+        synthesis_prompt = f"""You are analyzing a PDF document that has been processed page by page.
+Below is the content extracted from each page. Please synthesize this into a coherent,
+well-organized document summary that:
+
+1. Preserves all important information and key details
+2. Organizes the content logically (not necessarily by page order)
+3. Removes redundant information
+4. Maintains any tables, lists, or structured data
+5. Highlights key findings, conclusions, or important points
+
+Page-by-page content:
+{raw_content}
+
+Please provide a comprehensive synthesis of this document:"""
+
+        response = await model.ainvoke([HumanMessage(content=synthesis_prompt)])
+        return f"# PDF Document Analysis\n\n{response.content}"
+    except Exception as e:
+        logger.warning(f"PDF synthesis failed, using raw content: {e}")
+        return raw_content
+
+
+async def process_pdf_content(content_state: dict, file_path: str) -> dict:
+    """Process PDF using vision model page-by-page."""
+    model_manager = ModelManager()
+    temp_files = []
+
+    try:
+        # 1. Convert PDF pages to images (with adaptive sampling)
+        logger.info(f"Converting PDF to images: {file_path}")
+        pages = await convert_pdf_to_images(file_path, dpi=150)
+        if pages:
+            temp_files.append(str(Path(pages[0][0]).parent))
+
+        if not pages:
+            logger.warning("No pages extracted from PDF")
+            content_state["content"] = "[PDF - no pages could be extracted]"
+            content_state["title"] = content_state.get("title") or Path(file_path).stem
+            return {"content_state": ProcessSourceState(**content_state)}
+
+        # 2. Get vision model
+        vision_model = await model_manager.get_vision_model()
+        if not vision_model:
+            logger.warning("No vision model configured, skipping PDF analysis")
+            content_state["content"] = "[PDF - no vision model configured]"
+            content_state["title"] = content_state.get("title") or Path(file_path).stem
+            return {"content_state": ProcessSourceState(**content_state)}
+
+        langchain_model = vision_model.to_langchain()
+
+        # 3. Analyze pages in parallel
+        logger.info(f"Analyzing {len(pages)} PDF pages with vision model (parallel)")
+        page_descriptions = await analyze_pages_parallel(
+            pages, langchain_model, max_concurrent=5
+        )
+
+        # 4. Synthesize all page content
+        synthesis_model = None
+        if len(page_descriptions) > 3:
+            chat_model = await model_manager.get_default_model("chat")
+            if chat_model:
+                synthesis_model = chat_model.to_langchain()
+
+        content = await synthesize_pdf_content(
+            page_descriptions=page_descriptions,
+            model=synthesis_model,
+        )
+
+        content_state["content"] = content
+        content_state["title"] = content_state.get("title") or Path(file_path).stem
+        logger.info(f"Successfully processed PDF: {file_path}")
+
+        return {"content_state": ProcessSourceState(**content_state)}
+
+    except Exception as e:
+        logger.error(f"PDF processing failed: {e}")
+        content_state["content"] = f"[PDF processing failed: {e}]"
+        content_state["title"] = content_state.get("title") or Path(file_path).stem
+        return {"content_state": ProcessSourceState(**content_state)}
+
+    finally:
+        # Cleanup temp files
+        cleanup_pdf_temp_files(temp_files)
+
+
+async def process_office_content(content_state: dict, file_path: str) -> dict:
+    """Process Office documents by converting to PDF then using vision processing."""
+    temp_files = []
+
+    try:
+        # 1. Convert Office document to PDF
+        logger.info(f"Converting Office document to PDF: {file_path}")
+        pdf_path = await convert_office_to_pdf(file_path)
+        temp_files.append(str(Path(pdf_path).parent))  # Temp dir containing PDF
+
+        # 2. Process the PDF using the PDF processor
+        result = await process_pdf_content(content_state, pdf_path)
+
+        # Update title to use original file name
+        if result.get("content_state"):
+            result["content_state"].title = (
+                content_state.get("title") or Path(file_path).stem
+            )
+
+        return result
+
+    except Exception as e:
+        logger.error(f"Office document processing failed: {e}")
+        content_state["content"] = f"[Office document processing failed: {e}]"
+        content_state["title"] = content_state.get("title") or Path(file_path).stem
+        return {"content_state": ProcessSourceState(**content_state)}
+
+    finally:
+        # Cleanup temp files
+        cleanup_pdf_temp_files(temp_files)
+
+
 async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
     file_path = content_state.get("file_path")
@@ -241,6 +455,12 @@ async def content_process(state: SourceState) -> dict:
         elif content_type == "video":
             logger.info(f"Detected video file, using vision processing: {file_path}")
             return await process_video_content(content_state, file_path)
+        elif content_type == "pdf":
+            logger.info(f"Detected PDF file, using vision processing: {file_path}")
+            return await process_pdf_content(content_state, file_path)
+        elif content_type == "office":
+            logger.info(f"Detected Office document, using vision processing: {file_path}")
+            return await process_office_content(content_state, file_path)
 
     # Fall through to existing content-core processing for all other content
     content_settings = ContentSettings(

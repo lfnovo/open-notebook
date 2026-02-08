@@ -448,9 +448,7 @@ class Source(ObjectModel):
             return command_id_str
 
         except Exception as e:
-            logger.error(
-                f"Failed to submit embed_source job for source {self.id}: {e}"
-            )
+            logger.error(f"Failed to submit embed_source job for source {self.id}: {e}")
             logger.exception(e)
             raise DatabaseOperationError(e)
 
@@ -626,17 +624,28 @@ class ChatSession(ObjectModel):
 
 
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    notebook_id: Optional[str] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
+        notebook_record_id = ensure_record_id(notebook_id) if notebook_id else None
         search_results = await repo_query(
             """
             select *
-            from fn::text_search($keyword, $results, $source, $note)
+            from fn::text_search($keyword, $results, $source, $note, $notebook_id)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {
+                "keyword": keyword,
+                "results": results,
+                "source": source,
+                "note": note,
+                "notebook_id": notebook_record_id,
+            },
         )
         return search_results
     except Exception as e:
@@ -651,17 +660,19 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    notebook_id: Optional[str] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         from open_notebook.utils.embedding import generate_embedding
 
+        notebook_record_id = ensure_record_id(notebook_id) if notebook_id else None
         # Use unified embedding function (handles chunking if query is very long)
         embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score, $notebook_id);
             """,
             {
                 "embed": embed,
@@ -669,6 +680,7 @@ async def vector_search(
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
+                "notebook_id": notebook_record_id,
             },
         )
         return search_results

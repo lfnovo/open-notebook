@@ -14,6 +14,23 @@ from open_notebook.graphs.ask import graph as ask_graph
 router = APIRouter()
 
 
+def _build_ask_config(
+    strategy_model: Model,
+    answer_model: Model,
+    final_answer_model: Model,
+    notebook_id: str | None = None,
+) -> dict:
+    """Build the config dict for ask graph invocations."""
+    return dict(
+        configurable=dict(
+            strategy_model=strategy_model.id,
+            answer_model=answer_model.id,
+            final_answer_model=final_answer_model.id,
+            notebook_id=notebook_id,
+        )
+    )
+
+
 @router.post("/search", response_model=SearchResponse)
 async def search_knowledge_base(search_request: SearchRequest):
     """Search the knowledge base using text or vector search."""
@@ -73,13 +90,8 @@ async def stream_ask_response(
 
         async for chunk in ask_graph.astream(
             input=dict(question=question),  # type: ignore[arg-type]
-            config=dict(
-                configurable=dict(
-                    strategy_model=strategy_model.id,
-                    answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id,
-                    notebook_id=notebook_id,
-                )
+            config=_build_ask_config(
+                strategy_model, answer_model, final_answer_model, notebook_id
             ),
             stream_mode="updates",
         ):
@@ -201,13 +213,11 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         final_answer = None
         async for chunk in ask_graph.astream(
             input=dict(question=ask_request.question),  # type: ignore[arg-type]
-            config=dict(
-                configurable=dict(
-                    strategy_model=strategy_model.id,
-                    answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id,
-                    notebook_id=ask_request.notebook_id,
-                )
+            config=_build_ask_config(
+                strategy_model,
+                answer_model,
+                final_answer_model,
+                ask_request.notebook_id,
             ),
             stream_mode="updates",
         ):

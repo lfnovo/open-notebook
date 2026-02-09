@@ -128,12 +128,15 @@ export default function NotebookPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col flex-1 min-h-0">
-        <div className="flex-shrink-0 p-6 pb-0">
-          <NotebookHeader notebook={notebook} />
-        </div>
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        {/* Header stays fixed at top; only columns area scrolls */}
+        <header className="flex-shrink-0 bg-background z-10">
+          <div className="p-6 pb-0">
+            <NotebookHeader notebook={notebook} />
+          </div>
+        </header>
 
-        <div className="flex-1 p-6 pt-6 overflow-x-auto flex flex-col">
+        <div className="flex-1 min-h-0 p-6 pt-4 overflow-auto flex flex-col">
           {/* Mobile: Tabbed interface - only render on mobile to avoid double-mounting */}
           {!isDesktop && (
             <>

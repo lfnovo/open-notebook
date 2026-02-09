@@ -139,3 +139,6 @@ specs/
 
 *.local.yml
 **/*.local.md
+
+#Ignore cursor AI rules
+.cursor\rules\codacy.mdc

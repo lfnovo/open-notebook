@@ -49,35 +49,41 @@ export default function NotebooksPage() {
 
   return (
     <AppShell>
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">{t.notebooks.title}</h1>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {/* Sticky header: title, refresh, search, New Notebook */}
+        <header className="flex-shrink-0 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 z-10">
+          <div className="p-6 pb-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-4">
+                <h1 className="text-2xl font-bold">{t.notebooks.title}</h1>
+                <Button variant="outline" size="sm" onClick={() => refetch()} aria-label={t.common.refresh ?? 'Refresh'}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                <Input
+                  id="notebook-search"
+                  name="notebook-search"
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder={t.notebooks.searchPlaceholder}
+                  autoComplete="off"
+                  aria-label={t.common.accessibility?.searchNotebooks || "Search notebooks"}
+                  className="w-full sm:w-64"
+                />
+                <Button onClick={() => setCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t.notebooks.newNotebook}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <Input
-              id="notebook-search"
-              name="notebook-search"
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t.notebooks.searchPlaceholder}
-              autoComplete="off"
-              aria-label={t.common.accessibility?.searchNotebooks || "Search notebooks"}
-              className="w-full sm:w-64"
-            />
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t.notebooks.newNotebook}
-            </Button>
-          </div>
-        </div>
-        
-        <div className="space-y-8">
-          <NotebookList 
+        </header>
+
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6 pt-4 space-y-6">
+            <div className="space-y-8">
+              <NotebookList 
             notebooks={filteredActive} 
             isLoading={isLoading}
             title={t.notebooks.activeNotebooks}
@@ -98,6 +104,7 @@ export default function NotebooksPage() {
             />
           )}
         </div>
+          </div>
         </div>
       </div>
 

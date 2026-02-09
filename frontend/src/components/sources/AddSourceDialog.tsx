@@ -534,15 +534,16 @@ export function AddSourceDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[700px] p-0">
-        <DialogHeader className="px-6 pt-6 pb-0">
+      <DialogContent className="sm:max-w-[700px] p-0 flex flex-col max-h-[calc(100vh-2rem)]">
+        <DialogHeader className="px-6 pt-6 pb-0 flex-shrink-0">
           <DialogTitle>{t.sources.addNew}</DialogTitle>
           <DialogDescription>
             {t.sources.processDescription}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
           <WizardContainer
             currentStep={currentStep}
             steps={WIZARD_STEPS}
@@ -583,9 +584,10 @@ export function AddSourceDialog({
               />
             )}
           </WizardContainer>
+          </div>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted">
+          <div className="flex flex-shrink-0 justify-between items-center px-6 py-4 border-t border-border bg-muted">
             <Button 
               type="button" 
               variant="outline" 

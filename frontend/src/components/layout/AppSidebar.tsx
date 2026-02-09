@@ -108,14 +108,14 @@ export function AppSidebar() {
     <TooltipProvider delayDuration={0}>
       <div
         className={cn(
-          'app-sidebar flex h-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
+          'app-sidebar flex h-full max-h-full min-h-0 w-full flex-col bg-sidebar border-sidebar-border border-r transition-all duration-300',
           isCollapsed ? 'w-16' : 'w-64'
         )}
       >
         <div
           className={cn(
-            'flex h-16 items-center group',
-            isCollapsed ? 'justify-center px-2' : 'justify-between px-4'
+            'flex h-14 flex-shrink-0 items-center group',
+            isCollapsed ? 'justify-center px-2' : 'justify-between px-3'
           )}
         >
           {isCollapsed ? (
@@ -159,13 +159,13 @@ export function AppSidebar() {
 
         <nav
           className={cn(
-            'flex-1 space-y-1 py-4',
+            'flex-1 min-h-0 space-y-1 py-3',
             isCollapsed ? 'px-2' : 'px-3'
           )}
         >
           <div
             className={cn(
-              'mb-4',
+              'mb-3',
               isCollapsed ? 'px-0' : 'px-3'
             )}
           >
@@ -243,11 +243,11 @@ export function AppSidebar() {
           {navigation.map((section, index) => (
             <div key={section.title}>
               {index > 0 && (
-                <Separator className="my-3" />
+                <Separator className="my-2" />
               )}
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 {!isCollapsed && (
-                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                  <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/60">
                     {section.title}
                   </h3>
                 )}
@@ -294,25 +294,22 @@ export function AppSidebar() {
 
         <div
           className={cn(
-            'border-t border-sidebar-border p-3 space-y-2',
+            'flex-shrink-0 border-t border-sidebar-border p-2 space-y-1.5',
             isCollapsed && 'px-2'
           )}
         >
           {/* Command Palette hint */}
           {!isCollapsed && (
-            <div className="px-3 py-1.5 text-xs text-sidebar-foreground/60">
-              <div className="flex items-center justify-between">
-                 <span className="flex items-center gap-1.5">
+            <div className="px-2 py-1 text-xs text-sidebar-foreground/60">
+              <div className="flex items-center justify-between gap-1">
+                 <span className="flex items-center gap-1">
                   <Command className="h-3 w-3" />
                   {t.common.quickActions}
                 </span>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-                  {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
+                <kbd className="pointer-events-none inline-flex h-4 select-none items-center rounded border bg-muted px-1 font-mono text-[10px] font-medium text-muted-foreground">
+                  {isMac ? <span className="text-[10px]">⌘</span> : <span>Ctrl+</span>}K
                 </kbd>
               </div>
-               <p className="mt-1 text-[10px] text-sidebar-foreground/40">
-                {t.common.quickActionsDesc}
-              </p>
             </div>
           )}
 

@@ -113,7 +113,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
       if (typeof height === 'number' && height > 0) setEditorHeight(Math.max(200, Math.floor(height)))
     })
     ro.observe(el)
-    return () => ro.disconnect()
+    return () => { ro.disconnect(); }
   }, [open])
 
   // Drag: use direct DOM updates for smooth movement (no re-renders during drag)
@@ -129,7 +129,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
       currentX: dragOffset.x,
       currentY: dragOffset.y,
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }, [dragOffset.x, dragOffset.y])
 
   const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
@@ -141,7 +141,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
       startHeight: modalHeightPx,
       currentHeight: modalHeightPx,
     }
-    ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }, [modalHeightPx])
 
   useEffect(() => {

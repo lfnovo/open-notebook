@@ -552,6 +552,117 @@ class MigrationResult(BaseModel):
 
 
 # Notebook delete cascade models
+# Credential models
+class CreateCredentialRequest(BaseModel):
+    """Request to create a new credential."""
+
+    name: str = Field(..., description="Credential name")
+    provider: str = Field(..., description="Provider name (openai, anthropic, etc.)")
+    modalities: List[str] = Field(
+        default_factory=list,
+        description="Supported modalities (language, embedding, text_to_speech, speech_to_text)",
+    )
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL (Azure)")
+    api_version: Optional[str] = Field(None, description="API version (Azure)")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID (Vertex)")
+    location: Optional[str] = Field(None, description="Location (Vertex)")
+    credentials_path: Optional[str] = Field(
+        None, description="Credentials file path (Vertex)"
+    )
+
+
+class UpdateCredentialRequest(BaseModel):
+    """Request to update an existing credential."""
+
+    name: Optional[str] = Field(None, description="Credential name")
+    modalities: Optional[List[str]] = Field(None, description="Supported modalities")
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL")
+    api_version: Optional[str] = Field(None, description="API version")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID")
+    location: Optional[str] = Field(None, description="Location")
+    credentials_path: Optional[str] = Field(None, description="Credentials path")
+
+
+class CredentialResponse(BaseModel):
+    """Response for a credential (never includes api_key)."""
+
+    id: str
+    name: str
+    provider: str
+    modalities: List[str]
+    base_url: Optional[str] = None
+    endpoint: Optional[str] = None
+    api_version: Optional[str] = None
+    endpoint_llm: Optional[str] = None
+    endpoint_embedding: Optional[str] = None
+    endpoint_stt: Optional[str] = None
+    endpoint_tts: Optional[str] = None
+    project: Optional[str] = None
+    location: Optional[str] = None
+    credentials_path: Optional[str] = None
+    has_api_key: bool = False
+    created: str
+    updated: str
+    model_count: int = 0
+
+
+class CredentialDeleteResponse(BaseModel):
+    """Response for credential deletion."""
+
+    message: str
+    deleted_models: int = 0
+
+
+class DiscoveredModelResponse(BaseModel):
+    """A model discovered from a provider."""
+
+    name: str
+    provider: str
+    model_type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DiscoverModelsResponse(BaseModel):
+    """Response from model discovery."""
+
+    credential_id: str
+    provider: str
+    discovered: List[DiscoveredModelResponse]
+
+
+class RegisterModelData(BaseModel):
+    """A model to register with user-specified type."""
+
+    name: str
+    provider: str
+    model_type: str  # Required: user specifies the type
+
+
+class RegisterModelsRequest(BaseModel):
+    """Request to register discovered models."""
+
+    models: List[RegisterModelData]
+
+
+class RegisterModelsResponse(BaseModel):
+    """Response from model registration."""
+
+    created: int
+    existing: int
+
+
 class NotebookDeletePreview(BaseModel):
     notebook_id: str = Field(..., description="ID of the notebook")
     notebook_name: str = Field(..., description="Name of the notebook")

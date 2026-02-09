@@ -600,8 +600,8 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
     "openai_compatible": discover_openai_compatible_models,
-    "azure": discover_openai_models,  # Azure uses OpenAI-compatible API
-    "vertex": discover_google_models,  # Vertex uses Google API
+    "azure": None,  # Azure requires credential-based discovery (different auth)
+    "vertex": None,  # Vertex requires credential-based discovery (service account)
 }
 
 
@@ -616,8 +616,14 @@ async def discover_provider_models(provider: str) -> List[DiscoveredModel]:
         List of discovered models
     """
     discover_func = PROVIDER_DISCOVERY_FUNCTIONS.get(provider)
-    if not discover_func:
-        logger.warning(f"No discovery function for provider: {provider}")
+    if discover_func is None:
+        if provider in PROVIDER_DISCOVERY_FUNCTIONS:
+            logger.info(
+                f"Provider '{provider}' requires credential-based discovery. "
+                f"Use the /credentials/{{id}}/discover endpoint instead."
+            )
+        else:
+            logger.warning(f"No discovery function for provider: {provider}")
         return []
 
     return await discover_func()

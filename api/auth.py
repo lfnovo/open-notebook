@@ -1,10 +1,80 @@
 import os
-from typing import Optional
+from typing import Optional, Set
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+
+from open_notebook.database.async_migrate import AsyncMigrationManager
+from open_notebook.user_context import current_user
+
+# Track which users have been migrated (in-memory cache, resets on restart)
+_migrated_users: Set[str] = set()
+
+
+async def ensure_user_migrated(user: str):
+    """Run DB migrations for a user's database if not already done."""
+    if user in _migrated_users:
+        return
+    manager = AsyncMigrationManager()
+    if await manager.needs_migration():
+        logger.info(f"Running migrations for user database: {user}")
+        await manager.run_migration_up()
+    _migrated_users.add(user)
+
+
+class ProxyAuthMiddleware:
+    """
+    Pure ASGI middleware that reads X-Forwarded-User header (set by OAuth2 Proxy
+    or any auth proxy) and sets the current_user contextvar for per-user DB routing.
+
+    Uses pure ASGI (not BaseHTTPMiddleware) so contextvars propagate correctly
+    to all async handlers and database connections.
+    """
+
+    def __init__(self, app, excluded_paths: Optional[list] = None):
+        self.app = app
+        self.excluded_paths: Set[str] = set(excluded_paths or [
+            "/", "/health", "/docs", "/openapi.json", "/redoc",
+        ])
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        path = scope.get("path", "")
+        if path in self.excluded_paths:
+            await self.app(scope, receive, send)
+            return
+
+        # Skip CORS preflight
+        method = scope.get("method", "")
+        if method == "OPTIONS":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract X-Forwarded-User from ASGI headers (list of byte tuples)
+        headers = dict(scope.get("headers", []))
+        user = headers.get(b"x-forwarded-user", b"").decode().strip()
+
+        if not user:
+            response = JSONResponse(
+                status_code=401,
+                content={"detail": "Missing X-Forwarded-User header"},
+            )
+            await response(scope, receive, send)
+            return
+
+        # Set contextvar for this request — db_connection() reads it
+        token = current_user.set(user)
+        try:
+            await ensure_user_migrated(user)
+            await self.app(scope, receive, send)
+        finally:
+            current_user.reset(token)
 
 
 class PasswordAuthMiddleware(BaseHTTPMiddleware):

@@ -39,10 +39,13 @@ def client():
     """Create test client for API endpoint testing.
 
     This fixture is shared across all API router tests to avoid duplication.
-    Note: TestClient is not used as a context manager here so lifespan
-    (migrations) does not run, avoiding a requirement for SurrealDB in unit tests.
+
+    Do not use TestClient as a context manager (e.g. ``with TestClient(app) as client:``).
+    Doing so triggers FastAPI lifespan events; in this project the lifespan runs
+    DB migrations via AsyncMigrationManager, which would reintroduce a SurrealDB
+    dependency for unit tests. We intentionally avoid that by returning the client
+    directly so lifespan is never run.
     """
     from api.main import app
 
-    with TestClient(app) as client:
-        yield client
+    return TestClient(app)

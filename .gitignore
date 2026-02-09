@@ -140,7 +140,17 @@ specs/
 *.local.yml
 **/*.local.md
 
-#Ignore cursor AI rules
-.cursor\rules\codacy.mdc
+# Cursor and Codacy (local/tooling)
+.cursor/
+.codacy
 open-notebook-image.tar
 scripts/save-image.sh
+Makefile
+scripts/save-image.sh
+
+# Archive folder (from project rules: moved unused/legacy items)
+archive/
+
+# Optional: local PR/submission helpers (uncomment to keep untracked)
+SUBMISSION_GUIDE_ISSUE_541.md
+.github/PULL_REQUEST_TEMPLATE_filled_541.md

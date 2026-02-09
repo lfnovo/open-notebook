@@ -73,7 +73,7 @@ async def get_status():
         return await get_provider_status()
     except Exception as e:
         logger.error(f"Error fetching status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to fetch credential status")
 
 
 @router.get("/env-status")
@@ -83,7 +83,7 @@ async def get_env_status():
         return await svc_get_env_status()
     except Exception as e:
         logger.error(f"Error checking env status: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to check environment status")
 
 
 # =============================================================================
@@ -111,7 +111,7 @@ async def list_credentials(
 
     except Exception as e:
         logger.error(f"Error listing credentials: {e}")
-        raise HTTPException(status_code=500, detail=f"Error listing credentials: {e}")
+        raise HTTPException(status_code=500, detail="Failed to list credentials")
 
 
 @router.get("/by-provider/{provider}", response_model=List[CredentialResponse])
@@ -126,7 +126,7 @@ async def list_credentials_by_provider(provider: str):
         return result
     except Exception as e:
         logger.error(f"Error listing credentials for {provider}: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to list credentials for provider")
 
 
 @router.post("", response_model=CredentialResponse, status_code=201)
@@ -170,7 +170,7 @@ async def create_credential(request: CreateCredentialRequest):
 
     except Exception as e:
         logger.error(f"Error creating credential: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating credential: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create credential")
 
 
 @router.get("/{credential_id}", response_model=CredentialResponse)
@@ -242,7 +242,7 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
         raise
     except Exception as e:
         logger.error(f"Error updating credential {credential_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error updating credential: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update credential")
 
 
 @router.delete("/{credential_id}", response_model=CredentialDeleteResponse)
@@ -302,7 +302,7 @@ async def delete_credential(
         raise
     except Exception as e:
         logger.error(f"Error deleting credential {credential_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error deleting credential: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete credential")
 
 
 # =============================================================================
@@ -341,7 +341,7 @@ async def discover_models_for_credential(credential_id: str):
 
     except Exception as e:
         logger.error(f"Error discovering models for credential {credential_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error discovering models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to discover models")
 
 
 @router.post("/{credential_id}/register-models", response_model=RegisterModelsResponse)
@@ -354,7 +354,7 @@ async def register_models_for_credential(
         return RegisterModelsResponse(**result)
     except Exception as e:
         logger.error(f"Error registering models for credential {credential_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error registering models: {e}")
+        raise HTTPException(status_code=500, detail="Failed to register models")
 
 
 # =============================================================================
@@ -371,7 +371,7 @@ async def migrate_from_provider_config():
         raise _handle_value_error(e)
     except Exception as e:
         logger.error(f"ProviderConfig migration FAILED: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Migration failed: {e}")
+        raise HTTPException(status_code=500, detail="Migration from provider config failed")
 
 
 @router.post("/migrate-from-env")
@@ -383,4 +383,4 @@ async def migrate_from_env():
         raise _handle_value_error(e)
     except Exception as e:
         logger.error(f"Env migration FAILED: {type(e).__name__}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Migration failed: {e}")
+        raise HTTPException(status_code=500, detail="Migration from environment variables failed")

@@ -2,8 +2,8 @@
 API Key Provider - Database-first with environment fallback.
 
 This module provides a unified interface for retrieving API keys and provider
-configuration. It reads from ProviderConfig (single source of truth) and
-falls back to environment variables for backward compatibility.
+configuration. It reads from Credential records (individual per-provider
+credentials) and falls back to environment variables for backward compatibility.
 
 Usage:
     from open_notebook.ai.key_provider import provision_provider_keys
@@ -17,7 +17,7 @@ from typing import Optional
 
 from loguru import logger
 
-from open_notebook.domain.provider_config import ProviderConfig
+from open_notebook.domain.credential import Credential
 
 
 # =============================================================================
@@ -65,6 +65,17 @@ PROVIDER_CONFIG = {
 }
 
 
+async def _get_default_credential(provider: str) -> Optional[Credential]:
+    """Get the first credential for a provider from the database."""
+    try:
+        credentials = await Credential.get_by_provider(provider)
+        if credentials:
+            return credentials[0]
+    except Exception as e:
+        logger.debug(f"Could not load credential from database for {provider}: {e}")
+    return None
+
+
 async def get_api_key(provider: str) -> Optional[str]:
     """
     Get API key for a provider. Checks database first, then env var.
@@ -75,14 +86,10 @@ async def get_api_key(provider: str) -> Optional[str]:
     Returns:
         API key string or None if not configured
     """
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config(provider)
-        if default_cred and default_cred.api_key:
-            logger.debug(f"Using {provider} API key from ProviderConfig")
-            return default_cred.api_key.get_secret_value()
-    except Exception as e:
-        logger.debug(f"Could not load API key from ProviderConfig for {provider}: {e}")
+    cred = await _get_default_credential(provider)
+    if cred and cred.api_key:
+        logger.debug(f"Using {provider} API key from Credential")
+        return cred.api_key.get_secret_value()
 
     # Fall back to environment variable
     config_info = PROVIDER_CONFIG.get(provider.lower())
@@ -91,82 +98,6 @@ async def get_api_key(provider: str) -> Optional[str]:
         if env_value:
             logger.debug(f"Using {provider} API key from environment variable")
         return env_value
-
-    return None
-
-
-async def get_provider_configs(provider: str) -> list[dict]:
-    """
-    Get all configurations for a provider from ProviderConfig.
-
-    Args:
-        provider: Provider name (openai, anthropic, etc.)
-
-    Returns:
-        List of configuration dicts, each containing id, name, is_default, etc.
-        Does NOT include api_key for security.
-    """
-    provider_lower = provider.lower()
-
-    try:
-        config = await ProviderConfig.get_instance()
-        credentials = config.credentials.get(provider_lower, [])
-
-        result = []
-        for cred in credentials:
-            config_data = {
-                "id": cred.id,
-                "name": cred.name,
-                "provider": cred.provider,
-                "is_default": cred.is_default,
-            }
-            if cred.base_url:
-                config_data["base_url"] = cred.base_url
-            if cred.model:
-                config_data["model"] = cred.model
-            if cred.api_version:
-                config_data["api_version"] = cred.api_version
-            if cred.endpoint:
-                config_data["endpoint"] = cred.endpoint
-            if cred.endpoint_llm:
-                config_data["endpoint_llm"] = cred.endpoint_llm
-            if cred.endpoint_embedding:
-                config_data["endpoint_embedding"] = cred.endpoint_embedding
-            if cred.endpoint_stt:
-                config_data["endpoint_stt"] = cred.endpoint_stt
-            if cred.endpoint_tts:
-                config_data["endpoint_tts"] = cred.endpoint_tts
-            if cred.project:
-                config_data["project"] = cred.project
-            if cred.location:
-                config_data["location"] = cred.location
-            if cred.credentials_path:
-                config_data["credentials_path"] = cred.credentials_path
-            result.append(config_data)
-
-        return result
-    except Exception as e:
-        logger.debug(f"Could not load provider configs from database for {provider}: {e}")
-        return []
-
-
-async def get_default_api_key(provider: str) -> Optional[str]:
-    """
-    Get the default API key for a provider from ProviderConfig.
-
-    Args:
-        provider: Provider name (openai, anthropic, etc.)
-
-    Returns:
-        API key string or None if not configured
-    """
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config(provider)
-        if default_cred and default_cred.api_key:
-            return default_cred.api_key.get_secret_value()
-    except Exception as e:
-        logger.debug(f"Could not load API key from ProviderConfig for {provider}: {e}")
 
     return None
 
@@ -185,29 +116,22 @@ async def _provision_simple_provider(provider: str) -> bool:
 
     env_var = config_info["env_var"]
 
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config(provider_lower)
+    cred = await _get_default_credential(provider_lower)
+    if not cred:
+        return False
 
-        if default_cred:
-            # Set API key / primary env var
-            if default_cred.api_key:
-                os.environ[env_var] = (
-                    default_cred.api_key.get_secret_value()
-                )
-                logger.debug(f"Set {env_var} from ProviderConfig")
+    # Set API key / primary env var
+    if cred.api_key:
+        os.environ[env_var] = cred.api_key.get_secret_value()
+        logger.debug(f"Set {env_var} from Credential")
 
-            # Set base URL if present
-            if default_cred.base_url:
-                provider_upper = provider_lower.upper()
-                os.environ[f"{provider_upper}_API_BASE"] = default_cred.base_url
-                logger.debug(f"Set {provider_upper}_API_BASE from ProviderConfig")
+    # Set base URL if present
+    if cred.base_url:
+        provider_upper = provider_lower.upper()
+        os.environ[f"{provider_upper}_API_BASE"] = cred.base_url
+        logger.debug(f"Set {provider_upper}_API_BASE from Credential")
 
-            return True
-    except Exception as e:
-        logger.debug(f"Could not provision {provider} from ProviderConfig: {e}")
-
-    return False
+    return True
 
 
 async def _provision_vertex() -> bool:
@@ -219,27 +143,22 @@ async def _provision_vertex() -> bool:
     """
     any_set = False
 
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config("vertex")
+    cred = await _get_default_credential("vertex")
+    if not cred:
+        return False
 
-        if default_cred:
-            if default_cred.project:
-                os.environ["VERTEX_PROJECT"] = default_cred.project
-                logger.debug("Set VERTEX_PROJECT from ProviderConfig")
-                any_set = True
-            if default_cred.location:
-                os.environ["VERTEX_LOCATION"] = default_cred.location
-                logger.debug("Set VERTEX_LOCATION from ProviderConfig")
-                any_set = True
-            if default_cred.credentials_path:
-                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = (
-                    default_cred.credentials_path
-                )
-                logger.debug("Set GOOGLE_APPLICATION_CREDENTIALS from ProviderConfig")
-                any_set = True
-    except Exception as e:
-        logger.debug(f"Could not provision vertex from ProviderConfig: {e}")
+    if cred.project:
+        os.environ["VERTEX_PROJECT"] = cred.project
+        logger.debug("Set VERTEX_PROJECT from Credential")
+        any_set = True
+    if cred.location:
+        os.environ["VERTEX_LOCATION"] = cred.location
+        logger.debug("Set VERTEX_LOCATION from Credential")
+        any_set = True
+    if cred.credentials_path:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred.credentials_path
+        logger.debug("Set GOOGLE_APPLICATION_CREDENTIALS from Credential")
+        any_set = True
 
     return any_set
 
@@ -253,45 +172,38 @@ async def _provision_azure() -> bool:
     """
     any_set = False
 
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config("azure")
+    cred = await _get_default_credential("azure")
+    if not cred:
+        return False
 
-        if default_cred:
-            if default_cred.api_key:
-                os.environ["AZURE_OPENAI_API_KEY"] = (
-                    default_cred.api_key.get_secret_value()
-                )
-                logger.debug("Set AZURE_OPENAI_API_KEY from ProviderConfig")
-                any_set = True
-            if default_cred.api_version:
-                os.environ["AZURE_OPENAI_API_VERSION"] = default_cred.api_version
-                logger.debug("Set AZURE_OPENAI_API_VERSION from ProviderConfig")
-                any_set = True
-            if default_cred.endpoint:
-                os.environ["AZURE_OPENAI_ENDPOINT"] = default_cred.endpoint
-                logger.debug("Set AZURE_OPENAI_ENDPOINT from ProviderConfig")
-                any_set = True
-            if default_cred.endpoint_llm:
-                os.environ["AZURE_OPENAI_ENDPOINT_LLM"] = default_cred.endpoint_llm
-                logger.debug("Set AZURE_OPENAI_ENDPOINT_LLM from ProviderConfig")
-                any_set = True
-            if default_cred.endpoint_embedding:
-                os.environ["AZURE_OPENAI_ENDPOINT_EMBEDDING"] = (
-                    default_cred.endpoint_embedding
-                )
-                logger.debug("Set AZURE_OPENAI_ENDPOINT_EMBEDDING from ProviderConfig")
-                any_set = True
-            if default_cred.endpoint_stt:
-                os.environ["AZURE_OPENAI_ENDPOINT_STT"] = default_cred.endpoint_stt
-                logger.debug("Set AZURE_OPENAI_ENDPOINT_STT from ProviderConfig")
-                any_set = True
-            if default_cred.endpoint_tts:
-                os.environ["AZURE_OPENAI_ENDPOINT_TTS"] = default_cred.endpoint_tts
-                logger.debug("Set AZURE_OPENAI_ENDPOINT_TTS from ProviderConfig")
-                any_set = True
-    except Exception as e:
-        logger.debug(f"Could not provision azure from ProviderConfig: {e}")
+    if cred.api_key:
+        os.environ["AZURE_OPENAI_API_KEY"] = cred.api_key.get_secret_value()
+        logger.debug("Set AZURE_OPENAI_API_KEY from Credential")
+        any_set = True
+    if cred.api_version:
+        os.environ["AZURE_OPENAI_API_VERSION"] = cred.api_version
+        logger.debug("Set AZURE_OPENAI_API_VERSION from Credential")
+        any_set = True
+    if cred.endpoint:
+        os.environ["AZURE_OPENAI_ENDPOINT"] = cred.endpoint
+        logger.debug("Set AZURE_OPENAI_ENDPOINT from Credential")
+        any_set = True
+    if cred.endpoint_llm:
+        os.environ["AZURE_OPENAI_ENDPOINT_LLM"] = cred.endpoint_llm
+        logger.debug("Set AZURE_OPENAI_ENDPOINT_LLM from Credential")
+        any_set = True
+    if cred.endpoint_embedding:
+        os.environ["AZURE_OPENAI_ENDPOINT_EMBEDDING"] = cred.endpoint_embedding
+        logger.debug("Set AZURE_OPENAI_ENDPOINT_EMBEDDING from Credential")
+        any_set = True
+    if cred.endpoint_stt:
+        os.environ["AZURE_OPENAI_ENDPOINT_STT"] = cred.endpoint_stt
+        logger.debug("Set AZURE_OPENAI_ENDPOINT_STT from Credential")
+        any_set = True
+    if cred.endpoint_tts:
+        os.environ["AZURE_OPENAI_ENDPOINT_TTS"] = cred.endpoint_tts
+        logger.debug("Set AZURE_OPENAI_ENDPOINT_TTS from Credential")
+        any_set = True
 
     return any_set
 
@@ -305,25 +217,18 @@ async def _provision_openai_compatible() -> bool:
     """
     any_set = False
 
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config("openai_compatible")
+    cred = await _get_default_credential("openai_compatible")
+    if not cred:
+        return False
 
-        if default_cred:
-            if default_cred.api_key:
-                os.environ["OPENAI_COMPATIBLE_API_KEY"] = (
-                    default_cred.api_key.get_secret_value()
-                )
-                logger.debug("Set OPENAI_COMPATIBLE_API_KEY from ProviderConfig")
-                any_set = True
-            if default_cred.base_url:
-                os.environ["OPENAI_COMPATIBLE_BASE_URL"] = default_cred.base_url
-                logger.debug("Set OPENAI_COMPATIBLE_BASE_URL from ProviderConfig")
-                any_set = True
-    except Exception as e:
-        logger.debug(
-            f"Could not provision openai_compatible from ProviderConfig: {e}"
-        )
+    if cred.api_key:
+        os.environ["OPENAI_COMPATIBLE_API_KEY"] = cred.api_key.get_secret_value()
+        logger.debug("Set OPENAI_COMPATIBLE_API_KEY from Credential")
+        any_set = True
+    if cred.base_url:
+        os.environ["OPENAI_COMPATIBLE_BASE_URL"] = cred.base_url
+        logger.debug("Set OPENAI_COMPATIBLE_BASE_URL from Credential")
+        any_set = True
 
     return any_set
 
@@ -332,11 +237,11 @@ async def provision_provider_keys(provider: str) -> bool:
     """
     Provision environment variables from database for a specific provider.
 
-    This function checks if the provider has configuration stored in the database
-    and sets the corresponding environment variables. If the database doesn't have
-    the configuration, existing environment variables remain unchanged.
+    This function checks if the provider has a Credential record stored in the
+    database and sets the corresponding environment variables. If the database
+    doesn't have the configuration, existing environment variables remain unchanged.
 
-    This is the main entry point for the DB→Env fallback mechanism.
+    This is the main entry point for the DB->Env fallback mechanism.
 
     Args:
         provider: Provider name (openai, anthropic, azure, vertex,
@@ -390,64 +295,3 @@ async def provision_all_keys() -> dict[str, bool]:
     results["openai_compatible"] = await provision_provider_keys("openai_compatible")
 
     return results
-
-
-# Alternative function that uses fresh DB values instead of modifying os.environ
-async def get_provider_config(provider: str) -> Optional[dict]:
-    """
-    Get provider configuration directly from database.
-
-    This is a cleaner alternative to provision_provider_keys() that doesn't
-    modify global state. Returns the configuration values without setting env vars.
-
-    Args:
-        provider: Provider name
-
-    Returns:
-        Dict with configuration values, or None if not configured
-    """
-    provider_lower = provider.lower()
-
-    try:
-        provider_config = await ProviderConfig.get_instance()
-        default_cred = provider_config.get_default_config(provider_lower)
-
-        if not default_cred:
-            return None
-
-        config = {}
-
-        # Extract api_key (handle SecretStr)
-        if default_cred.api_key:
-            config["api_key"] = default_cred.api_key.get_secret_value()
-
-        # Add all other fields if present
-        if default_cred.base_url:
-            config["base_url"] = default_cred.base_url
-        if default_cred.model:
-            config["model"] = default_cred.model
-        if default_cred.api_version:
-            config["api_version"] = default_cred.api_version
-        if default_cred.endpoint:
-            config["endpoint"] = default_cred.endpoint
-        if default_cred.endpoint_llm:
-            config["endpoint_llm"] = default_cred.endpoint_llm
-        if default_cred.endpoint_embedding:
-            config["endpoint_embedding"] = default_cred.endpoint_embedding
-        if default_cred.endpoint_stt:
-            config["endpoint_stt"] = default_cred.endpoint_stt
-        if default_cred.endpoint_tts:
-            config["endpoint_tts"] = default_cred.endpoint_tts
-        if default_cred.project:
-            config["project"] = default_cred.project
-        if default_cred.location:
-            config["location"] = default_cred.location
-        if default_cred.credentials_path:
-            config["credentials_path"] = default_cred.credentials_path
-
-        return config if config else None
-
-    except Exception as e:
-        logger.debug(f"Could not load provider config from database for {provider}: {e}")
-
-    return None

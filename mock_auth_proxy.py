@@ -20,7 +20,10 @@ from urllib.parse import urlparse
 class ProxyHandler(BaseHTTPRequestHandler):
     def _proxy(self):
         upstream = urlparse(self.server.upstream)
-        conn = http.client.HTTPConnection(upstream.hostname, upstream.port)
+        if upstream.scheme == "https":
+            conn = http.client.HTTPSConnection(upstream.hostname, upstream.port)
+        else:
+            conn = http.client.HTTPConnection(upstream.hostname, upstream.port)
 
         # Read request body if present
         content_length = int(self.headers.get("Content-Length", 0))

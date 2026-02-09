@@ -62,7 +62,7 @@ export const useAuthStore = create<AuthState>()(
           if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             set({
               error: 'Unable to connect to server. Please check if the API is running.',
-              authRequired: null  // Don't assume auth is required if we can't connect
+              authRequired: false  // Allow UI to render (not stuck loading); ConnectionGuard handles connectivity
             })
           } else {
             // For other errors, default to requiring auth to be safe

@@ -94,38 +94,55 @@ class TestGetDatabaseName:
                 assert result == "open_notebook"
 
     def test_returns_user_prefixed_name(self):
-        """With user set, returns 'user_<sanitized_name>'."""
+        """With user set, returns 'user_<sanitized_name>_<hash>'."""
         from open_notebook.database.repository import _get_database_name
 
         token = current_user.set("alice")
         try:
-            assert _get_database_name() == "user_alice"
+            assert _get_database_name() == "user_alice_2bd806c97f0e"
         finally:
             current_user.reset(token)
 
     def test_sanitizes_email_user(self):
-        """Email addresses are sanitized (@ and . become _)."""
+        """Email addresses are sanitized (@ and . become _) with hash suffix."""
         from open_notebook.database.repository import _get_database_name
 
         token = current_user.set("alice@company.com")
         try:
-            assert _get_database_name() == "user_alice_company_com"
+            assert _get_database_name() == "user_alice_company_com_22c9943ba6fd"
         finally:
             current_user.reset(token)
 
     def test_sanitizes_special_characters(self):
-        """Special characters are sanitized to underscores."""
+        """Special characters are sanitized to underscores with hash suffix."""
         from open_notebook.database.repository import _get_database_name
 
         token = current_user.set("user-name/with spaces!")
         try:
             result = _get_database_name()
-            assert result == "user_user_name_with_spaces_"
+            assert result == "user_user_name_with_spaces__fc4997ad11fa"
             # Should only contain alphanumeric and underscore
-            clean = result.replace("user_", "", 1)
-            assert all(c.isalnum() or c == "_" for c in clean)
+            assert all(c.isalnum() or c == "_" for c in result)
         finally:
             current_user.reset(token)
+
+    def test_no_collision_between_similar_names(self):
+        """Users with same sanitized form but different original get different DBs."""
+        from open_notebook.database.repository import _get_database_name
+
+        token1 = current_user.set("alice.bob@co.com")
+        try:
+            db1 = _get_database_name()
+        finally:
+            current_user.reset(token1)
+
+        token2 = current_user.set("alice_bob@co_com")
+        try:
+            db2 = _get_database_name()
+        finally:
+            current_user.reset(token2)
+
+        assert db1 != db2, f"Collision: {db1} == {db2}"
 
     def test_ignores_env_var_when_user_set(self):
         """When a user is set, env var SURREAL_DATABASE is ignored."""
@@ -134,7 +151,7 @@ class TestGetDatabaseName:
         token = current_user.set("bob")
         try:
             with patch.dict(os.environ, {"SURREAL_DATABASE": "should_not_use"}):
-                assert _get_database_name() == "user_bob"
+                assert _get_database_name() == "user_bob_81b637d8fcd2"
         finally:
             current_user.reset(token)
 
@@ -387,7 +404,7 @@ class TestDbConnectionRouting:
                 async with db_connection() as conn:
                     pass
 
-            mock_db.use.assert_called_once_with("test_ns", "user_alice")
+            mock_db.use.assert_called_once_with("test_ns", "user_alice_2bd806c97f0e")
         finally:
             current_user.reset(token)
 
@@ -414,7 +431,7 @@ class TestDbConnectionRouting:
                 async with db_connection() as conn:
                     pass
             alice_call = mock_db.use.call_args_list[-1]
-            assert alice_call[0] == ("test_ns", "user_alice")
+            assert alice_call[0] == ("test_ns", "user_alice_2bd806c97f0e")
         finally:
             current_user.reset(token1)
 
@@ -425,7 +442,7 @@ class TestDbConnectionRouting:
                 async with db_connection() as conn:
                     pass
             bob_call = mock_db.use.call_args_list[-1]
-            assert bob_call[0] == ("test_ns", "user_bob")
+            assert bob_call[0] == ("test_ns", "user_bob_81b637d8fcd2")
         finally:
             current_user.reset(token2)
 

@@ -1,3 +1,4 @@
+import hashlib
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -32,9 +33,11 @@ def _get_database_name() -> str:
     """Return per-user database name when multi-tenant, or default from env."""
     user = current_user.get("")
     if user:
-        # Sanitize: keep only alphanumeric and underscore
+        # Sanitize: readable prefix + hash suffix to prevent collisions
+        # e.g. alice.bob@co.com and alice_bob@co.com won't collide
         safe_user = "".join(c if c.isalnum() else "_" for c in user)
-        return f"user_{safe_user}"
+        user_hash = hashlib.sha256(user.encode()).hexdigest()[:12]
+        return f"user_{safe_user}_{user_hash}"
     # Single-user mode: use env var
     return os.environ.get("SURREAL_DATABASE", "open_notebook")
 

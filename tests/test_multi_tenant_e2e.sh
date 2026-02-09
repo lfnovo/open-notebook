@@ -70,8 +70,17 @@ assert_status() {
 assert_json_count() {
     local description="$1" expected="$2" json="$3"
     local count
-    count=$(echo "$json" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "-1")
-    if [ "$count" -eq "$expected" ]; then
+    count=$(echo "$json" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+if not isinstance(data, list):
+    print('-2')  # Not a list (e.g. error object)
+else:
+    print(len(data))
+" 2>/dev/null || echo "-1")
+    if [ "$count" = "-2" ]; then
+        fail "$description" "response is not a JSON array"
+    elif [ "$count" -eq "$expected" ]; then
         pass "$description"
     else
         fail "$description" "expected $expected items, got $count"
@@ -267,10 +276,10 @@ echo "================================================================"
 echo ""
 echo "Architecture tested:"
 echo "  User → [ADFS/OIDC] → [Dex] → [OAuth2 Proxy] → X-Forwarded-User → API"
-echo "  Each user gets: SurrealDB database 'user_<name>'"
-echo "    alice       → user_alice"
-echo "    bob         → user_bob"
-echo "    carol@co.com → user_carol_co_com"
+echo "  Each user gets: SurrealDB database 'user_<name>_<hash>'"
+echo "    alice        → user_alice_2bd806c97f0e"
+echo "    bob          → user_bob_81b637d8fcd2"
+echo "    carol@co.com → user_carol_company_com_3dec473b35fb"
 echo ""
 
 if [ "$FAIL" -gt 0 ]; then

@@ -1,5 +1,6 @@
+import asyncio
 import os
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -12,17 +13,33 @@ from open_notebook.user_context import current_user
 
 # Track which users have been migrated (in-memory cache, resets on restart)
 _migrated_users: Set[str] = set()
+# Per-user locks to prevent concurrent migration runs for the same user
+_migration_locks: Dict[str, asyncio.Lock] = {}
+_locks_lock = asyncio.Lock()
+
+
+async def _get_user_lock(user: str) -> asyncio.Lock:
+    """Get or create an asyncio.Lock for a specific user."""
+    async with _locks_lock:
+        if user not in _migration_locks:
+            _migration_locks[user] = asyncio.Lock()
+        return _migration_locks[user]
 
 
 async def ensure_user_migrated(user: str):
     """Run DB migrations for a user's database if not already done."""
     if user in _migrated_users:
         return
-    manager = AsyncMigrationManager()
-    if await manager.needs_migration():
-        logger.info(f"Running migrations for user database: {user}")
-        await manager.run_migration_up()
-    _migrated_users.add(user)
+    lock = await _get_user_lock(user)
+    async with lock:
+        # Double-check after acquiring lock
+        if user in _migrated_users:
+            return
+        manager = AsyncMigrationManager()
+        if await manager.needs_migration():
+            logger.info(f"Running migrations for user database: {user}")
+            await manager.run_migration_up()
+        _migrated_users.add(user)
 
 
 class ProxyAuthMiddleware:
@@ -32,6 +49,11 @@ class ProxyAuthMiddleware:
 
     Uses pure ASGI (not BaseHTTPMiddleware) so contextvars propagate correctly
     to all async handlers and database connections.
+
+    SECURITY: X-Forwarded-User MUST be set by a trusted auth proxy that strips
+    any client-provided X-Forwarded-User header. In production, ensure this app
+    is only reachable through the proxy (network policy / firewall).
+    Optionally set PROXY_AUTH_SECRET env var for shared-secret verification.
     """
 
     def __init__(self, app, excluded_paths: Optional[list] = None):
@@ -39,6 +61,8 @@ class ProxyAuthMiddleware:
         self.excluded_paths: Set[str] = set(excluded_paths or [
             "/", "/health", "/docs", "/openapi.json", "/redoc",
         ])
+        # Optional shared secret: proxy must send X-Proxy-Auth-Secret header
+        self.proxy_secret = os.environ.get("PROXY_AUTH_SECRET", "")
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -56,8 +80,20 @@ class ProxyAuthMiddleware:
             await self.app(scope, receive, send)
             return
 
-        # Extract X-Forwarded-User from ASGI headers (list of byte tuples)
+        # Extract headers from ASGI scope (list of byte tuples)
         headers = dict(scope.get("headers", []))
+
+        # If PROXY_AUTH_SECRET is set, verify the proxy sent it
+        if self.proxy_secret:
+            provided_secret = headers.get(b"x-proxy-auth-secret", b"").decode().strip()
+            if provided_secret != self.proxy_secret:
+                response = JSONResponse(
+                    status_code=403,
+                    content={"detail": "Invalid or missing proxy auth secret"},
+                )
+                await response(scope, receive, send)
+                return
+
         user = headers.get(b"x-forwarded-user", b"").decode().strip()
 
         if not user:

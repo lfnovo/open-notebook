@@ -28,6 +28,22 @@ lint:
 ruff:
 	ruff check . --fix
 
+# Create .venv with pip (no uv required). Run once, then use make coverage.
+setup-venv:
+	@echo "Creating .venv and installing package with [dev] deps..."
+	python3 -m venv .venv
+	.venv/bin/pip install -e ".[dev]"
+	@echo "Done. Run: make coverage"
+
+coverage:
+	@if [ -x .venv/bin/python ]; then \
+		.venv/bin/python -m pytest tests/ --cov=open_notebook --cov=api --cov-report=term-missing --cov-report=term; \
+	elif command -v uv >/dev/null 2>&1; then \
+		uv run pytest tests/ --cov=open_notebook --cov=api --cov-report=term-missing --cov-report=term; \
+	else \
+		python3 -m pytest tests/ --cov=open_notebook --cov=api --cov-report=term-missing --cov-report=term; \
+	fi
+
 # === Docker Build Setup ===
 docker-buildx-prepare:
 	@docker buildx inspect multi-platform-builder >/dev/null 2>&1 || \

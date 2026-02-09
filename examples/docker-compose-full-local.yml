@@ -136,16 +136,12 @@ volumes:
 #    - Base URL for STT: (same as TTS)
 #    - Save → Test Connection
 #
-# 3. Add Speech Models:
-#    - Go to Settings → Models
-#    - Add TTS Model:
-#      * Provider: openai_compatible
-#      * Model Name: speaches-ai/Kokoro-82M-v1.0-ONNX
-#      * Display Name: Local TTS
-#    - Add STT Model:
-#      * Provider: openai_compatible
-#      * Model Name: Systran/faster-whisper-small
-#      * Display Name: Local Whisper
+# 3. Discover Speech Models:
+#    - In the Speaches credential you just created, click Discover Models
+#    - Select and register the models you need (e.g. TTS and STT)
+#    - If models aren't discovered automatically, add them manually:
+#      * TTS: speaches-ai/Kokoro-82M-v1.0-ONNX
+#      * STT: Systran/faster-whisper-small
 #
 # ==========================================
 # RECOMMENDED MODELS

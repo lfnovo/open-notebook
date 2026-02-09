@@ -4,13 +4,13 @@ Tests for API service layer modules.
 These tests focus on the service layer that wraps API client calls.
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from api.chat_service import ChatService
 from api.notebook_service import NotebookService
-from api.sources_service import SourceProcessingResult, SourceWithMetadata, SourcesService
+from api.sources_service import SourceWithMetadata, SourcesService
 
 
 class TestChatService:

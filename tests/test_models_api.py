@@ -1,15 +1,6 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    """Create test client after environment variables have been cleared by conftest."""
-    from api.main import app
-
-    return TestClient(app)
 
 
 class TestModelCreation:
@@ -85,7 +76,7 @@ class TestModelCreation:
         mock_repo_query.return_value = []
 
         # Patch the save method on the Model class
-        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+        with patch.object(Model, "save", new_callable=AsyncMock):
             # Attempt to create same model name with different provider (anthropic)
             response = client.post(
                 "/api/models",
@@ -105,7 +96,7 @@ class TestModelCreation:
         mock_repo_query.return_value = []
 
         # Patch the save method on the Model class
-        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+        with patch.object(Model, "save", new_callable=AsyncMock):
             # Attempt to create same model name with different type (embedding instead of language)
             response = client.post(
                 "/api/models",

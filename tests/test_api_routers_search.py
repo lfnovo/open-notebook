@@ -7,15 +7,6 @@ Focuses on increasing coverage from 19%.
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    """Create test client."""
-    from api.main import app
-
-    return TestClient(app)
 
 
 class TestSearchRouter:

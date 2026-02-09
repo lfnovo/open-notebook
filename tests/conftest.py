@@ -9,6 +9,9 @@ import os
 import sys
 from pathlib import Path
 
+import pytest
+from fastapi.testclient import TestClient
+
 # Ensure password auth is disabled for tests BEFORE any imports
 # The PasswordAuthMiddleware skips auth when this env var is not set
 # Set to empty string instead of deleting to prevent it from being reloaded
@@ -29,3 +32,13 @@ else:
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
+
+
+@pytest.fixture
+def client():
+    """Create test client for API endpoint testing.
+    
+    This fixture is shared across all API router tests to avoid duplication.
+    """
+    from api.main import app
+    return TestClient(app)

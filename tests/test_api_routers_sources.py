@@ -8,15 +8,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from io import BytesIO
 
 import pytest
-from fastapi.testclient import TestClient
-
-
-@pytest.fixture
-def client():
-    """Create test client."""
-    from api.main import app
-
-    return TestClient(app)
 
 
 class TestSourcesRouter:

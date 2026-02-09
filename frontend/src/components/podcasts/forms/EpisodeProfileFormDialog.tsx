@@ -185,8 +185,8 @@ export function EpisodeProfileFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col sm:max-w-2xl">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {isEdit ? t.podcasts.editEpisodeProfile : t.podcasts.createEpisodeProfile}
           </DialogTitle>
@@ -195,6 +195,7 @@ export function EpisodeProfileFormDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="min-h-0 flex-1 overflow-y-auto">
         {speakerProfiles.length === 0 ? (
           <Alert className="bg-amber-50 text-amber-900 border-amber-200">
             <AlertTitle>{t.podcasts.noSpeakerProfilesAvailable}</AlertTitle>
@@ -445,6 +446,7 @@ export function EpisodeProfileFormDialog({
             </Button>
           </div>
         </form>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -40,7 +40,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col p-0">
+      <DialogContent className="max-w-5xl max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden p-0">
         {/* Accessibility title (hidden visually but read by screen readers) */}
         <DialogTitle className="sr-only">{t.sources.detailsTitle}</DialogTitle>
 

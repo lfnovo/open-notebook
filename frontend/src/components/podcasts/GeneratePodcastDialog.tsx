@@ -861,7 +861,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         resetState()
       }
     }}>
-      <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
+      <DialogContent className="w-[80vw] max-w-[1080px] max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>{t.podcasts.generateEpisode}</DialogTitle>
           <DialogDescription>

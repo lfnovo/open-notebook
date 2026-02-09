@@ -37,8 +37,11 @@ sys.path.insert(0, str(project_root))
 @pytest.fixture
 def client():
     """Create test client for API endpoint testing.
-    
+
     This fixture is shared across all API router tests to avoid duplication.
+    Note: TestClient is not used as a context manager here so lifespan
+    (migrations) does not run, avoiding a requirement for SurrealDB in unit tests.
     """
     from api.main import app
+
     return TestClient(app)

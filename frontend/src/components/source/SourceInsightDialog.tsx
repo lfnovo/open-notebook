@@ -70,7 +70,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
+      <DialogContent className="sm:max-w-3xl max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>{t.sources.sourceInsight}</span>

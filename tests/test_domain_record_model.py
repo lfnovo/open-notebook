@@ -133,8 +133,8 @@ class TestRecordModel:
         instance.default_embedding_option = "always"
         await instance.update()
 
-        # Should have refreshed from DB
-        assert hasattr(instance, "updated") or True  # May or may not have updated field
+        # Should have refreshed from DB without clearing existing attrs
+        assert instance.default_embedding_option == "always"
 
     def test_clear_instance(self):
         """Test clear_instance() removes singleton."""
@@ -144,6 +144,5 @@ class TestRecordModel:
         ContentSettings.clear_instance()
         instance2 = ContentSettings()
 
-        # After clear, should be different instances (or same if singleton recreated)
-        # The key is that clear_instance() doesn't raise
-        assert ContentSettings.record_id not in ContentSettings._instances or True
+        # After clear_instance(), a new ContentSettings() returns a new instance
+        assert instance1 is not instance2

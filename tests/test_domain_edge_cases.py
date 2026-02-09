@@ -26,7 +26,8 @@ class TestObjectModelEdgeCases:
         # Force validation error by corrupting internal state
         notebook.name = ""  # Invalid
 
-        with pytest.raises(ValidationError):
+        # InvalidInputError from field validator may be re-raised as DatabaseOperationError by base.save()
+        with pytest.raises((ValidationError, InvalidInputError, DatabaseOperationError)):
             await notebook.save()
 
     @pytest.mark.asyncio
@@ -301,12 +302,16 @@ class TestSourceEdgeCases:
         assert isinstance(context, dict)
         assert context.get("title") == "Test Source"
 
-    def test_get_context_empty_full_text(self):
+    @pytest.mark.asyncio
+    @patch("open_notebook.domain.notebook.repo_query", new_callable=AsyncMock, return_value=[])
+    async def test_get_context_empty_full_text(self, mock_repo_query):
         """Test Source.get_context() handles empty full_text."""
         source = Source(title="Test Source", topics=[], full_text="")
+        source.id = "source:456"
 
-        context = source.get_context()
-        assert "Test Source" in context
+        context = await source.get_context()
+        assert isinstance(context, dict)
+        assert context.get("title") == "Test Source"
 
 
 class TestNoteEdgeCases:

@@ -142,3 +142,5 @@ specs/
 
 #Ignore cursor AI rules
 .cursor\rules\codacy.mdc
+open-notebook-image.tar
+scripts/save-image.sh

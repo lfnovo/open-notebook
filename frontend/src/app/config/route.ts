@@ -23,6 +23,19 @@ import { NextRequest, NextResponse } from 'next/server'
  * This allows the same Docker image to work in different deployment scenarios.
  */
 export async function GET(request: NextRequest) {
+  // Multi-tenant / auth proxy mode: if request has X-Forwarded-User header,
+  // it came through an auth proxy (OAuth2 Proxy, mock_auth_proxy, etc.).
+  // Return empty apiUrl so the browser uses relative URLs, keeping all requests
+  // on the same origin — the proxy adds X-Forwarded-User to every request.
+  // Direct URLs (e.g., http://localhost:5055) would bypass the proxy and lose the header.
+  const forwardedUser = request.headers.get('x-forwarded-user')
+  if (forwardedUser) {
+    console.log(`[runtime-config] Auth proxy detected (X-Forwarded-User: ${forwardedUser}). Using relative API URLs.`)
+    return NextResponse.json({
+      apiUrl: '',
+    })
+  }
+
   // Priority 1: Check if API_URL is explicitly set
   const envApiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
 

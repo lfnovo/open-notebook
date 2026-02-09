@@ -138,3 +138,8 @@ specs/
 
 *.local.yml
 **/*.local.md
+
+# Multi-tenant dev files
+plan.md
+changerequest.log
+**/CLAUDE.md

@@ -1,3 +1,4 @@
+import hashlib
 import os
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -5,6 +6,8 @@ from typing import Any, Dict, List, Optional, TypeVar, Union
 
 from loguru import logger
 from surrealdb import AsyncSurreal, RecordID  # type: ignore
+
+from open_notebook.user_context import current_user
 
 T = TypeVar("T", Dict[str, Any], List[Dict[str, Any]])
 
@@ -24,6 +27,19 @@ def get_database_url():
 def get_database_password():
     """Get password with backward compatibility"""
     return os.getenv("SURREAL_PASSWORD") or os.getenv("SURREAL_PASS")
+
+
+def _get_database_name() -> str:
+    """Return per-user database name when multi-tenant, or default from env."""
+    user = current_user.get("")
+    if user:
+        # Sanitize: readable prefix + hash suffix to prevent collisions
+        # e.g. alice.bob@co.com and alice_bob@co.com won't collide
+        safe_user = "".join(c if c.isalnum() else "_" for c in user)
+        user_hash = hashlib.sha256(user.encode()).hexdigest()[:12]
+        return f"user_{safe_user}_{user_hash}"
+    # Single-user mode: use env var
+    return os.environ.get("SURREAL_DATABASE", "open_notebook")
 
 
 def parse_record_ids(obj: Any) -> Any:
@@ -54,7 +70,8 @@ async def db_connection():
         }
     )
     await db.use(
-        os.environ.get("SURREAL_NAMESPACE"), os.environ.get("SURREAL_DATABASE")
+        os.environ.get("SURREAL_NAMESPACE", "open_notebook"),
+        _get_database_name(),
     )
     try:
         yield db

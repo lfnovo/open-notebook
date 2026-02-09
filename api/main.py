@@ -1,4 +1,6 @@
 # Load environment variables
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,7 +13,10 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from api.auth import PasswordAuthMiddleware
+from api.auth import PasswordAuthMiddleware, ProxyAuthMiddleware
+
+MULTI_TENANT = os.environ.get("MULTI_TENANT_MODE", "").lower() == "true"
+
 from api.routers import (
     auth,
     chat,
@@ -51,27 +56,32 @@ async def lifespan(app: FastAPI):
     # Startup: Run database migrations
     logger.info("Starting API initialization...")
 
-    try:
-        migration_manager = AsyncMigrationManager()
-        current_version = await migration_manager.get_current_version()
-        logger.info(f"Current database version: {current_version}")
+    if MULTI_TENANT:
+        # Multi-tenant mode: migrations run per-user on first request
+        logger.info("Multi-tenant mode enabled. Migrations will run per-user on first request.")
+    else:
+        # Single-user mode: run migrations on the default database at startup
+        try:
+            migration_manager = AsyncMigrationManager()
+            current_version = await migration_manager.get_current_version()
+            logger.info(f"Current database version: {current_version}")
 
-        if await migration_manager.needs_migration():
-            logger.warning("Database migrations are pending. Running migrations...")
-            await migration_manager.run_migration_up()
-            new_version = await migration_manager.get_current_version()
-            logger.success(
-                f"Migrations completed successfully. Database is now at version {new_version}"
-            )
-        else:
-            logger.info(
-                "Database is already at the latest version. No migrations needed."
-            )
-    except Exception as e:
-        logger.error(f"CRITICAL: Database migration failed: {str(e)}")
-        logger.exception(e)
-        # Fail fast - don't start the API with an outdated database schema
-        raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
+            if await migration_manager.needs_migration():
+                logger.warning("Database migrations are pending. Running migrations...")
+                await migration_manager.run_migration_up()
+                new_version = await migration_manager.get_current_version()
+                logger.success(
+                    f"Migrations completed successfully. Database is now at version {new_version}"
+                )
+            else:
+                logger.info(
+                    "Database is already at the latest version. No migrations needed."
+                )
+        except Exception as e:
+            logger.error(f"CRITICAL: Database migration failed: {str(e)}")
+            logger.exception(e)
+            # Fail fast - don't start the API with an outdated database schema
+            raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
 
     logger.success("API initialization completed successfully")
 
@@ -88,20 +98,23 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add password authentication middleware first
-# Exclude /api/auth/status and /api/config from authentication
-app.add_middleware(
-    PasswordAuthMiddleware,
-    excluded_paths=[
-        "/",
-        "/health",
-        "/docs",
-        "/openapi.json",
-        "/redoc",
-        "/api/auth/status",
-        "/api/config",
-    ],
-)
+# Add authentication middleware
+# In multi-tenant mode: ProxyAuthMiddleware reads X-Forwarded-User header
+# In single-user mode: PasswordAuthMiddleware checks shared password
+_auth_excluded_paths = [
+    "/",
+    "/health",
+    "/docs",
+    "/openapi.json",
+    "/redoc",
+    "/api/auth/status",
+    "/api/config",
+]
+
+if MULTI_TENANT:
+    app.add_middleware(ProxyAuthMiddleware, excluded_paths=_auth_excluded_paths)
+else:
+    app.add_middleware(PasswordAuthMiddleware, excluded_paths=_auth_excluded_paths)
 
 # Add CORS middleware last (so it processes first)
 app.add_middleware(

@@ -44,4 +44,5 @@ def client():
     """
     from api.main import app
 
-    return TestClient(app)
+    with TestClient(app) as client:
+        yield client

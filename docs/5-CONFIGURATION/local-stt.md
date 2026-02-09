@@ -19,6 +19,12 @@ Run speech-to-text locally for free, private audio/video transcription using Ope
 
 [Speaches](https://github.com/speaches-ai/speaches) is an open-source, OpenAI-compatible server that supports both TTS and STT. It uses [faster-whisper](https://github.com/SYSTRAN/faster-whisper) for transcription.
 
+> **💡 Ready-made Docker Compose files available:**
+> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + Open Notebook
+> - **[docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml)** - Speaches + Ollama (100% local setup)
+>
+> These include complete setup instructions and configuration examples. Just copy and run!
+
 ### Step 1: Create Docker Compose File
 
 Create a folder and add `docker-compose.yml`:

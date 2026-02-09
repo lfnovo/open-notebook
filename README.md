@@ -94,45 +94,86 @@ Learn more about our project at [https://www.open-notebook.ai](https://www.open-
 
 [![Python][Python]][Python-url] [![Next.js][Next.js]][Next-url] [![React][React]][React-url] [![SurrealDB][SurrealDB]][SurrealDB-url] [![LangChain][LangChain]][LangChain-url]
 
-## 🚀 Quick Start
+## 🚀 Quick Start (2 Minutes)
 
-Choose your installation method:
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed
+- That's it! (API keys configured later in the UI)
 
-### 🐳 **Docker (Recommended)**
+### Step 1: Get docker-compose.yml
 
-**Best for most users** - Fast setup with Docker Compose:
+**Option A:** Download directly
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+```
 
-→ **[Docker Compose Installation Guide](docs/1-INSTALLATION/docker-compose.md)**
-- Multi-container setup (recommended)
-- 5-10 minutes setup time
-- Requires Docker Desktop
+**Option B:** Create the file manually
+Copy this into a new file called `docker-compose.yml`:
 
-**Quick Start:**
-- Get an API key (OpenAI, Anthropic, Google, etc.) or setup Ollama
-- Create docker-compose.yml (example in guide)
-- Run: docker compose up -d
-- Access: http://localhost:8502
+```yaml
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
+    restart: always
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    environment:
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+    volumes:
+      - ./notebook_data:/app/data
+    depends_on:
+      - surrealdb
+    restart: always
+```
+
+### Step 2: Set Your Encryption Key
+Edit `docker-compose.yml` and change this line:
+```yaml
+OPEN_NOTEBOOK_ENCRYPTION_KEY: "change-me-to-a-secret-string"
+```
+to any secret value (e.g., `my-super-secret-key-123`)
+
+### Step 3: Start Services
+```bash
+docker compose up -d
+```
+
+Wait 15-20 seconds, then open: **http://localhost:8502**
+
+### Step 4: Configure AI Provider
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Choose your provider (OpenAI, Anthropic, Google, etc.)
+4. Paste your API key and click **Save**
+5. Click **Test Connection** → **Discover Models** → **Register Models**
+
+Done! You're ready to create your first notebook.
+
+> **Need an API key?** Get one from:
+> [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/) · [Google](https://aistudio.google.com/) · [Groq](https://console.groq.com/) (free tier)
+
+> **Want free local AI?** See [examples/docker-compose-ollama.yml](examples/) for Ollama setup
 
 ---
 
-### 💻 **From Source (Developers)**
+### 📚 More Installation Options
 
-**For development and contributors:**
-
-→ **[From Source Installation Guide](docs/1-INSTALLATION/from-source.md)**
-- Clone and run locally
-- 10-15 minutes setup time
-- Requires: Python 3.11+, Node.js 18+, Docker, uv
-
-**Quick Start:**
-
-```bash
-git clone https://github.com/lfnovo/open-notebook.git
-uv sync
-make start-all
-```
-
-Access: http://localhost:3000 (dev) or http://localhost:8502 (production)
+- **[With Ollama (Free Local AI)](examples/docker-compose-ollama.yml)** - Run models locally without API costs
+- **[From Source (Developers)](docs/1-INSTALLATION/from-source.md)** - For development and contributions
+- **[Complete Installation Guide](docs/1-INSTALLATION/index.md)** - All deployment scenarios
 
 ---
 

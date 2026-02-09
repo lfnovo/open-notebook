@@ -10,36 +10,51 @@ Multi-container setup with separate services. **Best for most users.**
 - **5-10 minutes** of your time
 - **API key** for at least one AI provider (OpenAI recommended for beginners)
 
-## Step 1: Create Configuration (2 min)
+## Step 1: Get docker-compose.yml (1 min)
 
-Create a folder `open-notebook` and add this file:
+**Option A: Download from repository**
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
+```
 
-**docker-compose.yml**:
+**Option B: Use the official file from the repo**
+
+The official `docker-compose.yml` is in the root of our repository: [View on GitHub](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml)
+
+Copy that file to your project folder.
+
+**Option C: Create manually**
+
+Create a file called `docker-compose.yml` with this content:
+
 ```yaml
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
-    user: root  # Required for bind mounts on Linux (SurrealDB runs as non-root by default)
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root  # Required for bind mounts on Linux
     ports:
       - "8000:8000"
     volumes:
       - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    restart: always
+    pull_policy: always
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
     ports:
       - "8502:8502"  # Web UI
-      - "5055:5055"  # API
+      - "5055:5055"  # REST API
     environment:
-      # Encryption key for credential storage (required)
+      # REQUIRED: Change this to your own secret string
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 
-      # Database
+      # Database connection (default values - no need to change)
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
-      - SURREAL_PASSWORD=password
+      - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
     volumes:
@@ -47,11 +62,11 @@ services:
     depends_on:
       - surrealdb
     restart: always
-
+    pull_policy: always
 ```
 
 **Edit the file:**
-- Replace `change-me-to-a-secret-string` with your own secret (any string works)
+- Replace `change-me-to-a-secret-string` with your own secret (any string works, e.g., `my-super-secret-key-123`)
 
 ---
 
@@ -129,7 +144,19 @@ Done! You now have a fully working Open Notebook instance.
 
 ### Adding Ollama (Free Local Models)
 
-Add to `docker-compose.yml`:
+Instead of manually editing, use our ready-made example:
+
+```bash
+# Download the Ollama example
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/examples/docker-compose-ollama.yml
+
+# Or copy from repo
+cp examples/docker-compose-ollama.yml docker-compose.yml
+```
+
+See [examples/docker-compose-ollama.yml](../../examples/docker-compose-ollama.yml) for the complete setup.
+
+**Manual setup:** Add this to your existing `docker-compose.yml`:
 
 ```yaml
   ollama:
@@ -141,17 +168,16 @@ Add to `docker-compose.yml`:
     restart: always
 
 volumes:
-  surreal_data:
   ollama_models:
 ```
 
-Restart and pull a model:
+Then restart and pull a model:
 ```bash
 docker compose restart
 docker exec open_notebook-ollama-1 ollama pull mistral
 ```
 
-Then configure Ollama in the Settings UI:
+Configure Ollama in the Settings UI:
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential** → Select **Ollama**
 3. Enter base URL: `http://ollama:11434`
@@ -167,7 +193,7 @@ Then configure Ollama in the Settings UI:
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY` | Encryption key for credentials | `my-secret-key` |
 | `SURREAL_URL` | Database connection | `ws://surrealdb:8000/rpc` |
 | `SURREAL_USER` | Database user | `root` |
-| `SURREAL_PASSWORD` | Database password | `password` |
+| `SURREAL_PASSWORD` | Database password | `root` |
 | `API_URL` | API external URL | `http://localhost:5055` |
 
 See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.
@@ -291,6 +317,18 @@ Then restart:
 docker compose down -v
 docker compose up -d
 ```
+
+---
+
+## Alternative Setups
+
+Looking for different configurations? Check out our [examples/](../../examples/) folder:
+
+- **[Ollama Setup](../../examples/docker-compose-ollama.yml)** - Run local AI models (free, private)
+- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, not recommended)
+- **[Development](../../examples/docker-compose-dev.yml)** - For contributors and developers
+
+Each example includes detailed comments and usage instructions.
 
 ---
 

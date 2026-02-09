@@ -19,6 +19,12 @@ Run text-to-speech locally for free, private podcast generation using OpenAI-com
 
 [Speaches](https://github.com/speaches-ai/speaches) is an open-source, OpenAI-compatible TTS server.
 
+> **💡 Ready-made Docker Compose files available:**
+> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + Open Notebook
+> - **[docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml)** - Speaches + Ollama (100% local setup)
+>
+> These include complete setup instructions and configuration examples. Just copy and run!
+
 ### Step 1: Create Docker Compose File
 
 Create a folder and add `docker-compose.yml`:

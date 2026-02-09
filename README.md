@@ -142,7 +142,7 @@ services:
 ### Step 2: Set Your Encryption Key
 Edit `docker-compose.yml` and change this line:
 ```yaml
-OPEN_NOTEBOOK_ENCRYPTION_KEY: "change-me-to-a-secret-string"
+- OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 ```
 to any secret value (e.g., `my-super-secret-key-123`)
 

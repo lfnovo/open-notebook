@@ -229,5 +229,141 @@ class TestGenerateEmbedding:
             assert len(result) == 3
 
 
+# ============================================================================
+# TEST SUITE 4: Reactive Batching on Context Errors
+# ============================================================================
+
+
+class TestGenerateEmbeddingsReactiveBatching:
+    """Test reactive batching on context errors."""
+
+    @pytest.mark.asyncio
+    async def test_succeeds_without_batching_for_small_input(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["Hello", "World"]
+        mock_model = MagicMock()
+        call_count = 0
+
+        async def mock_aembed(batch):
+            nonlocal call_count
+            call_count += 1
+            return [[0.1] * 3] * len(batch)
+
+        mock_model.aembed = mock_aembed
+
+        with patch(
+            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            result = await generate_embeddings(texts)
+
+        assert len(result) == 2
+        assert call_count == 1  # Single call, no batching needed
+
+    @pytest.mark.asyncio
+    async def test_batches_on_context_error(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["word " * 200] * 20
+        mock_model = MagicMock()
+        first_call = True
+
+        async def mock_aembed(batch):
+            nonlocal first_call
+            if first_call and len(batch) > 5:
+                first_call = False
+                raise Exception(
+                    "tokens (50000) exceeded context window limit (8192)"
+                )
+            return [[0.1] * 3] * len(batch)
+
+        mock_model.aembed = mock_aembed
+
+        with patch(
+            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            result = await generate_embeddings(texts)
+
+        assert len(result) == 20  # All texts embedded
+
+    @pytest.mark.asyncio
+    async def test_parses_limit_from_error(self):
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["test"] * 5
+        mock_model = MagicMock()
+        parsed_correctly = False
+
+        async def mock_aembed(batch):
+            nonlocal parsed_correctly
+            if len(batch) == 5:
+                raise Exception(
+                    "estimated tokens (144512) exceeded limit (128000)"
+                )
+            parsed_correctly = True
+            return [[0.1] * 3] * len(batch)
+
+        mock_model.aembed = mock_aembed
+
+        with patch(
+            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            result = await generate_embeddings(texts)
+
+        assert len(result) == 5
+        assert parsed_correctly  # Retried with batching
+
+    @pytest.mark.asyncio
+    async def test_raises_non_context_errors(self):
+        """Test that non-context errors are raised immediately."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["test text"]
+        mock_model = MagicMock()
+        mock_model.aembed = AsyncMock(side_effect=Exception("Connection refused"))
+
+        with patch(
+            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            with pytest.raises(RuntimeError, match="Connection refused"):
+                await generate_embeddings(texts)
+
+    @pytest.mark.asyncio
+    async def test_adaptive_retry_splits_batch(self):
+        """Test that batches are split further if they still fail."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["text " * 50] * 10
+        mock_model = MagicMock()
+        call_sizes = []
+
+        async def mock_aembed(batch):
+            call_sizes.append(len(batch))
+            if len(batch) > 3:
+                raise Exception("token limit exceeded maximum (1000)")
+            return [[0.1] * 3] * len(batch)
+
+        mock_model.aembed = mock_aembed
+
+        with patch(
+            "open_notebook.utils.embedding.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            result = await generate_embeddings(texts)
+
+        assert len(result) == 10  # All texts embedded
+        # Should have made multiple calls with progressively smaller batches
+        assert len(call_sizes) > 1
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

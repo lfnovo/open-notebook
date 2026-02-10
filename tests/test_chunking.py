@@ -15,7 +15,6 @@ from open_notebook.utils.chunking import (
     detect_content_type_from_heuristics,
 )
 
-
 # ============================================================================
 # TEST SUITE 1: Content Type Detection from Extension
 # ============================================================================

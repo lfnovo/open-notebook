@@ -1,0 +1,10 @@
+-- Migration 11: Create provider configuration singleton record
+-- This record stores multiple API key configurations per provider
+-- The data is managed by the ProviderConfig RecordModel class
+
+-- Create the provider configs singleton record for multi-config support
+-- This record stores multiple API key configurations per provider
+-- The data is managed by the ProviderConfig RecordModel class
+UPSERT open_notebook:provider_configs CONTENT {
+    credentials: {}
+};

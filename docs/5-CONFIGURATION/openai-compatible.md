@@ -40,12 +40,18 @@ Open Notebook can connect to any server using this format.
 3. Download a model (e.g., Llama 3)
 4. Start the local server (default: port 1234)
 
-### Step 2: Configure Environment
+### Step 2: Configure in Settings UI (Recommended)
 
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **OpenAI-Compatible**
+3. Enter base URL: `http://host.docker.internal:1234/v1` (Docker) or `http://localhost:1234/v1` (local)
+4. API key: `lm-studio` (placeholder, LM Studio doesn't require one)
+5. Click **Save**, then **Test Connection**
+
+**Legacy (Deprecated) — Environment variables:**
 ```bash
-# For language models
 export OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
-export OPENAI_COMPATIBLE_API_KEY=not-needed  # LM Studio doesn't require key
+export OPENAI_COMPATIBLE_API_KEY=not-needed
 ```
 
 ### Step 3: Add Model in Open Notebook
@@ -60,7 +66,19 @@ export OPENAI_COMPATIBLE_API_KEY=not-needed  # LM Studio doesn't require key
 
 ---
 
-## Environment Variables
+## Configuration via Settings UI
+
+The recommended way to configure OpenAI-compatible providers is through the Settings UI:
+
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **OpenAI-Compatible**
+3. Enter your base URL and API key (if needed)
+4. Optionally configure per-service URLs for LLM, Embedding, TTS, and STT
+5. Click **Save**, then **Test Connection**
+
+## Legacy: Environment Variables (Deprecated)
+
+> **Deprecated**: These environment variables are deprecated. Use the Settings UI instead.
 
 ### Language Models (Chat)
 
@@ -73,7 +91,7 @@ OPENAI_COMPATIBLE_API_KEY=optional-api-key
 
 ```bash
 OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:1234/v1
-OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=optional-api-key
+OPENAI_COMPATIBLE_API_KEY_EMBEDDING=optional-api-key
 ```
 
 ### Text-to-Speech
@@ -94,23 +112,18 @@ OPENAI_COMPATIBLE_API_KEY_STT=optional-api-key
 
 ## Docker Networking
 
-When Open Notebook runs in Docker and your compatible server runs on the host:
+When Open Notebook runs in Docker and your compatible server runs on the host, use the appropriate base URL when adding your credential in **Settings → API Keys**:
 
 ### macOS / Windows
 
-```bash
-OPENAI_COMPATIBLE_BASE_URL=http://host.docker.internal:1234/v1
-```
+**Base URL:** `http://host.docker.internal:1234/v1`
 
 ### Linux
 
-```bash
-# Option 1: Docker bridge IP
-OPENAI_COMPATIBLE_BASE_URL=http://172.17.0.1:1234/v1
+**Base URL (Option 1 — Docker bridge IP):** `http://172.17.0.1:1234/v1`
 
-# Option 2: Host networking mode
-docker run --network host ...
-```
+**Option 2:** Use host networking mode: `docker run --network host ...`
+Then use base URL: `http://localhost:1234/v1`
 
 ### Same Docker Network
 
@@ -119,14 +132,14 @@ docker run --network host ...
 services:
   open-notebook:
     # ...
-    environment:
-      - OPENAI_COMPATIBLE_BASE_URL=http://lm-studio:1234/v1
 
   lm-studio:
     # your LM Studio container
     ports:
       - "1234:1234"
 ```
+
+**Base URL in Settings → API Keys:** `http://lm-studio:1234/v1`
 
 ---
 
@@ -140,9 +153,7 @@ python server.py --api --listen
 
 ### Configure Open Notebook
 
-```bash
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:5000/v1
-```
+In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:5000/v1`
 
 ### Docker Compose Example
 
@@ -160,11 +171,11 @@ services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
-    environment:
-      - OPENAI_COMPATIBLE_BASE_URL=http://text-gen:5000/v1
     depends_on:
       - text-gen
 ```
+
+Then in **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://text-gen:5000/v1`
 
 ---
 
@@ -180,9 +191,7 @@ python -m vllm.entrypoints.openai.api_server \
 
 ### Configure Open Notebook
 
-```bash
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:8000/v1
-```
+In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://localhost:8000/v1`
 
 ### Docker Compose with GPU
 
@@ -206,11 +215,11 @@ services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
-    environment:
-      - OPENAI_COMPATIBLE_BASE_URL=http://vllm:8000/v1
     depends_on:
       - vllm
 ```
+
+Then in **Settings → API Keys**, add an **OpenAI-Compatible** credential with base URL: `http://vllm:8000/v1`
 
 ---
 
@@ -306,8 +315,8 @@ Problem: 401 or authentication failed
 
 Solutions:
 1. Check if server requires API key
-2. Set OPENAI_COMPATIBLE_API_KEY
-3. Some servers need any non-empty key
+2. Set the API key in your credential (Settings → API Keys)
+3. Some servers need any non-empty key (use a placeholder like "not-needed")
 ```
 
 ### Timeout Errors
@@ -326,20 +335,14 @@ Solutions:
 
 ## Multiple Compatible Endpoints
 
-You can use different compatible servers for different purposes:
+You can use different compatible servers for different purposes. When adding an **OpenAI-Compatible** credential in **Settings → API Keys**, you can configure per-service URLs:
 
-```bash
-# Chat model from LM Studio
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+- **LLM URL**: e.g., `http://localhost:1234/v1` (LM Studio)
+- **Embedding URL**: e.g., `http://localhost:8080/v1` (different server)
+- **TTS URL**: e.g., `http://localhost:8969/v1` (Speaches)
+- **STT URL**: e.g., `http://localhost:9000/v1` (Speaches)
 
-# Embeddings from different server
-OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:8080/v1
-
-# TTS from Speaches
-OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
-```
-
-Add each as a separate model in Open Notebook settings.
+Alternatively, add each as a separate credential with its own base URL.
 
 ---
 

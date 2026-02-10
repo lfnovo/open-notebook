@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.7.0-rc1] - 2026-02-07
+## [1.7.0] - 2026-02-10
 
 ### Added
 - **Credential-Based Provider Management** (#477)
@@ -34,10 +34,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Preserves formatting that would be lost with plain text paste
   - Bump content-core to 0.11.0 for HTML to Markdown conversion support
 
+- **Improved Getting Started Experience**
+  - Simplified docker-compose.yml in repository root (single official file)
+  - Added examples/ folder with ready-made configurations:
+    - `docker-compose-ollama.yml` - Local AI with Ollama
+    - `docker-compose-speaches.yml` - Local TTS/STT with Speaches
+    - `docker-compose-full-local.yml` - 100% local setup (Ollama + Speaches)
+  - Inline quick start in README (no need to navigate to docs)
+  - Cross-references between docker-compose examples and documentation
+  - .env.example template with all configuration options
+
 ### Fixed
 - Azure form race condition: all configuration now saved in single atomic request
 - Migration API "error error" display: added proper MigrationResult model with message field
 - Connection tester for Ollama providers: improved error handling and URL validation
+- SqliteSaver async compatibility issues in chat system (#509, #525, #538)
+- Re-embedding failures with empty content (#513, #515)
+- Deletion cascade for notes and sources (#77)
+- YouTube content availability issues (#494)
+- Large document embedding errors (#489)
 
 ### Security
 - API keys are encrypted at rest using Fernet symmetric encryption
@@ -49,6 +64,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - All quick-start, installation, and configuration guides now use Settings UI workflow
 - Environment variable API key instructions moved to deprecated/legacy sections
 - Fixed broken links in installation docs
+- Added comprehensive examples/ folder with documented docker-compose configurations
+- Updated local-tts.md and local-stt.md with links to ready-made examples
+
+### Internationalization
+- Added Russian (ru-RU) language support (#524)
+- Added Italian (it-IT) language support (#508)
 
 ## [1.6.2] - 2026-01-24
 

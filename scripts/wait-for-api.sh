@@ -22,4 +22,4 @@ done
 
 echo "ERROR: API did not become ready within $((MAX_RETRIES * RETRY_INTERVAL)) seconds"
 echo "Starting frontend anyway - users may see connection errors initially"
-exit 0
+exit 0 # Exit 0 so frontend still starts (better than nothing)

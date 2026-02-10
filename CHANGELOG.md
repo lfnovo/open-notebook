@@ -7,12 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0-rc1] - 2026-02-07
+
 ### Added
+- **Credential-Based Provider Management** (#477)
+  - New Settings → API Keys page for managing AI provider credentials via the UI
+  - Support for 14 providers: OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter, Voyage AI, ElevenLabs, Ollama, Azure OpenAI, OpenAI-Compatible, and Vertex AI
+  - Secure storage of API keys in SurrealDB with field-level encryption (Fernet AES-128-CBC + HMAC-SHA256)
+  - One-click connection testing, model discovery, and model registration per credential
+  - Migration tool to import existing environment variable keys into the credential system
+  - Azure OpenAI support with service-specific endpoints (LLM, Embedding, STT, TTS)
+  - OpenAI-Compatible support with per-service URL configurations
+  - Vertex AI support with project, location, and credentials path
+  - Environment variable API keys deprecated in favor of Settings UI
+
+- **Security Enhancements**
+  - Docker secrets support via `_FILE` suffix pattern (e.g., `OPEN_NOTEBOOK_PASSWORD_FILE`)
+  - Default encryption key derived from "0p3n-N0t3b0ok" for easy setup (change in production!)
+  - Default password "open-notebook-change-me" for out-of-box experience (change in production!)
+  - URL validation for SSRF protection - blocks private IPs and localhost (except for Ollama which runs locally)
+  - Security warnings logged when using default credentials
+
 - HTML clipboard detection for text sources (#426)
   - When pasting content, automatically detects HTML format (e.g., from Word, web pages)
   - Shows info message when HTML is detected, informing user it will be converted to Markdown
   - Preserves formatting that would be lost with plain text paste
   - Bump content-core to 0.11.0 for HTML to Markdown conversion support
+
+### Fixed
+- Azure form race condition: all configuration now saved in single atomic request
+- Migration API "error error" display: added proper MigrationResult model with message field
+- Connection tester for Ollama providers: improved error handling and URL validation
+
+### Security
+- API keys are encrypted at rest using Fernet symmetric encryption
+- Keys are never returned to the frontend, only configuration status
+- SSRF protection prevents internal network access via URL validation
+
+### Docs
+- Complete documentation update for credential-based system across 25 files
+- All quick-start, installation, and configuration guides now use Settings UI workflow
+- Environment variable API key instructions moved to deprecated/legacy sections
+- Fixed broken links in installation docs
 
 ## [1.6.2] - 2026-01-24
 

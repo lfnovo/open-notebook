@@ -53,11 +53,8 @@ SURREAL_PASSWORD=password
 SURREAL_NAMESPACE=open_notebook
 SURREAL_DATABASE=development
 
-# AI Providers (add your API keys)
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_API_KEY=AI...
-GROQ_API_KEY=gsk-...
+# Credential encryption (required for storing API keys)
+OPEN_NOTEBOOK_ENCRYPTION_KEY=my-dev-secret-key
 
 # Application
 APP_PASSWORD=  # Optional password protection
@@ -65,10 +62,17 @@ DEBUG=true
 LOG_LEVEL=DEBUG
 ```
 
-### AI Provider Keys
+### AI Provider Configuration
 
-You'll need at least one AI provider. Popular options:
+After starting the API and frontend, configure your AI provider via the Settings UI:
 
+1. Open **http://localhost:3000** → **Settings** → **API Keys**
+2. Click **Add Credential** → Select your provider
+3. Enter your API key (get from provider dashboard)
+4. Click **Save**, then **Test Connection**
+5. Click **Discover Models** → **Register Models**
+
+Popular providers:
 - **OpenAI** - https://platform.openai.com/api-keys
 - **Anthropic (Claude)** - https://console.anthropic.com/
 - **Google** - https://ai.google.dev/
@@ -76,6 +80,8 @@ You'll need at least one AI provider. Popular options:
 
 For local development, you can also use:
 - **Ollama** - Run locally without API keys (see "Local Ollama" below)
+
+> **Note:** API key environment variables (e.g., `OPENAI_API_KEY`) are deprecated. Use the Settings UI to manage credentials instead.
 
 ## Step 4: Start SurrealDB
 
@@ -363,12 +369,13 @@ For testing with local AI models:
 
 # Pull a model (e.g., Mistral 7B)
 ollama pull mistral
-
-# Add to .env
-OLLAMA_BASE_URL=http://localhost:11434
 ```
 
-Then in your code, you can use Ollama through the Esperanto library.
+Then configure via the Settings UI:
+1. Go to **Settings** → **API Keys** → **Add Credential** → **Ollama**
+2. Enter base URL: `http://localhost:11434`
+3. Click **Save**, then **Test Connection**
+4. Click **Discover Models** → **Register Models**
 
 ## Optional: Docker Development Environment
 

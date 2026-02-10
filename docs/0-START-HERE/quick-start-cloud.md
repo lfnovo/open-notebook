@@ -39,22 +39,8 @@ services:
       - "8502:8502"  # Web UI
       - "5055:5055"  # API
     environment:
-      # Choose ONE provider (uncomment your choice):
-
-      # OpenRouter - 100+ models with one API key
-      - OPENROUTER_API_KEY=sk-or-...
-
-      # Anthropic (Claude) - Excellent reasoning
-      # - ANTHROPIC_API_KEY=sk-ant-...
-
-      # Google (Gemini) - Large context, cost-effective
-      # - GOOGLE_API_KEY=...
-
-      # Groq - Ultra-fast inference, free tier available
-      # - GROQ_API_KEY=gsk_...
-
-      # Mistral - European provider, good quality
-      # - MISTRAL_API_KEY=...
+      # Encryption key for credential storage (required)
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 
       # Database (required)
       - SURREAL_URL=ws://surrealdb:8000/rpc
@@ -71,8 +57,7 @@ services:
 ```
 
 **Edit the file:**
-- Uncomment ONE provider and add your API key
-- Comment out or remove the others
+- Replace `change-me-to-a-secret-string` with your own secret (any string works)
 
 ---
 
@@ -99,7 +84,23 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 4: Configure Your Model (1 min)
+## Step 4: Configure Your AI Provider (1 min)
+
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select your provider (e.g., Anthropic, Google, Groq, OpenRouter)
+4. Give it a name, paste your API key
+5. Click **Save**
+6. Click **Test Connection** — should show success
+7. Click **Discover Models** → **Register Models**
+
+Your provider's models are now available!
+
+> **Multiple providers**: You can add credentials for as many providers as you want. Just repeat this step for each provider.
+
+---
+
+## Step 5: Configure Your Model (1 min)
 
 1. Go to **Settings** (gear icon)
 2. Navigate to **Models**
@@ -117,7 +118,7 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 5: Create Your First Notebook (1 min)
+## Step 6: Create Your First Notebook (1 min)
 
 1. Click **New Notebook**
 2. Name: "My Research"
@@ -125,7 +126,7 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 6: Add Content & Chat (2 min)
+## Step 7: Add Content & Chat (2 min)
 
 1. Click **Add Source**
 2. Choose **Web Link**
@@ -139,7 +140,8 @@ You should see the Open Notebook interface!
 
 - [ ] Docker is running
 - [ ] You can access `http://localhost:8502`
-- [ ] Models are configured for your provider
+- [ ] Provider credential is configured and tested
+- [ ] Models are registered
 - [ ] You created a notebook
 - [ ] Chat works
 
@@ -160,29 +162,14 @@ You should see the Open Notebook interface!
 
 ---
 
-## Using Multiple Providers
-
-You can enable multiple providers simultaneously:
-
-```yaml
-environment:
-  - OPENROUTER_API_KEY=sk-or-...
-  - ANTHROPIC_API_KEY=sk-ant-...
-  - GOOGLE_API_KEY=...
-  - GROQ_API_KEY=gsk_...
-```
-
-Then switch between them in **Settings** > **Models** as needed.
-
----
-
 ## Troubleshooting
 
 ### "Model not found" Error
 
-1. Verify your API key is correct (no extra spaces)
-2. Check you have credits/access for the model
-3. Restart: `docker compose restart api`
+1. Go to **Settings** → **API Keys**
+2. Click **Test Connection** on your credential
+3. If valid, click **Discover Models** → **Register Models**
+4. Check you have credits/access for the model
 
 ### "Cannot connect to server"
 

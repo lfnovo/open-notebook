@@ -1,4 +1,4 @@
-from typing import ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Union
 
 from esperanto import (
     AIFactory,
@@ -17,9 +17,11 @@ ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeech
 
 class Model(ObjectModel):
     table_name: ClassVar[str] = "model"
+    nullable_fields: ClassVar[set[str]] = {"credential"}
     name: str
     provider: str
     type: str
+    credential: Optional[str] = None
 
     @classmethod
     async def get_models_by_type(cls, model_type):
@@ -27,6 +29,33 @@ class Model(ObjectModel):
             "SELECT * FROM model WHERE type=$model_type;", {"model_type": model_type}
         )
         return [Model(**model) for model in models]
+
+    @classmethod
+    async def get_by_credential(cls, credential_id: str):
+        """Get all models linked to a specific credential."""
+        models = await repo_query(
+            "SELECT * FROM model WHERE credential=$cred_id;",
+            {"cred_id": ensure_record_id(credential_id)},
+        )
+        return [Model(**model) for model in models]
+
+    def _prepare_save_data(self) -> Dict[str, Any]:
+        data = super()._prepare_save_data()
+        if data.get("credential"):
+            data["credential"] = ensure_record_id(data["credential"])
+        return data
+
+    async def get_credential_obj(self):
+        """Get the Credential object linked to this model, if any."""
+        if not self.credential:
+            return None
+        from open_notebook.domain.credential import Credential
+
+        try:
+            return await Credential.get(self.credential)
+        except Exception:
+            logger.warning(f"Could not load credential {self.credential} for model {self.id}")
+            return None
 
 
 class DefaultModels(RecordModel):
@@ -87,30 +116,60 @@ class ModelManager:
         ]:
             raise ValueError(f"Invalid model type: {model.type}")
 
+        # Build config from credential if linked, otherwise fall back to env vars
+        config: dict = {}
+        if model.credential:
+            credential = await model.get_credential_obj()
+            if credential:
+                config = credential.to_esperanto_config()
+                logger.debug(
+                    f"Using credential '{credential.name}' for model {model.name}"
+                )
+            else:
+                logger.warning(
+                    f"Model {model.id} has credential {model.credential} but it could not be loaded. "
+                    f"Falling back to env vars."
+                )
+                # Fall back to env var provisioning
+                from open_notebook.ai.key_provider import provision_provider_keys
+
+                await provision_provider_keys(model.provider)
+        else:
+            # No credential linked - use env var fallback
+            from open_notebook.ai.key_provider import provision_provider_keys
+
+            await provision_provider_keys(model.provider)
+
+        # Merge any additional kwargs (e.g. temperature)
+        config.update(kwargs)
+
+        # Normalize provider name: DB stores underscores but Esperanto expects hyphens
+        provider = model.provider.replace("_", "-")
+
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
             return AIFactory.create_language(
                 model_name=model.name,
-                provider=model.provider,
-                config=kwargs,
+                provider=provider,
+                config=config,
             )
         elif model.type == "embedding":
             return AIFactory.create_embedding(
                 model_name=model.name,
-                provider=model.provider,
-                config=kwargs,
+                provider=provider,
+                config=config,
             )
         elif model.type == "speech_to_text":
             return AIFactory.create_speech_to_text(
                 model_name=model.name,
-                provider=model.provider,
-                config=kwargs,
+                provider=provider,
+                config=config,
             )
         elif model.type == "text_to_speech":
             return AIFactory.create_text_to_speech(
                 model_name=model.name,
-                provider=model.provider,
-                config=kwargs,
+                provider=provider,
+                config=config,
             )
         else:
             raise ValueError(f"Invalid model type: {model.type}")

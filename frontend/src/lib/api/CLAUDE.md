@@ -64,3 +64,95 @@ const response = await sourcesApi.create({
 // With auth token (auto-added by interceptor)
 const notes = await notesApi.list()
 ```
+
+## Credentials Module (`credentials.ts`)
+
+Client functions for managing AI provider credentials (API keys, base URLs, endpoints) stored encrypted in SurrealDB.
+
+### Type Definitions
+
+```typescript
+// Full credential object (api_key never exposed)
+interface Credential {
+  id: string
+  name: string
+  provider: string
+  modalities: string[]
+  has_api_key: boolean
+  model_count: number
+  base_url?: string
+  endpoint?: string
+  api_version?: string
+  // ... endpoint_llm, endpoint_embedding, endpoint_stt, endpoint_tts, project, location, credentials_path
+}
+
+// Request payload for creating/updating credential
+interface CreateCredentialRequest {
+  name: string
+  provider: string
+  modalities: string[]
+  api_key?: string
+  base_url?: string
+  // ... other provider-specific fields
+}
+
+// Model discovery and registration
+interface DiscoverModelsResponse { provider: string; models: DiscoveredModel[]; credential_id: string }
+interface RegisterModelsRequest { models: RegisterModelData[] }
+
+// Status and migration
+interface CredentialStatus { configured: Record<string, boolean>; source: Record<string, string>; encryption_configured: boolean }
+interface EnvStatus { [provider: string]: boolean }
+interface MigrationResult { message: string; migrated: string[]; skipped: string[]; errors: string[] }
+interface TestConnectionResult { provider: string; success: boolean; message: string }
+```
+
+### API Functions
+
+| Function | Description | Endpoint |
+|----------|-------------|----------|
+| `getStatus()` | Get configuration status of all providers | `GET /credentials/status` |
+| `getEnvStatus()` | Get which providers have env vars set | `GET /credentials/env-status` |
+| `list(provider?)` | List all credentials (optional filter) | `GET /credentials` |
+| `listByProvider(provider)` | List credentials for a provider | `GET /credentials/by-provider/{provider}` |
+| `get(credentialId)` | Get a specific credential | `GET /credentials/{credentialId}` |
+| `create(data)` | Create a new credential | `POST /credentials` |
+| `update(credentialId, data)` | Update a credential | `PUT /credentials/{credentialId}` |
+| `delete(credentialId, options?)` | Delete a credential | `DELETE /credentials/{credentialId}` |
+| `test(credentialId)` | Test connection using credential | `POST /credentials/{credentialId}/test` |
+| `discover(credentialId)` | Discover available models | `POST /credentials/{credentialId}/discover` |
+| `registerModels(credentialId, data)` | Register discovered models | `POST /credentials/{credentialId}/register-models` |
+| `migrateFromProviderConfig()` | Migrate from legacy ProviderConfig | `POST /credentials/migrate-from-provider-config` |
+| `migrateFromEnv()` | Migrate from env vars | `POST /credentials/migrate-from-env` |
+
+### Usage Example
+
+```typescript
+import { credentialsApi } from '@/lib/api/credentials'
+
+// Check which providers are configured
+const status = await credentialsApi.getStatus()
+if (status.configured['openai']) {
+  console.log(`OpenAI configured via ${status.source['openai']}`)
+}
+
+// Create a new credential
+const cred = await credentialsApi.create({
+  name: 'My OpenAI Key',
+  provider: 'openai',
+  modalities: ['language', 'embedding'],
+  api_key: 'sk-proj-...'
+})
+
+// Test the connection
+const result = await credentialsApi.test(cred.id)
+if (result.success) {
+  console.log('Connection successful!')
+}
+
+// Discover and register models
+const discovered = await credentialsApi.discover(cred.id)
+await credentialsApi.registerModels(cred.id, {
+  models: discovered.models.map(m => ({ model_id: m.model_id, name: m.name, type: 'language' }))
+})
+```

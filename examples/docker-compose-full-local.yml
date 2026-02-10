@@ -1,0 +1,197 @@
+# Docker Compose - 100% Local AI Setup
+#
+# This is the complete privacy-focused setup with NO external APIs needed:
+# - Ollama: Local LLM and embeddings (mistral, llama, nomic-embed, etc.)
+# - Speaches: Local TTS (text-to-speech) and STT (speech-to-text)
+# - Open Notebook: Your research assistant
+# - SurrealDB: Local database
+#
+# Perfect for:
+# - Complete privacy (nothing leaves your machine)
+# - Offline work
+# - No API costs
+# - Air-gapped environments
+# - Testing and development
+#
+# Usage:
+#   1. Copy this file to your project folder as docker-compose.yml
+#   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
+#   3. Run: docker compose up -d
+#   4. Pull models (see instructions below)
+#   5. Configure providers in UI
+#
+# Full documentation:
+# - Ollama setup: https://github.com/lfnovo/open-notebook/blob/main/examples/README.md
+# - TTS setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
+# - STT setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-stt.md
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    restart: always
+    pull_policy: always
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: always
+    pull_policy: always
+    # For GPU acceleration (NVIDIA), add:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    container_name: speaches
+    ports:
+      - "8969:8000"
+    volumes:
+      - hf-hub-cache:/home/ubuntu/.cache/huggingface/hub
+    restart: unless-stopped
+    # For GPU acceleration, use: ghcr.io/speaches-ai/speaches:latest-cuda
+    # and add GPU device mapping (see docs)
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    environment:
+      # REQUIRED: Change this to your own secret string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+
+      # Database connection
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=open_notebook
+
+      # Ollama connection (optional, can also configure via UI)
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./notebook_data:/app/data
+    depends_on:
+      - surrealdb
+      - ollama
+      - speaches
+    restart: always
+    pull_policy: always
+
+volumes:
+  ollama_models:
+  hf-hub-cache:
+
+# ==========================================
+# AFTER STARTING: Download Models
+# ==========================================
+#
+# Ollama Models (LLM):
+#   docker exec open_notebook-ollama-1 ollama pull mistral
+#   docker exec open_notebook-ollama-1 ollama pull llama3.1
+#   docker exec open_notebook-ollama-1 ollama pull qwen2.5
+#
+# Ollama Models (Embeddings):
+#   docker exec open_notebook-ollama-1 ollama pull nomic-embed-text
+#   docker exec open_notebook-ollama-1 ollama pull mxbai-embed-large
+#
+# Speaches (TTS):
+#   docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX
+#
+# Speaches (STT):
+#   docker compose exec speaches uv tool run speaches-cli model download Systran/faster-whisper-small
+#
+# ==========================================
+# CONFIGURATION IN OPEN NOTEBOOK
+# ==========================================
+#
+# 1. Configure Ollama:
+#    - Go to Settings → API Keys
+#    - Add Credential → Select "Ollama"
+#    - Base URL: http://ollama:11434
+#    - Save → Test Connection → Discover Models → Register Models
+#
+# 2. Configure Speaches (TTS/STT):
+#    - Go to Settings → API Keys
+#    - Add Credential → Select "OpenAI-Compatible"
+#    - Name: "Local Speaches"
+#    - Base URL for TTS: http://host.docker.internal:8969/v1  (macOS/Windows)
+#                    or: http://172.17.0.1:8969/v1           (Linux)
+#    - Base URL for STT: (same as TTS)
+#    - Save → Test Connection
+#
+# 3. Discover Speech Models:
+#    - In the Speaches credential you just created, click Discover Models
+#    - Select and register the models you need (e.g. TTS and STT)
+#    - If models aren't discovered automatically, add them manually:
+#      * TTS: speaches-ai/Kokoro-82M-v1.0-ONNX
+#      * STT: Systran/faster-whisper-small
+#
+# ==========================================
+# RECOMMENDED MODELS
+# ==========================================
+#
+# For LLM (choose based on your hardware):
+# - Fast: mistral (7B), qwen2.5 (7B)
+# - Balanced: llama3.1 (8B)
+# - Best quality: qwen2.5 (14B+), llama3.1 (70B) - requires powerful GPU
+#
+# For Embeddings:
+# - nomic-embed-text (recommended, 137M params)
+# - mxbai-embed-large (334M params, better quality)
+#
+# For TTS:
+# - speaches-ai/Kokoro-82M-v1.0-ONNX (good quality, fast)
+#
+# For STT (Whisper):
+# - faster-whisper-small (balanced, ~500MB)
+# - faster-whisper-base (faster, less accurate)
+# - faster-whisper-large-v3 (best quality, slower, ~3GB)
+#
+# ==========================================
+# HARDWARE REQUIREMENTS
+# ==========================================
+#
+# Minimum (CPU only):
+# - 8 GB RAM
+# - 20 GB disk space
+# - 4 CPU cores
+#
+# Recommended (with GPU):
+# - 16+ GB RAM
+# - 8+ GB VRAM (NVIDIA GPU)
+# - 50 GB disk space
+# - 8+ CPU cores
+#
+# ==========================================
+# COST COMPARISON
+# ==========================================
+#
+# Local (this setup):
+# - Cost: $0 (after hardware)
+# - Privacy: 100% private
+# - Speed: Depends on hardware
+#
+# Cloud (OpenAI + ElevenLabs):
+# - LLM: ~$0.01-0.10 per 1K tokens
+# - Embeddings: ~$0.0001 per 1K tokens
+# - TTS: ~$0.015 per minute
+# - STT: ~$0.006 per minute
+# - Privacy: Data sent to providers
+# - Speed: Usually faster

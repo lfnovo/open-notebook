@@ -124,6 +124,27 @@ class TestSourceDomain:
         assert "command" in save_data
 
     @pytest.mark.asyncio
+    async def test_source_vectorize_stops_for_whitespace_only_pdf(self):
+        """Test vectorize raises ValueError and stops for whitespace-only PDF text."""
+        pdf_path = Path(__file__).parent / "resources" / "onlySpaces.pdf"
+        assert pdf_path.exists()
+
+        source = Source(
+            id="source:test_whitespace_pdf",
+            title="Whitespace PDF",
+            asset=Asset(file_path=str(pdf_path)),
+            full_text="   \n\t   ",
+        )
+
+        with patch("open_notebook.domain.notebook.submit_command") as mock_submit_command:
+            with pytest.raises(ValueError, match="has no text to vectorize"):
+                await source.vectorize()
+
+        # confirms that once the validation failed, execution stopped and never reached the job submission call.
+        # the "submit_command" is the next step in the vectorize function.
+        mock_submit_command.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_source_delete_cleans_up_file(self):
         """Test that deleting a source removes the associated file."""
         # Create a temporary file

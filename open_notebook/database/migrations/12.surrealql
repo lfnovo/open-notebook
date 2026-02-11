@@ -1,0 +1,29 @@
+-- Migration 12: Create credential table and add credential link to model table
+-- Individual credential records replace the ProviderConfig singleton
+-- Each credential stores API key and provider-specific configuration
+
+
+DEFINE TABLE credential SCHEMAFULL;
+DEFINE FIELD name ON credential TYPE string;
+DEFINE FIELD provider ON credential TYPE string;
+DEFINE FIELD modalities ON credential TYPE array DEFAULT [];
+DEFINE FIELD modalities.* ON credential TYPE string;
+DEFINE FIELD api_key ON credential TYPE option<string>;
+DEFINE FIELD base_url ON credential TYPE option<string>;
+DEFINE FIELD endpoint ON credential TYPE option<string>;
+DEFINE FIELD api_version ON credential TYPE option<string>;
+DEFINE FIELD endpoint_llm ON credential TYPE option<string>;
+DEFINE FIELD endpoint_embedding ON credential TYPE option<string>;
+DEFINE FIELD endpoint_stt ON credential TYPE option<string>;
+DEFINE FIELD endpoint_tts ON credential TYPE option<string>;
+DEFINE FIELD project ON credential TYPE option<string>;
+DEFINE FIELD location ON credential TYPE option<string>;
+DEFINE FIELD credentials_path ON credential TYPE option<string>;
+DEFINE FIELD created ON credential TYPE option<datetime> DEFAULT time::now();
+DEFINE FIELD updated ON credential TYPE option<datetime> DEFAULT time::now();
+
+-- Index for fast provider lookups
+DEFINE INDEX idx_credential_provider ON credential FIELDS provider;
+
+-- Add optional credential link to model table
+DEFINE FIELD credential ON model TYPE option<record<credential>>;

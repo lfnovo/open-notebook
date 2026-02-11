@@ -428,9 +428,9 @@ ESPERANTO_SSL_VERIFY=false
 
 ### Solution 3: Use HTTP Instead
 If services are on a trusted local network, HTTP is acceptable:
-```bash
-# Change endpoint from https:// to http://
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
+```
+Change the base URL in your credential (Settings → API Keys) from https:// to http://
+Example: http://localhost:1234/v1
 ```
 
 > **Security Note:** Disabling SSL verification exposes you to man-in-the-middle attacks. Always prefer custom CA bundle or HTTP on trusted networks.

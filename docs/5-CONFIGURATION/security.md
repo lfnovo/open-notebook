@@ -4,6 +4,65 @@ Protect your Open Notebook deployment with password authentication and productio
 
 ---
 
+## API Key Encryption
+
+Open Notebook encrypts API keys stored in the database using Fernet symmetric encryption (AES-128-CBC with HMAC-SHA256).
+
+### Configuration Methods
+
+| Method | Documentation |
+|--------|---------------|
+| **Settings UI** | [API Configuration Guide](../3-USER-GUIDE/api-configuration.md) |
+| **Environment Variables** | This page (below) |
+
+### Setup
+
+Set the encryption key to any secret string:
+
+```bash
+# .env or docker.env
+OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
+```
+
+Any string works — it will be securely derived via SHA-256 internally. Use a strong passphrase for production deployments.
+
+### Default Credentials
+
+| Setting | Default | Security Level |
+|---------|---------|----------------|
+| Password | `open-notebook-change-me` | Development only |
+| Encryption Key | **None** (must be configured) | Required for API key storage |
+
+**The encryption key has no default.** You must set `OPEN_NOTEBOOK_ENCRYPTION_KEY` before using the API key configuration feature. Without it, encrypting/decrypting API keys will fail.
+
+### Docker Secrets Support
+
+Both settings support Docker secrets via `_FILE` suffix:
+
+```yaml
+environment:
+  - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
+  - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
+```
+
+### Security Notes
+
+| Scenario | Behavior |
+|----------|----------|
+| Key configured | API keys encrypted with your key |
+| No key configured | Encryption/decryption will fail (key is required) |
+| Key changed | Old encrypted keys become unreadable |
+| Legacy data | Unencrypted keys still work (graceful fallback) |
+
+### Key Management
+
+- **Keep secret**: Never commit the encryption key to version control
+- **Backup securely**: Store the key separately from database backups
+- **No rotation yet**: Changing the key requires re-saving all API keys
+- **Per-deployment**: Each instance should have its own encryption key
+
+---
+
 ## When to Use Password Protection
 
 ### Use it for:
@@ -29,7 +88,7 @@ services:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
     environment:
-      - OPENAI_API_KEY=sk-...
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
       - OPEN_NOTEBOOK_PASSWORD=your_secure_password
     # ... rest of config
 ```
@@ -38,9 +97,11 @@ Or using environment file:
 
 ```bash
 # docker.env
-OPENAI_API_KEY=sk-...
+OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-encryption-key
 OPEN_NOTEBOOK_PASSWORD=your_secure_password
 ```
+
+> **Important**: The encryption key is **required** for credential storage. Without it, you cannot save AI provider credentials via the Settings UI. If you change or lose the encryption key, all stored credentials become unreadable.
 
 ### Development Setup
 

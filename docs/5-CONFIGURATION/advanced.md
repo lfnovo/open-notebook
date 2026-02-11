@@ -197,28 +197,21 @@ ESPERANTO_SSL_VERIFY=false
 
 ### Use Different Providers for Different Tasks
 
-```env
-# Language model (main)
-OPENAI_API_KEY=sk-proj-...
+Configure multiple AI providers via **Settings → API Keys**. Each provider gets its own credential:
 
-# Embeddings (alternative)
-# (Future: Configure different embedding provider)
+1. Add a credential for your main language model provider (e.g., OpenAI, Anthropic)
+2. Add a credential for embeddings (e.g., Voyage AI, or use the same provider)
+3. Add a credential for TTS (e.g., ElevenLabs, or OpenAI-Compatible for local Speaches)
+4. Each credential's models are registered and available independently
 
-# TTS (different provider)
-ELEVENLABS_API_KEY=...
-```
+### Multiple Endpoints for OpenAI-Compatible
 
-### OpenAI-Compatible with Fallback
+When using OpenAI-Compatible providers, you can configure per-service URLs in a single credential:
 
-```env
-# Primary
-OPENAI_COMPATIBLE_BASE_URL=http://localhost:1234/v1
-OPENAI_COMPATIBLE_API_KEY=key1
-
-# Can also set specific modality endpoints
-OPENAI_COMPATIBLE_BASE_URL_LLM=http://localhost:1234/v1
-OPENAI_COMPATIBLE_BASE_URL_EMBEDDING=http://localhost:8001/v1
-```
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **OpenAI-Compatible**
+3. Configure separate URLs for LLM, Embedding, TTS, and STT
+4. Click **Save**, then **Test Connection**
 
 ---
 
@@ -283,25 +276,12 @@ Get key from: https://jina.ai/
 
 ## Environment Variable Groups
 
-### API Keys (Choose at least one)
+### Credential Storage (Required)
 ```env
-OPENAI_API_KEY
-ANTHROPIC_API_KEY
-GOOGLE_API_KEY
-GROQ_API_KEY
-MISTRAL_API_KEY
-DEEPSEEK_API_KEY
-OPENROUTER_API_KEY
-XAI_API_KEY
+OPEN_NOTEBOOK_ENCRYPTION_KEY    # Required for storing credentials
 ```
 
-### AI Provider Endpoints
-```env
-OLLAMA_API_BASE
-OPENAI_COMPATIBLE_BASE_URL
-AZURE_OPENAI_ENDPOINT
-GEMINI_API_BASE_URL
-```
+AI provider API keys are configured via **Settings → API Keys** (not environment variables).
 
 ### Database
 ```env
@@ -332,9 +312,10 @@ ESPERANTO_LLM_TIMEOUT
 
 ### Audio/TTS
 ```env
-ELEVENLABS_API_KEY
 TTS_BATCH_SIZE
 ```
+
+> **Note:** `ELEVENLABS_API_KEY` is deprecated. Configure ElevenLabs via **Settings → API Keys**.
 
 ### Debugging
 ```env
@@ -351,14 +332,10 @@ LANGCHAIN_PROJECT
 ### Quick Test
 
 ```bash
-# Add test config
-export OPENAI_API_KEY=sk-test-key
-export API_URL=http://localhost:5055
-
-# Test connection
+# Test API health
 curl http://localhost:5055/health
 
-# Test with sample
+# Test with sample (requires configured credential and registered models)
 curl -X POST http://localhost:5055/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message":"Hello"}'
@@ -368,7 +345,7 @@ curl -X POST http://localhost:5055/api/chat \
 
 ```bash
 # Check environment variables are set
-env | grep OPENAI_API_KEY
+env | grep OPEN_NOTEBOOK_ENCRYPTION_KEY
 
 # Verify database connection
 python -c "import os; print(os.getenv('SURREAL_URL'))"

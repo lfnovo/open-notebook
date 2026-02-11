@@ -10,55 +10,51 @@ Multi-container setup with separate services. **Best for most users.**
 - **5-10 minutes** of your time
 - **API key** for at least one AI provider (OpenAI recommended for beginners)
 
-## Step 1: Get an API Key (2 min)
+## Step 1: Get docker-compose.yml (1 min)
 
-Choose at least one AI provider. **OpenAI recommended if you're unsure:**
-
-```
-OpenAI:     https://platform.openai.com/api-keys
-Anthropic:  https://console.anthropic.com/
-Google:     https://aistudio.google.com/
-Groq:       https://console.groq.com/
+**Option A: Download from repository**
+```bash
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/docker-compose.yml
 ```
 
-Add at least $5 in credits to your account.
+**Option B: Use the official file from the repo**
 
-(Skip this if using Ollama for free local models)
+The official `docker-compose.yml` is in the root of our repository: [View on GitHub](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml)
 
----
+Copy that file to your project folder.
 
-## Step 2: Create Configuration (2 min)
+**Option C: Create manually**
 
-Create a folder `open-notebook` and add this file:
+Create a file called `docker-compose.yml` with this content:
 
-**docker-compose.yml**:
 ```yaml
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
-    user: root  # Required for bind mounts on Linux (SurrealDB runs as non-root by default)
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root  # Required for bind mounts on Linux
     ports:
       - "8000:8000"
     volumes:
       - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    restart: always
+    pull_policy: always
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
-    pull_policy: always
     ports:
       - "8502:8502"  # Web UI
-      - "5055:5055"  # API
+      - "5055:5055"  # REST API
     environment:
-      # AI Provider (choose ONE)
-      - OPENAI_API_KEY=sk-...  # Your OpenAI key
-      # - ANTHROPIC_API_KEY=sk-ant-...  # Or Anthropic
-      # - GOOGLE_API_KEY=...  # Or Google
+      # REQUIRED: Change this to your own secret string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 
-      # Database
+      # Database connection (default values - no need to change)
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
-      - SURREAL_PASSWORD=password
+      - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
     volumes:
@@ -66,17 +62,15 @@ services:
     depends_on:
       - surrealdb
     restart: always
-
+    pull_policy: always
 ```
 
 **Edit the file:**
-- Replace `sk-...` with your actual OpenAI API key
-- (Or use Anthropic, Google, Groq keys instead)
-- If you have multiple keys, uncomment the ones you want
+- Replace `change-me-to-a-secret-string` with your own secret (any string works, e.g., `my-super-secret-key-123`)
 
 ---
 
-## Step 3: Start Services (2 min)
+## Step 2: Start Services (2 min)
 
 Open terminal in the `open-notebook` folder:
 
@@ -97,7 +91,7 @@ docker compose ps
 
 ---
 
-## Step 4: Verify Installation (1 min)
+## Step 3: Verify Installation (1 min)
 
 **API Health:**
 ```bash
@@ -115,6 +109,26 @@ You should see the Open Notebook interface!
 
 ---
 
+## Step 4: Configure AI Provider (2 min)
+
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select your provider (e.g., OpenAI, Anthropic, Google)
+4. Give it a name, paste your API key
+5. Click **Save**
+6. Click **Test Connection** — should show success
+7. Click **Discover Models** → **Register Models**
+
+Your models are now available!
+
+> **Need an API key?** Get one from your chosen provider:
+> - **OpenAI**: https://platform.openai.com/api-keys
+> - **Anthropic**: https://console.anthropic.com/
+> - **Google**: https://aistudio.google.com/
+> - **Groq**: https://console.groq.com/
+
+---
+
 ## Step 5: First Notebook (2 min)
 
 1. Click **New Notebook**
@@ -122,35 +136,27 @@ You should see the Open Notebook interface!
 3. Description: "Getting started"
 4. Click **Create**
 
-Done! You now have a fully working Open Notebook instance. 🎉
+Done! You now have a fully working Open Notebook instance.
 
 ---
 
 ## Configuration
 
-### Using Different AI Providers
+### Adding Ollama (Free Local Models)
 
-Change `environment` section in `docker-compose.yml`:
+Instead of manually editing, use our ready-made example:
 
-```yaml
-# For Anthropic (Claude)
-- ANTHROPIC_API_KEY=sk-ant-...
+```bash
+# Download the Ollama example
+curl -o docker-compose.yml https://raw.githubusercontent.com/lfnovo/open-notebook/main/examples/docker-compose-ollama.yml
 
-# For Google Gemini
-- GOOGLE_API_KEY=...
-
-# For Groq (fast, free tier available)
-- GROQ_API_KEY=...
-
-# For local Ollama docker container (free, offline) --> Virtual machine
-- OLLAMA_API_BASE=http://ollama:11434
-# For localhost Ollama (free, offline) --> Real machine
-# - OLLAMA_API_BASE=http://host.docker.internal:11434
+# Or copy from repo
+cp examples/docker-compose-ollama.yml docker-compose.yml
 ```
 
-### Adding Ollama container (Free Local Models)
+See [examples/docker-compose-ollama.yml](../../examples/docker-compose-ollama.yml) for the complete setup.
 
-Add to `docker-compose.yml`:
+**Manual setup:** Add this to your existing `docker-compose.yml`:
 
 ```yaml
   ollama:
@@ -162,21 +168,21 @@ Add to `docker-compose.yml`:
     restart: always
 
 volumes:
-  surreal_data:
   ollama_models:
 ```
 
-Then update API service:
-```yaml
-environment:
-  - OLLAMA_API_BASE=http://ollama:11434
-```
-
-Restart and pull a model:
+Then restart and pull a model:
 ```bash
 docker compose restart
 docker exec open_notebook-ollama-1 ollama pull mistral
 ```
+
+Configure Ollama in the Settings UI:
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **Ollama**
+3. Enter base URL: `http://ollama:11434`
+4. Click **Save**, then **Test Connection**
+5. Click **Discover Models** → **Register Models**
 
 ---
 
@@ -184,13 +190,13 @@ docker exec open_notebook-ollama-1 ollama pull mistral
 
 | Variable | Purpose | Example |
 |----------|---------|---------|
-| `OPENAI_API_KEY` | OpenAI API key | `sk-proj-...` |
-| `ANTHROPIC_API_KEY` | Anthropic/Claude key | `sk-ant-...` |
+| `OPEN_NOTEBOOK_ENCRYPTION_KEY` | Encryption key for credentials | `my-secret-key` |
 | `SURREAL_URL` | Database connection | `ws://surrealdb:8000/rpc` |
 | `SURREAL_USER` | Database user | `root` |
-| `SURREAL_PASSWORD` | Database password | `password` |
+| `SURREAL_PASSWORD` | Database password | `root` |
 | `API_URL` | API external URL | `http://localhost:5055` |
-| `NEXT_PUBLIC_API_URL` | Frontend API URL | `http://localhost:5055` |
+
+See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.
 
 ---
 
@@ -266,12 +272,13 @@ Then access at `http://localhost:8503`
 
 ---
 
-### API Key Not Working
+### Credential Issues
 
-1. Double-check your API key in the file (no extra spaces)
-2. Verify key is valid at provider's website
-3. Check you added credits to your account
-4. Restart: `docker compose restart api`
+1. Go to **Settings** → **API Keys**
+2. Click **Test Connection** on the credential
+3. If it fails, verify key at provider's website
+4. Check you have credits in your account
+5. Delete and re-create the credential if needed
 
 ---
 
@@ -313,6 +320,18 @@ docker compose up -d
 
 ---
 
+## Alternative Setups
+
+Looking for different configurations? Check out our [examples/](../../examples/) folder:
+
+- **[Ollama Setup](../../examples/docker-compose-ollama.yml)** - Run local AI models (free, private)
+- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, not recommended)
+- **[Development](../../examples/docker-compose-dev.yml)** - For contributors and developers
+
+Each example includes detailed comments and usage instructions.
+
+---
+
 ## Next Steps
 
 1. **Add Content**: Sources, notebooks, documents
@@ -325,8 +344,8 @@ docker compose up -d
 ## Production Deployment
 
 For production use, see:
-- [Security Hardening](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/security.md)
-- [Reverse Proxy](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/reverse-proxy.md)
+- [Security Hardening](../5-CONFIGURATION/security.md)
+- [Reverse Proxy](../5-CONFIGURATION/reverse-proxy.md)
 
 ---
 

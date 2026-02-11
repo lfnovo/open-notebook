@@ -36,8 +36,8 @@ services:
       - "8502:8502"  # Web UI
       - "5055:5055"  # API
     environment:
-      # Your OpenAI key
-      - OPENAI_API_KEY=sk-...
+      # Encryption key for credential storage (required)
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 
       # Database (required)
       - SURREAL_URL=ws://surrealdb:8000/rpc
@@ -54,7 +54,7 @@ services:
 ```
 
 **Edit the file:**
-- Replace `sk-...` with your actual OpenAI API key
+- Replace `change-me-to-a-secret-string` with your own secret (any string works)
 
 ---
 
@@ -81,7 +81,22 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 4: Create Your First Notebook (1 min)
+## Step 4: Configure Your OpenAI Provider (1 min)
+
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **OpenAI**
+4. Give it a name (e.g., "My OpenAI Key")
+5. Paste your OpenAI API key
+6. Click **Save**
+7. Click **Test Connection** — should show success
+8. Click **Discover Models** → **Register Models**
+
+Your OpenAI models are now available!
+
+---
+
+## Step 5: Create Your First Notebook (1 min)
 
 1. Click **New Notebook**
 2. Name: "My Research"
@@ -89,7 +104,7 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 5: Add a Source (1 min)
+## Step 6: Add a Source (1 min)
 
 1. Click **Add Source**
 2. Choose **Web Link**
@@ -99,7 +114,7 @@ You should see the Open Notebook interface!
 
 ---
 
-## Step 6: Chat With Your Content (1 min)
+## Step 7: Chat With Your Content (1 min)
 
 1. Go to **Chat**
 2. Type: "What is artificial intelligence?"
@@ -112,11 +127,12 @@ You should see the Open Notebook interface!
 
 - [ ] Docker is running
 - [ ] You can access `http://localhost:8502`
+- [ ] OpenAI credential is configured and tested
 - [ ] You created a notebook
 - [ ] You added a source
 - [ ] Chat works
 
-**All checked?** 🎉 You have a fully working AI research assistant!
+**All checked?** You have a fully working AI research assistant!
 
 ---
 
@@ -142,9 +158,10 @@ Then access at `http://localhost:8503`
 
 ### "API key not working"
 
-1. Double-check your API key (no extra spaces)
-2. Verify you added credits at https://platform.openai.com
-3. Restart: `docker compose restart api`
+1. Go to **Settings** → **API Keys**
+2. Click **Test Connection** on your OpenAI credential
+3. If it fails, verify your key at https://platform.openai.com
+4. Delete the credential and create a new one with the correct key
 
 ### "Cannot connect to server"
 

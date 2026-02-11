@@ -6,6 +6,7 @@ To avoid circular imports, import functions directly:
 - from open_notebook.utils import token_count, compare_versions
 - from open_notebook.utils.chunking import chunk_text, detect_content_type, ContentType
 - from open_notebook.utils.embedding import generate_embedding, generate_embeddings
+- from open_notebook.utils.encryption import encrypt_value, decrypt_value
 """
 
 from .chunking import (
@@ -20,6 +21,10 @@ from .embedding import (
     generate_embedding,
     generate_embeddings,
     mean_pool_embeddings,
+)
+from .encryption import (
+    decrypt_value,
+    encrypt_value,
 )
 from .text_utils import (
     clean_thinking_content,
@@ -58,4 +63,7 @@ __all__ = [
     "compare_versions",
     "get_installed_version",
     "get_version_from_github",
+    # Encryption utils
+    "decrypt_value",
+    "encrypt_value",
 ]

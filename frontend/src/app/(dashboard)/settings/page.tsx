@@ -22,6 +22,7 @@ export default function SettingsPage() {
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
+
             <SettingsForm />
           </div>
         </div>

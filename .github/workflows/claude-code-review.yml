@@ -1,10 +1,11 @@
 name: Claude Code Review
 
+# Run only when PR is opened, ready_for_review, or reopened (not on every push/sync)
 on:
   pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [opened, ready_for_review, reopened]
   pull_request_target:
-    types: [opened, synchronize, ready_for_review, reopened]
+    types: [opened, ready_for_review, reopened]
     # Optional: Only run on specific file changes
     # paths:
     #   - "src/**/*.ts"

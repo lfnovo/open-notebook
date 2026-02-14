@@ -174,7 +174,7 @@ volumes:
 Then restart and pull a model:
 ```bash
 docker compose restart
-docker exec open_notebook-ollama-1 ollama pull mistral
+docker exec open-notebook-local-ollama-1 ollama pull mistral
 ```
 
 Configure Ollama in the Settings UI:

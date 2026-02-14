@@ -35,21 +35,7 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
         if default_prompts.transformation_instructions:
             transformation_template_text = f"{default_prompts.transformation_instructions}\n\n{transformation_template_text}"
 
-<<<<<<< HEAD
         transformation_template_text = f"{transformation_template_text}\n\n# INPUT"
-=======
-    system_prompt = Prompter(template_text=transformation_template_text).render(
-        data=state
-    )
-    content_str = str(content) if content else ""
-    payload = [SystemMessage(content=system_prompt), HumanMessage(content=content_str)]
-    chain = await provision_langchain_model(
-        str(payload),
-        config.get("configurable", {}).get("model_id"),
-        "transformation",
-        max_tokens=8192,
-    )
->>>>>>> 877c303 (fix: update esperanto dep and increase transformation max_tokens (#568))
 
         system_prompt = Prompter(template_text=transformation_template_text).render(
             data=state

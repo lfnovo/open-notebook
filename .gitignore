@@ -139,6 +139,8 @@ specs/
 
 *.local.yml
 **/*.local.md
+*.lock
+
 
 # Cursor and Codacy (local/tooling)
 .cursor/

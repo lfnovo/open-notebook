@@ -429,7 +429,7 @@ class Source(ObjectModel):
         logger.info(f"Submitting embed_source job for source {self.id}")
 
         try:
-            if not self.full_text:
+            if not self.full_text or not self.full_text.strip():
                 raise ValueError(f"Source {self.id} has no text to vectorize")
 
             # Submit the embed_source command
@@ -447,6 +447,8 @@ class Source(ObjectModel):
 
             return command_id_str
 
+        except ValueError:
+            raise
         except Exception as e:
             logger.error(
                 f"Failed to submit embed_source job for source {self.id}: {e}"

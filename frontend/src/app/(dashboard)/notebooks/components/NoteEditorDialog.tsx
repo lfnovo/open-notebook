@@ -118,7 +118,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
 
   // Drag: use direct DOM updates for smooth movement (no re-renders during drag)
   const handleDragPointerDown = useCallback((e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button, input, [contenteditable="true"]')) return
+    const target = e.target as HTMLElement
+    if (target.closest('button, input, [contenteditable="true"]')) return
     e.preventDefault()
     dragRef.current = {
       isDragging: true,
@@ -129,19 +130,20 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
       currentX: dragOffset.x,
       currentY: dragOffset.y,
     }
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    ;target.setPointerCapture(e.pointerId)
   }, [dragOffset.x, dragOffset.y])
 
   const handleResizePointerDown = useCallback((e: React.PointerEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    const target = e.target as HTMLElement
     resizeRef.current = {
       isResizing: true,
       startY: e.clientY,
       startHeight: modalHeightPx,
       currentHeight: modalHeightPx,
     }
-    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+    ;target.setPointerCapture(e.pointerId)
   }, [modalHeightPx])
 
   useEffect(() => {

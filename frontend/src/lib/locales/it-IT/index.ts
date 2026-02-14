@@ -23,6 +23,7 @@ export const itIT = {
     english: "English",
     chinese: "简体中文",
     japanese: "日本語",
+    french: "Français",
     russian: "Русский",
     source: "Fonte",
     notebook: "Quaderno",

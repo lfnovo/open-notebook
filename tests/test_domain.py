@@ -202,6 +202,43 @@ class TestSourceDomain:
             mock_delete.assert_called_once()
 
 
+    @pytest.mark.asyncio
+    async def test_vectorize_raises_valueerror_when_no_text(self):
+        """Test that vectorize() raises ValueError (not DatabaseOperationError) for empty text."""
+        source = Source(id="source:test_empty", title="Test", full_text=None)
+        with pytest.raises(ValueError, match="has no text to vectorize"):
+            await source.vectorize()
+
+    @pytest.mark.asyncio
+    async def test_vectorize_raises_valueerror_when_empty_string(self):
+        """Test that vectorize() raises ValueError for empty string."""
+        source = Source(id="source:test_empty_str", title="Test", full_text="")
+        with pytest.raises(ValueError, match="has no text to vectorize"):
+            await source.vectorize()
+
+    @pytest.mark.asyncio
+    async def test_vectorize_raises_valueerror_when_whitespace_only(self):
+        """Test that vectorize() raises ValueError for whitespace-only text."""
+        source = Source(id="source:test_ws", title="Test", full_text="   \n\t  ")
+        with pytest.raises(ValueError, match="has no text to vectorize"):
+            await source.vectorize()
+
+    @pytest.mark.asyncio
+    async def test_vectorize_submits_command_with_valid_text(self):
+        """Test that vectorize() submits embed_source command when text is valid."""
+        source = Source(id="source:test_valid", title="Test", full_text="Real content")
+        with patch(
+            "open_notebook.domain.notebook.submit_command", return_value="command:123"
+        ) as mock_submit:
+            result = await source.vectorize()
+            mock_submit.assert_called_once_with(
+                "open_notebook",
+                "embed_source",
+                {"source_id": "source:test_valid"},
+            )
+            assert result == "command:123"
+
+
 # ============================================================================
 # TEST SUITE 5: Note Domain
 # ============================================================================

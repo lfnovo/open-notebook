@@ -96,13 +96,13 @@ Ollama needs at least one language model. Pick one:
 
 ```bash
 # Fastest & smallest (recommended for testing)
-docker exec open_notebook-ollama-1 ollama pull mistral
+docker exec open-notebook-local-ollama-1 ollama pull mistral
 
 # OR: Better quality but slower
-docker exec open_notebook-ollama-1 ollama pull neural-chat
+docker exec open-notebook-local-ollama-1 ollama pull neural-chat
 
 # OR: Even better quality, more VRAM needed
-docker exec open_notebook-ollama-1 ollama pull llama2
+docker exec open-notebook-local-ollama-1 ollama pull llama2
 ```
 
 This downloads the model (will take 1-5 minutes depending on your internet).
@@ -224,7 +224,7 @@ docker compose up -d
 Check if GPU is available:
 ```bash
 # Show available GPUs
-docker exec open_notebook-ollama-1 ollama ps
+docker exec open-notebook-local-ollama-1 ollama ps
 
 # Enable GPU in docker-compose.yml:
 # - OLLAMA_NUM_GPU=1
@@ -236,10 +236,10 @@ Then restart: `docker compose restart ollama`
 
 ```bash
 # List available models
-docker exec open_notebook-ollama-1 ollama list
+docker exec open-notebook-local-ollama-1 ollama list
 
 # Pull additional model
-docker exec open_notebook-ollama-1 ollama pull neural-chat
+docker exec open-notebook-local-ollama-1 ollama pull neural-chat
 ```
 
 ---

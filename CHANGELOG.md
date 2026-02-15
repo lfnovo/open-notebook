@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.1] - 2026-02-14
+
+### Added
+- French (fr-FR) language support (#581)
+- CI test workflow and improved i18n validation (#580)
+- Expose embed `command_id` in note API responses (#545)
+
+### Fixed
+- ElevenLabs TTS credential passthrough via Esperanto update (#578)
+- Handle empty/whitespace source content without retry loop (#576)
+- Increase transformation `max_tokens` and update Esperanto dep (#568)
+- Turn the embedding field into optional (#557)
+
+### Docs
+- Fix docker container names in local setup guides (#577)
+
+### Dependencies
+- Bump langchain-core from 1.2.7 to 1.2.11 (#564)
+- Bump cryptography from 46.0.3 to 46.0.5 (#563)
+
 ## [1.7.0] - 2026-02-10
 
 ### Added

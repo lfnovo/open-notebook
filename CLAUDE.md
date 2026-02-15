@@ -218,4 +218,4 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 ---
 
-**Last Updated**: January 2026 | **Project Version**: 1.2.4+
+**Last Updated**: February 2026 | **Project Version**: 1.7.1

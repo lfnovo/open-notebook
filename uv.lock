@@ -637,15 +637,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.19.4"
+version = "2.19.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/85/8b4761f16675a11fcc3615186ae8fdbb4612b0a05fe54b9ec29176c7301d/esperanto-2.19.4.tar.gz", hash = "sha256:c52506b1c9ff877a8c8723745826589f064af93395fa38a20bb4ad1c6cc71184", size = 833497, upload-time = "2026-02-17T21:17:08.962Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a8/50/cb258aa994d190d327b43cfc760b7d4db7714c1be57158233643606fb3d2/esperanto-2.19.2.tar.gz", hash = "sha256:cfe34893c31619dd65502787d54ab8182445abf9827cbff8bbbe13314201c8c1", size = 832654, upload-time = "2026-02-14T22:05:29.5Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/b4/32094bd554e8b8d574bc4ff6c25ec558f14da30244248e504eef9210250a/esperanto-2.19.4-py3-none-any.whl", hash = "sha256:af605d5f2e63382b2f4426fff97aee59f9e000dcd2d7ddebf94d9fd7199703e9", size = 202495, upload-time = "2026-02-17T21:17:10.083Z" },
+    { url = "https://files.pythonhosted.org/packages/45/cc/807d7c26d775cb512f2fa372613d7bd1939748d66d48873d1d5a2d7b4187/esperanto-2.19.2-py3-none-any.whl", hash = "sha256:c16ffe084dd39f417d9660e4cc1fd0134b680d6d762118fa0007b66c406f6f98", size = 202161, upload-time = "2026-02-14T22:05:28.206Z" },
 ]
 
 [[package]]
@@ -2095,7 +2095,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.7.2"
+version = "1.7.1"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
@@ -2149,7 +2149,7 @@ dev = [
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3,<1" },
     { name = "content-core", specifier = ">=1.14.1,<2" },
-    { name = "esperanto", specifier = ">=2.19.3,<3" },
+    { name = "esperanto", specifier = ">=2.19.2,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
     { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.29.5" },
@@ -2168,7 +2168,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.11.2,<1" },
+    { name = "podcast-creator", specifier = ">=0.9,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -2519,7 +2519,7 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.11.2"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -2533,12 +2533,11 @@ dependencies = [
     { name = "pydub" },
     { name = "python-dotenv" },
     { name = "requests" },
-    { name = "tenacity" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/13/a1e4d01eacd385c018ffc92e74852ff90dbb64c5eb3779eba2862b466a0f/podcast_creator-0.11.2.tar.gz", hash = "sha256:3f5474323980427cc1764ebdb353c41002eac2bf8e28b74decf701f4ca6444dd", size = 480385, upload-time = "2026-02-18T00:03:56.801Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a7/2a/b965715040e9295bc5bfb8aa30869ef26f25815e3bfd0a05dba1d98eb10e/podcast_creator-0.9.0.tar.gz", hash = "sha256:9fd706e616a3ee6b71f34eafa284ed272b8fd24c857db2b4970dc85f646329bf", size = 469820, upload-time = "2026-01-30T01:59:19.509Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/2e/c7e8d0c540d5296d26c43c5e41a7803906b86c3d79e8a57f9ee9a0f2b4ad/podcast_creator-0.11.2-py3-none-any.whl", hash = "sha256:17c9361306a6e7223e7f5d12fd4bdad4514231ce33df73ad3052e35cfdd92fd9", size = 77885, upload-time = "2026-02-18T00:03:55.804Z" },
+    { url = "https://files.pythonhosted.org/packages/41/6d/d576690f1fd8ac5e2d1a830fb799ec848de425c65b401b402e5579c02a9d/podcast_creator-0.9.0-py3-none-any.whl", hash = "sha256:c1a3c36c77fc1c86edb45217d085f96f10ddd83a1fab7c4e5e17c21253af1e16", size = 74109, upload-time = "2026-01-30T01:59:18.355Z" },
 ]
 
 [[package]]

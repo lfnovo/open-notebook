@@ -79,7 +79,6 @@ async def create_note(note_data: NoteCreate):
             note_type=note_type,
         )
         command_id = await new_note.save()
-        command_id = await new_note.save()
 
         # Add to notebook if specified
         if note_data.notebook_id:
@@ -97,6 +96,7 @@ async def create_note(note_data: NoteCreate):
             note_type=new_note.note_type,
             created=str(new_note.created),
             updated=str(new_note.updated),
+            command_id=str(command_id) if command_id else None,
         )
     except HTTPException:
         raise
@@ -160,6 +160,7 @@ async def update_note(note_id: str, note_update: NoteUpdate):
             note_type=note.note_type,
             created=str(note.created),
             updated=str(note.updated),
+            command_id=str(command_id) if command_id else None,
         )
     except HTTPException:
         raise

@@ -13,8 +13,10 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Source, SourceInsight
+from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.context_builder import ContextBuilder
+from open_notebook.utils.error_classifier import classify_error
 
 
 class SourceChatState(TypedDict):
@@ -39,6 +41,18 @@ def call_model_with_source_context(
     3. Handles model provisioning with override support
     4. Tracks context indicators for referenced insights/content
     """
+    try:
+        return _call_model_with_source_context_inner(state, config)
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
+
+
+def _call_model_with_source_context_inner(
+    state: SourceChatState, config: RunnableConfig
+) -> dict:
     source_id = state.get("source_id")
     if not source_id:
         raise ValueError("source_id is required in state")

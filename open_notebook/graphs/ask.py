@@ -11,7 +11,9 @@ from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import vector_search
+from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
+from open_notebook.utils.error_classifier import classify_error
 
 
 class SubGraphState(TypedDict):
@@ -46,33 +48,39 @@ class ThreadState(TypedDict):
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
-    parser = PydanticOutputParser(pydantic_object=Strategy)
-    system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(  # type: ignore[arg-type]
-        data=state  # type: ignore[arg-type]
-    )
-    model = await provision_langchain_model(
-        system_prompt,
-        config.get("configurable", {}).get("strategy_model"),
-        "tools",
-        max_tokens=2000,
-        structured=dict(type="json"),
-    )
-    # model = model.bind_tools(tools)
-    # First get the raw response from the model
-    ai_message = await model.ainvoke(system_prompt)
+    try:
+        parser = PydanticOutputParser(pydantic_object=Strategy)
+        system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(  # type: ignore[arg-type]
+            data=state  # type: ignore[arg-type]
+        )
+        model = await provision_langchain_model(
+            system_prompt,
+            config.get("configurable", {}).get("strategy_model"),
+            "tools",
+            max_tokens=2000,
+            structured=dict(type="json"),
+        )
+        # model = model.bind_tools(tools)
+        # First get the raw response from the model
+        ai_message = await model.ainvoke(system_prompt)
 
-    # Clean the thinking content from the response
-    message_content = (
-        ai_message.content
-        if isinstance(ai_message.content, str)
-        else str(ai_message.content)
-    )
-    cleaned_content = clean_thinking_content(message_content)
+        # Clean the thinking content from the response
+        message_content = (
+            ai_message.content
+            if isinstance(ai_message.content, str)
+            else str(ai_message.content)
+        )
+        cleaned_content = clean_thinking_content(message_content)
 
-    # Parse the cleaned JSON content
-    strategy = parser.parse(cleaned_content)
+        # Parse the cleaned JSON content
+        strategy = parser.parse(cleaned_content)
 
-    return {"strategy": strategy}
+        return {"strategy": strategy}
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
 
 
 async def trigger_queries(state: ThreadState, config: RunnableConfig):
@@ -91,47 +99,59 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
 
 
 async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
-    payload = state
-    # if state["type"] == "text":
-    #     results = text_search(state["term"], 10, True, True)
-    # else:
-    results = await vector_search(state["term"], 10, True, True)
-    if len(results) == 0:
-        return {"answers": []}
-    payload["results"] = results
-    ids = [r["id"] for r in results]
-    payload["ids"] = ids
-    system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
-    model = await provision_langchain_model(
-        system_prompt,
-        config.get("configurable", {}).get("answer_model"),
-        "tools",
-        max_tokens=2000,
-    )
-    ai_message = await model.ainvoke(system_prompt)
-    ai_content = (
-        ai_message.content
-        if isinstance(ai_message.content, str)
-        else str(ai_message.content)
-    )
-    return {"answers": [clean_thinking_content(ai_content)]}
+    try:
+        payload = state
+        # if state["type"] == "text":
+        #     results = text_search(state["term"], 10, True, True)
+        # else:
+        results = await vector_search(state["term"], 10, True, True)
+        if len(results) == 0:
+            return {"answers": []}
+        payload["results"] = results
+        ids = [r["id"] for r in results]
+        payload["ids"] = ids
+        system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
+        model = await provision_langchain_model(
+            system_prompt,
+            config.get("configurable", {}).get("answer_model"),
+            "tools",
+            max_tokens=2000,
+        )
+        ai_message = await model.ainvoke(system_prompt)
+        ai_content = (
+            ai_message.content
+            if isinstance(ai_message.content, str)
+            else str(ai_message.content)
+        )
+        return {"answers": [clean_thinking_content(ai_content)]}
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
 
 
 async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict:
-    system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)  # type: ignore[arg-type]
-    model = await provision_langchain_model(
-        system_prompt,
-        config.get("configurable", {}).get("final_answer_model"),
-        "tools",
-        max_tokens=2000,
-    )
-    ai_message = await model.ainvoke(system_prompt)
-    final_content = (
-        ai_message.content
-        if isinstance(ai_message.content, str)
-        else str(ai_message.content)
-    )
-    return {"final_answer": clean_thinking_content(final_content)}
+    try:
+        system_prompt = Prompter(prompt_template="ask/final_answer").render(data=state)  # type: ignore[arg-type]
+        model = await provision_langchain_model(
+            system_prompt,
+            config.get("configurable", {}).get("final_answer_model"),
+            "tools",
+            max_tokens=2000,
+        )
+        ai_message = await model.ainvoke(system_prompt)
+        final_content = (
+            ai_message.content
+            if isinstance(ai_message.content, str)
+            else str(ai_message.content)
+        )
+        return {"final_answer": clean_thinking_content(final_content)}
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
 
 
 agent_state = StateGraph(ThreadState)

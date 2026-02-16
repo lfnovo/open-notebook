@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-02-16
+
+### Added
+- Error classification utility that maps LLM provider errors to user-friendly messages (#506)
+- Global exception handlers in FastAPI for all custom exception types with proper HTTP status codes
+- `getApiErrorMessage()` frontend helper that falls back to backend messages when no i18n mapping exists
+
+### Fixed
+- LLM errors (invalid API key, wrong model, rate limits) now show descriptive messages instead of "An unexpected error occurred"
+- SSE streaming error events in source chat and ask hooks were swallowed by inner JSON parse catch blocks
+- Transformation execution errors were caught and re-wrapped as generic 500s instead of using proper status codes
+
+### Changed
+- `ValueError` replaced with `ConfigurationError` in model provisioning for proper error classification
+- `ConfigurationError` added to command retry `stop_on` lists to avoid retrying permanent config failures
+
 ## [1.7.1] - 2026-02-14
 
 ### Added

@@ -36,7 +36,7 @@ dependencies = [
     "ai-prompter>=0.3,<1",
     "esperanto>=2.19.3,<3",
     "surrealdb>=1.0.4",
-    "podcast-creator>=0.9,<1",
+    "podcast-creator>=0.9.1,<1",
     "surreal-commands>=1.3.1,<2",
     "numpy>=2.4.1",
 ]

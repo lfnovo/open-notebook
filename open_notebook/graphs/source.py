@@ -76,6 +76,21 @@ async def content_process(state: SourceState) -> dict:
         # Continue without custom audio model (content-core will use its default)
 
     processed_state = await extract_content(content_state)
+
+    if not processed_state.content or not processed_state.content.strip():
+        url = processed_state.url or ""
+        if url and ("youtube.com" in url or "youtu.be" in url):
+            raise ValueError(
+                "Could not extract content from this YouTube video. "
+                "No transcript or subtitles are available. "
+                "Try configuring a Speech-to-Text model in Settings "
+                "to transcribe the audio instead."
+            )
+        raise ValueError(
+            "Could not extract any text content from this source. "
+            "The content may be empty, inaccessible, or in an unsupported format."
+        )
+
     return {"content_state": processed_state}
 
 

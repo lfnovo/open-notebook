@@ -2168,7 +2168,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.9,<1" },
+    { name = "podcast-creator", specifier = ">=0.9.1,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -2519,7 +2519,7 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -2535,9 +2535,9 @@ dependencies = [
     { name = "requests" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/2a/b965715040e9295bc5bfb8aa30869ef26f25815e3bfd0a05dba1d98eb10e/podcast_creator-0.9.0.tar.gz", hash = "sha256:9fd706e616a3ee6b71f34eafa284ed272b8fd24c857db2b4970dc85f646329bf", size = 469820, upload-time = "2026-01-30T01:59:19.509Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/de/f7ee60b502dad23b724d669be31fdeb6a790e306968c2cd6a079388262be/podcast_creator-0.9.1.tar.gz", hash = "sha256:177ae68b18c7efd815e555dcec3c644e541bd053e2c63669fd0a18a008b2f374", size = 470751, upload-time = "2026-02-16T17:58:44.275Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/6d/d576690f1fd8ac5e2d1a830fb799ec848de425c65b401b402e5579c02a9d/podcast_creator-0.9.0-py3-none-any.whl", hash = "sha256:c1a3c36c77fc1c86edb45217d085f96f10ddd83a1fab7c4e5e17c21253af1e16", size = 74109, upload-time = "2026-01-30T01:59:18.355Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/d7/687284d059fc490a19d60af8f07a66b19895e15946e7ced143096d3c5ea0/podcast_creator-0.9.1-py3-none-any.whl", hash = "sha256:e3e513f2aacccd96c15bcab891216ff447568551c4392b3f12575aa0cf0cbeee", size = 74421, upload-time = "2026-02-16T17:58:42.818Z" },
 ]
 
 [[package]]

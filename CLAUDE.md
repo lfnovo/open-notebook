@@ -36,7 +36,7 @@ This file provides architectural guidance for contributors working on Open Noteb
 │         Database (SurrealDB)                            │
 │         Graph database @ port 8000                      │
 ├─────────────────────────────────────────────────────────┤
-│ - Records: Notebook, Source, Note, ChatSession, etc.    │
+│ - Records: Notebook, Source, Note, ChatSession, Credential│
 │ - Relationships: source-to-notebook, note-to-source     │
 │ - Vector embeddings for semantic search                 │
 └─────────────────────────────────────────────────────────┘
@@ -98,7 +98,8 @@ User documentation is at @docs/
 
 ### 3. Multi-Provider AI
 - **Esperanto library**: Unified interface to 8+ AI providers
-- **ModelManager**: Factory pattern with fallback logic
+- **Credential system**: Individual encrypted credential records per provider; models link to credentials for direct config
+- **ModelManager**: Factory pattern with fallback logic; uses credential config when available, env vars as fallback
 - **Smart selection**: Detects large contexts, prefers long-context models
 - **Override support**: Per-request model configuration
 
@@ -217,4 +218,4 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 ---
 
-**Last Updated**: January 2026 | **Project Version**: 1.2.4+
+**Last Updated**: February 2026 | **Project Version**: 1.7.1

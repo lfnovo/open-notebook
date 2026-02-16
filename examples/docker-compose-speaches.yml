@@ -1,0 +1,125 @@
+# Docker Compose with Speaches (Local TTS/STT)
+#
+# This setup includes Speaches for free, private speech processing:
+# - Text-to-Speech (TTS): Generate podcast audio locally
+# - Speech-to-Text (STT): Transcribe audio/video content locally
+#
+# Why Speaches?
+# - Free: No per-minute/per-character costs
+# - Private: Audio never leaves your machine
+# - Offline: Works without internet
+# - OpenAI-compatible: Drop-in replacement for OpenAI TTS/STT
+#
+# Usage:
+#   1. Copy this file to your project folder as docker-compose.yml
+#   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
+#   3. Run: docker compose up -d
+#   4. Download models (see instructions below)
+#   5. Configure in UI: Settings → API Keys → Add OpenAI-Compatible
+#
+# Full documentation:
+# - TTS setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
+# - STT setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-stt.md
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    restart: always
+    pull_policy: always
+
+  speaches:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    container_name: speaches
+    ports:
+      - "8969:8000"
+    volumes:
+      - hf-hub-cache:/home/ubuntu/.cache/huggingface/hub
+    restart: unless-stopped
+    # For GPU acceleration, use: ghcr.io/speaches-ai/speaches:latest-cuda
+    # and add GPU device mapping (see docs/5-CONFIGURATION/local-tts.md)
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    environment:
+      # REQUIRED: Change this to your own secret string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+
+      # Database connection
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=open_notebook
+    volumes:
+      - ./notebook_data:/app/data
+    depends_on:
+      - surrealdb
+      - speaches
+    restart: always
+    pull_policy: always
+
+volumes:
+  hf-hub-cache:
+
+# ==========================================
+# AFTER STARTING: Download Speech Models
+# ==========================================
+#
+# For TTS (Text-to-Speech):
+#   docker compose exec speaches uv tool run speaches-cli model download speaches-ai/Kokoro-82M-v1.0-ONNX
+#
+# For STT (Speech-to-Text):
+#   docker compose exec speaches uv tool run speaches-cli model download Systran/faster-whisper-small
+#
+# ==========================================
+# CONFIGURATION IN OPEN NOTEBOOK
+# ==========================================
+#
+# 1. Go to Settings → API Keys
+# 2. Click "Add Credential" → Select "OpenAI-Compatible"
+# 3. Configure:
+#    - Name: "Local Speaches"
+#    - Base URL for TTS: http://host.docker.internal:8969/v1  (macOS/Windows)
+#                    or: http://172.17.0.1:8969/v1           (Linux)
+#    - Base URL for STT: (same as TTS)
+# 4. Click Save → Test Connection
+#
+# 5. Go to Settings → Models
+# 6. Add TTS Model:
+#    - Provider: openai_compatible
+#    - Model Name: speaches-ai/Kokoro-82M-v1.0-ONNX
+#    - Display Name: Local TTS
+#
+# 7. Add STT Model:
+#    - Provider: openai_compatible
+#    - Model Name: Systran/faster-whisper-small
+#    - Display Name: Local Whisper
+#
+# ==========================================
+# TESTING
+# ==========================================
+#
+# Test TTS:
+#   curl "http://localhost:8969/v1/audio/speech" -s \
+#     -H "Content-Type: application/json" \
+#     --output test.mp3 \
+#     --data '{"input": "Hello, local TTS works!", "model": "speaches-ai/Kokoro-82M-v1.0-ONNX", "voice": "af_bella"}'
+#
+# Test STT:
+#   curl "http://localhost:8969/v1/audio/transcriptions" \
+#     -F "file=@test.mp3" \
+#     -F "model=Systran/faster-whisper-small"
+#
+# Available voices: af_bella, af_sarah, am_adam, am_michael, bf_emma, bm_george
+# Available models: See docs/5-CONFIGURATION/local-stt.md for model sizes

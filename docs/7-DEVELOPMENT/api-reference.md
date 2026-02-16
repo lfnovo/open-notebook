@@ -75,6 +75,16 @@ Instead of memorizing endpoints, use the interactive API docs:
 - `GET /models/defaults` - Current defaults
 - `POST /models/config` - Set defaults
 
+**Credentials** - Manage AI provider credentials
+- `GET/POST /credentials` - List and create credentials
+- `GET/PUT/DELETE /credentials/{id}` - CRUD operations
+- `POST /credentials/{id}/test` - Test connection
+- `POST /credentials/{id}/discover` - Discover models from provider
+- `POST /credentials/{id}/register-models` - Register discovered models
+- `GET /credentials/status` - Provider status overview
+- `GET /credentials/env-status` - Environment variable status
+- `POST /credentials/migrate-from-env` - Migrate env vars to credentials
+
 **Health & Status**
 - `GET /health` - Health check
 - `GET /commands/{id}` - Track async operations

@@ -62,10 +62,11 @@ make database
 
 ```bash
 cp .env.example .env
-# Edit .env and add your API key:
-# OPENAI_API_KEY=sk-...
-# (or ANTHROPIC_API_KEY, GROQ_API_KEY, etc.)
+# Edit .env and set:
+# OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ```
+
+After starting the app, configure AI providers via the **Settings → API Keys** UI in the browser.
 
 ### 5. Start API
 
@@ -87,6 +88,14 @@ cd frontend && npm install && npm run dev
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:5055/docs
 - **Database**: http://localhost:8000
+
+### 8. Configure AI Provider
+
+1. Open http://localhost:3000
+2. Go to **Settings** → **API Keys**
+3. Click **Add Credential** → Select your provider → Paste API key
+4. Click **Save**, then **Test Connection**
+5. Click **Discover Models** → **Register Models**
 
 ---
 

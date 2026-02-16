@@ -17,6 +17,7 @@ from api.routers import (
     chat,
     config,
     context,
+    credentials,
     embedding,
     embedding_rebuild,
     episode_profiles,
@@ -34,6 +35,7 @@ from api.routers import (
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
+from open_notebook.utils.encryption import get_secret_from_env
 
 # Import commands to register them in the API process
 try:
@@ -48,8 +50,20 @@ async def lifespan(app: FastAPI):
     Lifespan event handler for the FastAPI application.
     Runs database migrations automatically on startup.
     """
-    # Startup: Run database migrations
+    import os
+
+    # Startup: Security checks
     logger.info("Starting API initialization...")
+
+    # Security check: Encryption key
+    if not get_secret_from_env("OPEN_NOTEBOOK_ENCRYPTION_KEY"):
+        logger.warning(
+            "OPEN_NOTEBOOK_ENCRYPTION_KEY not set. "
+            "API key encryption will fail until this is configured. "
+            "Set OPEN_NOTEBOOK_ENCRYPTION_KEY to any secret string."
+        )
+
+    # Run database migrations
 
     try:
         migration_manager = AsyncMigrationManager()
@@ -162,6 +176,7 @@ app.include_router(episode_profiles.router, prefix="/api", tags=["episode-profil
 app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profiles"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
+app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 
 
 @app.get("/")

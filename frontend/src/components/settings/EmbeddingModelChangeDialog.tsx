@@ -68,7 +68,7 @@ export function EmbeddingModelChangeDialog({
               </p>
 
               <div className="bg-muted p-4 rounded-md space-y-2">
-                <p className="font-semibold text-foreground">⚠️ {t.models.rebuildRequired}</p>
+                <p className="font-semibold text-foreground">{t.models.rebuildRequired}</p>
                 <p className="text-sm">
                   {t.models.rebuildReason}
                 </p>

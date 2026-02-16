@@ -101,8 +101,13 @@ async def save_source(state: SourceState) -> dict:
     # No need to create them here to avoid duplicate edges
 
     if state["embed"]:
-        logger.debug("Embedding content for vector search")
-        await source.vectorize()
+        if source.full_text and source.full_text.strip():
+            logger.debug("Embedding content for vector search")
+            await source.vectorize()
+        else:
+            logger.warning(
+                f"Source {source.id} has no text content to embed, skipping vectorization"
+            )
 
     return {"source": source}
 

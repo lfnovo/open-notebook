@@ -142,8 +142,8 @@ Now that you've chosen a provider, follow the detailed setup instructions:
 → **[AI Providers Configuration Guide](../5-CONFIGURATION/ai-providers.md)**
 
 This guide includes:
-- Step-by-step setup instructions for each provider
-- Environment variable configuration
+- Step-by-step setup instructions for each provider via the Settings UI
+- How to add credentials, test connections, and discover models
 - Model selection and recommendations
 - Provider-specific troubleshooting
 - Hardware requirements (for local providers)
@@ -184,11 +184,11 @@ Any use: Free (electricity only)
 
 ## Next Steps
 
-1. ✅ **You've chosen a provider** (from this comparison guide)
-2. 📖 **Follow the setup guide**: [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
-3. ⚙️ **Configure your environment** (detailed in the setup guide)
-4. 🧪 **Test your setup** in Settings → Models
-5. 🚀 **Start using Open Notebook!**
+1. **You've chosen a provider** (from this comparison guide)
+2. **Follow the setup guide**: [AI Providers Configuration](../5-CONFIGURATION/ai-providers.md)
+3. **Add your credential** in Settings → API Keys
+4. **Test your connection** and discover models
+5. **Start using Open Notebook!**
 
 ---
 

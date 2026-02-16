@@ -13,7 +13,9 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
+from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
+from open_notebook.utils.error_classifier import classify_error
 
 
 class ThreadState(TypedDict):
@@ -25,59 +27,65 @@ class ThreadState(TypedDict):
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
-    system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
-    payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
-    model_id = config.get("configurable", {}).get("model_id") or state.get(
-        "model_override"
-    )
-
-    # Handle async model provisioning from sync context
-    def run_in_new_loop():
-        """Run the async function in a new event loop"""
-        new_loop = asyncio.new_event_loop()
-        try:
-            asyncio.set_event_loop(new_loop)
-            return new_loop.run_until_complete(
-                provision_langchain_model(
-                    str(payload), model_id, "chat", max_tokens=8192
-                )
-            )
-        finally:
-            new_loop.close()
-            asyncio.set_event_loop(None)
-
     try:
-        # Try to get the current event loop
-        asyncio.get_running_loop()
-        # If we're in an event loop, run in a thread with a new loop
-        import concurrent.futures
-
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(run_in_new_loop)
-            model = future.result()
-    except RuntimeError:
-        # No event loop running, safe to use asyncio.run()
-        model = asyncio.run(
-            provision_langchain_model(
-                str(payload),
-                model_id,
-                "chat",
-                max_tokens=8192,
-            )
+        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
+        payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
+        model_id = config.get("configurable", {}).get("model_id") or state.get(
+            "model_override"
         )
 
-    ai_message = model.invoke(payload)
+        # Handle async model provisioning from sync context
+        def run_in_new_loop():
+            """Run the async function in a new event loop"""
+            new_loop = asyncio.new_event_loop()
+            try:
+                asyncio.set_event_loop(new_loop)
+                return new_loop.run_until_complete(
+                    provision_langchain_model(
+                        str(payload), model_id, "chat", max_tokens=8192
+                    )
+                )
+            finally:
+                new_loop.close()
+                asyncio.set_event_loop(None)
 
-    # Clean thinking content from AI response (e.g., <think>...</think> tags)
-    content = (
-        ai_message.content
-        if isinstance(ai_message.content, str)
-        else str(ai_message.content)
-    )
-    cleaned_content = clean_thinking_content(content)
-    cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+        try:
+            # Try to get the current event loop
+            asyncio.get_running_loop()
+            # If we're in an event loop, run in a thread with a new loop
+            import concurrent.futures
 
-    return {"messages": cleaned_message}
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(run_in_new_loop)
+                model = future.result()
+        except RuntimeError:
+            # No event loop running, safe to use asyncio.run()
+            model = asyncio.run(
+                provision_langchain_model(
+                    str(payload),
+                    model_id,
+                    "chat",
+                    max_tokens=8192,
+                )
+            )
+
+        ai_message = model.invoke(payload)
+
+        # Clean thinking content from AI response (e.g., <think>...</think> tags)
+        content = (
+            ai_message.content
+            if isinstance(ai_message.content, str)
+            else str(ai_message.content)
+        )
+        cleaned_content = clean_thinking_content(content)
+        cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
+
+        return {"messages": cleaned_message}
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
 
 
 conn = sqlite3.connect(

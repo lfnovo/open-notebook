@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
 import { AskStreamEvent } from '@/lib/types/search'
 
@@ -122,8 +122,12 @@ export function useAsk() {
                 throw new Error(data.message || 'Stream error occurred')
               }
             } catch (e) {
-              console.error('Error parsing SSE data:', e, 'Line:', line)
-              // Don't throw - continue processing other lines
+              if (e instanceof SyntaxError) {
+                console.error('Error parsing SSE data:', e, 'Line:', line)
+                // Don't throw - continue processing other lines
+              } else {
+                throw e
+              }
             }
           }
         }
@@ -144,7 +148,7 @@ export function useAsk() {
       }))
 
       toast.error(t('apiErrors.askFailed'), {
-        description: t(getApiErrorKey(errorMessage))
+        description: getApiErrorMessage(errorMessage, (key) => t(key))
       })
     }
   }, [t])

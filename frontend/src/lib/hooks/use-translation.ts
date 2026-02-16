@@ -78,12 +78,6 @@ export function useTranslation() {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (target as any)[prop];
           }
-          
-          // Handle function's own properties
-          if (prop in target) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            return (target as any)[prop];
-          }
 
           if (typeof prop !== 'string') return undefined;
 
@@ -94,7 +88,9 @@ export function useTranslation() {
 
           const currentPath = path ? `${path}.${prop}` : prop;
 
-          // Try to get the translation
+          // Try to get the translation first (before checking target properties,
+          // since target is a function and has built-in properties like 'name'
+          // that would shadow translation keys)
           const result = i18nTranslateCopy(currentPath, { returnObjects: true });
 
           // If it's a leaf string, return it directly

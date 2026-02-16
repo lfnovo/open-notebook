@@ -75,7 +75,7 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="notebook-name">{t.common.name || 'Name'} *</Label>
+            <Label htmlFor="notebook-name">{t.common.name} *</Label>
             <Input
               id="notebook-name"
               {...register('name')}

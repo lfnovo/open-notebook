@@ -542,7 +542,7 @@ export function AddSourceDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
           <WizardContainer
             currentStep={currentStep}
             steps={WIZARD_STEPS}

@@ -80,11 +80,18 @@ def classify_error(exception: BaseException) -> tuple[type[OpenNotebookError], s
     for keywords, exc_class, message in _CLASSIFICATION_RULES:
         for keyword in keywords:
             if keyword in combined:
-                user_message = message if message is not None else str(exception)
+                user_message = message if message is not None else _truncate(str(exception))
                 return exc_class, user_message
 
     # Unclassified error - log for future improvement
     logger.warning(
         f"Unclassified LLM error ({type(exception).__name__}): {exception}"
     )
-    return ExternalServiceError, f"AI service error: {exception}"
+    return ExternalServiceError, f"AI service error: {_truncate(str(exception))}"
+
+
+def _truncate(text: str, max_length: int = 200) -> str:
+    """Truncate text to max_length to avoid leaking verbose internal details."""
+    if len(text) <= max_length:
+        return text
+    return text[:max_length] + "..."

@@ -255,7 +255,7 @@ class ModelManager:
 
         try:
             return await self.get_model(model_id, **kwargs)
-        except ValueError as e:
+        except (ValueError, ConfigurationError) as e:
             logger.error(
                 f"Failed to load default model for type '{model_type}': {e}. "
                 f"The configured model_id '{model_id}' may have been deleted or misconfigured. "

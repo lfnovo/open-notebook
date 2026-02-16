@@ -12,6 +12,16 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
+from open_notebook.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ExternalServiceError,
+    InvalidInputError,
+    NetworkError,
+    NotFoundError,
+    OpenNotebookError,
+    RateLimitError,
+)
 from api.routers import (
     auth,
     chat,
@@ -151,6 +161,88 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
             "Access-Control-Allow-Methods": "*",
             "Access-Control-Allow-Headers": "*",
         },
+    )
+
+
+def _cors_headers(request: Request) -> dict[str, str]:
+    origin = request.headers.get("origin", "*")
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    }
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_error_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(
+        status_code=404,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(InvalidInputError)
+async def invalid_input_error_handler(request: Request, exc: InvalidInputError):
+    return JSONResponse(
+        status_code=400,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(AuthenticationError)
+async def authentication_error_handler(request: Request, exc: AuthenticationError):
+    return JSONResponse(
+        status_code=401,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(RateLimitError)
+async def rate_limit_error_handler(request: Request, exc: RateLimitError):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(ConfigurationError)
+async def configuration_error_handler(request: Request, exc: ConfigurationError):
+    return JSONResponse(
+        status_code=422,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(NetworkError)
+async def network_error_handler(request: Request, exc: NetworkError):
+    return JSONResponse(
+        status_code=502,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(ExternalServiceError)
+async def external_service_error_handler(request: Request, exc: ExternalServiceError):
+    return JSONResponse(
+        status_code=502,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(OpenNotebookError)
+async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
+    return JSONResponse(
+        status_code=500,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
     )
 
 

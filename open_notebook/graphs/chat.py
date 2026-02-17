@@ -16,6 +16,7 @@ from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
+from open_notebook.utils.text_utils import extract_text_content
 
 
 class ThreadState(TypedDict):
@@ -72,11 +73,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
         ai_message = model.invoke(payload)
 
         # Clean thinking content from AI response (e.g., <think>...</think> tags)
-        content = (
-            ai_message.content
-            if isinstance(ai_message.content, str)
-            else str(ai_message.content)
-        )
+        content = extract_text_content(ai_message.content)
         cleaned_content = clean_thinking_content(content)
         cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
 

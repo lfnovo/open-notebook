@@ -14,6 +14,7 @@ from open_notebook.domain.notebook import vector_search
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
+from open_notebook.utils.text_utils import extract_text_content
 
 
 class SubGraphState(TypedDict):
@@ -65,11 +66,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
         ai_message = await model.ainvoke(system_prompt)
 
         # Clean the thinking content from the response
-        message_content = (
-            ai_message.content
-            if isinstance(ai_message.content, str)
-            else str(ai_message.content)
-        )
+        message_content = extract_text_content(ai_message.content)
         cleaned_content = clean_thinking_content(message_content)
 
         # Parse the cleaned JSON content
@@ -118,11 +115,7 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
             max_tokens=2000,
         )
         ai_message = await model.ainvoke(system_prompt)
-        ai_content = (
-            ai_message.content
-            if isinstance(ai_message.content, str)
-            else str(ai_message.content)
-        )
+        ai_content = extract_text_content(ai_message.content)
         return {"answers": [clean_thinking_content(ai_content)]}
     except OpenNotebookError:
         raise
@@ -141,11 +134,7 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
             max_tokens=2000,
         )
         ai_message = await model.ainvoke(system_prompt)
-        final_content = (
-            ai_message.content
-            if isinstance(ai_message.content, str)
-            else str(ai_message.content)
-        )
+        final_content = extract_text_content(ai_message.content)
         return {"final_answer": clean_thinking_content(final_content)}
     except OpenNotebookError:
         raise

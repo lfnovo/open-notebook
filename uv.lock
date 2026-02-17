@@ -637,15 +637,15 @@ wheels = [
 
 [[package]]
 name = "esperanto"
-version = "2.19.3"
+version = "2.19.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b1/9d/51d65e448e52aa76ceaaa9eb4d50cebb7c16ead6508eb56bf159cc22718d/esperanto-2.19.3.tar.gz", hash = "sha256:3be09ac90bd976b9299f26ef829bd1a46d3aa6137e09700032512cad883d531a", size = 832672, upload-time = "2026-02-15T02:07:48.58Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8a/85/8b4761f16675a11fcc3615186ae8fdbb4612b0a05fe54b9ec29176c7301d/esperanto-2.19.4.tar.gz", hash = "sha256:c52506b1c9ff877a8c8723745826589f064af93395fa38a20bb4ad1c6cc71184", size = 833497, upload-time = "2026-02-17T21:17:08.962Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d2/9b/fc5963cf21165b1e4f135b365ce7d78c9d8fd64e959434ff05521ca11c30/esperanto-2.19.3-py3-none-any.whl", hash = "sha256:a0dfe5f65e24a4b892fbe43c0abc091ae10406bd40e9aed9b0372f75f7358d40", size = 202177, upload-time = "2026-02-15T02:07:50.213Z" },
+    { url = "https://files.pythonhosted.org/packages/70/b4/32094bd554e8b8d574bc4ff6c25ec558f14da30244248e504eef9210250a/esperanto-2.19.4-py3-none-any.whl", hash = "sha256:af605d5f2e63382b2f4426fff97aee59f9e000dcd2d7ddebf94d9fd7199703e9", size = 202495, upload-time = "2026-02-17T21:17:10.083Z" },
 ]
 
 [[package]]
@@ -2168,7 +2168,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.9.4,<1" },
+    { name = "podcast-creator", specifier = ">=0.10,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -2519,7 +2519,7 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.9.4"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -2535,9 +2535,9 @@ dependencies = [
     { name = "requests" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/97/4a/9f23b55659d7d236645593a4b75141837ed88568ba6a6a370b01d97827e6/podcast_creator-0.9.4.tar.gz", hash = "sha256:9e40a77c105d0b02f04a3eef7881a34454ef556fabd8297fe68d50307ca5f926", size = 472357, upload-time = "2026-02-17T20:21:57.257Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c5/14/d6e502de86f4d6df9698c19dbf2e683e7a1e477e6dceb614d82e90216ddd/podcast_creator-0.10.0.tar.gz", hash = "sha256:afc8a32d72d332b9f9c42f02c2f8266fe19037333563784855ea480b58875be3", size = 476574, upload-time = "2026-02-17T21:22:28.583Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0c/ac/b331aae683771964f0574189c8dbc1bc0c7b22aca9a376d61c3248180848/podcast_creator-0.9.4-py3-none-any.whl", hash = "sha256:2bd1138cbd1a4deda9da657e7e2b9c8a7d8c0cc43c649506af4837aeb708d46f", size = 74844, upload-time = "2026-02-17T20:21:58.271Z" },
+    { url = "https://files.pythonhosted.org/packages/ac/1a/8829c8da83758077cc5a49d5c5257a80559f58610c754134e08e4a7328dd/podcast_creator-0.10.0-py3-none-any.whl", hash = "sha256:b5a8c298db4749a004c7c4b1987c92728299aa73734c40be9576e9bab233145c", size = 75783, upload-time = "2026-02-17T21:22:30.392Z" },
 ]
 
 [[package]]

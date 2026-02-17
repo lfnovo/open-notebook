@@ -129,6 +129,24 @@ class PodcastEpisode(ObjectModel):
         except Exception:
             return "unknown"
 
+    async def get_job_detail(self) -> dict:
+        """Get status and error_message of the associated command"""
+        if not self.command:
+            return {"status": None, "error_message": None}
+
+        try:
+            from surreal_commands import get_command_status
+
+            status = await get_command_status(str(self.command))
+            if not status:
+                return {"status": "unknown", "error_message": None}
+            return {
+                "status": status.status,
+                "error_message": getattr(status, "error_message", None),
+            }
+        except Exception:
+            return {"status": "unknown", "error_message": None}
+
     @field_validator("command", mode="before")
     @classmethod
     def parse_command(cls, value):

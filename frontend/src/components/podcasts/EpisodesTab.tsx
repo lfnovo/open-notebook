@@ -3,7 +3,7 @@
 import { useCallback, useState } from 'react'
 import { AlertCircle, Loader2, RefreshCcw } from 'lucide-react'
 
-import { useDeletePodcastEpisode, usePodcastEpisodes } from '@/lib/hooks/use-podcasts'
+import { useDeletePodcastEpisode, usePodcastEpisodes, useRetryPodcastEpisode } from '@/lib/hooks/use-podcasts'
 import { EpisodeCard } from '@/components/podcasts/EpisodeCard'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
@@ -62,6 +62,7 @@ export function EpisodesTab() {
     isFetching,
   } = usePodcastEpisodes()
   const deleteEpisode = useDeletePodcastEpisode()
+  const retryEpisode = useRetryPodcastEpisode()
 
   const handleRefresh = useCallback(() => {
     void refetch()
@@ -70,6 +71,11 @@ export function EpisodesTab() {
   const handleDelete = useCallback(
     (episodeId: string) => deleteEpisode.mutateAsync(episodeId),
     [deleteEpisode]
+  )
+
+  const handleRetry = useCallback(
+    (episodeId: string) => retryEpisode.mutateAsync(episodeId),
+    [retryEpisode]
   )
 
   const emptyState = !isLoading && episodes.length === 0
@@ -158,6 +164,8 @@ export function EpisodesTab() {
                   episode={episode}
                   onDelete={handleDelete}
                   deleting={deleteEpisode.isPending}
+                  onRetry={handleRetry}
+                  retrying={retryEpisode.isPending}
                 />
               ))}
             </div>

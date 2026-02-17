@@ -39,6 +39,13 @@ export const podcastsApi = {
     await apiClient.delete(`/podcasts/episodes/${episodeId}`)
   },
 
+  retryEpisode: async (episodeId: string) => {
+    const response = await apiClient.post<{ job_id: string; message: string }>(
+      `/podcasts/episodes/${episodeId}/retry`
+    )
+    return response.data
+  },
+
   listEpisodeProfiles: async () => {
     const response = await apiClient.get<EpisodeProfile[]>('/episode-profiles')
     return response.data

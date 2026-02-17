@@ -699,6 +699,12 @@ export const frFR = {
     speakerCountMax: "Vous pouvez configurer jusqu'à 4 intervenants",
     delete: "Supprimer",
     failedToDelete: "Échec de la suppression du podcast",
+    retry: "Réessayer",
+    retrying: "Nouvelle tentative…",
+    retryStarted: "Nouvelle tentative lancée",
+    retryStartedDesc: "Un nouveau travail de génération de podcast a été soumis.",
+    failedToRetry: "Échec de la nouvelle tentative",
+    errorDetails: "Détails de l'erreur",
   },
   settings: {
     contentProcessing: "Traitement du contenu",

@@ -167,7 +167,7 @@ services:
     container_name: open-notebook
     environment:
       - API_URL=https://notebook.example.com
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
       - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD}
     volumes:
       - ./notebook_data:/app/data
@@ -340,7 +340,7 @@ services:
     pull_policy: always
     environment:
       - API_URL=https://api.notebook.example.com
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
     # Don't expose ports (nginx handles routing)
 ```
 
@@ -409,7 +409,7 @@ services:
     image: lfnovo/open_notebook_api:v1-latest
     pull_policy: always
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
     ports:
       - "5055:5055"
     depends_on:
@@ -616,7 +616,7 @@ You'll see which API URL is being used
 curl https://your-domain.com/api/config
 
 # Expected output:
-{"openai_api_key_set":true,"anthropic_api_key_set":false,...}
+{"status":"ok","credentials_configured":true,...}
 ```
 
 **Step 3: Check Docker logs**

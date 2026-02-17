@@ -4,7 +4,7 @@ import { sourcesApi } from '@/lib/api/sources'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import {
   CreateSourceRequest,
   UpdateSourceRequest,
@@ -131,7 +131,7 @@ export function useCreateSource() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToAddSource)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToAddSource),
         variant: 'destructive',
       })
     },
@@ -158,7 +158,7 @@ export function useUpdateSource() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToUpdateSource)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToUpdateSource),
         variant: 'destructive',
       })
     },
@@ -185,7 +185,7 @@ export function useDeleteSource() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToDeleteSource)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToDeleteSource),
         variant: 'destructive',
       })
     },
@@ -212,7 +212,7 @@ export function useFileUpload() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToUploadFile)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToUploadFile),
         variant: 'destructive',
       })
     },
@@ -270,7 +270,7 @@ export function useRetrySource() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToRetry)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToRetry),
         variant: 'destructive',
       })
     },
@@ -332,7 +332,7 @@ export function useAddSourcesToNotebook() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToAddSourcesToNotebook)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToAddSourcesToNotebook),
         variant: 'destructive',
       })
     },
@@ -366,7 +366,7 @@ export function useRemoveSourceFromNotebook() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: t(getApiErrorKey(error, t.sources.failedToRemoveSourceFromNotebook)),
+        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToRemoveSourceFromNotebook),
         variant: 'destructive',
       })
     },

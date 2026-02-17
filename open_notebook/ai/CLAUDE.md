@@ -19,8 +19,10 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 ### models.py
 
 #### Model (ObjectModel)
-- Database record: name, provider, type (language/embedding/speech_to_text/text_to_speech)
+- Database record: name, provider, type (language/embedding/speech_to_text/text_to_speech), credential (optional link to Credential record)
 - `get_models_by_type()`: Async query to fetch all models of a specific type
+- `get_credential_obj()`: Fetches linked Credential object (if credential field set)
+- `get_by_credential(credential_id)`: Class method to find all models linked to a credential
 - Stores provider-model pairs for AI factory instantiation
 
 #### DefaultModels (RecordModel)
@@ -31,7 +33,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 
 #### ModelManager
 - Stateless factory for instantiating AI models
-- `get_model(model_id)`: Retrieves Model by ID, creates via AIFactory.create_* based on type
+- `get_model(model_id)`: Retrieves Model by ID; if model has linked credential, uses `credential.to_esperanto_config()` for provider config; otherwise falls back to env var provisioning via `key_provider`
 - `get_defaults()`: Fetches DefaultModels configuration
 - `get_default_model(model_type)`: Smart lookup (e.g., "chat" → default_chat_model, "transformation" → default_transformation_model with fallback to chat)
 - `get_speech_to_text()`, `get_text_to_speech()`, `get_embedding_model()`: Type-specific convenience methods with assertions
@@ -48,6 +50,24 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - Returns LangChain-compatible model via `.to_langchain()`
 - Logs model selection decision
 
+### key_provider.py
+
+#### API Key Provider (Credential→Env Fallback)
+- **Purpose**: Provides API keys from database first, falls back to environment variables
+- **Pattern**: Before Esperanto creates a model, keys are loaded from `Credential` records and set as environment variables
+- **Integration point**: Called by `ModelManager.get_model()` as fallback when model has no linked credential
+
+#### Key Functions
+- `get_api_key(provider)`: Get single API key (DB first, then env var)
+- `provision_provider_keys(provider)`: Set env vars from DB config for a provider
+- `provision_all_keys()`: Load all provider keys from DB into env vars (useful at startup)
+
+#### Provider Configuration Maps
+- `PROVIDER_CONFIG`: Simple providers (openai, anthropic, google, groq, etc.)
+- `VERTEX_CONFIG`: Google Vertex AI (project, location, credentials)
+- `AZURE_CONFIG`: Azure OpenAI (api_key, endpoint, api_version, mode-specific endpoints)
+- `OPENAI_COMPATIBLE_CONFIG`: Generic OpenAI-compatible (generic + mode-specific for LLM/EMBEDDING/STT/TTS)
+
 ## Common Patterns
 
 - **Type dispatch**: Model.type field drives factory logic (4 model types)
@@ -56,12 +76,14 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Config override**: provision_langchain_model() accepts kwargs passed to AIFactory.create_* methods
 - **Token-based selection**: provision_langchain_model() detects large contexts and upgrades model automatically
 - **Type assertions**: get_speech_to_text(), get_embedding_model() assert returned type (safety check)
+- **Credential→Env fallback**: If model has linked credential, config from `credential.to_esperanto_config()` is used directly; otherwise keys checked in database via key_provider, then environment variables; enables UI-based key management while maintaining backward compatibility
 
 ## Key Dependencies
 
 - `esperanto`: AIFactory.create_language(), create_embedding(), create_speech_to_text(), create_text_to_speech()
 - `open_notebook.database.repository`: repo_query, ensure_record_id
 - `open_notebook.domain.base`: ObjectModel, RecordModel base classes
+- `open_notebook.domain.credential`: Credential for database-stored API keys
 - `open_notebook.utils`: token_count() for context size detection
 - `loguru`: Logging for model selection decisions
 
@@ -75,6 +97,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Esperanto caching**: Actual model instances cached by Esperanto (not by ModelManager); ModelManager stateless
 - **Fallback chain specificity**: "transformation" type falls back to default_chat_model if not explicitly set (convention-based)
 - **kwargs passed through**: provision_langchain_model() passes kwargs to AIFactory but doesn't validate what's accepted
+- **Key provider sets env vars**: `provision_provider_keys()` modifies `os.environ` to inject DB-stored keys (from `Credential` records); Esperanto reads from env vars (only used as fallback when model has no linked credential)
 
 ## How to Extend
 
@@ -107,3 +130,202 @@ langchain_model = await provision_langchain_model(
     temperature=0.7
 )
 ```
+
+---
+
+## Connection Testing (connection_tester.py)
+
+### Purpose
+
+Provides functionality to test if a provider's API key is valid by making minimal API calls. Used by the API Configuration UI to validate user-entered credentials before saving.
+
+### test_provider_connection()
+
+Main entry point for testing provider connectivity.
+
+```python
+async def test_provider_connection(
+    provider: str, model_type: str = "language",
+    config_id: Optional[str] = None
+) -> Tuple[bool, str]
+```
+
+**Returns**: `(success: bool, message: str)` - Success status and human-readable message.
+
+**Flow**:
+1. If `config_id` provided: Loads credential via `Credential.get(config_id)`, uses `credential.to_esperanto_config()` for provider config
+2. Looks up test model from `TEST_MODELS` dict
+3. For URL-based providers (ollama, openai_compatible): Tests server connectivity
+4. For Azure: Tests `/openai/models` endpoint with api_version
+5. For API-based providers: Creates minimal model via Esperanto and makes test call
+6. Returns user-friendly error messages for common failures
+
+### test_individual_model()
+
+Tests a specific Model instance by loading its linked credential (if any) and making a minimal API call.
+
+### TEST_MODELS Configuration
+
+Maps each provider to `(model_name, model_type)` for testing:
+
+```python
+TEST_MODELS = {
+    "openai": ("gpt-3.5-turbo", "language"),
+    "anthropic": ("claude-3-haiku-20240307", "language"),
+    "google": ("gemini-1.5-flash", "language"),
+    "groq": ("llama-3.1-8b-instant", "language"),
+    "voyage": ("voyage-3-lite", "embedding"),
+    "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
+    "ollama": (None, "language"),  # Dynamic
+    # ... more providers
+}
+```
+
+### Special Provider Handlers
+
+- **`_test_ollama_connection(base_url)`**: Tests Ollama server via `/api/tags` endpoint, returns model count
+- **`_test_openai_compatible_connection(base_url, api_key)`**: Tests OpenAI-compatible servers via `/models` endpoint
+- **`_get_ollama_models(base_url)`**: Fetches available models from Ollama server
+
+### Error Message Normalization
+
+The tester normalizes error messages for user-friendly display:
+- `401/unauthorized` -> "Invalid API key"
+- `403/forbidden` -> "API key lacks required permissions"
+- `rate limit` -> "Rate limited - but connection works" (success)
+- `model not found` -> "API key valid (test model not available)" (success)
+- Connection/timeout errors -> Helpful troubleshooting messages
+
+---
+
+## Key Provider (key_provider.py)
+
+### Purpose
+
+Unified interface for retrieving API keys with database-first, environment-fallback strategy. Enables UI-based key management while maintaining backward compatibility with `.env` files. Used as fallback when models don't have a directly linked credential.
+
+### Core Functions
+
+#### get_api_key(provider)
+
+```python
+async def get_api_key(provider: str) -> Optional[str]
+```
+
+Gets API key for a provider. Checks database (`Credential` records) first, then environment variable.
+
+**Fallback Chain**:
+1. Query `Credential` records from database for the given provider
+2. Get api_key from default credential
+3. Handle `SecretStr` (call `.get_secret_value()`) vs regular strings
+4. If DB value exists and is non-empty, return it
+5. Otherwise, return `os.environ.get(env_var)`
+
+#### provision_provider_keys(provider)
+
+```python
+async def provision_provider_keys(provider: str) -> bool
+```
+
+Main entry point for DB->Env fallback. Sets environment variables from database config for a provider. Called before model provisioning to ensure Esperanto can read keys from env vars.
+
+**Returns**: `True` if any keys were set from database.
+
+**Usage**:
+```python
+# Before creating a model, ensure DB keys are in env vars
+await provision_provider_keys("openai")
+model = AIFactory.create_language(model_name="gpt-4", provider="openai")
+```
+
+#### provision_all_keys()
+
+```python
+async def provision_all_keys() -> dict[str, bool]
+```
+
+Provisions all providers at once. Useful at application startup.
+
+### Provider Configuration Maps
+
+#### PROVIDER_CONFIG (Simple Providers)
+
+Single-field providers with API key only:
+
+```python
+PROVIDER_CONFIG = {
+    "openai": {"env_var": "OPENAI_API_KEY", "config_field": "openai_api_key"},
+    "anthropic": {"env_var": "ANTHROPIC_API_KEY", "config_field": "anthropic_api_key"},
+    "google": {"env_var": "GOOGLE_API_KEY", "config_field": "google_api_key"},
+    "groq": {"env_var": "GROQ_API_KEY", "config_field": "groq_api_key"},
+    "mistral": {"env_var": "MISTRAL_API_KEY", "config_field": "mistral_api_key"},
+    "deepseek": {"env_var": "DEEPSEEK_API_KEY", "config_field": "deepseek_api_key"},
+    "xai": {"env_var": "XAI_API_KEY", "config_field": "xai_api_key"},
+    "openrouter": {"env_var": "OPENROUTER_API_KEY", "config_field": "openrouter_api_key"},
+    "voyage": {"env_var": "VOYAGE_API_KEY", "config_field": "voyage_api_key"},
+    "elevenlabs": {"env_var": "ELEVENLABS_API_KEY", "config_field": "elevenlabs_api_key"},
+    "ollama": {"env_var": "OLLAMA_API_BASE", "config_field": "ollama_api_base"},
+}
+```
+
+#### VERTEX_CONFIG (Google Vertex AI)
+
+Multi-field configuration for Vertex AI:
+
+```python
+VERTEX_CONFIG = {
+    "project": {"env_var": "VERTEX_PROJECT", "config_field": "vertex_project"},
+    "location": {"env_var": "VERTEX_LOCATION", "config_field": "vertex_location"},
+    "credentials": {"env_var": "GOOGLE_APPLICATION_CREDENTIALS", "config_field": "google_application_credentials"},
+}
+```
+
+#### AZURE_CONFIG (Azure OpenAI)
+
+Generic and mode-specific endpoints for Azure:
+
+```python
+AZURE_CONFIG = {
+    "api_key": {"env_var": "AZURE_OPENAI_API_KEY", "config_field": "azure_openai_api_key"},
+    "api_version": {"env_var": "AZURE_OPENAI_API_VERSION", "config_field": "azure_openai_api_version"},
+    "endpoint": {"env_var": "AZURE_OPENAI_ENDPOINT", "config_field": "azure_openai_endpoint"},
+    # Mode-specific endpoints
+    "endpoint_llm": {"env_var": "AZURE_OPENAI_ENDPOINT_LLM", "config_field": "azure_openai_endpoint_llm"},
+    "endpoint_embedding": {"env_var": "AZURE_OPENAI_ENDPOINT_EMBEDDING", "config_field": "azure_openai_endpoint_embedding"},
+    "endpoint_stt": {"env_var": "AZURE_OPENAI_ENDPOINT_STT", "config_field": "azure_openai_endpoint_stt"},
+    "endpoint_tts": {"env_var": "AZURE_OPENAI_ENDPOINT_TTS", "config_field": "azure_openai_endpoint_tts"},
+}
+```
+
+#### OPENAI_COMPATIBLE_CONFIG
+
+Generic and mode-specific configuration for OpenAI-compatible providers:
+
+```python
+OPENAI_COMPATIBLE_CONFIG = {
+    # Generic
+    "api_key": {"env_var": "OPENAI_COMPATIBLE_API_KEY", "config_field": "openai_compatible_api_key"},
+    "base_url": {"env_var": "OPENAI_COMPATIBLE_BASE_URL", "config_field": "openai_compatible_base_url"},
+    # Mode-specific: LLM, Embedding, STT, TTS
+    "api_key_llm": {"env_var": "OPENAI_COMPATIBLE_API_KEY_LLM", "config_field": "openai_compatible_api_key_llm"},
+    "base_url_llm": {"env_var": "OPENAI_COMPATIBLE_BASE_URL_LLM", "config_field": "openai_compatible_base_url_llm"},
+    # ... similar for embedding, stt, tts
+}
+```
+
+### Internal Helper Functions
+
+- **`_provision_simple_provider(provider)`**: Sets single env var for simple providers
+- **`_provision_vertex()`**: Sets all Vertex AI env vars
+- **`_provision_azure()`**: Sets all Azure OpenAI env vars (handles SecretStr)
+- **`_provision_openai_compatible()`**: Sets all OpenAI-compatible env vars
+
+### Integration with ModelManager
+
+The credential system integrates with model provisioning in two ways:
+
+1. **Credential-linked models** (preferred): Model has `credential` field pointing to a Credential record. `ModelManager.get_model()` calls `credential.to_esperanto_config()` and passes config directly to Esperanto's `AIFactory.create_*` methods
+2. **Env var fallback**: If model has no linked credential, `provision_provider_keys(provider)` sets env vars from DB credentials; Esperanto reads from env vars
+3. **ConnectionTester** loads Credential directly via `Credential.get(config_id)` for testing
+
+The credential-linked approach is preferred as it allows multiple credentials per provider and avoids env var mutation.

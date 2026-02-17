@@ -131,6 +131,7 @@ doc_exports/
 
 specs/
 .claude
+.sisyphus
 
 .playwright-mcp/
 

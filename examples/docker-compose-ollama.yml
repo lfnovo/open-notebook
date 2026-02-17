@@ -1,0 +1,63 @@
+# Docker Compose with Ollama (Free Local AI)
+#
+# This setup includes Ollama for running local AI models without API costs.
+# Great for privacy-focused deployments or testing without cloud dependencies.
+#
+# Usage:
+#   1. Copy this file to your project folder as docker-compose.yml
+#   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
+#   3. Run: docker compose up -d
+#   4. Pull a model: docker exec open_notebook-ollama-1 ollama pull mistral
+#   5. Configure Ollama in UI: Settings → API Keys → Add Ollama (URL: http://ollama:11434)
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    restart: always
+    pull_policy: always
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: always
+    pull_policy: always
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    ports:
+      - "8502:8502"
+      - "5055:5055"
+    environment:
+      # REQUIRED: Change this to your own secret string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+
+      # Database connection
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=open_notebook
+
+      # Ollama connection
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./notebook_data:/app/data
+    depends_on:
+      - surrealdb
+      - ollama
+    restart: always
+    pull_policy: always
+
+volumes:
+  ollama_models:

@@ -126,7 +126,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
         <DialogTitle className="sr-only">
           {isEditing ? t.sources.editNote : t.sources.createNote}
         </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col min-w-0">
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <span className="text-sm text-muted-foreground">{t.common.loading}</span>

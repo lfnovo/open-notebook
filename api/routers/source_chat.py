@@ -470,8 +470,11 @@ async def stream_source_chat_response(
         yield f"data: {json.dumps(completion_event)}\n\n"
 
     except Exception as e:
+        from open_notebook.utils.error_classifier import classify_error
+
+        _, user_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
-        error_event = {"type": "error", "message": str(e)}
+        error_event = {"type": "error", "message": user_message}
         yield f"data: {json.dumps(error_event)}\n\n"
 
 

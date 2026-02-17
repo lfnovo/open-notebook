@@ -9,7 +9,8 @@ import { useEpisodeProfiles, useGeneratePodcast } from '@/lib/hooks/use-podcasts
 import { chatApi } from '@/lib/api/chat'
 import { sourcesApi } from '@/lib/api/sources'
 import { notesApi } from '@/lib/api/notes'
-import { BuildContextRequest, NoteResponse, SourceListResponse } from '@/lib/types/api'
+import { BuildContextRequest, NoteResponse, NotebookResponse, SourceListResponse } from '@/lib/types/api'
+import type { QueryClient } from '@tanstack/react-query'
 import { PodcastGenerationRequest } from '@/lib/types/podcasts'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
@@ -69,6 +70,30 @@ interface GeneratePodcastDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+interface NotebookSummary {
+  notebookId: string
+  sources: number
+  notes: number
+}
+
+interface ContentSelectionPanelProps {
+  notebooks: NotebookResponse[]
+  isLoading: boolean
+  selectedNotebookSummaries: NotebookSummary[]
+  tokenCount: number
+  charCount: number
+  expandedNotebooks: string[]
+  setExpandedNotebooks: (notebooks: string[]) => void
+  selections: Record<string, NotebookSelection>
+  sourcesByNotebook: Record<string, SourceListResponse[]>
+  notesByNotebook: Record<string, NoteResponse[]>
+  fetchingNotebookIds: Set<string>
+  handleNotebookToggle: (notebookId: string, checked: boolean | 'indeterminate') => void
+  handleSourceModeChange: (notebookId: string, sourceId: string, mode: SourceMode) => void
+  handleNoteToggle: (notebookId: string, noteId: string, checked: boolean | 'indeterminate') => void
+  queryClient: QueryClient
+}
+
 // Extracted component for content selection panel
 function ContentSelectionPanel({
   notebooks,
@@ -86,7 +111,7 @@ function ContentSelectionPanel({
   handleSourceModeChange,
   handleNoteToggle,
   queryClient,
-}: any) {
+}: ContentSelectionPanelProps) {
   const { t, language } = useTranslation()
 
   // Cache all translation strings at render time to avoid repeated Proxy accesses in loops
@@ -138,7 +163,7 @@ function ContentSelectionPanel({
             {tr.itemsSelected.replace(
               '{count}',
               selectedNotebookSummaries.reduce(
-                (acc: number, summary: any) => acc + summary.sources + summary.notes,
+                (acc: number, summary: NotebookSummary) => acc + summary.sources + summary.notes,
                 0
               ).toString()
             )}
@@ -170,7 +195,7 @@ function ContentSelectionPanel({
               onValueChange={(value) => setExpandedNotebooks(value as string[])}
               className="w-full"
             >
-              {notebooks.map((notebook: any, index: number) => {
+              {notebooks.map((notebook: NotebookResponse, index: number) => {
                 const sources = sourcesByNotebook[notebook.id] ?? []
                 const notes = notesByNotebook[notebook.id] ?? []
                 const selection = selections[notebook.id]
@@ -239,7 +264,7 @@ function ContentSelectionPanel({
                             </p>
                           ) : (
                             <div className="space-y-2">
-                              {sources.map((source: any) => {
+                              {sources.map((source: SourceListResponse) => {
                                 const mode = selection?.sources?.[source.id] ?? 'off'
                                 return (
                                   <div
@@ -318,7 +343,7 @@ function ContentSelectionPanel({
                             </p>
                           ) : (
                             <div className="space-y-2">
-                              {notes.map((note: any) => {
+                              {notes.map((note: NoteResponse) => {
                                 const mode = selection?.notes?.[note.id] ?? 'off'
                                 return (
                                   <div
@@ -370,7 +395,7 @@ function ContentSelectionPanel({
 }
 
 export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDialogProps) {
-  const { t, language } = useTranslation()
+  const { t } = useTranslation()
   const { toast } = useToast()
   const queryClient = useQueryClient()
   const [expandedNotebooks, setExpandedNotebooks] = useState<string[]>([])

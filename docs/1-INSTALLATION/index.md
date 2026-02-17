@@ -144,9 +144,9 @@ Once you're up and running:
 
 Installing for production use? See additional resources:
 
-- [Security Hardening](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/security.md)
-- [Reverse Proxy Setup](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/reverse-proxy.md)
-- [Performance Tuning](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/retry-configuration.md)
+- [Security Hardening](../5-CONFIGURATION/security.md)
+- [Reverse Proxy Setup](../5-CONFIGURATION/reverse-proxy.md)
+- [Performance Tuning](../5-CONFIGURATION/advanced.md)
 
 ---
 

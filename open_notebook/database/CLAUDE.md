@@ -50,7 +50,7 @@ Both leverage connection context manager for lifecycle management and automatic 
   - `run_one_down()`: Rollback latest migration
 
 - `AsyncMigrationManager`: Main orchestrator
-  - Loads 9 up migrations + 9 down migrations (hard-coded in __init__)
+  - Loads 12 up migrations + 12 down migrations (hard-coded in __init__; migrations 11-12 add credential table and model-credential link)
   - `get_current_version()`: Query max version from _sbl_migrations table
   - `needs_migration()`: Boolean check (current < total migrations available)
   - `run_migration_up()`: Run all pending migrations with logging
@@ -87,7 +87,7 @@ Both leverage connection context manager for lifecycle management and automatic 
 ## Important Quirks & Gotchas
 
 - **No connection pooling**: Each repo_* operation creates new connection; adequate for HTTP request-scoped operations but inefficient for bulk workloads
-- **Hard-coded migration files**: AsyncMigrationManager lists migrations 1-9 explicitly; adding new migration requires code change (not auto-discovery)
+- **Hard-coded migration files**: AsyncMigrationManager lists migrations 1-12 explicitly; adding new migration requires code change (not auto-discovery)
 - **Record ID format inconsistency**: repo_update() accepts both `table:id` format and full RecordID; path handling can be subtle
 - **ISO date parsing**: repo_update() parses `created` field from string to datetime if present; assumes ISO format
 - **Timestamp overwrite risk**: repo_create() always sets new timestamps; can't preserve original created time on reimport

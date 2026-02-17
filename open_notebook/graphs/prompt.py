@@ -7,7 +7,7 @@ from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
-from open_notebook.utils.text_utils import clean_thinking_content
+from open_notebook.utils.text_utils import clean_thinking_content, extract_text_content
 
 
 class PatternChainState(TypedDict):
@@ -33,7 +33,7 @@ async def call_model(state: dict, config: RunnableConfig) -> dict:
     response = await chain.ainvoke(payload)
 
     # Clean thinking tags from response (handles extended thinking models)
-    output = clean_thinking_content(str(response.content))
+    output = clean_thinking_content(extract_text_content(response.content))
     return {"output": output}
 
 

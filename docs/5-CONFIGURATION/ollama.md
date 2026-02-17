@@ -38,41 +38,40 @@ ollama pull mxbai-embed-large  # Best embedding model for Ollama
 
 ### 3. Configure Open Notebook
 
-**For local installation:**
-```bash
-export OLLAMA_API_BASE=http://localhost:11434
-```
+**Via Settings UI (Recommended):**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → Select **Ollama**
+3. Enter the base URL (see [Network Configuration](#network-configuration-guide) below for correct URL)
+4. Click **Save**, then **Test Connection**
+5. Click **Discover Models** → **Register Models**
 
-**For Docker installation:**
+**Legacy (Deprecated) — Environment variables:**
 ```bash
+# For local installation:
+export OLLAMA_API_BASE=http://localhost:11434
+# For Docker installation:
 export OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
+> **Note**: The `OLLAMA_API_BASE` environment variable is deprecated. Configure Ollama via Settings → API Keys instead.
+
 ## Network Configuration Guide
 
-The `OLLAMA_API_BASE` environment variable tells Open Notebook where to find your Ollama server. The correct value depends on your deployment scenario:
+When adding an Ollama credential in **Settings → API Keys**, you need to enter the correct base URL. The correct URL depends on your deployment scenario:
 
 ### Scenario 1: Local Installation (Same Machine)
 
 When both Open Notebook and Ollama run directly on your machine:
 
-```bash
-export OLLAMA_API_BASE=http://localhost:11434
-# or
-export OLLAMA_API_BASE=http://127.0.0.1:11434
-```
+**Base URL to enter in Settings → API Keys:** `http://localhost:11434`
 
-**Use `localhost` vs `127.0.0.1`:**
-- **localhost**: Recommended, works with most configurations
-- **127.0.0.1**: Use if you have DNS resolution issues with localhost
+Alternative: `http://127.0.0.1:11434` (use if you have DNS resolution issues with localhost)
 
 ### Scenario 2: Open Notebook in Docker, Ollama on Host
 
 When Open Notebook runs in Docker but Ollama runs on your host machine:
 
-```bash
-export OLLAMA_API_BASE=http://host.docker.internal:11434
-```
+**Base URL to enter in Settings → API Keys:** `http://host.docker.internal:11434`
 
 **⚠️ CRITICAL: Ollama must accept external connections:**
 ```bash
@@ -92,8 +91,6 @@ services:
     # ... other settings ...
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    environment:
-      - OLLAMA_API_BASE=http://host.docker.internal:11434
 ```
 
 Without this, you'll get connection errors like:
@@ -115,9 +112,7 @@ httpcore.ConnectError: [Errno -2] Name or service not known
 
 When both Open Notebook and Ollama run in the same Docker Compose stack:
 
-```bash
-export OLLAMA_API_BASE=http://ollama:11434
-```
+**Base URL to enter in Settings → API Keys:** `http://ollama:11434`
 
 **Docker Compose Example:**
 
@@ -131,7 +126,7 @@ services:
       - "8502:8502"
       - "5055:5055"
     environment:
-      - OLLAMA_API_BASE=http://ollama:11434
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
     volumes:
       - ./notebook_data:/app/data
       - ./surreal_data:/mydata
@@ -139,7 +134,7 @@ services:
       - ollama
 
   ollama:
-    image: ollama/ollama:v1-latest
+    image: ollama/ollama:latest
     ports:
       - "11434:11434"
     volumes:
@@ -161,10 +156,7 @@ volumes:
 
 When Ollama runs on a different machine in your network:
 
-```bash
-export OLLAMA_API_BASE=http://192.168.1.100:11434
-# Replace 192.168.1.100 with your Ollama server's IP address
-```
+**Base URL to enter in Settings → API Keys:** `http://192.168.1.100:11434` (replace with your Ollama server's IP)
 
 **Security Note:** Only use this in trusted networks. Ollama doesn't have built-in authentication.
 
@@ -175,10 +167,9 @@ If you've configured Ollama to use a different port:
 ```bash
 # Start Ollama on custom port
 OLLAMA_HOST=0.0.0.0:8080 ollama serve
-
-# Configure Open Notebook
-export OLLAMA_API_BASE=http://localhost:8080
 ```
+
+**Base URL to enter in Settings → API Keys:** `http://localhost:8080`
 
 ## Model Recommendations
 
@@ -301,10 +292,8 @@ qwen3:32b                   030ee887880f    20 GB     9 days ago
 curl http://localhost:11434/api/tags
 ```
 
-**Verify environment variable:**
-```bash
-echo $OLLAMA_API_BASE
-```
+**Verify credential is configured:**
+Check **Settings → API Keys** for an Ollama credential with the correct base URL.
 
 **⚠️ IMPORTANT: Enable external connections (most common fix):**
 ```bash
@@ -382,8 +371,8 @@ netstat -tulpn | grep 11434
 **Use custom port:**
 ```bash
 OLLAMA_HOST=0.0.0.0:8080 ollama serve
-export OLLAMA_API_BASE=http://localhost:8080
 ```
+Then update the base URL in **Settings → API Keys** to `http://localhost:8080`
 
 **6. "Failed to send message" in Chat**
 
@@ -442,9 +431,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
-      - OLLAMA_API_BASE=http://host.docker.internal:11434
     # ... rest of your config
 ```
+
+Then in **Settings → API Keys**, use base URL: `http://host.docker.internal:11434`
 
 This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker Desktop does this automatically, but Linux requires explicit configuration.
 
@@ -452,8 +442,8 @@ This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker
 ```bash
 # Use host networking if host.docker.internal doesn't work
 docker run --network host lfnovo/open_notebook:v1-latest-single
-export OLLAMA_API_BASE=http://localhost:11434
 ```
+Then in **Settings → API Keys**, use base URL: `http://localhost:11434`
 
 **3. Custom bridge network:**
 ```yaml
@@ -467,14 +457,14 @@ services:
     networks:
       - ollama_network
     environment:
-      - OLLAMA_API_BASE=http://ollama:11434
-
   ollama:
     networks:
       - ollama_network
 ```
 
-**3. Firewall issues:**
+Then in **Settings → API Keys**, use base URL: `http://ollama:11434`
+
+**4. Firewall issues:**
 ```bash
 # Allow Ollama port through firewall
 sudo ufw allow 11434
@@ -550,8 +540,8 @@ export OLLAMA_MAX_QUEUE=512            # Request queue size
 export OLLAMA_NUM_PARALLEL=4           # Parallel request handling
 export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
 
-# Open Notebook configuration
-export OLLAMA_API_BASE=http://localhost:11434
+# Open Notebook configuration (configure via Settings → API Keys instead)
+# OLLAMA_API_BASE=http://localhost:11434  # Deprecated — use Settings UI
 ```
 
 ### SSL Configuration (Self-Signed Certificates)
@@ -583,8 +573,8 @@ services:
     image: lfnovo/open_notebook:v1-latest-single
     pull_policy: always
     environment:
-      - OLLAMA_API_BASE=https://ollama.local:11434
-      # Option 1: Custom CA bundle
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      # Option 1: Custom CA bundle (if Ollama uses self-signed SSL)
       - ESPERANTO_SSL_CA_BUNDLE=/certs/ca-bundle.pem
       # Option 2: Disable verification (dev only)
       # - ESPERANTO_SSL_VERIFY=false

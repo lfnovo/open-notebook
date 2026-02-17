@@ -52,6 +52,31 @@ export function getApiErrorKey(errorOrMessage: unknown, fallbackKey?: string): s
 }
 
 /**
+ * Extracts the error message, looks up i18n mapping, and falls back to the
+ * backend-provided message when no mapping exists. This ensures user-friendly
+ * error messages from the backend are displayed directly in the UI.
+ */
+export function getApiErrorMessage(
+  errorOrMessage: unknown,
+  t: (key: string) => string,
+  fallbackKey?: string
+): string {
+  const message = formatApiError(errorOrMessage);
+  if (!message) return fallbackKey ? t(fallbackKey) : t("apiErrors.genericError");
+
+  // Try exact match
+  if (ERROR_MAP[message]) return t(ERROR_MAP[message]);
+
+  // Try partial match for dynamic messages (e.g., "Strategy model ...")
+  for (const [key, value] of Object.entries(ERROR_MAP)) {
+    if (message.startsWith(key)) return t(value);
+  }
+
+  // No mapping: return backend message directly (backend is responsible for making it user-friendly)
+  return message;
+}
+
+/**
  * Formats a raw error from the API into a user-friendly (potentially translated) string.
  */
 export function formatApiError(error: unknown): string {

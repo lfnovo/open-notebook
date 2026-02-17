@@ -1,6 +1,6 @@
 from typing import Any, Dict, List, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # Notebook models
@@ -68,6 +68,9 @@ class ModelCreate(BaseModel):
         ...,
         description="Model type (language, embedding, text_to_speech, speech_to_text)",
     )
+    credential: Optional[str] = Field(
+        None, description="Credential ID to link this model to"
+    )
 
 
 class ModelResponse(BaseModel):
@@ -75,6 +78,7 @@ class ModelResponse(BaseModel):
     name: str
     provider: str
     type: str
+    credential: Optional[str] = None
     created: str
     updated: str
 
@@ -189,6 +193,7 @@ class NoteResponse(BaseModel):
     note_type: Optional[str]
     created: str
     updated: str
+    command_id: Optional[str] = None
 
 
 # Embedding API models
@@ -434,7 +439,231 @@ class ErrorResponse(BaseModel):
     message: str
 
 
+# API Key Configuration models
+class SetApiKeyRequest(BaseModel):
+    """Request to set an API key for a provider."""
+
+    api_key: Optional[str] = Field(None, description="API key for the provider")
+    base_url: Optional[str] = Field(
+        None, description="Base URL for URL-based providers (Ollama, OpenAI-compatible)"
+    )
+    endpoint: Optional[str] = Field(
+        None, description="Endpoint URL for Azure OpenAI"
+    )
+    api_version: Optional[str] = Field(
+        None, description="API version for Azure OpenAI"
+    )
+    endpoint_llm: Optional[str] = Field(
+        None, description="Service-specific endpoint for LLM (Azure)"
+    )
+    endpoint_embedding: Optional[str] = Field(
+        None, description="Service-specific endpoint for embedding (Azure)"
+    )
+    endpoint_stt: Optional[str] = Field(
+        None, description="Service-specific endpoint for STT (Azure)"
+    )
+    endpoint_tts: Optional[str] = Field(
+        None, description="Service-specific endpoint for TTS (Azure)"
+    )
+    service_type: Optional[Literal["llm", "embedding", "stt", "tts"]] = Field(
+        None,
+        description="Service type for OpenAI-compatible providers (llm, embedding, stt, tts)",
+    )
+    # Vertex AI specific fields
+    vertex_project: Optional[str] = Field(
+        None, description="Google Cloud Project ID for Vertex AI"
+    )
+    vertex_location: Optional[str] = Field(
+        None, description="Google Cloud Region for Vertex AI (e.g., us-central1)"
+    )
+    vertex_credentials_path: Optional[str] = Field(
+        None, description="Path to Google Cloud service account JSON file"
+    )
+
+    @field_validator(
+        "api_key",
+        "base_url",
+        "endpoint",
+        "api_version",
+        "endpoint_llm",
+        "endpoint_embedding",
+        "endpoint_stt",
+        "endpoint_tts",
+        "vertex_project",
+        "vertex_location",
+        "vertex_credentials_path",
+        mode="before",
+    )
+    @classmethod
+    def validate_not_empty_string(cls, v: Optional[str]) -> Optional[str]:
+        """Reject empty strings - convert to None or raise error."""
+        if v is not None:
+            stripped = v.strip()
+            if not stripped:
+                return None  # Treat empty/whitespace-only as None
+            return stripped
+        return v
+
+
+class ApiKeyStatusResponse(BaseModel):
+    """Response showing which providers are configured and their source."""
+
+    configured: Dict[str, bool] = Field(
+        ..., description="Map of provider name to whether it is configured"
+    )
+    source: Dict[str, Literal["database", "environment", "none"]] = Field(
+        ...,
+        description="Map of provider name to configuration source (database, environment, or none)",
+    )
+    encryption_configured: bool = Field(
+        ...,
+        description="Whether OPEN_NOTEBOOK_ENCRYPTION_KEY is set (required to store keys in database)",
+    )
+
+
+class TestConnectionResponse(BaseModel):
+    """Response from testing a provider connection."""
+
+    provider: str = Field(..., description="Provider name that was tested")
+    success: bool = Field(..., description="Whether connection test succeeded")
+    message: str = Field(..., description="Result message with details")
+
+
+class MigrateFromEnvRequest(BaseModel):
+    """Request to migrate API keys from environment variables to database."""
+
+    force: bool = Field(
+        False, description="Force overwrite existing database configurations"
+    )
+
+
+class MigrationResult(BaseModel):
+    """Response from migrating API keys from environment to database."""
+
+    message: str = Field(..., description="Summary message")
+    migrated: List[str] = Field(
+        default_factory=list, description="Providers successfully migrated"
+    )
+    skipped: List[str] = Field(
+        default_factory=list, description="Providers skipped (already in DB)"
+    )
+    errors: List[str] = Field(
+        default_factory=list, description="Migration errors by provider"
+    )
+
+
 # Notebook delete cascade models
+# Credential models
+class CreateCredentialRequest(BaseModel):
+    """Request to create a new credential."""
+
+    name: str = Field(..., description="Credential name")
+    provider: str = Field(..., description="Provider name (openai, anthropic, etc.)")
+    modalities: List[str] = Field(
+        default_factory=list,
+        description="Supported modalities (language, embedding, text_to_speech, speech_to_text)",
+    )
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL (Azure)")
+    api_version: Optional[str] = Field(None, description="API version (Azure)")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID (Vertex)")
+    location: Optional[str] = Field(None, description="Location (Vertex)")
+    credentials_path: Optional[str] = Field(
+        None, description="Credentials file path (Vertex)"
+    )
+
+
+class UpdateCredentialRequest(BaseModel):
+    """Request to update an existing credential."""
+
+    name: Optional[str] = Field(None, description="Credential name")
+    modalities: Optional[List[str]] = Field(None, description="Supported modalities")
+    api_key: Optional[str] = Field(None, description="API key (stored encrypted)")
+    base_url: Optional[str] = Field(None, description="Base URL")
+    endpoint: Optional[str] = Field(None, description="Endpoint URL")
+    api_version: Optional[str] = Field(None, description="API version")
+    endpoint_llm: Optional[str] = Field(None, description="LLM endpoint")
+    endpoint_embedding: Optional[str] = Field(None, description="Embedding endpoint")
+    endpoint_stt: Optional[str] = Field(None, description="STT endpoint")
+    endpoint_tts: Optional[str] = Field(None, description="TTS endpoint")
+    project: Optional[str] = Field(None, description="Project ID")
+    location: Optional[str] = Field(None, description="Location")
+    credentials_path: Optional[str] = Field(None, description="Credentials path")
+
+
+class CredentialResponse(BaseModel):
+    """Response for a credential (never includes api_key)."""
+
+    id: str
+    name: str
+    provider: str
+    modalities: List[str]
+    base_url: Optional[str] = None
+    endpoint: Optional[str] = None
+    api_version: Optional[str] = None
+    endpoint_llm: Optional[str] = None
+    endpoint_embedding: Optional[str] = None
+    endpoint_stt: Optional[str] = None
+    endpoint_tts: Optional[str] = None
+    project: Optional[str] = None
+    location: Optional[str] = None
+    credentials_path: Optional[str] = None
+    has_api_key: bool = False
+    created: str
+    updated: str
+    model_count: int = 0
+
+
+class CredentialDeleteResponse(BaseModel):
+    """Response for credential deletion."""
+
+    message: str
+    deleted_models: int = 0
+
+
+class DiscoveredModelResponse(BaseModel):
+    """A model discovered from a provider."""
+
+    name: str
+    provider: str
+    model_type: Optional[str] = None
+    description: Optional[str] = None
+
+
+class DiscoverModelsResponse(BaseModel):
+    """Response from model discovery."""
+
+    credential_id: str
+    provider: str
+    discovered: List[DiscoveredModelResponse]
+
+
+class RegisterModelData(BaseModel):
+    """A model to register with user-specified type."""
+
+    name: str
+    provider: str
+    model_type: str  # Required: user specifies the type
+
+
+class RegisterModelsRequest(BaseModel):
+    """Request to register discovered models."""
+
+    models: List[RegisterModelData]
+
+
+class RegisterModelsResponse(BaseModel):
+    """Response from model registration."""
+
+    created: int
+    existing: int
+
+
 class NotebookDeletePreview(BaseModel):
     notebook_id: str = Field(..., description="ID of the notebook")
     notebook_name: str = Field(..., description="Name of the notebook")

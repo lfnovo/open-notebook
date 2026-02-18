@@ -3,19 +3,24 @@ Unified embedding utilities for Open Notebook.
 
 Provides centralized embedding generation with support for:
 - Single text embedding (with automatic chunking and mean pooling for large texts)
-- Batch text embedding (multiple texts in a single API call)
+- Batch text embedding (multiple texts with automatic batching)
 - Mean pooling for combining multiple embeddings into one
 
 All embedding operations in the application should use these functions
 to ensure consistent behavior and proper handling of large content.
 """
 
+import asyncio
 from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
 from loguru import logger
 
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
+
+EMBEDDING_BATCH_SIZE = 50
+EMBEDDING_MAX_RETRIES = 3
+EMBEDDING_RETRY_DELAY = 2  # seconds
 
 # Lazy import to avoid circular dependency:
 # utils -> embedding -> models -> key_provider -> provider_config -> utils
@@ -83,10 +88,11 @@ async def generate_embeddings(
     texts: List[str], command_id: Optional[str] = None
 ) -> List[List[float]]:
     """
-    Generate embeddings for multiple texts in a single API call.
+    Generate embeddings for multiple texts with automatic batching and retry.
 
-    This is more efficient than calling generate_embedding() multiple times
-    when you have multiple texts to embed (e.g., source chunks).
+    Texts are split into batches of EMBEDDING_BATCH_SIZE to avoid exceeding
+    provider payload limits. Each batch is retried up to EMBEDDING_MAX_RETRIES
+    times on transient failures.
 
     Args:
         texts: List of text strings to embed
@@ -121,23 +127,42 @@ async def generate_embeddings(
         f"total={sum(text_sizes)} chars)"
     )
 
-    try:
-        # Single API call for all texts
-        embeddings = await embedding_model.aembed(texts)
-        logger.debug(f"Generated {len(embeddings)} embeddings")
-        return embeddings
-    except Exception as e:
-        # Log at debug level - the calling command will log at appropriate level
-        # based on whether retries are exhausted
-        cmd_context = f" (command: {command_id})" if command_id else ""
-        logger.debug(
-            f"Embedding API error using model '{model_name}' "
-            f"for {len(texts)} texts (sizes: {min(text_sizes)}-{max(text_sizes)} chars)"
-            f"{cmd_context}: {e}"
-        )
-        raise RuntimeError(
-            f"Failed to generate embeddings using model '{model_name}': {e}"
-        ) from e
+    all_embeddings: List[List[float]] = []
+    total_batches = (len(texts) + EMBEDDING_BATCH_SIZE - 1) // EMBEDDING_BATCH_SIZE
+
+    for batch_idx in range(total_batches):
+        start = batch_idx * EMBEDDING_BATCH_SIZE
+        end = start + EMBEDDING_BATCH_SIZE
+        batch = texts[start:end]
+
+        for attempt in range(1, EMBEDDING_MAX_RETRIES + 1):
+            try:
+                batch_embeddings = await embedding_model.aembed(batch)
+                all_embeddings.extend(batch_embeddings)
+                break
+            except Exception as e:
+                cmd_context = f" (command: {command_id})" if command_id else ""
+                if attempt < EMBEDDING_MAX_RETRIES:
+                    logger.debug(
+                        f"Embedding batch {batch_idx + 1}/{total_batches} "
+                        f"attempt {attempt}/{EMBEDDING_MAX_RETRIES} failed "
+                        f"using model '{model_name}'{cmd_context}: {e}. Retrying..."
+                    )
+                    await asyncio.sleep(EMBEDDING_RETRY_DELAY)
+                else:
+                    logger.debug(
+                        f"Embedding batch {batch_idx + 1}/{total_batches} "
+                        f"failed after {EMBEDDING_MAX_RETRIES} attempts "
+                        f"using model '{model_name}'{cmd_context}: {e}"
+                    )
+                    raise RuntimeError(
+                        f"Failed to generate embeddings using model '{model_name}' "
+                        f"(batch {batch_idx + 1}/{total_batches}, "
+                        f"{len(batch)} texts): {e}"
+                    ) from e
+
+    logger.debug(f"Generated {len(all_embeddings)} embeddings in {total_batches} batch(es)")
+    return all_embeddings
 
 
 async def generate_embedding(
@@ -154,7 +179,7 @@ async def generate_embedding(
 
     For long text (> CHUNK_SIZE):
         - Chunks the text using appropriate splitter for content type
-        - Embeds all chunks in a single API call
+        - Embeds all chunks in batches
         - Combines embeddings via mean pooling
 
     Args:
@@ -197,7 +222,7 @@ async def generate_embedding(
 
     logger.debug(f"Embedding {len(chunks)} chunks and mean pooling")
 
-    # Embed all chunks in single API call
+    # Embed all chunks in batches
     embeddings = await generate_embeddings(chunks, command_id=command_id)
 
     # Mean pool to get single embedding

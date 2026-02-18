@@ -178,10 +178,17 @@ def _cors_headers(
     request_origin = request.headers.get("origin")
 
     if "*" in allowed_origins:
-        headers["Access-Control-Allow-Origin"] = "*"
+        # With credentials enabled, wildcard ACAO is invalid for browsers.
+        # Mirror the request origin instead, matching CORSMiddleware behavior.
+        if not request_origin:
+            return headers
+        headers["Access-Control-Allow-Origin"] = request_origin
+        vary = headers.get("Vary")
+        headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
     elif request_origin and request_origin in allowed_origins:
         headers["Access-Control-Allow-Origin"] = request_origin
-        headers["Vary"] = "Origin"
+        vary = headers.get("Vary")
+        headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
     else:
         # Origin not allowed: omit ACAO so browsers block cross-origin reads.
         return headers

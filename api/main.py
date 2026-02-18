@@ -1,7 +1,18 @@
 # Load environment variables
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _cors_origins() -> list[str]:
+    """CORS allowed origins. Set CORS_ORIGINS (comma-separated) in production."""
+    value = os.getenv("CORS_ORIGINS", "*").strip()
+    if value == "*":
+        return ["*"]
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
 
 from contextlib import asynccontextmanager
 
@@ -130,7 +141,7 @@ app.add_middleware(
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

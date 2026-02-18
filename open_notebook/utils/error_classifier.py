@@ -54,6 +54,12 @@ _CLASSIFICATION_RULES: list[tuple[list[str], type[OpenNotebookError], str | None
         ExternalServiceError,
         "Content too large for the selected model. Try using a smaller selection or a model with a larger context window.",
     ),
+    # Payload too large errors
+    (
+        ["413", "payload too large", "request entity too large"],
+        ExternalServiceError,
+        "The request payload is too large for the AI provider. Try reducing the content size or using a different model.",
+    ),
     # Provider availability errors
     (
         ["500", "502", "503", "service unavailable", "overloaded", "internal server error"],

@@ -54,7 +54,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 ### Routers
 - **routers/chat.py**: POST /chat
 - **routers/source_chat.py**: POST /source/{source_id}/chat
-- **routers/podcasts.py**: POST /podcasts, GET /podcasts/{id}, etc.
+- **routers/podcasts.py**: POST /podcasts, GET /podcasts/{id}, POST /podcasts/episodes/{id}/retry, etc.
 - **routers/notes.py**: POST /notes, GET /notes/{id}
 - **routers/sources.py**: POST /sources, GET /sources/{id}, DELETE /sources/{id}
 - **routers/models.py**: GET /models, POST /models/config
@@ -70,7 +70,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **Async/await throughout**: All DB queries, graph invocations, AI calls are async
 - **SurrealDB transactions**: Services use repo_query, repo_create, repo_upsert from database layer
 - **Config override pattern**: Models/config override via models_service passed to graph.ainvoke(config=...)
-- **Error handling**: Services catch exceptions and return HTTP status codes (400 Bad Request, 404 Not Found, 500 Internal Server Error)
+- **Error handling**: Custom exception hierarchy (`open_notebook.exceptions`) with global FastAPI exception handlers mapping to HTTP status codes (see Error Handling section below). LangGraph nodes use `classify_error()` to convert raw LLM provider errors into typed exceptions with user-friendly messages.
 - **Logging**: loguru logger in main.py; services expected to log key operations
 - **Response normalization**: All responses follow standard schema (data + metadata structure)
 
@@ -100,6 +100,35 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **CORS open by default**: main.py CORS settings allow all origins (restrict before production)
 - **No OpenAPI security scheme**: API docs available without auth (disable before production)
 - **Services don't validate user permission**: All endpoints trust authentication layer; no per-notebook permission checks
+
+## Error Handling
+
+### Global Exception Handlers (`main.py`)
+
+FastAPI exception handlers map custom exception types from `open_notebook.exceptions` to HTTP status codes. All error responses include CORS headers.
+
+| Exception Class | HTTP Status | Use Case |
+|----------------|-------------|----------|
+| `NotFoundError` | 404 | Resource not found |
+| `InvalidInputError` | 400 | Bad request data |
+| `AuthenticationError` | 401 | Invalid/missing API key |
+| `RateLimitError` | 429 | Provider rate limit exceeded |
+| `ConfigurationError` | 422 | Wrong model name, missing config |
+| `NetworkError` | 502 | Cannot reach AI provider |
+| `ExternalServiceError` | 502 | Provider returned error (500/503, context length) |
+| `OpenNotebookError` (base) | 500 | Any other application error |
+
+### Error Classification (`open_notebook.utils.error_classifier`)
+
+The `classify_error()` function maps raw exceptions from LLM providers/Esperanto/LangChain into the typed exceptions above with user-friendly messages. Used in all LangGraph graph nodes and SSE streaming handlers.
+
+**Flow**: Raw exception → keyword matching → `(ExceptionClass, user_message)` → raised → caught by global handler → HTTP response with descriptive message.
+
+### Frontend Integration
+
+The frontend `getApiErrorMessage()` helper (`lib/utils/error-handler.ts`) tries i18n mapping first, then falls back to displaying the backend's descriptive error message directly.
+
+---
 
 ## How to Add New Endpoint
 

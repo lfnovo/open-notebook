@@ -2,6 +2,8 @@
 
 Problems with AI models, chat, and response quality.
 
+> **Note:** Open Notebook now shows descriptive error messages for AI provider failures. Instead of a generic "An unexpected error occurred", you'll see specific messages like "Authentication failed. Please check your API key" or "Rate limit exceeded. Please wait a moment and try again." These messages help you diagnose and fix issues faster.
+
 ---
 
 ## "Failed to send message" Error

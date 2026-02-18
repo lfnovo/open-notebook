@@ -5,7 +5,7 @@ Axios-based client and resource-specific API modules for backend communication w
 ## Key Components
 
 - **`client.ts`**: Central Axios instance with request/response interceptors, auth headers, base URL resolution
-- **Resource modules** (`sources.ts`, `notebooks.ts`, `chat.ts`, `search.ts`, etc.): Endpoint-specific functions returning typed responses
+- **Resource modules** (`sources.ts`, `notebooks.ts`, `chat.ts`, `search.ts`, `podcasts.ts`, etc.): Endpoint-specific functions returning typed responses
 - **`query-client.ts`**: TanStack Query client configuration with default options
 - **`models.ts`, `notes.ts`, `embeddings.ts`, `settings.ts`**: Additional resource APIs
 
@@ -44,7 +44,7 @@ Axios-based client and resource-specific API modules for backend communication w
 - **Timeout for streaming**: 10-minute timeout may not cover very long-running LLM operations; consider extending if needed
 - **Auth token management**: Token stored in localStorage `auth-storage` key; uses Zustand persist middleware
 - **Headers mutation in interceptor**: Mutating `config.headers` directly; be careful with middleware order
-- **No retry logic**: Failed requests not automatically retried; must be handled in consuming code
+- **No automatic retry logic**: Failed requests not automatically retried; must be handled in consuming code. Podcast episodes have explicit retry via `retryEpisode()` in `podcasts.ts` and `useRetryPodcastEpisode()` hook
 - **Content-Type header precedence**: FormData interceptor deletes Content-Type after checking; subsequent interceptors won't re-add it
 
 ## Usage Example

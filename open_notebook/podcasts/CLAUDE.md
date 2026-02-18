@@ -34,6 +34,7 @@ All inherit from `ObjectModel` (SurrealDB base class with table_name and save/lo
 - Optional audio_file path, transcript/outline dicts
 - **Job tracking**: command field links to surreal-commands RecordID
 - `get_job_status()` fetches async job status via surreal-commands library
+- `get_job_detail()` returns both status and error_message from the job (used for retry validation and UI error display)
 - `_prepare_save_data()` ensures command field is always RecordID format for database
 
 ## Common Patterns
@@ -56,6 +57,7 @@ All inherit from `ObjectModel` (SurrealDB base class with table_name and save/lo
 
 - **Snapshot approach**: Episode/speaker profiles stored as dicts (not references), so profile updates don't retroactively affect past episodes
 - **Job status resilience**: get_job_status() catches all exceptions and returns "unknown" (no error propagation)
+- **No automatic retries**: Podcast generation commands use `retry={"max_attempts": 1}` to prevent duplicate episode records on failure; retry is user-initiated via `POST /podcasts/episodes/{id}/retry`
 - **validate_speakers executes late**: Validators run at instantiation; bulk inserts may not trigger full validation
 - **RecordID coercion**: ensure_record_id() handles both string and RecordID inputs; command field parsed during deserialization
 - **No cascade delete**: Removing a profile doesn't cascade to episodes using it

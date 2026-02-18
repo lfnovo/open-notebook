@@ -160,29 +160,36 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     FastAPI, this handler won't be called. In that case, configure your reverse proxy
     to add CORS headers to error responses.
     """
-    # Get the origin from the request
-    origin = request.headers.get("origin", "*")
-
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers={
-            **(exc.headers or {}), "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        headers=_cors_headers(request, dict(exc.headers or {})),
     )
 
 
-def _cors_headers(request: Request) -> dict[str, str]:
-    origin = request.headers.get("origin", "*")
-    return {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    }
+def _cors_headers(
+    request: Request, base_headers: dict[str, str] | None = None
+) -> dict[str, str]:
+    """
+    Build CORS headers for exception responses without reflecting disallowed origins.
+    """
+    headers = dict(base_headers or {})
+    allowed_origins = _cors_origins()
+    request_origin = request.headers.get("origin")
+
+    if "*" in allowed_origins:
+        headers["Access-Control-Allow-Origin"] = "*"
+    elif request_origin and request_origin in allowed_origins:
+        headers["Access-Control-Allow-Origin"] = request_origin
+        headers["Vary"] = "Origin"
+    else:
+        # Origin not allowed: omit ACAO so browsers block cross-origin reads.
+        return headers
+
+    headers["Access-Control-Allow-Credentials"] = "true"
+    headers["Access-Control-Allow-Methods"] = "*"
+    headers["Access-Control-Allow-Headers"] = "*"
+    return headers
 
 
 @app.exception_handler(NotFoundError)

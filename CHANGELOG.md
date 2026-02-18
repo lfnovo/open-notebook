@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-02-17
+
+### Added
+- Retry button for failed podcast episodes in the UI (#211, #218)
+- Error details displayed on failed podcast episodes (#185, #355)
+- `POST /podcasts/episodes/{id}/retry` API endpoint for re-submitting failed episodes
+- `error_message` field in podcast episode API responses
+
+### Fixed
+- Podcast generation failures now correctly marked as "failed" instead of "completed" (#300, #335)
+- Disabled automatic retries for podcast generation to prevent duplicate episode records (#302)
+
+### Dependencies
+- Bump podcast-creator to >= 0.11.2
+- Bump esperanto to >= 2.19.4
+
+## [1.7.2] - 2026-02-16
+
+### Added
+- Error classification utility that maps LLM provider errors to user-friendly messages (#506)
+- Global exception handlers in FastAPI for all custom exception types with proper HTTP status codes
+- `getApiErrorMessage()` frontend helper that falls back to backend messages when no i18n mapping exists
+
+### Fixed
+- LLM errors (invalid API key, wrong model, rate limits) now show descriptive messages instead of "An unexpected error occurred" (#590)
+- SSE streaming error events in source chat and ask hooks were swallowed by inner JSON parse catch blocks
+- Transformation execution errors were caught and re-wrapped as generic 500s instead of using proper status codes
+- Fail fast when source content extraction returns empty instead of retrying (#589)
+- Chat input and message overflow with long unbroken strings (#588)
+- Word-wrap overflow in source cards, note editor, inline edit, note titles, and dialog content (#588)
+- Translation proxy shadowing `name` keys (#588)
+- OpenAI-compatible provider name handling via Esperanto update (#583)
+
+### Changed
+- `ValueError` replaced with `ConfigurationError` in model provisioning for proper error classification
+- `ConfigurationError` added to command retry `stop_on` lists to avoid retrying permanent config failures
+
+### Dependencies
+- Bump esperanto to 2.19.3 (#583)
+- Bump podcast-creator to 0.9.1
+
 ## [1.7.1] - 2026-02-14
 
 ### Added

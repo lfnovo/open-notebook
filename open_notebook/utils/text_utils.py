@@ -117,3 +117,29 @@ def clean_thinking_content(content: str) -> str:
     """
     _, cleaned_content = parse_thinking_content(content)
     return cleaned_content
+
+
+def extract_text_content(content) -> str:
+    """Extract text from LLM response content.
+
+    Handles both plain string responses and structured content formats
+    (e.g. Gemini's envelope format):
+    [{'type': 'text', 'text': '...', 'extras': {...}}]
+
+    Args:
+        content: The content from an AI message, either a string or a list of parts.
+
+    Returns:
+        The extracted text content as a string.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        text_parts = []
+        for part in content:
+            if isinstance(part, dict) and "text" in part:
+                text_parts.append(part["text"])
+            elif isinstance(part, str):
+                text_parts.append(part)
+        return "".join(text_parts)
+    return str(content)

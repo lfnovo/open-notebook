@@ -11,6 +11,7 @@ from loguru import logger
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
+from open_notebook.exceptions import ConfigurationError
 
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
 
@@ -106,7 +107,7 @@ class ModelManager:
         try:
             model: Model = await Model.get(model_id)
         except Exception:
-            raise ValueError(f"Model with ID {model_id} not found")
+            raise ConfigurationError(f"Model with ID {model_id} not found")
 
         if not model.type or model.type not in [
             "language",
@@ -114,7 +115,7 @@ class ModelManager:
             "speech_to_text",
             "text_to_speech",
         ]:
-            raise ValueError(f"Invalid model type: {model.type}")
+            raise ConfigurationError(f"Invalid model type: {model.type}")
 
         # Build config from credential if linked, otherwise fall back to env vars
         config: dict = {}
@@ -172,7 +173,7 @@ class ModelManager:
                 config=config,
             )
         else:
-            raise ValueError(f"Invalid model type: {model.type}")
+            raise ConfigurationError(f"Invalid model type: {model.type}")
 
     async def get_defaults(self) -> DefaultModels:
         """Get the default models configuration from database"""
@@ -254,7 +255,7 @@ class ModelManager:
 
         try:
             return await self.get_model(model_id, **kwargs)
-        except ValueError as e:
+        except (ValueError, ConfigurationError) as e:
             logger.error(
                 f"Failed to load default model for type '{model_type}': {e}. "
                 f"The configured model_id '{model_id}' may have been deleted or misconfigured. "

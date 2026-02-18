@@ -121,8 +121,11 @@ async def stream_ask_response(
         yield f"data: {json.dumps(completion_data)}\n\n"
 
     except Exception as e:
+        from open_notebook.utils.error_classifier import classify_error
+
+        _, user_message = classify_error(e)
         logger.error(f"Error in ask streaming: {str(e)}")
-        error_data = {"type": "error", "message": str(e)}
+        error_data = {"type": "error", "message": user_message}
         yield f"data: {json.dumps(error_data)}\n\n"
 
 

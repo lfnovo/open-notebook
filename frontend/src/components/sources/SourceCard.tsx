@@ -240,7 +240,7 @@ export function SourceCard({
             {/* Title */}
             <div className={cn('mb-1.5', !isCompleted && 'mb-1')}>
               <h4
-                className="text-sm font-medium leading-tight line-clamp-2"
+                className="text-sm font-medium leading-tight line-clamp-2 break-all"
                 title={title}
               >
                 {title}

@@ -699,6 +699,12 @@ export const jaJP = {
     speakerCountMax: "最大4人まで設定できます",
     delete: "削除",
     failedToDelete: "ポッドキャストの削除に失敗しました",
+    retry: "再試行",
+    retrying: "再試行中…",
+    retryStarted: "再試行を開始しました",
+    retryStartedDesc: "新しいポッドキャスト生成ジョブが送信されました。",
+    failedToRetry: "再試行に失敗しました",
+    errorDetails: "エラー詳細",
   },
   settings: {
     contentProcessing: "コンテンツ処理",

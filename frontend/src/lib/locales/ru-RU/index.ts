@@ -699,6 +699,12 @@ export const ruRU = {
     speakerCountMax: "Можно настроить до 4 говорящих",
     delete: "Удалить",
     failedToDelete: "Не удалось удалить подкаст",
+    retry: "Повторить",
+    retrying: "Повтор…",
+    retryStarted: "Повтор запущен",
+    retryStartedDesc: "Новое задание на генерацию подкаста отправлено.",
+    failedToRetry: "Не удалось повторить",
+    errorDetails: "Подробности ошибки",
   },
   settings: {
     contentProcessing: "Обработка контента",

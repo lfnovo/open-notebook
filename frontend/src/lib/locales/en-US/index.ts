@@ -699,6 +699,12 @@ export const enUS = {
     speakerCountMax: "You can configure up to 4 speakers",
     delete: "Delete",
     failedToDelete: "Failed to delete podcast",
+    retry: "Retry",
+    retrying: "Retrying…",
+    retryStarted: "Retry Started",
+    retryStartedDesc: "A new podcast generation job has been submitted.",
+    failedToRetry: "Failed to retry episode",
+    errorDetails: "Error details",
   },
   settings: {
     contentProcessing: "Content Processing",

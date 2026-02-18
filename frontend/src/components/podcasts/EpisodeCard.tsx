@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { InfoIcon, Trash2 } from 'lucide-react'
+import { InfoIcon, RefreshCcw, Trash2 } from 'lucide-react'
 
 import { resolvePodcastAssetUrl } from '@/lib/api/podcasts'
-import { EpisodeStatus, PodcastEpisode } from '@/lib/types/podcasts'
+import { EpisodeStatus, FAILED_EPISODE_STATUSES, PodcastEpisode } from '@/lib/types/podcasts'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog,
@@ -39,6 +39,8 @@ interface EpisodeCardProps {
   episode: PodcastEpisode
   onDelete: (episodeId: string) => Promise<void> | void
   deleting?: boolean
+  onRetry?: (episodeId: string) => Promise<void> | void
+  retrying?: boolean
 }
 
 const getSTATUS_META = (t: TranslationKeys): Record<
@@ -136,7 +138,7 @@ function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
   return []
 }
 
-export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
+export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: EpisodeCardProps) {
   const { t, language } = useTranslation()
   const [audioSrc, setAudioSrc] = useState<string | undefined>()
   const [audioError, setAudioError] = useState<string | null>(null)
@@ -216,6 +218,14 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
   const handleDelete = () => {
     void onDelete(episode.id)
   }
+
+  const handleRetry = () => {
+    if (onRetry) {
+      void onRetry(episode.id)
+    }
+  }
+
+  const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
   return (
     <Card className="shadow-sm">
@@ -371,6 +381,17 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
                 </div>
               </DialogContent>
             </Dialog>
+            {isFailed && onRetry ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetry}
+                disabled={retrying}
+              >
+                <RefreshCcw className={cn('mr-2 h-4 w-4', retrying && 'animate-spin')} />
+                {retrying ? t.podcasts.retrying : t.podcasts.retry}
+              </Button>
+            ) : null}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="ghost" size="sm" className="text-destructive">
@@ -400,6 +421,13 @@ export function EpisodeCard({ episode, onDelete, deleting }: EpisodeCardProps) {
           <audio controls preload="none" src={audioSrc} className="w-full" />
         ) : audioError ? (
           <p className="text-sm text-destructive">{audioError}</p>
+        ) : null}
+
+        {isFailed && episode.error_message ? (
+          <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
+            <p className="text-xs font-medium text-red-800 dark:text-red-300">{t.podcasts.errorDetails}</p>
+            <p className="mt-1 text-xs whitespace-pre-wrap text-red-700 dark:text-red-400">{episode.error_message}</p>
+          </div>
         ) : null}
       </CardContent>
     </Card>

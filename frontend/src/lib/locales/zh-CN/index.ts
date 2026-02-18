@@ -699,6 +699,12 @@ export const zhCN = {
     speakerCountMax: "最多只能配置 4 个发言人",
     delete: "删除",
     failedToDelete: "删除播客失败",
+    retry: "重试",
+    retrying: "重试中…",
+    retryStarted: "已开始重试",
+    retryStartedDesc: "已提交新的播客生成任务。",
+    failedToRetry: "重试失败",
+    errorDetails: "错误详情",
   },
   settings: {
     contentProcessing: "内容处理",

@@ -699,6 +699,12 @@ export const itIT = {
     speakerCountMax: "Puoi configurare fino a 4 speaker",
     delete: "Elimina",
     failedToDelete: "Impossibile eliminare il podcast",
+    retry: "Riprova",
+    retrying: "Nuovo tentativo…",
+    retryStarted: "Nuovo tentativo avviato",
+    retryStartedDesc: "Un nuovo lavoro di generazione podcast è stato inviato.",
+    failedToRetry: "Impossibile riprovare",
+    errorDetails: "Dettagli errore",
   },
   settings: {
     contentProcessing: "Elaborazione contenuti",

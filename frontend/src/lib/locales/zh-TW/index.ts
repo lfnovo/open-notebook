@@ -699,6 +699,12 @@ export const zhTW = {
     speakerCountMax: "最多只能設定 4 個發言人",
     delete: "刪除",
     failedToDelete: "刪除播客失敗",
+    retry: "重試",
+    retrying: "重試中…",
+    retryStarted: "已開始重試",
+    retryStartedDesc: "已提交新的播客生成任務。",
+    failedToRetry: "重試失敗",
+    errorDetails: "錯誤詳情",
   },
   settings: {
     contentProcessing: "內容處理",

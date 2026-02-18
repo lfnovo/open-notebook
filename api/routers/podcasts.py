@@ -28,6 +28,7 @@ class PodcastEpisodeResponse(BaseModel):
     outline: Optional[dict] = None
     created: Optional[str] = None
     job_status: Optional[str] = None
+    error_message: Optional[str] = None
 
 
 def _resolve_audio_path(audio_file: str) -> Path:
@@ -94,11 +95,14 @@ async def list_podcast_episodes():
             if not episode.command and not episode.audio_file:
                 continue
 
-            # Get job status if available
+            # Get job status and error message if available
             job_status = None
+            error_message = None
             if episode.command:
                 try:
-                    job_status = await episode.get_job_status()
+                    detail = await episode.get_job_detail()
+                    job_status = detail["status"]
+                    error_message = detail["error_message"]
                 except Exception:
                     job_status = "unknown"
             else:
@@ -124,6 +128,7 @@ async def list_podcast_episodes():
                     outline=episode.outline,
                     created=str(episode.created) if episode.created else None,
                     job_status=job_status,
+                    error_message=error_message,
                 )
             )
 
@@ -142,11 +147,14 @@ async def get_podcast_episode(episode_id: str):
     try:
         episode = await PodcastService.get_episode(episode_id)
 
-        # Get job status if available
+        # Get job status and error message if available
         job_status = None
+        error_message = None
         if episode.command:
             try:
-                job_status = await episode.get_job_status()
+                detail = await episode.get_job_detail()
+                job_status = detail["status"]
+                error_message = detail["error_message"]
             except Exception:
                 job_status = "unknown"
         else:
@@ -171,6 +179,7 @@ async def get_podcast_episode(episode_id: str):
             outline=episode.outline,
             created=str(episode.created) if episode.created else None,
             job_status=job_status,
+            error_message=error_message,
         )
 
     except Exception as e:
@@ -201,6 +210,63 @@ async def stream_podcast_episode_audio(episode_id: str):
         media_type="audio/mpeg",
         filename=audio_path.name,
     )
+
+
+@router.post("/podcasts/episodes/{episode_id}/retry")
+async def retry_podcast_episode(episode_id: str):
+    """Retry a failed podcast episode by deleting it and submitting a new job"""
+    try:
+        episode = await PodcastService.get_episode(episode_id)
+
+        # Validate episode is in a failed state
+        detail = await episode.get_job_detail()
+        if detail["status"] not in ("failed", "error"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Episode is not in a failed state (current: {detail['status']})",
+            )
+
+        # Extract params for re-submission
+        ep_profile_name = episode.episode_profile.get("name")
+        sp_profile_name = episode.speaker_profile.get("name")
+        episode_name = episode.name
+        content = episode.content
+
+        if not ep_profile_name or not sp_profile_name:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot retry: episode or speaker profile name missing from stored data",
+            )
+
+        # Delete audio file if any
+        if episode.audio_file:
+            audio_path = _resolve_audio_path(episode.audio_file)
+            if audio_path.exists():
+                try:
+                    audio_path.unlink()
+                except Exception as e:
+                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+
+        # Delete the failed episode
+        await episode.delete()
+
+        # Submit a new job
+        job_id = await PodcastService.submit_generation_job(
+            episode_profile_name=ep_profile_name,
+            speaker_profile_name=sp_profile_name,
+            episode_name=episode_name,
+            content=content,
+        )
+
+        return {"job_id": job_id, "message": "Retry submitted successfully"}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrying podcast episode: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail="Failed to retry episode"
+        )
 
 
 @router.delete("/podcasts/episodes/{episode_id}")

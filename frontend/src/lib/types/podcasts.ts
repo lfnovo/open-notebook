@@ -49,6 +49,7 @@ export interface PodcastEpisode {
   outline?: Record<string, unknown> | null
   created?: string | null
   job_status?: EpisodeStatus | null
+  error_message?: string | null
 }
 
 export interface PodcastGenerationRequest {

@@ -2168,7 +2168,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.10,<1" },
+    { name = "podcast-creator", specifier = ">=0.11.2,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
@@ -2519,7 +2519,7 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.10.0"
+version = "0.11.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -2533,11 +2533,12 @@ dependencies = [
     { name = "pydub" },
     { name = "python-dotenv" },
     { name = "requests" },
+    { name = "tenacity" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/14/d6e502de86f4d6df9698c19dbf2e683e7a1e477e6dceb614d82e90216ddd/podcast_creator-0.10.0.tar.gz", hash = "sha256:afc8a32d72d332b9f9c42f02c2f8266fe19037333563784855ea480b58875be3", size = 476574, upload-time = "2026-02-17T21:22:28.583Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3f/13/a1e4d01eacd385c018ffc92e74852ff90dbb64c5eb3779eba2862b466a0f/podcast_creator-0.11.2.tar.gz", hash = "sha256:3f5474323980427cc1764ebdb353c41002eac2bf8e28b74decf701f4ca6444dd", size = 480385, upload-time = "2026-02-18T00:03:56.801Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ac/1a/8829c8da83758077cc5a49d5c5257a80559f58610c754134e08e4a7328dd/podcast_creator-0.10.0-py3-none-any.whl", hash = "sha256:b5a8c298db4749a004c7c4b1987c92728299aa73734c40be9576e9bab233145c", size = 75783, upload-time = "2026-02-17T21:22:30.392Z" },
+    { url = "https://files.pythonhosted.org/packages/97/2e/c7e8d0c540d5296d26c43c5e41a7803906b86c3d79e8a57f9ee9a0f2b4ad/podcast_creator-0.11.2-py3-none-any.whl", hash = "sha256:17c9361306a6e7223e7f5d12fd4bdad4514231ce33df73ad3052e35cfdd92fd9", size = 77885, upload-time = "2026-02-18T00:03:55.804Z" },
 ]
 
 [[package]]

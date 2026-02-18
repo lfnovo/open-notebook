@@ -93,7 +93,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - **Large context threshold hard-coded**: 105,000 token threshold for large_context_model upgrade (not configurable)
 - **DefaultModels.get_instance() fresh fetch**: Intentionally bypasses parent singleton cache to pick up live config changes; creates new instance each call
 - **Type-specific getters use assertions**: get_speech_to_text() asserts isinstance (catches misconfiguration early)
-- **No validation of model existence**: ModelManager.get_model() raises ValueError if model not found (not caught upstream)
+- **ConfigurationError on missing model**: ModelManager.get_model() and provision_langchain_model() raise `ConfigurationError` (not ValueError) when a model is not found or not configured, so the global exception handler returns HTTP 422 with a descriptive message
 - **Esperanto caching**: Actual model instances cached by Esperanto (not by ModelManager); ModelManager stateless
 - **Fallback chain specificity**: "transformation" type falls back to default_chat_model if not explicitly set (convention-based)
 - **kwargs passed through**: provision_langchain_model() passes kwargs to AIFactory but doesn't validate what's accepted

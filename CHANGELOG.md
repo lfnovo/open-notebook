@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-02-17
+
+### Added
+- Retry button for failed podcast episodes in the UI (#211, #218)
+- Error details displayed on failed podcast episodes (#185, #355)
+- `POST /podcasts/episodes/{id}/retry` API endpoint for re-submitting failed episodes
+- `error_message` field in podcast episode API responses
+
+### Fixed
+- Podcast generation failures now correctly marked as "failed" instead of "completed" (#300, #335)
+- Disabled automatic retries for podcast generation to prevent duplicate episode records (#302)
+
+### Dependencies
+- Bump podcast-creator to >= 0.11.2
+- Bump esperanto to >= 2.19.4
+
 ## [1.7.2] - 2026-02-16
 
 ### Added

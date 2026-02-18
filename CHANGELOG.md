@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.4] - 2026-02-18
+
+### Fixed
+- Embedding large documents (3MB+) fails with 413 Payload Too Large (#594)
+- `generate_embeddings()` now batches texts in groups of 50 with per-batch retry, preventing provider payload limits from being exceeded
+- 413 errors now classified with user-friendly message in error classifier
+- Misleading "Created 0 embedded chunks" log in `process_source_command` — embedding is fire-and-forget, so the count was always 0; now logs "embedding submitted" instead
+
 ## [1.7.3] - 2026-02-17
 
 ### Added

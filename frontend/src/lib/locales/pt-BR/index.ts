@@ -699,6 +699,12 @@ export const ptBR = {
     speakerCountMax: "Você pode configurar até 4 locutores",
     delete: "Excluir",
     failedToDelete: "Falha ao excluir podcast",
+    retry: "Tentar novamente",
+    retrying: "Tentando novamente…",
+    retryStarted: "Nova tentativa iniciada",
+    retryStartedDesc: "Um novo trabalho de geração de podcast foi enviado.",
+    failedToRetry: "Falha ao tentar novamente",
+    errorDetails: "Detalhes do erro",
   },
   settings: {
     contentProcessing: "Processamento de Conteúdo",

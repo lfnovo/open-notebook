@@ -113,6 +113,7 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 
 ### Error Handling
 - **API errors**: All request failures propagate to consuming code; components show toast notifications
+- **Error message resolution** (`lib/utils/error-handler.ts`): `getApiErrorMessage()` tries i18n mapping first via `ERROR_MAP`, then falls back to displaying the backend's descriptive error message directly. This ensures user-friendly error messages from the error classification system are shown as-is.
 - **Toast feedback**: Mutations show success/error toasts (from `sonner` library)
 - **Error boundary**: App-level error boundary catches React render errors; shows fallback UI
 

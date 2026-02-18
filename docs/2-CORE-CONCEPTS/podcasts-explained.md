@@ -156,6 +156,37 @@ Audio files → Mix together → Final podcast MP3
 
 ---
 
+## When Things Go Wrong: Failures & Retry
+
+Podcast generation involves multiple steps (outline, transcript, TTS) and depends on external AI providers. Sometimes things fail.
+
+### What Happens on Failure
+
+When podcast generation fails (e.g., wrong model configured, API key expired, provider outage):
+
+- The episode is marked as **Failed** with a red badge
+- The **error message** from the AI provider is displayed so you can understand what went wrong
+- No duplicate episodes are created — automatic retries are disabled to prevent confusion
+
+### How to Retry a Failed Episode
+
+1. Go to the podcast's **Episodes** tab
+2. Find the failed episode — it shows a red "FAILED" badge and an error details box
+3. Click the **Retry** button
+4. The failed episode is deleted and a new generation job is submitted
+5. The new episode appears with "pending" status
+
+### Common Failure Causes
+
+| Error | What to Do |
+|-------|-----------|
+| Invalid API key | Check Settings -> Credentials for the TTS and language model providers |
+| Model not found | Verify the model name in your episode profile exists and is correctly configured |
+| Rate limit exceeded | Wait a few minutes and retry |
+| Provider unavailable | Check provider status page; retry later |
+
+---
+
 ## Key Architecture Decisions
 
 ### 1. Asynchronous Processing

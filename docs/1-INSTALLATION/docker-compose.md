@@ -194,6 +194,8 @@ Configure Ollama in the Settings UI:
 | `SURREAL_URL` | Database connection | `ws://surrealdb:8000/rpc` |
 | `SURREAL_USER` | Database user | `root` |
 | `SURREAL_PASSWORD` | Database password | `root` |
+| `SURREAL_NAMESPACE` | Database namespace | `open_notebook` |
+| `SURREAL_DATABASE` | Database name | `open_notebook` |
 | `API_URL` | API external URL | `http://localhost:5055` |
 
 See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.

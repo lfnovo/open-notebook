@@ -132,6 +132,8 @@ services:
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=open_notebook
+      - SURREAL_DATABASE=open_notebook
     volumes:
       - ./notebook_data:/app/data
     depends_on:

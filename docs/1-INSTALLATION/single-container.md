@@ -107,6 +107,8 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 | `SURREAL_URL` | Database | `ws://localhost:8000/rpc` |
 | `SURREAL_USER` | DB user | `root` |
 | `SURREAL_PASSWORD` | DB password | `password` |
+| `SURREAL_NAMESPACE` | DB namespace | `open_notebook` |
+| `SURREAL_DATABASE` | DB name | `open_notebook` |
 | `API_URL` | External URL (for remote access) | `https://myapp.example.com` |
 
 AI provider API keys are configured via the **Settings → API Keys** UI after deployment.

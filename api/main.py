@@ -1,10 +1,7 @@
-# Load environment variables
-from dotenv import load_dotenv
-
-load_dotenv()
-
 from contextlib import asynccontextmanager
+import os
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -46,6 +43,21 @@ from api.routers import (
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
+
+load_dotenv()
+
+
+def _cors_origins() -> list[str]:
+    """CORS allowed origins. Set CORS_ORIGINS (comma-separated) in production."""
+    value = os.getenv("CORS_ORIGINS", "*").strip()
+    if value == "*":
+        return ["*"]
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+
+# Read and parse once at module load; env values won't change during runtime.
+CORS_ALLOWED_ORIGINS = _cors_origins()
+
 
 # Import commands to register them in the API process
 try:
@@ -130,7 +142,7 @@ app.add_middleware(
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -149,29 +161,40 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     FastAPI, this handler won't be called. In that case, configure your reverse proxy
     to add CORS headers to error responses.
     """
-    # Get the origin from the request
-    origin = request.headers.get("origin", "*")
-
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers={
-            **(exc.headers or {}), "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        headers=_cors_headers(request, dict(exc.headers or {})),
     )
 
 
-def _cors_headers(request: Request) -> dict[str, str]:
-    origin = request.headers.get("origin", "*")
-    return {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    }
+def _cors_headers(
+    request: Request, base_headers: dict[str, str] | None = None
+) -> dict[str, str]:
+    """
+    Build CORS headers for exception responses without reflecting disallowed origins.
+    """
+    headers = dict(base_headers or {})
+    request_origin = request.headers.get("origin")
+
+    if "*" in CORS_ALLOWED_ORIGINS:
+        # With credentials enabled, wildcard ACAO is invalid for browsers.
+        # Mirror the request origin instead, matching CORSMiddleware behavior.
+        if not request_origin:
+            return headers
+        headers["Access-Control-Allow-Origin"] = request_origin
+    elif request_origin and request_origin in CORS_ALLOWED_ORIGINS:
+        headers["Access-Control-Allow-Origin"] = request_origin
+    else:
+        # Origin not allowed: omit ACAO so browsers block cross-origin reads.
+        return headers
+
+    vary = headers.get("Vary")
+    headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
+    headers["Access-Control-Allow-Credentials"] = "true"
+    headers["Access-Control-Allow-Methods"] = "*"
+    headers["Access-Control-Allow-Headers"] = "*"
+    return headers
 
 
 @app.exception_handler(NotFoundError)

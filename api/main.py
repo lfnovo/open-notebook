@@ -1,21 +1,7 @@
-# Load environment variables
+from contextlib import asynccontextmanager
 import os
 
 from dotenv import load_dotenv
-
-load_dotenv()
-
-
-def _cors_origins() -> list[str]:
-    """CORS allowed origins. Set CORS_ORIGINS (comma-separated) in production."""
-    value = os.getenv("CORS_ORIGINS", "*").strip()
-    if value == "*":
-        return ["*"]
-    return [origin.strip() for origin in value.split(",") if origin.strip()]
-
-
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -57,6 +43,21 @@ from api.routers import (
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
+
+load_dotenv()
+
+
+def _cors_origins() -> list[str]:
+    """CORS allowed origins. Set CORS_ORIGINS (comma-separated) in production."""
+    value = os.getenv("CORS_ORIGINS", "*").strip()
+    if value == "*":
+        return ["*"]
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+
+# Read and parse once at module load; env values won't change during runtime.
+CORS_ALLOWED_ORIGINS = _cors_origins()
+
 
 # Import commands to register them in the API process
 try:
@@ -141,7 +142,7 @@ app.add_middleware(
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origins(),
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -174,25 +175,22 @@ def _cors_headers(
     Build CORS headers for exception responses without reflecting disallowed origins.
     """
     headers = dict(base_headers or {})
-    allowed_origins = _cors_origins()
     request_origin = request.headers.get("origin")
 
-    if "*" in allowed_origins:
+    if "*" in CORS_ALLOWED_ORIGINS:
         # With credentials enabled, wildcard ACAO is invalid for browsers.
         # Mirror the request origin instead, matching CORSMiddleware behavior.
         if not request_origin:
             return headers
         headers["Access-Control-Allow-Origin"] = request_origin
-        vary = headers.get("Vary")
-        headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
-    elif request_origin and request_origin in allowed_origins:
+    elif request_origin and request_origin in CORS_ALLOWED_ORIGINS:
         headers["Access-Control-Allow-Origin"] = request_origin
-        vary = headers.get("Vary")
-        headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
     else:
         # Origin not allowed: omit ACAO so browsers block cross-origin reads.
         return headers
 
+    vary = headers.get("Vary")
+    headers["Vary"] = f"{vary}, Origin" if vary and "Origin" not in vary else "Origin"
     headers["Access-Control-Allow-Credentials"] = "true"
     headers["Access-Control-Allow-Methods"] = "*"
     headers["Access-Control-Allow-Headers"] = "*"

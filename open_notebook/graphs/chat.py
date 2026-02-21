@@ -1,11 +1,10 @@
 import asyncio
-import sqlite3
 from typing import Annotated, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
@@ -85,11 +84,16 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
         raise error_class(user_message) from e
 
 
-conn = sqlite3.connect(
-    LANGGRAPH_CHECKPOINT_FILE,
-    check_same_thread=False,
-)
-memory = SqliteSaver(conn)
+async def _create_memory() -> AsyncSqliteSaver:
+    import aiosqlite
+
+    conn = await aiosqlite.connect(LANGGRAPH_CHECKPOINT_FILE)
+    saver = AsyncSqliteSaver(conn)
+    await saver.setup()
+    return saver
+
+
+memory = asyncio.run(_create_memory())
 
 agent_state = StateGraph(ThreadState)
 agent_state.add_node("agent", call_model_with_messages)

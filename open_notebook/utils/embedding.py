@@ -19,6 +19,7 @@ from loguru import logger
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
 
 EMBEDDING_BATCH_SIZE = 50
+EMBEDDING_BATCH_MAX_CHARS = 16000  # max total chars per batch (guards against provider token limits)
 EMBEDDING_MAX_RETRIES = 3
 EMBEDDING_RETRY_DELAY = 2  # seconds
 
@@ -128,12 +129,30 @@ async def generate_embeddings(
     )
 
     all_embeddings: List[List[float]] = []
-    total_batches = (len(texts) + EMBEDDING_BATCH_SIZE - 1) // EMBEDDING_BATCH_SIZE
 
-    for batch_idx in range(total_batches):
-        start = batch_idx * EMBEDDING_BATCH_SIZE
-        end = start + EMBEDDING_BATCH_SIZE
-        batch = texts[start:end]
+    # Build batches respecting both count and total-character limits.
+    # The total-char limit prevents HTTP 400 errors from providers (e.g. Mistral)
+    # that reject requests whose combined token count exceeds their API limits.
+    batches: List[List[str]] = []
+    current_batch: List[str] = []
+    current_chars = 0
+    for text in texts:
+        text_len = len(text)
+        if current_batch and (
+            len(current_batch) >= EMBEDDING_BATCH_SIZE
+            or current_chars + text_len > EMBEDDING_BATCH_MAX_CHARS
+        ):
+            batches.append(current_batch)
+            current_batch = []
+            current_chars = 0
+        current_batch.append(text)
+        current_chars += text_len
+    if current_batch:
+        batches.append(current_batch)
+
+    total_batches = len(batches)
+
+    for batch_idx, batch in enumerate(batches):
 
         for attempt in range(1, EMBEDDING_MAX_RETRIES + 1):
             try:

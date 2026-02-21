@@ -34,6 +34,14 @@ services:
       - SURREAL_EXPERIMENTAL_GRAPHQL=true
     restart: always
     pull_policy: always
+    # Memory limits prevent SurrealDB from exhausting host RAM during indexing/embedding.
+    # Increase the limit if you index very large documents or many sources.
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
 
   speaches:
     image: ghcr.io/speaches-ai/speaches:latest-cpu

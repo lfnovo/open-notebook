@@ -28,8 +28,15 @@ def token_count(input_string: str) -> int:
         encoding = tiktoken.get_encoding("o200k_base")
         tokens = encoding.encode(input_string)
         return len(tokens)
-    except ImportError:
-        # Fallback: simple word count estimation
+    except Exception:
+        # Fallback: handles ImportError (not installed) AND network errors
+        # (e.g., offline environments that can't download encoding from internet)
+        from loguru import logger
+
+        logger.warning(
+            "tiktoken unavailable (not installed or offline); "
+            "falling back to word-count estimation."
+        )
         return int(len(input_string.split()) * 1.3)
 
 

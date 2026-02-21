@@ -30,6 +30,14 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 # Install dependencies
 RUN uv sync --frozen --no-dev
 
+# Pre-download tiktoken encoding so the app works offline (issue #264).
+# /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts
+# of /app/data (for user data persistence) do not hide the pre-baked encoding.
+# config.py reads TIKTOKEN_CACHE_DIR from the environment to pick up this path.
+ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
+RUN mkdir -p /app/tiktoken-cache && \
+    .venv/bin/python -c "import tiktoken; tiktoken.get_encoding('o200k_base')"
+
 # Stage 3: Runtime
 FROM python:3.12-slim-bookworm AS runtime
 
@@ -54,6 +62,9 @@ WORKDIR /app
 COPY --from=backend-builder /app/.venv /app/.venv
 COPY . /app/
 
+# Copy pre-downloaded tiktoken encoding from builder (outside /data/ — volume-mount safe)
+COPY --from=backend-builder /app/tiktoken-cache /app/tiktoken-cache
+
 # Copy built frontend from standalone output
 COPY --from=frontend-builder /app/frontend/.next/standalone /app/frontend/
 COPY --from=frontend-builder /app/frontend/.next/static /app/frontend/.next/static
@@ -61,6 +72,8 @@ COPY --from=frontend-builder /app/frontend/public /app/frontend/public
 
 # Bind Next.js to all interfaces (required for Docker networking and reverse proxies)
 ENV HOSTNAME=0.0.0.0
+# Point the app at the pre-baked tiktoken encoding (see open_notebook/config.py)
+ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 
 # Setup directories and permissions
 RUN mkdir -p /app/data /mydata

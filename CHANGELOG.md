@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Embedding batch size is now configurable via `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` environment variable, allowing users to tune for their embedding provider's per-request limits and preventing HTTP 400 errors with Mistral and other providers (#536)
+
 ## [1.7.4] - 2026-02-18
 
 ### Fixed

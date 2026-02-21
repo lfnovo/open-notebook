@@ -19,6 +19,7 @@ export interface EpisodeProfile {
   transcript_model: string
   default_briefing: string
   num_segments: number
+  language?: string | null
 }
 
 export interface SpeakerVoiceConfig {

@@ -93,6 +93,11 @@ async def generate_podcast_command(
 
         # 4. Generate briefing
         briefing = episode_profile.default_briefing
+        if episode_profile.language:
+            briefing = (
+                f"IMPORTANT: Write ALL podcast content (outline, transcript, and dialogue) in {episode_profile.language}. "
+                f"Do not use any other language.\n\n"
+            ) + briefing
         if input_data.briefing_suffix:
             briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
 

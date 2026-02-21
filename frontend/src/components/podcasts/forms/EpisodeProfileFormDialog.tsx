@@ -42,6 +42,7 @@ const episodeProfileSchema = (t: TranslationKeys) => z.object({
   transcript_provider: z.string().min(1, t.podcasts.transcriptProviderRequired || 'Transcript provider is required'),
   transcript_model: z.string().min(1, t.podcasts.transcriptModelRequired || 'Transcript model is required'),
   default_briefing: z.string().min(1, t.podcasts.defaultBriefingRequired || 'Default briefing is required'),
+  language: z.string().optional(),
   num_segments: z.number()
     .int(t.podcasts.segmentsInteger || 'Must be an integer')
     .min(3, t.podcasts.segmentsMin || 'At least 3 segments')
@@ -89,6 +90,7 @@ export function EpisodeProfileFormDialog({
         transcript_model: initialData.transcript_model,
         default_briefing: initialData.default_briefing,
         num_segments: initialData.num_segments,
+        language: initialData.language ?? '',
       }
     }
 
@@ -102,6 +104,7 @@ export function EpisodeProfileFormDialog({
       transcript_model: firstModel,
       default_briefing: '',
       num_segments: 5,
+      language: '',
     }
   }, [initialData, modelOptions, providers, speakerProfiles])
 
@@ -164,6 +167,7 @@ export function EpisodeProfileFormDialog({
     const payload = {
       ...values,
       description: values.description ?? '',
+      language: values.language?.trim() || null,
     }
 
     if (mode === 'create') {
@@ -236,6 +240,17 @@ export function EpisodeProfileFormDialog({
               {errors.num_segments ? (
                 <p className="text-xs text-red-600">{errors.num_segments.message}</p>
               ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="language">{t.podcasts.podcastLanguage}</Label>
+              <Input
+                id="language"
+                placeholder={t.podcasts.podcastLanguagePlaceholder}
+                {...register('language')}
+                autoComplete="off"
+              />
+              <p className="text-xs text-muted-foreground">{t.podcasts.podcastLanguageDesc}</p>
             </div>
 
             <div className="md:col-span-2 space-y-2">

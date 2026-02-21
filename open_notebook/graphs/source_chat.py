@@ -1,11 +1,10 @@
 import asyncio
-import sqlite3
 from typing import Annotated, Dict, List, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import AIMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
@@ -240,12 +239,16 @@ def _format_source_context(context_data: Dict) -> str:
     return "\n".join(context_parts)
 
 
-# Create SQLite checkpointer
-conn = sqlite3.connect(
-    LANGGRAPH_CHECKPOINT_FILE,
-    check_same_thread=False,
-)
-memory = SqliteSaver(conn)
+async def _create_memory() -> AsyncSqliteSaver:
+    import aiosqlite
+
+    conn = await aiosqlite.connect(LANGGRAPH_CHECKPOINT_FILE)
+    saver = AsyncSqliteSaver(conn)
+    await saver.setup()
+    return saver
+
+
+memory = asyncio.run(_create_memory())
 
 # Create the StateGraph
 source_chat_state = StateGraph(SourceChatState)

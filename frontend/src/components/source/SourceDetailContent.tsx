@@ -113,7 +113,11 @@ export function SourceDetailContent({
       }
     } catch (err) {
       console.error('Failed to fetch source:', err)
-      setError(t.sources.loadFailed)
+      if (isAxiosError(err) && err.response?.status === 404) {
+        setError(t.sources.notFound)
+      } else {
+        setError(t.sources.loadFailed)
+      }
     } finally {
       setLoading(false)
     }

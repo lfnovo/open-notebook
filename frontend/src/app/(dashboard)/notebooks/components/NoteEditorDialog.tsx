@@ -40,7 +40,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
     ? (note.id.includes(':') ? note.id : `note:${note.id}`)
     : ''
 
-  const { data: fetchedNote, isLoading: noteLoading } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
+  const { data: fetchedNote, isLoading: noteLoading, isError: noteNotFound } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
   const isSaving = isEditing ? updateNote.isPending : createNote.isPending
   const {
     handleSubmit,
@@ -130,6 +130,10 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+            </div>
+          ) : isEditing && noteNotFound ? (
+            <div className="flex-1 flex items-center justify-center py-10">
+              <p className="text-sm text-muted-foreground">{t.common.itemNotFound.replace('{type}', t.common.note)}</p>
             </div>
           ) : (
             <>

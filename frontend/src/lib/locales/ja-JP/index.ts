@@ -693,6 +693,8 @@ export const jaJP = {
     segmentsMin: "最低3セグメント",
     segmentsMax: "最大20セグメント",
     voiceIdRequired: "Voice IDは必須です",
+    voiceIdPlaceholder: "例: alloy (OpenAI) または モデル:音声 (互換プロバイダ)",
+    voiceIdHint: "OpenAI: 音声名を使用してください（例: alloy、echo、nova）。OpenAI互換プロバイダの場合、形式はモデル名:音声名になることがあります（例: FunAudioLLM/CosyVoice2-0.5B:anna）。プロバイダのドキュメントを確認してください。",
     backstoryRequired: "バックストーリーは必須です",
     personalityRequired: "パーソナリティは必須です",
     speakerCountMin: "最低1人のスピーカーが必要です",

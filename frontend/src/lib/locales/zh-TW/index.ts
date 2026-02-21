@@ -693,6 +693,8 @@ export const zhTW = {
     segmentsMin: "至少包含 3 個分段",
     segmentsMax: "最多包含 20 個分段",
     voiceIdRequired: "必須填寫聲音 ID",
+    voiceIdPlaceholder: "例如 alloy (OpenAI) 或 模型:聲音 (相容提供商)",
+    voiceIdHint: "OpenAI：使用聲音名稱（例如 alloy、echo、nova）。對於 OpenAI 相容提供商，格式可能為 模型名:聲音名（例如 FunAudioLLM/CosyVoice2-0.5B:anna）。請查閱您提供商的說明文件。",
     backstoryRequired: "必須填寫背景故事",
     personalityRequired: "必須填寫性格描述",
     speakerCountMin: "至少需要一個發言人",

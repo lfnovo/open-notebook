@@ -693,6 +693,8 @@ export const zhCN = {
     segmentsMin: "至少包含 3 个分段",
     segmentsMax: "最多包含 20 个分段",
     voiceIdRequired: "必须填写声音 ID",
+    voiceIdPlaceholder: "例如 alloy (OpenAI) 或 模型:声音 (兼容提供商)",
+    voiceIdHint: "OpenAI：使用声音名称（例如 alloy、echo、nova）。对于 OpenAI 兼容提供商，格式可能为 模型名:声音名（例如 FunAudioLLM/CosyVoice2-0.5B:anna）。请查阅您提供商的文档。",
     backstoryRequired: "必须填写背景故事",
     personalityRequired: "必须填写性格描述",
     speakerCountMin: "至少需要一个发言人",

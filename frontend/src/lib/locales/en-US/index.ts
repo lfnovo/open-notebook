@@ -693,6 +693,8 @@ export const enUS = {
     segmentsMin: "At least 3 segments",
     segmentsMax: "Maximum 20 segments",
     voiceIdRequired: "Voice ID is required",
+    voiceIdPlaceholder: "e.g. alloy (OpenAI) or Model:Voice (compatible providers)",
+    voiceIdHint: "OpenAI: use a voice name (e.g. alloy, echo, nova). For OpenAI-compatible providers, the format may be ModelName:VoiceName (e.g. FunAudioLLM/CosyVoice2-0.5B:anna). Check your provider's documentation.",
     backstoryRequired: "Backstory is required",
     personalityRequired: "Personality is required",
     speakerCountMin: "At least one speaker is required",

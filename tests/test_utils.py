@@ -151,6 +151,28 @@ class TestTokenUtilities:
             assert isinstance(count, int)
             assert count > 0
 
+    def test_token_count_network_error_fallback(self):
+        """Test fallback when tiktoken raises a network error (issue #264).
+
+        In offline environments tiktoken.get_encoding() tries to download the
+        encoding file and raises a URLError/OSError, not an ImportError.
+        The except clause must catch Exception (not only ImportError) so that
+        these network failures also fall through to the word-count estimate.
+        """
+        import urllib.error
+        from unittest.mock import patch
+
+        with patch(
+            "tiktoken.get_encoding",
+            side_effect=urllib.error.URLError("No network (simulated offline)"),
+        ):
+            text = "one two three four five"
+            count = token_count(text)
+
+            # Must not raise; must return a positive int via the fallback
+            assert isinstance(count, int)
+            assert count > 0
+
 
 # ============================================================================
 # TEST SUITE 3: Version Utilities

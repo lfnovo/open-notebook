@@ -32,6 +32,14 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 # Install dependencies with optimizations (this layer will be cached unless dependencies change)
 RUN uv sync --frozen --no-dev
 
+# Pre-download tiktoken encoding so the app works offline (issue #264).
+# /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts
+# of /app/data (for user data persistence) do not hide the pre-baked encoding.
+# config.py reads TIKTOKEN_CACHE_DIR from the environment to pick up this path.
+ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
+RUN mkdir -p /app/tiktoken-cache && \
+    .venv/bin/python -c "import tiktoken; tiktoken.get_encoding('o200k_base')"
+
 # Copy the rest of the application code
 COPY . /app
 
@@ -72,9 +80,14 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy the source code (the rest)
 COPY . /app
 
+# Copy pre-downloaded tiktoken encoding from builder (outside /data/ — volume-mount safe)
+COPY --from=builder /app/tiktoken-cache /app/tiktoken-cache
+
 # Ensure uv uses the existing venv without attempting network operations
 ENV UV_NO_SYNC=1
 ENV VIRTUAL_ENV=/app/.venv
+# Point the app at the pre-baked tiktoken encoding (see open_notebook/config.py)
+ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 
 # Bind Next.js to all interfaces (required for Docker networking and reverse proxies)
 ENV HOSTNAME=0.0.0.0

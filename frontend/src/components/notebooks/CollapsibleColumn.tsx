@@ -21,6 +21,8 @@ export function CollapsibleColumn({
   collapsedLabel,
   children,
 }: CollapsibleColumnProps) {
+  const isCJK = /[\u4e00-\u9fa5\u3040-\u30ff\uac00-\ud7af]/.test(collapsedLabel);
+
   if (isCollapsed) {
     return (
       <TooltipProvider>
@@ -42,7 +44,7 @@ export function CollapsibleColumn({
               <CollapsedIcon className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
               <div
                 className="text-xs font-medium text-muted-foreground group-hover:text-foreground transition-colors whitespace-nowrap"
-                style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', textOrientation: 'mixed' }}
+                style={{ writingMode: 'vertical-rl', transform: isCJK ? 'none' : 'rotate(180deg)', textOrientation: 'mixed' }}
               >
                 {collapsedLabel}
               </div>

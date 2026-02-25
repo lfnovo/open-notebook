@@ -13,7 +13,10 @@ COPY frontend/ ./
 # Build the frontend
 RUN npm run build
 
-# Stage 2: Backend Builder
+# Stage 2: SurrealDB binary (pinned to v2 to match docker-compose.yml)
+FROM surrealdb/surrealdb:v2 AS surreal-binary
+
+# Stage 4: Backend Builder
 FROM python:3.12-slim-bookworm AS backend-builder
 # Install build dependencies
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
@@ -30,7 +33,7 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 # Install dependencies
 RUN uv sync --frozen --no-dev
 
-# Stage 3: Runtime
+# Stage 5: Runtime
 FROM python:3.12-slim-bookworm AS runtime
 
 # Install runtime dependencies
@@ -42,8 +45,8 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Install SurrealDB
-RUN curl --proto '=https' --tlsv1.2 -sSf https://install.surrealdb.com | sh
+# Install SurrealDB (copied from pinned v2 image to match docker-compose.yml)
+COPY --from=surreal-binary /surreal /usr/local/bin/surreal
 
 # Install uv (optional but helpful for some scripts)
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/

@@ -2,7 +2,6 @@
 
 import { useMemo } from 'react'
 import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
-import { useSources } from '@/lib/hooks/use-sources'
 import { useNotes } from '@/lib/hooks/use-notes'
 import { ChatPanel } from '@/components/source/ChatPanel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -10,17 +9,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 import { ContextSelections } from '../[id]/page'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { SourceListResponse } from '@/lib/types/api'
 
 interface ChatColumnProps {
   notebookId: string
   contextSelections: ContextSelections
+  sources: SourceListResponse[]
+  sourcesLoading: boolean
 }
 
-export function ChatColumn({ notebookId, contextSelections }: ChatColumnProps) {
+export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoading }: ChatColumnProps) {
   const { t } = useTranslation()
 
-  // Fetch sources and notes for this notebook
-  const { data: sources = [], isLoading: sourcesLoading } = useSources(notebookId)
+  // Fetch notes for this notebook
   const { data: notes = [], isLoading: notesLoading } = useNotes(notebookId)
 
   // Initialize notebook chat hook

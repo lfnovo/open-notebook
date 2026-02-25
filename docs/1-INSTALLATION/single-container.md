@@ -31,7 +31,7 @@ services:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
       - SURREAL_URL=ws://localhost:8000/rpc
       - SURREAL_USER=root
-      - SURREAL_PASSWORD=password
+      - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
     volumes:
@@ -106,7 +106,7 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 | `OPEN_NOTEBOOK_ENCRYPTION_KEY` | Encryption key for credentials (required) | `my-secret-key` |
 | `SURREAL_URL` | Database | `ws://localhost:8000/rpc` |
 | `SURREAL_USER` | DB user | `root` |
-| `SURREAL_PASSWORD` | DB password | `password` |
+| `SURREAL_PASSWORD` | DB password | `root` |
 | `SURREAL_NAMESPACE` | DB namespace | `open_notebook` |
 | `SURREAL_DATABASE` | DB name | `open_notebook` |
 | `API_URL` | External URL (for remote access) | `https://myapp.example.com` |

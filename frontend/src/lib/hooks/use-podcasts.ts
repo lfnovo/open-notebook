@@ -16,6 +16,14 @@ import {
   speakerUsageMap,
 } from '@/lib/types/podcasts'
 
+export function useLanguages() {
+  return useQuery({
+    queryKey: ['languages'] as const,
+    queryFn: podcastsApi.listLanguages,
+    staleTime: Infinity,
+  })
+}
+
 interface EpisodeStatusCounts {
   total: number
   running: number

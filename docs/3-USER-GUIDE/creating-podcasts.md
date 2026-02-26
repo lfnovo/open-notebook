@@ -74,7 +74,7 @@ An episode profile defines the structure and tone.
 **Option A: Use Preset Profile**
 
 ```
-Open Notebook provides templates:
+Open Notebook provides preset profiles:
 
 Academic Presentation (Monologue)
 ├─ 1 speaker
@@ -140,22 +140,22 @@ Speakers are the "voice" of your podcast.
 **Option A: Use Preset Speakers**
 
 ```
-Open Notebook provides templates:
+Open Notebook provides preset profiles:
 
 "Expert Alex"
 - Expertise: Deep knowledge
 - Personality: Rigorous, patient
-- TTS: OpenAI (clear voice)
+- Voice Model: Selected from model registry
 
 "Curious Sam"
 - Expertise: Curious newcomer
 - Personality: Asks questions
-- TTS: Google (natural voice)
+- Voice Model: Selected from model registry
 
 "Skeptic Jordan"
 - Expertise: Critical perspective
 - Personality: Challenges assumptions
-- TTS: ElevenLabs (warm voice)
+- Voice Model: Selected from model registry
 
 For your first podcast: Use presets
 For custom podcast: Create your own
@@ -179,15 +179,17 @@ Personality:
  explains clearly, asks good questions"
 
 Voice Configuration:
-- TTS Provider: OpenAI / Google / ElevenLabs / Local
-- Voice selection: Choose from available voices
-- Accent (optional): British / American / etc.
+- Voice Model: Select from model registry (e.g., OpenAI TTS, Google TTS, ElevenLabs)
+- Voice: Choose from available voices for the selected model
+- Per-speaker override: Each speaker can optionally use a different voice model
+
+Credentials are automatically resolved from the model configuration.
 
 Example:
 Name: Dr. Research Expert
 Expertise: AI safety alignment research
 Personality: Rigorous, academic but accessible
-Voice: ElevenLabs - professional male voice
+Voice Model: ElevenLabs TTS (from registry), Voice: professional male
 ```
 
 ### Step 6: Generate Podcast
@@ -463,7 +465,7 @@ Rule: 3-5 sources per podcast
 
 **Solutions**:
 ```
-1. Choose different TTS providers (OpenAI + Google)
+1. Choose different voice models from the registry for each speaker
 2. Choose very different voice options
 3. Increase personality differences in profile
 4. Try different speaker count (2 vs 3 vs 4)

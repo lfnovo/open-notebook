@@ -4,6 +4,7 @@ import {
   PodcastEpisode,
   EpisodeProfile,
   SpeakerProfile,
+  Language,
   PodcastGenerationRequest,
   PodcastGenerationResponse,
 } from '@/lib/types/podcasts'
@@ -115,6 +116,11 @@ export const podcastsApi = {
       '/podcasts/generate',
       payload
     )
+    return response.data
+  },
+
+  listLanguages: async () => {
+    const response = await apiClient.get<Language[]>('/languages')
     return response.data
   },
 }

@@ -8,7 +8,12 @@ from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.config import DATA_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.podcasts.models import EpisodeProfile, PodcastEpisode, SpeakerProfile
+from open_notebook.podcasts.models import (
+    EpisodeProfile,
+    PodcastEpisode,
+    SpeakerProfile,
+    _resolve_model_config,
+)
 
 try:
     from podcast_creator import configure, create_podcast
@@ -79,7 +84,41 @@ async def generate_podcast_command(
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")
 
-        # 3. Load all profiles and configure podcast-creator
+        # 2. Validate that model registry fields are populated
+        if not episode_profile.outline_llm:
+            raise ValueError(
+                f"Episode profile '{episode_profile.name}' has no outline model configured. "
+                "Please update the profile to select an outline model."
+            )
+        if not episode_profile.transcript_llm:
+            raise ValueError(
+                f"Episode profile '{episode_profile.name}' has no transcript model configured. "
+                "Please update the profile to select a transcript model."
+            )
+        if not speaker_profile.voice_model:
+            raise ValueError(
+                f"Speaker profile '{speaker_profile.name}' has no voice model configured. "
+                "Please update the profile to select a voice model."
+            )
+
+        # 3. Resolve model configs with credentials
+        outline_provider, outline_model_name, outline_config = (
+            await episode_profile.resolve_outline_config()
+        )
+        transcript_provider, transcript_model_name, transcript_config = (
+            await episode_profile.resolve_transcript_config()
+        )
+        tts_provider, tts_model_name, tts_config = (
+            await speaker_profile.resolve_tts_config()
+        )
+
+        logger.info(
+            f"Resolved models - outline: {outline_provider}/{outline_model_name}, "
+            f"transcript: {transcript_provider}/{transcript_model_name}, "
+            f"tts: {tts_provider}/{tts_model_name}"
+        )
+
+        # 4. Load all profiles and configure podcast-creator
         episode_profiles = await repo_query("SELECT * FROM episode_profile")
         speaker_profiles = await repo_query("SELECT * FROM speaker_profile")
 
@@ -91,12 +130,70 @@ async def generate_podcast_command(
             profile["name"]: profile for profile in speaker_profiles
         }
 
-        # 4. Generate briefing
+        # 5. Inject resolved model configs into profile dicts
+        # Resolve ALL episode profiles (podcast-creator validates all)
+        for ep_name, ep_dict in episode_profiles_dict.items():
+            if ep_dict.get("outline_llm"):
+                try:
+                    prov, model, conf = await _resolve_model_config(
+                        str(ep_dict["outline_llm"])
+                    )
+                    ep_dict["outline_provider"] = prov
+                    ep_dict["outline_model"] = model
+                    ep_dict["outline_config"] = conf
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to resolve outline model for episode profile '{ep_name}': {e}"
+                    )
+            if ep_dict.get("transcript_llm"):
+                try:
+                    prov, model, conf = await _resolve_model_config(
+                        str(ep_dict["transcript_llm"])
+                    )
+                    ep_dict["transcript_provider"] = prov
+                    ep_dict["transcript_model"] = model
+                    ep_dict["transcript_config"] = conf
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to resolve transcript model for episode profile '{ep_name}': {e}"
+                    )
+
+        # Resolve TTS for ALL speaker profiles (podcast-creator validates all)
+        for sp_name, sp_dict in speaker_profiles_dict.items():
+            if sp_dict.get("voice_model"):
+                try:
+                    prov, model, conf = await _resolve_model_config(
+                        str(sp_dict["voice_model"])
+                    )
+                    sp_dict["tts_provider"] = prov
+                    sp_dict["tts_model"] = model
+                    sp_dict["tts_config"] = conf
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to resolve TTS for speaker profile '{sp_name}': {e}"
+                    )
+
+            # Per-speaker TTS overrides
+            for speaker in sp_dict.get("speakers", []):
+                if speaker.get("voice_model"):
+                    try:
+                        prov, model, conf = await _resolve_model_config(
+                            str(speaker["voice_model"])
+                        )
+                        speaker["tts_provider"] = prov
+                        speaker["tts_model"] = model
+                        speaker["tts_config"] = conf
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to resolve per-speaker TTS for '{speaker.get('name')}': {e}"
+                        )
+
+        # 6. Generate briefing
         briefing = episode_profile.default_briefing
         if input_data.briefing_suffix:
             briefing += f"\n\nAdditional instructions: {input_data.briefing_suffix}"
 
-        # Create the a record for the episose and associate with the ongoing command
+        # Create the record for the episode and associate with the ongoing command
         episode = PodcastEpisode(
             name=input_data.episode_name,
             episode_profile=full_model_dump(episode_profile.model_dump()),
@@ -119,13 +216,13 @@ async def generate_podcast_command(
 
         logger.info(f"Generated briefing (length: {len(briefing)} chars)")
 
-        # 5. Create output directory
+        # 7. Create output directory
         output_dir = Path(f"{DATA_FOLDER}/podcasts/episodes/{input_data.episode_name}")
         output_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Created output directory: {output_dir}")
 
-        # 6. Generate podcast using podcast-creator
+        # 8. Generate podcast using podcast-creator
         logger.info("Starting podcast generation with podcast-creator...")
 
         result = await create_podcast(

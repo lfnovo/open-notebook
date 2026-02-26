@@ -94,13 +94,14 @@ Speaker 1: "Expert Alex"
 ├─ Expertise: "Deep knowledge of alignment research"
 ├─ Personality: "Rigorous, academic, patient with explanation"
 ├─ Accent: (Optional) "British English"
-└─ TTS Voice: "OpenAI Onyx" (or ElevenLabs, Google, etc.)
+└─ Voice Model: Selected from model registry (e.g., OpenAI TTS)
+   └─ Optional per-speaker override of the episode's default voice model
 
 Speaker 2: "Researcher Sam"
 ├─ Expertise: "Field observer, pragmatic perspective"
 ├─ Personality: "Curious, asks clarifying questions"
 ├─ Accent: "American English"
-└─ TTS Voice: "ElevenLabs - thoughtful"
+└─ Voice Model: Selected from model registry (e.g., ElevenLabs TTS)
 ```
 
 ### Stage 4: Outline Generation
@@ -147,10 +148,10 @@ Alex: "Exactly. And that's where the three approaches come in..."
 
 ### Stage 6: Text-to-Speech
 
-System converts dialogue to audio:
+System converts dialogue to audio using the voice models configured in the model registry. Credentials are automatically resolved from each model's configuration.
 ```
-Alex's text → OpenAI TTS → Alex's voice (audio file)
-Sam's text → ElevenLabs TTS → Sam's voice (audio file)
+Alex's text → Voice model (from registry) → Alex's voice (audio file)
+Sam's text → Voice model (from registry) → Sam's voice (audio file)
 Audio files → Mix together → Final podcast MP3
 ```
 
@@ -181,7 +182,7 @@ When podcast generation fails (e.g., wrong model configured, API key expired, pr
 | Error | What to Do |
 |-------|-----------|
 | Invalid API key | Check Settings -> Credentials for the TTS and language model providers |
-| Model not found | Verify the model name in your episode profile exists and is correctly configured |
+| Model not found | Verify the model exists in the model registry and has valid credentials configured |
 | Rate limit exceeded | Wait a few minutes and retry |
 | Provider unavailable | Check provider status page; retry later |
 
@@ -314,7 +315,7 @@ New team member listens, gets context faster than reading 100 documents
 4. Decide on podcast
    ├─→ Create speaker profiles
    ├─→ Define episode profile
-   ├─→ Choose TTS provider
+   ├─→ Configure voice models (from model registry)
    └─→ Generate podcast
    ↓
 5. Listen while commuting/exercising

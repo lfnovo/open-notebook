@@ -10,7 +10,7 @@ Encapsulates podcast metadata and configuration: speaker profiles (voice/persona
 
 Two-tier profile system using the **model registry** for AI model references:
 - **SpeakerProfile**: `voice_model` (record<model> reference) + 1-4 speaker configurations (name, voice_id, backstory, personality). Per-speaker `voice_model` overrides supported.
-- **EpisodeProfile**: `outline_llm`/`transcript_llm` (record<model> references) for LLM selection, `language` field (ISO 639-1), segment count, briefing template.
+- **EpisodeProfile**: `outline_llm`/`transcript_llm` (record<model> references) for LLM selection, `language` field (BCP 47 locale code), segment count, briefing template.
 - **PodcastEpisode**: Generated episode record linking profiles, content, and async job.
 
 All inherit from `ObjectModel` (SurrealDB base class with table_name and save/load).
@@ -36,7 +36,7 @@ All inherit from `ObjectModel` (SurrealDB base class with table_name and save/lo
 
 #### EpisodeProfile
 - `outline_llm`/`transcript_llm`: Optional `record<model>` references (replace legacy `outline_provider`/`outline_model`/`transcript_provider`/`transcript_model` strings).
-- `language`: Optional ISO 639-1 code for podcast language.
+- `language`: Optional BCP 47 locale code for podcast language (e.g. `pt-BR`, `en-US`).
 - Legacy fields kept as optional for migration compatibility.
 - `nullable_fields` ClassVar lists fields that may be null in the database.
 - `num_segments` validated between 3 and 20.

@@ -131,35 +131,36 @@ async def generate_podcast_command(
         }
 
         # 5. Inject resolved model configs into profile dicts
-        # Resolve ALL episode profiles (podcast-creator validates all)
-        for ep_name, ep_dict in episode_profiles_dict.items():
-            if ep_dict.get("outline_llm"):
-                try:
+        # Resolve ALL episode profiles (podcast-creator validates all).
+        # Remove profiles that fail resolution to prevent validation errors.
+        for ep_name in list(episode_profiles_dict.keys()):
+            ep_dict = episode_profiles_dict[ep_name]
+            try:
+                if ep_dict.get("outline_llm"):
                     prov, model, conf = await _resolve_model_config(
                         str(ep_dict["outline_llm"])
                     )
                     ep_dict["outline_provider"] = prov
                     ep_dict["outline_model"] = model
                     ep_dict["outline_config"] = conf
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to resolve outline model for episode profile '{ep_name}': {e}"
-                    )
-            if ep_dict.get("transcript_llm"):
-                try:
+                if ep_dict.get("transcript_llm"):
                     prov, model, conf = await _resolve_model_config(
                         str(ep_dict["transcript_llm"])
                     )
                     ep_dict["transcript_provider"] = prov
                     ep_dict["transcript_model"] = model
                     ep_dict["transcript_config"] = conf
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to resolve transcript model for episode profile '{ep_name}': {e}"
-                    )
+            except Exception as e:
+                logger.warning(
+                    f"Failed to resolve models for episode profile '{ep_name}', "
+                    f"removing from config to prevent validation errors: {e}"
+                )
+                del episode_profiles_dict[ep_name]
 
-        # Resolve TTS for ALL speaker profiles (podcast-creator validates all)
-        for sp_name, sp_dict in speaker_profiles_dict.items():
+        # Resolve TTS for ALL speaker profiles (podcast-creator validates all).
+        # Remove profiles that fail resolution to prevent validation errors.
+        for sp_name in list(speaker_profiles_dict.keys()):
+            sp_dict = speaker_profiles_dict[sp_name]
             if sp_dict.get("voice_model"):
                 try:
                     prov, model, conf = await _resolve_model_config(
@@ -170,8 +171,11 @@ async def generate_podcast_command(
                     sp_dict["tts_config"] = conf
                 except Exception as e:
                     logger.warning(
-                        f"Failed to resolve TTS for speaker profile '{sp_name}': {e}"
+                        f"Failed to resolve TTS for speaker profile '{sp_name}', "
+                        f"removing from config to prevent validation errors: {e}"
                     )
+                    del speaker_profiles_dict[sp_name]
+                    continue
 
             # Per-speaker TTS overrides
             for speaker in sp_dict.get("speakers", []):

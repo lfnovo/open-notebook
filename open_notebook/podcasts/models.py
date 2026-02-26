@@ -73,7 +73,7 @@ class EpisodeProfile(ObjectModel):
         None, description="Model record ID for transcript generation"
     )
     language: Optional[str] = Field(
-        None, description="Podcast language (ISO 639-1 code)"
+        None, description="Podcast language (BCP 47 locale code, e.g. pt-BR, en-US)"
     )
 
     default_briefing: str = Field(..., description="Default briefing template")

@@ -18,7 +18,7 @@ import {
 
 export function useLanguages() {
   return useQuery({
-    queryKey: ['languages'] as const,
+    queryKey: QUERY_KEYS.languages,
     queryFn: podcastsApi.listLanguages,
     staleTime: Infinity,
   })

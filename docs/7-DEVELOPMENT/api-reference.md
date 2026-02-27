@@ -63,8 +63,8 @@ Instead of memorizing endpoints, use the interactive API docs:
 - `POST /chat/context/build` - Prepare context for chat
 
 **Search** - Find content by text or semantic similarity
-- `POST /search` - Full-text or vector search
-- `POST /ask` - Ask a question (search + synthesize)
+- `POST /search` - Full-text or vector search (supports optional `notebook_id` to scope results)
+- `POST /ask` - Ask a question (search + synthesize, supports optional `notebook_id` to scope results)
 
 **Transformations** - Custom prompts for extracting insights
 - `GET/POST /transformations` - Create custom extraction rules

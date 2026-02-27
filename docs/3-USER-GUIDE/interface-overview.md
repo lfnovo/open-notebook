@@ -200,8 +200,8 @@ Inside a notebook, switch to Podcasts:
 │  Episode Profile: [Select ▼]  │
 │                               │
 │  Speakers:                    │
-│  ├─ Host: Alex (OpenAI)       │
-│  └─ Guest: Sam (Google)       │
+│  ├─ Host: Alex (voice model)  │
+│  └─ Guest: Sam (voice model)  │
 │                               │
 │  Include:                     │
 │  ☑ Paper.pdf                  │

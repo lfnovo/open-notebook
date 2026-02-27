@@ -1,10 +1,32 @@
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import Any, ClassVar, Dict, List, Optional, Tuple, Union
 
+from loguru import logger
 from pydantic import ConfigDict, Field, field_validator
 from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+
+
+async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
+    """Load Model record, resolve credential -> (provider, model_name, config_dict).
+
+    Used by resolve_outline_config, resolve_transcript_config, resolve_tts_config,
+    and per-speaker TTS overrides.
+    """
+    from open_notebook.ai.models import Model
+
+    model = await Model.get(model_id)
+    config: dict = {}
+    if model.credential:
+        credential = await model.get_credential_obj()
+        if credential:
+            config = credential.to_esperanto_config()
+    if not config:
+        from open_notebook.ai.key_provider import provision_provider_keys
+
+        await provision_provider_keys(model.provider)
+    return (model.provider, model.name, config)
 
 
 class EpisodeProfile(ObjectModel):
@@ -14,16 +36,46 @@ class EpisodeProfile(ObjectModel):
     """
 
     table_name: ClassVar[str] = "episode_profile"
+    nullable_fields: ClassVar[set[str]] = {
+        "description",
+        "outline_provider",
+        "outline_model",
+        "transcript_provider",
+        "transcript_model",
+        "outline_llm",
+        "transcript_llm",
+        "language",
+    }
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
     speaker_config: str = Field(..., description="Reference to speaker profile name")
-    outline_provider: str = Field(..., description="AI provider for outline generation")
-    outline_model: str = Field(..., description="AI model for outline generation")
-    transcript_provider: str = Field(
-        ..., description="AI provider for transcript generation"
+
+    # Legacy fields (kept for migration, app ignores)
+    outline_provider: Optional[str] = Field(
+        None, description="[Legacy] AI provider for outline generation"
     )
-    transcript_model: str = Field(..., description="AI model for transcript generation")
+    outline_model: Optional[str] = Field(
+        None, description="[Legacy] AI model for outline generation"
+    )
+    transcript_provider: Optional[str] = Field(
+        None, description="[Legacy] AI provider for transcript generation"
+    )
+    transcript_model: Optional[str] = Field(
+        None, description="[Legacy] AI model for transcript generation"
+    )
+
+    # New fields: Model registry references
+    outline_llm: Optional[str] = Field(
+        None, description="Model record ID for outline generation"
+    )
+    transcript_llm: Optional[str] = Field(
+        None, description="Model record ID for transcript generation"
+    )
+    language: Optional[str] = Field(
+        None, description="Podcast language (BCP 47 locale code, e.g. pt-BR, en-US)"
+    )
+
     default_briefing: str = Field(..., description="Default briefing template")
     num_segments: int = Field(default=5, description="Number of podcast segments")
 
@@ -33,6 +85,32 @@ class EpisodeProfile(ObjectModel):
         if not 3 <= v <= 20:
             raise ValueError("Number of segments must be between 3 and 20")
         return v
+
+    def _prepare_save_data(self) -> dict:
+        data = super()._prepare_save_data()
+        if data.get("outline_llm"):
+            data["outline_llm"] = ensure_record_id(data["outline_llm"])
+        if data.get("transcript_llm"):
+            data["transcript_llm"] = ensure_record_id(data["transcript_llm"])
+        return data
+
+    async def resolve_outline_config(self) -> Tuple[str, str, dict]:
+        """Resolve outline model -> (provider, model_name, config_dict)"""
+        if not self.outline_llm:
+            raise ValueError(
+                f"Episode profile '{self.name}' has no outline model configured. "
+                "Please update the profile to select an outline model."
+            )
+        return await _resolve_model_config(self.outline_llm)
+
+    async def resolve_transcript_config(self) -> Tuple[str, str, dict]:
+        """Resolve transcript model -> (provider, model_name, config_dict)"""
+        if not self.transcript_llm:
+            raise ValueError(
+                f"Episode profile '{self.name}' has no transcript model configured. "
+                "Please update the profile to select a transcript model."
+            )
+        return await _resolve_model_config(self.transcript_llm)
 
     @classmethod
     async def get_by_name(cls, name: str) -> Optional["EpisodeProfile"]:
@@ -52,13 +130,27 @@ class SpeakerProfile(ObjectModel):
     """
 
     table_name: ClassVar[str] = "speaker_profile"
+    nullable_fields: ClassVar[set[str]] = {
+        "description",
+        "tts_provider",
+        "tts_model",
+        "voice_model",
+    }
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
-    tts_provider: str = Field(
-        ..., description="TTS provider (openai, elevenlabs, etc.)"
+
+    # Legacy fields (kept for migration, app ignores)
+    tts_provider: Optional[str] = Field(
+        None, description="[Legacy] TTS provider (openai, elevenlabs, etc.)"
     )
-    tts_model: str = Field(..., description="TTS model name")
+    tts_model: Optional[str] = Field(None, description="[Legacy] TTS model name")
+
+    # New field: Model registry reference
+    voice_model: Optional[str] = Field(
+        None, description="Model record ID for TTS"
+    )
+
     speakers: List[Dict[str, Any]] = Field(
         ..., description="Array of speaker configurations"
     )
@@ -75,6 +167,26 @@ class SpeakerProfile(ObjectModel):
                 if field not in speaker:
                     raise ValueError(f"Speaker missing required field: {field}")
         return v
+
+    def _prepare_save_data(self) -> dict:
+        data = super()._prepare_save_data()
+        if data.get("voice_model"):
+            data["voice_model"] = ensure_record_id(data["voice_model"])
+        # Handle per-speaker voice_model overrides
+        if data.get("speakers"):
+            for speaker in data["speakers"]:
+                if speaker.get("voice_model"):
+                    speaker["voice_model"] = ensure_record_id(speaker["voice_model"])
+        return data
+
+    async def resolve_tts_config(self) -> Tuple[str, str, dict]:
+        """Resolve TTS model -> (provider, model_name, config_dict)"""
+        if not self.voice_model:
+            raise ValueError(
+                f"Speaker profile '{self.name}' has no voice model configured. "
+                "Please update the profile to select a voice model."
+            )
+        return await _resolve_model_config(self.voice_model)
 
     @classmethod
     async def get_by_name(cls, name: str) -> Optional["SpeakerProfile"]:

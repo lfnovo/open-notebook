@@ -32,6 +32,7 @@ from api.routers import (
     embedding_rebuild,
     episode_profiles,
     insights,
+    languages,
     models,
     notebooks,
     notes,
@@ -96,6 +97,15 @@ async def lifespan(app: FastAPI):
         logger.exception(e)
         # Fail fast - don't start the API with an outdated database schema
         raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
+
+    # Run podcast profile data migration (legacy strings -> Model registry)
+    try:
+        from open_notebook.podcasts.migration import migrate_podcast_profiles
+
+        await migrate_podcast_profiles()
+    except Exception as e:
+        logger.warning(f"Podcast profile migration encountered errors: {e}")
+        # Non-fatal: profiles can be migrated manually via UI
 
     logger.success("API initialization completed successfully")
 
@@ -269,6 +279,7 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 
 @app.get("/")

@@ -211,6 +211,15 @@ wheels = [
 ]
 
 [[package]]
+name = "babel"
+version = "2.18.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/b2/51899539b6ceeeb420d40ed3cd4b7a40519404f9baf3d4ac99dc413a834b/babel-2.18.0.tar.gz", hash = "sha256:b80b99a14bd085fcacfa15c9165f651fbb3406e66cc603abf11c5750937c992d", size = 9959554, upload-time = "2026-02-01T12:30:56.078Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/77/f5/21d2de20e8b8b0408f0681956ca2c69f1320a3848ac50e6e7f39c6159675/babel-2.18.0-py3-none-any.whl", hash = "sha256:e2b422b277c2b9a9630c1d7903c2a00d0830c409c59ac8cae9081c92f1aeba35", size = 10196845, upload-time = "2026-02-01T12:30:53.445Z" },
+]
+
+[[package]]
 name = "backports-tarfile"
 version = "1.2.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2099,6 +2108,7 @@ version = "1.7.4"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
+    { name = "babel" },
     { name = "content-core" },
     { name = "esperanto" },
     { name = "fastapi" },
@@ -2117,6 +2127,7 @@ dependencies = [
     { name = "loguru" },
     { name = "numpy" },
     { name = "podcast-creator" },
+    { name = "pycountry" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "surreal-commands" },
@@ -2148,6 +2159,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ai-prompter", specifier = ">=0.3,<1" },
+    { name = "babel", specifier = ">=2.18.0" },
     { name = "content-core", specifier = ">=1.14.1,<2" },
     { name = "esperanto", specifier = ">=2.19.3,<3" },
     { name = "fastapi", specifier = ">=0.104.0" },
@@ -2170,6 +2182,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=2.4.1" },
     { name = "podcast-creator", specifier = ">=0.11.2,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "pycountry", specifier = ">=26.2.16" },
     { name = "pydantic", specifier = ">=2.9.2" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },
@@ -2723,6 +2736,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/e9/e6/78ebbb10a8c8e4b61a59249394a4a594c1a7af95593dc933a349c8d00964/pyasn1_modules-0.4.2.tar.gz", hash = "sha256:677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6", size = 307892, upload-time = "2025-03-28T02:41:22.17Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/47/8d/d529b5d697919ba8c11ad626e835d4039be708a35b0d22de83a269a6682c/pyasn1_modules-0.4.2-py3-none-any.whl", hash = "sha256:29253a9207ce32b64c3ac6600edc75368f98473906e8fd1043bd6b5b1de2c14a", size = 181259, upload-time = "2025-03-28T02:41:19.028Z" },
+]
+
+[[package]]
+name = "pycountry"
+version = "26.2.16"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/de/1d/061b9e7a48b85cfd69f33c33d2ef784a531c359399ad764243399673c8f5/pycountry-26.2.16.tar.gz", hash = "sha256:5b6027d453fcd6060112b951dd010f01f168b51b4bf8a1f1fc8c95c8d94a0801", size = 7711342, upload-time = "2026-02-17T03:42:52.367Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/42/7703bd45b62fecd44cd7d3495423097e2f7d28bc2e99e7c1af68892ab157/pycountry-26.2.16-py3-none-any.whl", hash = "sha256:115c4baf7cceaa30f59a4694d79483c9167dbce7a9de4d3d571c5f3ea77c305a", size = 8044600, upload-time = "2026-02-17T03:42:49.777Z" },
 ]
 
 [[package]]

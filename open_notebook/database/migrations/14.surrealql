@@ -1,0 +1,27 @@
+-- Migration 14: Podcast profiles model registry integration
+-- Adds record<model> references to replace loose provider/model strings
+-- Adds language field to episode_profile
+-- Adds per-speaker TTS override support
+
+-- EPISODE PROFILE
+-- Legacy fields: make optional (app ignores, preserved for data migration)
+DEFINE FIELD OVERWRITE outline_provider ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE outline_model ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE transcript_provider ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE transcript_model ON TABLE episode_profile TYPE option<string>;
+
+-- New fields: reference to Model registry
+DEFINE FIELD IF NOT EXISTS outline_llm ON TABLE episode_profile TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS transcript_llm ON TABLE episode_profile TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS language ON TABLE episode_profile TYPE option<string>;
+
+-- SPEAKER PROFILE
+-- Legacy fields: make optional
+DEFINE FIELD OVERWRITE tts_provider ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE tts_model ON TABLE speaker_profile TYPE option<string>;
+
+-- New field: reference to Model registry (profile-level)
+DEFINE FIELD IF NOT EXISTS voice_model ON TABLE speaker_profile TYPE option<record<model>>;
+
+-- Per-speaker TTS override
+DEFINE FIELD IF NOT EXISTS speakers.*.voice_model ON TABLE speaker_profile TYPE option<record<model>>;

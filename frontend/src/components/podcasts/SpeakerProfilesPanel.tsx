@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, Edit3, MoreVertical, Trash2, Volume2 } from 'lucide-react'
+import { AlertTriangle, Copy, Edit3, MoreVertical, Trash2, Volume2 } from 'lucide-react'
 
-import { SpeakerProfile } from '@/lib/types/podcasts'
+import { SpeakerProfile, needsModelSetup } from '@/lib/types/podcasts'
 import {
   useDeleteSpeakerProfile,
   useDuplicateSpeakerProfile,
 } from '@/lib/hooks/use-podcasts'
+import { useModels } from '@/lib/hooks/use-models'
 import { SpeakerProfileFormDialog } from '@/components/podcasts/forms/SpeakerProfileFormDialog'
 import {
   AlertDialog,
@@ -40,13 +41,11 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface SpeakerProfilesPanelProps {
   speakerProfiles: SpeakerProfile[]
-  modelOptions: Record<string, string[]>
   usage: Record<string, number>
 }
 
 export function SpeakerProfilesPanel({
   speakerProfiles,
-  modelOptions,
   usage,
 }: SpeakerProfilesPanelProps) {
   const { t } = useTranslation()
@@ -55,10 +54,19 @@ export function SpeakerProfilesPanel({
 
   const deleteProfile = useDeleteSpeakerProfile()
   const duplicateProfile = useDuplicateSpeakerProfile()
+  const { data: models = [] } = useModels()
+
+  const modelNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const m of models) {
+      map[m.id] = `${m.provider} / ${m.name}`
+    }
+    return map
+  }, [models])
 
   const sortedProfiles = useMemo(
     () =>
-      [...speakerProfiles].sort((a, b) => a.name.localeCompare(b.name, 'en')), 
+      [...speakerProfiles].sort((a, b) => a.name.localeCompare(b.name, 'en')),
     [speakerProfiles]
   )
 
@@ -83,21 +91,34 @@ export function SpeakerProfilesPanel({
           {sortedProfiles.map((profile) => {
             const usageCount = usage[profile.name] ?? 0
             const deleteDisabled = usageCount > 0
+            const unconfigured = needsModelSetup(profile)
 
             return (
               <Card key={profile.id} className="shadow-sm">
                 <CardHeader className="flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <CardTitle className="text-lg font-semibold">
-                        {profile.name}
-                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <CardTitle className="text-lg font-semibold">
+                          {profile.name}
+                        </CardTitle>
+                        {unconfigured ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            {t.podcasts.setupRequired}
+                          </Badge>
+                        ) : null}
+                      </div>
                       <CardDescription className="text-sm text-muted-foreground">
                         {profile.description || t.podcasts.noDescription}
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className="text-xs">
-                      {profile.tts_provider} / {profile.tts_model}
+                      {profile.voice_model
+                        ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
+                        : (profile.tts_provider
+                          ? `${profile.tts_provider} / ${profile.tts_model}`
+                          : t.podcasts.notConfigured)}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -126,9 +147,16 @@ export function SpeakerProfilesPanel({
                               {speaker.name}
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {t.podcasts.voiceId}: {speaker.voice_id}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {t.podcasts.voiceId}: {speaker.voice_id}
+                            </span>
+                            {speaker.voice_model ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {modelNameMap[speaker.voice_model] ?? speaker.voice_model}
+                              </Badge>
+                            ) : null}
+                          </div>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
                           <span className="font-semibold">{t.podcasts.backstory}:</span> {speaker.backstory}
@@ -219,7 +247,6 @@ export function SpeakerProfilesPanel({
         mode="create"
         open={createOpen}
         onOpenChange={setCreateOpen}
-        modelOptions={modelOptions}
       />
 
       <SpeakerProfileFormDialog
@@ -230,7 +257,6 @@ export function SpeakerProfilesPanel({
             setEditProfile(null)
           }
         }}
-        modelOptions={modelOptions}
         initialData={editProfile ?? undefined}
       />
     </div>

@@ -16,7 +16,7 @@
 
 - **`process_source_command`**: Ingests content through `source_graph`, creates embeddings (optional), and generates insights. Retries on transaction conflicts (exp. jitter, max 15×, 1-120s).
 - **`run_transformation_command`**: Runs a transformation on an existing source to generate an insight. Executes the transformation graph (LLM call) then creates insight via `create_insight_command`. Used by `POST /sources/{id}/insights` API endpoint. Retry: 5 attempts, exponential jitter 1-60s.
-- **`generate_podcast_command`**: Creates podcasts via `podcast-creator` library using stored episode/speaker profiles.
+- **`generate_podcast_command`**: Creates podcasts via podcast-creator library. Resolves model registry references and credentials for all profiles before invoking podcast-creator. Validates that outline_llm, transcript_llm, and voice_model are configured.
 - **`process_text_command`** (example): Test fixture for text operations (uppercase, lowercase, reverse, word_count).
 - **`analyze_data_command`** (example): Test fixture for numeric aggregations.
 
@@ -43,7 +43,7 @@
 - **source_commands**: `ensure_record_id()` wraps command IDs for DB storage; transaction conflicts trigger exponential backoff retry. ValueError exceptions are permanent (not retried).
 - **embedding_commands**: Content type detection uses file extension as primary source, heuristics as fallback. Chunks >1800 chars trigger secondary splitting. Empty/whitespace-only content returns ValueError (not retried).
 - **rebuild_embeddings_command**: Returns "jobs_submitted" not "processed_items" - embedding is async. Individual commands handle failures with their own retries.
-- **podcast_commands**: Profiles loaded from SurrealDB by name (must exist); briefing can be extended with suffix. Episode records created mid-execution.
+- **podcast_commands**: Profiles loaded from SurrealDB by name; model configs (credentials) resolved for ALL profiles before podcast-creator validation. Validates outline_llm/transcript_llm/voice_model are set. Episode records created mid-execution.
 - **Example commands**: Accept optional `delay_seconds` for testing async behavior; not for production.
 
 ## Code Example

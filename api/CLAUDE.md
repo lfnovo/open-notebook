@@ -17,6 +17,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - Load .env environment variables
 - Initialize CORS middleware + password auth middleware
 - Run database migrations via AsyncMigrationManager on lifespan startup
+- Run podcast profile data migration (legacy string to model registry conversion)
 - Register all routers
 
 **Key services**:
@@ -62,6 +63,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **routers/transformations.py**: POST /transformations
 - **routers/insights.py**: GET /sources/{source_id}/insights
 - **routers/auth.py**: POST /auth/password (password-based auth)
+- **routers/languages.py**: GET /languages (available podcast languages via pycountry+babel)
 - **routers/commands.py**: GET /commands/{command_id} (job status tracking)
 
 ## Common Patterns

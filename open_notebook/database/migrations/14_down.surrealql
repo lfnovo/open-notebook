@@ -1,0 +1,20 @@
+-- Migration 14 rollback: Remove model registry fields from podcast profiles
+
+-- Remove new fields from episode_profile
+REMOVE FIELD IF EXISTS outline_llm ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS transcript_llm ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS language ON TABLE episode_profile;
+
+-- Restore episode_profile legacy fields as required strings
+DEFINE FIELD OVERWRITE outline_provider ON TABLE episode_profile TYPE string;
+DEFINE FIELD OVERWRITE outline_model ON TABLE episode_profile TYPE string;
+DEFINE FIELD OVERWRITE transcript_provider ON TABLE episode_profile TYPE string;
+DEFINE FIELD OVERWRITE transcript_model ON TABLE episode_profile TYPE string;
+
+-- Remove new fields from speaker_profile
+REMOVE FIELD IF EXISTS voice_model ON TABLE speaker_profile;
+REMOVE FIELD IF EXISTS speakers.*.voice_model ON TABLE speaker_profile;
+
+-- Restore speaker_profile legacy fields as required strings
+DEFINE FIELD OVERWRITE tts_provider ON TABLE speaker_profile TYPE string;
+DEFINE FIELD OVERWRITE tts_model ON TABLE speaker_profile TYPE string;

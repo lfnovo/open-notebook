@@ -35,10 +35,11 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
     ? (insight.id.includes(':') ? insight.id : `source_insight:${insight.id}`)
     : ''
 
-  const { data: fetchedInsight, isLoading } = useInsight(insightIdWithPrefix, { enabled: open && !!insight?.id })
+  const { data: fetchedInsight, isLoading, isError } = useInsight(insightIdWithPrefix, { enabled: open && !!insight?.id })
 
   // Use fetched data if available, otherwise fall back to passed-in insight
-  const displayInsight = fetchedInsight ?? insight
+  // If there was a fetch error, don't fall back to the stub prop (it has no real content)
+  const displayInsight = isError ? null : (fetchedInsight ?? insight)
 
   // Get source_id from fetched data (preferred) or passed-in insight
   const sourceId = fetchedInsight?.source_id ?? insight?.source_id
@@ -123,6 +124,10 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
                 <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+              </div>
+            ) : isError ? (
+              <div className="flex items-center justify-center py-10">
+                <p className="text-sm text-muted-foreground">{t.common.itemNotFound.replace('{type}', t.common.insight)}</p>
               </div>
             ) : displayInsight ? (
               <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">

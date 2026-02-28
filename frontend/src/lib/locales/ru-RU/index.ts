@@ -687,6 +687,8 @@ export const ruRU = {
     segmentsMin: "Минимум 3 сегмента",
     segmentsMax: "Максимум 20 сегментов",
     voiceIdRequired: "Требуется ID голоса",
+    voiceIdPlaceholder: "напр. alloy (OpenAI) или Модель:Голос (совместимые провайдеры)",
+    voiceIdHint: "OpenAI: используйте имя голоса (напр. alloy, echo, nova). Для OpenAI-совместимых провайдеров формат может быть НазваниеМодели:НазваниеГолоса (напр. FunAudioLLM/CosyVoice2-0.5B:anna). Проверьте документацию вашего провайдера.",
     backstoryRequired: "Требуется биография",
     personalityRequired: "Требуется описание личности",
     speakerCountMin: "Требуется минимум один говорящий",

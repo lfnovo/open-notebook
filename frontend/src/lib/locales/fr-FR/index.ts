@@ -687,6 +687,8 @@ export const frFR = {
     segmentsMin: "Au moins 3 segments",
     segmentsMax: "20 segments maximum",
     voiceIdRequired: "L'ID de la voix est requis",
+    voiceIdPlaceholder: "ex. alloy (OpenAI) ou Modèle:Voix (fournisseurs compatibles)",
+    voiceIdHint: "OpenAI : utilisez un nom de voix (ex. alloy, echo, nova). Pour les fournisseurs compatibles OpenAI, le format peut être NomModèle:NomVoix (ex. FunAudioLLM/CosyVoice2-0.5B:anna). Consultez la documentation de votre fournisseur.",
     backstoryRequired: "L'histoire (backstory) est requise",
     personalityRequired: "La personnalité est requise",
     speakerCountMin: "Au moins un intervenant est requis",

@@ -687,6 +687,8 @@ export const itIT = {
     segmentsMin: "Almeno 3 segmenti",
     segmentsMax: "Massimo 20 segmenti",
     voiceIdRequired: "L'ID voce è obbligatorio",
+    voiceIdPlaceholder: "es. alloy (OpenAI) o Modello:Voce (provider compatibili)",
+    voiceIdHint: "OpenAI: usa un nome voce (es. alloy, echo, nova). Per i provider compatibili con OpenAI, il formato può essere NomeModello:NomeVoce (es. FunAudioLLM/CosyVoice2-0.5B:anna). Consulta la documentazione del tuo provider.",
     backstoryRequired: "Il background è obbligatorio",
     personalityRequired: "La personalità è obbligatoria",
     speakerCountMin: "È richiesto almeno uno speaker",

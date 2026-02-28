@@ -8,9 +8,15 @@ Provides centralized embedding generation with support for:
 
 All embedding operations in the application should use these functions
 to ensure consistent behavior and proper handling of large content.
+
+Environment Variables:
+    OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE: Number of texts per embedding API call (default: 50).
+        Different providers enforce different per-request limits; tune this when you hit
+        HTTP 400/413 errors from your embedding provider.
 """
 
 import asyncio
+import os
 from typing import TYPE_CHECKING, List, Optional
 
 import numpy as np
@@ -18,9 +24,48 @@ from loguru import logger
 
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
 
-EMBEDDING_BATCH_SIZE = 50
 EMBEDDING_MAX_RETRIES = 3
 EMBEDDING_RETRY_DELAY = 2  # seconds
+
+
+def _get_embedding_batch_size() -> int:
+    """Get embedding batch size from environment variable or use default.
+
+    Different embedding providers enforce different limits on the number of
+    texts that can be submitted in a single API call. Examples:
+    - Mistral (mistral-embed): up to 512 inputs per request
+    - OpenAI: up to 2048 inputs per request
+    - Google: varies by model
+
+    Returns:
+        Batch size as a positive integer (default: 50)
+    """
+    batch_size_str = os.getenv("OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE")
+    if batch_size_str:
+        try:
+            batch_size = int(batch_size_str)
+            if batch_size < 1:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE ({batch_size}) must be at least 1. "
+                    f"Using default value of 50."
+                )
+                return 50
+            if batch_size > 512:
+                logger.warning(
+                    f"OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE ({batch_size}) is very large. "
+                    f"This may exceed some embedding providers' per-request limits."
+                )
+            logger.info(f"Using custom embedding batch size: {batch_size}")
+            return batch_size
+        except ValueError:
+            logger.warning(
+                f"Invalid OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE value: '{batch_size_str}'. "
+                f"Using default: 50"
+            )
+    return 50
+
+
+EMBEDDING_BATCH_SIZE = _get_embedding_batch_size()
 
 # Lazy import to avoid circular dependency:
 # utils -> embedding -> models -> key_provider -> provider_config -> utils

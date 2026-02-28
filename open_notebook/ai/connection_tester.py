@@ -50,7 +50,7 @@ async def _test_azure_connection(
     """
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
-    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-06-01")
+    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
     if not test_endpoint:
         return False, "No Azure endpoint configured"

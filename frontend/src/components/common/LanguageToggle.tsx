@@ -76,6 +76,12 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         >
           <span>{t.common.russian}</span>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('bn-IN')}
+          className={currentLang === 'bn-IN' || currentLang.startsWith('bn') ? 'bg-accent' : ''}
+        >
+          <span>{t.common.bengali}</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

@@ -25,6 +25,7 @@ export const zhTW = {
     japanese: "日本語",
     french: "Français",
     russian: "Русский",
+    bengali: "বাংলা",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",

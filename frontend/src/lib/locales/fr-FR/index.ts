@@ -25,6 +25,7 @@ export const frFR = {
     japanese: "日本語",
     french: "Français",
     russian: "Русский",
+    bengali: "বাংলা",
     source: "Source",
     notebook: "Carnet",
     podcast: "Podcast",

@@ -25,6 +25,7 @@ export const ruRU = {
     japanese: "日本語",
     french: "Français",
     russian: "Русский",
+    bengali: "বাংলা",
     source: "Источник",
     notebook: "Блокнот",
     podcast: "Подкаст",

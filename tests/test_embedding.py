@@ -229,5 +229,118 @@ class TestGenerateEmbedding:
             assert len(result) == 3
 
 
+    @pytest.mark.asyncio
+    async def test_batching(self):
+        """Test that large input is split into batches of EMBEDDING_BATCH_SIZE."""
+        from unittest.mock import AsyncMock, MagicMock, call, patch
+
+        from open_notebook.utils.embedding import EMBEDDING_BATCH_SIZE
+
+        num_texts = 120
+        texts = [f"text_{i}" for i in range(num_texts)]
+
+        mock_model = MagicMock()
+        mock_model.model_name = "test-model"
+
+        def make_embeddings(batch):
+            return [[float(i)] * 3 for i in range(len(batch))]
+
+        mock_model.aembed = AsyncMock(side_effect=lambda batch: make_embeddings(batch))
+
+        with patch(
+            "open_notebook.ai.models.model_manager.get_embedding_model",
+            new_callable=AsyncMock,
+            return_value=mock_model,
+        ):
+            result = await generate_embeddings(texts)
+
+            assert len(result) == num_texts
+            # 120 texts / 50 batch size = 3 batches (50, 50, 20)
+            assert mock_model.aembed.call_count == 3
+            assert len(mock_model.aembed.call_args_list[0][0][0]) == EMBEDDING_BATCH_SIZE
+            assert len(mock_model.aembed.call_args_list[1][0][0]) == EMBEDDING_BATCH_SIZE
+            assert len(mock_model.aembed.call_args_list[2][0][0]) == 20
+
+    @pytest.mark.asyncio
+    async def test_batch_retry_on_transient_failure(self):
+        """Test that a transient failure is retried and succeeds."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        texts = ["text_a", "text_b"]
+        mock_model = MagicMock()
+        mock_model.model_name = "test-model"
+
+        # Fail once, then succeed
+        mock_model.aembed = AsyncMock(
+            side_effect=[
+                RuntimeError("transient error"),
+                [[0.1, 0.2], [0.3, 0.4]],
+            ]
+        )
+
+        with (
+            patch(
+                "open_notebook.ai.models.model_manager.get_embedding_model",
+                new_callable=AsyncMock,
+                return_value=mock_model,
+            ),
+            patch("open_notebook.utils.embedding.EMBEDDING_RETRY_DELAY", 0),
+        ):
+            result = await generate_embeddings(texts)
+            assert result == [[0.1, 0.2], [0.3, 0.4]]
+            assert mock_model.aembed.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_batch_retry_exhaustion(self):
+        """Test that RuntimeError is raised after all retries are exhausted."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.utils.embedding import EMBEDDING_MAX_RETRIES
+
+        texts = ["text_a"]
+        mock_model = MagicMock()
+        mock_model.model_name = "test-model"
+        mock_model.aembed = AsyncMock(side_effect=RuntimeError("persistent error"))
+
+        with (
+            patch(
+                "open_notebook.ai.models.model_manager.get_embedding_model",
+                new_callable=AsyncMock,
+                return_value=mock_model,
+            ),
+            patch("open_notebook.utils.embedding.EMBEDDING_RETRY_DELAY", 0),
+        ):
+            with pytest.raises(RuntimeError, match="Failed to generate embeddings"):
+                await generate_embeddings(texts)
+            assert mock_model.aembed.call_count == EMBEDDING_MAX_RETRIES
+
+
+# ============================================================================
+# TEST SUITE 4: Error Classification for 413
+# ============================================================================
+
+
+class TestErrorClassifier413:
+    """Test that 413 payload-too-large errors are classified correctly."""
+
+    def test_413_status_code(self):
+        from open_notebook.exceptions import ExternalServiceError
+        from open_notebook.utils.error_classifier import classify_error
+
+        exc = Exception("HTTP 413: Payload Too Large")
+        exc_class, message = classify_error(exc)
+        assert exc_class is ExternalServiceError
+        assert "payload is too large" in message
+
+    def test_request_entity_too_large(self):
+        from open_notebook.exceptions import ExternalServiceError
+        from open_notebook.utils.error_classifier import classify_error
+
+        exc = Exception("Request Entity Too Large")
+        exc_class, message = classify_error(exc)
+        assert exc_class is ExternalServiceError
+        assert "payload is too large" in message
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

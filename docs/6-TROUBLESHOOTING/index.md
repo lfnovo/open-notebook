@@ -61,6 +61,7 @@ Having issues? Use this guide to diagnose and fix problems.
 ### Podcasts
 
 - **Can't generate podcast** → [Quick Fixes](quick-fixes.md#8-podcast-generation-failed)
+- **Podcast shows "FAILED" badge** → Check the error message displayed on the episode, then use the **Retry** button. See [Podcasts Explained](../2-CORE-CONCEPTS/podcasts-explained.md#when-things-go-wrong-failures--retry)
 - **Podcast audio is robotic** → [Quick Fixes](quick-fixes.md#8-podcast-generation-failed)
 - **Podcast generation times out** → [Quick Fixes](quick-fixes.md#8-podcast-generation-failed)
 

@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Copy, Edit3, MoreVertical, Trash2, Users } from 'lucide-react'
+import { AlertTriangle, Copy, Edit3, MoreVertical, Trash2, Users } from 'lucide-react'
 
-import { EpisodeProfile, SpeakerProfile } from '@/lib/types/podcasts'
+import { EpisodeProfile, SpeakerProfile, needsModelSetup } from '@/lib/types/podcasts'
 import {
   useDeleteEpisodeProfile,
   useDuplicateEpisodeProfile,
 } from '@/lib/hooks/use-podcasts'
+import { useModels } from '@/lib/hooks/use-models'
 import { EpisodeProfileFormDialog } from '@/components/podcasts/forms/EpisodeProfileFormDialog'
 import {
   AlertDialog,
@@ -41,7 +42,6 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 interface EpisodeProfilesPanelProps {
   episodeProfiles: EpisodeProfile[]
   speakerProfiles: SpeakerProfile[]
-  modelOptions: Record<string, string[]>
 }
 
 function findSpeakerSummary(
@@ -54,7 +54,6 @@ function findSpeakerSummary(
 export function EpisodeProfilesPanel({
   episodeProfiles,
   speakerProfiles,
-  modelOptions,
 }: EpisodeProfilesPanelProps) {
   const { t } = useTranslation()
   const [createOpen, setCreateOpen] = useState(false)
@@ -62,6 +61,15 @@ export function EpisodeProfilesPanel({
 
   const deleteProfile = useDeleteEpisodeProfile()
   const duplicateProfile = useDuplicateEpisodeProfile()
+  const { data: models = [] } = useModels()
+
+  const modelNameMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const m of models) {
+      map[m.id] = `${m.provider} / ${m.name}`
+    }
+    return map
+  }, [models])
 
   const sortedProfiles = useMemo(
     () =>
@@ -102,14 +110,23 @@ export function EpisodeProfilesPanel({
               speakerProfiles,
               profile.speaker_config
             )
+            const unconfigured = needsModelSetup(profile)
 
             return (
               <Card key={profile.id} className="shadow-sm">
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
-                    <CardTitle className="text-lg font-semibold">
-                      {profile.name}
-                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg font-semibold">
+                        {profile.name}
+                      </CardTitle>
+                      {unconfigured ? (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          {t.podcasts.setupRequired}
+                        </Badge>
+                      ) : null}
+                    </div>
                     <CardDescription className="text-sm text-muted-foreground">
                       {profile.description || t.podcasts.noDescription}
                     </CardDescription>
@@ -183,7 +200,11 @@ export function EpisodeProfilesPanel({
                         {t.podcasts.outlineModel}
                       </p>
                       <p className="text-foreground">
-                        {profile.outline_provider} / {profile.outline_model}
+                        {profile.outline_llm
+                          ? (modelNameMap[profile.outline_llm] ?? profile.outline_llm)
+                          : (profile.outline_provider && profile.outline_model
+                            ? `${profile.outline_provider} / ${profile.outline_model}`
+                            : t.podcasts.notConfigured)}
                       </p>
                     </div>
                     <div>
@@ -191,7 +212,11 @@ export function EpisodeProfilesPanel({
                         {t.podcasts.transcriptModel}
                       </p>
                       <p className="text-foreground">
-                        {profile.transcript_provider} / {profile.transcript_model}
+                        {profile.transcript_llm
+                          ? (modelNameMap[profile.transcript_llm] ?? profile.transcript_llm)
+                          : (profile.transcript_provider && profile.transcript_model
+                            ? `${profile.transcript_provider} / ${profile.transcript_model}`
+                            : t.podcasts.notConfigured)}
                       </p>
                     </div>
                     <div>
@@ -200,6 +225,14 @@ export function EpisodeProfilesPanel({
                       </p>
                       <p className="text-foreground">{profile.num_segments}</p>
                     </div>
+                    {profile.language ? (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t.podcasts.language}
+                        </p>
+                        <p className="text-foreground">{profile.language}</p>
+                      </div>
+                    ) : null}
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         {t.podcasts.speakerProfile}
@@ -207,7 +240,11 @@ export function EpisodeProfilesPanel({
                       <div className="flex items-center gap-2 text-foreground">
                         <Users className="h-4 w-4" />
                         <span>{profile.speaker_config}</span>
-                        {speakerSummary ? (
+                        {speakerSummary?.voice_model ? (
+                          <Badge variant="outline" className="text-xs">
+                            {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}
+                          </Badge>
+                        ) : speakerSummary?.tts_provider ? (
                           <Badge variant="outline" className="text-xs">
                             {speakerSummary.tts_provider} / {speakerSummary.tts_model}
                           </Badge>
@@ -238,7 +275,6 @@ export function EpisodeProfilesPanel({
         open={createOpen}
         onOpenChange={setCreateOpen}
         speakerProfiles={speakerProfiles}
-        modelOptions={modelOptions}
       />
 
       <EpisodeProfileFormDialog
@@ -250,7 +286,6 @@ export function EpisodeProfilesPanel({
           }
         }}
         speakerProfiles={speakerProfiles}
-        modelOptions={modelOptions}
         initialData={editProfile ?? undefined}
       />
     </div>

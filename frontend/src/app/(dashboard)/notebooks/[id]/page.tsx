@@ -185,6 +185,8 @@ export default function NotebookPage() {
                   <ChatColumn
                     notebookId={notebookId}
                     contextSelections={contextSelections}
+                    sources={sources}
+                    sourcesLoading={sourcesLoading}
                   />
                 )}
               </div>
@@ -234,6 +236,8 @@ export default function NotebookPage() {
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}
+                sources={sources}
+                sourcesLoading={sourcesLoading}
               />
             </div>
           </div>

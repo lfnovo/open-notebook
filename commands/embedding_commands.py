@@ -328,7 +328,7 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
     2. DELETE existing source_embedding records for this source
     3. Detect content type from file path or content
     4. Chunk text using appropriate splitter
-    5. Generate embeddings for all chunks in a single API call
+    5. Generate embeddings for all chunks in batches
     6. Bulk INSERT source_embedding records
 
     Retry Strategy:
@@ -377,7 +377,7 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
         if total_chunks == 0:
             raise ValueError("No chunks created after splitting text")
 
-        # 5. Generate embeddings for all chunks in single API call
+        # 5. Generate embeddings for all chunks in batches
         cmd_id = get_command_id(input_data)
         logger.debug(f"Generating embeddings for {total_chunks} chunks")
         embeddings = await generate_embeddings(chunks, command_id=cmd_id)

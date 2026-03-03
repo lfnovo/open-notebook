@@ -21,6 +21,23 @@ LangGraph-based workflow orchestration for content processing, chat interactions
 - **Checkpointing**: `chat.py` and `source_chat.py` use SqliteSaver for message history (LangGraph's built-in persistence)
 - **Content extraction**: `source.py` uses content-core library with provider/model from DefaultModels; URLs and files both supported
 
+## Error Handling in Graphs
+
+All graph nodes use `classify_error()` from `open_notebook.utils.error_classifier` to catch raw LLM provider exceptions and re-raise them as typed `OpenNotebookError` subclasses with user-friendly messages. This ensures that errors from any AI provider (authentication failures, rate limits, model not found, network issues) are surfaced to the user with actionable messages instead of opaque stack traces.
+
+**Pattern in nodes**:
+```python
+from open_notebook.utils.error_classifier import classify_error
+
+try:
+    result = await model.ainvoke(...)
+except Exception as e:
+    exc_class, message = classify_error(e)
+    raise exc_class(message) from e
+```
+
+---
+
 ## Quirks & Edge Cases
 
 - **Async loop gymnastics**: ThreadPoolExecutor workaround needed because LangGraph invokes sync nodes but we call async functions; fragile if event loop state changes
@@ -38,6 +55,7 @@ LangGraph-based workflow orchestration for content processing, chat interactions
 - `ai_prompter`: Prompter for Jinja2 template rendering
 - `content_core`: `extract_content()` for file/URL processing
 - `open_notebook.ai.provision`: `provision_langchain_model()` (async factory with fallback logic)
+- `open_notebook.utils.error_classifier`: `classify_error()` for user-friendly LLM error messages
 - `open_notebook.domain.notebook`: Domain models (Source, Note, SourceInsight, vector_search)
 - `loguru`: Logging
 

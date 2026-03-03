@@ -109,7 +109,12 @@ User documentation is at @docs/
 - **Vector search**: Built-in semantic search across all content
 - **Transactions**: Repo functions handle ACID operations
 
-### 5. Authentication
+### 5. Error Handling
+- **Custom exceptions** (`exceptions.py`): Hierarchy rooted at `OpenNotebookError` with typed subclasses (`AuthenticationError`, `ConfigurationError`, `RateLimitError`, `ExternalServiceError`, `NetworkError`, etc.)
+- **Error classification** (`utils/error_classifier.py`): `classify_error()` maps raw LLM provider exceptions to typed exceptions with user-friendly messages via keyword matching
+- **Global handlers**: FastAPI exception handlers in `api/main.py` convert typed exceptions to appropriate HTTP status codes (401, 422, 429, 502, etc.)
+
+### 6. Authentication
 - **Current**: Simple password middleware (insecure, dev-only)
 - **Production**: Replace with OAuth/JWT (see CONFIGURATION.md)
 
@@ -135,6 +140,8 @@ User documentation is at @docs/
 ### Podcast Generation
 - **Async job queue**: `podcast_service.py` submits jobs but doesn't wait
 - **Track status**: Use `/commands/{command_id}` endpoint to poll status
+- **Failure handling**: Failed jobs are marked as "failed" with error messages; retry via `POST /podcasts/episodes/{id}/retry`
+- **No automatic retries**: Podcast jobs use `max_attempts: 1` to prevent duplicate episode records
 - **TTS failures**: Fall back to silent audio if speech synthesis fails
 
 ### Content Processing
@@ -217,5 +224,5 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 ---
 
-**Last Updated**: January 2026 | **Project Version**: 1.2.4+
+**Last Updated**: February 2026 | **Project Version**: 1.7.3
 

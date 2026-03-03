@@ -13,12 +13,16 @@ export interface EpisodeProfile {
   name: string
   description: string
   speaker_config: string
-  outline_provider: string
-  outline_model: string
-  transcript_provider: string
-  transcript_model: string
+  outline_llm?: string | null
+  transcript_llm?: string | null
+  language?: string | null
   default_briefing: string
   num_segments: number
+  // Legacy fields (app ignores, kept in DB for migration)
+  outline_provider?: string | null
+  outline_model?: string | null
+  transcript_provider?: string | null
+  transcript_model?: string | null
 }
 
 export interface SpeakerVoiceConfig {
@@ -26,15 +30,23 @@ export interface SpeakerVoiceConfig {
   voice_id: string
   backstory: string
   personality: string
+  voice_model?: string | null
 }
 
 export interface SpeakerProfile {
   id: string
   name: string
   description: string
-  tts_provider: string
-  tts_model: string
+  voice_model?: string | null
   speakers: SpeakerVoiceConfig[]
+  // Legacy fields
+  tts_provider?: string | null
+  tts_model?: string | null
+}
+
+export interface Language {
+  code: string
+  name: string
 }
 
 export interface PodcastEpisode {
@@ -131,4 +143,14 @@ export function speakerUsageMap(
   }
 
   return usage
+}
+
+/** Check if a profile needs model configuration (missing required model references) */
+export function needsModelSetup(profile: EpisodeProfile | SpeakerProfile): boolean {
+  if ('outline_llm' in profile) {
+    const ep = profile as EpisodeProfile
+    return !ep.outline_llm || !ep.transcript_llm
+  }
+  const sp = profile as SpeakerProfile
+  return !sp.voice_model
 }

@@ -78,7 +78,7 @@ Note: Changes require restart of the application.
 
 ### embedding.py
 - **mean_pool_embeddings(embeddings)**: Combine multiple embeddings via normalized mean pooling
-- **generate_embeddings(texts)**: Batch embedding via single Esperanto API call
+- **generate_embeddings(texts)**: Batch embedding with automatic batching (default 50 texts per batch) and per-batch retry
 - **generate_embedding(text, content_type, file_path)**: Unified embedding with automatic chunking + mean pooling
 
 **Key behavior**:

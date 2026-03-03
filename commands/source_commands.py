@@ -115,24 +115,25 @@ async def process_source_command(
         processed_source = result["source"]
 
         # 4. Gather processing results (notebook associations handled by source_graph)
-        embedded_chunks = (
-            await processed_source.get_embedded_chunks() if input_data.embed else 0
-        )
+        # Note: embedding is fire-and-forget (async job), so we can't query the
+        # count here — it hasn't completed yet. The embed_source_command logs
+        # the actual count when it finishes.
         insights_list = await processed_source.get_insights()
         insights_created = len(insights_list)
 
         processing_time = time.time() - start_time
+        embed_status = "submitted" if input_data.embed else "skipped"
         logger.info(
             f"Successfully processed source: {processed_source.id} in {processing_time:.2f}s"
         )
         logger.info(
-            f"Created {insights_created} insights and {embedded_chunks} embedded chunks"
+            f"Created {insights_created} insights, embedding {embed_status}"
         )
 
         return SourceProcessingOutput(
             success=True,
             source_id=str(processed_source.id),
-            embedded_chunks=embedded_chunks,
+            embedded_chunks=0,
             insights_created=insights_created,
             processing_time=processing_time,
         )

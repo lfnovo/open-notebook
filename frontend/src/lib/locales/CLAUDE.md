@@ -19,7 +19,8 @@ lib/
     ├── zh-CN/index.ts   # Simplified Chinese translations
     ├── zh-TW/index.ts   # Traditional Chinese translations
     ├── ja-JP/index.ts   # Japanese translations
-    └── ru-RU/index.ts   # Russian translations
+    ├── ru-RU/index.ts   # Russian translations
+    └── bn-IN/index.ts   # Bengali translations
 ```
 
 ## Key Components

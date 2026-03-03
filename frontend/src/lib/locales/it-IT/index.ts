@@ -25,6 +25,7 @@ export const itIT = {
     japanese: "日本語",
     french: "Français",
     russian: "Русский",
+    bengali: "বাংলা",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",

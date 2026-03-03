@@ -2104,7 +2104,7 @@ wheels = [
 
 [[package]]
 name = "open-notebook"
-version = "1.7.4"
+version = "1.8.0"
 source = { editable = "." }
 dependencies = [
     { name = "ai-prompter" },
@@ -2180,7 +2180,7 @@ requires-dist = [
     { name = "loguru", specifier = ">=0.7.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.11.1" },
     { name = "numpy", specifier = ">=2.4.1" },
-    { name = "podcast-creator", specifier = ">=0.11.2,<1" },
+    { name = "podcast-creator", specifier = ">=0.12.0,<1" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "pycountry", specifier = ">=26.2.16" },
     { name = "pydantic", specifier = ">=2.9.2" },
@@ -2532,7 +2532,7 @@ wheels = [
 
 [[package]]
 name = "podcast-creator"
-version = "0.11.2"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ai-prompter" },
@@ -2543,15 +2543,16 @@ dependencies = [
     { name = "loguru" },
     { name = "moviepy" },
     { name = "nest-asyncio" },
+    { name = "pycountry" },
     { name = "pydub" },
     { name = "python-dotenv" },
     { name = "requests" },
     { name = "tenacity" },
     { name = "tiktoken" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3f/13/a1e4d01eacd385c018ffc92e74852ff90dbb64c5eb3779eba2862b466a0f/podcast_creator-0.11.2.tar.gz", hash = "sha256:3f5474323980427cc1764ebdb353c41002eac2bf8e28b74decf701f4ca6444dd", size = 480385, upload-time = "2026-02-18T00:03:56.801Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/e3/d7112e86ec4194c14f6024dd0a0d1509b5ef70c76bf41c8359db22c6a9d9/podcast_creator-0.12.0.tar.gz", hash = "sha256:16efbafb3103fecf7f37f434e8dcaf2e5e2929c505b9be833faa25287bc8d9ad", size = 486668, upload-time = "2026-03-03T13:43:18.993Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/2e/c7e8d0c540d5296d26c43c5e41a7803906b86c3d79e8a57f9ee9a0f2b4ad/podcast_creator-0.11.2-py3-none-any.whl", hash = "sha256:17c9361306a6e7223e7f5d12fd4bdad4514231ce33df73ad3052e35cfdd92fd9", size = 77885, upload-time = "2026-02-18T00:03:55.804Z" },
+    { url = "https://files.pythonhosted.org/packages/2f/6c/f9ed9d1e313183506d5774e4490a36ca6c0f231899055d658e283b26aaed/podcast_creator-0.12.0-py3-none-any.whl", hash = "sha256:605080b5841710733b7bcb6ff2fcb05b6a77f2aabd3c7bec617b58b03250fb47", size = 79295, upload-time = "2026-03-03T13:43:17.797Z" },
 ]
 
 [[package]]

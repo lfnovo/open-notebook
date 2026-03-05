@@ -273,9 +273,10 @@ export function SpeakerProfileFormDialog({
                     <Input
                       id={`speaker-voice-${index}`}
                       {...register(`speakers.${index}.voice_id` as const)}
-                      placeholder="voice_123"
+                      placeholder={t.podcasts.voiceIdPlaceholder}
                       autoComplete="off"
                     />
+                    <p className="text-xs text-muted-foreground">{t.podcasts.voiceIdHint}</p>
                     {errors.speakers?.[index]?.voice_id ? (
                       <p className="text-xs text-red-600">
                         {errors.speakers[index]?.voice_id?.message}

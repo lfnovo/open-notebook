@@ -687,6 +687,8 @@ export const ptBR = {
     segmentsMin: "Mínimo de 3 segmentos",
     segmentsMax: "Máximo de 20 segmentos",
     voiceIdRequired: "ID da voz é obrigatório",
+    voiceIdPlaceholder: "ex. alloy (OpenAI) ou Modelo:Voz (provedores compatíveis)",
+    voiceIdHint: "OpenAI: use um nome de voz (ex. alloy, echo, nova). Para provedores compatíveis com OpenAI, o formato pode ser NomeModelo:NomeVoz (ex. FunAudioLLM/CosyVoice2-0.5B:anna). Consulte a documentação do seu provedor.",
     backstoryRequired: "História é obrigatória",
     personalityRequired: "Personalidade é obrigatória",
     speakerCountMin: "Pelo menos um locutor é necessário",

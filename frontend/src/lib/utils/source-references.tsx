@@ -44,14 +44,16 @@ export interface ReferenceData {
  * @returns Array of parsed references
  */
 export function parseSourceReferences(text: string): ParsedReference[] {
-  // Match pattern: (source_insight|note|source):alphanumeric_id
+  // Match pattern: (source_insight|insight|note|source):alphanumeric_id
   // This handles references both inside and outside brackets
-  const pattern = /(source_insight|note|source):([a-zA-Z0-9_]+)/g
+  // 'insight' is treated as an alias for 'source_insight' (LLM may output either)
+  const pattern = /(source_insight|insight|note|source):([a-zA-Z0-9_]+)/g
   const matches: ParsedReference[] = []
 
   let match
   while ((match = pattern.exec(text)) !== null) {
-    const type = match[1] as ReferenceType
+    // Normalize 'insight' to 'source_insight' for consistency
+    const type = (match[1] === 'insight' ? 'source_insight' : match[1]) as ReferenceType
     const id = match[2]
 
     matches.push({
@@ -173,12 +175,14 @@ export function convertSourceReferences(
  */
 export function convertReferencesToMarkdownLinks(text: string): string {
   // Step 1: Find ALL references using simple greedy pattern
-  const refPattern = /(source_insight|note|source):([a-zA-Z0-9_]+)/g
+  // 'insight' is treated as an alias for 'source_insight' (LLM may output either)
+  const refPattern = /(source_insight|insight|note|source):([a-zA-Z0-9_]+)/g
   const references: Array<{ type: string; id: string; index: number; length: number }> = []
 
   let match
   while ((match = refPattern.exec(text)) !== null) {
-    const type = match[1]
+    // Normalize 'insight' to 'source_insight' for consistency
+    const type = match[1] === 'insight' ? 'source_insight' : match[1]
     const id = match[2]
 
     // Validate the reference

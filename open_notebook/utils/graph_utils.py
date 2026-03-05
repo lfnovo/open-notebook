@@ -1,5 +1,3 @@
-import asyncio
-
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 
@@ -7,9 +5,7 @@ from loguru import logger
 async def get_session_message_count(graph, session_id: str) -> int:
     """Get message count from LangGraph state, returns 0 on error."""
     try:
-        # Use sync get_state() in a thread (SqliteSaver doesn't support async)
-        thread_state = await asyncio.to_thread(
-            graph.get_state,
+        thread_state = await graph.aget_state(
             config=RunnableConfig(configurable={"thread_id": session_id}),
         )
         if (

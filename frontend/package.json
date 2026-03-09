@@ -9,7 +9,12 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "all": "concurrently -n db,api,worker,frontend -c blue,green,yellow,magenta \"npm run db\" \"npm run api\" \"npm run worker\" \"npm run dev\"",
+    "all:no-db": "concurrently -n api,worker,frontend -c green,yellow,magenta \"npm run api\" \"npm run worker\" \"npm run dev\"",
+    "db": "cd .. && dotenv -e .env -- surreal start --user root --pass root file:data/surreal-db",
+    "api": "cd .. && uv run --env-file .env run_api.py",
+    "worker": "cd .. && uv run --env-file .env surreal-commands-worker --import-modules commands"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -37,7 +42,9 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
+    "concurrently": "^9.2.1",
     "date-fns": "^4.1.0",
+    "dotenv-cli": "^11.0.0",
     "i18next": "^25.7.3",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.525.0",
@@ -58,19 +65,19 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^3.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
     "jsdom": "^26.0.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
-    "vitest": "^3.0.0",
-    "@vitest/ui": "^3.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "@testing-library/react": "^16.2.0",
-    "@testing-library/jest-dom": "^6.6.3"
+    "vitest": "^3.0.0"
   }
 }

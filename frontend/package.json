@@ -13,8 +13,8 @@
     "all": "concurrently -n db,api,worker,frontend -c blue,green,yellow,magenta \"npm run db\" \"npm run api\" \"npm run worker\" \"npm run dev\"",
     "all:no-db": "concurrently -n api,worker,frontend -c green,yellow,magenta \"npm run api\" \"npm run worker\" \"npm run dev\"",
     "db": "cd .. && dotenv -e .env -- surreal start --user root --pass root file:data/surreal-db",
-    "api": "cd .. && uv run --env-file .env run_api.py",
-    "worker": "cd .. && uv run --env-file .env surreal-commands-worker --import-modules commands"
+    "api": "cd .. && uv run --no-sync --env-file .env run_api.py",
+    "worker": "cd .. && uv run --no-sync --env-file .env surreal-commands-worker --import-modules commands"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

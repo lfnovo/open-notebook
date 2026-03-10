@@ -31,6 +31,8 @@ services:
       - "8000:8000"
     volumes:
       - ./surreal_data:/mydata
+    # Removed the healthcheck because the v2 image is too minimal to run wget/curl
+    restart: always
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -39,10 +41,7 @@ services:
       - "8502:8502"  # Web UI
       - "5055:5055"  # API
     environment:
-      # Encryption key for credential storage (required)
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-
-      # Database (required)
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=password

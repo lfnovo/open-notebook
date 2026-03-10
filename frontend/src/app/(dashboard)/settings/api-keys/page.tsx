@@ -1149,7 +1149,7 @@ function DefaultModelSelectors({
         )}
 
         {/* Primary models: Chat, Embedding, TTS, STT */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {primaryConfigs.map(config => {
             const available = getModelsForType(config.modelType)
             const currentValue = watch(config.key) || undefined
@@ -1168,7 +1168,7 @@ function DefaultModelSelectors({
                   >
                     <SelectTrigger
                       id={config.id}
-                      className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+                      className={`h-8 text-xs truncate ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
                     >
                       <SelectValue placeholder={
                         config.required && !isValid && available.length > 0
@@ -1201,14 +1201,14 @@ function DefaultModelSelectors({
         {/* Advanced models: Transformation, Tools, Large Context */}
         <div className="border-t pt-3">
           <p className="text-xs text-muted-foreground mb-3">{t.navigation.advanced}</p>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {advancedConfigs.map(config => {
                 const available = getModelsForType(config.modelType)
                 const currentValue = watch(config.key) || undefined
                 const isValid = currentValue && available.some(m => m.id === currentValue)
 
                 return (
-                  <div key={config.key} className="space-y-1">
+                  <div key={config.key} className="space-y-1 min-w-0">
                     <Label htmlFor={config.id} className="text-xs">
                       {config.label}
                       {config.required && <span className="text-destructive ml-0.5">*</span>}
@@ -1220,7 +1220,7 @@ function DefaultModelSelectors({
                       >
                         <SelectTrigger
                           id={config.id}
-                          className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+                          className={`h-8 text-xs truncate ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
                         >
                           <SelectValue placeholder={
                             config.required && !isValid && available.length > 0

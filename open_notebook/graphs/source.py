@@ -32,6 +32,8 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
+    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
+
     content_settings = ContentSettings(
         default_content_processing_engine_doc="auto",
         default_content_processing_engine_url="auto",
@@ -49,7 +51,6 @@ async def content_process(state: SourceState) -> dict:
             "ja",
         ],
     )
-    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
@@ -59,21 +60,42 @@ async def content_process(state: SourceState) -> dict:
     )
     content_state["output_format"] = "markdown"
 
-    # Add speech-to-text model configuration from Default Models
+    # Add model configurations from Default Models
     try:
         model_manager = ModelManager()
         defaults = await model_manager.get_defaults()
+
+        # Speech-to-text model config (for audio/video transcription)
         if defaults.default_speech_to_text_model:
             stt_model = await Model.get(defaults.default_speech_to_text_model)
             if stt_model:
                 content_state["audio_provider"] = stt_model.provider
                 content_state["audio_model"] = stt_model.name
+                if stt_model.credential:
+                    cred = await stt_model.get_credential_obj()
+                    if cred:
+                        content_state["audio_config"] = cred.to_esperanto_config()
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
+
+        # Vision model config (for image, video frame, and PDF page analysis)
+        vision_model_id = defaults.default_vision_model or defaults.default_chat_model
+        if vision_model_id:
+            vision_db_model = await Model.get(vision_model_id)
+            if vision_db_model:
+                content_state["vision_provider"] = vision_db_model.provider
+                content_state["vision_model"] = vision_db_model.name
+                if vision_db_model.credential:
+                    cred = await vision_db_model.get_credential_obj()
+                    if cred:
+                        content_state["vision_config"] = cred.to_esperanto_config()
+                logger.debug(
+                    f"Using vision model: {vision_db_model.provider}/{vision_db_model.name}"
+                )
     except Exception as e:
-        logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
-        # Continue without custom audio model (content-core will use its default)
+        logger.warning(f"Failed to retrieve model configuration: {e}")
+        # Continue without custom models (content-core will use its defaults)
 
     processed_state = await extract_content(content_state)
 

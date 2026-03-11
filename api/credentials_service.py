@@ -554,7 +554,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     if provider == "azure":
         endpoint = config.get("endpoint")
-        api_version = config.get("api_version", "2024-06-01")
+        api_version = config.get("api_version", "2024-10-21")
         if not endpoint or not api_key:
             return []
         try:

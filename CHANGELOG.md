@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-03-10
+
+### Added
+- i18n support for Bengali (bn-IN) (#643)
+- Podcast language support via podcast-creator 0.12.0 (#645)
+- Upgrade default Azure API version for model testing and fetching (#638)
+
+### Fixed
+- Tiktoken network errors in offline/air-gapped Docker deployments — pre-downloads encoding at build time (#264, #622)
+- SurrealDB getting stuck (#656)
+
+### Dependencies
+- Bump esperanto to 2.19.5 (#657)
+- Bump langgraph from 1.0.6 to 1.0.10rc1 (#658)
+- Bump authlib from 1.6.6 to 1.6.7 (#649)
+- Bump lxml-html-clean from 0.4.3 to 0.4.4 (#646)
+- Bump rollup from 4.55.1 to 4.59.0 (#635)
+- Bump minimatch in frontend (#634)
+- Bump tar from 7.5.9 to 7.5.11 (#650, #659)
+
 ## [1.7.4] - 2026-02-18
 
 ### Fixed

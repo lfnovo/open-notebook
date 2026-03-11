@@ -7,68 +7,62 @@ spaces and special characters (GitHub issue #663).
 """
 
 import uuid
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
+
+from commands.podcast_commands import build_episode_output_dir
 
 
-def _build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
-    """Replicate the directory naming logic from generate_podcast_command."""
-    episode_dir_name = str(uuid.uuid4())
-    output_dir = Path(f"{data_folder}/podcasts/episodes/{episode_dir_name}")
-    return episode_dir_name, output_dir
+class TestBuildEpisodeOutputDir:
+    """Test the actual production helper that builds episode output paths."""
 
-
-class TestPodcastEpisodeDirectory:
-    """Verify that episode directories are always filesystem-safe."""
-
-    def test_directory_uses_uuid_format(self):
-        dir_name, _ = _build_episode_output_dir("/data")
-        # Should be a valid UUID
+    def test_directory_name_is_valid_uuid(self):
+        dir_name, _ = build_episode_output_dir("/data")
         parsed = uuid.UUID(dir_name)
         assert str(parsed) == dir_name
 
-    def test_directory_path_is_valid(self):
-        _, output_dir = _build_episode_output_dir("/data")
-        # Path should have exactly the expected structure
-        assert str(output_dir).startswith("/data/podcasts/episodes/")
-        # Directory name should be the last component
-        assert len(output_dir.name) == 36  # UUID string length
+    def test_path_structure(self):
+        dir_name, output_dir = build_episode_output_dir("/data")
+        assert str(output_dir) == f"/data/podcasts/episodes/{dir_name}"
 
     def test_no_collision_between_calls(self):
-        dir1, _ = _build_episode_output_dir("/data")
-        dir2, _ = _build_episode_output_dir("/data")
+        dir1, _ = build_episode_output_dir("/data")
+        dir2, _ = build_episode_output_dir("/data")
         assert dir1 != dir2
 
-    def test_path_has_no_spaces_or_special_chars(self):
-        """Regardless of episode name, path should be clean."""
+    def test_path_is_independent_of_episode_name(self):
+        """The returned path must never contain user-supplied episode names.
+
+        Since build_episode_output_dir does not accept an episode name at all,
+        any name the user types is structurally excluded from the path.
+        """
         problematic_names = [
             "My Episode Name",
             "Episode: Part 1",
             'test "quotes"',
             "path/traversal",
-            "dots..and...more",
             "café résumé",
             "   spaces   ",
-            "",
             "?*<>|",
         ]
         for name in problematic_names:
-            dir_name, output_dir = _build_episode_output_dir("/data")
-            # UUID path is independent of the episode name
+            _, output_dir = build_episode_output_dir("/data")
             path_str = str(output_dir)
-            assert " " not in path_str, f"Space found in path for name: {name}"
-            for char in ['<', '>', ':', '"', '|', '?', '*']:
-                assert char not in path_str, (
-                    f"Unsafe char '{char}' in path for name: {name}"
-                )
+            # The episode name must not appear anywhere in the path
+            assert name not in path_str
+            # UUID paths contain only hex digits and hyphens after the base
+            dir_component = output_dir.name
+            assert all(c in "0123456789abcdef-" for c in dir_component), (
+                f"Unexpected chars in directory name: {dir_component}"
+            )
 
     def test_path_works_on_posix(self):
-        _, output_dir = _build_episode_output_dir("/data")
+        dir_name, output_dir = build_episode_output_dir("/data")
         posix = PurePosixPath(str(output_dir))
-        assert posix.parts == ("/", "data", "podcasts", "episodes", output_dir.name)
+        assert posix.parts == ("/", "data", "podcasts", "episodes", dir_name)
 
-    def test_uuid_directory_can_be_created(self, tmp_path):
-        """Actually create the directory to verify it works on the real filesystem."""
-        dir_name, output_dir = _build_episode_output_dir(str(tmp_path))
+    def test_directory_can_be_created(self, tmp_path):
+        """Create the directory on the real filesystem."""
+        _, output_dir = build_episode_output_dir(str(tmp_path))
         output_dir.mkdir(parents=True, exist_ok=True)
         assert output_dir.exists()
         assert output_dir.is_dir()

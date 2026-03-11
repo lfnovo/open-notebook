@@ -1,7 +1,10 @@
-from contextlib import asynccontextmanager
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -43,8 +46,6 @@ from api.routers import (
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
-
-load_dotenv()
 
 
 def _cors_origins() -> list[str]:
@@ -149,25 +150,6 @@ app.add_middleware(
 )
 
 
-# Custom exception handler to ensure CORS headers are included in error responses
-# This helps when errors occur before the CORS middleware can process them
-@app.exception_handler(StarletteHTTPException)
-async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
-    """
-    Custom exception handler that ensures CORS headers are included in error responses.
-    This is particularly important for 413 (Payload Too Large) errors during file uploads.
-
-    Note: If a reverse proxy (nginx, traefik) returns 413 before the request reaches
-    FastAPI, this handler won't be called. In that case, configure your reverse proxy
-    to add CORS headers to error responses.
-    """
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"detail": exc.detail},
-        headers=_cors_headers(request, dict(exc.headers or {})),
-    )
-
-
 def _cors_headers(
     request: Request, base_headers: dict[str, str] | None = None
 ) -> dict[str, str]:
@@ -195,6 +177,25 @@ def _cors_headers(
     headers["Access-Control-Allow-Methods"] = "*"
     headers["Access-Control-Allow-Headers"] = "*"
     return headers
+
+
+# Custom exception handler to ensure CORS headers are included in error responses
+# This helps when errors occur before the CORS middleware can process them
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    """
+    Custom exception handler that ensures CORS headers are included in error responses.
+    This is particularly important for 413 (Payload Too Large) errors during file uploads.
+
+    Note: If a reverse proxy (nginx, traefik) returns 413 before the request reaches
+    FastAPI, this handler won't be called. In that case, configure your reverse proxy
+    to add CORS headers to error responses.
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=_cors_headers(request, dict(exc.headers or {})),
+    )
 
 
 @app.exception_handler(NotFoundError)

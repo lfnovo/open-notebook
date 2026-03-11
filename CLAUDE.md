@@ -216,6 +216,3 @@ See dedicated CLAUDE.md files for detailed guidance:
 - **Issues**: https://github.com/lfnovo/open-notebook/issues
 - **License**: MIT (see LICENSE)
 
----
-
-**Last Updated**: February 2026 | **Project Version**: 1.8.0

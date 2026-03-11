@@ -63,7 +63,7 @@ In a world dominated by Artificial Intelligence, having the ability to think �
 - 🎙️ **Generate professional podcasts** - Advanced multi-speaker podcast generation
 - 🔍 **Search intelligently** - Full-text and vector search across all your content
 - 💬 **Chat with context** - AI conversations powered by your research
-- 🌐 **Multi-language UI** - English, Portuguese, Chinese (Simplified & Traditional), Japanese, and Russian support
+- 🌐 **Multi-language UI** - English, Portuguese, Chinese (Simplified & Traditional), Japanese, Russian, and Bengali support
 
 Learn more about our project at [https://www.open-notebook.ai](https://www.open-notebook.ai)
 

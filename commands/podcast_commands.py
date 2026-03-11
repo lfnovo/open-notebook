@@ -1,4 +1,5 @@
 import time
+import uuid
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,20 @@ try:
 except ImportError as e:
     logger.error(f"Failed to import podcast_creator: {e}")
     raise ValueError("podcast_creator library not available")
+
+
+def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
+    """Build a filesystem-safe output directory path for a podcast episode.
+
+    Uses a UUID as the directory name so the path is safe regardless of
+    what the user typed as episode name (spaces, special chars, etc.).
+
+    Returns:
+        A tuple of (episode_dir_name, output_dir_path).
+    """
+    episode_dir_name = str(uuid.uuid4())
+    output_dir = Path(f"{data_folder}/podcasts/episodes/{episode_dir_name}")
+    return episode_dir_name, output_dir
 
 
 def full_model_dump(model):
@@ -220,8 +235,8 @@ async def generate_podcast_command(
 
         logger.info(f"Generated briefing (length: {len(briefing)} chars)")
 
-        # 7. Create output directory
-        output_dir = Path(f"{DATA_FOLDER}/podcasts/episodes/{input_data.episode_name}")
+        # 7. Create output directory using UUID for filesystem-safe paths
+        episode_dir_name, output_dir = build_episode_output_dir(DATA_FOLDER)
         output_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Created output directory: {output_dir}")
@@ -232,7 +247,7 @@ async def generate_podcast_command(
         result = await create_podcast(
             content=input_data.content,
             briefing=briefing,
-            episode_name=input_data.episode_name,
+            episode_name=episode_dir_name,
             output_dir=str(output_dir),
             speaker_config=speaker_profile.name,
             episode_profile=episode_profile.name,

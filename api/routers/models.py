@@ -94,6 +94,7 @@ PROVIDER_PRIORITY = [
     "xai",
     "openrouter",
     "ollama",
+    "lmstudio",
     "azure",
     "openai_compatible",
 ]
@@ -378,6 +379,7 @@ async def get_provider_availability():
             "voyage": "VOYAGE_API_KEY",
             "elevenlabs": "ELEVENLABS_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "lmstudio": "LMSTUDIO_API_BASE",
         }
 
         provider_status = {}

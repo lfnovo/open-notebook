@@ -41,6 +41,7 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
     "voyage": {"required": ["VOYAGE_API_KEY"]},
     "elevenlabs": {"required": ["ELEVENLABS_API_KEY"]},
     "ollama": {"required": ["OLLAMA_API_BASE"]},
+    "lmstudio": {"required": ["LMSTUDIO_API_BASE"]},
     "vertex": {
         "required": ["VERTEX_PROJECT", "VERTEX_LOCATION"],
         "optional": ["GOOGLE_APPLICATION_CREDENTIALS"],
@@ -74,6 +75,7 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "vertex": ["language", "embedding"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "lmstudio": ["language", "embedding"],
 }
 
 
@@ -550,6 +552,31 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 ]
         except Exception as e:
             logger.warning(f"Failed to discover openai_compatible models: {e}")
+            return []
+
+    if provider == "lmstudio":
+        effective_base = (base_url or "http://localhost:1234/v1").rstrip("/")
+        if not effective_base:
+            return []
+        try:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{effective_base}/models",
+                    headers=headers,
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return [
+                    {"name": m.get("id", ""), "provider": "lmstudio"}
+                    for m in data.get("data", [])
+                    if m.get("id")
+                ]
+        except Exception as e:
+            logger.warning(f"Failed to discover lmstudio models: {e}")
             return []
 
     if provider == "azure":

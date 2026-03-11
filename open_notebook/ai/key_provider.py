@@ -62,6 +62,9 @@ PROVIDER_CONFIG = {
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
     },
+    "lmstudio": {
+        "env_var": "LMSTUDIO_API_BASE",
+    },
 }
 
 

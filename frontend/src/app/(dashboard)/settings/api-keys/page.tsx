@@ -75,13 +75,14 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
   openai_compatible: 'OpenAI Compatible',
+  lmstudio: 'LM Studio',
 }
 
 // All providers in display order
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
   'xai', 'openrouter', 'voyage', 'elevenlabs', 'ollama',
-  'azure', 'vertex', 'openai_compatible',
+  'lmstudio', 'azure', 'vertex', 'openai_compatible',
 ]
 
 // Default modalities per provider
@@ -100,6 +101,7 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
   openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  lmstudio: ['language', 'embedding'],
 }
 
 // Documentation links
@@ -117,6 +119,7 @@ const PROVIDER_DOCS: Record<string, string> = {
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
+  lmstudio: 'https://lmstudio.ai/docs',
 }
 
 const TYPE_ICONS: Record<ModelType, React.ReactNode> = {
@@ -166,7 +169,8 @@ function CredentialFormDialog({
   const isVertex = provider === 'vertex'
   const isOllama = provider === 'ollama'
   const isOpenAICompatible = provider === 'openai_compatible'
-  const requiresApiKey = !isVertex && !isOllama && !isOpenAICompatible
+  const isLmStudio = provider === 'lmstudio'
+  const requiresApiKey = !isVertex && !isOllama && !isOpenAICompatible && !isLmStudio
 
   const [name, setName] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -353,7 +357,13 @@ function CredentialFormDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder={isOllama ? 'http://localhost:11434' : 'https://api.example.com/v1'}
+                placeholder={
+                  isOllama
+                    ? 'http://localhost:11434'
+                    : isLmStudio
+                      ? 'http://localhost:1234/v1'
+                      : 'https://api.example.com/v1'
+                }
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">{t.apiKeys.baseUrlOverrideHint}</p>

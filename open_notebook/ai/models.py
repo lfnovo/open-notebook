@@ -141,13 +141,13 @@ class ModelManager:
 
             await provision_provider_keys(model.provider)
 
-        # Merge any additional kwargs (e.g. temperature)
         config.update(kwargs)
 
-        # Normalize provider name: DB stores underscores but Esperanto expects hyphens
         provider = model.provider.replace("_", "-")
 
-        # Create model based on type (Esperanto will cache the instance)
+        if provider == "lmstudio":
+            provider = "openai-compatible"
+
         if model.type == "language":
             return AIFactory.create_language(
                 model_name=model.name,

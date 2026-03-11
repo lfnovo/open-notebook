@@ -582,6 +582,64 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
+async def discover_lmstudio_models() -> List[DiscoveredModel]:
+    api_key = None
+    base_url = None
+
+    try:
+        credentials = await Credential.get_by_provider("lmstudio")
+        if credentials:
+            cred = credentials[0]
+            config = cred.to_esperanto_config()
+            api_key = config.get("api_key")
+            base_url = config.get("base_url", "").rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read lmstudio config from Credential: {e}")
+
+    if not api_key:
+        api_key = os.environ.get("LMSTUDIO_API_KEY")
+    if not base_url:
+        env_base = os.environ.get("LMSTUDIO_API_BASE", "").rstrip("/")
+        base_url = env_base or "http://localhost:1234/v1"
+
+    if not base_url:
+        logger.warning("No base_url configured for lmstudio provider")
+        return []
+
+    models: List[DiscoveredModel] = []
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            response = await client.get(
+                f"{base_url}/models",
+                headers=headers,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "openai")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="lmstudio",
+                            model_type=model_type,
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"Failed to discover lmstudio models: HTTP {e.response.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to discover lmstudio models: {e}")
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -600,6 +658,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
     "openai_compatible": discover_openai_compatible_models,
+    "lmstudio": discover_lmstudio_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

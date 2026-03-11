@@ -34,6 +34,7 @@ TEST_MODELS = {
     "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
     "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
     "openai_compatible": (None, "language"),  # Dynamic - will use first available model
+    "lmstudio": (None, "language"),
 }
 
 
@@ -213,11 +214,17 @@ async def test_provider_connection(
             return await _test_ollama_connection(test_base_url)
 
         if normalized_provider == "openai_compatible":
-            # Use base_url from specific config, or environment variable
             test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
             test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
             if not test_base_url:
                 return False, "No base URL configured for OpenAI-compatible provider"
+            return await _test_openai_compatible_connection(test_base_url, test_api_key)
+
+        if normalized_provider == "lmstudio":
+            test_base_url = base_url or os.environ.get("LMSTUDIO_API_BASE")
+            test_api_key = api_key or os.environ.get("LMSTUDIO_API_KEY")
+            if not test_base_url:
+                test_base_url = "http://localhost:1234/v1"
             return await _test_openai_compatible_connection(test_base_url, test_api_key)
 
         if normalized_provider == "azure":
@@ -307,6 +314,7 @@ DEFAULT_TEST_VOICES = {
     "google": "Kore",
     "vertex": "Kore",
     "openai_compatible": "alloy",
+    "lmstudio": "alloy",
 }
 
 

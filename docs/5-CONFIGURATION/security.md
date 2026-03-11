@@ -286,6 +286,14 @@ iptables -A INPUT -p tcp --dport 5055 -j DROP
 
 See [Reverse Proxy Configuration](reverse-proxy.md) for complete nginx/Caddy/Traefik setup with HTTPS.
 
+### CORS (Production)
+
+In production, restrict which origins can call your API by setting `CORS_ORIGINS` to your frontend URL(s), comma-separated. The default `*` allows any origin and is suitable only for development. See [Environment Reference](environment-reference.md#api-configuration).
+
+```bash
+CORS_ORIGINS=https://app.example.com,https://www.example.com
+```
+
 ---
 
 ## Security Limitations

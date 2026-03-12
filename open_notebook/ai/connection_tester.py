@@ -34,6 +34,7 @@ TEST_MODELS = {
     "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
     "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
     "openai_compatible": (None, "language"),  # Dynamic - will use first available model
+    "minimax": ("MiniMax-M2.5-highspeed", "language"),  # MiniMax via OpenAI-compatible
 }
 
 
@@ -218,6 +219,14 @@ async def test_provider_connection(
             test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
             if not test_base_url:
                 return False, "No base URL configured for OpenAI-compatible provider"
+            return await _test_openai_compatible_connection(test_base_url, test_api_key)
+
+        if normalized_provider == "minimax":
+            # MiniMax uses OpenAI-compatible API
+            test_base_url = base_url or "https://api.minimax.io/v1"
+            test_api_key = api_key or os.environ.get("MINIMAX_API_KEY")
+            if not test_api_key:
+                return False, "No API key configured for MiniMax"
             return await _test_openai_compatible_connection(test_base_url, test_api_key)
 
         if normalized_provider == "azure":

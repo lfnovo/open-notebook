@@ -247,6 +247,7 @@ If you have these variables configured from a previous installation, click the *
 | `GROQ_API_KEY` | Groq | Settings → API Keys → Add Groq Credential |
 | `MISTRAL_API_KEY` | Mistral | Settings → API Keys → Add Mistral Credential |
 | `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
+| `MINIMAX_API_KEY` | MiniMax | Settings → API Keys → Add MiniMax Credential |
 | `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
 | `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
 | `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |

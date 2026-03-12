@@ -58,6 +58,9 @@ PROVIDER_CONFIG = {
     "elevenlabs": {
         "env_var": "ELEVENLABS_API_KEY",
     },
+    "minimax": {
+        "env_var": "MINIMAX_API_KEY",
+    },
     # URL-based providers
     "ollama": {
         "env_var": "OLLAMA_API_BASE",

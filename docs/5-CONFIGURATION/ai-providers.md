@@ -249,6 +249,43 @@ Heavy use: Depends on models chosen
 
 ---
 
+### MiniMax
+
+**Cost:** ~$0.20-1.00 per 1M tokens
+
+**Get Your API Key:**
+1. Go to https://platform.minimaxi.com/
+2. Create account or login
+3. Go to API keys section
+4. Create new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **MiniMax**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Manually register models (model discovery not supported)
+
+**Available Models:**
+- `MiniMax-M2.5` — Latest flagship model (204K context)
+- `MiniMax-M2.5-highspeed` — Faster variant (204K context)
+
+**Recommended:**
+- For quality: `MiniMax-M2.5` (best overall)
+- For speed: `MiniMax-M2.5-highspeed` (faster, same context)
+
+**Advantages:**
+- Very large context window (204K tokens)
+- Competitive pricing
+- OpenAI-compatible API
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key at platform.minimaxi.com
+- "Rate limited" → Wait or upgrade account
+
+---
+
 ## Self-Hosted / Local
 
 ### Ollama (Recommended for Local)

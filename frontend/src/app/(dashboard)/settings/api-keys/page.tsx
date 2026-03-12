@@ -74,6 +74,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   ollama: 'Ollama',
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
+  minimax: 'MiniMax',
   openai_compatible: 'OpenAI Compatible',
 }
 
@@ -81,7 +82,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
   'xai', 'openrouter', 'voyage', 'elevenlabs', 'ollama',
-  'azure', 'vertex', 'openai_compatible',
+  'minimax', 'azure', 'vertex', 'openai_compatible',
 ]
 
 // Default modalities per provider
@@ -97,6 +98,7 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   voyage: ['embedding'],
   elevenlabs: ['text_to_speech', 'speech_to_text'],
   ollama: ['language', 'embedding'],
+  minimax: ['language'],
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
   openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
@@ -114,6 +116,7 @@ const PROVIDER_DOCS: Record<string, string> = {
   openrouter: 'https://openrouter.ai/keys',
   voyage: 'https://dash.voyageai.com/api-keys',
   elevenlabs: 'https://elevenlabs.io/app/settings/api-keys',
+  minimax: 'https://platform.minimaxi.com/',
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',

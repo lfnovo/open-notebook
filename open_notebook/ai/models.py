@@ -147,6 +147,15 @@ class ModelManager:
         # Normalize provider name: DB stores underscores but Esperanto expects hyphens
         provider = model.provider.replace("_", "-")
 
+        # Map providers that use OpenAI-compatible API to the openai-compatible provider
+        OPENAI_COMPATIBLE_PROVIDERS = {
+            "minimax": "https://api.minimax.io/v1",
+        }
+        if provider in OPENAI_COMPATIBLE_PROVIDERS:
+            if "base_url" not in config:
+                config["base_url"] = OPENAI_COMPATIBLE_PROVIDERS[provider]
+            provider = "openai-compatible"
+
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
             return AIFactory.create_language(

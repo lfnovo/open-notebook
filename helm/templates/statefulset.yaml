@@ -1,0 +1,140 @@
+{{- /*
+Copyright © 2024 Luis Novo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+*/ -}}
+{{- if .Values.surrealdb.enabled }}
+apiVersion: {{ include "common.capabilities.statefulset.apiVersion" . }}
+kind: StatefulSet
+metadata:
+  name: {{ include "common.names.fullname" . }}-surrealdb
+  namespace: {{ include "common.names.namespace" . }}
+  labels: {{- include "open-notebook.surrealdb.labels" . | nindent 4 }}
+  annotations: {{- include "common.tplvalues.render" ( dict "value" .Values.global.annotations "context" $ ) | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "open-notebook.surrealdb.selectorLabels" . | nindent 6 }}
+  serviceName: {{ include "common.names.fullname" . }}-surrealdb
+  template:
+    metadata:
+      labels: {{- include "open-notebook.surrealdb.selectorLabels" . | nindent 8 }}
+        {{- if .Values.surrealdb.podLabels }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.podLabels "context" $) | nindent 8 }}
+        {{- end }}
+      annotations:
+        {{- if .Values.surrealdb.podAnnotations }}
+        {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.podAnnotations "context" $) | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- include "common.images.pullSecrets" . | nindent 6 }}
+      {{- if .Values.surrealdb.podSecurityContext.enabled }}
+      securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.surrealdb.podSecurityContext "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.surrealdb.priorityClassName }}
+      priorityClassName: {{ .Values.surrealdb.priorityClassName | quote }}
+      {{- end }}
+      containers:
+        - name: surrealdb
+          image: {{ include "open-notebook.surrealdb.image" . }}
+          imagePullPolicy: {{ .Values.surrealdb.image.pullPolicy }}
+          command:
+            - /surreal
+            - start
+            - --log
+            - info
+            - --bind
+            - 0.0.0.0:{{ .Values.surrealdb.service.port }}
+            - --
+            - rocksdb:{{ .Values.surrealdb.persistence.mountPath }}/mydatabase.db
+          env:
+            - name: SURREAL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "open-notebook.surrealdb.secretName" . }}
+                  key: {{ .Values.surrealdb.auth.secretKey.username | default "username" }}
+            - name: SURREAL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "open-notebook.surrealdb.secretName" . }}
+                  key: {{ .Values.surrealdb.auth.secretKey.password | default "password" }}
+            {{- if .Values.surrealdb.experimental.graphql }}
+            - name: SURREAL_EXPERIMENTAL_GRAPHQL
+              value: "true"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.surrealdb.service.port }}
+              protocol: TCP
+          {{- if .Values.surrealdb.livenessProbe.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.surrealdb.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.surrealdb.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.surrealdb.livenessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.surrealdb.livenessProbe.failureThreshold }}
+            successThreshold: {{ .Values.surrealdb.livenessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.surrealdb.readinessProbe.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.surrealdb.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.surrealdb.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.surrealdb.readinessProbe.timeoutSeconds }}
+            failureThreshold: {{ .Values.surrealdb.readinessProbe.failureThreshold }}
+            successThreshold: {{ .Values.surrealdb.readinessProbe.successThreshold }}
+          {{- end }}
+          {{- if .Values.surrealdb.resources }}
+          resources: {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.resources "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.surrealdb.containerSecurityContext.enabled }}
+          securityContext: {{- include "common.compatibility.renderSecurityContext" (dict "secContext" .Values.surrealdb.containerSecurityContext "context" $) | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: surrealdb-data
+              mountPath: {{ .Values.surrealdb.persistence.mountPath }}
+      {{- if .Values.surrealdb.nodeSelector }}
+      nodeSelector: {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.nodeSelector "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.surrealdb.affinity }}
+      affinity: {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.affinity "context" $) | nindent 8 }}
+      {{- end }}
+      {{- if .Values.surrealdb.tolerations }}
+      tolerations: {{- include "common.tplvalues.render" (dict "value" .Values.surrealdb.tolerations "context" $) | nindent 8 }}
+      {{- end }}
+  volumeClaimTemplates:
+    - metadata:
+        name: surrealdb-data
+        labels: {{- include "open-notebook.surrealdb.labels" . | nindent 10 }}
+      spec:
+        accessModes:
+          - {{ .Values.surrealdb.persistence.accessMode }}
+        {{- if .Values.surrealdb.persistence.storageClass }}
+        {{- if (eq "-" .Values.surrealdb.persistence.storageClass) }}
+        storageClassName: ""
+        {{- else }}
+        storageClassName: {{ .Values.surrealdb.persistence.storageClass }}
+        {{- end }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.surrealdb.persistence.size }}
+{{- end }}

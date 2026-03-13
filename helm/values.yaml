@@ -1,0 +1,883 @@
+# Default values for open-notebook
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+##
+## Global Docker image parameters
+## Please, note that this will override the image parameters, including dependencies, configured to use the global value
+## Current available global Docker image parameters: imageRegistry, imagePullSecrets and storageClass
+##
+global:
+  ## @param global.commonChartEnabled Enable common chart library compatibility
+  ##
+  commonChartEnabled: true
+  ## @param global.imageRegistry Global Docker image registry
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#updating-a-global-image
+  ##
+  imageRegistry: ""
+  ## @param global.imagePullSecrets Global Docker registry secret names as an array
+  ## e.g.:
+  ## imagePullSecrets:
+  ##   - myRegistryKeySecretName
+  ##
+  imagePullSecrets: []
+  ## @param global.storageClass Global StorageClass for PVCs
+  ## ref: https://kubernetes.io/docs/concepts/storage/storage-classes/
+  ##
+  storageClass: ""
+  ## @param global.labels Labels to add to all deployed objects
+  ##
+  labels: {}
+  ## @param global.annotations Annotations to add to all deployed objects
+  ##
+  annotations: {}
+  ## @param global.clusterDomain Kubernetes cluster domain
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-config
+  ##
+  clusterDomain: cluster.local
+
+##
+## Open Notebook image parameters
+##
+image:
+  ## @param image.registry Docker image registry
+  ##
+  registry: docker.io
+  ## @param image.repository Docker image repository
+  ##
+  repository: lfnovo/open_notebook
+  ## @param image.tag Docker image tag (immutable tags are recommended)
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#image-names
+  ##
+  tag: ""
+  ## @param image.digest Docker image digest (overrides tag when set)
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#image-pull-policy
+  ##
+  digest: ""
+  ## @param image.pullPolicy Docker image pull policy
+  ## ref: https://kubernetes.io/docs/concepts/containers/images/#updating-images
+  ##
+  pullPolicy: IfNotPresent
+
+##
+## SurrealDB database configuration
+##
+surrealdb:
+  ## @param surrealdb.enabled Deploy SurrealDB as part of the chart
+  ## If false, configure external SurrealDB connection
+  ##
+  enabled: true
+
+  ## @param surrealdb.external.enabled Use external SurrealDB instead of deploying one
+  ##
+  external:
+    enabled: false
+    ## @param surrealdb.external.host External SurrealDB host
+    ##
+    host: ""
+    ## @param surrealdb.external.port External SurrealDB port
+    ##
+    port: 8000
+    ## @param surrealdb.external.secure Use HTTPS/WSS for external connection
+    ##
+    secure: false
+
+  ## SurrealDB image parameters
+  ## ref: https://hub.docker.com/r/surrealdb/surrealdb
+  ##
+  image:
+    registry: docker.io
+    repository: surrealdb/surrealdb
+    tag: v2
+    digest: ""
+    pullPolicy: IfNotPresent
+
+  ## SurrealDB authentication configuration
+  ##
+  auth:
+    ## @param surrealdb.auth.user SurrealDB username
+    ##
+    user: root
+    ## @param surrealdb.auth.password SurrealDB password
+    ## NOTE: Must be set if existingSecret is not provided
+    ##
+    password: "root"
+    ## @param surrealdb.auth.existingSecret Existing secret containing SurrealDB credentials
+    ## NOTE: Must contain keys specified in secretKey.username and secretKey.password
+    ##
+    existingSecret: ""
+    ## @param surrealdb.auth.secretKey Keys in the secret containing credentials
+    ##
+    secretKey:
+      ## @param surrealdb.auth.secretKey.username Key in secret containing username
+      ##
+      username: username
+      ## @param surrealdb.auth.secretKey.password Key in secret containing password
+      ##
+      password: password
+
+  ## SurrealDB database configuration
+  ##
+  database:
+    ## @param surrealdb.database.namespace SurrealDB namespace
+    ##
+    namespace: open_notebook
+    ## @param surrealdb.database.database SurrealDB database name
+    ##
+    database: production
+
+  ## SurrealDB experimental features
+  ##
+  experimental:
+    ## @param surrealdb.experimental.graphql Enable GraphQL experimental feature
+    ##
+    graphql: true
+
+  ## SurrealDB persistence configuration
+  ##
+  persistence:
+    ## @param surrealdb.persistence.enabled Enable persistence using PVC
+    ##
+    enabled: true
+    ## @param surrealdb.persistence.existingClaim Name of an existing PVC to use
+    ##
+    existingClaim: ""
+    ## @param surrealdb.persistence.storageClass StorageClass for PVC
+    ## ref: https://kubernetes.io/docs/concepts/storage/storage-classes/
+    ##
+    storageClass: ""
+    ## @param surrealdb.persistence.accessMode PVC access mode
+    ##
+    accessMode: ReadWriteOnce
+    ## @param surrealdb.persistence.size PVC storage request size
+    ##
+    size: 8Gi
+    ## @param surrealdb.persistence.mountPath Mount path for SurrealDB data
+    ##
+    mountPath: /mydata
+
+  ## SurrealDB service configuration
+  ##
+  service:
+    ## @param surrealdb.service.type Kubernetes Service type
+    ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+    ##
+    type: ClusterIP
+    ## @param surrealdb.service.port SurrealDB service port
+    ##
+    port: 8000
+    ## @param surrealdb.service.nodePort Specific node port when type is NodePort
+    ##
+    nodePort: null
+    ## @param surrealdb.service.annotations Service annotations
+    ##
+    annotations: {}
+
+  ## SurrealDB resource requests and limits
+  ## ref: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+  ##
+  resources:
+    limits: {}
+    requests: {}
+
+  ## Configure liveness probe for SurrealDB
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
+  ##
+  livenessProbe:
+    ## @param surrealdb.livenessProbe.enabled Enable liveness probe
+    ##
+    enabled: true
+    ## @param surrealdb.livenessProbe.initialDelaySeconds Initial delay seconds for liveness probe
+    ##
+    initialDelaySeconds: 30
+    ## @param surrealdb.livenessProbe.periodSeconds Period seconds for liveness probe
+    ##
+    periodSeconds: 10
+    ## @param surrealdb.livenessProbe.timeoutSeconds Timeout seconds for liveness probe
+    ##
+    timeoutSeconds: 5
+    ## @param surrealdb.livenessProbe.failureThreshold Failure threshold for liveness probe
+    ##
+    failureThreshold: 6
+    ## @param surrealdb.livenessProbe.successThreshold Success threshold for liveness probe
+    ##
+    successThreshold: 1
+
+  ## Configure readiness probe for SurrealDB
+  ##
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  ## @param surrealdb.podAnnotations Annotations for SurrealDB pods
+  ##
+  podAnnotations: {}
+  ## @param surrealdb.podLabels Labels for SurrealDB pods
+  ##
+  podLabels: {}
+
+  ## SurrealDB pod security context
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+  ##
+  podSecurityContext:
+    ## @param surrealdb.podSecurityContext.enabled Enable pod security context
+    ##
+    enabled: true
+    ## @param surrealdb.podSecurityContext.fsGroup File system group ID
+    ##
+    fsGroup: 1001
+    ## @param surrealdb.podSecurityContext.runAsUser User ID to run as
+    ##
+    runAsUser: 1001
+
+  ## SurrealDB container security context
+  ##
+  containerSecurityContext:
+    enabled: true
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  ## @param surrealdb.nodeSelector Node selector for SurrealDB pods
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#nodeselector
+  ##
+  nodeSelector: {}
+  ## @param surrealdb.tolerations Tolerations for SurrealDB pods
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  ##
+  tolerations: []
+  ## @param surrealdb.affinity Affinity rules for SurrealDB pods
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/#affinity-and-anti-affinity
+  ##
+  affinity: {}
+  ## @param surrealdb.priorityClassName Priority class name for SurrealDB pods
+  ## ref: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+  ##
+  priorityClassName: ""
+
+##
+## Open Notebook application configuration
+##
+app:
+  ## @param app.nameOverride String to partially override common.names.fullname template
+  ##
+  nameOverride: ""
+  ## @param app.fullnameOverride String to fully override common.names.fullname template
+  ##
+  fullnameOverride: ""
+
+  ## @param app.replicaCount Number of application replicas
+  ##
+  replicaCount: 1
+
+  ## Update strategy for the application deployment
+  ## ref: https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#updating-a-deployment
+  ##
+  updateStrategy:
+    ## @param app.updateStrategy.type Deployment update strategy type
+    ##
+    type: RollingUpdate
+    rollingUpdate:
+      ## @param app.updateStrategy.rollingUpdate.maxSurge Maximum number of pods that can be created above desired
+      ##
+      maxSurge: 1
+      ## @param app.updateStrategy.rollingUpdate.maxUnavailable Maximum number of pods that can be unavailable
+      ##
+      maxUnavailable: 0
+
+  ## Application ports
+  ##
+  ports:
+    ## @param app.ports.http HTTP frontend port
+    ##
+    http: 8502
+    ## @param app.ports.api API server port
+    ##
+    api: 5055
+
+  ## Application data persistence
+  ##
+  persistence:
+    enabled: true
+    existingClaim: ""
+    storageClass: ""
+    accessMode: ReadWriteOnce
+    size: 8Gi
+    mountPath: /app/data
+
+  ## @param app.command Override default container command
+  ##
+  command: []
+  ## @param app.args Override default container args
+  ##
+  args: []
+
+  ## Additional environment variables for application containers
+  ## ref: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/
+  ##
+  extraEnvVars: []
+  ## e.g.:
+  ## extraEnvVars:
+  ##   - name: MY_VAR
+  ##     value: "my-value"
+
+  ## @param app.extraEnvVarsCM Name of existing ConfigMap with extra environment variables
+  ##
+  extraEnvVarsCM: ""
+  ## @param app.extraEnvVarsSecret Name of existing Secret with extra environment variables
+  ##
+  extraEnvVarsSecret: ""
+
+  ## Configure liveness probe for the application
+  ##
+  livenessProbe:
+    enabled: true
+    ## @param app.livenessProbe.probeType Probe type (httpGet, tcpSocket, exec)
+    ##
+    probeType: httpGet
+    ## @param app.livenessProbe.path Path for HTTP probe
+    ##
+    path: /health
+    ## @param app.livenessProbe.port Port for probe
+    ##
+    port: api
+    initialDelaySeconds: 60
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  ## Configure readiness probe for the application
+  ##
+  readinessProbe:
+    enabled: true
+    probeType: httpGet
+    path: /health
+    port: api
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  ## Configure startup probe for the application
+  ##
+  startupProbe:
+    enabled: false
+    probeType: httpGet
+    path: /health
+    port: api
+    initialDelaySeconds: 0
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 30
+    successThreshold: 1
+
+  ## Application resource requests and limits
+  ##
+  resources:
+    limits: {}
+    requests: {}
+  ## e.g.:
+  ## resources:
+  ##   limits:
+  ##     cpu: 500m
+  ##     memory: 512Mi
+  ##   requests:
+  ##     cpu: 100m
+  ##     memory: 128Mi
+
+  ## @param app.podAnnotations Annotations for application pods
+  ##
+  podAnnotations: {}
+  ## @param app.podLabels Labels for application pods
+  ##
+  podLabels: {}
+
+  ## Application pod security context
+  ##
+  podSecurityContext:
+    enabled: false
+    fsGroup: 1001
+
+  containerSecurityContext:
+    enabled: false
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  ## @param app.nodeSelector Node selector for application pods
+  ##
+  nodeSelector: {}
+  ## @param app.tolerations Tolerations for application pods
+  ##
+  tolerations: []
+  ## @param app.affinity Affinity rules for application pods
+  ##
+  affinity: {}
+  ## @param app.priorityClassName Priority class name for application pods
+  ##
+  priorityClassName: ""
+
+  ## Service account configuration
+  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
+  ##
+  serviceAccount:
+    ## @param app.serviceAccount.create Create a service account
+    ##
+    create: false
+    ## @param app.serviceAccount.name Name of the service account to use
+    ##
+    name: ""
+    ## @param app.serviceAccount.automountServiceAccountToken Automount service account token
+    ##
+    automountServiceAccountToken: false
+    ## @param app.serviceAccount.annotations Service account annotations
+    ##
+    annotations: {}
+
+  ## Pod disruption budget configuration
+  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+  ##
+  podDisruptionBudget:
+    ## @param app.podDisruptionBudget.enabled Enable pod disruption budget
+    ##
+    enabled: false
+    ## @param app.podDisruptionBudget.minAvailable Minimum number of pods that must be available
+    ##
+    minAvailable: 1
+    ## @param app.podDisruptionBudget.maxUnavailable Maximum number of pods that can be unavailable
+    ##
+    maxUnavailable: ""
+
+##
+## Service configuration
+##
+service:
+  ## @param service.type Kubernetes Service type
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
+  ##
+  type: ClusterIP
+  ports:
+    ## @param service.ports.http HTTP service port
+    ##
+    http: 8502
+    ## @param service.ports.api API service port
+    ##
+    api: 5055
+    ## @param service.ports.httpNodePort Node port for HTTP service (when type=NodePort)
+    ##
+    httpNodePort: null
+    ## @param service.ports.apiNodePort Node port for API service (when type=NodePort)
+    ##
+    apiNodePort: null
+  ## @param service.annotations Service annotations
+  ##
+  annotations: {}
+  ## @param service.sessionAffinity Control where client requests go, to the same pod or round-robin
+  ## Values: ClientIP or None
+  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#virtual-ips-and-service-proxies
+  ##
+  sessionAffinity: None
+  ## @param service.sessionAffinityConfig Session affinity configuration
+  ##
+  sessionAffinityConfig: {}
+
+##
+## Ingress configuration
+## ref: https://kubernetes.io/docs/concepts/services-networking/ingress/
+##
+ingress:
+  ## @param ingress.enabled Enable ingress record generation
+  ##
+  enabled: false
+  ## @param ingress.className IngressClass that will be used to implement the Ingress
+  ## This is supported in Kubernetes 1.18+ and required if you have more than one IngressClass marked as the default for your cluster
+  ## ref: https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/
+  ##
+  className: ""
+  ## @param ingress.annotations Additional annotations for the Ingress resource
+  ## e.g.:
+  ## annotations:
+  ##   cert-manager.io/cluster-issuer: letsencrypt-prod
+  ##   nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  ##
+  annotations: {}
+  ## @param ingress.hosts List of host configurations
+  ## e.g.:
+  ## hosts:
+  ##   - host: open-notebook.example.com
+  ##     paths:
+  ##       - path: /
+  ##         pathType: Prefix
+  ##         service: http
+  ##
+  hosts:
+    - host: open-notebook.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+          service: http
+
+  ## @param ingress.tls TLS configuration for Ingress
+  ## e.g.:
+  ## tls:
+  ##   - secretName: open-notebook-tls
+  ##     hosts:
+  ##       - open-notebook.example.com
+  ##
+  tls: []
+
+##
+## Open Notebook application configuration
+##
+config:
+  ## API configuration
+  ##
+  api:
+    ## @param config.api.url External API URL for browser access
+    ## e.g. http://your-domain:30555 or https://api.example.com
+    ##
+    url: ""
+    ## @param config.api.internalUrl Internal API URL for Next.js server-side calls
+    ## e.g. http://open-notebook.open-notebook.svc.cluster.local:5055
+    ##
+    internalUrl: ""
+    ## @param config.api.clientTimeout Client timeout in seconds
+    ##
+    clientTimeout: 300
+    ## @param config.api.esperantoTimeout Esperanto LLM timeout in seconds
+    ##
+    esperantoTimeout: 60
+
+  ## Security configuration
+  ##
+  auth:
+    ## @param config.auth.password Application password (leave empty to disable auth)
+    ##
+    password: ""
+    ## @param config.auth.existingSecret Existing secret containing password
+    ## NOTE: Must contain key specified by secretKey
+    ##
+    existingSecret: ""
+    ## @param config.auth.secretKey Key in secret containing password
+    ##
+    secretKey: open-notebook-password
+
+  ## SSL/TLS configuration
+  ##
+  ssl:
+    ## @param config.ssl.caBundle Path to CA bundle file
+    ##
+    caBundle: ""
+    ## @param config.ssl.verify Verify SSL certificates
+    ##
+    verify: true
+
+  ## Worker configuration
+  ##
+  worker:
+    ## @param config.worker.maxTasks Maximum number of concurrent worker tasks
+    ##
+    maxTasks: 5
+    ## Retry configuration
+    ##
+    retry:
+      ## @param config.worker.retry.enabled Enable retry logic
+      ##
+      enabled: true
+      ## @param config.worker.retry.maxAttempts Maximum number of retry attempts
+      ##
+      maxAttempts: 3
+      ## @param config.worker.retry.waitStrategy Retry wait strategy
+      ## Values: exponential_jitter, fixed, linear, exponential
+      ##
+      waitStrategy: exponential_jitter
+      ## @param config.worker.retry.waitMin Minimum wait time in seconds
+      ##
+      waitMin: 1
+      ## @param config.worker.retry.waitMax Maximum wait time in seconds
+      ##
+      waitMax: 30
+
+  ## TTS (Text-to-Speech) configuration
+  ##
+  tts:
+    ## @param config.tts.batchSize Batch size for TTS processing
+    ##
+    batchSize: 5
+
+  ## AI providers configuration
+  ## Configure one or more AI providers for LLM, embeddings, STT, and TTS
+  ##
+  aiProviders:
+    ## OpenAI configuration
+    ##
+    openai:
+      ## @param config.aiProviders.openai.apiKey OpenAI API key
+      ## NOTE: When set and secrets.create=true, will be automatically added to secret
+      ##
+      apiKey: ""
+      ## @param config.aiProviders.openai.existingSecret Existing secret containing API key
+      ##
+      existingSecret: ""
+      ## @param config.aiProviders.openai.secretKey Key in secret containing API key
+      ##
+      secretKey: openai-api-key
+      ## @param config.aiProviders.openai.baseUrl Custom OpenAI base URL
+      ##
+      baseUrl: ""
+
+    ## Anthropic (Claude) configuration
+    ##
+    anthropic:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: anthropic-api-key
+
+    ## Google Gemini configuration
+    ##
+    google:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: google-api-key
+      ## @param config.aiProviders.google.geminiBaseUrl Custom Gemini base URL
+      ##
+      geminiBaseUrl: ""
+
+    ## Google Vertex AI configuration
+    ##
+    vertexai:
+      ## @param config.aiProviders.vertexai.project Google Cloud project ID
+      ##
+      project: ""
+      ## @param config.aiProviders.vertexai.credentials Service account credentials (JSON string or file path)
+      ##
+      credentials: ""
+      ## @param config.aiProviders.vertexai.location Vertex AI region/location
+      ##
+      location: us-east5
+      existingSecret: ""
+
+    ## Mistral AI configuration
+    ##
+    mistral:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: mistral-api-key
+
+    ## DeepSeek configuration
+    ##
+    deepseek:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: deepseek-api-key
+
+    ## Ollama configuration
+    ##
+    ollama:
+      ## @param config.aiProviders.ollama.baseUrl Ollama API base URL
+      ## e.g. http://localhost:11434
+      ##
+      baseUrl: ""
+
+    ## OpenRouter configuration
+    ##
+    openrouter:
+      baseUrl: https://openrouter.ai/api/v1
+      apiKey: ""
+      existingSecret: ""
+      secretKey: openrouter-api-key
+
+    ## Groq configuration
+    ##
+    groq:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: groq-api-key
+
+    ## XAI (Grok) configuration
+    ##
+    xai:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: xai-api-key
+
+    ## ElevenLabs configuration (for podcast generation)
+    ##
+    elevenlabs:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: elevenlabs-api-key
+
+    ## Voyage AI configuration (embeddings)
+    ##
+    voyage:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: voyage-api-key
+
+    ## OpenAI-compatible endpoints configuration
+    ## For Azure OpenAI, or other OpenAI-compatible APIs
+    ##
+    openaiCompatible:
+      ## @param config.aiProviders.openaiCompatible.baseUrl Base URL for OpenAI-compatible endpoint
+      ## e.g. https://api.openai.com/v1 for OpenAI
+      ##
+      baseUrl: ""
+      ## @param config.aiProviders.openaiCompatible.apiKey API key for OpenAI-compatible endpoint
+      ## NOTE: When set and secrets.create=true, will be automatically added to secret
+      ##
+      apiKey: ""
+      ## @param config.aiProviders.openaiCompatible.existingSecret Existing secret containing API key
+      ##
+      existingSecret: ""
+      ## Mode-specific configuration
+      ##
+      llm:
+        ## @param config.aiProviders.openaiCompatible.llm.baseUrl Override base URL for LLM mode
+        ##
+        baseUrl: ""
+        ## @param config.aiProviders.openaiCompatible.llm.apiKey Override API key for LLM mode
+        ##
+        apiKey: ""
+      embedding:
+        baseUrl: ""
+        apiKey: ""
+      stt:
+        baseUrl: ""
+        apiKey: ""
+      tts:
+        baseUrl: ""
+        apiKey: ""
+
+    ## Azure OpenAI configuration
+    ##
+    azureOpenai:
+      ## @param config.aiProviders.azureOpenai.apiKey Azure OpenAI API key
+      ##
+      apiKey: ""
+      ## @param config.aiProviders.azureOpenai.endpoint Azure OpenAI endpoint URL
+      ## e.g. https://your-resource.openai.azure.com
+      ##
+      endpoint: ""
+      ## @param config.aiProviders.azureOpenai.apiVersion Azure OpenAI API version
+      ##
+      apiVersion: "2024-12-01-preview"
+      existingSecret: ""
+      ## Mode-specific configuration
+      ##
+      llm:
+        apiKey: ""
+        endpoint: ""
+        apiVersion: ""
+      embedding:
+        apiKey: ""
+        endpoint: ""
+        apiVersion: ""
+      stt:
+        apiKey: ""
+        endpoint: ""
+        apiVersion: ""
+      tts:
+        apiKey: ""
+        endpoint: ""
+        apiVersion: ""
+
+    ## Firecrawl configuration
+    ##
+    firecrawl:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: firecrawl-api-key
+
+    ## Jina configuration
+    ##
+    jina:
+      apiKey: ""
+      existingSecret: ""
+      secretKey: jina-api-key
+
+    ## LangChain configuration
+    ##
+    langchain:
+      ## @param config.aiProviders.langchain.tracingV2 Enable LangSmith tracing
+      ##
+      tracingV2: false
+      ## @param config.aiProviders.langchain.endpoint LangSmith API endpoint
+      ##
+      endpoint: https://api.smith.langchain.com
+      apiKey: ""
+      ## @param config.aiProviders.langchain.project LangSmith project name
+      ##
+      project: "Open Notebook"
+      existingSecret: ""
+      secretKey: langchain-api-key
+
+##
+## Secret management configuration
+##
+secrets:
+  ## @param secrets.create Create secrets for sensitive data
+  ## When enabled, secrets will be created for any apiKey/password fields that are set
+  ##
+  create: true
+  ## @param secrets.existingSecret Use existing secret for all configuration
+  ## NOTE: Must contain appropriate keys for each provider
+  ##
+  existingSecret: ""
+  ## @param secrets.annotations Annotations to add to created secrets
+  ##
+  annotations: {}
+
+##
+## Network policy configuration
+## ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+##
+networkPolicy:
+  ## @param networkPolicy.enabled Enable network policies
+  ##
+  enabled: false
+  ## @param networkPolicy.policyTypes Policy types to enforce
+  ##
+  policyTypes:
+    - Ingress
+    - Egress
+  ## @param networkPolicy.ingress Ingress rules
+  ##
+  ingress: []
+  ## @param networkPolicy.egress Egress rules
+  ##
+  egress: []
+
+##
+## ServiceMonitor configuration for Prometheus Operator
+## ref: https://prometheus-operator.dev/docs/operator/api/#servicemonitor
+##
+serviceMonitor:
+  ## @param serviceMonitor.enabled Create ServiceMonitor resource
+  ##
+  enabled: false
+  ## @param serviceMonitor.namespace Namespace for ServiceMonitor
+  ##
+  namespace: ""
+  ## @param serviceMonitor.interval Scraping interval
+  ##
+  interval: 30s
+  ## @param serviceMonitor.scrapeTimeout Scrape timeout
+  ##
+  scrapeTimeout: 10s
+  ## @param serviceMonitor.labels Additional labels for ServiceMonitor
+  ##
+  labels: {}
+  ## @param serviceMonitor.annotations Additional annotations for ServiceMonitor
+  ##
+  annotations: {}

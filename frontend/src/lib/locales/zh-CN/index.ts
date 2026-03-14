@@ -26,6 +26,7 @@ export const zhCN = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    catalan: "Català",
     source: "来源",
     notebook: "笔记本",
     podcast: "播客",

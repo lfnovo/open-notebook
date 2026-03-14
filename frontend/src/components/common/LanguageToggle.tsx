@@ -34,11 +34,17 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem 
+        <DropdownMenuItem
           onClick={() => setLanguage('en-US')}
           className={currentLang === 'en-US' || currentLang.startsWith('en') ? 'bg-accent' : ''}
         >
           <span>{t.common.english}</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('ca-ES')}
+          className={currentLang === 'ca-ES' || currentLang.startsWith('ca') ? 'bg-accent' : ''}
+        >
+          <span>{t.common.catalan}</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('zh-CN')}

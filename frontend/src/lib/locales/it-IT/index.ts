@@ -26,6 +26,7 @@ export const itIT = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    catalan: "Català",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",

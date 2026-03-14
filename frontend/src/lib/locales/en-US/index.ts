@@ -26,6 +26,7 @@ export const enUS = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    catalan: "Català",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",

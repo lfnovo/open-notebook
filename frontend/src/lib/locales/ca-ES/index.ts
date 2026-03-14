@@ -921,7 +921,7 @@ export const caES = {
     encryptionRequiredDescription: "Estableix la variable d'entorn OPEN_NOTEBOOK_ENCRYPTION_KEY per habilitar l'emmagatzematge segur de credencials.",
     migrationAvailable: "Migració de clau de l'API disponible",
     migrationDescription: "{count} proveïdor(s) tenen claus de l'API configurades mitjançant variables d'entorn. Migra-les a la base de dades per facilitar-ne la gestió.",
-    goToSettings: "Vés a la configuració",
+    goToSettings: "Ves a la configuració",
     viewDocs: "Visualitza la documentació",
   },
 }

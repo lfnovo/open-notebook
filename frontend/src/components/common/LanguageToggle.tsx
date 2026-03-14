@@ -44,7 +44,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
           onClick={() => setLanguage('ca-ES')}
           className={currentLang === 'ca-ES' || currentLang.startsWith('ca') ? 'bg-accent' : ''}
         >
-          <span>Català</span>
+          <span>{t.common.catalan}</span>
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => setLanguage('zh-CN')}

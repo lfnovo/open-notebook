@@ -126,7 +126,7 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-1/2 flex-1 overflow-hidden">
+    <Card className="flex flex-col h-full flex-1 overflow-hidden my-2">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -321,7 +321,7 @@ export function ChatPanel({
       </CardContent>
     </Card>
 
-    <StudioActionsCard/>
+   
     
 
     </>

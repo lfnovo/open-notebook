@@ -17,6 +17,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import { StudioActionsCard } from '@/components/source/StudioSection'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -218,28 +219,45 @@ export default function NotebookPage() {
             </div>
 
             {/* Notes Column */}
-            <div className={cn(
-              'transition-all duration-150',
-              notesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none basis-1/3'
-            )}>
-              <NotesColumn
-                notes={notes}
-                isLoading={notesLoading}
-                notebookId={notebookId}
-                contextSelections={contextSelections.notes}
-                onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
-              />
-            </div>
+            <div
+              className={cn(
+                "transition-all duration-150 flex flex-col h-full",
+                notesCollapsed ? "w-12 flex-shrink-0" : "flex-none basis-1/3"
+              )}
+            >
+              {/* Notes */}
+              <div className="flex-1 min-h-0">
+                <NotesColumn
+                  notes={notes}
+                  isLoading={notesLoading}
+                  notebookId={notebookId}
+                  contextSelections={contextSelections.notes}
+                  onContextModeChange={(noteId, mode) =>
+                    handleContextModeChange(noteId, mode, "note")
+                  }
+                />
+              </div>
 
+              {/* Chat */}
+              <div className="flex-1 min-h-0">
+                <ChatColumn
+                  notebookId={notebookId}
+                  contextSelections={contextSelections}
+                  sources={sources}
+                  sourcesLoading={sourcesLoading}
+                />
+              </div>
+            </div>
             {/* Chat Column - always expanded, takes remaining space */}
-            <div className="transition-all duration-150 flex-1 min-w-0 lg:pr-6 lg:-mr-6">
+            {/* <div className="transition-all duration-150 h-1/2 flex-1 min-w-0 lg:pr-6 lg:-mr-6">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}
                 sources={sources}
                 sourcesLoading={sourcesLoading}
-              />
-            </div>
+              /> */}
+            {/* </div> */}
+            <StudioActionsCard />
           </div>
         </div>
       </div>

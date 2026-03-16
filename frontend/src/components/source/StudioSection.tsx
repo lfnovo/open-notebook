@@ -10,6 +10,9 @@ import {
   Table,
 } from "lucide-react"
 
+import CreateReportDialog from "./CreateReportDialog"
+import { useState } from "react"
+
 const actions = [
   {
     title: "Audio Overview",
@@ -45,6 +48,7 @@ const actions = [
     bg: "bg-[#FFF4E5] dark:bg-[#3f372f]",
     text: "text-[#f59e0b]",
     iconColor: "text-[#f59e0b]",
+
   },
   {
     title: "Flashcards",
@@ -77,35 +81,48 @@ const actions = [
 ]
 
 export function StudioActionsCard() {
-  return (
-    <Card className="flex flex-col flex-1 h-1/2 my-4">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-center text-[25px]">
-          Studio
-        </CardTitle>
-      </CardHeader>
+const [reportOpen, setReportOpen] = useState<boolean>(false)
 
-      <CardContent className="grid grid-cols-3 gap-3">
-        {actions.map((action, index) => {
-          const Icon = action.icon
-          return (
-            <Button
-              key={index}
-              variant="ghost"
-              className={`flex flex-col items-start gap-2 h-auto py-3 px-3 rounded-xl border-0 ${action.bg} hover:scale-[1.02] transition`}
-            >
-              <div className="flex items-center justify-between w-full">
-                <Icon className={`h-4 w-4 ${action.iconColor}`} />
-             
-              </div>
+return (
+    <>
+      <Card className="flex flex-col flex-1 h-1/2">
+        <CardHeader className="pb-1">
+          <CardTitle className="text-center text-[25px]">
+            Studio
+          </CardTitle>
+        </CardHeader>
 
-              <span className={`text-xs text-left font-medium ${action.text}`}>
-                {action.title}
-              </span>
-            </Button>
-          )
-        })}
-      </CardContent>
-    </Card>
+        <CardContent className="grid grid-cols-3 gap-3">
+          {actions.map((action, index) => {
+            const Icon = action.icon
+            return (
+              <Button
+                key={index}
+                variant="ghost"
+                onClick={() => {
+                  if (action.title === "Reports") {
+                    setReportOpen(true)
+                  }
+                }}
+                className={`flex flex-col items-start gap-2 h-auto py-3 px-3 rounded-xl border-0 ${action.bg} hover:scale-[1.02] transition`}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <Icon className={`h-4 w-4 ${action.iconColor}`} />
+
+                </div>
+
+                <span className={`text-xs text-left font-medium ${action.text}`}>
+                  {action.title}
+                </span>
+              </Button>
+            )
+          })}
+        </CardContent>
+      </Card>
+      <CreateReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+      />
+    </>
   )
 }

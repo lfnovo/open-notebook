@@ -17,6 +17,8 @@ services:
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
@@ -28,9 +30,24 @@ services:
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
+      - OLLAMA_BASE_URL=http://127.0.0.1:11435
+      - OLLAMA_API_URL=http://127.0.0.1:11435
     volumes:
       - ./notebook_data:/app/data
     depends_on:
       - surrealdb
     restart: always
     pull_policy: always
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: always
+    pull_policy: always
+
+
+volumes:
+  ollama_models:

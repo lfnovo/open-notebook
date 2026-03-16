@@ -23,6 +23,7 @@ import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { StudioActionsCard } from './StudioSection'
 
 interface NotebookContextStats {
   sourcesInsights: number
@@ -125,7 +126,7 @@ export function ChatPanel({
 
   return (
     <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden">
+    <Card className="flex flex-col h-1/2 flex-1 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -319,6 +320,9 @@ export function ChatPanel({
         </div>
       </CardContent>
     </Card>
+
+    <StudioActionsCard/>
+    
 
     </>
   )

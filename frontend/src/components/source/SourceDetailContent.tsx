@@ -67,6 +67,7 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/source/NotebookAssociations'
+import { MindMapDialog } from '@/components/source/MindMapDialog'
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -416,6 +417,8 @@ export function SourceDetailContent({
                 {t.chat.chatWith.replace('{name}', t.navigation.sources)}
               </Button>
             )}
+
+            <MindMapDialog sourceId={sourceId} sourceTitle={source.title} />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

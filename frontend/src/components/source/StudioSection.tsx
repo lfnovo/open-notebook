@@ -8,6 +8,7 @@ import {
   Layers,
   HelpCircle,
   Table,
+  GitBranch,
 } from "lucide-react"
 
 import CreateReportDialog from "./CreateReportDialog"
@@ -37,7 +38,7 @@ const actions = [
   },
   {
     title: "Mind Map",
-    icon: Brain,
+    icon: GitBranch,
     bg: "bg-[#FCE8F3] dark:bg-[#3f2f3a]",
     text: "text-[#d63384]",
     iconColor: "text-[#d63384]",
@@ -48,7 +49,6 @@ const actions = [
     bg: "bg-[#FFF4E5] dark:bg-[#3f372f]",
     text: "text-[#f59e0b]",
     iconColor: "text-[#f59e0b]",
-
   },
   {
     title: "Flashcards",
@@ -81,9 +81,9 @@ const actions = [
 ]
 
 export function StudioActionsCard() {
-const [reportOpen, setReportOpen] = useState<boolean>(false)
+  const [reportOpen, setReportOpen] = useState<boolean>(false)
 
-return (
+  return (
     <>
       <Card className="flex flex-col flex-1 h-1/2">
         <CardHeader className="pb-1">
@@ -108,9 +108,7 @@ return (
               >
                 <div className="flex items-center justify-between w-full">
                   <Icon className={`h-4 w-4 ${action.iconColor}`} />
-
                 </div>
-
                 <span className={`text-xs text-left font-medium ${action.text}`}>
                   {action.title}
                 </span>
@@ -119,6 +117,7 @@ return (
           })}
         </CardContent>
       </Card>
+
       <CreateReportDialog
         open={reportOpen}
         onOpenChange={setReportOpen}

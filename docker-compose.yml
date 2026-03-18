@@ -1,4 +1,23 @@
 services:
+  kafka:
+    image: apache/kafka:latest
+    container_name: local-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    restart: always
+
   surrealdb:
     image: surrealdb/surrealdb:v2
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
@@ -13,7 +32,9 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
@@ -21,23 +42,22 @@ services:
       - "host.docker.internal:host-gateway"
     environment:
       # REQUIRED: Change this to your own secret string
-      # This encrypts your API keys in the database
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-
-      # Database connection (default values - no need to change)
+      # Database connection
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
-      - OLLAMA_BASE_URL=http://127.0.0.1:11435
-      - OLLAMA_API_URL=http://127.0.0.1:11435
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_API_URL=http://ollama:11434
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
     volumes:
       - ./notebook_data:/app/data
     depends_on:
       - surrealdb
+      - kafka
     restart: always
-    pull_policy: always
 
   ollama:
     image: ollama/ollama:latest
@@ -46,7 +66,6 @@ services:
     volumes:
       - ollama_models:/root/.ollama
     restart: always
-    pull_policy: always
 
 
 volumes:

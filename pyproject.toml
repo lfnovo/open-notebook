@@ -41,6 +41,14 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
+    # Mind map pipeline
+    "nltk>=3.8.0",
+    "spacy>=3.7.0",
+    "pymupdf>=1.24.0",
+    "pytextrank>=3.3.0",
+    "pdf2image>=1.17.0",
+    "aiokafka>=0.11.0",
+    "easyocr>=1.7.0",
 ]
 
 [tool.setuptools]

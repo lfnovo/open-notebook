@@ -23,7 +23,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Loader2,
-  Unlink
+  Unlink,
+  GitBranch,
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -31,6 +32,7 @@ import { TranslationKeys } from '@/lib/locales'
 import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
+import { MindMapDialog } from '@/components/source/MindMapDialog'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -127,6 +129,7 @@ export function SourceCard({
 
   // Track processing state to continue polling until we detect completion
   const [wasProcessing, setWasProcessing] = useState(false)
+  const [mindMapOpen, setMindMapOpen] = useState(false)
 
   const shouldFetchStatus = !!sourceWithStatus.command_id ||
     sourceWithStatus.status === 'new' ||
@@ -295,6 +298,20 @@ export function SourceCard({
               />
             )}
 
+            {/* Mind Map button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Generate Mind Map"
+              onClick={(e) => {
+                e.stopPropagation()
+                setMindMapOpen(true)
+              }}
+            >
+              <GitBranch className="h-4 w-4" />
+            </Button>
+
             {/* Actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -389,6 +406,14 @@ export function SourceCard({
           </div>
         )}
       </CardContent>
+
+      {/* Mind Map Dialog — rendered outside CardContent to avoid click propagation issues */}
+      <MindMapDialog
+        open={mindMapOpen}
+        onOpenChange={setMindMapOpen}
+        sourceId={source.id}
+        sourceTitle={source.title}
+      />
     </Card>
   )
 }

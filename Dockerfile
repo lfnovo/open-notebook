@@ -11,6 +11,9 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
+    poppler-utils \
+    libgl1 \
+    libglib2.0-0 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -30,7 +33,13 @@ COPY pyproject.toml uv.lock ./
 COPY open_notebook/__init__.py ./open_notebook/__init__.py
 
 # Install dependencies with optimizations (this layer will be cached unless dependencies change)
-RUN uv sync --frozen --no-dev
+# Using --no-sync to allow pyproject.toml changes without regenerating uv.lock in CI
+RUN uv sync --no-dev
+
+# Install easyocr with CPU-only torch to avoid downloading NVIDIA/CUDA packages (~3GB)
+RUN .venv/bin/pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu --quiet && \
+    .venv/bin/pip install easyocr --no-deps && \
+    .venv/bin/pip install Pillow scikit-image python-bidi PyYAML ninja
 
 # Pre-download tiktoken encoding so the app works offline (issue #264).
 # /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts
@@ -60,10 +69,14 @@ FROM python:3.12-slim-bookworm AS runtime
 
 # Install only runtime system dependencies (no build tools)
 # Add Node.js 20.x LTS for running frontend
+# poppler-utils required by pdf2image (mind map pipeline)
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     ffmpeg \
     supervisor \
     curl \
+    poppler-utils \
+    libgl1 \
+    libglib2.0-0 \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
@@ -102,6 +115,18 @@ COPY --from=builder /app/frontend/start-server.js /app/frontend/start-server.js
 EXPOSE 8502 5055
 
 RUN mkdir -p /app/data
+
+# Download spaCy model and NLTK data for mind map pipeline
+RUN /app/.venv/bin/python -m spacy download en_core_web_sm && \
+    /app/.venv/bin/python -c "\
+import nltk; \
+nltk.download('punkt', quiet=True); \
+nltk.download('punkt_tab', quiet=True); \
+nltk.download('averaged_perceptron_tagger', quiet=True); \
+nltk.download('averaged_perceptron_tagger_eng', quiet=True); \
+nltk.download('maxent_ne_chunker', quiet=True); \
+nltk.download('maxent_ne_chunker_tab', quiet=True); \
+nltk.download('words', quiet=True)"
 
 # Copy and make executable the wait-for-api script
 COPY scripts/wait-for-api.sh /app/scripts/wait-for-api.sh

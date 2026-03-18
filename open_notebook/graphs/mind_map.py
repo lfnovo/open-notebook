@@ -90,8 +90,9 @@ class EasyOCRService:
 class TextProcessor:
     def __init__(self, nlp_model_name: str = "en_core_web_sm"):
         try:
-            # We MUST keep 'attribute_ruler', 'tok2vec', 'tagger', and 'ner' for entity recognition
-            self.nlp = spacy.load(nlp_model_name, disable=["parser", "textcat"])
+            # parser is required by pytextrank — do NOT disable it
+            self.nlp = spacy.load(nlp_model_name, disable=["textcat"])
+            self.nlp.add_pipe("textrank")
         except OSError:
             logger.error(f"spaCy model '{nlp_model_name}' not found. Run: python -m spacy download {nlp_model_name}")
             raise

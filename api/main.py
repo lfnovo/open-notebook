@@ -45,6 +45,7 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
+from api.routers import mindmap as mindmap_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -280,6 +281,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(mindmap_router.router, prefix="/api", tags=["mindmap"])
 
 
 @app.get("/")

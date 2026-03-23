@@ -34,6 +34,9 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
+from urllib.parse import unquote
+from pydantic import BaseModel
+from typing import Dict, Any
 
 router = APIRouter()
 
@@ -1017,3 +1020,4 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         raise HTTPException(
             status_code=500, detail=f"Error starting insight generation: {str(e)}"
         )
+

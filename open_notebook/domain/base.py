@@ -48,6 +48,15 @@ class ObjectModel(BaseModel):
                     "get_all() must be called from a specific model class"
                 )
             if order_by:
+                # Validate order_by to prevent injection
+                if not re.match(
+                    r"^[a-zA-Z_][a-zA-Z0-9_.]*(?:\s+(?:asc|desc))?(?:,\s*[a-zA-Z_][a-zA-Z0-9_.]*(?:\s+(?:asc|desc))?)*$",
+                    order_by.strip(),
+                    re.IGNORECASE,
+                ):
+                    raise InvalidInputError(
+                        f"Invalid order_by: '{order_by}'"
+                    )
                 query = f"SELECT * FROM {table_name} ORDER BY {order_by}"
             else:
                 query = f"SELECT * FROM {table_name}"

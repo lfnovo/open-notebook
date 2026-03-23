@@ -74,6 +74,7 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     ffmpeg \
     supervisor \
     curl \
+    git \
     poppler-utils \
     libgl1 \
     libglib2.0-0 \

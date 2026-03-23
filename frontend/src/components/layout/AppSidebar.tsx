@@ -41,38 +41,43 @@ import {
   Plus,
   Wrench,
   Command,
+  GitBranch,
+  Newspaper,
 } from 'lucide-react'
+import { SourcePickerDialog } from '@/components/studio/SourcePickerDialog'
 
 const getNavigation = (t: TranslationKeys) => [
   {
     title: t.navigation.collect,
     items: [
-      { name: t.navigation.sources, href: '/sources', icon: FileText },
+      { name: t.navigation.sources, href: '/sources', icon: FileText, studio: null },
     ],
   },
   {
     title: t.navigation.process,
     items: [
-      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
-      { name: t.navigation.askAndSearch, href: '/search', icon: Search },
+      { name: t.navigation.notebooks, href: '/notebooks', icon: Book, studio: null },
+      { name: t.navigation.askAndSearch, href: '/search', icon: Search, studio: null },
     ],
   },
   {
-    title: t.navigation.create,
+    title: 'Studio',
     items: [
-      { name: t.navigation.podcasts, href: '/podcasts', icon: Mic },
+      { name: 'Mind Map', href: null, icon: GitBranch, studio: 'mindmap' as const },
+      { name: 'Infographic', href: null, icon: Newspaper, studio: 'infographic' as const },
+      { name: 'Summary', href: null, icon: FileText, studio: 'summary' as const },
     ],
   },
   {
     title: t.navigation.manage,
     items: [
-      { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
-      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
-      { name: t.navigation.settings, href: '/settings', icon: Settings },
-      { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
+      { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, studio: null },
+      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, studio: null },
+      { name: t.navigation.settings, href: '/settings', icon: Settings, studio: null },
+      { name: t.navigation.advanced, href: '/advanced', icon: Wrench, studio: null },
     ],
   },
-] as const
+]
 
 type CreateTarget = 'source' | 'notebook' | 'podcast'
 
@@ -85,7 +90,10 @@ export function AppSidebar() {
   const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
-  const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
+  const [isMac, setIsMac] = useState(true)
+  const [mindMapPickerOpen, setMindMapPickerOpen] = useState(false)
+  const [infographicPickerOpen, setInfographicPickerOpen] = useState(false)
+  const [summaryPickerOpen, setSummaryPickerOpen] = useState(false)
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -121,11 +129,11 @@ export function AppSidebar() {
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
               <Image
-                src="/logo.svg"
-                alt="Open Notebook"
+                src="/KavachLogo.png"
+                alt="Kavach"
                 width={32}
                 height={32}
-                className="transition-opacity group-hover:opacity-0"
+                className="transition-opacity group-hover:opacity-0 object-contain"
               />
               <Button
                 variant="ghost"
@@ -139,10 +147,8 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <Image src="/logo.svg" alt={t.common.appName} width={32} height={32} />
-                <span className="text-base font-medium text-sidebar-foreground">
-                  {t.common.appName}
-                </span>
+                <Image src="/logo(1).svg" alt="Notebook" width={50} height={36} className="object-contain" />
+                <p>NOTEBOOK</p>
               </div>
               <Button
                 variant="ghost"
@@ -253,7 +259,7 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname?.startsWith(item.href) || false
+                  const isActive = item.href ? (pathname?.startsWith(item.href) || false) : false
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}
@@ -268,11 +274,36 @@ export function AppSidebar() {
                     </Button>
                   )
 
+                  // Studio items open a source picker dialog
+                  if (item.studio) {
+                    const studioKey = item.studio
+                    const openPicker = () => {
+                      if (studioKey === 'mindmap') setMindMapPickerOpen(true)
+                      else if (studioKey === 'infographic') setInfographicPickerOpen(true)
+                      else setSummaryPickerOpen(true)
+                    }
+                    if (isCollapsed) {
+                      return (
+                        <Tooltip key={item.name}>
+                          <TooltipTrigger asChild>
+                            <div onClick={openPicker}>{button}</div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">{item.name}</TooltipContent>
+                        </Tooltip>
+                      )
+                    }
+                    return (
+                      <div key={item.name} onClick={openPicker}>
+                        {button}
+                      </div>
+                    )
+                  }
+
                   if (isCollapsed) {
                     return (
                       <Tooltip key={item.name}>
                         <TooltipTrigger asChild>
-                          <Link href={item.href}>
+                          <Link href={item.href!}>
                             {button}
                           </Link>
                         </TooltipTrigger>
@@ -282,7 +313,7 @@ export function AppSidebar() {
                   }
 
                   return (
-                    <Link key={item.name} href={item.href}>
+                    <Link key={item.name} href={item.href!}>
                       {button}
                     </Link>
                   )
@@ -376,6 +407,22 @@ export function AppSidebar() {
           )}
         </div>
       </div>
+      {/* Studio source pickers — always mounted so result dialogs survive picker close */}
+      <SourcePickerDialog
+        open={mindMapPickerOpen}
+        onOpenChange={setMindMapPickerOpen}
+        mode="mindmap"
+      />
+      <SourcePickerDialog
+        open={infographicPickerOpen}
+        onOpenChange={setInfographicPickerOpen}
+        mode="infographic"
+      />
+      <SourcePickerDialog
+        open={summaryPickerOpen}
+        onOpenChange={setSummaryPickerOpen}
+        mode="summary"
+      />
     </TooltipProvider>
   )
 }

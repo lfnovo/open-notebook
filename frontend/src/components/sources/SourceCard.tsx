@@ -25,6 +25,7 @@ import {
   Loader2,
   Unlink,
   GitBranch,
+  Newspaper,
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -33,6 +34,7 @@ import { cn } from '@/lib/utils'
 import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 import { MindMapDialog } from '@/components/source/MindMapDialog'
+import { InfographicDialog } from '@/components/source/InfographicDialog'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -130,12 +132,23 @@ export function SourceCard({
   // Track processing state to continue polling until we detect completion
   const [wasProcessing, setWasProcessing] = useState(false)
   const [mindMapOpen, setMindMapOpen] = useState(false)
+  const [infographicOpen, setInfographicOpen] = useState(false)
+  // Once we've seen a terminal status, stop polling entirely
+  const [terminalStatus, setTerminalStatus] = useState<string | null>(
+    sourceWithStatus.status === 'completed' || sourceWithStatus.status === 'failed'
+      ? sourceWithStatus.status
+      : null
+  )
 
-  const shouldFetchStatus = !!sourceWithStatus.command_id ||
-    sourceWithStatus.status === 'new' ||
-    sourceWithStatus.status === 'queued' ||
-    sourceWithStatus.status === 'running' ||
-    wasProcessing // Keep polling if we were processing to catch the completion
+  const isActiveStatus = (s?: string | null) =>
+    s === 'new' || s === 'queued' || s === 'running'
+
+  // Only poll if: actively processing OR we were processing (to catch completion).
+  // Never poll if we already know the terminal status.
+  const shouldFetchStatus = !terminalStatus && (
+    isActiveStatus(sourceWithStatus.status) ||
+    wasProcessing
+  )
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
     source.id,
@@ -155,20 +168,28 @@ export function SourceCard({
     const currentStatusFromData = statusData?.status || sourceWithStatus.status
 
     // If we're currently processing, mark that we were processing
-    if (currentStatusFromData === 'new' || currentStatusFromData === 'running' || currentStatusFromData === 'queued') {
+    if (isActiveStatus(currentStatusFromData)) {
       setWasProcessing(true)
     }
 
     // If we were processing and now completed/failed, trigger refresh and stop polling
     if (wasProcessing &&
         (currentStatusFromData === 'completed' || currentStatusFromData === 'failed')) {
-      setWasProcessing(false) // Stop polling
+      setWasProcessing(false)
+      setTerminalStatus(currentStatusFromData) // stop all future polling
 
       if (onRefresh) {
-        setTimeout(() => onRefresh(), 500) // Small delay to ensure API is updated
+        setTimeout(() => onRefresh(), 500)
       }
     }
-  }, [statusData, sourceWithStatus.status, wasProcessing, onRefresh, source.id])
+
+    // If status came back terminal from the very first fetch, lock it in
+    if (!wasProcessing &&
+        (currentStatusFromData === 'completed' || currentStatusFromData === 'failed') &&
+        !terminalStatus) {
+      setTerminalStatus(currentStatusFromData)
+    }
+  }, [statusData, sourceWithStatus.status, wasProcessing, terminalStatus, onRefresh, source.id])
   
   const statusConfig = statusConfigMap[currentStatus] || statusConfigMap.completed
   const StatusIcon = statusConfig.icon
@@ -211,9 +232,13 @@ export function SourceCard({
         'transition-all duration-200 hover:shadow-md group relative cursor-pointer border border-border/60 dark:border-border/40',
         className
       )}
-      onClick={handleCardClick}
+      onClick={(e) => {
+        // Don't open source detail if a dialog is already open
+        if (mindMapOpen || infographicOpen) return
+        handleCardClick()
+      }}
     >
-      <CardContent className="px-3 py-1">
+      <CardContent className="px-4 py-3 min-h-[80px]">
         {/* Header with status indicator */}
         <div className="flex items-start justify-between gap-3 mb-1">
           <div className="flex-1 min-w-0">
@@ -302,7 +327,7 @@ export function SourceCard({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-pink-600 hover:bg-pink-50 transition-colors"
               title="Generate Mind Map"
               onClick={(e) => {
                 e.stopPropagation()
@@ -312,13 +337,27 @@ export function SourceCard({
               <GitBranch className="h-4 w-4" />
             </Button>
 
+            {/* Infographic button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-purple-600 hover:bg-purple-50 transition-colors"
+              title="Generate Infographic"
+              onClick={(e) => {
+                e.stopPropagation()
+                setInfographicOpen(true)
+              }}
+            >
+              <Newspaper className="h-4 w-4" />
+            </Button>
+
             {/* Actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
@@ -408,12 +447,22 @@ export function SourceCard({
       </CardContent>
 
       {/* Mind Map Dialog — rendered outside CardContent to avoid click propagation issues */}
-      <MindMapDialog
-        open={mindMapOpen}
-        onOpenChange={setMindMapOpen}
-        sourceId={source.id}
-        sourceTitle={source.title}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <MindMapDialog
+          open={mindMapOpen}
+          onOpenChange={setMindMapOpen}
+          sourceId={source.id}
+          sourceTitle={source.title}
+        />
+
+        {/* Infographic Dialog */}
+        <InfographicDialog
+          open={infographicOpen}
+          onOpenChange={setInfographicOpen}
+          sourceId={source.id}
+          sourceTitle={source.title}
+        />
+      </div>
     </Card>
   )
 }

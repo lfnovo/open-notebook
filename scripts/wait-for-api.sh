@@ -2,7 +2,7 @@
 # Wait for the API to be healthy before starting the frontend
 # This prevents the "Unable to Connect to API Server" error during startup
 
-API_URL="${INTERNAL_API_URL:-https://kavach-ai.kavachglobal.com/api/}"
+API_URL="${INTERNAL_API_URL:-http://localhost:5055}"
 MAX_RETRIES=60  # 60 retries * 5 seconds = 5 minutes max wait
 RETRY_INTERVAL=5
 

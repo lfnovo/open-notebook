@@ -1,0 +1,32 @@
+# --- Core API & Utils ---
+fastapi
+uvicorn
+pydantic
+loguru
+python-multipart
+uuid
+
+# --- Kafka Integration ---
+aiokafka
+
+# --- OCR & Image Processing ---
+easyocr
+pdf2image
+opencv-python-headless
+numpy
+pymupdf
+
+# --- NLP & Text Processing ---
+spacy
+nltk
+pytextrank
+
+# --- LLM Framework ---
+langchain-core
+langchain-community
+# If using OpenAI or Anthropic, add:
+# langchain-openai
+# langchain-anthropic
+
+# --- Async & Performance ---
+asyncio

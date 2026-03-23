@@ -27,42 +27,25 @@ export async function GET(request: NextRequest) {
   const envApiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL
 
   if (envApiUrl) {
-    return NextResponse.json({
-      apiUrl: envApiUrl,
-    })
+    return NextResponse.json({ apiUrl: envApiUrl })
   }
 
-  // Priority 2: Auto-detect from request headers
+  // Priority 2: Auto-detect from the incoming request host so it works on any IP/hostname.
+  // This means the browser will call the backend on the same host but port 5055,
+  // which avoids routing through the Next.js proxy (and its timeout) for long requests.
   try {
-    // Get the protocol (http or https)
-    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme
-    const proto = request.headers.get('x-forwarded-proto') ||
-                  request.nextUrl.protocol.replace(':', '') ||
-                  'http'
-
-    // Get the host header (includes port if non-standard)
-    const hostHeader = request.headers.get('host')
-
-    if (hostHeader) {
-      // Extract just the hostname (remove port if present)
-      const hostname = hostHeader.split(':')[0]
-
-      // Construct the API URL with port 5055
-      const apiUrl = `${proto}://${hostname}:5055`
-
-      console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
-
-      return NextResponse.json({
-        apiUrl,
-      })
+    const host = request.headers.get('host') || ''
+    // Strip port from host, then append the backend port
+    const hostname = host.split(':')[0]
+    if (hostname) {
+      // Always return direct backend URL (including localhost) to bypass Next.js proxy timeout
+      return NextResponse.json({ apiUrl: `http://${hostname}:5055` })
     }
-  } catch (error) {
-    console.error('[runtime-config] Auto-detection failed:', error)
+  } catch {
+    // fall through to empty string
   }
 
-  // Priority 3: Fallback to localhost
-  console.log('[runtime-config] Using fallback: http://localhost:5055')
-  return NextResponse.json({
-    apiUrl: 'http://localhost:5055',
-  })
+  // Use empty string so the frontend uses Next.js rewrites (/api/* proxy)
+  // This avoids CORS issues when frontend and backend are on different ports
+  return NextResponse.json({ apiUrl: '' })
 }

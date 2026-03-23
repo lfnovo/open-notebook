@@ -1,3 +1,4 @@
+import re
 from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -24,6 +25,14 @@ async def get_notebooks(
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
+        # Validate order_by to prevent SQL injection — only allow
+        # alphanumeric field names with optional asc/desc direction
+        if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*\s+(asc|desc)$", order_by.strip(), re.IGNORECASE):
+            raise InvalidInputError(
+                f"Invalid order_by parameter: '{order_by}'. "
+                "Expected format: 'field_name asc' or 'field_name desc'"
+            )
+
         # Build the query with counts
         query = f"""
             SELECT *,

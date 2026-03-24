@@ -41,13 +41,36 @@ function FormattedText({ text }: { text: string }) {
 }
 
 function SummaryContent({ text }: { text: string }) {
+  const cleaned = text
+    .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
+    .replace(/^-{3,}$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+
   return (
     <div className="space-y-2 text-sm text-foreground leading-relaxed">
-      {text.split('\n').map((line, i) =>
-        !line.trim()
-          ? <div key={i} className="h-1" />
-          : <p key={i}><FormattedText text={line} /></p>
-      )}
+      {cleaned.split('\n').map((line, i) => {
+        const trimmed = line.trim()
+        if (!trimmed) return <div key={i} className="h-1" />
+        if (/^[-*]\s/.test(trimmed)) {
+          return (
+            <div key={i} className="flex gap-2 pl-2">
+              <span className="text-muted-foreground shrink-0">•</span>
+              <span><FormattedText text={trimmed.replace(/^[-*]\s/, '')} /></span>
+            </div>
+          )
+        }
+        if (/^\d+\.\s/.test(trimmed)) {
+          const num = trimmed.match(/^(\d+)\.\s/)![1]
+          return (
+            <div key={i} className="flex gap-2 pl-2">
+              <span className="text-muted-foreground shrink-0 w-5 text-right">{num}.</span>
+              <span><FormattedText text={trimmed.replace(/^\d+\.\s/, '')} /></span>
+            </div>
+          )
+        }
+        return <p key={i}><FormattedText text={line} /></p>
+      })}
     </div>
   )
 }

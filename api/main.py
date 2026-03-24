@@ -121,16 +121,26 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Could not start Kafka consumer task: {e}")
 
+    # Start Kafka infographic consumer as a background task
+    kafka_infographic_task = None
+    try:
+        from api.routers.infographic import start_kafka_consumer as start_infographic_consumer
+        kafka_infographic_task = asyncio.create_task(start_infographic_consumer())
+        logger.info("Kafka infographic consumer task started")
+    except Exception as e:
+        logger.warning(f"Could not start Kafka infographic consumer task: {e}")
+
     # Yield control to the application
     yield
 
-    # Shutdown: cancel Kafka consumer
-    if kafka_consumer_task and not kafka_consumer_task.done():
-        kafka_consumer_task.cancel()
-        try:
-            await kafka_consumer_task
-        except asyncio.CancelledError:
-            pass
+    # Shutdown: cancel Kafka consumers
+    for task in [kafka_consumer_task, kafka_infographic_task]:
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
     logger.info("API shutdown complete")
 
 

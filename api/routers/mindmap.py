@@ -179,7 +179,13 @@ async def get_node_summary(source_id: str, request: NodeSummaryRequest):
             "You are an expert analyst. Given source document content, provide a detailed, "
             "well-structured summary about a specific topic as it relates to the main subject. "
             "Be thorough, cite specific facts from the source, and organize your response clearly. "
-            "Do not add information not present in the source. Respond in plain text, no markdown headers."
+            "Do not add information not present in the source. "
+            "STRICT FORMATTING RULES: "
+            "- Do NOT use any markdown headers (no #, ##, ### etc). "
+            "- Do NOT use --- horizontal rules. "
+            "- Use **bold** only for section titles and key terms. "
+            "- Use plain numbered lists or bullet points for structure. "
+            "- Write in clean plain text paragraphs."
         )
 
         user_prompt = (
@@ -201,6 +207,12 @@ async def get_node_summary(source_id: str, request: NodeSummaryRequest):
         # Strip <think>...</think> tags if model outputs chain-of-thought
         import re
         summary = re.sub(r'<think>.*?</think>', '', summary, flags=re.DOTALL).strip()
+        # Strip markdown headers (###, ##, #) — replace with bold text instead
+        summary = re.sub(r'^#{1,6}\s+(.+)$', r'**\1**', summary, flags=re.MULTILINE)
+        # Strip horizontal rules
+        summary = re.sub(r'^-{3,}$', '', summary, flags=re.MULTILINE)
+        # Collapse multiple blank lines
+        summary = re.sub(r'\n{3,}', '\n\n', summary).strip()
 
         logger.info(f"Node summary generated for '{request.node_name}' in source {source_id}")
         return NodeSummaryResponse(

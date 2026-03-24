@@ -2,9 +2,26 @@ import axios from 'axios'
 import { apiClient } from './client'
 import { getApiUrl } from '@/lib/config'
 
+export interface InfographicColumn {
+  icon: string
+  title: string
+  description: string
+}
+
+export interface InfographicHighlight {
+  title: string
+  subtitle?: string
+  description: string
+}
+
 export interface InfographicResponse {
-  html: string
   source_id: string
+  html?: string // kept for backward compat but no longer used for rendering
+  header?: { title: string; subtitle: string; center_icon?: string }
+  left_column?: InfographicColumn[]
+  right_column?: InfographicColumn[]
+  stat?: { value: string; label: string }
+  highlights?: InfographicHighlight[]
 }
 
 // ── localStorage cache helpers ────────────────────────────────────────────────

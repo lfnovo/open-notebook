@@ -26,6 +26,7 @@ import {
   Unlink,
   GitBranch,
   Newspaper,
+  Lightbulb,
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -290,9 +291,14 @@ export function SourceCard({
                 {sourceType === 'link' ? t.sources.addUrl : sourceType === 'upload' ? t.sources.uploadFile : t.sources.enterText}
               </Badge>
 
-              {isCompleted && source.insights_count > 0 && (
-                <Badge variant="outline" className="text-xs">
-                  {t.sources.insightsCount.replace('{count}', source.insights_count.toString())}
+              {isCompleted && (
+                <Badge
+                  variant={source.insights_count > 0 ? 'default' : 'outline'}
+                  className="text-xs flex items-center gap-1"
+                  title={`${source.insights_count} insight${source.insights_count !== 1 ? 's' : ''}`}
+                >
+                  <Lightbulb className="h-3 w-3 shrink-0" />
+                  <span>{source.insights_count} {source.insights_count === 1 ? 'Insight' : 'Insights'}</span>
                 </Badge>
               )}
               {source.topics && source.topics.length > 0 && isCompleted && (

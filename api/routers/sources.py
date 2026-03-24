@@ -602,8 +602,8 @@ def _is_source_file_available(source: Source) -> Optional[bool]:
 
 
 @router.get("/sources/{source_id}", response_model=SourceResponse)
-async def get_source(source_id: str):
-    """Get a specific source by ID."""
+async def get_source(source_id: str, include_text: bool = True):
+    """Get a specific source by ID. Pass include_text=false to skip full_text for faster loads."""
     try:
         source = await Source.get(source_id)
         if not source:
@@ -641,7 +641,7 @@ async def get_source(source_id: str):
             )
             if source.asset
             else None,
-            full_text=source.full_text,
+            full_text=source.full_text if include_text else None,
             embedded=embedded_chunks > 0,
             embedded_chunks=embedded_chunks,
             file_available=_is_source_file_available(source),

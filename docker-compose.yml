@@ -45,7 +45,8 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8502:8502"  # Web UI
+      - "3000:8502"  # Web UI (also accessible on :8502 via the alias below)
+      - "8502:8502"  # Web UI legacy port
       - "5055:5055"  # REST API
     extra_hosts:
       - "host.docker.internal:host-gateway"

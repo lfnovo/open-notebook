@@ -1,6 +1,9 @@
+import asyncio
 import operator
 from typing import Any, Dict, List, Optional
 
+import fitz
+import numpy as np
 from content_core import extract_content
 from content_core.common import ProcessSourceState
 from langchain_core.runnables import RunnableConfig
@@ -14,6 +17,99 @@ from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
+
+
+def _ocr_image_bytes(image_bytes: bytes, reader) -> str:
+    """Run EasyOCR on raw image bytes. Returns joined text string."""
+    try:
+        import io as _io
+        from PIL import Image as _Image
+        img = _Image.open(_io.BytesIO(image_bytes)).convert("RGB")
+        arr = np.array(img)
+        lines = reader.readtext(arr, detail=0, batch_size=4)
+        return " ".join(lines).strip()
+    except Exception as e:
+        logger.warning(f"OCR on image bytes failed: {e}")
+        return ""
+
+
+def _ocr_pdf_sync(file_path: str) -> str:
+    """
+    Robust PDF text extraction with per-page OCR fallback.
+
+    Strategy:
+      1. Open with PyMuPDF.
+      2. For each page:
+         a. Extract embedded text (get_text).
+         b. Extract text blocks (get_text("blocks")).
+         c. If combined page text < 200 chars → rasterise page at 300 DPI and OCR it.
+      3. Deduplicate parts per page (preserving order), join all pages.
+      4. If total result is still empty, return "".
+    """
+    try:
+        import easyocr
+        reader = easyocr.Reader(["en", "hi"], gpu=False, verbose=False)
+    except Exception as e:
+        logger.warning(f"EasyOCR init failed: {e}. OCR fallback unavailable.")
+        reader = None
+
+    try:
+        doc = fitz.open(file_path)
+    except Exception as e:
+        logger.error(f"PyMuPDF could not open '{file_path}': {e}")
+        return ""
+
+    final_pages: list[str] = []
+
+    for page_index, page in enumerate(doc):
+        page_text_parts: list[str] = []
+
+        # 1. Embedded text
+        try:
+            embedded = page.get_text("text").strip()
+            if embedded:
+                page_text_parts.append(embedded)
+        except Exception:
+            pass
+
+        # 2. Text blocks (captures table cells and structured content)
+        try:
+            blocks = page.get_text("blocks")
+            for block in blocks:
+                if block[6] == 0 and block[4].strip():  # type 0 = text block
+                    page_text_parts.append(block[4].strip())
+        except Exception:
+            pass
+
+        combined = "\n".join(page_text_parts).strip()
+
+        # 3. Per-page OCR if text is sparse (scanned / image-based page)
+        if len(combined) < 200 and reader is not None:
+            try:
+                pix = page.get_pixmap(dpi=300)
+                img_bytes = pix.tobytes("png")
+                ocr_text = _ocr_image_bytes(img_bytes, reader)
+                if ocr_text:
+                    logger.info(
+                        f"Page {page_index + 1}: OCR extracted {len(ocr_text)} chars"
+                    )
+                    page_text_parts.append("[OCR PAGE CONTENT]\n" + ocr_text)
+            except Exception as e:
+                logger.warning(f"Page {page_index + 1} OCR failed: {e}")
+
+        # Deduplicate parts while preserving order
+        clean_page_text = "\n".join(dict.fromkeys(page_text_parts))
+        final_pages.append(clean_page_text)
+
+    doc.close()
+    result = "\n\n".join(final_pages).strip()
+    logger.info(f"PDF extraction complete: {len(result)} chars from '{file_path}'")
+    return result
+
+
+async def _ocr_fallback(file_path: str) -> str:
+    """Async wrapper — runs OCR in a thread so it doesn't block the event loop."""
+    return await asyncio.to_thread(_ocr_pdf_sync, file_path)
 
 
 class SourceState(TypedDict):
@@ -77,8 +173,34 @@ async def content_process(state: SourceState) -> dict:
 
     processed_state = await extract_content(content_state)
 
-    if not processed_state.content or not processed_state.content.strip():
-        url = processed_state.url or ""
+    file_path = getattr(processed_state, "file_path", None) or content_state.get("file_path")
+    content_text = processed_state.content or ""
+    is_pdf = file_path and str(file_path).lower().endswith(".pdf")
+
+    # Trigger OCR fallback when:
+    #   - content is empty/missing, OR
+    #   - it's a PDF and the extracted text is suspiciously sparse (< 200 chars total)
+    #     which indicates a scanned/image-based PDF that content_core couldn't read well
+    needs_ocr = (not content_text.strip()) or (is_pdf and len(content_text.strip()) < 200)
+
+    if needs_ocr:
+        # ── OCR fallback for file-based sources (scanned PDFs, image PDFs) ──
+        if file_path:
+            logger.info(
+                f"content_core returned {'empty' if not content_text.strip() else 'sparse'} "
+                f"text for file '{file_path}'. Attempting OCR fallback..."
+            )
+            ocr_text = await _ocr_fallback(file_path)
+            if ocr_text and ocr_text.strip():
+                logger.info(
+                    f"OCR fallback succeeded — extracted {len(ocr_text)} chars from '{file_path}'"
+                )
+                processed_state.content = ocr_text
+                return {"content_state": processed_state}
+            else:
+                logger.warning(f"OCR fallback also returned empty text for '{file_path}'")
+
+        url = getattr(processed_state, "url", None) or ""
         if url and ("youtube.com" in url or "youtu.be" in url):
             raise ValueError(
                 "Could not extract content from this YouTube video. "

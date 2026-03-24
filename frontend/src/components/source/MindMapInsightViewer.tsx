@@ -1,22 +1,22 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+/**
+ * MindMapInsightViewer
+ * Renders a mind-map insight (JSON content) with the full interactive
+ * graph experience: zoomable tree + node-summary side panel.
+ * Reuses all helpers from MindMapDialog.tsx — kept in sync.
+ */
+
+import { useState, useEffect, useCallback } from 'react'
 import { mindmapApi, MindMapNode } from '@/lib/api/mindmap'
-import { Button } from '@/components/ui/button'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { toast } from 'sonner'
-import {
-  GitBranch, ChevronRight, RefreshCw, AlertCircle,
-  ImageIcon, Network, BookOpen, X, ZoomIn, ZoomOut, Maximize2,
+  ChevronRight, AlertCircle, RefreshCw,
+  BookOpen, X, ZoomIn, ZoomOut, Maximize2, Network, ImageIcon,
 } from 'lucide-react'
 
-// ── localStorage helpers ──────────────────────────────────────────────────────
+// ── localStorage helpers (same keys as MindMapDialog) ────────────────────────
 const CACHE_PREFIX = 'mindmap_cache_'
 const NODE_SUMMARY_PREFIX = 'mindmap_node_summary_'
 
@@ -53,7 +53,6 @@ function FormattedText({ text }: { text: string }) {
 }
 
 function SummaryContent({ text }: { text: string }) {
-  // Pre-process: convert ### headers → **bold**, strip --- rules
   const cleaned = text
     .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
     .replace(/^-{3,}$/gm, '')
@@ -65,7 +64,6 @@ function SummaryContent({ text }: { text: string }) {
       {cleaned.split('\n').map((line, i) => {
         const trimmed = line.trim()
         if (!trimmed) return <div key={i} className="h-1" />
-        // Bullet lines starting with - or *
         if (/^[-*]\s/.test(trimmed)) {
           return (
             <div key={i} className="flex gap-2 pl-2">
@@ -74,7 +72,6 @@ function SummaryContent({ text }: { text: string }) {
             </div>
           )
         }
-        // Numbered list lines
         if (/^\d+\.\s/.test(trimmed)) {
           const num = trimmed.match(/^(\d+)\.\s/)![1]
           return (
@@ -90,9 +87,7 @@ function SummaryContent({ text }: { text: string }) {
   )
 }
 
-// ── Inline node summary panel ─────────────────────────────────────────────────
-// nodeName  = the clicked node
-// context   = its parent's label (used as "larger context of {context}")
+// ── Node summary side panel ───────────────────────────────────────────────────
 function NodeSummaryPanel({
   sourceId, nodeName, context, onClose,
 }: {
@@ -119,7 +114,6 @@ function NodeSummaryPanel({
 
   return (
     <div className="flex flex-col h-full border-l border-border/60 bg-muted/20">
-      {/* Header */}
       <div className="flex items-start justify-between gap-2 px-4 pt-4 pb-3 border-b border-border/40 shrink-0">
         <div className="flex items-start gap-2 min-w-0">
           <BookOpen className="h-4 w-4 text-indigo-500 mt-0.5 shrink-0" />
@@ -132,12 +126,13 @@ function NodeSummaryPanel({
             </p>
           </div>
         </div>
-        <button onClick={onClose} className="shrink-0 rounded-full p-1 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+        <button
+          onClick={onClose}
+          className="shrink-0 rounded-full p-1 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+        >
           <X className="h-3.5 w-3.5" />
         </button>
       </div>
-
-      {/* Body */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {loading && (
           <div className="flex flex-col items-center justify-center py-10 gap-3">
@@ -162,8 +157,7 @@ function NodeSummaryPanel({
   )
 }
 
-// ── Mind map nodes ────────────────────────────────────────────────────────────
-// onLabelClick(nodeName, contextName) — contextName = parent's label
+// ── Tree nodes ────────────────────────────────────────────────────────────────
 function LeafNode({ label, isSelected, parentLabel, onLabelClick }: {
   label: string; isSelected: boolean; parentLabel: string
   onLabelClick: (label: string, context: string) => void
@@ -193,18 +187,15 @@ function BranchNode({ label, expanded, hasChildren, isSelected, isRoot, parentLa
       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium select-none shadow-sm border transition-colors
         ${isRoot
           ? isSelected ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-indigo-100 text-indigo-800 border-indigo-200'
-          : isSelected ? 'bg-blue-500 text-white border-blue-600'   : 'bg-blue-100 text-blue-800 border-blue-200'
+          : isSelected ? 'bg-blue-500 text-white border-blue-600' : 'bg-blue-100 text-blue-800 border-blue-200'
         }`}
     >
-      {/* Label click → open summary (not for root) */}
       <span
         className={`whitespace-nowrap ${!isRoot ? 'cursor-pointer hover:underline underline-offset-2' : ''}`}
         onClick={() => { if (!isRoot) onLabelClick(label, parentLabel) }}
       >
         {label}
       </span>
-
-      {/* Chevron → toggle expand/collapse only */}
       {hasChildren && (
         <span
           onClick={e => { e.stopPropagation(); onToggle() }}
@@ -228,26 +219,16 @@ function HorizontalNode({ node, depth = 0, parentLabel, selectedNode, onLabelCli
   const toggle = useCallback(() => setExpanded(e => !e), [])
 
   if (!hasChildren) return (
-    <LeafNode
-      label={node.label}
-      isSelected={isSelected}
-      parentLabel={parentLabel}
-      onLabelClick={onLabelClick}
-    />
+    <LeafNode label={node.label} isSelected={isSelected} parentLabel={parentLabel} onLabelClick={onLabelClick} />
   )
 
   return (
     <div className="flex items-start gap-0">
       <div className="flex items-center self-center">
         <BranchNode
-          label={node.label}
-          expanded={expanded}
-          hasChildren={hasChildren}
-          isSelected={isSelected}
-          isRoot={isRoot}
-          parentLabel={parentLabel}
-          onToggle={toggle}
-          onLabelClick={onLabelClick}
+          label={node.label} expanded={expanded} hasChildren={hasChildren}
+          isSelected={isSelected} isRoot={isRoot} parentLabel={parentLabel}
+          onToggle={toggle} onLabelClick={onLabelClick}
         />
       </div>
       {expanded && (
@@ -259,11 +240,8 @@ function HorizontalNode({ node, depth = 0, parentLabel, selectedNode, onLabelCli
               <div key={i} className="flex items-center gap-0">
                 <div className="w-5 h-px bg-indigo-300 shrink-0" />
                 <HorizontalNode
-                  node={child}
-                  depth={depth + 1}
-                  parentLabel={node.label}
-                  selectedNode={selectedNode}
-                  onLabelClick={onLabelClick}
+                  node={child} depth={depth + 1} parentLabel={node.label}
+                  selectedNode={selectedNode} onLabelClick={onLabelClick}
                 />
               </div>
             ))}
@@ -295,29 +273,6 @@ function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: {
   )
 }
 
-// ── Loading stages ────────────────────────────────────────────────────────────
-const LOADING_STAGES = [
-  'Connecting to backend...', 'Fetching source content...', 'Cleaning and processing text...',
-  'Extracting named entities with NLP...', 'Extracting facts with AI (this may take a few minutes)...',
-  'Building mind map structure...', 'Almost done...',
-]
-
-function useLoadingMessage(loading: boolean) {
-  const [idx, setIdx] = useState(0)
-  const t = useRef<ReturnType<typeof setTimeout> | null>(null)
-  useEffect(() => {
-    if (!loading) { setIdx(0); if (t.current) clearTimeout(t.current); return }
-    const delays = [2000, 4000, 8000, 15000, 30000, 60000]
-    const adv = (i: number) => {
-      const n = Math.min(i + 1, LOADING_STAGES.length - 1)
-      t.current = setTimeout(() => { setIdx(n); if (n < LOADING_STAGES.length - 1) adv(n) }, delays[Math.min(i, delays.length - 1)])
-    }
-    adv(0)
-    return () => { if (t.current) clearTimeout(t.current) }
-  }, [loading])
-  return LOADING_STAGES[idx]
-}
-
 // ── Photos tab ────────────────────────────────────────────────────────────────
 function PhotosTab({ sourceId }: { sourceId: string }) {
   const [images, setImages] = useState<string[]>([])
@@ -336,12 +291,14 @@ function PhotosTab({ sourceId }: { sourceId: string }) {
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
-      <LoadingSpinner /><p className="text-sm text-muted-foreground">Extracting images from source...</p>
+      <LoadingSpinner />
+      <p className="text-sm text-muted-foreground">Extracting images from source...</p>
     </div>
   )
   if (images.length === 0) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
-      <ImageIcon className="h-10 w-10 opacity-30" /><p className="text-sm">No images found in this source.</p>
+      <ImageIcon className="h-10 w-10 opacity-30" />
+      <p className="text-sm">No images found in this source.</p>
     </div>
   )
 
@@ -369,157 +326,134 @@ function PhotosTab({ sourceId }: { sourceId: string }) {
   )
 }
 
-// ── Selected node state — stores both node name and its context (parent label) ─
-interface SelectedNodeState {
-  nodeName: string
-  context: string
+// ── Selected node state ───────────────────────────────────────────────────────
+interface SelectedNodeState { nodeName: string; context: string }
+
+// ── Public props ──────────────────────────────────────────────────────────────
+export interface MindMapInsightViewerProps {
+  /** The raw JSON string stored in insight.content */
+  content: string
+  /** source_id — needed for node-summary API calls */
+  sourceId: string
+  /** Optional title shown in the header */
+  title?: string | null
 }
 
-// ── Main dialog ───────────────────────────────────────────────────────────────
-interface MindMapDialogProps {
-  sourceId: string; sourceTitle?: string | null
-  open: boolean; onOpenChange: (open: boolean) => void
+/**
+ * Detects whether an insight_type string represents a mind-map insight.
+ * Matches: "mind map", "mindmap", "mind_map", "MIND MAP", etc.
+ */
+export function isMindMapInsight(insightType: string): boolean {
+  return /mind.?map/i.test(insightType)
 }
 
-export function MindMapDialog({ sourceId, sourceTitle, open, onOpenChange }: MindMapDialogProps) {
-  const [activeTab, setActiveTab] = useState<'graph' | 'photos'>('graph')
-  const [loading, setLoading] = useState(false)
+// ── Main viewer ───────────────────────────────────────────────────────────────
+export function MindMapInsightViewer({ content, sourceId, title }: MindMapInsightViewerProps) {
   const [mindMap, setMindMap] = useState<MindMapNode | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [fromCache, setFromCache] = useState(false)
-  const abortRef = useRef<AbortController | null>(null)
-  const loadingMessage = useLoadingMessage(loading)
-
-  // Selected node: { nodeName, context } — context = parent label
+  const [parseError, setParseError] = useState<string | null>(null)
   const [selected, setSelected] = useState<SelectedNodeState | null>(null)
   const [scale, setScale] = useState(1)
+  const [activeTab, setActiveTab] = useState<'graph' | 'photos'>('graph')
 
-  // Root label from the mind map (detected person/topic)
-  const rootLabel = mindMap?.label ?? sourceTitle ?? 'the subject'
+  // Parse JSON content on mount / content change
+  useEffect(() => {
+    setSelected(null)
+    setScale(1)
+    try {
+      // content may be a JSON string or already an object (edge case)
+      const parsed: MindMapNode = typeof content === 'string' ? JSON.parse(content) : content
+      if (!parsed?.label) throw new Error('Invalid mind map structure')
+      setMindMap(parsed)
+      // Also persist to the shared localStorage cache so MindMapDialog reuses it
+      saveCache(sourceId, parsed)
+      setParseError(null)
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : 'Failed to parse mind map data')
+      setMindMap(null)
+    }
+  }, [content, sourceId])
+
+  const rootLabel = mindMap?.label ?? title ?? 'the subject'
 
   const zoomIn  = useCallback(() => setScale(s => Math.min(s + 0.15, 3)), [])
   const zoomOut = useCallback(() => setScale(s => Math.max(s - 0.15, 0.3)), [])
   const zoomReset = useCallback(() => setScale(1), [])
 
-  const generate = useCallback((forceRegenerate = false) => {
-    if (!forceRegenerate) {
-      const cached = loadCached(sourceId)
-      if (cached) { setMindMap(cached); setError(null); setFromCache(true); return }
-    }
-    setMindMap(null); setError(null); setFromCache(false); setLoading(true)
-    if (abortRef.current) abortRef.current.abort()
-    abortRef.current = new AbortController()
-    mindmapApi.generate(sourceId)
-      .then(r => { setMindMap(r.mind_map); setFromCache(false); saveCache(sourceId, r.mind_map) })
-      .catch(err => {
-        if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') return
-        const detail = err?.response?.data?.detail || err?.message || 'Unknown error'
-        setError(detail); toast.error('Mind map generation failed')
-      })
-      .finally(() => setLoading(false))
-  }, [sourceId])
-
-  useEffect(() => { return () => { if (abortRef.current) abortRef.current.abort() } }, [sourceId])
-
-  useEffect(() => {
-    if (!open) return
-    setActiveTab('graph'); setSelected(null); setScale(1); generate(false)
-  }, [open, sourceId, generate])
-
-  // Called when any node label is clicked
-  // nodeName = clicked node, context = its parent's label
   const handleLabelClick = useCallback((nodeName: string, context: string) => {
     setSelected(prev =>
       prev?.nodeName === nodeName && prev?.context === context ? null : { nodeName, context }
     )
   }, [])
 
-  const showPanel = !!selected && activeTab === 'graph' && !!mindMap && !loading
+  const showPanel = !!selected && activeTab === 'graph' && !!mindMap
+
+  if (parseError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+        <AlertCircle className="h-8 w-8 text-destructive" />
+        <p className="text-sm font-medium text-destructive">Could not render mind map</p>
+        <p className="text-xs text-muted-foreground max-w-xs">{parseError}</p>
+        <details className="mt-2 w-full text-left">
+          <summary className="text-xs text-muted-foreground cursor-pointer">Show raw data</summary>
+          <pre className="mt-2 text-xs bg-muted rounded p-3 overflow-auto max-h-48 whitespace-pre-wrap break-words">{content}</pre>
+        </details>
+      </div>
+    )
+  }
+
+  if (!mindMap) return (
+    <div className="flex items-center justify-center py-10">
+      <LoadingSpinner />
+    </div>
+  )
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`h-[92vh] max-h-[92vh] overflow-hidden flex flex-col transition-all duration-300 ${showPanel ? 'max-w-6xl' : 'max-w-5xl'}`}>
-        <DialogHeader className="shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <GitBranch className="h-5 w-5" />
-              Mind Map{sourceTitle ? ` — ${sourceTitle}` : ''}
-            </DialogTitle>
-            {!loading && mindMap && (
-              <div className="flex items-center gap-2">
-                {fromCache && <span className="text-xs text-muted-foreground">Cached result</span>}
-                <Button variant="outline" size="sm" onClick={() => generate(true)} className="gap-1.5 h-7 text-xs">
-                  <RefreshCw className="h-3 w-3" /> Regenerate
-                </Button>
-              </div>
-            )}
-          </div>
-        </DialogHeader>
+    <div className="flex flex-col h-full min-h-0">
+      {/* Tab bar */}
+      <div className="flex gap-1 border-b border-border/60 shrink-0 mb-2">
+        {(['graph', 'photos'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => { setActiveTab(tab); if (tab !== 'graph') setSelected(null) }}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab === 'graph'
+              ? <><Network className="h-3.5 w-3.5" /> Mind Map Graph</>
+              : <><ImageIcon className="h-3.5 w-3.5" /> Photos</>}
+          </button>
+        ))}
+      </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 border-b border-border/60 shrink-0">
-          {(['graph', 'photos'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-                activeTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tab === 'graph'
-                ? <><Network className="h-3.5 w-3.5" /> Mind Map Graph</>
-                : <><ImageIcon className="h-3.5 w-3.5" /> Photos</>}
-            </button>
-          ))}
-        </div>
-
-        {/* Graph tab */}
-        {activeTab === 'graph' && (
-          <div className="flex-1 overflow-hidden flex min-h-0">
-            {/* Left: graph */}
-            <div className={`flex flex-col min-h-0 transition-all duration-300 ${showPanel ? 'w-1/2' : 'w-full'}`}>
-              {loading && (
-                <div className="flex flex-col items-center justify-center py-16 gap-4 flex-1">
-                  <LoadingSpinner />
-                  <p className="text-sm text-muted-foreground text-center max-w-xs">{loadingMessage}</p>
-                  <p className="text-xs text-muted-foreground/60 text-center">AI processing can take several minutes.</p>
-                </div>
-              )}
-              {!loading && error && (
-                <div className="flex flex-col items-center justify-center py-12 gap-4 flex-1">
-                  <AlertCircle className="h-10 w-10 text-destructive" />
-                  <p className="text-sm font-medium text-destructive">Generation failed</p>
-                  <p className="text-xs text-muted-foreground max-w-sm">{error}</p>
-                  <Button variant="outline" size="sm" onClick={() => generate(true)} className="gap-2">
-                    <RefreshCw className="h-4 w-4" /> Retry
-                  </Button>
-                </div>
-              )}
-              {!loading && mindMap && (
-                <>
-                  <div className="relative flex-1 overflow-auto m-2 rounded-xl border bg-white dark:bg-zinc-950 min-h-[680px]">
-                    <div
-                      className="flex items-center justify-center p-8 transition-transform duration-150"
-                      style={{ transform: `scale(${scale})`, transformOrigin: 'center center', minHeight: '100%' }}
-                    >
-                      <div className="inline-flex items-start">
-                        <HorizontalNode
-                          node={mindMap}
-                          depth={0}
-                          parentLabel={rootLabel}
-                          selectedNode={selected?.nodeName ?? null}
-                          onLabelClick={handleLabelClick}
-                        />
-                      </div>
-                    </div>
-                    <ZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={zoomReset} />
+      {/* Graph tab */}
+      {activeTab === 'graph' && (
+        <>
+          <div className="flex flex-1 min-h-0 overflow-hidden rounded-xl border border-border/60">
+            {/* Graph pane */}
+            <div className={`relative flex flex-col min-h-0 transition-all duration-300 ${showPanel ? 'w-1/2' : 'w-full'}`}>
+              <div className="flex-1 overflow-auto bg-white dark:bg-zinc-950" style={{ minHeight: 320 }}>
+                <div
+                  className="flex items-center justify-center p-8 transition-transform duration-150"
+                  style={{ transform: `scale(${scale})`, transformOrigin: 'center center', minHeight: '100%' }}
+                >
+                  <div className="inline-flex items-start">
+                    <HorizontalNode
+                      node={mindMap}
+                      depth={0}
+                      parentLabel={rootLabel}
+                      selectedNode={selected?.nodeName ?? null}
+                      onLabelClick={handleLabelClick}
+                    />
                   </div>
-                  <p className="text-[11px] text-muted-foreground px-3 pb-2 shrink-0">
-                    Click a node label to open summary · Chevron to expand/collapse · Click again to close panel
-                  </p>
-                </>
-              )}
+                </div>
+              </div>
+              <ZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={zoomReset} />
             </div>
 
-            {/* Right: summary panel */}
+            {/* Node summary panel */}
             {showPanel && (
               <div className="w-1/2 flex flex-col min-h-0 overflow-hidden">
                 <NodeSummaryPanel
@@ -531,28 +465,18 @@ export function MindMapDialog({ sourceId, sourceTitle, open, onOpenChange }: Min
               </div>
             )}
           </div>
-        )}
+          <p className="text-[11px] text-muted-foreground px-1 pt-1.5 shrink-0">
+            Click a node label to open summary · Chevron to expand/collapse · Click again to close panel
+          </p>
+        </>
+      )}
 
-        {/* Photos tab */}
-        {activeTab === 'photos' && (
-          <div className="flex-1 overflow-auto">
-            <PhotosTab sourceId={sourceId} />
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ── Standalone button ─────────────────────────────────────────────────────────
-export function MindMapButton({ sourceId, sourceTitle }: { sourceId: string; sourceTitle?: string | null }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <GitBranch className="mr-2 h-4 w-4" /> Mind Map
-      </Button>
-      <MindMapDialog open={open} onOpenChange={setOpen} sourceId={sourceId} sourceTitle={sourceTitle} />
-    </>
+      {/* Photos tab */}
+      {activeTab === 'photos' && (
+        <div className="flex-1 overflow-auto rounded-xl border border-border/60">
+          <PhotosTab sourceId={sourceId} />
+        </div>
+      )}
+    </div>
   )
 }

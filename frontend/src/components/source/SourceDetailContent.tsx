@@ -3,8 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import { sourcesApi } from '@/lib/api/sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
 import { transformationsApi } from '@/lib/api/transformations'
@@ -67,7 +65,35 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/source/NotebookAssociations'
-import { MindMapButton } from '@/components/source/MindMapDialog'
+
+// Safe paginated content renderer — avoids browser crash on large documents
+const PAGE = 3000
+function SafeContent({ text, noContentLabel }: { text: string; noContentLabel: string }) {
+  const [visible, setVisible] = useState(PAGE)
+  if (!text) return <p className="text-sm text-muted-foreground">{noContentLabel}</p>
+  const slice = text.slice(0, visible)
+  const hasMore = visible < text.length
+  return (
+    <div className="space-y-2">
+      {slice.split(/\n{2,}/).filter(Boolean).map((para, i) => (
+        <p key={i} className="text-sm leading-relaxed whitespace-pre-wrap break-words">{para}</p>
+      ))}
+      {hasMore && (
+        <div className="pt-3 flex flex-col items-center gap-1">
+          <span className="text-xs text-muted-foreground">
+            {visible.toLocaleString()} / {text.length.toLocaleString()} chars
+          </span>
+          <button
+            onClick={() => setVisible(v => v + PAGE)}
+            className="text-xs text-blue-600 hover:underline"
+          >
+            Load more ↓
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface SourceDetailContentProps {
   sourceId: string
@@ -418,8 +444,6 @@ export function SourceDetailContent({
               </Button>
             )}
 
-            <MindMapButton sourceId={sourceId} sourceTitle={source.title} />
-
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -523,32 +547,7 @@ export function SourceDetailContent({
                     )}
                   </div>
                 )}
-                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none prose-headings:font-semibold prose-a:text-blue-600 prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <p className="mb-4">{children}</p>,
-                      h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
-                      ul: ({ children }) => <ul className="mb-4 list-disc pl-6">{children}</ul>,
-                      ol: ({ children }) => <ol className="mb-4 list-decimal pl-6">{children}</ol>,
-                      li: ({ children }) => <li className="mb-1">{children}</li>,
-                      table: ({ children }) => (
-                        <div className="my-4 overflow-x-auto">
-                          <table className="min-w-full border-collapse border border-border">{children}</table>
-                        </div>
-                      ),
-                      thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
-                      tbody: ({ children }) => <tbody>{children}</tbody>,
-                      tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-                      th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
-                      td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-                    }}
-                  >
-                    {source.full_text || t.sources.noContent}
-                  </ReactMarkdown>
-                </div>
+                <SafeContent text={source.full_text || ''} noContentLabel={t.sources.noContent} />
               </CardContent>
             </Card>
           </TabsContent>

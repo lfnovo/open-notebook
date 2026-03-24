@@ -63,9 +63,9 @@ const getNavigation = (t: TranslationKeys) => [
   {
     title: 'Studio',
     items: [
+      { name: 'Summary', href: null, icon: FileText, studio: 'summary' as const },
       { name: 'Mind Map', href: null, icon: GitBranch, studio: 'mindmap' as const },
       { name: 'Infographic', href: null, icon: Newspaper, studio: 'infographic' as const },
-      { name: 'Summary', href: null, icon: FileText, studio: 'summary' as const },
     ],
   },
   {
@@ -129,7 +129,7 @@ export function AppSidebar() {
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
               <Image
-                src="/KavachLogo.png"
+                src="/logo(1).svg"
                 alt="Kavach"
                 width={32}
                 height={32}
@@ -147,8 +147,8 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <Image src="/logo(1).svg" alt="Notebook" width={50} height={36} className="object-contain" />
-                <p>NOTEBOOK</p>
+                <Image src="/logo(1).svg" alt="Kavach" width={50} height={36} className="object-contain" />
+                <p className="font-semibold text-sm tracking-wide">NOTEBOOKS</p>
               </div>
               <Button
                 variant="ghost"
@@ -409,6 +409,11 @@ export function AppSidebar() {
       </div>
       {/* Studio source pickers — always mounted so result dialogs survive picker close */}
       <SourcePickerDialog
+        open={summaryPickerOpen}
+        onOpenChange={setSummaryPickerOpen}
+        mode="summary"
+      />
+      <SourcePickerDialog
         open={mindMapPickerOpen}
         onOpenChange={setMindMapPickerOpen}
         mode="mindmap"
@@ -417,11 +422,6 @@ export function AppSidebar() {
         open={infographicPickerOpen}
         onOpenChange={setInfographicPickerOpen}
         mode="infographic"
-      />
-      <SourcePickerDialog
-        open={summaryPickerOpen}
-        onOpenChange={setSummaryPickerOpen}
-        mode="summary"
       />
     </TooltipProvider>
   )

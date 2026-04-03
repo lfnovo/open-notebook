@@ -55,6 +55,8 @@ interface ChatPanelProps {
   notebookContextStats?: NotebookContextStats
   // Notebook ID for saving notes
   notebookId?: string
+  // Suggested questions
+  suggestedQuestions?: string[]
 }
 
 export function ChatPanel({
@@ -74,7 +76,8 @@ export function ChatPanel({
   title,
   contextType = 'source',
   notebookContextStats,
-  notebookId
+  notebookId,
+  suggestedQuestions = []
 }: ChatPanelProps) {
   const { t } = useTranslation()
   const chatInputId = useId()
@@ -212,6 +215,26 @@ export function ChatPanel({
                         content={message.content}
                         notebookId={notebookId}
                       />
+                    )}
+                    {message.type === 'ai' && suggestedQuestions.length > 0 && messages[messages.length - 1]?.id === message.id && (
+                      <div className="flex flex-col gap-2 mt-3">
+                        <p className="text-xs text-muted-foreground font-medium">Suggested questions:</p>
+                        <div className="flex flex-col gap-2">
+                          {suggestedQuestions.map((question, idx) => (
+                            <Button
+                              key={idx}
+                              variant="outline"
+                              size="sm"
+                              className="justify-start text-left h-auto py-2 px-3 text-xs"
+                              onClick={() => onSendMessage(question, modelOverride)}
+                              disabled={isStreaming}
+                            >
+                              <Lightbulb className="h-3 w-3 mr-2 flex-shrink-0" />
+                              <span className="line-clamp-2">{question}</span>
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                   {message.type === 'human' && (

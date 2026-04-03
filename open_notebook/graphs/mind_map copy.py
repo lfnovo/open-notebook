@@ -19,7 +19,7 @@ from spacy.matcher import Matcher
 from aiokafka import AIOKafkaProducer, AIOKafkaConsumer
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_core.messages import HumanMessage
 
 # Ensure NLTK models are available
@@ -229,7 +229,7 @@ OUTPUT FORMAT (Return ONLY valid JSON matching this recursive schema exactly):
   ]
 }}"""),
             ("human", "Primary Subject/Topic: {subject}\n\nDocument Context/Data:\n{context}")
-        ]) | self.llm | StrOutputParser()
+        ]) | self.llm | JsonOutputParser()
 
     def extract_facts_sync(self, text_chunk: str) -> List[str]:
         """Synchronous version to support the concurrent ThreadPoolExecutor pipeline."""
@@ -280,71 +280,11 @@ OUTPUT FORMAT (Return ONLY valid JSON matching this recursive schema exactly):
             return []
 
     async def generate_mind_map_async(self, person: str, facts: List[str]) -> Dict:
-        try:
-            raw_response = await self.mindmap_chain.ainvoke({
-                "subject": person,
-                "context": json.dumps(facts, indent=2)
-            })
-            # Clean the response - remove markdown code blocks and extra text
-            cleaned = raw_response.strip()
-            cleaned = cleaned.removeprefix("```json").removeprefix("```").strip()
-            cleaned = cleaned.removesuffix("```").strip()
-            
-            # Try to extract JSON if there's extra text
-            json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
-            if json_match:
-                cleaned = json_match.group(0)
-            
-            # Remove trailing commas before closing brackets/braces (common LLM error)
-            cleaned = re.sub(r',(\s*[}\]])', r'\1', cleaned)
-            
-            result = json.loads(cleaned)
-            
-            # Validate the result has the expected structure
-            if not isinstance(result, dict) or "label" not in result:
-                logger.warning("LLM returned invalid mind map structure, using fallback")
-                raise ValueError("Invalid mind map structure")
-            return result
-        except (json.JSONDecodeError, ValueError) as e:
-            logger.error(f"JSON parsing error in mind map generation: {e}")
-            logger.error(f"Raw response was: {raw_response[:1000] if 'raw_response' in locals() else 'N/A'}")
-            logger.warning(f"Falling back to structured mind map for person: {person}")
-            # Return a structured fallback instead of raising
-            return self._create_fallback_mind_map(person, facts)
-        except Exception as e:
-            logger.error(f"Mind map generation error: {e}")
-            logger.warning(f"Falling back to structured mind map for person: {person}")
-            # Return a structured fallback instead of raising
-            return self._create_fallback_mind_map(person, facts)
-
-    def _create_fallback_mind_map(self, person: str, facts: List[str]) -> Dict:
-        """Create a structured fallback mind map when LLM fails."""
-        buckets = defaultdict(list)
-        for fact in facts:
-            f = fact.lower()
-            if any(k in f for k in ["resident", "born", "age", "height", "weight", "appearance"]):
-                buckets["Identity & Background"].append(fact)
-            elif any(k in f for k in ["fir", "arrest", "crime", "case", "criminal", "conviction"]):
-                buckets["Criminal History"].append(fact)
-            elif any(k in f for k in ["gang", "associate", "member", "organization"]):
-                buckets["Associations"].append(fact)
-            elif any(k in f for k in ["location", "address", "resident", "area"]):
-                buckets["Locations"].append(fact)
-            else:
-                buckets["Other Details"].append(fact)
-        
-        children = []
-        for category, items in buckets.items():
-            if items:
-                children.append({
-                    "label": category,
-                    "children": [{"label": fact} for fact in items]
-                })
-        
-        return {
-            "label": f"{person} Dossier",
-            "children": children if children else [{"label": "No extractable facts found."}]
-        }
+        result = await self.mindmap_chain.ainvoke({
+            "subject": person,
+            "context": json.dumps(facts, indent=2)
+        })
+        return result
 
 
 # ============================================================================
@@ -381,18 +321,9 @@ class MindMapPipeline:
             return {"label": "Target Subject", "children": [{"label": "No data/text found to process."}]}
 
         clean_text = await self.processor.clean_ocr_text(full_text)
-        
-        # Limit text size for faster processing - use first 20k chars
-        if len(clean_text) > 20000:
-            logger.info(f"Text too long ({len(clean_text)} chars), truncating to 20k for faster processing")
-            clean_text = clean_text[:20000]
-        
         main_person = await self.processor.detect_main_person_async(clean_text) or "Target Subject"
 
-        # Reduce chunk size and limit number of chunks for faster processing
-        chunk_size = 8000
-        max_chunks = 3  # Process max 3 chunks for speed
-        text_chunks = [clean_text[i:i+chunk_size] for i in range(0, len(clean_text), chunk_size)][:max_chunks]
+        text_chunks = [clean_text[i:i+10000] for i in range(0, len(clean_text), 10000)]
         all_facts = []
 
         logger.info(f"Extracting facts across {len(text_chunks)} chunks concurrently...")
@@ -404,17 +335,10 @@ class MindMapPipeline:
                 all_facts.extend(result)
 
         facts = self.processor.deduplicate_facts(all_facts)
-        
-        # Limit facts to top 30 for faster mind map generation
-        if len(facts) > 30:
-            logger.info(f"Too many facts ({len(facts)}), limiting to 30 for faster processing")
-            facts = facts[:30]
-        
         if not facts:
             return {"label": f"{main_person} Dossier", "children": [{"label": "No extractable facts found."}]}
 
         result = await self.llm_service.generate_mind_map_async(main_person, facts)
-        
         logger.info(f"Mind map generation completed for source_id: {source_id}")
         return result
 

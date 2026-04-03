@@ -29,7 +29,15 @@ class ThreadState(TypedDict):
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
-        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
+        # Limit context to first 1000 characters to speed up processing
+        context = state.get("context", "")
+        if context and len(context) > 1000:
+            context = context[:1000] + "...[truncated]"
+        
+        # Create limited state for prompt rendering
+        limited_state = {**state, "context": context}
+        
+        system_prompt = Prompter(prompt_template="chat/system").render(data=limited_state)  # type: ignore[arg-type]
         payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
         model_id = config.get("configurable", {}).get("model_id") or state.get(
             "model_override"
@@ -43,7 +51,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                 asyncio.set_event_loop(new_loop)
                 return new_loop.run_until_complete(
                     provision_langchain_model(
-                        str(payload), model_id, "chat", max_tokens=8192
+                        str(payload), model_id, "chat", max_tokens=500
                     )
                 )
             finally:
@@ -66,7 +74,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                     str(payload),
                     model_id,
                     "chat",
-                    max_tokens=8192,
+                    max_tokens=500,
                 )
             )
 

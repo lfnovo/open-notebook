@@ -21,6 +21,7 @@ export function useSourceChat(sourceId: string) {
   const [messages, setMessages] = useState<SourceChatMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   const [contextIndicators, setContextIndicators] = useState<SourceChatContextIndicator | null>(null)
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const abortControllerRef = useRef<AbortController | null>(null)
 
   // Fetch sessions
@@ -201,6 +202,8 @@ export function useSourceChat(sourceId: string) {
       setIsStreaming(false)
       // Refetch session to get persisted messages
       refetchCurrentSession()
+      // Clear suggested questions when starting a new message
+      setSuggestedQuestions([])
     }
   }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
 
@@ -241,6 +244,7 @@ export function useSourceChat(sourceId: string) {
     messages,
     isStreaming,
     contextIndicators,
+    suggestedQuestions,
     loadingSessions,
     
     // Actions

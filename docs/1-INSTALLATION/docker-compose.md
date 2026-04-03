@@ -30,7 +30,7 @@ Create a file called `docker-compose.yml` with this content:
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v2
+    image: surrealdb/surrealdb:v3
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
     ports:
@@ -309,7 +309,7 @@ This happens because SurrealDB runs as a non-root user but Docker creates bind m
 
 ```yaml
 surrealdb:
-  image: surrealdb/surrealdb:v2
+  image: surrealdb/surrealdb:v3
   user: root  # Fix for Linux bind mount permissions
   # ... rest of config
 ```

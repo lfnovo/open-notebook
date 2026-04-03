@@ -416,7 +416,7 @@ services:
       - surrealdb
 
   surrealdb:
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v3
     command: start --log trace --user root --pass root file:/mydata/database.db
     ports:
       - "8000:8000"

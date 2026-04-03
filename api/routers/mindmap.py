@@ -37,7 +37,7 @@ def _build_orchestrator():
 
     # Read env vars fresh at build time — never at module load — so the correct
     # runtime value is always used even after container restarts or hot-reloads.
-    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
     kafka_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9093")
 
     logger.info(f"Building MindMapPipeline — Ollama: {ollama_url}, Kafka: {kafka_servers}")
@@ -165,7 +165,7 @@ async def get_node_summary(source_id: str, request: NodeSummaryRequest):
         if not source.full_text or not source.full_text.strip():
             raise HTTPException(status_code=400, detail="Source has no text content")
 
-        ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+        ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
         from langchain_ollama import ChatOllama
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -243,7 +243,7 @@ async def get_source_summary(source_id: str):
         from langchain_ollama import ChatOllama
         from open_notebook.graphs.summary import SummaryPipeline, SummaryTextProcessor, SummaryLLMService
 
-        ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+        ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
         llm = ChatOllama(model="qwen3", temperature=0.3, base_url=ollama_url)
 
         pipeline = SummaryPipeline(

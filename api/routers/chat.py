@@ -75,6 +75,9 @@ class ExecuteChatRequest(BaseModel):
 class ExecuteChatResponse(BaseModel):
     session_id: str = Field(..., description="Session ID")
     messages: List[ChatMessage] = Field(..., description="Updated message list")
+    suggested_questions: Optional[List[str]] = Field(
+        None, description="Suggested follow-up questions"
+    )
 
 
 class BuildContextRequest(BaseModel):
@@ -394,7 +397,11 @@ async def execute_chat(request: ExecuteChatRequest):
                 )
             )
 
-        return ExecuteChatResponse(session_id=request.session_id, messages=messages)
+        return ExecuteChatResponse(
+            session_id=request.session_id, 
+            messages=messages,
+            suggested_questions=None
+        )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
     except Exception as e:

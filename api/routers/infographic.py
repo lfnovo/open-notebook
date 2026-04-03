@@ -71,7 +71,7 @@ def _build_orchestrator():
         TextExtractorService,
     )
 
-    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
+    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
     kafka_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9093")
 
     logger.info(f"Building InfographicPipeline — Ollama: {ollama_url}, Kafka: {kafka_servers}")

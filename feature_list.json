@@ -9,7 +9,7 @@
       "Step 4: Verify the toast notification appears",
       "Step 5: Verify the source list automatically updates to include the new source without manual page refresh"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -21,7 +21,7 @@
       "Step 4: Verify the toast notification appears",
       "Step 5: Verify the source list automatically updates to include the new uploaded source without manual page refresh"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -31,7 +31,7 @@
       "Step 2: Add a new text source via the add source dialog",
       "Step 3: Verify the source list automatically updates to include the new text source"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -41,7 +41,7 @@
       "Step 2: Use the batch mode to add multiple URLs at once",
       "Step 3: Verify the source list updates to show the newly added sources"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -53,7 +53,7 @@
       "Step 4: Wait for processing to complete",
       "Step 5: Verify the source status updates to completed without manual refresh (via useSourceStatus polling)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -64,7 +64,7 @@
       "Step 3: Add an existing source from another notebook and verify it appears",
       "Step 4: Remove a source from the notebook and verify it disappears"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -76,7 +76,7 @@
       "Step 4: Navigate to another targeted notebook",
       "Step 5: Verify that notebook's source list also shows the new source"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -88,6 +88,6 @@
       "Step 4: Verify additional sources load correctly",
       "Step 5: Add a new source and verify the list updates without layout jumps or visual glitches"
     ],
-    "passes": false
+    "passes": true
   }
 ]

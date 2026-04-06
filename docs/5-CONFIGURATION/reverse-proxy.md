@@ -75,6 +75,8 @@ Caddy handles HTTPS automatically. The timeout settings ensure long-running oper
 ### Traefik
 
 ```yaml
+# Add this to your docker-compose.yml alongside the surrealdb service
+# See full base setup: https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -159,6 +161,8 @@ When `API_URL` is not set, the Next.js frontend:
 
 ## Complete Docker Compose Example
 
+> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml) for the complete setup.
+
 ```yaml
 services:
   open-notebook:
@@ -171,7 +175,6 @@ services:
       - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD}
     volumes:
       - ./notebook_data:/app/data
-      - ./surreal_data:/mydata
     # Only expose to localhost (nginx handles public access)
     ports:
       - "127.0.0.1:8502:8502"
@@ -304,6 +307,7 @@ API_URL=http://192.168.1.100:5055
 
 **Step 3: Expose ports**
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -334,6 +338,7 @@ Host the API and frontend on different subdomains:
 
 **docker-compose.yml:**
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest

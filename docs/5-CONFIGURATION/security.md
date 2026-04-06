@@ -82,7 +82,7 @@ environment:
 ### Docker Deployment
 
 ```yaml
-# docker-compose.yml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -245,6 +245,7 @@ async function getNotebooks() {
 ### Docker Security
 
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest

@@ -158,6 +158,7 @@ In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base 
 ### Docker Compose Example
 
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   text-gen:
     image: atinoda/text-generation-webui:default
@@ -196,6 +197,7 @@ In **Settings → API Keys**, add an **OpenAI-Compatible** credential with base 
 ### Docker Compose with GPU
 
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   vllm:
     image: vllm/vllm-openai:latest

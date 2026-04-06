@@ -85,6 +85,7 @@ ollama serve
 On Linux, `host.docker.internal` doesn't resolve automatically like it does on macOS/Windows. You must add `extra_hosts` to your docker-compose.yml:
 
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -117,7 +118,8 @@ When both Open Notebook and Ollama run in the same Docker Compose stack:
 **Docker Compose Example:**
 
 ```yaml
-version: '3.8'
+# Requires surrealdb service — see full base setup:
+# https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -129,7 +131,6 @@ services:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
     volumes:
       - ./notebook_data:/app/data
-      - ./surreal_data:/mydata
     depends_on:
       - ollama
 
@@ -425,6 +426,7 @@ ollama run gemma3:12b "Hello, world"
 If you see `Name or service not known` errors on Linux, add `extra_hosts` to your docker-compose.yml:
 
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -568,6 +570,7 @@ export ESPERANTO_SSL_VERIFY=false
 
 **Docker Compose example with SSL configuration:**
 ```yaml
+# Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest

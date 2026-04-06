@@ -31,7 +31,7 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook, Source
+from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
@@ -353,10 +353,19 @@ async def create_source(
             # ASYNC PATH: Create source record first, then queue command
             logger.info("Using async processing path")
 
-            # Create minimal source record - let SurrealDB generate the ID
+            # Create source record with asset - let SurrealDB generate the ID
+            # Persist asset before save so it's available for retry if processing fails
+            if source_data.type == "link":
+                source_asset = Asset(url=source_data.url)
+            elif source_data.type == "upload":
+                source_asset = Asset(file_path=file_path or source_data.file_path)
+            else:
+                source_asset = None
+
             source = Source(
                 title=source_data.title or "Processing...",
                 topics=[],
+                asset=source_asset,
             )
             await source.save()
 

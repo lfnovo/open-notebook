@@ -106,8 +106,8 @@ async def save_source(state: SourceState) -> dict:
     source.asset = Asset(url=content_state.url, file_path=content_state.file_path)
     source.full_text = content_state.content
 
-    # Preserve existing title if none provided in processed content
-    if content_state.title:
+    # Preserve user-set title; only overwrite placeholder or empty titles
+    if content_state.title and (not source.title or source.title == "Processing..."):
         source.title = content_state.title
 
     await source.save()

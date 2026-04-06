@@ -99,12 +99,20 @@ export function useCreateSource() {
         variables.notebooks.forEach(notebookId => {
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.sources(notebookId),
-            refetchType: 'active' // Refetch active queries immediately
+            refetchType: 'active'
+          })
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            refetchType: 'active'
           })
         })
       } else if (variables.notebook_id) {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.sources(variables.notebook_id),
+          refetchType: 'active'
+        })
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
           refetchType: 'active'
         })
       }
@@ -201,8 +209,12 @@ export function useFileUpload() {
     mutationFn: ({ file, notebookId }: { file: File; notebookId: string }) =>
       sourcesApi.upload(file, notebookId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.sources(variables.notebookId) 
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sources(variables.notebookId)
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sourcesInfinite(variables.notebookId),
+        refetchType: 'active'
       })
       toast({
         title: t.common.success,

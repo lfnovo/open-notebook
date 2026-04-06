@@ -1,6 +1,6 @@
 # AI Providers - Comparison & Selection Guide
 
-Open Notebook supports 15+ AI providers. This guide helps you **choose the right provider** for your needs.
+Open Notebook supports 17+ AI providers. This guide helps you **choose the right provider** for your needs.
 
 > 💡 **Just want to set up a provider?** Skip to the [Configuration Guide](../5-CONFIGURATION/ai-providers.md) for detailed setup instructions.
 

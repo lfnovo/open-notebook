@@ -58,7 +58,7 @@ body:
       description: Which version are you using?
       options:
         - v1-latest (Docker)
-        - v1-latest-single (Docker)
+        - v1-latest-single (Docker, deprecated)
         - Latest from main branch
         - Other (please specify in additional context)
     validations:

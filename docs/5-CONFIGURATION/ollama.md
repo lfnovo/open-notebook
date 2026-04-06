@@ -87,7 +87,7 @@ On Linux, `host.docker.internal` doesn't resolve automatically like it does on m
 ```yaml
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     # ... other settings ...
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -120,7 +120,7 @@ When both Open Notebook and Ollama run in the same Docker Compose stack:
 version: '3.8'
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     ports:
       - "8502:8502"
@@ -427,7 +427,7 @@ If you see `Name or service not known` errors on Linux, add `extra_hosts` to you
 ```yaml
 services:
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -441,7 +441,7 @@ This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker
 **2. Host networking on Linux (alternative):**
 ```bash
 # Use host networking if host.docker.internal doesn't work
-docker run --network host lfnovo/open_notebook:v1-latest-single
+docker run --network host lfnovo/open_notebook:v1-latest  # for quick testing only
 ```
 Then in **Settings → API Keys**, use base URL: `http://localhost:11434`
 
@@ -570,7 +570,7 @@ export ESPERANTO_SSL_VERIFY=false
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string

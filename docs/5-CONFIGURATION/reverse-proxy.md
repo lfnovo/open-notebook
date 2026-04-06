@@ -77,7 +77,7 @@ Caddy handles HTTPS automatically. The timeout settings ensure long-running oper
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
@@ -106,7 +106,7 @@ serversTransport:
 
 ### Coolify
 
-1. Create new service with `lfnovo/open_notebook:v1-latest-single`
+1. Create new service using [Docker Compose](../1-INSTALLATION/docker-compose.md)
 2. Set port to **8502**
 3. Add environment: `API_URL=https://your-domain.com`
 4. Enable HTTPS in Coolify
@@ -162,7 +162,7 @@ When `API_URL` is not set, the Next.js frontend:
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     container_name: open-notebook
     environment:
@@ -306,7 +306,7 @@ API_URL=http://192.168.1.100:5055
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     environment:
       - API_URL=http://192.168.1.100:5055
@@ -336,7 +336,7 @@ Host the API and frontend on different subdomains:
 ```yaml
 services:
   open-notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     environment:
       - API_URL=https://api.notebook.example.com
@@ -465,7 +465,7 @@ http {
 }
 ```
 
-**Note**: Most users should use the single-container approach (`v1-latest-single`). Multi-container is only needed for custom scaling or isolation requirements.
+**Note**: Most users should use the [Docker Compose](../1-INSTALLATION/docker-compose.md) approach (`v1-latest`). Multi-container with separate nginx is only needed for custom scaling or isolation requirements.
 
 ---
 

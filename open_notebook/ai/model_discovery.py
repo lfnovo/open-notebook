@@ -131,6 +131,14 @@ ELEVENLABS_MODEL_TYPES = {
     "text_to_speech": ["eleven"],
 }
 
+DASHSCOPE_MODEL_TYPES = {
+    "language": ["qwen"],
+}
+
+MINIMAX_MODEL_TYPES = {
+    "language": ["minimax", "abab"],
+}
+
 
 def classify_model_type(model_name: str, provider: str) -> str:
     """
@@ -150,6 +158,8 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "xai": XAI_MODEL_TYPES,
         "voyage": VOYAGE_MODEL_TYPES,
         "elevenlabs": ELEVENLABS_MODEL_TYPES,
+        "dashscope": DASHSCOPE_MODEL_TYPES,
+        "minimax": MINIMAX_MODEL_TYPES,
     }
 
     mapping = type_mappings.get(provider, {})
@@ -518,6 +528,74 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     ]
 
 
+async def discover_dashscope_models() -> List[DiscoveredModel]:
+    """Fetch available models from DashScope (Qwen) API."""
+    api_key = os.environ.get("DASHSCOPE_API_KEY")
+    if not api_key:
+        return []
+
+    models = []
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "dashscope")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="dashscope",
+                            model_type=model_type,
+                        )
+                    )
+    except Exception as e:
+        logger.warning(f"Failed to discover DashScope models: {e}")
+
+    return models
+
+
+async def discover_minimax_models() -> List[DiscoveredModel]:
+    """Fetch available models from MiniMax API."""
+    api_key = os.environ.get("MINIMAX_API_KEY")
+    if not api_key:
+        return []
+
+    models = []
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.minimax.io/v1/models",
+                headers={"Authorization": f"Bearer {api_key}"},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "minimax")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="minimax",
+                            model_type=model_type,
+                        )
+                    )
+    except Exception as e:
+        logger.warning(f"Failed to discover MiniMax models: {e}")
+
+    return models
+
+
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     """
     Fetch available models from an OpenAI-compatible API endpoint.
@@ -600,6 +678,8 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
     "openai_compatible": discover_openai_compatible_models,
+    "dashscope": discover_dashscope_models,
+    "minimax": discover_minimax_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

@@ -34,6 +34,8 @@ TEST_MODELS = {
     "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
     "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
     "openai_compatible": (None, "language"),  # Dynamic - will use first available model
+    "dashscope": ("qwen-plus", "language"),
+    "minimax": ("MiniMax-M2.5", "language"),
 }
 
 

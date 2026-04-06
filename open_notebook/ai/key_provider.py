@@ -62,6 +62,12 @@ PROVIDER_CONFIG = {
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
     },
+    "dashscope": {
+        "env_var": "DASHSCOPE_API_KEY",
+    },
+    "minimax": {
+        "env_var": "MINIMAX_API_KEY",
+    },
 }
 
 

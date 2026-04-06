@@ -75,12 +75,14 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
   openai_compatible: 'OpenAI Compatible',
+  dashscope: 'DashScope (Qwen)',
+  minimax: 'MiniMax',
 }
 
 // All providers in display order
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
-  'xai', 'openrouter', 'voyage', 'elevenlabs', 'ollama',
+  'xai', 'openrouter', 'dashscope', 'minimax', 'voyage', 'elevenlabs', 'ollama',
   'azure', 'vertex', 'openai_compatible',
 ]
 
@@ -100,6 +102,8 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
   openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  dashscope: ['language'],
+  minimax: ['language'],
 }
 
 // Documentation links
@@ -117,6 +121,8 @@ const PROVIDER_DOCS: Record<string, string> = {
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
+  dashscope: 'https://help.aliyun.com/zh/model-studio/getting-started/',
+  minimax: 'https://platform.minimaxi.com/document/Guides',
 }
 
 const TYPE_ICONS: Record<ModelType, React.ReactNode> = {

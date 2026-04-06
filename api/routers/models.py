@@ -96,6 +96,8 @@ PROVIDER_PRIORITY = [
     "ollama",
     "azure",
     "openai_compatible",
+    "dashscope",
+    "minimax",
 ]
 
 # Model preference patterns (preferred models within each provider)
@@ -105,6 +107,8 @@ MODEL_PREFERENCES = {
     "google": ["gemini-2.0", "gemini-1.5-pro", "gemini-pro"],
     "mistral": ["mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
+    "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
+    "minimax": ["MiniMax-M2.5", "MiniMax-M2.5-highspeed"],
 }
 
 
@@ -378,6 +382,8 @@ async def get_provider_availability():
             "voyage": "VOYAGE_API_KEY",
             "elevenlabs": "ELEVENLABS_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "dashscope": "DASHSCOPE_API_KEY",
+            "minimax": "MINIMAX_API_KEY",
         }
 
         provider_status = {}

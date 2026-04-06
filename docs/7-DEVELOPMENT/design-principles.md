@@ -86,7 +86,7 @@ Open Notebook aims to be a **privacy-focused, self-hosted alternative to Google'
 - Graceful degradation when providers are unavailable
 
 **Example Decisions**:
-- ✅ Support for 16+ AI providers
+- ✅ Support for 18+ AI providers
 - ✅ Per-feature model selection (chat, embeddings, TTS)
 - ❌ Features that only work with OpenAI
 - ❌ Hard-coded API endpoints for specific providers

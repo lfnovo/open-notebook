@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-04-06
+
+### Added
+- DashScope (Qwen) provider support — Alibaba Cloud's Qwen models (qwen-turbo, qwen-plus, qwen-max)
+- MiniMax provider support — MiniMax models with 204K context (MiniMax-M2.5, MiniMax-M2.5-highspeed)
+- Model discovery, connection testing, and credential management for both new providers
+- Documentation for DashScope and MiniMax in AI providers guide, environment reference, and provider comparison
+
+### Dependencies
+- Bump esperanto to >= 2.20.0
+
 ## [1.8.1] - 2026-03-10
 
 ### Added

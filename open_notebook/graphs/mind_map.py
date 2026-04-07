@@ -195,39 +195,85 @@ EXAMPLE OUTPUT:
 
         logger.info("Mind Map Chain Initialized...")
         self.mindmap_chain = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert information architect creating a logically structured JSON mind map from the provided document data.
+            ("system", """You are an expert information architect specializing in transforming unstructured or semi-structured data into precise, hierarchical JSON mind maps.
 
-HIERARCHY RULES:
-1. Root (Level 0): Use a concise, highly descriptive title representing the main subject of the document as the Root label.
-2. Categories (Level 1): Dynamically extract the most logical main themes, sections, or categories based entirely on the provided context.
-3. Sub-Categories (Level 2+): Where appropriate, create sub-categories to logically group related information.
-4. Facts (Leaf Nodes): Represent actual data points as concise strings. Use 'Key: Value' format where appropriate.
+Your task is to construct a logically organized mind map strictly from the provided input.
 
-OUTPUT FORMAT (Return ONLY valid JSON matching this recursive schema exactly):
-{{
-  "label": "Main Subject Title",
+---CORE OBJECTIVE---
+Convert the input into a clean, hierarchical JSON mind map that captures the structure, relationships, and key facts.
+
+---STRICT RULES---
+1. Use ONLY information explicitly present in the input. Do NOT infer or hallucinate.
+2. If information is missing or unclear, omit it rather than guessing.
+3. Maintain strict hierarchical integrity (no flat or redundant structures).
+4. Avoid duplication of facts across nodes.
+5. Keep labels concise, precise, and readable.
+
+---HIERARCHY DESIGN---
+Level 0 (Root): Create a short, highly descriptive title representing the main subject.
+Level 1 (Primary Categories): Dynamically identify the most relevant categories (e.g., Personal Details, Criminal Records, Locations, Timeline, Affiliations, etc.).
+Level 2+ (Sub-Categories): Group related information logically under sub-categories where needed.
+Leaf Nodes (Facts): Represent atomic facts as concise labels. Prefer "Key: Value" format where applicable.
+
+---OUTPUT FORMAT (CRITICAL)---
+Return ONLY this exact JSON structure. NO markdown, NO backticks, NO extra text:
+
+{
+  "label": "Root Title",
   "children": [
-    {{
-      "label": "Dynamic Category 1",
+    {
+      "label": "Category",
       "children": [
-        {{ "label": "Key: Value or concise fact" }},
-        {{ "label": "Another relevant detail" }}
-      ]
-    }},
-    {{
-      "label": "Dynamic Category 2",
-      "children": [
-        {{
-          "label": "Dynamic Sub-Category",
+        { "label": "Fact or Key: Value" },
+        {
+          "label": "Sub-Category",
           "children": [
-            {{ "label": "Detailed point 1" }},
-            {{ "label": "Detailed point 2" }}
+            { "label": "Nested Fact 1" },
+            { "label": "Nested Fact 2" }
           ]
-        }}
+        }
       ]
-    }}
+    }
   ]
-}}"""),
+}
+
+---QUALITY GUIDELINES---
+- Ensure logical grouping and readability.
+- Prefer fewer, well-structured categories over many shallow ones.
+- Maintain semantic clarity in labels.
+- Preserve relationships between entities where possible.
+
+---ABSOLUTE REQUIREMENTS---
+✓ Return ONLY the raw JSON object — NOTHING ELSE
+✓ Do NOT include markdown code fences (```) — not even at the end
+✓ Do NOT include function call syntax: json(...), json.loads(...), python(...), etc.
+✓ Do NOT include explanations or comments outside JSON
+✓ Do NOT include <think> blocks or any explanatory text  
+✓ Do NOT use parentheses around the JSON: ( { ... } ) is WRONG
+✓ JSON must be DIRECTLY parseable — no escaping issues
+✓ All field names must be properly quoted with double quotes
+✓ All string values must use double quotes (not single)
+✓ No trailing commas
+✓ No null, empty arrays, or unused fields
+✓ Output must be ONLY the clean JSON object
+
+---INVALID FORMATS (NEVER DO THIS)---
+❌ json({ ... })
+❌ json.loads("...")
+❌ json \n ( { ... } )
+❌ ```json \n { ... } \n ```
+❌ "Here is your mind map: { ... }"
+❌ { ... } } (extra closing brace)
+
+---VALID FORMAT (ONLY THIS)---
+✓ {"label": "...", "children": [ ... ]}
+
+Start directly with { — no prefix, no wrapper, no filler text.
+✓ All field names must be properly quoted with double quotes
+✓ All string values must use double quotes (not single)
+✓ No trailing commas
+✓ No null, empty arrays, or unused fields
+✓ Output must be ONLY the clean JSON object"""),
             ("human", "Primary Subject/Topic: {subject}\n\nDocument Context/Data:\n{context}")
         ]) | self.llm | StrOutputParser()
 
@@ -280,6 +326,7 @@ OUTPUT FORMAT (Return ONLY valid JSON matching this recursive schema exactly):
             return []
 
     async def generate_mind_map_async(self, person: str, facts: List[str]) -> Dict:
+
         try:
             raw_response = await self.mindmap_chain.ainvoke({
                 "subject": person,
@@ -345,6 +392,67 @@ OUTPUT FORMAT (Return ONLY valid JSON matching this recursive schema exactly):
             "label": f"{person} Dossier",
             "children": children if children else [{"label": "No extractable facts found."}]
         }
+
+        """Generate mind map with bulletproof JSON extraction and parsing."""
+        try:
+            # First attempt: Use the chain directly
+            raw_result = await self.mindmap_chain.ainvoke({
+                "subject": person,
+                "context": json.dumps(facts, indent=2)
+            })
+            
+            logger.debug(f"Raw result type: {type(raw_result)}")
+            logger.debug(f"Raw result first 150 chars: {str(raw_result)[:150]}")
+            
+            # If it's already a dict, return it
+            if isinstance(raw_result, dict):
+                if isinstance(raw_result, dict) and "label" in raw_result:
+                    logger.debug("Result is already valid dict, returning directly")
+                    return raw_result
+            
+            # If it's a string, extract and parse the JSON
+            if isinstance(raw_result, str):
+                json_str = raw_result
+                
+                # Strategy 1: Find the JSON object by brackets
+                # This ignores all markdown, backticks, etc - just finds the JSON
+                start_idx = json_str.find('{')
+                end_idx = json_str.rfind('}')
+                
+                if start_idx >= 0 and end_idx > start_idx:
+                    json_str = json_str[start_idx:end_idx + 1]
+                    logger.debug(f"Extracted JSON (first 200 chars): {json_str[:200]}")
+                    
+                    try:
+                        parsed = json.loads(json_str)
+                        if isinstance(parsed, dict) and "label" in parsed:
+                            logger.debug("SUCCESS: Parsed JSON from extracted substring")
+                            return parsed
+                    except json.JSONDecodeError as e:
+                        logger.warning(f"Failed to parse extracted JSON: {e}")
+                        # Continue to fallback
+                else:
+                    logger.warning(f"Could not find JSON object boundaries. Raw: {json_str[:300]}")
+        
+        except Exception as e:
+            logger.warning(f"Mind map generation error: {type(e).__name__}: {e}")
+            import traceback
+            logger.debug(f"Traceback: {traceback.format_exc()}")
+        
+        # Fallback: Return a basic structure - this ensures we ALWAYS return a valid Dict
+        logger.warning(f"Using fallback mind map for: {person}")
+        fallback = {
+            "label": person if person else "Subject",
+            "children": [
+                {
+                    "label": "Key Information",
+                    "children": [{"label": fact} for fact in (facts[:15] if facts else ["No data available"])]
+                }
+            ]
+        }
+        logger.debug(f"Returning fallback structure")
+        return fallback
+
 
 
 # ============================================================================

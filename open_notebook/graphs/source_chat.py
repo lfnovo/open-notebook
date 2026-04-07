@@ -3,7 +3,7 @@ import sqlite3
 from typing import Annotated, Dict, List, Optional
 
 from ai_prompter import Prompter
-from langchain_core.messages import AIMessage, SystemMessage
+from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
@@ -28,6 +28,75 @@ class SourceChatState(TypedDict):
     context: Optional[str]
     model_override: Optional[str]
     context_indicators: Optional[Dict[str, List[str]]]
+    entity_details: Optional[Dict[str, str]]  # Entity name -> details mapping
+
+
+def extract_entities_from_message(message_content: str) -> List[str]:
+    """
+    Extract potential entity names from user message.
+    Looks for patterns like "Name @ Company" or just mentioned names.
+    
+    Args:
+        message_content: User's message text
+        
+    Returns:
+        List of extracted entity names/patterns
+    """
+    import re
+    entities = []
+    
+    # Pattern: "Name @ Company" or "Name@Company"
+    at_pattern = r'(\w+\s*@\s*\w+|\w+@\w+)'
+    at_matches = re.findall(at_pattern, message_content)
+    entities.extend(at_matches)
+    
+    # Pattern: Capitalized words (potential names)
+    # Look for 2+ consecutive capitalized words
+    cap_pattern = r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b'
+    cap_matches = re.findall(cap_pattern, message_content)
+    entities.extend(cap_matches)
+    
+    return list(set(entities))  # Remove duplicates
+
+
+def extract_entity_details_from_content(entity_name: str, content: str, max_chars: int = 500) -> Optional[str]:
+    """
+    Search for entity details in the given content.
+    Looks for sentences or paragraphs containing the entity name.
+    
+    Args:
+        entity_name: Entity to search for
+        content: Source content to search in
+        max_chars: Maximum characters to return
+        
+    Returns:
+        Extracted entity details or None
+    """
+    if not content or not entity_name:
+        return None
+    
+    import re
+    
+    # Create a pattern that finds sentences containing the entity name
+    # Case-insensitive search
+    pattern = r'[^.!?]*' + re.escape(entity_name) + r'[^.!?]*[.!?]'
+    matches = re.finditer(pattern, content, re.IGNORECASE)
+    
+    sentences = []
+    for match in matches:
+        sentences.append(match.group(0).strip())
+    
+    if not sentences:
+        return None
+    
+    # Combine relevant sentences
+    details = " ".join(sentences)
+    
+    # Truncate if too long
+    if len(details) > max_chars:
+        details = details[:max_chars] + "..."
+    
+    return details if details.strip() else None
 
 
 def call_model_with_source_context(
@@ -177,6 +246,31 @@ def _call_model_with_source_context_inner(
     cleaned_content = clean_thinking_content(content)
     cleaned_message = ai_message.model_copy(update={"content": cleaned_content})
 
+    # Extract entities from the latest user message and find their details
+    entity_details: Dict[str, str] = {}
+    messages = state.get("messages", [])
+    if messages:
+        # Get the latest user message
+        latest_user_message = None
+        for msg in reversed(messages):
+            if isinstance(msg, HumanMessage):
+                latest_user_message = msg.content
+                break
+        
+        if latest_user_message and source and source.full_text:
+            # Extract entities from the message
+            entities = extract_entities_from_message(latest_user_message)
+            
+            # Find details for each entity in the source content
+            for entity in entities:
+                details = extract_entity_details_from_content(
+                    entity, 
+                    source.full_text,
+                    max_chars=500
+                )
+                if details:
+                    entity_details[entity] = details
+
     # Update state with context information
     return {
         "messages": cleaned_message,
@@ -184,6 +278,7 @@ def _call_model_with_source_context_inner(
         "insights": insights,
         "context": formatted_context,
         "context_indicators": context_indicators,
+        "entity_details": entity_details if entity_details else None,
     }
 
 

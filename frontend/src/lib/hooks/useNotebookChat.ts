@@ -23,6 +23,23 @@ interface UseNotebookChatParams {
   contextSelections: ContextSelections
 }
 
+function buildFallbackSuggestedQuestions(message: string): string[] {
+  const topic = message.trim().replace(/[?.!]+$/g, '').slice(0, 80)
+  if (!topic) {
+    return [
+      'Can you summarize this briefly?',
+      'What are the key takeaways?',
+      'What should I ask next?',
+    ]
+  }
+
+  return [
+    `Can you explain this in simpler terms: ${topic}?`,
+    `What are the most important points about ${topic}?`,
+    `Which related question should I ask next about ${topic}?`,
+  ]
+}
+
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -33,6 +50,8 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [charCount, setCharCount] = useState<number>(0)
   // Pending model override for when user changes model before a session exists
   const [pendingModelOverride, setPendingModelOverride] = useState<string | null>(null)
+  // Suggested follow-up questions
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
 
   // Fetch sessions for this notebook
   const {
@@ -58,7 +77,30 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   // Update messages when current session changes
   useEffect(() => {
     if (currentSession?.messages) {
-      setMessages(currentSession.messages)
+      console.log('📬 [Hook] Current session loaded with messages:', currentSession.messages.length)
+      // Only update if we have different messages to avoid flickering
+      setMessages(prevMessages => {
+        // If we have local messages, merge with server messages to avoid losing optimistic updates
+        const serverMessages = currentSession.messages || []
+        
+        // Create a map of server messages by ID
+        const serverMap = new Map(serverMessages.map(m => [m.id, m]))
+        
+        // Keep all local messages that aren't already on server (optimistic messages)
+        const optimisticMessages = prevMessages.filter(m => !serverMap.has(m.id))
+        
+        // Combine server messages + any optimistic messages
+        return [...serverMessages, ...optimisticMessages]
+      })
+    }
+    
+    // ✅ Load persisted suggested questions when session loads
+    if (currentSession?.suggested_questions && currentSession.suggested_questions.length > 0) {
+      console.log('💡 [Hook] Loading persisted suggestions from session:', currentSession.suggested_questions)
+      setSuggestedQuestions(currentSession.suggested_questions)
+    } else {
+      console.log('⚠️ [Hook] No suggestions in current session')
+      setSuggestedQuestions([])
     }
   }, [currentSession])
 
@@ -211,28 +253,79 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     }
     setMessages(prev => [...prev, userMessage])
     setIsSending(true)
+    // Clear previous suggested questions when sending new message
+    setSuggestedQuestions([])
+
+    // Create AI message placeholder
+    const aiMessageId = `ai-${Date.now()}`
+    const aiMessage: NotebookChatMessage = {
+      id: aiMessageId,
+      type: 'ai',
+      content: '',
+      timestamp: new Date().toISOString()
+    }
+    setMessages(prev => [...prev, aiMessage])
 
     try {
       // Build context and send message
       const context = await buildContext()
-      const response = await chatApi.sendMessage({
+      
+      // Use streaming API with token callback and suggested questions callback
+      await chatApi.sendMessageStream({
         session_id: sessionId,
         message,
         context,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
+      }, (token) => {
+        // Update AI message content with streamed token
+        setMessages(prev => {
+          const newMessages = [...prev]
+          const msgIndex = newMessages.findIndex(m => m.id === aiMessageId)
+          if (msgIndex >= 0) {
+            const currentMsg = newMessages[msgIndex]
+            newMessages[msgIndex] = {
+              ...currentMsg,
+              content: currentMsg.content + token
+            }
+          }
+          return newMessages
+        })
+      }, (questions) => {
+        // Handle suggested questions from stream
+        console.log('💡 [Hook] Received suggested questions from stream:', questions)
+        setSuggestedQuestions(questions)
       })
 
-      // Update messages with API response
-      setMessages(response.messages)
-
       // Refetch current session to get updated data
-      await refetchCurrentSession()
+      console.log('🔄 [Hook] Refetching session after stream completes...')
+      const updatedSession = await refetchCurrentSession()
+      
+      // Ensure suggested questions are persisted even after refetch
+      if (updatedSession?.data?.suggested_questions) {
+        console.log('💾 [Hook] Loaded persisted suggestions from session:', updatedSession.data.suggested_questions)
+        setSuggestedQuestions(updatedSession.data.suggested_questions)
+      } else {
+        // UI fallback so follow-up suggestions still appear even if backend did not emit them
+        setSuggestedQuestions((prev) => {
+          if (prev.length > 0) {
+            return prev
+          }
+          return buildFallbackSuggestedQuestions(message)
+        })
+      }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
       console.error('Error sending message:', error)
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      // Remove optimistic messages on error
+      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-') && msg.id !== aiMessageId))
+      // Ensure follow-up suggestions still appear even on stream/provider failure
+      setSuggestedQuestions((prev) => {
+        if (prev.length > 0) {
+          return prev
+        }
+        return buildFallbackSuggestedQuestions(message)
+      })
     } finally {
       setIsSending(false)
     }
@@ -310,6 +403,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     tokenCount,
     charCount,
     pendingModelOverride,
+    suggestedQuestions,
 
     // Actions
     createSession,

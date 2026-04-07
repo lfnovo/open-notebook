@@ -17,7 +17,7 @@ numpy
 pymupdf
 
 # --- NLP & Text Processing ---
-spacy
+# spacy
 nltk
 pytextrank
 
@@ -30,3 +30,5 @@ langchain-community
 
 # --- Async & Performance ---
 asyncio
+scipy==1.13.1
+numpy==1.26.4

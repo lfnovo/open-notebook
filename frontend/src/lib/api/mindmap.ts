@@ -17,16 +17,52 @@ export interface MindMapRequest {
   temperature?: number
 }
 
-// Dedicated axios instance for mindmap — no timeout since LLM generation can take many minutes
+/* -------------------------------------------------- */
+/* 🔥 NORMALIZE ANY RESPONSE FORMAT */
+/* -------------------------------------------------- */
+function normalizeMindMap(data: any): MindMapResponse {
+  // case 1: already correct
+  if (data?.mind_map?.label) {
+    return data
+  }
+
+  // case 2: backend returned direct node
+  if (data?.label) {
+    return {
+      mind_map: data,
+      source_id: data.source_id || 'unknown',
+    }
+  }
+
+  // case 3: string JSON from LLM
+  if (typeof data === 'string') {
+    try {
+      const parsed = JSON.parse(data)
+      return normalizeMindMap(parsed)
+    } catch {}
+  }
+
+  // case 4: wrapped response
+  if (data?.data?.label) {
+    return {
+      mind_map: data.data,
+      source_id: data.source_id || 'unknown',
+    }
+  }
+
+  console.error('Invalid mindmap response:', data)
+  throw new Error('Invalid mindmap structure')
+}
+
+/* -------------------------------------------------- */
+
 const mindmapClient = axios.create({
-  timeout: 0, // no timeout
+  timeout: 0,
   headers: { 'Content-Type': 'application/json' },
   withCredentials: false,
 })
 
-// Reuse the same request interceptor logic (base URL + auth)
 mindmapClient.interceptors.request.use(async (config) => {
-  // Always re-resolve the API URL so it picks up the correct host (works on any IP)
   const apiUrl = await getApiUrl()
   config.baseURL = `${apiUrl}/api`
 
@@ -38,29 +74,43 @@ mindmapClient.interceptors.request.use(async (config) => {
         if (state?.token) {
           config.headers.Authorization = `Bearer ${state.token}`
         }
-      } catch (_) {}
+      } catch {}
     }
   }
+
   return config
 })
 
 export const mindmapApi = {
-  generate: async (sourceId: string, options: MindMapRequest = {}): Promise<MindMapResponse> => {
-    const response = await mindmapClient.post<MindMapResponse>(
+  /* ---------------- GENERATE ---------------- */
+  generate: async (
+    sourceId: string,
+    options: MindMapRequest = {}
+  ): Promise<MindMapResponse> => {
+
+    const response = await mindmapClient.post(
       `/sources/${encodeURIComponent(sourceId)}/mindmap`,
       { model_name: 'qwen3', temperature: 0.2, ...options }
     )
-    return response.data
+
+    // ✅ IMPORTANT FIX
+    return normalizeMindMap(response.data)
   },
 
-  getImages: async (sourceId: string): Promise<{ images: string[]; count: number }> => {
-    const response = await mindmapClient.get<{ images: string[]; source_id: string; count: number }>(
+  /* ---------------- IMAGES ---------------- */
+  getImages: async (sourceId: string) => {
+    const response = await mindmapClient.get(
       `/sources/${encodeURIComponent(sourceId)}/images`
     )
     return response.data
   },
 
-  getNodeSummary: async (sourceId: string, nodeName: string, rootSubject: string): Promise<{ summary: string; node_name: string; root_subject: string }> => {
+  /* ---------------- NODE SUMMARY ---------------- */
+  getNodeSummary: async (
+    sourceId: string,
+    nodeName: string,
+    rootSubject: string
+  ) => {
     const response = await mindmapClient.post(
       `/sources/${encodeURIComponent(sourceId)}/node-summary`,
       { node_name: nodeName, root_subject: rootSubject }
@@ -68,7 +118,8 @@ export const mindmapApi = {
     return response.data
   },
 
-  getSourceSummary: async (sourceId: string): Promise<{ summary: string; source_id: string }> => {
+  /* ---------------- SOURCE SUMMARY ---------------- */
+  getSourceSummary: async (sourceId: string) => {
     const response = await mindmapClient.post(
       `/sources/${encodeURIComponent(sourceId)}/summary`,
       {}
@@ -76,10 +127,12 @@ export const mindmapApi = {
     return response.data
   },
 
-  // Poll source status to show live progress messages
-  getStatus: async (sourceId: string): Promise<{ status: string | null; message?: string }> => {
+  /* ---------------- STATUS ---------------- */
+  getStatus: async (sourceId: string) => {
     try {
-      const response = await apiClient.get(`/sources/${encodeURIComponent(sourceId)}/status`)
+      const response = await apiClient.get(
+        `/sources/${encodeURIComponent(sourceId)}/status`
+      )
       return response.data
     } catch {
       return { status: null }

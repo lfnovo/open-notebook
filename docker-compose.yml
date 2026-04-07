@@ -148,8 +148,8 @@ services:
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
-      - OLLAMA_BASE_URL=http://host.docker.internal:11434
-      - OLLAMA_API_URL=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_API_URL=http://ollama:11434
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
       - GIT_PYTHON_REFRESH=quiet
       - LIBVA_DRIVER_NAME=iHD
@@ -163,6 +163,21 @@ services:
       - surrealdb
       - kafka
 
+
+
+      - ollama
+    restart: always
+
+  ollama:
+    image: ollama/ollama:latest
+    runtime: nvidia
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     restart: always
 
 volumes:

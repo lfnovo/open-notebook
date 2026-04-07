@@ -200,6 +200,7 @@ export interface NotebookChatMessage {
 
 export interface NotebookChatSessionWithMessages extends NotebookChatSession {
   messages: NotebookChatMessage[]
+  suggested_questions?: string[]
 }
 
 export interface CreateNotebookChatSessionRequest {

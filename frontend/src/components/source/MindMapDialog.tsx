@@ -38,6 +38,95 @@ function saveCachedNodeSummary(sourceId: string, nodeName: string, context: stri
   try { localStorage.setItem(nodeSummaryKey(sourceId, nodeName, context), summary) } catch {}
 }
 
+// ── Robust JSON extractor ─────────────────────────────────────────────────────
+/**
+ * Extracts a valid MindMapNode JSON object from any LLM output string or object.
+ * Handles:
+ *   1. Already a plain object (pass-through)
+ *   2. Double-encoded JSON string: "{\"label\":...}"
+ *   3. Markdown fences: ```json { ... } ```
+ *   4. <think>...</think> chain-of-thought noise (qwen3)
+ *   5. Prose prefix/suffix around the JSON object
+ *   6. Multiple candidate { } blocks — picks the one with a "label" key
+ */
+function extractMindMapJson(raw: unknown): MindMapNode {
+  // Already an object
+  if (raw !== null && typeof raw === 'object' && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>
+    if (typeof obj.label === 'string') return obj as unknown as MindMapNode
+  }
+
+  if (typeof raw !== 'string') {
+    throw new Error(`Unsupported content type: ${typeof raw}`)
+  }
+
+  let text = raw
+
+  // 1. Strip <think>...</think> blocks (qwen3 chain-of-thought)
+  text = text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim()
+
+  // 2. Unwrap markdown code fences  ```json ... ```  or  ``` ... ```
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+  if (fenceMatch) {
+    text = fenceMatch[1].trim()
+  }
+
+  // 3. If the whole string is itself JSON-encoded (double-stringified), unwrap it
+  if (text.startsWith('"') && text.endsWith('"')) {
+    try {
+      const inner = JSON.parse(text)
+      if (typeof inner === 'string') text = inner
+    } catch { /* not double-encoded, keep as-is */ }
+  }
+
+  // 4. Try parsing the cleaned text directly
+  try {
+    const parsed = JSON.parse(text)
+    if (parsed && typeof parsed === 'object' && typeof parsed.label === 'string') {
+      return parsed as MindMapNode
+    }
+    // Parsed but no label — maybe it's wrapped: { mind_map: { label: ... } }
+    if (parsed?.mind_map?.label) return parsed.mind_map as MindMapNode
+  } catch { /* not clean JSON yet — fall through */ }
+
+  // 5. Find ALL { ... } candidates in the raw text, pick the best one
+  //    "Best" = contains "label" key and is the largest valid JSON object
+  const candidates: MindMapNode[] = []
+  let depth = 0
+  let start = -1
+
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') {
+      if (depth === 0) start = i
+      depth++
+    } else if (text[i] === '}') {
+      depth--
+      if (depth === 0 && start !== -1) {
+        const slice = text.slice(start, i + 1)
+        try {
+          const parsed = JSON.parse(slice)
+          if (parsed && typeof parsed === 'object' && typeof parsed.label === 'string') {
+            candidates.push(parsed as MindMapNode)
+          }
+        } catch { /* malformed slice, skip */ }
+        start = -1
+      }
+    }
+  }
+
+  if (candidates.length > 0) {
+    // Pick the candidate with the most children (largest tree)
+    candidates.sort((a, b) =>
+      JSON.stringify(b).length - JSON.stringify(a).length
+    )
+    return candidates[0]
+  }
+
+  throw new Error(
+    `No valid mind-map JSON found. Content preview: ${String(raw).slice(0, 200)}`
+  )
+}
+
 // ── Markdown bold renderer ────────────────────────────────────────────────────
 function FormattedText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g)
@@ -404,13 +493,36 @@ export function MindMapDialog({ sourceId, sourceTitle, open, onOpenChange }: Min
   const generate = useCallback((forceRegenerate = false) => {
     if (!forceRegenerate) {
       const cached = loadCached(sourceId)
-      if (cached) { setMindMap(cached); setError(null); setFromCache(true); return }
+      if (cached) {
+        try {
+          const parsed = extractMindMapJson(cached)
+          setMindMap(parsed)
+          setError(null)
+          setFromCache(true)
+          return
+        } catch (err) {
+          console.warn('[MindMapDialog] Cached data parse error:', err)
+          // Fall through to regenerate
+        }
+      }
     }
     setMindMap(null); setError(null); setFromCache(false); setLoading(true)
     if (abortRef.current) abortRef.current.abort()
     abortRef.current = new AbortController()
     mindmapApi.generate(sourceId)
-      .then(r => { setMindMap(r.mind_map); setFromCache(false); saveCache(sourceId, r.mind_map) })
+      .then(r => {
+        try {
+          const parsed = extractMindMapJson(r.mind_map)
+          setMindMap(parsed)
+          setFromCache(false)
+          saveCache(sourceId, parsed)
+          console.log('[MindMapDialog] Generated mind map:', parsed.label)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Failed to parse mind map'
+          setError(msg)
+          toast.error('Mind map parsing failed: ' + msg)
+        }
+      })
       .catch(err => {
         if (err?.code === 'ERR_CANCELED' || err?.name === 'CanceledError') return
         const detail = err?.response?.data?.detail || err?.message || 'Unknown error'

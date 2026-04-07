@@ -20,6 +20,52 @@ from open_notebook.utils.graph_utils import get_session_message_count
 router = APIRouter()
 
 
+# Helper functions for serialization
+def serialize_source(source) -> dict:
+    """Serialize a Source object to JSON-compatible dict."""
+    if not source:
+        return None
+    
+    try:
+        result = {
+            "id": str(source.id) if hasattr(source, "id") else None,
+            "title": source.title if hasattr(source, "title") else None,
+            "topics": source.topics if hasattr(source, "topics") else [],
+        }
+        
+        # Add asset information
+        if hasattr(source, "asset") and source.asset:
+            result["asset"] = {
+                "file_path": source.asset.file_path if hasattr(source.asset, "file_path") else None,
+                "url": source.asset.url if hasattr(source.asset, "url") else None,
+            }
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error serializing source: {str(e)}")
+        return None
+
+
+def serialize_insights(insights) -> list:
+    """Serialize a list of Insight objects to JSON-compatible list."""
+    if not insights:
+        return []
+    
+    result = []
+    try:
+        for insight in insights:
+            insight_data = {
+                "id": str(insight.id) if hasattr(insight, "id") else None,
+                "type": insight.insight_type if hasattr(insight, "insight_type") else None,
+                "content": insight.content if hasattr(insight, "content") else None,
+            }
+            result.append(insight_data)
+    except Exception as e:
+        logger.error(f"Error serializing insights: {str(e)}")
+    
+    return result
+
+
 # Request/Response models
 class CreateSourceChatSessionRequest(BaseModel):
     source_id: str = Field(..., description="Source ID to create chat session for")
@@ -457,13 +503,39 @@ async def stream_source_chat_response(
                     }
                     yield f"data: {json.dumps(ai_event)}\n\n"
 
-        # Stream context indicators
+        # Stream context indicators with full details
         if "context_indicators" in result:
             context_event = {
                 "type": "context_indicators",
                 "data": result["context_indicators"],
             }
             yield f"data: {json.dumps(context_event)}\n\n"
+
+        # Stream source details
+        if "source" in result and result["source"]:
+            source_detail_event = {
+                "type": "source_details",
+                "data": serialize_source(result["source"]),
+            }
+            yield f"data: {json.dumps(source_detail_event)}\n\n"
+
+        # Stream insights details
+        if "insights" in result and result["insights"]:
+            insights_list = serialize_insights(result["insights"])
+            if insights_list:
+                insights_event = {
+                    "type": "insights_details",
+                    "data": insights_list,
+                }
+                yield f"data: {json.dumps(insights_event)}\n\n"
+
+        # Stream entity details (person information, etc.)
+        if "entity_details" in result and result["entity_details"]:
+            entity_details_event = {
+                "type": "entity_details",
+                "data": result["entity_details"],
+            }
+            yield f"data: {json.dumps(entity_details_event)}\n\n"
 
         # Send completion signal
         completion_event = {"type": "complete"}

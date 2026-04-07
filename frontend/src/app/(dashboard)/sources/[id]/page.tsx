@@ -70,7 +70,9 @@ export default function SourceDetailPage() {
             onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
             onDeleteSession={chat.deleteSession}
             loadingSessions={chat.loadingSessions}
+
             suggestedQuestions={chat.suggestedQuestions}
+            suggestedQuestions={[]}
           />
         </div>
       </div>

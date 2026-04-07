@@ -33,10 +33,10 @@ DEFINE FIELD IF NOT EXISTS created ON episode DEFAULT time::now() VALUE $before 
 DEFINE FIELD IF NOT EXISTS updated ON episode DEFAULT time::now() VALUE time::now();
 DEFINE FIELD IF NOT EXISTS name ON TABLE episode TYPE string;
 DEFINE FIELD IF NOT EXISTS briefing ON TABLE episode TYPE option<string>;
-DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode FLEXIBLE TYPE object;
-DEFINE FIELD IF NOT EXISTS speaker_profile ON TABLE episode FLEXIBLE TYPE object;
-DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode FLEXIBLE TYPE option<object>;
-DEFINE FIELD IF NOT EXISTS outline ON TABLE episode FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS episode_profile ON TABLE episode TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS speaker_profile ON TABLE episode TYPE object FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS transcript ON TABLE episode TYPE option<object> FLEXIBLE;
+DEFINE FIELD IF NOT EXISTS outline ON TABLE episode TYPE option<object> FLEXIBLE;
 DEFINE FIELD IF NOT EXISTS command ON TABLE episode TYPE option<record<command>>;
 DEFINE FIELD IF NOT EXISTS content ON TABLE episode TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS audio_file ON TABLE episode TYPE option<string>;

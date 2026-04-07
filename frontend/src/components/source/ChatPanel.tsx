@@ -383,7 +383,7 @@
 
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { useState, useRef, useEffect, useId, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -506,6 +506,39 @@ export function ChatPanel({
   }
 
   const keyHint = 'Enter'
+
+  const displaySuggestedQuestions = useMemo(() => {
+    if (suggestedQuestions.length > 0) {
+      return suggestedQuestions
+    }
+
+    const lastAiMessage = [...messages]
+      .reverse()
+      .find((m) => m.type === 'ai' && m.content?.trim())?.content?.trim() || ''
+
+    const plainAi = lastAiMessage
+      .replace(/\[[^\]]+\]\([^)]+\)/g, '')
+      .replace(/[#*_`>-]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    const firstSentence = plainAi.split(/[.!?]\s/)[0]?.trim() || ''
+    const topic = firstSentence.slice(0, 110)
+
+    if (!topic) {
+      return [
+        'Can you summarize this response in simple words?',
+        'What are the key points I should remember?',
+        'What should I ask next to go deeper?',
+      ]
+    }
+
+    return [
+      `Can you explain more about: ${topic}?`,
+      `What evidence supports this: ${topic}?`,
+      `What related detail should I explore next from this response?`,
+    ]
+  }, [messages, suggestedQuestions])
 
   return (
     <>
@@ -652,13 +685,13 @@ export function ChatPanel({
               </div>
             )}
 
-            {messages.length > 0 && !isStreaming && suggestedQuestions.length > 0 && (
+            {messages.length > 0 && !isStreaming && displaySuggestedQuestions.length > 0 && (
               <div className="mt-6 space-y-3">
                 <p className="text-xs font-medium text-muted-foreground px-3">
                   {t.chat.suggestedQuestions || 'Suggested questions'}
                 </p>
                 <div className="space-y-2 px-3">
-                  {suggestedQuestions.map((question, idx) => (
+                  {displaySuggestedQuestions.map((question, idx) => (
                     <button
                       key={`${question}-${idx}`}
                       onClick={() => onSendMessage(question)}

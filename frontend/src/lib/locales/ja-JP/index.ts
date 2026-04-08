@@ -26,6 +26,7 @@ export const jaJP = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    catalan: "Català",
     source: "ソース",
     notebook: "ノートブック",
     podcast: "ポッドキャスト",

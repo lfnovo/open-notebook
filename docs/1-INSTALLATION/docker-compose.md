@@ -197,6 +197,7 @@ Configure Ollama in the Settings UI:
 | `SURREAL_NAMESPACE` | Database namespace | `open_notebook` |
 | `SURREAL_DATABASE` | Database name | `open_notebook` |
 | `API_URL` | API external URL | `http://localhost:5055` |
+| `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | Override embedding batch size for stricter/local providers | `8` |
 
 See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.
 

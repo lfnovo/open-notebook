@@ -63,7 +63,7 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
         full_path = file_path / new_filename
         # Verify resolved path stays within upload folder
         resolved = full_path.resolve()
-        if not str(resolved).startswith(str(file_path.resolve())):
+        if not str(resolved).startswith(str(file_path.resolve()) + os.sep):
             raise ValueError("Invalid filename: path traversal detected")
         if not resolved.exists():
             return str(resolved)
@@ -337,7 +337,7 @@ async def create_source(
             # Validate file_path is within the uploads directory to prevent LFI
             uploads_resolved = Path(UPLOADS_FOLDER).resolve()
             file_resolved = Path(final_file_path).resolve()
-            if not str(file_resolved).startswith(str(uploads_resolved)):
+            if not str(file_resolved).startswith(str(uploads_resolved) + os.sep):
                 raise HTTPException(
                     status_code=400,
                     detail="Invalid file path: must be within the uploads directory",

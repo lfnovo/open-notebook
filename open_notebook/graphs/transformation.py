@@ -10,7 +10,6 @@ from open_notebook.domain.transformation import DefaultPrompts, Transformation
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
-from open_notebook.utils.text_utils import extract_text_content
 
 
 class TransformationState(TypedDict):
@@ -52,7 +51,9 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
         response = await chain.ainvoke(payload)
 
         # Clean thinking content from the response
-        response_content = extract_text_content(response.content)
+        response_content = (
+            response.content if isinstance(response.content, str) else str(response.content)
+        )
         cleaned_content = clean_thinking_content(response_content)
 
         if source:

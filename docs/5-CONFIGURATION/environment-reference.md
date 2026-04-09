@@ -61,6 +61,14 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Embeddings
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | No | 50 | Number of texts sent per embedding batch. Lower this for CPU-only or stricter OpenAI-compatible embedding providers. |
+
+---
+
 ## Text-to-Speech (TTS)
 
 | Variable | Required? | Default | Description |

@@ -1,10 +1,12 @@
 
+DEFINE TABLE IF NOT EXISTS command SCHEMALESS;
+
 DEFINE TABLE IF NOT EXISTS source SCHEMAFULL;
 
 DEFINE FIELD IF NOT EXISTS
     asset
     ON TABLE source
-    FLEXIBLE TYPE option<object>;
+    TYPE option<object> FLEXIBLE;
 
 DEFINE FIELD IF NOT EXISTS title ON TABLE source TYPE option<string>;
 DEFINE FIELD IF NOT EXISTS topics ON TABLE source TYPE option<array<string>>;
@@ -15,7 +17,7 @@ DEFINE FIELD IF NOT EXISTS updated ON source DEFAULT time::now() VALUE time::now
 
 DEFINE TABLE IF NOT EXISTS source_embedding SCHEMAFULL;
 DEFINE FIELD IF NOT EXISTS source ON TABLE source_embedding TYPE record<source>;
-DEFINE FIELD IF NOT EXISTS order ON TABLE source_embedding TYPE int;
+DEFINE FIELD IF NOT EXISTS `order` ON TABLE source_embedding TYPE int;
 DEFINE FIELD IF NOT EXISTS content ON TABLE source_embedding TYPE string;
 DEFINE FIELD IF NOT EXISTS embedding ON TABLE source_embedding TYPE array<float>;
 
@@ -64,12 +66,12 @@ DEFINE TABLE IF NOT EXISTS podcast_config SCHEMALESS;
 -- entender o analyzer
 DEFINE ANALYZER IF NOT EXISTS my_analyzer TOKENIZERS blank,class,camel,punct FILTERS snowball(english), lowercase;
 
-DEFINE INDEX IF NOT EXISTS idx_source_title ON TABLE source COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX IF NOT EXISTS idx_source_full_text ON TABLE source COLUMNS full_text SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX IF NOT EXISTS idx_source_embed_chunk ON TABLE source_embedding COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX IF NOT EXISTS idx_source_insight ON TABLE source_insight COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX IF NOT EXISTS idx_note ON TABLE note COLUMNS content SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
-DEFINE INDEX IF NOT EXISTS idx_note_title ON TABLE note COLUMNS title SEARCH ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_title ON TABLE source COLUMNS title FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_full_text ON TABLE source COLUMNS full_text FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_embed_chunk ON TABLE source_embedding COLUMNS content FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_source_insight ON TABLE source_insight COLUMNS content FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_note ON TABLE note COLUMNS content FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS idx_note_title ON TABLE note COLUMNS title FULLTEXT ANALYZER my_analyzer BM25 HIGHLIGHTS;
 
 DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources:bool, $show_notes:bool) {
   

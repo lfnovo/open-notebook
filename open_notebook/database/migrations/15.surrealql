@@ -1,0 +1,3 @@
+-- Create command table for surreal-commands worker
+-- SurrealDB v3 requires explicit table creation (no longer auto-creates on insert/live query)
+DEFINE TABLE IF NOT EXISTS command SCHEMALESS;

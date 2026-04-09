@@ -12,7 +12,7 @@
 
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v2
+    image: surrealdb/surrealdb:v3
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root
     ports:

@@ -1,10 +1,12 @@
 """Tests for the sources API endpoint."""
 
+import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.notebook import Source
 
 
@@ -71,7 +73,7 @@ class TestAsyncSourceAssetPersistence:
     ):
         """POST /sources with type=upload and async_processing=true persists Asset(file_path=...)."""
         mock_nb_get.return_value = MagicMock()
-        mock_upload.return_value = "/tmp/uploads/video.mp4"
+        mock_upload.return_value = os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
         mock_submit.return_value = "command:123"
 
         saved_sources = []
@@ -97,7 +99,7 @@ class TestAsyncSourceAssetPersistence:
 
         source = saved_sources[0]
         assert source.asset is not None
-        assert source.asset.file_path == "/tmp/uploads/video.mp4"
+        assert source.asset.file_path == os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
         assert source.asset.url is None
 
     @pytest.mark.asyncio

@@ -190,8 +190,10 @@ async def _provision_azure() -> bool:
         os.environ["AZURE_OPENAI_API_VERSION"] = cred.api_version
         logger.debug("Set AZURE_OPENAI_API_VERSION from Credential")
         any_set = True
-    if cred.endpoint:
-        os.environ["AZURE_OPENAI_ENDPOINT"] = cred.endpoint
+    # For Azure, base_url from the UI form maps to endpoint
+    azure_endpoint = cred.endpoint or cred.base_url
+    if azure_endpoint:
+        os.environ["AZURE_OPENAI_ENDPOINT"] = azure_endpoint
         logger.debug("Set AZURE_OPENAI_ENDPOINT from Credential")
         any_set = True
     if cred.endpoint_llm:

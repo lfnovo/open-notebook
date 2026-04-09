@@ -9,16 +9,16 @@ resolution-markers = [
 
 [[package]]
 name = "ai-prompter"
-version = "0.3.1"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jinja2" },
     { name = "pip" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/52/88/cadc58aac8bbb599d8c6d25f2cd357e938ddabe3756b1eed68e8860eed22/ai_prompter-0.3.1.tar.gz", hash = "sha256:cec7fddac5edf7d836c13fe77613e16b12b23aea625133846d11ae22455ed397", size = 84837, upload-time = "2025-06-20T19:31:36.879Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/a6/0703f5de846d4ccdc6cdfc7e44473f2722125e95316a50d44303b80edbe6/ai_prompter-0.4.0.tar.gz", hash = "sha256:63a8f2c19f13c0313ee7cef58f07cc00e948546c83c335c42737e076ae764385", size = 86469, upload-time = "2026-04-09T14:54:32.243Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/f6/490bf534d6b04755998142ec7412b78e7466dc6d9a3f31e90541506b7971/ai_prompter-0.3.1-py3-none-any.whl", hash = "sha256:ec26566f7f246f511325e1c0f260970963a6e49fb19ed0767152d30b82cd2b79", size = 13386, upload-time = "2025-06-20T19:31:34.952Z" },
+    { url = "https://files.pythonhosted.org/packages/bd/c3/881c31c26a7a131ed9e1a2c1c3838b5bb95e3822ac88c68fcda7738c5395/ai_prompter-0.4.0-py3-none-any.whl", hash = "sha256:230662484a27de34e8677ebe20a8220c78f8b605cb68005253c5dbf3e5cc254e", size = 13777, upload-time = "2026-04-09T14:54:33.017Z" },
 ]
 
 [[package]]
@@ -2126,7 +2126,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "ai-prompter", specifier = ">=0.3,<1" },
+    { name = "ai-prompter", specifier = ">=0.4,<1" },
     { name = "babel", specifier = ">=2.18.0" },
     { name = "content-core", specifier = ">=1.14.1,<2" },
     { name = "esperanto", specifier = ">=2.20.0,<3" },

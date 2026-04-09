@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-04-09
+
+### Security
+- Fix Remote Code Execution (RCE) via Jinja2 Server-Side Template Injection in transformations (CVSS 9.2 Critical)
+- Fix arbitrary file write via path traversal in file upload (CVSS 7.0 High)
+- Fix arbitrary file read via Local File Inclusion in source creation (CVSS 8.2 High)
+
+### Dependencies
+- Bump ai-prompter to >=0.4.0 (uses Jinja2 SandboxedEnvironment to prevent SSTI)
+
 ## [1.8.3] - 2026-04-07
 
 ### Security

@@ -7,9 +7,9 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
-from loguru import logger
+# from loguru import logger
 from pydantic import BaseModel, Field
-
+import logging as logger
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (

@@ -104,7 +104,7 @@ export const infographicApi = {
   generate: async (sourceId: string): Promise<InfographicResponse> => {
     const response = await infographicClient.post<InfographicResponse>(
       `/sources/${encodeURIComponent(sourceId)}/infographic`,
-      { model_name: 'qwen3', temperature: 0.3 }
+      { model_name: 'qwen3', temperature: 0.2 }
     )
     return response.data
   },

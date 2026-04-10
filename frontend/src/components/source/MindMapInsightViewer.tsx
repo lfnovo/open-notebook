@@ -37,11 +37,38 @@ function saveCachedNodeSummary(sourceId: string, nodeName: string, context: stri
 function pickNode(parsed: unknown): MindMapNode | null {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
   const obj = parsed as Record<string, unknown>
+
+  // Check for "Root Title" key - if present, use it as the true root label
+  // wrapping the existing node (which may have label + children) as a child
+  const rootTitleKey = Object.keys(obj).find(k => k.toLowerCase().replace(/[\s_-]/g, '') === 'roottitle')
+  if (rootTitleKey && typeof obj[rootTitleKey] === 'string') {
+    const rootLabel = obj[rootTitleKey] as string
+    // If there's also a label key, the current obj IS a child node - wrap it
+    if (typeof obj.label === 'string') {
+      const childNode = { ...obj } as unknown as MindMapNode
+      return { label: rootLabel, children: [childNode] } as MindMapNode
+    }
+    // No label key - just use Root Title as label with existing children
+    return { label: rootLabel, children: (obj.children as MindMapNode[] | undefined) ?? [] } as MindMapNode
+  }
+
+  // Direct label key
   if (typeof obj.label === 'string') return obj as unknown as MindMapNode
-  for (const key of ['mind_map', 'data', 'result', 'mindmap']) {
+
+  // "root" key
+  if (typeof obj.root === 'string') {
+    return { label: obj.root as string, children: (obj.children as MindMapNode[] | undefined) ?? [] } as MindMapNode
+  }
+
+  // Wrapped in a known key
+  for (const key of ['mind_map', 'data', 'result', 'mindmap', 'tree', 'node']) {
     const v = obj[key]
-    if (v && typeof v === 'object' && typeof (v as any).label === 'string') {
-      return v as unknown as MindMapNode
+    if (v && typeof v === 'object' && !Array.isArray(v)) {
+      const inner = v as Record<string, unknown>
+      if (typeof inner.label === 'string') return inner as unknown as MindMapNode
+      if (typeof inner.root === 'string') {
+        return { label: inner.root as string, children: (inner.children as MindMapNode[] | undefined) ?? [] } as MindMapNode
+      }
     }
   }
   return null
@@ -245,78 +272,86 @@ function NodeSummaryPanel({ sourceId, nodeName, context, onClose }: {
 }
 
 // ── Tree nodes ────────────────────────────────────────────────────────────────
-function LeafNode({ label, isSelected, parentLabel, onLabelClick }: {
-  label: string; isSelected: boolean; parentLabel: string
-  onLabelClick: (l: string, c: string) => void
-}) {
-  return (
-    <div className="flex items-center">
-      <div
-        onClick={() => onLabelClick(label, parentLabel)}
-        className={`px-3 py-1.5 rounded-lg text-xs font-medium border whitespace-nowrap shadow-sm cursor-pointer transition-colors
-          ${isSelected ? 'bg-teal-500 text-white border-teal-600' : 'bg-teal-100 text-teal-800 border-teal-200 hover:bg-teal-200'}`}
-      >{label}</div>
-    </div>
-  )
-}
 
-function BranchNode({ label, expanded, hasChildren, isSelected, isRoot, parentLabel, onToggle, onLabelClick }: {
-  label: string; expanded: boolean; hasChildren: boolean; isSelected: boolean
-  isRoot: boolean; parentLabel: string; onToggle: () => void
-  onLabelClick: (l: string, c: string) => void
-}) {
-  return (
-    <div className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium select-none shadow-sm border transition-colors
-      ${isRoot
-        ? isSelected ? 'bg-indigo-500 text-white border-indigo-600' : 'bg-indigo-100 text-indigo-800 border-indigo-200'
-        : isSelected ? 'bg-blue-500 text-white border-blue-600' : 'bg-blue-100 text-blue-800 border-blue-200'}`}
-    >
-      <span
-        className={`whitespace-nowrap ${!isRoot ? 'cursor-pointer hover:underline underline-offset-2' : ''}`}
-        onClick={() => { if (!isRoot) onLabelClick(label, parentLabel) }}
-      >{label}</span>
-      {hasChildren && (
-        <span
-          onClick={e => { e.stopPropagation(); onToggle() }}
-          className={`flex items-center justify-center w-5 h-5 rounded-full bg-white/30 border border-current cursor-pointer transition-transform hover:bg-white/50 ${expanded ? 'rotate-90' : ''}`}
-        >
-          <ChevronRight className="h-3 w-3" />
-        </span>
-      )}
-    </div>
-  )
-}
-
-function HorizontalNode({ node, depth = 0, parentLabel, selectedNode, onLabelClick }: {
+// Vertical tree matching reference: root left, branches right, connector lines
+function TreeNode({ node, depth = 0, parentLabel, selectedNode, onLabelClick }: {
   node: MindMapNode; depth?: number; parentLabel: string; selectedNode: string | null
   onLabelClick: (l: string, c: string) => void
 }) {
-  const [expanded, setExpanded] = useState(depth === 0)
+  const [expanded, setExpanded] = useState(depth <= 1)
   const hasChildren = !!node.children?.length
-  const toggle = useCallback(() => setExpanded(e => !e), [])
+  const isRoot = depth === 0
+  const isSelected = selectedNode === node.label
 
-  if (!hasChildren) return (
-    <LeafNode label={node.label} isSelected={selectedNode === node.label} parentLabel={parentLabel} onLabelClick={onLabelClick} />
-  )
+  const toggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpanded(v => !v)
+  }, [])
+
+  const handleLabelClick = useCallback(() => {
+    if (!isRoot) onLabelClick(node.label, parentLabel)
+  }, [isRoot, node.label, parentLabel, onLabelClick])
+
+  // Node pill style
+  const pillClass = isRoot
+    ? `bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-900/30 text-sm font-bold px-4 py-2`
+    : hasChildren
+      ? isSelected
+        ? `bg-blue-500 text-white border-blue-400 shadow-md text-xs font-semibold px-3 py-1.5`
+        : `bg-blue-900/80 text-blue-100 border-blue-700/60 hover:bg-blue-800/90 text-xs font-semibold px-3 py-1.5`
+      : isSelected
+        ? `bg-teal-400 text-slate-900 border-teal-300 shadow-md text-xs font-medium px-3 py-1.5`
+        : `bg-teal-900/70 text-teal-100 border-teal-700/50 hover:bg-teal-800/80 text-xs font-medium px-3 py-1.5`
 
   return (
-    <div className="flex items-start gap-0">
-      <div className="flex items-center self-center">
-        <BranchNode
-          label={node.label} expanded={expanded} hasChildren={hasChildren}
-          isSelected={selectedNode === node.label} isRoot={depth === 0} parentLabel={parentLabel}
-          onToggle={toggle} onLabelClick={onLabelClick}
-        />
+    <div className="flex items-start">
+      {/* Node pill */}
+      <div className="flex items-center shrink-0">
+        <div
+          onClick={handleLabelClick}
+          className={`rounded-lg border whitespace-nowrap cursor-pointer transition-all duration-150 select-none ${pillClass}`}
+        >
+          {node.label}
+        </div>
+        {/* Chevron toggle */}
+        {hasChildren && (
+          <button
+            onClick={toggle}
+            className={`ml-1.5 w-5 h-5 rounded-full border flex items-center justify-center transition-all duration-200 shrink-0
+              ${expanded
+                ? 'bg-indigo-500/30 border-indigo-400/50 text-indigo-300 hover:bg-indigo-500/50'
+                : 'bg-slate-700/50 border-slate-600/50 text-slate-400 hover:bg-slate-600/70'}`}
+          >
+            <ChevronRight className={`h-3 w-3 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} />
+          </button>
+        )}
       </div>
-      {expanded && (
-        <div className="flex items-center">
-          <div className="w-6 self-stretch flex items-center justify-center" />
-          <div className="relative flex flex-col gap-2 pl-2">
-            <div className="absolute left-0 top-0 bottom-0 w-px bg-indigo-300" style={{ left: '-1px' }} />
+
+      {/* Children */}
+      {hasChildren && expanded && (
+        <div className="flex items-start ml-0">
+          {/* Horizontal connector to vertical bar */}
+          <div className="flex items-center self-stretch">
+            <div className="w-5 h-px bg-indigo-500/40 self-center" />
+          </div>
+          {/* Vertical bar + children */}
+          <div className="relative flex flex-col gap-2">
+            {/* Vertical connector line */}
+            <div
+              className="absolute left-0 bg-indigo-500/30"
+              style={{ width: 1, top: 12, bottom: 12 }}
+            />
             {node.children!.map((child, i) => (
-              <div key={i} className="flex items-center gap-0">
-                <div className="w-5 h-px bg-indigo-300 shrink-0" />
-                <HorizontalNode node={child} depth={depth + 1} parentLabel={node.label} selectedNode={selectedNode} onLabelClick={onLabelClick} />
+              <div key={i} className="flex items-center">
+                {/* Horizontal branch line */}
+                <div className="w-4 h-px bg-indigo-500/40 shrink-0" />
+                <TreeNode
+                  node={child}
+                  depth={depth + 1}
+                  parentLabel={node.label}
+                  selectedNode={selectedNode}
+                  onLabelClick={onLabelClick}
+                />
               </div>
             ))}
           </div>
@@ -327,8 +362,8 @@ function HorizontalNode({ node, depth = 0, parentLabel, selectedNode, onLabelCli
 }
 
 // ── Zoom controls ─────────────────────────────────────────────────────────────
-function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: {
-  scale: number; onZoomIn: () => void; onZoomOut: () => void; onReset: () => void
+function ZoomControls({ scale, onZoomIn, onZoomOut, onReset, onFullscreen }: {
+  scale: number; onZoomIn: () => void; onZoomOut: () => void; onReset: () => void; onFullscreen?: () => void
 }) {
   return (
     <div className="absolute bottom-3 right-3 flex items-center gap-1 bg-background/90 border border-border/60 rounded-lg px-2 py-1 shadow-sm z-10">
@@ -337,6 +372,16 @@ function ZoomControls({ scale, onZoomIn, onZoomOut, onReset }: {
       <button onClick={onZoomIn} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Zoom in"><ZoomIn className="h-3.5 w-3.5" /></button>
       <div className="w-px h-4 bg-border/60 mx-0.5" />
       <button onClick={onReset} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Reset zoom"><Maximize2 className="h-3.5 w-3.5" /></button>
+      {onFullscreen && (
+        <>
+          <div className="w-px h-4 bg-border/60 mx-0.5" />
+          <button onClick={onFullscreen} className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground" title="Fullscreen view">
+            <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            </svg>
+          </button>
+        </>
+      )}
     </div>
   )
 }
@@ -413,6 +458,8 @@ export function MindMapInsightViewer({ content, sourceId, title }: MindMapInsigh
   const [selected, setSelected] = useState<SelectedNodeState | null>(null)
   const [scale, setScale] = useState(1)
   const [activeTab, setActiveTab] = useState<'graph' | 'photos'>('graph')
+  const [fullscreen, setFullscreen] = useState(false)
+  const [fsScale, setFsScale] = useState(1)
 
   useEffect(() => {
     setSelected(null); setScale(1)
@@ -439,6 +486,9 @@ export function MindMapInsightViewer({ content, sourceId, title }: MindMapInsigh
   const zoomIn     = useCallback(() => setScale(s => Math.min(s + 0.15, 3)), [])
   const zoomOut    = useCallback(() => setScale(s => Math.max(s - 0.15, 0.3)), [])
   const zoomReset  = useCallback(() => setScale(1), [])
+  const fsZoomIn   = useCallback(() => setFsScale(s => Math.min(s + 0.15, 5)), [])
+  const fsZoomOut  = useCallback(() => setFsScale(s => Math.max(s - 0.15, 0.2)), [])
+  const fsZoomReset = useCallback(() => setFsScale(1), [])
   const handleClick = useCallback((nodeName: string, context: string) => {
     setSelected(prev => prev?.nodeName === nodeName && prev?.context === context ? null : { nodeName, context })
   }, [])
@@ -480,17 +530,15 @@ export function MindMapInsightViewer({ content, sourceId, title }: MindMapInsigh
         <>
           <div className="flex flex-1 min-h-0 overflow-hidden rounded-xl border border-border/60">
             <div className={`relative flex flex-col min-h-0 transition-all duration-300 ${showPanel ? 'w-1/2' : 'w-full'}`}>
-              <div className="flex-1 overflow-auto bg-white dark:bg-zinc-950" style={{ minHeight: 320 }}>
+              <div className="flex-1 overflow-auto bg-slate-950 dark:bg-slate-950">
                 <div
-                  className="flex items-center justify-center p-8 transition-transform duration-150"
-                  style={{ transform: `scale(${scale})`, transformOrigin: 'center center', minHeight: '100%' }}
+                  className="flex items-start justify-start p-8 transition-transform duration-150"
+                  style={{ transform: `scale(${scale})`, transformOrigin: 'top left', minWidth: 'max-content' }}
                 >
-                  <div className="inline-flex items-start">
-                    <HorizontalNode node={mindMap} depth={0} parentLabel={rootLabel} selectedNode={selected?.nodeName ?? null} onLabelClick={handleClick} />
-                  </div>
+                  <TreeNode node={mindMap} depth={0} parentLabel={rootLabel} selectedNode={selected?.nodeName ?? null} onLabelClick={handleClick} />
                 </div>
               </div>
-              <ZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={zoomReset} />
+              <ZoomControls scale={scale} onZoomIn={zoomIn} onZoomOut={zoomOut} onReset={zoomReset} onFullscreen={() => { setFsScale(1); setFullscreen(true) }} />
             </div>
             {showPanel && (
               <div className="w-1/2 flex flex-col min-h-0 overflow-hidden">
@@ -501,6 +549,32 @@ export function MindMapInsightViewer({ content, sourceId, title }: MindMapInsigh
           <p className="text-[11px] text-muted-foreground px-1 pt-1.5 shrink-0">
             Click a node label to open summary · Chevron to expand/collapse · Click again to close panel
           </p>
+
+          {/* Fullscreen overlay */}
+          {fullscreen && (
+            <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col">
+              {/* Fullscreen header */}
+              <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800 shrink-0">
+                <span className="text-sm font-semibold text-slate-200">{rootLabel} — Mind Map</span>
+                <button
+                  onClick={() => setFullscreen(false)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" /> Close Fullscreen
+                </button>
+              </div>
+              {/* Fullscreen tree */}
+              <div className="flex-1 overflow-auto relative">
+                <div
+                  className="flex items-start justify-start p-10 transition-transform duration-150"
+                  style={{ transform: `scale(${fsScale})`, transformOrigin: 'top left', minWidth: 'max-content' }}
+                >
+                  <TreeNode node={mindMap} depth={0} parentLabel={rootLabel} selectedNode={selected?.nodeName ?? null} onLabelClick={handleClick} />
+                </div>
+                <ZoomControls scale={fsScale} onZoomIn={fsZoomIn} onZoomOut={fsZoomOut} onReset={fsZoomReset} />
+              </div>
+            </div>
+          )}
         </>
       )}
 

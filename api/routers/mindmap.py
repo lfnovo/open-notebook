@@ -587,7 +587,9 @@ def _build_orchestrator():
     kafka_servers = os.environ.get("KAFKA_BOOTSTRAP_SERVERS", "kafka:9093")
 
     logger.info(f"Building MindMapPipeline — Ollama: {ollama_url}, Kafka: {kafka_servers}")
-    llm = ChatOllama(model="qwen3", temperature=0.2, base_url=ollama_url)
+    # Use configured Ollama model from env, fallback to a sensible default
+    ollama_model = os.environ.get("OLLAMA_MODEL", os.environ.get("DEFAULT_CHAT_MODEL", "qwen2.5:1.5b"))
+    llm = ChatOllama(model=ollama_model, temperature=0.2, base_url=ollama_url)
     ocr_service = EasyOCRService()
     text_processor = TextProcessor()
     llm_service = IntelligenceLLMService(llm)
@@ -769,10 +771,8 @@ async def get_node_summary(source_id: str, request: NodeSummaryRequest):
 
         ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
-        from langchain_ollama import ChatOllama
+        from open_notebook.ai.provision import provision_langchain_model
         from langchain_core.messages import HumanMessage, SystemMessage
-
-        llm = ChatOllama(model="qwen3", temperature=0.3, base_url=ollama_url)
 
         context_text = source.full_text[:12000]
 
@@ -795,13 +795,17 @@ async def get_node_summary(source_id: str, request: NodeSummaryRequest):
             f"Source content:\n{context_text}"
         )
 
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=user_prompt),
+        ]
+
+        llm = await provision_langchain_model(
+            user_prompt, None, "chat", max_tokens=2048, temperature=0.3
+        )
+
         def _run_llm():
-            messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=user_prompt),
-            ]
-            response = llm.invoke(messages)
-            return response.content
+            return llm.invoke(messages).content
 
         summary = await asyncio.to_thread(_run_llm)
 
@@ -844,11 +848,10 @@ async def get_source_summary(source_id: str):
         source_id = _decode_source_id(source_id)
         logger.info(f"Source summary request: source_id={source_id!r}")
 
-        from langchain_ollama import ChatOllama
         from open_notebook.graphs.summary import SummaryPipeline, SummaryTextProcessor, SummaryLLMService
+        from open_notebook.ai.provision import provision_langchain_model
 
-        ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
-        llm = ChatOllama(model="qwen3", temperature=0.3, base_url=ollama_url)
+        llm = await provision_langchain_model("", None, "chat", max_tokens=4096, temperature=0.3)
 
         pipeline = SummaryPipeline(
             processor=SummaryTextProcessor(),

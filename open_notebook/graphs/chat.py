@@ -9,7 +9,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
-
+# import logging as logger
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook

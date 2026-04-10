@@ -38,11 +38,18 @@ export function useSourceChat(sourceId: string) {
     enabled: !!sourceId && !!currentSessionId
   })
 
-  // Update messages when session changes
+  // Update messages when session changes - but NOT during/after streaming to avoid scroll jump
   useEffect(() => {
+    if (isStreaming) return  // never overwrite messages while streaming
     if (currentSession?.messages) {
       setMessages(currentSession.messages)
     }
+    // Load persisted suggested questions when session changes
+    if (currentSession?.suggested_questions && currentSession.suggested_questions.length > 0) {
+      setSuggestedQuestions(currentSession.suggested_questions)
+    }
+    // Do NOT clear suggestions here - they may have just arrived via SSE
+    // Only clear when explicitly switching sessions (handled in switchSession)
   }, [currentSession])
 
   // Auto-select most recent session when sessions are loaded
@@ -130,6 +137,7 @@ export function useSourceChat(sourceId: string) {
       timestamp: new Date().toISOString()
     }
     setMessages(prev => [...prev, userMessage])
+    setSuggestedQuestions([])
     setIsStreaming(true)
 
     try {
@@ -145,49 +153,54 @@ export function useSourceChat(sourceId: string) {
       const reader = response.getReader()
       const decoder = new TextDecoder()
       let aiMessage: SourceChatMessage | null = null
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const text = decoder.decode(value)
-        const lines = text.split('\n')
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              
-              if (data.type === 'ai_message') {
-                // Create AI message on first content chunk to avoid empty bubble
-                if (!aiMessage) {
-                  aiMessage = {
-                    id: `ai-${Date.now()}`,
-                    type: 'ai',
-                    content: data.content || '',
-                    timestamp: new Date().toISOString()
-                  }
-                  setMessages(prev => [...prev, aiMessage!])
-                } else {
-                  aiMessage.content += data.content || ''
-                  setMessages(prev =>
-                    prev.map(msg => msg.id === aiMessage!.id
-                      ? { ...msg, content: aiMessage!.content }
-                      : msg
-                    )
-                  )
+          const trimmed = line.trim()
+          if (!trimmed || trimmed === ':ping') continue
+          if (!trimmed.startsWith('data: ')) continue
+          const jsonStr = trimmed.slice(6).trim()
+          if (!jsonStr) continue
+          try {
+            const data = JSON.parse(jsonStr)
+            if (data.type === 'ai_message') {
+              if (!aiMessage) {
+                aiMessage = {
+                  id: `ai-${Date.now()}`,
+                  type: 'ai',
+                  content: data.content || '',
+                  timestamp: new Date().toISOString()
                 }
-              } else if (data.type === 'context_indicators') {
-                setContextIndicators(data.data)
-              } else if (data.type === 'error') {
-                throw new Error(data.message || 'Stream error')
-              }
-            } catch (e) {
-              if (e instanceof SyntaxError) {
-                console.error('Error parsing SSE data:', e)
+                setMessages(prev => [...prev, aiMessage!])
               } else {
-                throw e
+                aiMessage.content = data.content || ''
+                setMessages(prev =>
+                  prev.map(msg => msg.id === aiMessage!.id
+                    ? { ...msg, content: aiMessage!.content }
+                    : msg
+                  )
+                )
               }
+            } else if (data.type === 'suggested_questions' && Array.isArray(data.questions) && data.questions.length > 0) {
+              setSuggestedQuestions(data.questions)
+            } else if (data.type === 'context_indicators') {
+              setContextIndicators(data.data)
+            } else if (data.type === 'error') {
+              throw new Error(data.message || 'Stream error')
+            }
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              console.warn('SSE parse error:', jsonStr?.slice(0, 100))
+            } else {
+              throw e
             }
           }
         }
@@ -200,12 +213,10 @@ export function useSourceChat(sourceId: string) {
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
     } finally {
       setIsStreaming(false)
-      // Refetch session to get persisted messages
+      // Refetch session silently in background - don't update messages state to avoid scroll jump
       refetchCurrentSession()
-      // Clear suggested questions when starting a new message
-      setSuggestedQuestions([])
     }
-  }, [sourceId, currentSessionId, refetchCurrentSession, queryClient, t])
+  }, [sourceId, currentSessionId, queryClient, t])
 
   // Cancel streaming
   const cancelStreaming = useCallback(() => {
@@ -219,6 +230,7 @@ export function useSourceChat(sourceId: string) {
   const switchSession = useCallback((sessionId: string) => {
     setCurrentSessionId(sessionId)
     setContextIndicators(null)
+    setSuggestedQuestions([])
   }, [])
 
   // Create session

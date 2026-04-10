@@ -110,6 +110,9 @@ class SourceChatSessionResponse(BaseModel):
     message_count: Optional[int] = Field(
         None, description="Number of messages in session"
     )
+    suggested_questions: Optional[List[str]] = Field(
+        None, description="Last suggested follow-up questions"
+    )
 
 class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
     messages: List[ChatMessage] = Field(
@@ -305,10 +308,14 @@ async def get_source_chat_session(
             # Extract context indicators from the last state
             if "context_indicators" in thread_state.values:
                 context_data = thread_state.values["context_indicators"]
+                # Filter out None values to prevent Pydantic validation errors
+                sources = [s for s in context_data.get("sources", []) if s is not None]
+                insights = [i for i in context_data.get("insights", []) if i is not None]
+                notes = [n for n in context_data.get("notes", []) if n is not None]
                 context_indicators = ContextIndicator(
-                    sources=context_data.get("sources", []),
-                    insights=context_data.get("insights", []),
-                    notes=context_data.get("notes", []),
+                    sources=sources,
+                    insights=insights,
+                    notes=notes,
                 )
 
         return SourceChatSessionWithMessagesResponse(
@@ -321,6 +328,7 @@ async def get_source_chat_session(
             message_count=len(messages),
             messages=messages,
             context_indicators=context_indicators,
+            suggested_questions=getattr(session, "suggested_questions", None),
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
@@ -492,13 +500,14 @@ async def stream_source_chat_response(
             ),
         )
 
-        # Stream the complete AI response
+        # Stream AI response as single message (no chunking to avoid duplication)
         if "messages" in result:
             for msg in result["messages"]:
                 if hasattr(msg, "type") and msg.type == "ai":
+                    full_content = msg.content if hasattr(msg, "content") else str(msg)
                     ai_event = {
                         "type": "ai_message",
-                        "content": msg.content if hasattr(msg, "content") else str(msg),
+                        "content": full_content,
                         "timestamp": None,
                     }
                     yield f"data: {json.dumps(ai_event)}\n\n"
@@ -536,6 +545,162 @@ async def stream_source_chat_response(
                 "data": result["entity_details"],
             }
             yield f"data: {json.dumps(entity_details_event)}\n\n"
+
+        # Generate suggested questions grounded STRICTLY in the source document content
+        try:
+            import json as json_lib
+            import re as re_lib
+            from langchain_core.messages import SystemMessage as SysMsg
+            from open_notebook.ai.provision import provision_langchain_model
+
+            # Always fetch source fresh from DB to ensure valid id and full_text
+            source_obj = await Source.get(source_id)
+
+            source_full_text = ""
+            source_title = ""
+            source_insights_text = ""
+            if source_obj and source_obj.id:
+                source_full_text = (getattr(source_obj, "full_text", "") or "")
+                source_title = getattr(source_obj, "title", "") or ""
+                try:
+                    insights = await source_obj.get_insights()
+                    source_insights_text = "\n".join(
+                        f"[{i.insight_type}]: {i.content[:800]}" for i in insights[:5]
+                    )
+                except Exception as ins_err:
+                    logger.warning(f"[SOURCE-CHAT-SUGGEST] Could not load insights: {ins_err}")
+
+            # Use full_text first 4000 chars + insights as context
+            # If full_text is empty, use insights as primary context
+            if source_full_text:
+                source_context = (source_full_text[:4000] + "\n\n" + source_insights_text).strip()
+            else:
+                source_context = source_insights_text.strip()
+
+            if not source_context:
+                logger.warning(f"[SOURCE-CHAT-SUGGEST] No source content available for {source_id}")
+                questions_list = []
+            else:
+                logger.info(f"[SOURCE-CHAT-SUGGEST] Generating questions from {len(source_context)} chars of source: {source_title}")
+
+                prompt_text = f"""You are analyzing a specific source document. Read it carefully and generate 3 follow-up questions.
+
+SOURCE DOCUMENT TITLE: {source_title}
+
+SOURCE DOCUMENT CONTENT:
+{source_context}
+
+TASK: Generate exactly 3 short questions that:
+1. Are DIRECTLY based on specific facts, names, events, or details in the document above
+2. Are 5-8 words maximum each
+3. Start with: Who/When/Where/How/Which/Why/What
+4. Reference actual names, dates, places, or events from the document
+5. Are different from what was already asked
+
+ALREADY ASKED: {message}
+
+CRITICAL: Every question MUST be answerable from the document content above. Do NOT invent or use external knowledge.
+
+Return ONLY a valid JSON array of 3 strings. No explanation, no markdown.
+Example format: ["Who is X?", "When did Y happen?", "Which gang did Z join?"]
+
+JSON array:"""
+
+                model = await provision_langchain_model(prompt_text, model_override, "chat", max_tokens=300, temperature=0.3)
+                llm_response = model.invoke([SysMsg(content=prompt_text)])
+                response_text = llm_response.content if hasattr(llm_response, "content") else str(llm_response)
+                logger.info(f"[SOURCE-CHAT-SUGGEST] LLM raw response: {response_text[:300]}")
+
+                questions = None
+                # Strategy 1: direct JSON parse
+                try:
+                    questions = json_lib.loads(response_text.strip())
+                except json_lib.JSONDecodeError:
+                    pass
+                # Strategy 2: strip markdown fences
+                if not questions:
+                    cleaned = re_lib.sub(r'```(?:json)?\s*', '', response_text).replace('```', '').strip()
+                    try:
+                        questions = json_lib.loads(cleaned)
+                    except json_lib.JSONDecodeError:
+                        pass
+                # Strategy 3: extract [...] block
+                if not questions:
+                    match = re_lib.search(r'\[[\s\S]*?\]', response_text)
+                    if match:
+                        try:
+                            questions = json_lib.loads(match.group())
+                        except json_lib.JSONDecodeError:
+                            pass
+                # Strategy 4: extract quoted question strings
+                if not questions or not isinstance(questions, list) or len(questions) < 2:
+                    extracted = re_lib.findall(r'"([^"]{5,}[?])"', response_text)
+                    if len(extracted) >= 2:
+                        questions = extracted
+
+                questions_list: list[str] = []
+                if questions and isinstance(questions, list):
+                    questions_list = [
+                        q.strip() for q in questions
+                        if isinstance(q, str) and q.strip() and len(q.strip()) > 4 and '?' in q
+                    ][:3]
+
+                # Enforce max 10 words per question
+                def trim_question(q: str, max_words: int = 10) -> str:
+                    words = q.split()
+                    if len(words) <= max_words:
+                        return q
+                    return " ".join(words[:max_words]).rstrip(".,;:") + "?"
+
+                questions_list = [trim_question(q) for q in questions_list]
+
+                # Source-grounded fallback using actual names from document/insights
+                if len(questions_list) < 3:
+                    # Extract from source_context (includes insights when full_text is empty)
+                    extract_text = source_context[:3000]
+                    names = re_lib.findall(r'\b[A-Z][a-z]+(?: [A-Z][a-z]+)+\b', extract_text)
+                    unique_names = list(dict.fromkeys(names))
+                    dates = re_lib.findall(r'\b(?:19|20)\d{2}\b', extract_text)
+                    unique_dates = list(dict.fromkeys(dates))
+                    places = re_lib.findall(r'\b(?:Rajasthan|Delhi|Punjab|Haryana|Bihar|UP|Sikar|Jaipur|Mumbai|Bikaner|Nagaur)\b', extract_text)
+                    unique_places = list(dict.fromkeys(places))
+                    gangs = re_lib.findall(r'\b(?:Bishnoi|Jathedi|Gogi|Banuda|Lawrence)\s+(?:Gang|Group|gang|group)?\b', extract_text)
+                    unique_gangs = list(dict.fromkeys(gangs))
+
+                    fallback = []
+                    if unique_names and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"Who is {unique_names[0]}?")
+                    if len(unique_names) > 1 and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"How is {unique_names[0]} linked to {unique_names[1]}?")
+                    if unique_gangs and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"What is the {unique_gangs[0].strip()} role?")
+                    if unique_dates and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"What happened in {unique_dates[0]}?")
+                    if unique_places and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"What activities occurred in {unique_places[0]}?")
+                    if len(unique_names) > 2 and len(questions_list) + len(fallback) < 3:
+                        fallback.append(f"What crimes involve {unique_names[2]}?")
+
+                    for fb in fallback:
+                        if len(questions_list) >= 3:
+                            break
+                        questions_list.append(fb)
+
+                questions_list = questions_list[:3]
+                logger.info(f"[SOURCE-CHAT-SUGGEST] Final {len(questions_list)} questions: {questions_list}")
+
+            # Persist to session
+            full_session_id_for_save = session_id if session_id.startswith("chat_session:") else f"chat_session:{session_id}"
+            session_obj = await ChatSession.get(full_session_id_for_save)
+            if session_obj and questions_list:
+                session_obj.suggested_questions = questions_list
+                await session_obj.save()
+
+            if questions_list:
+                yield f"data: {json.dumps({'type': 'suggested_questions', 'questions': questions_list})}\n\n"
+
+        except Exception as sq_err:
+            logger.error(f"Error generating suggested questions for source chat: {str(sq_err)}")
 
         # Send completion signal
         completion_event = {"type": "complete"}

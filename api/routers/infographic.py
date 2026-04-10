@@ -118,7 +118,7 @@ async def start_kafka_consumer():
 
 class InfographicRequest(BaseModel):
     model_name: str = "qwen3"
-    temperature: float = 0.3
+    temperature: float = 0.2
 
 
 class InfographicResponse(BaseModel):

@@ -14,6 +14,7 @@ import { MindMapInsightViewer, isMindMapInsight } from '@/components/source/Mind
 import { BankAnalysisInsightViewer, isBankAnalysisInsight } from '@/components/source/BankAnalysisInsightViewer'
 import { InfographicInsightViewer, isInfographicInsight } from '@/components/source/InfographicInsightViewer'
 import { TimelineAnalysisInsightViewer, isTimelineAnalysisInsight } from '@/components/source/TimelineAnalysisInsightViewer'
+import { InvestigativeProfileInsightViewer, isInvestigativeProfileInsight } from '@/components/source/InvestigativeProfileInsightViewer'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -55,6 +56,8 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   const isInfographic = !!(displayInsight?.insight_type && isInfographicInsight(displayInsight.insight_type))
   // Detect timeline analysis insight
   const isTimeline = !!(displayInsight?.insight_type && isTimelineAnalysisInsight(displayInsight.insight_type))
+  // Detect investigative profile insight
+  const isInvestigativeProfile = !!(displayInsight?.insight_type && isInvestigativeProfileInsight(displayInsight.insight_type))
 
   const handleViewSource = () => {
     if (sourceId) {
@@ -84,7 +87,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Wider dialog for mind-map insights so the graph has room */}
-      <DialogContent className={`flex flex-col max-h-[90vh] ${isMindMap ? 'sm:max-w-7xl w-[95vw] h-[85vh]' : isBankAnalysis ? 'sm:max-w-5xl w-[90vw]' : isInfographic ? 'sm:max-w-4xl w-[90vw]' : isTimeline ? 'sm:max-w-5xl w-[90vw]' : 'sm:max-w-3xl'}`}>
+      <DialogContent className={`flex flex-col max-h-[90vh] ${isMindMap ? 'sm:max-w-7xl w-[95vw] h-[85vh]' : isBankAnalysis ? 'sm:max-w-5xl w-[90vw]' : isInfographic ? 'sm:max-w-4xl w-[90vw]' : isTimeline ? 'sm:max-w-5xl w-[90vw]' : isInvestigativeProfile ? 'sm:max-w-4xl w-[90vw]' : 'sm:max-w-3xl'}`}>
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>{t.sources.sourceInsight}</span>
@@ -155,6 +158,9 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
               ) : isTimeline ? (
                 /* ── Timeline Analysis: communication log dashboard ── */
                 <TimelineAnalysisInsightViewer content={displayInsight.content ?? ''} />
+              ) : isInvestigativeProfile ? (
+                /* ── Investigative Profile: structured intelligence dashboard ── */
+                <InvestigativeProfileInsightViewer content={displayInsight.content ?? ''} />
               ) : (
                 /* ── Regular insight: markdown renderer ── */
                 <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">

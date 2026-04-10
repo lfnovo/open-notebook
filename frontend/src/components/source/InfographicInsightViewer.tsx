@@ -147,10 +147,21 @@ function InfographicView({ data }: { data: InfographicResponse }) {
 
 // ── main viewer ───────────────────────────────────────────────────────────────
 
+function extractJson(raw: string): string {
+  // Strip markdown code fences: ```json ... ``` or ``` ... ```
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+  if (fenceMatch) return fenceMatch[1].trim()
+  // Find first { ... } block in case there's surrounding text
+  const braceStart = raw.indexOf('{')
+  const braceEnd = raw.lastIndexOf('}')
+  if (braceStart !== -1 && braceEnd > braceStart) return raw.slice(braceStart, braceEnd + 1)
+  return raw.trim()
+}
+
 export function InfographicInsightViewer({ content }: InfographicInsightViewerProps) {
   let data: InfographicResponse | null = null
   try {
-    data = JSON.parse(content) as InfographicResponse
+    data = JSON.parse(extractJson(content)) as InfographicResponse
   } catch {
     // not valid JSON
   }

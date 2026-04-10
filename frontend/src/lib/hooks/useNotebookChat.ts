@@ -23,23 +23,6 @@ interface UseNotebookChatParams {
   contextSelections: ContextSelections
 }
 
-function buildFallbackSuggestedQuestions(message: string): string[] {
-  const topic = message.trim().replace(/[?.!]+$/g, '').slice(0, 80)
-  if (!topic) {
-    return [
-      'Can you summarize this briefly?',
-      'What are the key takeaways?',
-      'What should I ask next?',
-    ]
-  }
-
-  return [
-    `Can you explain this in simpler terms: ${topic}?`,
-    `What are the most important points about ${topic}?`,
-    `Which related question should I ask next about ${topic}?`,
-  ]
-}
-
 export function useNotebookChat({ notebookId, sources, notes, contextSelections }: UseNotebookChatParams) {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
@@ -300,18 +283,10 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       console.log('🔄 [Hook] Refetching session after stream completes...')
       const updatedSession = await refetchCurrentSession()
       
-      // Ensure suggested questions are persisted even after refetch
+      // Load persisted suggestions from session after refetch
       if (updatedSession?.data?.suggested_questions) {
         console.log('💾 [Hook] Loaded persisted suggestions from session:', updatedSession.data.suggested_questions)
         setSuggestedQuestions(updatedSession.data.suggested_questions)
-      } else {
-        // UI fallback so follow-up suggestions still appear even if backend did not emit them
-        setSuggestedQuestions((prev) => {
-          if (prev.length > 0) {
-            return prev
-          }
-          return buildFallbackSuggestedQuestions(message)
-        })
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
@@ -319,13 +294,6 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
       // Remove optimistic messages on error
       setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-') && msg.id !== aiMessageId))
-      // Ensure follow-up suggestions still appear even on stream/provider failure
-      setSuggestedQuestions((prev) => {
-        if (prev.length > 0) {
-          return prev
-        }
-        return buildFallbackSuggestedQuestions(message)
-      })
     } finally {
       setIsSending(false)
     }

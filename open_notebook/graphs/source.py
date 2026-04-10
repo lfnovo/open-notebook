@@ -9,9 +9,9 @@ from content_core.common import ProcessSourceState
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
-from loguru import logger
+# from loguru import logger
 from typing_extensions import Annotated, TypedDict
-
+import logging as logger
 from open_notebook.ai.models import Model, ModelManager
 from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source

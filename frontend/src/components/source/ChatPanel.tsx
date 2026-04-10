@@ -383,14 +383,13 @@
 
 'use client'
 
-import { useState, useRef, useEffect, useId, useMemo } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -472,9 +471,36 @@ export function ChatPanel({
   const chatInputId = useId()
   const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
+  const [thinkingLabel, setThinkingLabel] = useState('Thinking...')
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isAtBottomRef = useRef(true)
+  const prevMessageCountRef = useRef(0)
+  const thinkingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { openModal } = useModalManager()
+
+  // Cycle through thinking labels while streaming
+  const THINKING_LABELS = [
+    'Thinking...',
+    'Searching documents...',
+    'Analyzing data...',
+    'Reading source...',
+    'Drafting response...',
+  ]
+  useEffect(() => {
+    if (isStreaming) {
+      let idx = 0
+      setThinkingLabel(THINKING_LABELS[0])
+      thinkingTimerRef.current = setInterval(() => {
+        idx = (idx + 1) % THINKING_LABELS.length
+        setThinkingLabel(THINKING_LABELS[idx])
+      }, 1800)
+    } else {
+      if (thinkingTimerRef.current) clearInterval(thinkingTimerRef.current)
+      setThinkingLabel('Thinking...')
+    }
+    return () => { if (thinkingTimerRef.current) clearInterval(thinkingTimerRef.current) }
+  }, [isStreaming])
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
@@ -485,10 +511,24 @@ export function ChatPanel({
     }
   }
 
-  // ✅ Streaming content આવે ત્યારે auto-scroll
+  // Track if user is scrolled to bottom
+  const handleScroll = () => {
+    const el = scrollAreaRef.current
+    if (!el) return
+    isAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+  }
+
+  // Scroll to bottom only when user sends a message (new human message added)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamingContent])
+    const newCount = messages.length
+    const lastMsg = messages[messages.length - 1]
+    // Only scroll when user sends (human message added) - not on AI response updates
+    if (newCount > prevMessageCountRef.current && lastMsg?.type === 'human') {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+      isAtBottomRef.current = true
+    }
+    prevMessageCountRef.current = newCount
+  }, [messages])
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
@@ -507,42 +547,10 @@ export function ChatPanel({
 
   const keyHint = 'Enter'
 
-  const displaySuggestedQuestions = useMemo(() => {
-    if (suggestedQuestions.length > 0) {
-      return suggestedQuestions
-    }
-
-    const lastAiMessage = [...messages]
-      .reverse()
-      .find((m) => m.type === 'ai' && m.content?.trim())?.content?.trim() || ''
-
-    const plainAi = lastAiMessage
-      .replace(/\[[^\]]+\]\([^)]+\)/g, '')
-      .replace(/[#*_`>-]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-
-    const firstSentence = plainAi.split(/[.!?]\s/)[0]?.trim() || ''
-    const topic = firstSentence.slice(0, 110)
-
-    if (!topic) {
-      return [
-        'Can you summarize this response in simple words?',
-        'What are the key points I should remember?',
-        'What should I ask next to go deeper?',
-      ]
-    }
-
-    return [
-      `Can you explain more about: ${topic}?`,
-      `What evidence supports this: ${topic}?`,
-      `What related detail should I explore next from this response?`,
-    ]
-  }, [messages, suggestedQuestions])
 
   return (
-    <>
-    <Card className="flex flex-col h-full flex-1 overflow-hidden my-2">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden">
+    <Card className="flex flex-col h-full min-h-0 overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -581,8 +589,8 @@ export function ChatPanel({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
-        <ScrollArea className="flex-1 min-h-0 px-4" ref={scrollAreaRef}>
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto px-4" ref={scrollAreaRef} onScroll={handleScroll} style={{ overflowAnchor: 'auto' }}>
           <div className="space-y-4 py-4">
             {messages.length === 0 && !isStreaming ? (
               <div className="text-center text-muted-foreground py-8">
@@ -631,22 +639,29 @@ export function ChatPanel({
                       />
                     )}
                     {message.type === 'ai' && suggestedQuestions.length > 0 && messages[messages.length - 1]?.id === message.id && (
-                      <div className="flex flex-col gap-2 mt-3">
-                        <p className="text-xs text-muted-foreground font-medium">Suggested questions:</p>
-                        <div className="flex flex-col gap-2">
-                          {suggestedQuestions.map((question, idx) => (
-                            <Button
-                              key={idx}
-                              variant="outline"
-                              size="sm"
-                              className="justify-start text-left h-auto py-2 px-3 text-xs"
-                              onClick={() => onSendMessage(question, modelOverride)}
-                              disabled={isStreaming}
-                            >
-                              <Lightbulb className="h-3 w-3 mr-2 flex-shrink-0" />
-                              <span className="line-clamp-2">{question}</span>
-                            </Button>
-                          ))}
+                      <div className="flex flex-col gap-1.5 mt-3 items-end">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Suggested questions</p>
+                        <div className="flex flex-col gap-1.5 items-end">
+                          {suggestedQuestions.map((question, idx) => {
+                            const words = question.trim().split(/\s+/)
+                            const short = words.length > 8
+                              ? words.slice(0, 8).join(' ').replace(/[.,;:!]$/, '') + '?'
+                              : question
+                            return (
+                              <Button
+                                key={idx}
+                                variant="outline"
+                                size="sm"
+                                className="justify-end text-right h-auto py-1.5 px-3 text-xs w-fit max-w-full"
+                                title={question}
+                                onClick={() => onSendMessage(question, modelOverride)}
+                                disabled={isStreaming}
+                              >
+                                <span className="whitespace-nowrap">{short}</span>
+                                <Lightbulb className="h-3 w-3 ml-2 shrink-0" />
+                              </Button>
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -662,7 +677,7 @@ export function ChatPanel({
               ))
             )}
 
-            {/* ✅ Streaming block: live tokens દેખાય છે */}
+            {/* Streaming block: live tokens or thinking state */}
             {isStreaming && (
               <div className="flex gap-3 justify-start">
                 <div className="flex-shrink-0">
@@ -672,42 +687,27 @@ export function ChatPanel({
                 </div>
                 <div className="rounded-lg px-4 py-2 bg-muted max-w-[80%]">
                   {streamingContent ? (
-                    // ✅ Content આવે ત્યારે live markdown render
                     <AIMessageContent
                       content={streamingContent}
                       onReferenceClick={handleReferenceClick}
                     />
                   ) : (
-                    // ✅ Content ન આવ્યો હોય ત્યાં સુધી spinner
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <span className="inline-flex gap-0.5">
+                        <span className="animate-bounce [animation-delay:0ms]">·</span>
+                        <span className="animate-bounce [animation-delay:150ms]">·</span>
+                        <span className="animate-bounce [animation-delay:300ms]">·</span>
+                      </span>
+                      <span className="text-xs transition-all duration-500">{thinkingLabel}</span>
+                    </div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {messages.length > 0 && !isStreaming && displaySuggestedQuestions.length > 0 && (
-              <div className="mt-6 space-y-3">
-                <p className="text-xs font-medium text-muted-foreground px-3">
-                  {t.chat.suggestedQuestions || 'Suggested questions'}
-                </p>
-                <div className="space-y-2 px-3">
-                  {displaySuggestedQuestions.map((question, idx) => (
-                    <button
-                      key={`${question}-${idx}`}
-                      onClick={() => onSendMessage(question)}
-                      disabled={isStreaming}
-                      className="w-full text-left text-sm px-4 py-3 rounded-md border border-border hover:border-primary hover:bg-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {question}
-                    </button>
-                  ))}
                 </div>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Context Indicators */}
         {contextIndicators && (
@@ -778,7 +778,7 @@ export function ChatPanel({
               className="h-[40px] w-[40px] flex-shrink-0"
             >
               {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Send className="h-4 w-4 opacity-40" />
               ) : (
                 <Send className="h-4 w-4" />
               )}
@@ -787,7 +787,7 @@ export function ChatPanel({
         </div>
       </CardContent>
     </Card>
-    </>
+    </div>
   )
 }
 

@@ -1,6 +1,6 @@
 import asyncio
 import sqlite3
-from typing import Annotated, Optional
+from typing import Annotated, AsyncIterator, Optional
 
 from ai_prompter import Prompter
 from langchain_core.messages import AIMessage, SystemMessage
@@ -9,7 +9,7 @@ from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
-
+# import logging as logger
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
@@ -29,7 +29,15 @@ class ThreadState(TypedDict):
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
-        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
+        # Limit context to first 1000 characters to speed up processing
+        context = state.get("context", "")
+        if context and len(context) > 1000:
+            context = context[:1000] + "...[truncated]"
+        
+        # Create limited state for prompt rendering
+        limited_state = {**state, "context": context}
+        
+        system_prompt = Prompter(prompt_template="chat/system").render(data=limited_state)  # type: ignore[arg-type]
         payload = [SystemMessage(content=system_prompt)] + state.get("messages", [])
         model_id = config.get("configurable", {}).get("model_id") or state.get(
             "model_override"
@@ -43,7 +51,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                 asyncio.set_event_loop(new_loop)
                 return new_loop.run_until_complete(
                     provision_langchain_model(
-                        str(payload), model_id, "chat", max_tokens=8192
+                        str(payload), model_id, "chat", max_tokens=500
                     )
                 )
             finally:
@@ -66,7 +74,7 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
                     str(payload),
                     model_id,
                     "chat",
-                    max_tokens=8192,
+                    max_tokens=500,
                 )
             )
 
@@ -85,6 +93,53 @@ def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict
         raise error_class(user_message) from e
 
 
+async def stream_model_tokens(
+    messages: list, model_id: Optional[str], state: ThreadState
+) -> AsyncIterator[str]:
+    """Stream tokens from the model as they're generated."""
+    try:
+        system_prompt = Prompter(prompt_template="chat/system").render(data=state)  # type: ignore[arg-type]
+        payload = [SystemMessage(content=system_prompt)] + messages
+
+        model = await provision_langchain_model(
+            str(payload),
+            model_id,
+            "chat",
+            max_tokens=8192,
+        )
+
+        # Stream tokens from the model
+        try:
+            # Try async streaming first
+            async for chunk in model.astream(payload):
+                if hasattr(chunk, "content"):
+                    token = chunk.content
+                    if token:  # Only yield non-empty tokens
+                        # Clean thinking tags as we stream
+                        cleaned = clean_thinking_content(token)
+                        if cleaned:
+                            yield cleaned
+        except (AttributeError, NotImplementedError):
+            # Fall back to sync streaming in thread
+            def sync_stream():
+                for chunk in model.stream(payload):
+                    if hasattr(chunk, "content"):
+                        token = chunk.content
+                        if token:
+                            cleaned = clean_thinking_content(token)
+                            if cleaned:
+                                yield cleaned
+
+            for token in sync_stream():
+                yield token
+
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        error_class, user_message = classify_error(e)
+        raise error_class(user_message) from e
+
+
 conn = sqlite3.connect(
     LANGGRAPH_CHECKPOINT_FILE,
     check_same_thread=False,
@@ -96,3 +151,5 @@ agent_state.add_node("agent", call_model_with_messages)
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 graph = agent_state.compile(checkpointer=memory)
+
+

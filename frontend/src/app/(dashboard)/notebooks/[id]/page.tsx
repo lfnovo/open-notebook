@@ -17,6 +17,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import { StudioActionsCard } from '@/components/source/StudioSection'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -219,7 +220,7 @@ export default function NotebookPage() {
 
             {/* Notes Column */}
             <div className={cn(
-              'transition-all duration-150',
+              'transition-all duration-150 flex flex-col h-full',
               notesCollapsed ? 'w-12 flex-shrink-0' : 'flex-none basis-1/3'
             )}>
               <NotesColumn
@@ -231,8 +232,8 @@ export default function NotebookPage() {
               />
             </div>
 
-            {/* Chat Column - always expanded, takes remaining space */}
-            <div className="transition-all duration-150 flex-1 min-w-0 lg:pr-6 lg:-mr-6">
+            {/* Chat Column — right side, takes remaining space */}
+            <div className="flex-1 min-w-0 h-full">
               <ChatColumn
                 notebookId={notebookId}
                 contextSelections={contextSelections}

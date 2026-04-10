@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -45,6 +46,8 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
+from api.routers import mindmap as mindmap_router
+from api.routers import infographic as infographic_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -109,10 +112,35 @@ async def lifespan(app: FastAPI):
 
     logger.success("API initialization completed successfully")
 
+    # Start Kafka mind map consumer as a background task
+    kafka_consumer_task = None
+    try:
+        from api.routers.mindmap import start_kafka_consumer
+        kafka_consumer_task = asyncio.create_task(start_kafka_consumer())
+        logger.info("Kafka mind map consumer task started")
+    except Exception as e:
+        logger.warning(f"Could not start Kafka consumer task: {e}")
+
+    # Start Kafka infographic consumer as a background task
+    kafka_infographic_task = None
+    try:
+        from api.routers.infographic import start_kafka_consumer as start_infographic_consumer
+        kafka_infographic_task = asyncio.create_task(start_infographic_consumer())
+        logger.info("Kafka infographic consumer task started")
+    except Exception as e:
+        logger.warning(f"Could not start Kafka infographic consumer task: {e}")
+
     # Yield control to the application
     yield
 
-    # Shutdown: cleanup if needed
+    # Shutdown: cancel Kafka consumers
+    for task in [kafka_consumer_task, kafka_infographic_task]:
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
     logger.info("API shutdown complete")
 
 
@@ -280,6 +308,8 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(mindmap_router.router, prefix="/api", tags=["mindmap"])
+app.include_router(infographic_router.router, prefix="/api", tags=["infographic"])
 
 
 @app.get("/")

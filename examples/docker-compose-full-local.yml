@@ -42,7 +42,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     ports:
-      - "11434:11434"
+      - "11435:11434"
     volumes:
       - ollama_models:/root/.ollama
     restart: always
@@ -84,7 +84,8 @@ services:
       - SURREAL_DATABASE=open_notebook
 
       # Ollama connection (optional, can also configure via UI)
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_BASE_URL=http://127.0.0.1:11435
+      - OLLAMA_API_URL=http://127.0.0.1:11435
     volumes:
       - ./notebook_data:/app/data
     depends_on:

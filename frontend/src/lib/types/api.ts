@@ -160,6 +160,7 @@ export interface SourceChatContextIndicator {
 export interface SourceChatSessionWithMessages extends SourceChatSession {
   messages: SourceChatMessage[]
   context_indicators?: SourceChatContextIndicator
+  suggested_questions?: string[]
 }
 
 export interface CreateSourceChatSessionRequest {
@@ -200,6 +201,7 @@ export interface NotebookChatMessage {
 
 export interface NotebookChatSessionWithMessages extends NotebookChatSession {
   messages: NotebookChatMessage[]
+  suggested_questions?: string[]
 }
 
 export interface CreateNotebookChatSessionRequest {

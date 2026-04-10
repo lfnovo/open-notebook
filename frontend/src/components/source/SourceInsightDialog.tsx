@@ -10,6 +10,11 @@ import remarkGfm from 'remark-gfm'
 import { useInsight } from '@/lib/hooks/use-insights'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { MindMapInsightViewer, isMindMapInsight } from '@/components/source/MindMapInsightViewer'
+import { BankAnalysisInsightViewer, isBankAnalysisInsight } from '@/components/source/BankAnalysisInsightViewer'
+import { InfographicInsightViewer, isInfographicInsight } from '@/components/source/InfographicInsightViewer'
+import { TimelineAnalysisInsightViewer, isTimelineAnalysisInsight } from '@/components/source/TimelineAnalysisInsightViewer'
+import { InvestigativeProfileInsightViewer, isInvestigativeProfileInsight } from '@/components/source/InvestigativeProfileInsightViewer'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -43,6 +48,17 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   // Get source_id from fetched data (preferred) or passed-in insight
   const sourceId = fetchedInsight?.source_id ?? insight?.source_id
 
+  // Detect mind-map insight
+  const isMindMap = !!(displayInsight?.insight_type && isMindMapInsight(displayInsight.insight_type))
+  // Detect bank analysis insight
+  const isBankAnalysis = !!(displayInsight?.insight_type && isBankAnalysisInsight(displayInsight.insight_type))
+  // Detect infographic insight
+  const isInfographic = !!(displayInsight?.insight_type && isInfographicInsight(displayInsight.insight_type))
+  // Detect timeline analysis insight
+  const isTimeline = !!(displayInsight?.insight_type && isTimelineAnalysisInsight(displayInsight.insight_type))
+  // Detect investigative profile insight
+  const isInvestigativeProfile = !!(displayInsight?.insight_type && isInvestigativeProfileInsight(displayInsight.insight_type))
+
   const handleViewSource = () => {
     if (sourceId) {
       openModal('source', sourceId)
@@ -70,8 +86,9 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      {/* Wider dialog for mind-map insights so the graph has room */}
+      <DialogContent className={`flex flex-col max-h-[90vh] ${isMindMap ? 'sm:max-w-7xl w-[95vw] h-[85vh]' : isBankAnalysis ? 'sm:max-w-5xl w-[90vw]' : isInfographic ? 'sm:max-w-4xl w-[90vw]' : isTimeline ? 'sm:max-w-5xl w-[90vw]' : isInvestigativeProfile ? 'sm:max-w-4xl w-[90vw]' : 'sm:max-w-3xl'}`}>
+        <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>{t.sources.sourceInsight}</span>
             <div className="flex items-center gap-2">
@@ -125,25 +142,47 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                 <span className="text-sm text-muted-foreground">{t.common.loading}</span>
               </div>
             ) : displayInsight ? (
-              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    table: ({ children }) => (
-                      <div className="my-4 overflow-x-auto">
-                        <table className="min-w-full border-collapse border border-border">{children}</table>
-                      </div>
-                    ),
-                    thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
-                    tbody: ({ children }) => <tbody>{children}</tbody>,
-                    tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-                    th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
-                    td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-                  }}
-                >
-                  {displayInsight.content}
-                </ReactMarkdown>
-              </div>
+              isMindMap && sourceId ? (
+                /* ── Mind-map insight: interactive graph viewer ── */
+                <MindMapInsightViewer
+                  content={displayInsight.content ?? ''}
+                  sourceId={sourceId}
+                  title={displayInsight.insight_type}
+                />
+              ) : isBankAnalysis ? (
+                /* ── Bank Analysis Profile: structured dashboard ── */
+                <BankAnalysisInsightViewer content={displayInsight.content ?? ''} />
+              ) : isInfographic ? (
+                /* ── Infographic: structured card layout ── */
+                <InfographicInsightViewer content={displayInsight.content ?? ''} />
+              ) : isTimeline ? (
+                /* ── Timeline Analysis: communication log dashboard ── */
+                <TimelineAnalysisInsightViewer content={displayInsight.content ?? ''} />
+              ) : isInvestigativeProfile ? (
+                /* ── Investigative Profile: structured intelligence dashboard ── */
+                <InvestigativeProfileInsightViewer content={displayInsight.content ?? ''} />
+              ) : (
+                /* ── Regular insight: markdown renderer ── */
+                <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      table: ({ children }) => (
+                        <div className="my-4 overflow-x-auto">
+                          <table className="min-w-full border-collapse border border-border">{children}</table>
+                        </div>
+                      ),
+                      thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
+                      tbody: ({ children }) => <tbody>{children}</tbody>,
+                      tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
+                      th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
+                      td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
+                    }}
+                  >
+                    {displayInsight.content}
+                  </ReactMarkdown>
+                </div>
+              )
             ) : (
               <p className="text-sm text-muted-foreground">{t.sources.noInsightSelected}</p>
             )}

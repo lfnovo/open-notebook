@@ -1,199 +1,7 @@
-# services:
-
-#   surrealdb:
-#     image: surrealdb/surrealdb:v2
-#     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
-#     user: root  # Required for bind mounts on Linux
-#     ports:
-#       - "8000:8000"
-#     volumes:
-#       - ./surreal_data:/mydata
-#     environment:
-#       - SURREAL_EXPERIMENTAL_GRAPHQL=true
-#     restart: always
-#     pull_policy: always
-
-#   kafka:
-#     image: confluentinc/cp-kafka:latest
-#     container_name: kavach-kafka
-#     ports:
-#       - "9093:9093"
-#       - "29093:29093"
-#     environment:
-#       KAFKA_NODE_ID: 1
-#       KAFKA_PROCESS_ROLES: 'broker,controller'
-#       KAFKA_CONTROLLER_QUORUM_VOTERS: '1@localhost:29094'
-#       KAFKA_LISTENERS: 'CONTROLLER://localhost:29094,PLAINTEXT://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29093'
-#       KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:29093'
-#       KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-#       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-#       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-#       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-#       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-#       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-#       KAFKA_LOG_DIRS: '/var/lib/kafka/data'
-#     volumes:
-#       - kafka_data:/var/lib/kafka/data
-#     networks:
-#       - default
-#     restart: always
-
-#   open_notebook:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile
-#       args:
-#         BUILDKIT_INLINE_CACHE: 0
-#     ports:
-#       - "3001:8502"  # Web UI (also accessible on :8502 via the alias below)
-#       - "8502:8502"  # Web UI legacy port
-#       - "5055:5055"  # REST API
-#     extra_hosts:
-#       - "host.docker.internal:host-gateway"
-#     environment:
-#       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-#       - SURREAL_URL=ws://surrealdb:8000/rpc
-#       - SURREAL_USER=root
-#       - SURREAL_PASSWORD=root
-#       - SURREAL_NAMESPACE=open_notebook
-#       - SURREAL_DATABASE=open_notebook
-#       - OLLAMA_BASE_URL=http://host.docker.internal:11434
-#       - OLLAMA_API_URL=http://host.docker.internal:11434
-#       - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
-#       - GIT_PYTHON_REFRESH=quiet
-#     volumes:
-#       - ./notebook_data:/app/data
-#     depends_on:
-#       - surrealdb
-#       - kafka
-#     restart: always
-
-
-# volumes:
-#   kafka_data:
-
-# devices:
-#       - /dev/dri/card1:/dev/dri/card1
-
-
-
-
-
-# services:
-#   surrealdb:
-#     image: surrealdb/surrealdb:v2
-#     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
-#     user: root
-#     ports:
-#       - "8000:8000"
-#     volumes:
-#       - ./surreal_data:/mydata
-#     environment:
-#       - SURREAL_EXPERIMENTAL_GRAPHQL=true
-#     restart: always
-
-#   kafka:
-#     image: confluentinc/cp-kafka:latest
-#     container_name: kavach-kafka
-#     ports:
-#       - "9093:9093"
-#       - "29093:29093"
-#     environment:
-#       KAFKA_NODE_ID: 1
-#       KAFKA_PROCESS_ROLES: "broker,controller"
-#       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:29094"
-#       KAFKA_LISTENERS: "CONTROLLER://localhost:29094,PLAINTEXT://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29093"
-#       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:29093"
-#       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
-#       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-#       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
-#       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-#       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-#       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-#       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
-#     volumes:
-#       - kafka_data:/var/lib/kafka/data
-#     restart: always
-
-#   open_notebook:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile
-
-#     # ✅ Intel GPU (VAAPI)
-#     runtime: nvidia
-#     # group_add:
-#     #   - video
-#     #   - render
-      
-
-#     ports:
-#       - "3001:8502"
-#       - "8502:8502"
-#       - "5055:5055"
-
-#     extra_hosts:
-#       - "host.docker.internal:host-gateway"
-
-#     environment:
-#       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-#       - SURREAL_URL=ws://surrealdb:8000/rpc
-#       - SURREAL_USER=root
-#       - SURREAL_PASSWORD=root
-#       - SURREAL_NAMESPACE=open_notebook
-#       - SURREAL_DATABASE=open_notebook
-#       - OLLAMA_BASE_URL=http://ollama:11434
-#       - OLLAMA_API_URL=http://ollama:11434
-#       - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
-#       - GIT_PYTHON_REFRESH=quiet
-#       - LIBVA_DRIVER_NAME=iHD
-#       - LIBVA_DRIVERS_PATH=/usr/lib/x86_64-linux-gnu/dri
-#       - DRI_PRIME=0
-
-#     volumes:
-#       - ./notebook_data:/app/data
-
-#     depends_on:
-#       - surrealdb
-#       - kafka
-
-
-
-#       - ollama
-#     restart: always
-
-#   ollama:
-#     image: ollama/ollama:latest
-#     runtime: nvidia
-#     ports:
-#       - "11435:11434"
-#     volumes:
-#       - ollama_models:/root/.ollama
-#     environment:
-#       - NVIDIA_VISIBLE_DEVICES=all
-#       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-#     deploy:
-#       resources:
-#         reservations:
-#           devices:
-#             - driver: nvidia
-#               count: all
-#               capabilities: [gpu]
-#     restart: unless-stopped
-
-# volumes:
-#   kafka_data:
-#   ollama_models:
-
-
-
 version: "3.9"
 
 services:
+
   surrealdb:
     image: surrealdb/surrealdb:v2
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
@@ -203,7 +11,7 @@ services:
     volumes:
       - ./surreal_data:/mydata
     environment:
-      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+      SURREAL_EXPERIMENTAL_GRAPHQL: "true"
     restart: always
 
   kafka:
@@ -213,7 +21,7 @@ services:
       - "9093:9093"
       - "29093:29093"
     environment:
-      KAFKA_NODE_ID: 1
+      KAFKA_NODE_ID: "1"
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:29094"
       KAFKA_LISTENERS: "CONTROLLER://localhost:29094,PLAINTEXT://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29093"
@@ -222,21 +30,55 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
       KAFKA_LOG_DIRS: "/var/lib/kafka/data"
     volumes:
       - kafka_data:/var/lib/kafka/data
+    restart: always
+
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: all
+  #             capabilities: [gpu]
+  #   environment:
+  #     NVIDIA_VISIBLE_DEVICES: "all"
+  #     NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+  #   restart: always
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+
+    ports:
+      - "11434:11434"
+
+    gpus: all   # ✅ THIS enables GPU (GPU 0 automatically)
+
+    volumes:
+      - ollama_models:/root/.ollama
+
+    environment:
+      NVIDIA_VISIBLE_DEVICES: "0"   # ✅ Force GPU 0
+      NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
     restart: always
 
   open_notebook:
     build:
       context: .
       dockerfile: Dockerfile
-
-    runtime: nvidia
 
     ports:
       - "3001:8502"
@@ -247,19 +89,16 @@ services:
       - "host.docker.internal:host-gateway"
 
     environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
-      - SURREAL_URL=ws://surrealdb:8000/rpc
-      - SURREAL_USER=root
-      - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
-      - OLLAMA_BASE_URL=http://ollama:11434
-      - OLLAMA_API_URL=http://ollama:11434
-      - KAFKA_BOOTSTRAP_SERVERS=kafka:9093
-      - GIT_PYTHON_REFRESH=quiet
-
-      # ⚡ PERFORMANCE
-      - OLLAMA_MODEL=mistral:7b-instruct
+      OPEN_NOTEBOOK_ENCRYPTION_KEY: "change-me-to-a-secret-string"
+      SURREAL_URL: "ws://surrealdb:8000/rpc"
+      SURREAL_USER: "root"
+      SURREAL_PASSWORD: "root"
+      SURREAL_NAMESPACE: "open_notebook"
+      SURREAL_DATABASE: "open_notebook"
+      OLLAMA_BASE_URL: "http://ollama:11434"
+      OLLAMA_API_URL: "http://ollama:11434"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9093"
+      GIT_PYTHON_REFRESH: "quiet"
 
     volumes:
       - ./notebook_data:/app/data
@@ -267,43 +106,8 @@ services:
     depends_on:
       - surrealdb
       - kafka
-      - ollama
-
     restart: always
 
-  ollama:
-    image: ollama/ollama:latest
-
-    runtime: nvidia
-
-    ports:
-      - "11435:11434"
-
-    volumes:
-      - ollama_models:/root/.ollama
-
-    environment:
-      # ✅ GPU ENABLE
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-
-      # 🔥 FORCE GPU USAGE
-      - OLLAMA_GPU_LAYERS=999
-
-      # ⚡ SPEED OPTIMIZATION
-      - OLLAMA_NUM_PARALLEL=1
-      - OLLAMA_MAX_LOADED_MODELS=1
-
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-    restart: unless-stopped
-
 volumes:
-  kafka_data:
-  ollama_models:
+  kafka_data: {}
+  ollama_models: {}

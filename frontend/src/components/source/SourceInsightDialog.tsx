@@ -87,7 +87,8 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {/* Wider dialog for mind-map insights so the graph has room */}
-      <DialogContent className={`flex flex-col max-h-[98vh] ${isMindMap ? 'sm:max-w-[98vw] w-[98vw] h-[95vh]' : isBankAnalysis ? 'sm:max-w-5xl w-[90vw]' : isInfographic ? 'sm:max-w-4xl w-[90vw]' : isTimeline ? 'sm:max-w-5xl w-[90vw]' : isInvestigativeProfile ? 'sm:max-w-4xl w-[90vw]' : 'sm:max-w-3xl'}`}>
+      <DialogContent className={`flex flex-col max-h-[98vh] ${isMindMap ? 'sm:max-w-[98vw] w-[98vw] h-[95vh]' : isBankAnalysis ? 'sm:max-w-5xl w-[90vw]' : isInfographic ? 'sm:max-w-[95vw] w-[95vw] h-[95vh]' : isTimeline ? 'sm:max-w-5xl w-[90vw]' : isInvestigativeProfile ? 'sm:max-w-4xl w-[90vw]' : 'sm:max-w-3xl'}`}>
+
         <DialogHeader className="shrink-0">
           <DialogTitle className="flex items-center justify-between gap-2">
             <span>{t.sources.sourceInsight}</span>

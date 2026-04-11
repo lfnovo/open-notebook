@@ -122,7 +122,8 @@ export function InfographicDialog({ sourceId, sourceTitle, open, onOpenChange }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto p-0">
+      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] overflow-y-auto p-0 border-none bg-transparent shadow-none">
+
         {/* Sticky header */}
         <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b px-6 py-4">
           <DialogHeader>

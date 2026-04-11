@@ -39,41 +39,41 @@ services:
       - kafka_data:/var/lib/kafka/data
     restart: always
 
-  # ollama:
-  #   image: ollama/ollama:latest
-  #   ports:
-  #     - "11434:11434"
-  #   volumes:
-  #     - ollama_models:/root/.ollama
-  #   deploy:
-  #     resources:
-  #       reservations:
-  #         devices:
-  #           - driver: nvidia
-  #             count: all
-  #             capabilities: [gpu]
-  #   environment:
-  #     NVIDIA_VISIBLE_DEVICES: "all"
-  #     NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
-  #   restart: always
-
   ollama:
     image: ollama/ollama:latest
-    container_name: ollama
-
     ports:
       - "11434:11434"
-
-    gpus: all   # ✅ THIS enables GPU (GPU 0 automatically)
-
     volumes:
       - ollama_models:/root/.ollama
-
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     environment:
-      NVIDIA_VISIBLE_DEVICES: "0"   # ✅ Force GPU 0
+      NVIDIA_VISIBLE_DEVICES: "all"
       NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+    restart: unless-stopped
 
-    restart: always
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: ollama
+
+  #   ports:
+  #     - "11434:11434"
+
+  #   gpus: all   # ✅ THIS enables GPU (GPU 0 automatically)
+
+  #   volumes:
+  #     - ollama_models:/root/.ollama
+
+  #   environment:
+  #     NVIDIA_VISIBLE_DEVICES: "0"   # ✅ Force GPU 0
+  #     NVIDIA_DRIVER_CAPABILITIES: "compute,utility"
+
+  #   restart: always
 
   open_notebook:
     build:

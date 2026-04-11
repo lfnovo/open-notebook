@@ -114,11 +114,8 @@ RUN /app/.venv/bin/python -m spacy download en_core_web_sm && \
     /app/.venv/bin/python -c "\
 import nltk; \
 nltk.download('punkt', quiet=True); \
-nltk.download('punkt_tab', quiet=True); \
 nltk.download('averaged_perceptron_tagger', quiet=True); \
-nltk.download('averaged_perceptron_tagger_eng', quiet=True); \
 nltk.download('maxent_ne_chunker', quiet=True); \
-nltk.download('maxent_ne_chunker_tab', quiet=True); \
 nltk.download('words', quiet=True)"
 
 # Copy and make executable the wait-for-api script

@@ -1,18 +1,20 @@
 'use client'
 
 import React, { useMemo } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import {
   InfographicResponse,
   InfographicColumn,
-  InfographicHighlight,
 } from '@/lib/api/infographic'
 import {
   Info, Calendar, Target, Briefcase, AlertTriangle, Network,
   User, Building, Shield, Activity, BookOpen, BarChart2, MapPin,
   Scale, Lightbulb, FileText, Users, Zap, Sparkles,
-  Link2, Globe, TrendingUp, Search, Eye, ShieldCheck,
-  ChevronRight, ArrowRight, Fingerprint, Layers, GraduationCap,
-  Gavel, Share2, Box
+  Search, Eye, ShieldCheck,
+  Fingerprint, Layers, GraduationCap,
+  Share2, Box, Trophy, Landmark, Lock, Globe,
+  ShieldAlert, Database, History, TrendingUp, Cpu
 } from 'lucide-react'
 
 interface InfographicInsightViewerProps {
@@ -25,323 +27,315 @@ export function isInfographicInsight(insightType: string): boolean {
   return insightType.toLowerCase().includes('infographic')
 }
 
-// ── styles ──────────────────────────────────────────────────────────────────
+// ── helper: cleaning ─────────────────────────────────────────────────────────
 
-const THEME = {
-  bg: '#f3f0e8',
-  text: '#1a1a1a',
-  accent: '#964b3c', // Rust Red
-  secondary: '#2c4c58', // Deep Teal
-  muted: '#d9d2c5',
+function stripMarkdownSymbols(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/\*{1,3}/g, '') // remove *, **, ***
+    .replace(/_{1,3}/g, '')  // remove _, __, ___
+    .replace(/#+\s/g, '')    // remove # headers
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // remove links but keep text
+    .replace(/^[•\-\*]\s+/, '') // remove bullet points
+    .replace(/\+\+/g, '')    // remove logical artifacts
+    .trim()
+}
+
+function parseDataRow(line: string): [string, string] | null {
+  const trimmed = line.trim().replace(/^[•\-\*\+]{1,2}\s*/, '')
+  const colonIndex = trimmed.indexOf(':')
+  
+  if (colonIndex > 0 && colonIndex < trimmed.length - 1) {
+    const rawLabel = trimmed.substring(0, colonIndex)
+    const rawValue = trimmed.substring(colonIndex + 1)
+    
+    const label = stripMarkdownSymbols(rawLabel)
+    const value = stripMarkdownSymbols(rawValue)
+    
+    if (label && value && label.length < 40) return [label, value]
+  }
+  return null
 }
 
 // ── visuals ──────────────────────────────────────────────────────────────────
 
-function NetworkGraph() {
+function NetworkNodeDiagram() {
   return (
-    <div className="relative w-40 h-32 mx-auto overflow-visible">
-      <svg className="absolute inset-0 w-full h-full text-[#2c4c58]/80">
-        <line x1="20%" y1="20%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="80%" y1="30%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="30%" y1="80%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="70%" y1="70%" x2="50%" y2="50%" stroke="currentColor" strokeWidth="1.5" />
-        <line x1="80%" y1="30%" x2="70%" y2="70%" stroke="currentColor" strokeWidth="1.5" />
-        
+    <div className="relative w-full h-44 bg-slate-50 border border-slate-100 rounded-sm overflow-hidden p-6">
+      <svg className="w-full h-full text-slate-200">
+        <path d="M 20 20 L 50 50 L 80 20 M 50 50 L 50 85" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="3 3" />
         <circle cx="20%" cy="20%" r="5" fill="#964b3c" />
-        <circle cx="80%" cy="30%" r="6" fill="#1a1a1a" />
-        <circle cx="30%" cy="80%" r="5" fill="#1a1a1a" />
-        <circle cx="70%" cy="70%" r="5" fill="#2c4c58" />
-        <circle cx="50%" cy="50%" r="10" fill="#964b3c" stroke="white" strokeWidth="2" />
-        <Users className="text-white h-3 w-3 absolute" style={{ left: '46%', top: '46%' }} />
+        <circle cx="80%" cy="20%" r="5" fill="#334155" />
+        <circle cx="50%" cy="85%" r="5" fill="#334155" />
+        <circle cx="50%" cy="50%" r="12" fill="#964b3c" stroke="white" strokeWidth="3" />
+        <foreignObject x="43%" y="43%" width="14" height="14">
+          <div className="flex items-center justify-center w-full h-full text-white">
+            <Users size={10} />
+          </div>
+        </foreignObject>
       </svg>
     </div>
   )
 }
 
-function IsometricCube({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center gap-1 group">
-      <div className="relative w-12 h-14 transition-transform group-hover:-translate-y-1">
-        {/* Simplified ISO CSS Cube using absolute shapes */}
-        <div className="absolute top-0 left-[15%] w-[70%] h-[40%] bg-[#bcaaa4] transform transition-colors" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
-        <div className="absolute top-[20%] left-[15%] w-[35%] h-[60%] bg-[#8d6e63]" style={{ clipPath: 'polygon(0% 0%, 100% 33%, 100% 100%, 0% 66%)' }} />
-        <div className="absolute top-[20%] right-[15%] w-[35%] h-[60%] bg-[#6d4c41]" style={{ clipPath: 'polygon(0% 33%, 100% 0%, 100% 66%, 0% 100%)' }} />
-      </div>
-      <span className="text-[10px] font-bold text-center leading-tight uppercase tracking-tight">{label}</span>
-    </div>
-  )
-}
+// ── core sub-components ─────────────────────────────────────────────────────
 
-// ── helper components ───────────────────────────────────────────────────────
-
-function FormattedText({ text, className = "" }: { text: string; className?: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g)
-  return (
-    <span className={className}>
-      {parts.map((p, i) =>
-        p.startsWith('**') && p.endsWith('**') ? (
-          <strong key={i} className="font-extrabold text-black uppercase">
-            {p.slice(2, -2)}
-          </strong>
-        ) : (
-          <span key={i}>{p}</span>
-        )
-      )}
-    </span>
-  )
-}
-
-function SectionContainer({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={`relative mt-8 pt-4 pb-6 px-5 border-2 border-black/80 rounded-sm bg-white/5 ${className}`}>
-      <div className="absolute -top-4 left-4 bg-black text-white px-3 py-1 font-black uppercase text-[11px] tracking-widest shadow-sm">
-        {title}
-      </div>
-      {children}
-    </div>
-  )
-}
-
-function TimelineEvent({ year, description, isRight }: { year: string; description: string; isRight: boolean }) {
-  return (
-    <div className={`relative flex items-center mb-10 ${isRight ? 'flex-row' : 'flex-row-reverse'}`}>
-      {/* Date */}
-      <div className={`w-[45%] ${isRight ? 'text-right pr-6' : 'text-left pl-6'}`}>
-        <p className="font-black text-lg md:text-xl text-[#1a1a1a] tracking-tight">{year}</p>
-      </div>
-      
-      {/* Central Node */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <div className="w-4 h-4 rounded-full border-[3px] border-black bg-white z-10" />
-        <div className="w-1.5 h-16 bg-black/80 -mb-1" />
-      </div>
-
-      {/* Description */}
-      <div className={`w-[45%] ${isRight ? 'text-left pl-6' : 'text-right pr-6'}`}>
-        <div className={`p-4 bg-white/40 border border-black/10 rounded-sm shadow-sm transition-transform hover:scale-[1.02]`}>
-          <p className="text-xs text-slate-700 leading-relaxed font-medium">
-            <FormattedText text={description} />
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── main views ───────────────────────────────────────────────────────────────
-
-function InfographicView({ data }: { data: InfographicResponse }) {
-  const header = data.header ?? { title: 'INTEL PROFILE', subtitle: '' }
+function MarkdownContent({ content }: { content: string }) {
+  const lines = content.split('\n').filter(l => l.trim())
+  const dataRows: [string, string][] = []
+  const remainingLines: string[] = []
   
-  // Combine all items into a pool for specific placement
+  lines.forEach(line => {
+    const row = parseDataRow(line)
+    if (row) dataRows.push(row)
+    else remainingLines.push(line)
+  })
+
+  return (
+    <div className="space-y-4">
+      {dataRows.length > 0 && (
+        <div className="grid grid-cols-1 gap-y-3">
+          {dataRows.map(([label, value], i) => (
+            <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 group">
+               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 min-w-[120px] pt-0.5">
+                  {label}
+               </span>
+               <span className="text-[13px] font-bold text-slate-900 flex-1 leading-tight tracking-tight">
+                  {value}
+               </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {remainingLines.length > 0 && (
+        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none 
+          prose-p:leading-relaxed prose-p:my-1.5 
+          prose-strong:text-slate-950 prose-strong:font-black
+          text-[13px] font-medium text-slate-700">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {remainingLines.join('\n')}
+          </ReactMarkdown>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GridSection({ title, children, icon: Icon, className = "" }: { title: string; children: React.ReactNode; icon?: any; className?: string }) {
+  if (!children) return null
+  return (
+    <div className={`flex flex-col h-full bg-white border border-slate-100 rounded-none overflow-hidden shadow-sm ${className}`}>
+      <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="text-[#964b3c]">
+            {Icon && <Icon size={14} />}
+          </div>
+          <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-900">
+            {title}
+          </h3>
+        </div>
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+      </div>
+      <div className="p-8 flex-1">
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function TimelineItem({ year, description }: { year: string; description: string }) {
+  return (
+    <div className="relative pl-10 pb-12 last:pb-0 group">
+      <div className="absolute left-[3px] top-0 bottom-0 w-[1.5px] bg-slate-100 group-last:bottom-auto group-last:h-4" />
+      <div className="absolute left-0 top-1.5 w-2 h-2 rounded-full border-2 border-slate-900 bg-white z-10" />
+      
+      <div className="flex flex-col gap-3">
+         <span className="text-[11px] font-black tracking-widest text-[#964b3c] uppercase">{year}</span>
+         <div className="bg-slate-50/30 p-4 border border-slate-100 rounded-sm">
+            <MarkdownContent content={description} />
+         </div>
+      </div>
+    </div>
+  )
+}
+
+// ── main dashboard view ─────────────────────────────────────────────────────
+
+function InfographicDashboard({ data }: { data: InfographicResponse }) {
+  const headerTitleCombined = data.header?.title || 'Infographic View'
+  const mainTitle = stripMarkdownSymbols(headerTitleCombined)
+  const subTitle = stripMarkdownSymbols(data.header?.subtitle || '')
+
   const items = useMemo(() => [
     ...(data.left_column ?? []),
     ...(data.right_column ?? [])
   ], [data.left_column, data.right_column])
 
-  // Extract timeline items (any item with a year in title or desc)
   const timelineItems = useMemo(() => {
     return items.filter(it => it.title.match(/\d{4}/) || it.description.match(/\d{4}/))
   }, [items])
 
   const profileItems = useMemo(() => {
-    return items.filter(it => !timelineItems.includes(it) && (it.icon === 'family' || it.icon === 'education' || it.title.toLowerCase().includes('identity') || it.title.toLowerCase().includes('origin')))
+    return items.filter(it => !timelineItems.includes(it) && 
+      (it.icon === 'family' || it.icon === 'education' || 
+       it.title.toLowerCase().includes('identity') || 
+       it.title.toLowerCase().includes('origin')))
   }, [items, timelineItems])
 
-  const operationItems = useMemo(() => {
+  const operationsItems = useMemo(() => {
     return items.filter(it => !timelineItems.includes(it) && !profileItems.includes(it))
   }, [items, timelineItems, profileItems])
 
   return (
-    <div className="bg-[#f3f0e8] text-[#1a1a1a] p-4 md:p-10 font-sans min-h-screen relative overflow-hidden">
-      {/* Decorative vertical lines */}
-      <div className="absolute top-0 right-10 bottom-0 w-px bg-black/5 pointer-events-none" />
-      <div className="absolute top-0 left-10 bottom-0 w-px bg-black/5 pointer-events-none" />
-
-      {/* ── Header ── */}
-      <header className="max-w-6xl mx-auto mb-16 pt-8 text-center md:text-left flex flex-col md:flex-row justify-between items-end gap-6">
-        <div className="flex-1">
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-[0.9] mb-4">
-            {header.title.split(':').map((part, i) => (
-              <span key={i} className={i === 0 ? "block" : "block text-[#964b3c]"}>
-                {part.trim()}
-              </span>
-            ))}
-          </h1>
-          <p className="text-lg md:text-xl font-bold uppercase tracking-[0.1em] text-black/60 max-w-2xl leading-tight">
-            {header.subtitle}
-          </p>
-        </div>
-        <div className="hidden md:block w-32 h-px bg-black" />
-        <div className="text-right">
-            <p className="text-[10px] font-black tracking-widest uppercase opacity-40 mb-1">Source ID: {data.source_id.slice(0, 8)}</p>
-            <div className="bg-black text-white px-4 py-2 font-black italic transform -skew-x-12 uppercase text-xs">Verified Intel Report</div>
+    <div className="bg-white text-slate-900 font-sans min-h-screen relative p-10 lg:p-14 selection:bg-[#964b3c] selection:text-white">
+      
+      {/* ── Main Header ── */ }
+      <header className="mb-16 px-4">
+        <div className="flex flex-col lg:flex-row items-end justify-between gap-12 border-b-2 border-slate-900 pb-12">
+          <div className="flex-1">
+             <h1 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter leading-[0.85] text-slate-900">
+                {mainTitle.includes(':') ? (
+                  mainTitle.split(':').map((w, i) => (
+                    <span key={i} className={`block ${i === 1 ? 'text-[#964b3c] mt-2' : ''}`}>{w.trim()}</span>
+                  ))
+                ) : (
+                  <span>{mainTitle}</span>
+                )}
+             </h1>
+          </div>
+          
+          {subTitle && (
+            <div className="lg:w-2/5 text-right">
+               <p className="text-md md:text-lg font-bold italic text-slate-400 uppercase tracking-wide leading-tight border-r-4 border-[#964b3c] pr-8">
+                  {subTitle}
+               </p>
+            </div>
+          )}
         </div>
       </header>
 
-      {/* ── Main Layout ── (3 Columns) */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      {/* ── Clean Landscape Grid ── */}
+      <main className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         
-        {/* LEFT COLUMN: Profile & Origins */}
-        <div className="lg:col-span-3 space-y-4">
-          <SectionContainer title="Identity Profile">
-            <div className="space-y-8 py-4">
-              {profileItems.slice(0, 4).map((it, i) => (
-                <div key={i} className="group">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-black text-white rounded-sm group-hover:scale-110 transition-transform">
-                      {it.icon === 'family' ? <Users size={16} /> : it.icon === 'education' ? <GraduationCap size={16} /> : <Target size={16} />}
-                    </div>
-                    <h4 className="font-black text-xs uppercase tracking-wider">{it.title}</h4>
+        {/* Profile (3/12) */}
+        <div className="lg:col-span-3 space-y-8">
+          <GridSection title="Subject Profile" icon={User}>
+            <div className="space-y-12 py-2">
+              {profileItems.slice(0, 10).map((it, i) => (
+                <div key={i}>
+                   <h4 className="font-black text-[10px] uppercase tracking-widest text-[#964b3c] mb-5 border-l-2 border-[#964b3c] pl-4">
+                      {stripMarkdownSymbols(it.title)}
+                   </h4>
+                   <MarkdownContent content={it.description} />
+                </div>
+              ))}
+            </div>
+          </GridSection>
+        </div>
+
+        {/* Timeline (5/12) */}
+        <div className="lg:col-span-5">
+          <GridSection title="Temporal Events" icon={History}>
+             <div className="mt-8">
+               {timelineItems.length > 0 ? (
+                 timelineItems.map((it, i) => {
+                   const yearMatch = it.title.match(/(\d{4})/) || it.description.match(/(\d{4})/)
+                   const year = yearMatch ? yearMatch[1] : `PHASE ${i + 1}`
+                   return <TimelineItem key={i} year={year} description={it.description || it.title} />
+                 })
+               ) : (
+                <div className="h-40 flex flex-col items-center justify-center text-slate-200 border-2 border-dashed border-slate-50 gap-4">
+                   <p className="font-black uppercase text-[10px] tracking-widest italic opacity-50">No temporal data found</p>
+                </div>
+               )}
+             </div>
+          </GridSection>
+        </div>
+
+        {/* Details (4/12) */}
+        <div className="lg:col-span-4 space-y-8">
+           <GridSection title="Data Metrics" icon={BarChart2}>
+             {data.stat && (
+               <div className="flex items-end gap-5 mb-14">
+                  <div className="text-7xl font-black tracking-tighter text-slate-900 leading-none">
+                     {data.stat.value}
                   </div>
-                  <p className="text-[13px] leading-relaxed opacity-80 font-medium pl-10 border-l border-black/10">
-                    {it.description}
-                  </p>
-                </div>
-              ))}
-              {!profileItems.length && (
-                  <div className="text-[10px] italic opacity-40">No profile tags provided</div>
-              )}
-            </div>
-          </SectionContainer>
-        </div>
-
-        {/* MIDDLE COLUMN: Timeline of Criminal Evolution */}
-        <div className="lg:col-span-5 relative">
-          <div className="flex flex-col items-center mb-8">
-            <div className="bg-white border-2 border-black px-6 py-3 font-black uppercase text-sm tracking-widest shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
-              Chronological Path (2006—2024)
-            </div>
-          </div>
-          
-          <div className="relative pt-10">
-            {timelineItems.length > 0 ? timelineItems.map((it, i) => {
-               const yearMatch = it.title.match(/(\d{4})/) || it.description.match(/(\d{4})/)
-               const year = yearMatch ? yearMatch[1] : `Phase ${i+1}`
-               return (
-                 <TimelineEvent key={i} year={year} description={it.description || it.title} isRight={i % 2 === 0} />
-               )
-            }) : (
-                <div className="h-60 flex items-center justify-center border border-dashed border-black/20 rounded-lg">
-                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-30">No timeline data extracted</p>
-                </div>
-            )}
-            
-            {/* Terminal Point */}
-            <div className="flex justify-center -mt-6">
-                <div className="w-10 h-10 rounded-full border-4 border-black bg-white flex items-center justify-center shadow-lg">
-                    <ShieldCheck size={20} className="text-[#964b3c]" />
-                </div>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT COLUMN: Network & Records */}
-        <div className="lg:col-span-4 space-y-6">
-          <SectionContainer title="Records & Network">
-            <div className="flex gap-4 items-center p-4 bg-white/60 border-2 border-black rounded-sm shadow-md mb-6 overflow-hidden">
-               <div className="text-[60px] font-black tracking-tighter leading-none text-[#964b3c]">
-                 {data.stat?.value || "12+"}
+                  <div className="mb-1 bg-slate-100 px-3 py-1">
+                     <div className="text-[10px] font-black uppercase tracking-widest text-[#964b3c]">
+                       {stripMarkdownSymbols(data.stat.label)}
+                     </div>
+                  </div>
                </div>
-               <div className="flex-1">
-                 <h4 className="font-black text-[14px] uppercase leading-tight mb-1">
-                   {data.stat?.label || "Major Operations"}
-                 </h4>
-                 <p className="text-[10px] font-bold opacity-60 leading-tight">Verified criminal involvements across multiple jurisdictions.</p>
-               </div>
-            </div>
+             )}
 
-            <div className="space-y-6">
-              <div className="border-t border-black/20 pt-4">
-                <div className="flex items-center gap-2 mb-4">
-                  <Share2 size={16} />
-                  <h4 className="font-black text-xs uppercase tracking-widest">Network Architecture</h4>
+             <div className="space-y-12">
+                <div className="pt-2">
+                   <NetworkNodeDiagram />
                 </div>
-                <NetworkGraph />
-                <p className="text-[10px] italic leading-tight mt-4 text-center opacity-70">
-                  Multiple high-level gang associations including [Bishnoi / Kala Jatehdi Network]
-                </p>
-              </div>
 
-              <div className="border-t border-black/20 pt-6">
-                <div className="flex items-center gap-2 mb-4">
-                    <Box size={16} />
-                    <h4 className="font-black text-xs uppercase tracking-widest">Legal Status Diversity</h4>
+                <div className="space-y-6 pt-10 border-t border-slate-100">
+                  {operationsItems.slice(0, 8).map((it, i) => (
+                    <div key={i} className="group p-6 bg-slate-50/50 border border-slate-100 hover:bg-white transition-all">
+                       <div className="flex items-center gap-2 mb-4">
+                          <Zap size={14} className="text-[#964b3c]" />
+                          <h4 className="text-[10px] font-black uppercase tracking-wider text-slate-950">
+                             {stripMarkdownSymbols(it.title)}
+                          </h4>
+                       </div>
+                       <MarkdownContent content={it.description} />
+                    </div>
+                  ))}
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                    <IsometricCube label="163/2021" />
-                    <IsometricCube label="47/2015" />
-                    <IsometricCube label="320/2015" />
-                </div>
-              </div>
-
-              {operationItems.slice(0, 3).map((it, i) => (
-                <div key={i} className="p-3 bg-black text-white rounded-sm mt-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">{it.title}</p>
-                  <p className="text-[11px] font-bold leading-relaxed">{it.description}</p>
-                </div>
-              ))}
-            </div>
-          </SectionContainer>
+             </div>
+           </GridSection>
         </div>
+      </main>
 
-      </div>
-
-      {/* Footer / NotebookLM Signature Style */}
-      <footer className="max-w-7xl mx-auto mt-20 pt-8 border-t-2 border-black flex justify-between items-center opacity-60">
-        <div className="flex items-center gap-4">
-          <Fingerprint size={24} />
-          <div className="text-[10px] font-bold uppercase tracking-[0.2em] leading-tight">
-            Case Archive<br />Digital Forensics Unit
-          </div>
-        </div>
-        <div className="flex items-center gap-2 grayscale group cursor-default">
-           <Layers size={16} className="group-hover:text-blue-600 transition-colors" />
-           <span className="text-[11px] font-black uppercase tracking-widest">NotebookLM Intel Engine</span>
-        </div>
-      </footer>
     </div>
   )
 }
+
 
 function parseMarkdownToInfographic(raw: string): InfographicResponse {
   const lines = raw.split('\n')
   const sections: InfographicColumn[] = []
   
-  let currentHeader = 'Executive Summary'
+  let firstHeading = ''
+  let currentHeader = ''
   let currentContent: string[] = []
   
   const finalizeSection = () => {
     const desc = currentContent.join('\n').trim()
     if (!desc) return
-
     let icon = 'info'
     const t = currentHeader.toLowerCase()
-    if (t.includes('criminal') || t.includes('crime') || t.includes('arrest') || t.includes('kidnap') || t.includes('gang')) icon = 'crime'
-    else if (t.includes('education') || t.includes('degree') || t.includes('mba')) icon = 'education'
-    else if (t.includes('family') || t.includes('husband') || t.includes('relative')) icon = 'family'
-    else if (t.includes('location') || t.includes('place') || t.includes('prison')) icon = 'places'
-    else if (t.includes('follow') || t.includes('dispute') || t.includes('investigate')) icon = 'follow'
-    else if (t.includes('associate')) icon = 'associates'
-    else if (t.includes('business')) icon = 'business'
+    if (t.includes('criminal') || t.includes('crime') || t.includes('arrest') || t.includes('gang') || t.includes('associate')) icon = 'crime'
+    else if (t.includes('education') || t.includes('academic') || t.includes('mba')) icon = 'education'
+    else if (t.includes('family') || t.includes('husband')) icon = 'family'
+    else if (t.includes('personal') || t.includes('identity')) icon = 'personal'
 
-    const cleanTitle = currentHeader.replace(/\*\*/g, '').replace(/^PART [IVX]+:\s*/i, '').replace(/:$/, '').trim()
-    
-    sections.push({ title: cleanTitle, description: desc, icon })
+    sections.push({ title: currentHeader, description: desc, icon })
     currentContent = []
   }
 
   for (const line of lines) {
     const t = line.trim()
-    if (t.startsWith('**PART') || (t.startsWith('**') && t.endsWith('**') && !t.includes('•') && t.length > 5)) {
+    if (!t) continue
+    
+    const isSectionStart = t.startsWith('**PART') || 
+                           (t.startsWith('**') && t.endsWith('**') && !t.includes('•') && t.length > 5) ||
+                           t.match(/^#+\s/)
+
+    if (!firstHeading && t.length > 5) {
+      firstHeading = t
+    }
+
+    if (isSectionStart) {
       finalizeSection()
       currentHeader = t
     } else if (t.startsWith('**') && t.endsWith(':**')) {
       finalizeSection()
       currentHeader = t.slice(0, -1)
-    } else if (t.match(/^#+\s/)) {
-      finalizeSection()
-      currentHeader = t.replace(/^#+\s/, '')
     } else {
       currentContent.push(line)
     }
@@ -349,10 +343,13 @@ function parseMarkdownToInfographic(raw: string): InfographicResponse {
   finalizeSection()
 
   return {
-    header: { title: 'Evolution of "Lady Don": The Criminal Trajectory of Anuradha Choudhary', subtitle: 'Detailed intelligence analysis of professional transition into organized crime.' },
+    header: { 
+      title: firstHeading || 'Information Extract', 
+      subtitle: '' 
+    },
     left_column: sections,
     right_column: [],
-    source_id: 'poster-intel-001'
+    source_id: 'clean-v1'
   }
 }
 
@@ -380,5 +377,5 @@ export function InfographicInsightViewer({ content }: InfographicInsightViewerPr
 
   if (!data) return null
 
-  return <InfographicView data={data} />
+  return <InfographicDashboard data={data} />
 }

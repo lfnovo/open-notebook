@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
@@ -29,10 +29,15 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<NotebookChatMessage[]>([])
   const [isSending, setIsSending] = useState(false)
+  const [streamingContent, setStreamingContent] = useState<string>('')
   const [tokenCount, setTokenCount] = useState<number>(0)
   const [charCount, setCharCount] = useState<number>(0)
   // Pending model override for when user changes model before a session exists
   const [pendingModelOverride, setPendingModelOverride] = useState<string | null>(null)
+  // AbortController for in-flight streaming request
+  const abortControllerRef = useRef<AbortController | null>(null)
+  // Track accumulated content for partial preservation on cancel
+  const accumulatedRef = useRef<string>('')
 
   // Fetch sessions for this notebook
   const {
@@ -172,7 +177,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     return response.context
   }, [notebookId, sources, notes, contextSelections])
 
-  // Send message (synchronous, no streaming)
+  // Send message (SSE streaming via /chat/execute/stream)
   const sendMessage = useCallback(async (message: string, modelOverride?: string) => {
     let sessionId = currentSessionId
 
@@ -211,30 +216,98 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     }
     setMessages(prev => [...prev, userMessage])
     setIsSending(true)
+    setStreamingContent('')
+    accumulatedRef.current = ''
+
+    // Set up abort controller for this request
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     try {
-      // Build context and send message
+      // Build context and send message via streaming endpoint
       const context = await buildContext()
-      const response = await chatApi.sendMessage({
-        session_id: sessionId,
-        message,
-        context,
-        model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
-      })
+      const stream = await chatApi.sendMessageStream(
+        {
+          session_id: sessionId,
+          message,
+          context,
+          model_override: modelOverride ?? (currentSession?.model_override ?? undefined),
+        },
+        controller.signal
+      )
 
-      // Update messages with API response
-      setMessages(response.messages)
+      const reader = stream.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let accumulated = ''
 
-      // Refetch current session to get updated data
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || ''
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue
+          try {
+            const jsonStr = line.slice(6).trim()
+            if (!jsonStr) continue
+            const event = JSON.parse(jsonStr) as {
+              type: string
+              content?: string
+              message?: string
+            }
+
+            if (event.type === 'token' && event.content) {
+              accumulated += event.content
+              accumulatedRef.current = accumulated
+              setStreamingContent(accumulated)
+            } else if (event.type === 'error') {
+              throw new Error(event.message || 'Stream error occurred')
+            }
+            // 'user_message' and 'complete' events are informational only
+          } catch (e) {
+            if (e instanceof SyntaxError) {
+              console.error('Error parsing SSE data:', e, 'Line:', line)
+              // Don't throw - continue processing other lines
+            } else {
+              throw e
+            }
+          }
+        }
+      }
+
+      // Refetch session to get authoritative message list from server
       await refetchCurrentSession()
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string };
-      console.error('Error sending message:', error)
-      toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
-      // Remove optimistic message on error
-      setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      // AbortError is expected when user stops streaming; keep optimistic
+      // user message so they can see what they asked, and refetch session
+      // in case the server persisted a partial response.
+      const error = err as { name?: string; message?: string; response?: { data?: { detail?: string } } }
+      if (error.name === 'AbortError') {
+        // Keep partial AI response visible (local only, not persisted)
+        const partial = accumulatedRef.current
+        if (partial) {
+          setMessages(prev => [...prev, {
+            id: `partial-${Date.now()}`,
+            type: 'ai',
+            content: partial,
+            timestamp: new Date().toISOString()
+          }])
+        }
+      } else {
+        console.error('Error sending message:', error)
+        toast.error(getApiErrorMessage(error.response?.data?.detail || error.message, (key) => t(key), 'apiErrors.failedToSendMessage'))
+        // Remove optimistic message on error
+        setMessages(prev => prev.filter(msg => !msg.id.startsWith('temp-')))
+      }
     } finally {
+      setStreamingContent('')
       setIsSending(false)
+      abortControllerRef.current = null
+      accumulatedRef.current = ''
     }
   }, [
     notebookId,
@@ -246,6 +319,18 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     queryClient,
     t
   ])
+
+  // Stop in-flight streaming response
+  const stopStreaming = useCallback(() => {
+    abortControllerRef.current?.abort()
+  }, [])
+
+  // Abort in-flight stream on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort()
+    }
+  }, [])
 
   // Switch session
   const switchSession = useCallback((sessionId: string) => {
@@ -306,6 +391,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     currentSessionId,
     messages,
     isSending,
+    streamingContent,
     loadingSessions,
     tokenCount,
     charCount,
@@ -317,6 +403,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     deleteSession,
     switchSession,
     sendMessage,
+    stopStreaming,
     setModelOverride,
     refetchSessions
   }

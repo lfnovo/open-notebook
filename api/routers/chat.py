@@ -462,6 +462,7 @@ async def _stream_execute_chat(
         )
 
         accumulated = ""
+        persisted = False
         async for chunk in model.astream(payload):
             content = getattr(chunk, "content", "") or ""
             if content:
@@ -475,6 +476,7 @@ async def _stream_execute_chat(
             values={"messages": state_values["messages"] + [AIMessage(content=cleaned_content)]},
         )
         await session.save()
+        persisted = True
 
         yield f'data: {json.dumps({"type": "complete"})}\n\n'
 
@@ -485,6 +487,19 @@ async def _stream_execute_chat(
             f"  Traceback:\n{traceback.format_exc()}"
         )
         yield f'data: {json.dumps({"type": "error", "message": str(e)})}\n\n'
+    finally:
+        if accumulated and not persisted:
+            try:
+                cleaned = clean_thinking_content(extract_text_content(accumulated))
+                if cleaned:
+                    await asyncio.to_thread(
+                        chat_graph.update_state,
+                        config=RunnableConfig(configurable={"thread_id": full_session_id}),
+                        values={"messages": state_values["messages"] + [AIMessage(content=cleaned)]},
+                    )
+                    await session.save()
+            except Exception:
+                pass
 
 
 @router.post("/chat/execute/stream")
@@ -492,7 +507,15 @@ async def execute_chat_stream(request: ExecuteChatRequest):
     """Execute a chat request and stream the AI response as Server-Sent Events."""
     return StreamingResponse(
         _stream_execute_chat(request),
-        media_type="text/event-stream",
+        media_type="text/plain",
+        headers={
+            # Prevent intermediate proxies from compressing or buffering the
+            # stream; required for per-token delivery through Next.js rewrite
+            # proxy which otherwise applies gzip (buffered) when the client
+            # sends Accept-Encoding: gzip.
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

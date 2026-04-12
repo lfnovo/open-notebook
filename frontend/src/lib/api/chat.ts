@@ -59,6 +59,58 @@ export const chatApi = {
     return response.data
   },
 
+  // Messaging with SSE token streaming (uses relative URL for Docker compatibility)
+  sendMessageStream: async (
+    data: SendNotebookChatMessageRequest,
+    signal?: AbortSignal
+  ) => {
+    // Get auth token using the same logic as apiClient interceptor
+    let token = null
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const { state } = JSON.parse(authStorage)
+          if (state?.token) {
+            token = state.token
+          }
+        } catch (error) {
+          console.error('Error parsing auth storage:', error)
+        }
+      }
+    }
+
+    // Use relative URL to leverage Next.js rewrites
+    const url = '/api/chat/execute/stream'
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify(data),
+      signal,
+    })
+
+    if (!response.ok) {
+      let errorMessage = `HTTP error! status: ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.detail || errorData.message || errorMessage
+      } catch {
+        errorMessage = response.statusText || errorMessage
+      }
+      throw new Error(errorMessage)
+    }
+
+    if (!response.body) {
+      throw new Error('No response body received')
+    }
+
+    return response.body
+  },
+
   buildContext: async (data: BuildContextRequest) => {
     const response = await apiClient.post<BuildContextResponse>(
       `/chat/context`,

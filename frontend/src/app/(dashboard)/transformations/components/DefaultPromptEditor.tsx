@@ -37,9 +37,9 @@ export function DefaultPromptEditor() {
               <div className="flex items-center gap-2">
                 <Settings className="h-5 w-5" />
                 <div className="text-left">
-                  <CardTitle className="text-lg">{t.transformations.defaultPrompt}</CardTitle>
+                  <CardTitle className="text-lg">{t('transformations.defaultPrompt')}</CardTitle>
                   <CardDescription>
-                    {t.transformations.defaultPromptDesc}
+                    {t('transformations.defaultPromptDesc')}
                   </CardDescription>
                 </div>
               </div>
@@ -55,14 +55,14 @@ export function DefaultPromptEditor() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor={textareaId} className="sr-only">
-                {t.transformations.defaultPrompt}
+                {t('transformations.defaultPrompt')}
               </Label>
               <Textarea
                 id={textareaId}
                 name="default-prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={t.transformations.defaultPromptPlaceholder}
+                placeholder={t('transformations.defaultPromptPlaceholder')}
                 className="min-h-[200px] font-mono text-sm"
                 disabled={isLoading}
               />
@@ -72,7 +72,7 @@ export function DefaultPromptEditor() {
                 onClick={handleSave}
                 disabled={isLoading || updateDefaultPrompt.isPending}
               >
-                {t.common.save}
+                {t('common.save')}
               </Button>
             </div>
           </CardContent>

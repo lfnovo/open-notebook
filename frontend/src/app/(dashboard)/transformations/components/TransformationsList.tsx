@@ -39,12 +39,12 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     return (
       <EmptyState
         icon={Wand2}
-        title={t.transformations.noTransformations}
-        description={t.transformations.createOne}
+        title={t('transformations.noTransformations')}
+        description={t('transformations.createOne')}
         action={
           <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
-            {t.transformations.createNew}
+            {t('transformations.createNew')}
           </Button>
         }
       />
@@ -55,10 +55,10 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-semibold">{t.transformations.listTitle}</h2>
+          <h2 className="text-lg font-semibold">{t('transformations.listTitle')}</h2>
           <Button onClick={() => handleOpenEditor()}>
             <Plus className="h-4 w-4 mr-2" />
-            {t.transformations.createNew}
+            {t('transformations.createNew')}
           </Button>
         </div>
 

@@ -35,14 +35,14 @@ export function useCreateNote() {
         queryKey: QUERY_KEYS.notes(variables.notebook_id) 
       })
       toast({
-        title: t.common.success,
-        description: t.notebooks.noteCreatedSuccess,
+        title: t('common.success'),
+        description: t('notebooks.noteCreatedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToCreateNote),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('notebooks.failedToCreateNote')),
         variant: 'destructive',
       })
     },
@@ -61,14 +61,14 @@ export function useUpdateNote() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notes() })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.note(id) })
       toast({
-        title: t.common.success,
-        description: t.notebooks.noteUpdatedSuccess,
+        title: t('common.success'),
+        description: t('notebooks.noteUpdatedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToUpdateNote),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('notebooks.failedToUpdateNote')),
         variant: 'destructive',
       })
     },
@@ -86,14 +86,14 @@ export function useDeleteNote() {
       // Invalidate all notes queries (with and without notebook IDs)
       queryClient.invalidateQueries({ queryKey: ['notes'] })
       toast({
-        title: t.common.success,
-        description: t.notebooks.noteDeletedSuccess,
+        title: t('common.success'),
+        description: t('notebooks.noteDeletedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.notebooks.failedToDeleteNote),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('notebooks.failedToDeleteNote')),
         variant: 'destructive',
       })
     },

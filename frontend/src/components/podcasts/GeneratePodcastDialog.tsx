@@ -117,28 +117,28 @@ function ContentSelectionPanel({
   // Cache all translation strings at render time to avoid repeated Proxy accesses in loops
   // This prevents the infinite loop detection from triggering
   const tr = {
-    content: t.podcasts.content,
-    contentDesc: t.podcasts.contentDesc,
-    itemsSelected: t.podcasts.itemsSelected,
-    tokens: t.podcasts.tokens,
-    chars: t.podcasts.chars,
-    loadingNotebooks: t.podcasts.loadingNotebooks,
-    noNotebooksFoundInPodcasts: t.podcasts.noNotebooksFoundInPodcasts,
-    sources: t.podcasts.sources,
-    notes: t.podcasts.notes,
-    noContentSelected: t.podcasts.noContentSelected,
-    noSources: t.podcasts.noSources,
-    untitledSource: t.podcasts.untitledSource,
-    link: t.podcasts.link,
-    file: t.podcasts.file,
-    embedded: t.podcasts.embedded,
-    notEmbedded: t.podcasts.notEmbedded,
-    selectMode: t.podcasts.selectMode,
-    noNotes: t.podcasts.noNotes,
-    untitledNote: t.podcasts.untitledNote,
-    commonUpdated: t.common.updated,
-    summary: t.podcasts.summary,
-    fullContent: t.podcasts.fullContent,
+    content: t('podcasts.content'),
+    contentDesc: t('podcasts.contentDesc'),
+    itemsSelected: t('podcasts.itemsSelected'),
+    tokens: t('podcasts.tokens'),
+    chars: t('podcasts.chars'),
+    loadingNotebooks: t('podcasts.loadingNotebooks'),
+    noNotebooksFoundInPodcasts: t('podcasts.noNotebooksFoundInPodcasts'),
+    sources: t('podcasts.sources'),
+    notes: t('podcasts.notes'),
+    noContentSelected: t('podcasts.noContentSelected'),
+    noSources: t('podcasts.noSources'),
+    untitledSource: t('podcasts.untitledSource'),
+    link: t('podcasts.link'),
+    file: t('podcasts.file'),
+    embedded: t('podcasts.embedded'),
+    notEmbedded: t('podcasts.notEmbedded'),
+    selectMode: t('podcasts.selectMode'),
+    noNotes: t('podcasts.noNotes'),
+    untitledNote: t('podcasts.untitledNote'),
+    commonUpdated: t('common.updated'),
+    summary: t('podcasts.summary'),
+    fullContent: t('podcasts.fullContent'),
   }
 
   // Pre-compute source modes once to avoid repeated t.podcasts access in loops
@@ -768,11 +768,11 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
         const response = await chatApi.buildContext(task.payload)
         const notebookName = notebooks.find((nb) => nb.id === task.notebookId)?.name ?? task.notebookId
         const contextString = JSON.stringify(response.context, null, 2)
-        const snippet = `${t.common.notebookLabel.replace('{name}', notebookName)}\n${contextString}`
+        const snippet = `${t('common.notebookLabel').replace('{name}', notebookName)}\n${contextString}`
         parts.push(snippet)
       } catch (error) {
         console.error('Failed to build context for notebook', task.notebookId, error)
-        throw new Error(t.podcasts.buildContextFailed)
+        throw new Error(t('podcasts.buildContextFailed'))
       }
     }
 
@@ -782,8 +782,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
   const handleSubmit = useCallback(async () => {
     if (!selectedEpisodeProfile) {
       toast({
-        title: t.podcasts.profileRequired,
-        description: t.podcasts.profileRequiredDesc,
+        title: t('podcasts.profileRequired'),
+        description: t('podcasts.profileRequiredDesc'),
         variant: 'destructive',
       })
       return
@@ -791,8 +791,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
     if (!episodeName.trim()) {
       toast({
-        title: t.podcasts.nameRequired,
-        description: t.podcasts.nameRequiredDesc,
+        title: t('podcasts.nameRequired'),
+        description: t('podcasts.nameRequiredDesc'),
         variant: 'destructive',
       })
       return
@@ -803,8 +803,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       const content = await buildContentFromSelections()
       if (!content.trim()) {
         toast({
-          title: t.podcasts.addContext,
-          description: t.podcasts.addContextDesc,
+          title: t('podcasts.addContext'),
+          description: t('podcasts.addContextDesc'),
           variant: 'destructive',
         })
         return
@@ -821,8 +821,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       await generatePodcast.mutateAsync(payload)
 
       toast({
-        title: t.common.success,
-        description: t.podcasts.podcastTaskStarted,
+        title: t('common.success'),
+        description: t('podcasts.podcastTaskStarted'),
       })
 
       // Delay closing dialog slightly to ensure refetch completes
@@ -833,8 +833,8 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     } catch (error) {
       console.error('Failed to generate podcast', error)
       toast({
-        title: t.podcasts.generationFailed,
-        description: error instanceof Error ? error.message : t.common.refreshPage,
+        title: t('podcasts.generationFailed'),
+        description: error instanceof Error ? error.message : t('common.refreshPage'),
         variant: 'destructive',
       })
     } finally {
@@ -863,9 +863,9 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
     }}>
       <DialogContent className="w-[80vw] max-w-[1080px] max-h-[90vh] overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{t.podcasts.generateEpisode}</DialogTitle>
+          <DialogTitle>{t('podcasts.generateEpisode')}</DialogTitle>
           <DialogDescription>
-            {t.podcasts.generateEpisodeDesc}
+            {t('podcasts.generateEpisodeDesc')}
           </DialogDescription>
         </DialogHeader>
 
@@ -891,27 +891,27 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
           <div className="space-y-6">
             <div className="space-y-3">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t.podcasts.episodeSettings}
+                {t('podcasts.episodeSettings')}
               </h3>
               {episodeProfilesQuery.isLoading ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" /> {t.podcasts.loadingProfiles}
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t('podcasts.loadingProfiles')}
                 </div>
               ) : episodeProfiles.length === 0 ? (
                 <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-sm text-muted-foreground">
-                  {t.podcasts.noProfilesFound}
+                  {t('podcasts.noProfilesFound')}
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="episode_profile">{t.podcasts.episodeProfile}</Label>
+                    <Label htmlFor="episode_profile">{t('podcasts.episodeProfile')}</Label>
                     <Select
                       value={episodeProfileId}
                       onValueChange={setEpisodeProfileId}
                       disabled={episodeProfiles.length === 0}
                     >
                       <SelectTrigger id="episode_profile">
-                        <SelectValue placeholder={t.podcasts.episodeProfilePlaceholder} />
+                        <SelectValue placeholder={t('podcasts.episodeProfilePlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {episodeProfiles.map((profile) => (
@@ -923,30 +923,30 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                     </Select>
                     {selectedEpisodeProfile && (
                       <p className="text-xs text-muted-foreground">
-                        {t.podcasts.usesSpeakerProfile}{' '}
+                        {t('podcasts.usesSpeakerProfile')}{' '}
                         <strong>{selectedEpisodeProfile.speaker_config}</strong>
                       </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="episode_name">{t.podcasts.episodeName}</Label>
+                    <Label htmlFor="episode_name">{t('podcasts.episodeName')}</Label>
                     <Input
                       id="episode_name"
                       name="episode_name"
                       value={episodeName}
                       onChange={(event) => setEpisodeName(event.target.value)}
-                      placeholder={t.podcasts.episodeNamePlaceholder}
+                      placeholder={t('podcasts.episodeNamePlaceholder')}
                       autoComplete="off"
                     />
                   </div>
 
                    <div className="space-y-2">
-                    <Label htmlFor="instructions">{t.podcasts.additionalInstructions}</Label>
+                    <Label htmlFor="instructions">{t('podcasts.additionalInstructions')}</Label>
                     <Textarea
                       id="instructions"
                       name="instructions"
-                      placeholder={t.podcasts.instructionsPlaceholder}
+                      placeholder={t('podcasts.instructionsPlaceholder')}
                       value={instructions}
                       onChange={(event) => setInstructions(event.target.value)}
                       className="min-h-[100px] text-xs"
@@ -964,7 +964,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                 className="w-full"
               >
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSubmitting ? t.podcasts.generating : t.podcasts.generate}
+                {isSubmitting ? t('podcasts.generating') : t('podcasts.generate')}
               </Button>
               <Button
                 variant="outline"
@@ -972,7 +972,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                 disabled={isSubmitting}
                 className="w-full"
               >
-                {t.common.cancel}
+                {t('common.cancel')}
               </Button>
             </div>
           </div>

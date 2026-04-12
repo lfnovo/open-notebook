@@ -85,9 +85,9 @@ export function SettingsForm() {
   if (error) {
     return (
       <Alert variant="destructive">
-        <AlertTitle>{t.settings.loadFailed}</AlertTitle>
+        <AlertTitle>{t('settings.loadFailed')}</AlertTitle>
         <AlertDescription>
-          {error instanceof Error ? error.message : t.common.error}
+          {error instanceof Error ? error.message : t('common.error')}
         </AlertDescription>
       </Alert>
     )
@@ -97,14 +97,14 @@ export function SettingsForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t.settings.contentProcessing}</CardTitle>
+          <CardTitle>{t('settings.contentProcessing')}</CardTitle>
           <CardDescription>
-            {t.settings.contentProcessingDesc}
+            {t('settings.contentProcessingDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <Label htmlFor="doc_engine">{t.settings.docEngine}</Label>
+            <Label htmlFor="doc_engine">{t('settings.docEngine')}</Label>
             <Controller
               name="default_content_processing_engine_doc"
               control={control}
@@ -117,12 +117,12 @@ export function SettingsForm() {
                     disabled={field.disabled || isLoading}
                   >
                       <SelectTrigger id="doc_engine" className="w-full">
-                        <SelectValue placeholder={t.settings.docEnginePlaceholder} />
+                        <SelectValue placeholder={t('settings.docEnginePlaceholder')} />
                       </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">{t.settings.autoRecommended}</SelectItem>
-                      <SelectItem value="docling">{t.settings.docling}</SelectItem>
-                      <SelectItem value="simple">{t.settings.simple}</SelectItem>
+                      <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
+                      <SelectItem value="docling">{t('settings.docling')}</SelectItem>
+                      <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                     </SelectContent>
                   </Select>
               )}
@@ -130,16 +130,16 @@ export function SettingsForm() {
             <Collapsible open={expandedSections.doc} onOpenChange={() => toggleSection('doc')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.doc ? 'rotate-180' : ''}`} />
-                {t.settings.helpMeChoose}
+                {t('settings.helpMeChoose')}
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t.settings.docHelp}</p>
+                <p>{t('settings.docHelp')}</p>
               </CollapsibleContent>
             </Collapsible>
           </div>
           
           <div className="space-y-3">
-            <Label htmlFor="url_engine">{t.settings.urlEngine}</Label>
+            <Label htmlFor="url_engine">{t('settings.urlEngine')}</Label>
             <Controller
               name="default_content_processing_engine_url"
               control={control}
@@ -152,13 +152,13 @@ export function SettingsForm() {
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger id="url_engine" className="w-full">
-                    <SelectValue placeholder={t.settings.urlEnginePlaceholder} />
+                    <SelectValue placeholder={t('settings.urlEnginePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">{t.settings.autoRecommended}</SelectItem>
-                    <SelectItem value="firecrawl">{t.settings.firecrawl}</SelectItem>
-                    <SelectItem value="jina">{t.settings.jina}</SelectItem>
-                    <SelectItem value="simple">{t.settings.simple}</SelectItem>
+                    <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
+                    <SelectItem value="firecrawl">{t('settings.firecrawl')}</SelectItem>
+                    <SelectItem value="jina">{t('settings.jina')}</SelectItem>
+                    <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -166,10 +166,10 @@ export function SettingsForm() {
              <Collapsible open={expandedSections.url} onOpenChange={() => toggleSection('url')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.url ? 'rotate-180' : ''}`} />
-                {t.settings.helpMeChoose}
+                {t('settings.helpMeChoose')}
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t.settings.urlHelp}</p>
+                <p>{t('settings.urlHelp')}</p>
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -178,14 +178,14 @@ export function SettingsForm() {
 
        <Card>
         <CardHeader>
-          <CardTitle>{t.settings.embeddingAndSearch}</CardTitle>
+          <CardTitle>{t('settings.embeddingAndSearch')}</CardTitle>
           <CardDescription>
-            {t.settings.embeddingAndSearchDesc}
+            {t('settings.embeddingAndSearchDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            <div className="space-y-3">
-            <Label htmlFor="embedding">{t.settings.defaultEmbeddingOption}</Label>
+            <Label htmlFor="embedding">{t('settings.defaultEmbeddingOption')}</Label>
             <Controller
               name="default_embedding_option"
               control={control}
@@ -198,12 +198,12 @@ export function SettingsForm() {
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger id="embedding" className="w-full">
-                    <SelectValue placeholder={t.settings.embeddingOptionPlaceholder} />
+                    <SelectValue placeholder={t('settings.embeddingOptionPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="ask">{t.settings.ask}</SelectItem>
-                    <SelectItem value="always">{t.settings.always}</SelectItem>
-                    <SelectItem value="never">{t.settings.never}</SelectItem>
+                    <SelectItem value="ask">{t('settings.ask')}</SelectItem>
+                    <SelectItem value="always">{t('settings.always')}</SelectItem>
+                    <SelectItem value="never">{t('settings.never')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -211,10 +211,10 @@ export function SettingsForm() {
              <Collapsible open={expandedSections.embedding} onOpenChange={() => toggleSection('embedding')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.embedding ? 'rotate-180' : ''}`} />
-                {t.settings.helpMeChoose}
+                {t('settings.helpMeChoose')}
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t.settings.embeddingHelp}</p>
+                <p>{t('settings.embeddingHelp')}</p>
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -223,14 +223,14 @@ export function SettingsForm() {
 
        <Card>
         <CardHeader>
-          <CardTitle>{t.settings.fileManagement}</CardTitle>
+          <CardTitle>{t('settings.fileManagement')}</CardTitle>
           <CardDescription>
-            {t.settings.fileManagementDesc}
+            {t('settings.fileManagementDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            <div className="space-y-3">
-            <Label htmlFor="auto_delete">{t.settings.autoDeleteFiles}</Label>
+            <Label htmlFor="auto_delete">{t('settings.autoDeleteFiles')}</Label>
             <Controller
               name="auto_delete_files"
               control={control}
@@ -243,11 +243,11 @@ export function SettingsForm() {
                   disabled={field.disabled || isLoading}
                 >
                   <SelectTrigger id="auto_delete" className="w-full">
-                    <SelectValue placeholder={t.settings.autoDeletePlaceholder} />
+                    <SelectValue placeholder={t('settings.autoDeletePlaceholder')} />
                   </SelectTrigger>
                    <SelectContent>
-                    <SelectItem value="yes">{t.common.yes}</SelectItem>
-                    <SelectItem value="no">{t.common.no}</SelectItem>
+                    <SelectItem value="yes">{t('common.yes')}</SelectItem>
+                    <SelectItem value="no">{t('common.no')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -255,10 +255,10 @@ export function SettingsForm() {
              <Collapsible open={expandedSections.files} onOpenChange={() => toggleSection('files')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.files ? 'rotate-180' : ''}`} />
-                {t.settings.helpMeChoose}
+                {t('settings.helpMeChoose')}
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-2 text-sm text-muted-foreground space-y-2">
-                <p>{t.settings.filesHelp}</p>
+                <p>{t('settings.filesHelp')}</p>
               </CollapsibleContent>
             </Collapsible>
           </div>
@@ -270,7 +270,7 @@ export function SettingsForm() {
           type="submit" 
           disabled={!isDirty || updateSettings.isPending}
         >
-          {updateSettings.isPending ? t.common.saving : t.navigation.settings}
+          {updateSettings.isPending ? t('common.saving') : t('navigation.settings')}
         </Button>
       </div>
     </form>

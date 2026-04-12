@@ -28,15 +28,15 @@ export function NotebooksStep({
   return (
     <div className="space-y-6">
       <FormSection
-        title={`${t.notebooks.title} (${t.common.optional})`}
-        description={t.sources.addExistingDesc}
+        title={`${t('notebooks.title')} (${t('common.optional')})`}
+        description={t('sources.addExistingDesc')}
       >
         <CheckboxList
           items={notebookItems}
           selectedIds={selectedNotebooks}
           onToggle={onToggleNotebook}
           loading={loading}
-          emptyMessage={t.sources.noNotebooksFound}
+          emptyMessage={t('sources.noNotebooksFound')}
         />
       </FormSection>
     </div>

@@ -25,19 +25,19 @@ export function ContextToggle({ mode, hasInsights = false, onChange, className }
   const MODE_CONFIG = {
     off: {
       icon: EyeOff,
-      label: t.common.contextModes.off,
+      label: t('common.contextModes.off'),
       color: 'text-muted-foreground',
       bgColor: 'hover:bg-muted'
     },
     insights: {
       icon: Lightbulb,
-      label: t.common.contextModes.insights,
+      label: t('common.contextModes.insights'),
       color: 'text-amber-600',
       bgColor: 'hover:bg-amber-50'
     },
     full: {
       icon: FileText,
-      label: t.common.contextModes.full,
+      label: t('common.contextModes.full'),
       color: 'text-primary',
       bgColor: 'hover:bg-primary/10'
     }
@@ -79,7 +79,7 @@ export function ContextToggle({ mode, hasInsights = false, onChange, className }
         <TooltipContent>
           <p className="text-xs">{config.label}</p>
           <p className="text-[10px] text-muted-foreground mt-1">
-            {t.common.contextModes.clickToCycle}
+            {t('common.contextModes.clickToCycle')}
           </p>
         </TooltipContent>
       </Tooltip>

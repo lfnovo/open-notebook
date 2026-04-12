@@ -23,14 +23,14 @@ export function useUpdateSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.settings })
       toast({
-        title: t.common.success,
-        description: t.common.saveSuccess,
+        title: t('common.success'),
+        description: t('common.saveSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorKey(error, t.common.error),
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
         variant: 'destructive',
       })
     },

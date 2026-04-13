@@ -14,6 +14,32 @@ from open_notebook.utils.chunking import (
     detect_content_type_from_extension,
     detect_content_type_from_heuristics,
 )
+from open_notebook.utils.token_utils import token_count
+
+
+def _build_text_with_max_tokens(fragment: str, max_tokens: int) -> str:
+    """Build text that stays within a token budget."""
+    text = ""
+    while True:
+        candidate = text + fragment
+        if token_count(candidate) > max_tokens:
+            return text
+        text = candidate
+
+
+def _build_text_exceeding_tokens(fragment: str, threshold_tokens: int) -> str:
+    """Build text that exceeds a token threshold."""
+    text = fragment
+    while token_count(text) <= threshold_tokens:
+        text += fragment
+    return text
+
+
+def _assert_chunks_within_token_limit(chunks: list[str]) -> None:
+    """Assert chunks stay within the configured token window."""
+    assert chunks
+    for chunk in chunks:
+        assert token_count(chunk) <= CHUNK_SIZE
 
 # ============================================================================
 # TEST SUITE 1: Content Type Detection from Extension
@@ -222,20 +248,33 @@ class TestChunkText:
         assert chunks[0] == text
 
     def test_text_at_chunk_limit(self):
-        """Test text at exactly chunk size limit."""
-        text = "x" * CHUNK_SIZE
+        """Test text within the token chunk size limit."""
+        text = _build_text_with_max_tokens("This is a sentence. ", CHUNK_SIZE)
+        assert token_count(text) <= CHUNK_SIZE
         chunks = chunk_text(text)
         assert len(chunks) == 1
 
     def test_long_text_is_chunked(self):
-        """Test that long text is chunked."""
-        # Create text longer than chunk size
-        text = "This is a sentence. " * 200  # ~4000 chars
+        """Test that long English text is chunked by token budget."""
+        text = _build_text_exceeding_tokens("This is a sentence. ", CHUNK_SIZE)
         chunks = chunk_text(text)
         assert len(chunks) > 1
-        # Each chunk should be <= CHUNK_SIZE
-        for chunk in chunks:
-            assert len(chunk) <= CHUNK_SIZE + 100  # Allow some flexibility for overlap
+        _assert_chunks_within_token_limit(chunks)
+
+    def test_cjk_text_is_chunked_by_tokens(self):
+        """Test that long CJK text is chunked using token measurement."""
+        text = _build_text_exceeding_tokens("這是一段中文內容，用來驗證分塊邏輯。", CHUNK_SIZE)
+        chunks = chunk_text(text, content_type=ContentType.PLAIN)
+        assert len(chunks) > 1
+        _assert_chunks_within_token_limit(chunks)
+
+    def test_mixed_language_text_is_chunked_by_tokens(self):
+        """Test that mixed-language text is chunked using token measurement."""
+        fragment = "This paragraph mixes English and 中文內容 to verify token-based chunking. "
+        text = _build_text_exceeding_tokens(fragment, CHUNK_SIZE)
+        chunks = chunk_text(text, content_type=ContentType.PLAIN)
+        assert len(chunks) > 1
+        _assert_chunks_within_token_limit(chunks)
 
     def test_explicit_content_type_html(self):
         """Test chunking with explicit HTML content type."""
@@ -269,9 +308,10 @@ Content for section 2.
 
     def test_explicit_content_type_plain(self):
         """Test chunking with explicit plain content type."""
-        plain_text = "Word " * 500  # ~2500 chars
+        plain_text = _build_text_exceeding_tokens("Word ", CHUNK_SIZE)
         chunks = chunk_text(plain_text, content_type=ContentType.PLAIN)
-        assert len(chunks) >= 1
+        assert len(chunks) > 1
+        _assert_chunks_within_token_limit(chunks)
 
     def test_file_path_detection(self):
         """Test chunking with file path for content type detection."""
@@ -280,16 +320,14 @@ Content for section 2.
         assert len(chunks) == 1
 
     def test_secondary_chunking_for_large_sections(self):
-        """Test that large sections from HTML/MD splitters are further chunked."""
-        # Create text that would produce a single large section
-        large_section = "x" * 3000  # Larger than CHUNK_SIZE
+        """Test that large Markdown sections are further chunked by tokens."""
+        large_section = _build_text_exceeding_tokens(
+            "這是一段很長的章節內容，用來測試次級分塊。", CHUNK_SIZE
+        )
         md_text = f"# Title\n\n{large_section}"
         chunks = chunk_text(md_text, content_type=ContentType.MARKDOWN)
-        # Should have multiple chunks due to secondary chunking
-        assert len(chunks) >= 1
-        for chunk in chunks:
-            # Allow some flexibility but chunks should be reasonable size
-            assert len(chunk) <= CHUNK_SIZE + 300
+        assert len(chunks) > 1
+        _assert_chunks_within_token_limit(chunks)
 
 
 if __name__ == "__main__":

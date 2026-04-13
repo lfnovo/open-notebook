@@ -17,6 +17,7 @@ import numpy as np
 from loguru import logger
 
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
+from .token_utils import token_count
 
 EMBEDDING_BATCH_SIZE = 50
 EMBEDDING_MAX_RETRIES = 3
@@ -120,11 +121,12 @@ async def generate_embeddings(
     model_name = getattr(embedding_model, "model_name", "unknown")
 
     # Log text sizes for debugging
-    text_sizes = [len(t) for t in texts]
+    token_sizes = [token_count(t) for t in texts]
+    char_sizes = [len(t) for t in texts]
     logger.debug(
         f"Generating embeddings for {len(texts)} texts "
-        f"(sizes: min={min(text_sizes)}, max={max(text_sizes)}, "
-        f"total={sum(text_sizes)} chars)"
+        f"(tokens: min={min(token_sizes)}, max={max(token_sizes)}, "
+        f"total={sum(token_sizes)}; chars: total={sum(char_sizes)})"
     )
 
     all_embeddings: List[List[float]] = []
@@ -174,10 +176,10 @@ async def generate_embedding(
     """
     Generate a single embedding for text, handling large content via chunking and mean pooling.
 
-    For short text (<= CHUNK_SIZE):
+    For short text (<= CHUNK_SIZE tokens):
         - Embeds directly and returns the embedding
 
-    For long text (> CHUNK_SIZE):
+    For long text (> CHUNK_SIZE tokens):
         - Chunks the text using appropriate splitter for content type
         - Embeds all chunks in batches
         - Combines embeddings via mean pooling
@@ -199,16 +201,17 @@ async def generate_embedding(
         raise ValueError("Cannot generate embedding for empty text")
 
     text = text.strip()
+    text_tokens = token_count(text)
 
     # Check if chunking is needed
-    if len(text) <= CHUNK_SIZE:
+    if text_tokens <= CHUNK_SIZE:
         # Short text - embed directly
-        logger.debug(f"Embedding short text ({len(text)} chars) directly")
+        logger.debug(f"Embedding short text ({text_tokens} tokens) directly")
         embeddings = await generate_embeddings([text], command_id=command_id)
         return embeddings[0]
 
     # Long text - chunk and mean pool
-    logger.debug(f"Text exceeds chunk size ({len(text)} chars), chunking...")
+    logger.debug(f"Text exceeds chunk size ({text_tokens} tokens), chunking...")
 
     chunks = chunk_text(text, content_type=content_type, file_path=file_path)
 

@@ -10,6 +10,7 @@ from fastapi import (
     Form,
     HTTPException,
     Query,
+    Request,
     UploadFile,
 )
 from fastapi.responses import FileResponse, Response
@@ -28,6 +29,7 @@ from api.models import (
     SourceStatusResponse,
     SourceUpdate,
 )
+from api.rbac import require_editor
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -36,6 +38,8 @@ from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
+
+MAX_UPLOAD_SIZE_BYTES = 50 * 1024 * 1024  # 50MB
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
@@ -557,6 +561,250 @@ async def create_source_json(source_data: SourceCreate):
     # Convert to form data format and call main endpoint
     form_data = (source_data, None)
     return await create_source(form_data)
+
+
+# =============================================================================
+# WORKSPACE-SCOPED SOURCE UPLOAD
+# =============================================================================
+
+
+def parse_workspace_source_form_data(
+    type: str = Form(...),
+    url: Optional[str] = Form(None),
+    content: Optional[str] = Form(None),
+    title: Optional[str] = Form(None),
+    transformations: Optional[str] = Form(None),
+    embed: str = Form("false"),
+    delete_source: str = Form("false"),
+    async_processing: str = Form("true"),
+    file: Optional[UploadFile] = File(None),
+) -> tuple[SourceCreate, Optional[UploadFile]]:
+    """Parse form data for workspace-scoped source upload."""
+    import json
+
+    def str_to_bool(value: str) -> bool:
+        return value.lower() in ("true", "1", "yes", "on")
+
+    transformations_list = []
+    if transformations:
+        try:
+            transformations_list = json.loads(transformations)
+        except json.JSONDecodeError:
+            logger.error(f"Invalid JSON in transformations field: {transformations}")
+            raise ValueError("Invalid JSON in transformations field")
+
+    source_data = SourceCreate(
+        type=type,
+        url=url,
+        content=content,
+        title=title,
+        transformations=transformations_list,
+        embed=str_to_bool(embed),
+        delete_source=str_to_bool(delete_source),
+        async_processing=str_to_bool(async_processing),
+    )
+
+    return source_data, file
+
+
+async def _check_duplicate_in_workspace(
+    workspace_id: str, filename: str
+) -> Optional[dict]:
+    """Check if a file with the same name already exists in the workspace."""
+    results = await repo_query(
+        """
+        SELECT id, title, asset
+        FROM source
+        WHERE workspace_id = $workspace_id
+          AND asset.file_path IS NOT NONE
+        """,
+        {"workspace_id": workspace_id},
+    )
+
+    for row in results:
+        asset = row.get("asset") or {}
+        existing_path = asset.get("file_path", "")
+        if existing_path and Path(existing_path).name == filename:
+            return row
+    return None
+
+
+@router.post(
+    "/workspaces/{workspace_id}/sources",
+    response_model=SourceResponse,
+    status_code=202,
+)
+async def create_workspace_source(
+    workspace_id: str,
+    request: Request,
+    form_data: tuple[SourceCreate, Optional[UploadFile]] = Depends(
+        parse_workspace_source_form_data
+    ),
+):
+    """
+    Create a source scoped to a workspace.
+
+    Requires editor role. Enforces 50MB file size limit and
+    detects duplicate filenames within the workspace.
+    """
+    await require_editor(workspace_id, request)
+
+    source_data, upload_file = form_data
+    file_path = None
+
+    try:
+        # File size validation
+        if upload_file and source_data.type == "upload":
+            file_content = await upload_file.read()
+            if len(file_content) > MAX_UPLOAD_SIZE_BYTES:
+                raise HTTPException(
+                    status_code=413,
+                    detail=(
+                        f"File size exceeds the 50MB limit. "
+                        f"Received {len(file_content) / (1024 * 1024):.1f}MB."
+                    ),
+                )
+            await upload_file.seek(0)
+
+            # Duplicate detection
+            if upload_file.filename:
+                duplicate = await _check_duplicate_in_workspace(
+                    workspace_id, upload_file.filename
+                )
+                if duplicate:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            f"Duplicate file: '{upload_file.filename}' already exists "
+                            f"in this workspace (source {duplicate.get('id')}). "
+                            "Upload with a different name or delete the existing source."
+                        ),
+                    )
+
+            file_path = await save_uploaded_file(upload_file)
+
+        # Build content_state
+        content_state: dict[str, Any] = {}
+
+        if source_data.type == "link":
+            if not source_data.url:
+                raise HTTPException(
+                    status_code=400, detail="URL is required for link type"
+                )
+            content_state["url"] = source_data.url
+        elif source_data.type == "upload":
+            final_file_path = file_path or source_data.file_path
+            if not final_file_path:
+                raise HTTPException(
+                    status_code=400,
+                    detail="File upload or file_path is required for upload type",
+                )
+            content_state["file_path"] = final_file_path
+            content_state["delete_source"] = source_data.delete_source
+        elif source_data.type == "text":
+            if not source_data.content:
+                raise HTTPException(
+                    status_code=400, detail="Content is required for text type"
+                )
+            content_state["content"] = source_data.content
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid source type. Must be link, upload, or text",
+            )
+
+        # Validate transformations
+        transformation_ids = source_data.transformations or []
+        for trans_id in transformation_ids:
+            transformation = await Transformation.get(trans_id)
+            if not transformation:
+                raise HTTPException(
+                    status_code=404, detail=f"Transformation {trans_id} not found"
+                )
+
+        # Create source with workspace_id
+        source = Source(
+            title=source_data.title or "Processing...",
+            topics=[],
+            workspace_id=workspace_id,
+        )
+        await source.save()
+
+        try:
+            import commands.source_commands  # noqa: F401
+
+            command_input = SourceProcessingInput(
+                source_id=str(source.id),
+                content_state=content_state,
+                notebook_ids=[],
+                transformations=transformation_ids,
+                embed=source_data.embed,
+            )
+
+            command_id = await CommandService.submit_command_job(
+                "open_notebook",
+                "process_source",
+                command_input.model_dump(),
+            )
+
+            logger.info(f"Submitted workspace source processing: {command_id}")
+
+            source.command = ensure_record_id(command_id)
+            await source.save()
+
+            return SourceResponse(
+                id=source.id or "",
+                title=source.title,
+                topics=source.topics or [],
+                asset=None,
+                full_text=None,
+                embedded=False,
+                embedded_chunks=0,
+                created=str(source.created),
+                updated=str(source.updated),
+                command_id=command_id,
+                status="new",
+                processing_info={"async": True, "queued": True},
+                workspace_id=workspace_id,
+            )
+
+        except Exception as error:
+            logger.error(f"Failed to submit workspace source processing: {error}")
+            logger.exception(error)
+            try:
+                await source.delete()
+            except Exception:
+                pass
+            if file_path and upload_file:
+                try:
+                    os.unlink(file_path)
+                except Exception:
+                    pass
+            raise HTTPException(status_code=500, detail="Internal server error")
+
+    except HTTPException:
+        if file_path and upload_file:
+            try:
+                os.unlink(file_path)
+            except Exception:
+                pass
+        raise
+    except InvalidInputError as error:
+        if file_path and upload_file:
+            try:
+                os.unlink(file_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=400, detail=str(error))
+    except Exception as error:
+        logger.error(f"Error creating workspace source: {str(error)}")
+        logger.exception(error)
+        if file_path and upload_file:
+            try:
+                os.unlink(file_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 async def _resolve_source_file(source_id: str) -> tuple[str, str]:

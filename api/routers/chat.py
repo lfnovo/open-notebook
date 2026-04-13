@@ -2,11 +2,13 @@ import asyncio
 import traceback
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.models import NoteResponse, SaveChatAsNoteRequest, WorkspaceChatRequest
+from api.rbac import require_editor, require_viewer
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (
@@ -514,3 +516,161 @@ async def build_context(request: BuildContextRequest):
     except Exception as e:
         logger.error(f"Error building context: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error building context: {str(e)}")
+
+
+# =========================================================================
+# Workspace-scoped chat endpoints
+# =========================================================================
+
+
+class CreateWorkspaceSessionRequest(BaseModel):
+    workspace_id: str = Field(..., description="Workspace ID")
+    title: Optional[str] = Field(None, description="Optional session title")
+    model_override: Optional[str] = Field(
+        None, description="Optional model override for this session"
+    )
+
+
+@router.post("/chat/workspace/sessions", response_model=ChatSessionResponse)
+async def create_workspace_session(
+    body: CreateWorkspaceSessionRequest, request: Request
+):
+    """Create a new chat session in a workspace."""
+    try:
+        await require_editor(body.workspace_id, request)
+
+        session = ChatSession(
+            title=body.title or f"Chat Session {asyncio.get_event_loop().time():.0f}",
+            model_override=body.model_override,
+            workspace_id=body.workspace_id,
+        )
+        await session.save()
+
+        return ChatSessionResponse(
+            id=session.id or "",
+            title=session.title or "",
+            notebook_id=None,
+            created=str(session.created),
+            updated=str(session.updated),
+            message_count=0,
+            model_override=session.model_override,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating workspace chat session: {str(e)}")
+        logger.exception(e)
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error",
+        )
+
+
+@router.post("/chat/workspace/execute", response_model=ExecuteChatResponse)
+async def execute_workspace_chat(body: WorkspaceChatRequest, request: Request):
+    """Execute a chat request within workspace context."""
+    try:
+        # RBAC: require viewer on all referenced workspaces
+        for ws_id in body.workspace_ids:
+            await require_viewer(ws_id, request)
+
+        full_session_id = (
+            body.session_id
+            if body.session_id.startswith("chat_session:")
+            else f"chat_session:{body.session_id}"
+        )
+        session = await ChatSession.get(full_session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        model_override = (
+            body.model_override
+            if body.model_override is not None
+            else getattr(session, "model_override", None)
+        )
+
+        current_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
+        )
+
+        state_values = current_state.values if current_state else {}
+        state_values["messages"] = state_values.get("messages", [])
+        state_values["context"] = body.context
+        state_values["model_override"] = model_override
+        state_values["workspace_id"] = (
+            body.workspace_ids[0] if body.workspace_ids else None
+        )
+
+        from langchain_core.messages import HumanMessage
+
+        user_message = HumanMessage(content=body.message)
+        state_values["messages"].append(user_message)
+
+        result = chat_graph.invoke(
+            input=state_values,  # type: ignore[arg-type]
+            config=RunnableConfig(
+                configurable={
+                    "thread_id": full_session_id,
+                    "model_id": model_override,
+                }
+            ),
+        )
+
+        await session.save()
+
+        messages: list[ChatMessage] = []
+        for msg in result.get("messages", []):
+            messages.append(
+                ChatMessage(
+                    id=getattr(msg, "id", f"msg_{len(messages)}"),
+                    type=msg.type if hasattr(msg, "type") else "unknown",
+                    content=msg.content if hasattr(msg, "content") else str(msg),
+                    timestamp=None,
+                )
+            )
+
+        return ExecuteChatResponse(session_id=body.session_id, messages=messages)
+    except HTTPException:
+        raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Session not found")
+    except Exception as e:
+        logger.error(
+            f"Error executing workspace chat: {str(e)}\n"
+            f"  Session ID: {body.session_id}\n"
+            f"  Traceback:\n{traceback.format_exc()}"
+        )
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+
+@router.post("/chat/workspace/save-as-note", response_model=NoteResponse)
+async def save_chat_as_note(body: SaveChatAsNoteRequest, request: Request):
+    """Save a chat answer as a note in a workspace."""
+    try:
+        await require_editor(body.workspace_id, request)
+
+        new_note = Note(
+            title=body.title or "Chat Note",
+            content=body.content,
+            note_type="ai",
+            workspace_id=body.workspace_id,
+        )
+        command_id = await new_note.save()
+
+        return NoteResponse(
+            id=new_note.id or "",
+            title=new_note.title,
+            content=new_note.content,
+            note_type=new_note.note_type,
+            created=str(new_note.created),
+            updated=str(new_note.updated),
+            command_id=str(command_id) if command_id else None,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving chat as note: {str(e)}")
+        logger.exception(e)
+        raise HTTPException(status_code=500, detail="Internal server error")

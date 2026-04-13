@@ -60,12 +60,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     enabled: !!notebookId && !!currentSessionId
   })
 
-  // Update messages when current session changes
+  // Update messages when current session changes, but not during active
+  // streaming — the optimistic user message would be overwritten by the
+  // server state which does not yet include the in-flight turn.
   useEffect(() => {
-    if (currentSession?.messages) {
+    if (currentSession?.messages && !isSending) {
       setMessages(currentSession.messages)
     }
-  }, [currentSession])
+  }, [currentSession, isSending])
 
   // Auto-select most recent session when sessions are loaded
   useEffect(() => {

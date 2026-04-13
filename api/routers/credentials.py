@@ -248,7 +248,6 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
 @router.delete("/{credential_id}", response_model=CredentialDeleteResponse)
 async def delete_credential(
     credential_id: str,
-    delete_models: bool = Query(False, description="Also delete linked models"),
     migrate_to: Optional[str] = Query(
         None, description="Migrate linked models to this credential ID"
     ),
@@ -257,23 +256,12 @@ async def delete_credential(
     Delete a credential.
 
     If the credential has linked models:
-    - Pass delete_models=true to delete them
-    - Pass migrate_to=<credential_id> to reassign them
-    - Without either, returns 409 with linked model info
+    - Pass migrate_to=<credential_id> to reassign them to another credential
+    - Otherwise, linked models are cascade-deleted automatically
     """
     try:
         cred = await Credential.get(credential_id)
         linked_models = await cred.get_linked_models()
-
-        if linked_models and not delete_models and not migrate_to:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "message": f"Credential has {len(linked_models)} linked model(s)",
-                    "model_ids": [m.id for m in linked_models],
-                    "model_names": [f"{m.provider}/{m.name}" for m in linked_models],
-                },
-            )
 
         deleted_models = 0
 
@@ -284,8 +272,8 @@ async def delete_credential(
                 model.credential = target_cred.id
                 await model.save()
 
-        elif linked_models and delete_models:
-            # Delete linked models
+        elif linked_models:
+            # Cascade-delete linked models (default behavior when no migrate_to)
             for model in linked_models:
                 await model.delete()
                 deleted_models += 1

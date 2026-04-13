@@ -48,7 +48,40 @@ class ObjectModel(BaseModel):
                     "get_all() must be called from a specific model class"
                 )
             if order_by:
-                query = f"SELECT * FROM {table_name} ORDER BY {order_by}"
+                # Validate order_by to prevent SurrealQL injection
+                # Supports: "field", "field direction", "field1 direction, field2 direction"
+                import re
+
+                allowed_field_pattern = re.compile(r"^[a-z_][a-z0-9_]*$")
+                allowed_directions = {"asc", "desc"}
+
+                clauses = [c.strip() for c in order_by.split(",")]
+                validated_clauses = []
+                for clause in clauses:
+                    parts = clause.strip().split()
+                    if len(parts) == 1:
+                        if not allowed_field_pattern.match(parts[0].lower()):
+                            raise InvalidInputError(
+                                f"Invalid order_by field: '{parts[0]}'"
+                            )
+                        validated_clauses.append(parts[0].lower())
+                    elif len(parts) == 2:
+                        if not allowed_field_pattern.match(
+                            parts[0].lower()
+                        ) or parts[1].lower() not in allowed_directions:
+                            raise InvalidInputError(
+                                f"Invalid order_by clause: '{clause.strip()}'"
+                            )
+                        validated_clauses.append(
+                            f"{parts[0].lower()} {parts[1].lower()}"
+                        )
+                    else:
+                        raise InvalidInputError(
+                            f"Invalid order_by clause: '{clause.strip()}'"
+                        )
+
+                validated_order_by = ", ".join(validated_clauses)
+                query = f"SELECT * FROM {table_name} ORDER BY {validated_order_by}"
             else:
                 query = f"SELECT * FROM {table_name}"
 

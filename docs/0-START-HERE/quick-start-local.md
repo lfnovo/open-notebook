@@ -38,7 +38,7 @@ services:
       - ./surreal_data:/mydata
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+    image: lfnovo/open_notebook:v1-latest
     pull_policy: always
     ports:
       - "8502:8502"  # Web UI (React frontend)
@@ -55,7 +55,6 @@ services:
       - SURREAL_DATABASE=open_notebook
     volumes:
       - ./notebook_data:/app/data
-      - ./surreal_data:/mydata
     depends_on:
       - surrealdb
     restart: always

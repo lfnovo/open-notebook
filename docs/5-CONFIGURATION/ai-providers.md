@@ -249,6 +249,76 @@ Heavy use: Depends on models chosen
 
 ---
 
+### DashScope (Qwen)
+
+**Cost:** ~$0.01-0.06 per 1K tokens (varies by model)
+
+**Get Your API Key:**
+1. Go to https://dashscope.console.aliyun.com/
+2. Create an Alibaba Cloud account (if needed)
+3. Navigate to API Keys section
+4. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **DashScope (Qwen)**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Available Models:**
+- `qwen-max` — Most capable Qwen model
+- `qwen-plus` — Good balance of quality and speed
+- `qwen-turbo` — Fastest, cheapest
+
+**Recommended:**
+- For quality: `qwen-max` (best overall)
+- For general use: `qwen-plus` (good balance)
+- For speed/cost: `qwen-turbo` (cheapest)
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the DashScope console
+- "Model not available" → Re-discover models from the credential
+
+---
+
+### MiniMax
+
+**Cost:** Varies by model
+
+**Get Your API Key:**
+1. Go to https://platform.minimaxi.com/
+2. Create an account (if needed)
+3. Navigate to API Keys section
+4. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **MiniMax**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Available Models:**
+- `MiniMax-M2.5` — Most capable, 204K context
+- `MiniMax-M2.5-highspeed` — Faster variant, 204K context
+
+**Recommended:**
+- For quality: `MiniMax-M2.5` (best overall)
+- For speed: `MiniMax-M2.5-highspeed` (faster responses)
+
+**Advantages:**
+- Very long context (204K tokens)
+- Competitive pricing
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the MiniMax platform
+- "Model not available" → Re-discover models from the credential
+
+---
+
 ## Self-Hosted / Local
 
 ### Ollama (Recommended for Local)

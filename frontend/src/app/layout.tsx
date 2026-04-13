@@ -17,13 +17,25 @@ export const metadata: Metadata = {
   description: "Privacy-focused research and knowledge management",
 };
 
+// Clerk is optional — wrap only when a valid publishable key is provided at runtime.
+// This allows the Docker image to build without Clerk credentials.
+const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const isClerkEnabled = clerkKey && clerkKey.startsWith("pk_");
+
+function MaybeClerkProvider({ children }: { children: React.ReactNode }) {
+  if (isClerkEnabled) {
+    return <ClerkProvider publishableKey={clerkKey}>{children}</ClerkProvider>;
+  }
+  return <>{children}</>;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider>
+    <MaybeClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <head>
           <script dangerouslySetInnerHTML={{ __html: themeScript }} />
@@ -43,6 +55,6 @@ export default function RootLayout({
           </ErrorBoundary>
         </body>
       </html>
-    </ClerkProvider>
+    </MaybeClerkProvider>
   );
 }

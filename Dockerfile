@@ -50,10 +50,6 @@ COPY frontend/package.json frontend/package-lock.json ./
 RUN npm config set registry ${NPM_REGISTRY}
 RUN npm ci
 COPY frontend/ ./
-# Provide a placeholder Clerk key so Next.js static prerendering succeeds.
-# The real key is injected at runtime via environment variables.
-ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_placeholder
-ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 RUN npm run build
 
 # Return to app root

@@ -44,6 +44,10 @@ RUN mkdir -p /app/tiktoken-cache && \
 # Stage 5: Runtime
 FROM python:3.12-slim-bookworm AS runtime
 
+LABEL org.opencontainers.image.source="https://github.com/nsguga/open-notebook"
+LABEL org.opencontainers.image.description="Open Notebook - Privacy-focused research assistant"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Install runtime dependencies
 RUN apt-get update && apt-get upgrade -y && apt-get install -y \
     ffmpeg \

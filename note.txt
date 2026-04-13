@@ -1,0 +1,10 @@
+backend_start : uv run uvicorn api.main:app --host 127.0.0.1 --port 5055
+
+surrealdb_start : C:\surrealdb\surreal.exe start --log info --user root --pass root rocksdb://./surreal_data
+
+frontend : npm run dev
+
+zookeeper: C:\kafka\kafka> .\bin\windows\zookeeper-server-start.bat .\config\zookeeper.properties
+kafka server :  C:\kafka\kafka> .\bin\windows\kafka-server-start.bat .\config\server.properties
+
+surreal-commands-worker: uv run --env-file .env surreal-commands-worker --import-modules commands

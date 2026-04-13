@@ -121,12 +121,28 @@ async def generate_embeddings(
     model_name = getattr(embedding_model, "model_name", "unknown")
 
     # Log text sizes for debugging
-    token_sizes = [token_count(t) for t in texts]
-    char_sizes = [len(t) for t in texts]
-    logger.debug(
-        f"Generating embeddings for {len(texts)} texts "
-        f"(tokens: min={min(token_sizes)}, max={max(token_sizes)}, "
-        f"total={sum(token_sizes)}; chars: total={sum(char_sizes)})"
+    metrics: tuple[int, int, int, int] | None = None
+
+    def _get_size_metrics() -> tuple[int, int, int, int]:
+        nonlocal metrics
+        if metrics is None:
+            token_sizes = [token_count(t) for t in texts]
+            metrics = (
+                min(token_sizes),
+                max(token_sizes),
+                sum(token_sizes),
+                sum(len(t) for t in texts),
+            )
+        return metrics
+
+    logger.opt(lazy=True).debug(
+        "Generating embeddings for {} texts "
+        "(tokens: min={}, max={}, total={}; chars: total={})",
+        lambda: len(texts),
+        lambda: _get_size_metrics()[0],
+        lambda: _get_size_metrics()[1],
+        lambda: _get_size_metrics()[2],
+        lambda: _get_size_metrics()[3],
     )
 
     all_embeddings: List[List[float]] = []

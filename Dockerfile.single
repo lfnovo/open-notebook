@@ -10,6 +10,10 @@ RUN npm ci
 
 # Copy the rest of the frontend source
 COPY frontend/ ./
+# Provide a placeholder Clerk key so Next.js static prerendering succeeds.
+# The real key is injected at runtime via environment variables.
+ARG NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_placeholder
+ENV NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
 # Build the frontend
 RUN npm run build
 

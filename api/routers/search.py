@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import AsyncGenerator
 
@@ -248,30 +249,44 @@ async def workspace_search(search_request: WorkspaceSearchRequest, request: Requ
             )
 
         all_results: list = []
-        for ws_id in accessible_ids:
+
+        async def _search_workspace(ws_id: str) -> list:
             if search_request.type == "vector":
                 if not await model_manager.get_embedding_model():
                     raise HTTPException(
                         status_code=400,
                         detail="Vector search requires an embedding model.",
                     )
-                ws_results = await vector_search(
-                    keyword=search_request.query,
-                    results=search_request.limit,
-                    source=search_request.search_sources,
-                    note=search_request.search_notes,
-                    minimum_score=search_request.minimum_score,
-                    workspace_id=ws_id,
+                return (
+                    await vector_search(
+                        keyword=search_request.query,
+                        results=search_request.limit,
+                        source=search_request.search_sources,
+                        note=search_request.search_notes,
+                        minimum_score=search_request.minimum_score,
+                        workspace_id=ws_id,
+                    )
+                    or []
                 )
             else:
-                ws_results = await text_search(
-                    keyword=search_request.query,
-                    results=search_request.limit,
-                    source=search_request.search_sources,
-                    note=search_request.search_notes,
-                    workspace_id=ws_id,
+                return (
+                    await text_search(
+                        keyword=search_request.query,
+                        results=search_request.limit,
+                        source=search_request.search_sources,
+                        note=search_request.search_notes,
+                        workspace_id=ws_id,
+                    )
+                    or []
                 )
-            all_results.extend(ws_results or [])
+
+        tasks = [_search_workspace(ws_id) for ws_id in accessible_ids]
+        workspace_results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in workspace_results:
+            if isinstance(result, Exception):
+                logger.warning(f"Workspace search failed for one workspace: {result}")
+                continue  # Skip failed workspaces
+            all_results.extend(result)
 
         return WorkspaceSearchResponse(
             results=all_results,

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
@@ -22,24 +23,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body className={inter.className}>
-        <ErrorBoundary>
-          <ThemeProvider>
-            <QueryProvider>
-              <I18nProvider>
-                <ConnectionGuard>
-                  {children}
-                  <Toaster />
-                </ConnectionGuard>
-              </I18nProvider>
-            </QueryProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        </head>
+        <body className={inter.className}>
+          <ErrorBoundary>
+            <ThemeProvider>
+              <QueryProvider>
+                <I18nProvider>
+                  <ConnectionGuard>
+                    {children}
+                    <Toaster />
+                  </ConnectionGuard>
+                </I18nProvider>
+              </QueryProvider>
+            </ThemeProvider>
+          </ErrorBoundary>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

@@ -15,6 +15,9 @@ export const queryClient = new QueryClient({
 })
 
 export const QUERY_KEYS = {
+  workspaces: ['workspaces'] as const,
+  workspace: (id: string) => ['workspaces', id] as const,
+  workspaceMembers: (workspaceId: string) => ['workspaces', workspaceId, 'members'] as const,
   notebooks: ['notebooks'] as const,
   notebook: (id: string) => ['notebooks', id] as const,
   notes: (notebookId?: string) => ['notes', notebookId] as const,

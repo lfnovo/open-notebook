@@ -138,4 +138,6 @@ specs/
 
 
 *.local.yml
-**/*.local.md
+**/*.local.md.agents/
+.memory/
+.agents/

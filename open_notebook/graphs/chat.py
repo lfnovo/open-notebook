@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sqlite3
 from typing import Annotated, Optional
 
@@ -11,7 +12,7 @@ from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
-from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
+from open_notebook.config import DATA_FOLDER, LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
@@ -25,6 +26,7 @@ class ThreadState(TypedDict):
     context: Optional[str]
     context_config: Optional[dict]
     model_override: Optional[str]
+    workspace_id: Optional[str]
 
 
 def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -91,8 +93,44 @@ conn = sqlite3.connect(
 )
 memory = SqliteSaver(conn)
 
+_checkpoint_connections: dict[str, sqlite3.Connection] = {}
+
+
+def get_workspace_checkpointer(workspace_id: Optional[str] = None) -> SqliteSaver:
+    """Get a per-workspace SqliteSaver, or the global one for legacy sessions."""
+    if workspace_id:
+        if workspace_id not in _checkpoint_connections:
+            safe_id = workspace_id.replace(":", "_")
+            checkpoint_dir = os.path.join(DATA_FOLDER, "graphs", safe_id)
+            os.makedirs(checkpoint_dir, exist_ok=True)
+            checkpoint_path = os.path.join(checkpoint_dir, "chat_checkpoints.sqlite")
+            _checkpoint_connections[workspace_id] = sqlite3.connect(
+                checkpoint_path, check_same_thread=False
+            )
+        return SqliteSaver(_checkpoint_connections[workspace_id])
+    # Fallback to global for legacy sessions
+    return memory
+
+
 agent_state = StateGraph(ThreadState)
 agent_state.add_node("agent", call_model_with_messages)
 agent_state.add_edge(START, "agent")
 agent_state.add_edge("agent", END)
 graph = agent_state.compile(checkpointer=memory)
+
+
+def get_workspace_graph(workspace_id: Optional[str] = None):
+    """Get a compiled chat graph with per-workspace checkpointer.
+
+    For workspace-scoped sessions, returns a graph compiled with a
+    workspace-specific SqliteSaver. For legacy sessions (no workspace_id),
+    returns the global graph.
+    """
+    if not workspace_id:
+        return graph
+    checkpointer = get_workspace_checkpointer(workspace_id)
+    ws_graph = StateGraph(ThreadState)
+    ws_graph.add_node("agent", call_model_with_messages)
+    ws_graph.add_edge(START, "agent")
+    ws_graph.add_edge("agent", END)
+    return ws_graph.compile(checkpointer=checkpointer)

@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from api.auth import PasswordAuthMiddleware
+from api.clerk_auth import ClerkAuthMiddleware
 from open_notebook.exceptions import (
     AuthenticationError,
     ConfigurationError,
@@ -33,6 +33,7 @@ from api.routers import (
     episode_profiles,
     insights,
     languages,
+    mcp_keys,
     models,
     notebooks,
     notes,
@@ -43,6 +44,7 @@ from api.routers import (
     sources,
     speaker_profiles,
     transformations,
+    workspaces,
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
@@ -122,10 +124,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Add password authentication middleware first
-# Exclude /api/auth/status and /api/config from authentication
+# Add Clerk JWT authentication middleware
+# Requires CLERK_JWKS_URL and CLERK_ISSUER environment variables
+clerk_jwks_url = get_secret_from_env("CLERK_JWKS_URL") or ""
+clerk_issuer = get_secret_from_env("CLERK_ISSUER") or ""
+
+if not clerk_jwks_url or not clerk_issuer:
+    logger.warning(
+        "CLERK_JWKS_URL or CLERK_ISSUER not set. "
+        "Clerk auth middleware will reject all requests until configured."
+    )
+
 app.add_middleware(
-    PasswordAuthMiddleware,
+    ClerkAuthMiddleware,
+    jwks_url=clerk_jwks_url,
+    issuer=clerk_issuer,
     excluded_paths=[
         "/",
         "/health",
@@ -135,6 +148,7 @@ app.add_middleware(
         "/api/auth/status",
         "/api/config",
     ],
+    excluded_prefixes=["/api/mcp/"],
 )
 
 # Add CORS middleware last (so it processes first)
@@ -166,7 +180,8 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
         status_code=exc.status_code,
         content={"detail": exc.detail},
         headers={
-            **(exc.headers or {}), "Access-Control-Allow-Origin": origin,
+            **(exc.headers or {}),
+            "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",
             "Access-Control-Allow-Methods": "*",
             "Access-Control-Allow-Headers": "*",
@@ -280,6 +295,8 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(workspaces.router, prefix="/api", tags=["workspaces"])
+app.include_router(mcp_keys.router, prefix="/api", tags=["mcp_keys"])
 
 
 @app.get("/")

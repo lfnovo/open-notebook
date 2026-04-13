@@ -1,10 +1,10 @@
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v3
+    image: surrealdb/surrealdb:v3.0.5
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
-    ports:
-      - "8002:8000"
+    expose:
+      - "8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

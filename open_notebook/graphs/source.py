@@ -7,6 +7,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from loguru import logger
+from surreal_commands import submit_command
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.ai.models import Model, ModelManager
@@ -21,6 +22,7 @@ class SourceState(TypedDict):
     apply_transformations: List[Transformation]
     source_id: str
     notebook_ids: List[str]
+    workspace_id: Optional[str]
     source: Source
     transformation: Annotated[list, operator.add]
     embed: bool
@@ -51,6 +53,22 @@ async def content_process(state: SourceState) -> dict:
     )
     content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
+    # Try RAGAnything for supported file types (PDF, DOCX, PPTX)
+    file_path = content_state.get("file_path")
+    if file_path:
+        from open_notebook.services.ingestion_service import raganything_extract
+
+        rag_content = await raganything_extract(file_path)
+        if rag_content:
+            logger.info(f"Using RAGAnything extraction for {file_path}")
+            processed = ProcessSourceState(
+                content=rag_content,
+                file_path=file_path,
+                title=content_state.get("title"),
+            )
+            return {"content_state": processed}
+
+    # Fallback: content-core extraction for all other types
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
     )
@@ -110,6 +128,11 @@ async def save_source(state: SourceState) -> dict:
     if content_state.title:
         source.title = content_state.title
 
+    # Propagate workspace_id if present in graph state
+    workspace_id = state.get("workspace_id")
+    if workspace_id and not source.workspace_id:
+        source.workspace_id = workspace_id
+
     await source.save()
 
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness
@@ -122,6 +145,28 @@ async def save_source(state: SourceState) -> dict:
         else:
             logger.warning(
                 f"Source {source.id} has no text content to embed, skipping vectorization"
+            )
+
+    # Submit graph extraction if workspace-scoped and has content
+    workspace_id = state.get("workspace_id") or source.workspace_id
+    if workspace_id and source.full_text and source.full_text.strip():
+        try:
+            submit_command(
+                "open_notebook",
+                "build_graph",
+                {
+                    "workspace_id": str(workspace_id),
+                    "source_id": str(source.id),
+                },
+            )
+            logger.debug(
+                f"Submitted build_graph command for source {source.id} "
+                f"in workspace {workspace_id}"
+            )
+        except Exception as graph_error:
+            logger.warning(
+                f"Failed to submit build_graph for source {source.id}: {graph_error}. "
+                "Vector search remains unaffected."
             )
 
     return {"source": source}

@@ -4,11 +4,13 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { GeneratePodcastDialog } from '@/components/podcasts/GeneratePodcastDialog'
+import { CreateWorkspaceDialog } from '@/components/workspaces/CreateWorkspaceDialog'
 
 interface CreateDialogsContextType {
   openSourceDialog: () => void
   openNotebookDialog: () => void
   openPodcastDialog: () => void
+  openWorkspaceDialog: () => void
 }
 
 const CreateDialogsContext = createContext<CreateDialogsContextType | null>(null)
@@ -17,10 +19,12 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
   const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
   const [notebookDialogOpen, setNotebookDialogOpen] = useState(false)
   const [podcastDialogOpen, setPodcastDialogOpen] = useState(false)
+  const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false)
 
   const openSourceDialog = useCallback(() => setSourceDialogOpen(true), [])
   const openNotebookDialog = useCallback(() => setNotebookDialogOpen(true), [])
   const openPodcastDialog = useCallback(() => setPodcastDialogOpen(true), [])
+  const openWorkspaceDialog = useCallback(() => setWorkspaceDialogOpen(true), [])
 
   return (
     <CreateDialogsContext.Provider
@@ -28,12 +32,14 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
         openSourceDialog,
         openNotebookDialog,
         openPodcastDialog,
+        openWorkspaceDialog,
       }}
     >
       {children}
       <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
       <CreateNotebookDialog open={notebookDialogOpen} onOpenChange={setNotebookDialogOpen} />
       <GeneratePodcastDialog open={podcastDialogOpen} onOpenChange={setPodcastDialogOpen} />
+      <CreateWorkspaceDialog open={workspaceDialogOpen} onOpenChange={setWorkspaceDialogOpen} />
     </CreateDialogsContext.Provider>
   )
 }

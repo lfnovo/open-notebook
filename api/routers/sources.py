@@ -29,7 +29,7 @@ from api.models import (
     SourceStatusResponse,
     SourceUpdate,
 )
-from api.rbac import require_editor
+from api.rbac import require_editor, require_viewer
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
@@ -155,7 +155,9 @@ def parse_source_form_data(
 
 @router.get("/sources", response_model=List[SourceListResponse])
 async def get_sources(
+    request: Request,
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
+    workspace_id: Optional[str] = Query(None, description="Filter by workspace ID"),
     limit: int = Query(
         50, ge=1, le=100, description="Number of sources to return (1-100)"
     ),
@@ -167,6 +169,10 @@ async def get_sources(
 ):
     """Get sources with pagination and sorting support."""
     try:
+        # RBAC: enforce viewer access when filtering by workspace
+        if workspace_id:
+            await require_viewer(workspace_id, request)
+
         # Validate sort parameters
         if sort_by not in ["created", "updated"]:
             raise HTTPException(
@@ -206,17 +212,22 @@ async def get_sources(
                 },
             )
         else:
-            # Query all sources - include command field with FETCH
+            # Query all sources (optionally filtered by workspace) - include command field with FETCH
+            where_clause = "WHERE workspace_id = $workspace_id" if workspace_id else ""
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
                 FROM source
+                {where_clause}
                 {order_clause}
                 LIMIT $limit START $offset
                 FETCH command
             """
-            result = await repo_query(query, {"limit": limit, "offset": offset})
+            params: dict[str, Any] = {"limit": limit, "offset": offset}
+            if workspace_id:
+                params["workspace_id"] = workspace_id
+            result = await repo_query(query, params)
 
         # Convert result to response model
         # Command data is already fetched via FETCH command clause
@@ -847,12 +858,16 @@ def _is_source_file_available(source: Source) -> Optional[bool]:
 
 
 @router.get("/sources/{source_id}", response_model=SourceResponse)
-async def get_source(source_id: str):
+async def get_source(source_id: str, request: Request):
     """Get a specific source by ID."""
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce viewer access if source belongs to a workspace
+        if source.workspace_id:
+            await require_viewer(source.workspace_id, request)
 
         # Get status information if command exists
         status = None
@@ -907,9 +922,17 @@ async def get_source(source_id: str):
 
 
 @router.head("/sources/{source_id}/download")
-async def check_source_file(source_id: str):
+async def check_source_file(source_id: str, request: Request):
     """Check if a source has a downloadable file."""
     try:
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce viewer access if source belongs to a workspace
+        if source.workspace_id:
+            await require_viewer(source.workspace_id, request)
+
         await _resolve_source_file(source_id)
         return Response(status_code=200)
     except HTTPException:
@@ -920,9 +943,17 @@ async def check_source_file(source_id: str):
 
 
 @router.get("/sources/{source_id}/download")
-async def download_source_file(source_id: str):
+async def download_source_file(source_id: str, request: Request):
     """Download the original file associated with an uploaded source."""
     try:
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce viewer access if source belongs to a workspace
+        if source.workspace_id:
+            await require_viewer(source.workspace_id, request)
+
         resolved_path, filename = await _resolve_source_file(source_id)
         return FileResponse(
             path=resolved_path,
@@ -937,13 +968,17 @@ async def download_source_file(source_id: str):
 
 
 @router.get("/sources/{source_id}/status", response_model=SourceStatusResponse)
-async def get_source_status(source_id: str):
+async def get_source_status(source_id: str, request: Request):
     """Get processing status for a source."""
     try:
         # First, verify source exists
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce viewer access if source belongs to a workspace
+        if source.workspace_id:
+            await require_viewer(source.workspace_id, request)
 
         # Check if this is a legacy source (no command)
         if not source.command:
@@ -999,12 +1034,16 @@ async def get_source_status(source_id: str):
 
 
 @router.put("/sources/{source_id}", response_model=SourceResponse)
-async def update_source(source_id: str, source_update: SourceUpdate):
+async def update_source(source_id: str, source_update: SourceUpdate, request: Request):
     """Update a source."""
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce editor access if source belongs to a workspace
+        if source.workspace_id:
+            await require_editor(source.workspace_id, request)
 
         # Update only provided fields
         if source_update.title is not None:
@@ -1041,13 +1080,17 @@ async def update_source(source_id: str, source_update: SourceUpdate):
 
 
 @router.post("/sources/{source_id}/retry", response_model=SourceResponse)
-async def retry_source_processing(source_id: str):
+async def retry_source_processing(source_id: str, request: Request):
     """Retry processing for a failed or stuck source."""
     try:
         # First, verify source exists
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce editor access if source belongs to a workspace
+        if source.workspace_id:
+            await require_editor(source.workspace_id, request)
 
         # Check if source already has a running command
         if source.command:
@@ -1166,12 +1209,16 @@ async def retry_source_processing(source_id: str):
 
 
 @router.delete("/sources/{source_id}")
-async def delete_source(source_id: str):
+async def delete_source(source_id: str, request: Request):
     """Delete a source."""
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce editor access if source belongs to a workspace
+        if source.workspace_id:
+            await require_editor(source.workspace_id, request)
 
         await source.delete()
 
@@ -1184,12 +1231,16 @@ async def delete_source(source_id: str):
 
 
 @router.get("/sources/{source_id}/insights", response_model=List[SourceInsightResponse])
-async def get_source_insights(source_id: str):
+async def get_source_insights(source_id: str, request: Request):
     """Get all insights for a specific source."""
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce viewer access if source belongs to a workspace
+        if source.workspace_id:
+            await require_viewer(source.workspace_id, request)
 
         insights = await source.get_insights()
         return [
@@ -1217,7 +1268,9 @@ async def get_source_insights(source_id: str):
     response_model=InsightCreationResponse,
     status_code=202,
 )
-async def create_source_insight(source_id: str, request: CreateSourceInsightRequest):
+async def create_source_insight(
+    source_id: str, request: CreateSourceInsightRequest, http_request: Request
+):
     """
     Start insight generation for a source by running a transformation.
 
@@ -1230,6 +1283,10 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        # RBAC: enforce editor access if source belongs to a workspace
+        if source.workspace_id:
+            await require_editor(source.workspace_id, http_request)
 
         # Validate transformation exists
         transformation = await Transformation.get(request.transformation_id)

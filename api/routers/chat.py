@@ -14,7 +14,7 @@ from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (
     NotFoundError,
 )
-from open_notebook.graphs.chat import graph as chat_graph
+from open_notebook.graphs.chat import get_workspace_graph, graph as chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -589,8 +589,12 @@ async def execute_workspace_chat(body: WorkspaceChatRequest, request: Request):
             else getattr(session, "model_override", None)
         )
 
+        # Use per-workspace checkpointer for workspace-scoped sessions
+        workspace_id = body.workspace_ids[0] if body.workspace_ids else None
+        ws_graph = get_workspace_graph(workspace_id)
+
         current_state = await asyncio.to_thread(
-            chat_graph.get_state,
+            ws_graph.get_state,
             config=RunnableConfig(configurable={"thread_id": full_session_id}),
         )
 
@@ -598,16 +602,14 @@ async def execute_workspace_chat(body: WorkspaceChatRequest, request: Request):
         state_values["messages"] = state_values.get("messages", [])
         state_values["context"] = body.context
         state_values["model_override"] = model_override
-        state_values["workspace_id"] = (
-            body.workspace_ids[0] if body.workspace_ids else None
-        )
+        state_values["workspace_id"] = workspace_id
 
         from langchain_core.messages import HumanMessage
 
         user_message = HumanMessage(content=body.message)
         state_values["messages"].append(user_message)
 
-        result = chat_graph.invoke(
+        result = ws_graph.invoke(
             input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={

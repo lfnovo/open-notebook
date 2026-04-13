@@ -1,44 +1,30 @@
 'use client'
 
-import { useAuth } from '@/lib/hooks/use-auth'
-import { useVersionCheck } from '@/lib/hooks/use-version-check'
+import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { ModalProvider } from '@/components/providers/ModalProvider'
 import { CreateDialogsProvider } from '@/lib/hooks/use-create-dialogs'
 import { CommandPalette } from '@/components/common/CommandPalette'
+import { ClerkTokenProvider } from '@/components/providers/ClerkTokenProvider'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isSignedIn, isLoaded } = useAuth()
   const router = useRouter()
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
-
-  // Check for version updates once per session
-  useVersionCheck()
 
   useEffect(() => {
-    // Mark that we've completed the initial auth check
-    if (!isLoading) {
-      setHasCheckedAuth(true)
-
-      // Redirect to login if not authenticated
-      if (!isAuthenticated) {
-        // Store the current path to redirect back after login
-        const currentPath = window.location.pathname + window.location.search
-        sessionStorage.setItem('redirectAfterLogin', currentPath)
-        router.push('/login')
-      }
+    if (isLoaded && !isSignedIn) {
+      router.push('/login')
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isSignedIn, isLoaded, router])
 
-  // Show loading spinner during initial auth check or while loading
-  if (isLoading || !hasCheckedAuth) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner />
@@ -46,18 +32,17 @@ export default function DashboardLayout({
     )
   }
 
-  // Don't render anything if not authenticated (during redirect)
-  if (!isAuthenticated) {
-    return null
-  }
+  if (!isSignedIn) return null
 
   return (
     <ErrorBoundary>
-      <CreateDialogsProvider>
-        {children}
-        <ModalProvider />
-        <CommandPalette />
-      </CreateDialogsProvider>
+      <ClerkTokenProvider>
+        <CreateDialogsProvider>
+          {children}
+          <ModalProvider />
+          <CommandPalette />
+        </CreateDialogsProvider>
+      </ClerkTokenProvider>
     </ErrorBoundary>
   )
 }

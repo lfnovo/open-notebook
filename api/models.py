@@ -347,6 +347,8 @@ class SourceResponse(BaseModel):
     processing_info: Optional[Dict] = None
     # Notebook associations
     notebooks: Optional[List[str]] = None
+    # Workspace scoping
+    workspace_id: Optional[str] = None
 
 
 class SourceListResponse(BaseModel):
@@ -447,12 +449,8 @@ class SetApiKeyRequest(BaseModel):
     base_url: Optional[str] = Field(
         None, description="Base URL for URL-based providers (Ollama, OpenAI-compatible)"
     )
-    endpoint: Optional[str] = Field(
-        None, description="Endpoint URL for Azure OpenAI"
-    )
-    api_version: Optional[str] = Field(
-        None, description="API version for Azure OpenAI"
-    )
+    endpoint: Optional[str] = Field(None, description="Endpoint URL for Azure OpenAI")
+    api_version: Optional[str] = Field(None, description="API version for Azure OpenAI")
     endpoint_llm: Optional[str] = Field(
         None, description="Service-specific endpoint for LLM (Azure)"
     )
@@ -683,3 +681,121 @@ class NotebookDeleteResponse(BaseModel):
     unlinked_sources: int = Field(
         ..., description="Number of sources unlinked from notebook"
     )
+
+
+# Workspace models
+class CreateWorkspaceRequest(BaseModel):
+    name: str = Field(..., description="Workspace name")
+    description: Optional[str] = Field(None, description="Workspace description")
+    visibility: Literal["private", "shared", "community"] = Field(
+        "private", description="Workspace visibility"
+    )
+
+
+class UpdateWorkspaceRequest(BaseModel):
+    name: Optional[str] = Field(None, description="Workspace name")
+    description: Optional[str] = Field(None, description="Workspace description")
+    visibility: Optional[Literal["private", "shared", "community"]] = Field(
+        None, description="Workspace visibility"
+    )
+
+
+class WorkspaceResponse(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    visibility: str
+    owner_id: str
+    org_id: Optional[str] = None
+    created: str
+    updated: str
+
+
+class InviteMemberRequest(BaseModel):
+    user_id: str = Field(..., description="User ID to invite")
+    role: Literal["viewer", "editor", "owner"] = Field(
+        ..., description="Role to assign"
+    )
+
+
+class WorkspaceMemberResponse(BaseModel):
+    id: str
+    workspace_id: str
+    user_id: str
+    role: str
+    created: str
+    updated: str
+
+
+class WorkspaceDeleteResponse(BaseModel):
+    message: str = Field(..., description="Success message")
+
+
+# Workspace-scoped chat & search models
+class WorkspaceChatRequest(BaseModel):
+    session_id: str = Field(..., description="Chat session ID")
+    message: str = Field(..., description="User message content")
+    workspace_ids: List[str] = Field(..., description="Workspace IDs to query")
+    context: Optional[Dict[str, Any]] = Field(
+        None, description="Optional additional context"
+    )
+    model_override: Optional[str] = Field(None, description="Optional model override")
+
+
+class WorkspaceSearchRequest(BaseModel):
+    query: str = Field(..., description="Search query")
+    workspace_ids: List[str] = Field(..., description="Workspace IDs to search")
+    type: Literal["text", "vector"] = Field("vector", description="Search type")
+    limit: int = Field(100, description="Maximum results", le=1000)
+    search_sources: bool = Field(True, description="Include sources")
+    search_notes: bool = Field(True, description="Include notes")
+    minimum_score: float = Field(
+        0.2, description="Minimum score for vector search", ge=0, le=1
+    )
+
+
+class WorkspaceSearchResponse(BaseModel):
+    results: List[Dict[str, Any]] = Field(..., description="Search results")
+    total_count: int = Field(..., description="Total number of results")
+    search_type: str = Field(..., description="Type of search performed")
+    workspace_ids: List[str] = Field(..., description="Workspaces that were searched")
+
+
+class WorkspaceAskRequest(BaseModel):
+    question: str = Field(..., description="Question to ask")
+    workspace_ids: List[str] = Field(..., description="Workspace IDs to query")
+    strategy_model: str = Field(..., description="Model ID for query strategy")
+    answer_model: str = Field(..., description="Model ID for individual answers")
+    final_answer_model: str = Field(..., description="Model ID for final answer")
+
+
+class SaveChatAsNoteRequest(BaseModel):
+    content: str = Field(..., description="Chat answer content to save as note")
+    title: Optional[str] = Field(None, description="Note title")
+    workspace_id: str = Field(..., description="Workspace to save note in")
+
+
+# MCP API key models
+class CreateMcpKeyRequest(BaseModel):
+    workspace_ids: List[str] = Field(
+        ..., description="Workspace IDs to scope the key to"
+    )
+    label: Optional[str] = Field(None, description="Human-readable label")
+    expires_in_days: Optional[int] = Field(
+        None, description="Expiration in days from now"
+    )
+
+
+class McpKeyResponse(BaseModel):
+    id: str
+    label: Optional[str] = None
+    workspace_ids: List[str]
+    created: str
+    expires_at: Optional[str] = None
+    revoked: bool
+    # plain_key is ONLY included in create response
+    plain_key: Optional[str] = None
+
+
+class McpKeyListResponse(BaseModel):
+    keys: List[McpKeyResponse]

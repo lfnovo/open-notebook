@@ -1,3 +1,7 @@
+/**
+ * @deprecated This store is deprecated. Use Clerk's useAuth() hook instead.
+ * Will be removed after full Clerk migration is verified.
+ */
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getApiUrl } from '@/lib/config'

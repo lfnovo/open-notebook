@@ -223,6 +223,7 @@ def credential_to_response(cred: Credential, model_count: int = 0) -> Credential
         created=str(cred.created) if cred.created else "",
         updated=str(cred.updated) if cred.updated else "",
         model_count=model_count,
+        decryption_error=cred.decryption_error,
     )
 
 

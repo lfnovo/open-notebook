@@ -617,6 +617,7 @@ class CredentialResponse(BaseModel):
     created: str
     updated: str
     model_count: int = 0
+    decryption_error: Optional[str] = None
 
 
 class CredentialDeleteResponse(BaseModel):

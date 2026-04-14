@@ -269,7 +269,7 @@ async def delete_credential(
     try:
         try:
             cred = await Credential.get(credential_id)
-        except Exception as decrypt_err:
+        except ValueError as decrypt_err:
             # Credential exists but can't be decrypted (wrong encryption key).
             # Fall back to direct DB operations for deletion.
             logger.warning(
@@ -277,17 +277,33 @@ async def delete_credential(
                 f"falling back to direct delete: {decrypt_err}"
             )
 
-            # Delete linked models directly
+            # Query linked models
             linked = await repo_query(
                 "SELECT * FROM model WHERE credential = $cred_id",
                 {"cred_id": ensure_record_id(credential_id)},
             )
             deleted_models = 0
-            for model_row in linked:
-                model_id = str(model_row.get("id", ""))
-                if model_id:
-                    await repo_delete(model_id)
-                    deleted_models += 1
+
+            if linked and migrate_to:
+                # Migrate models to another credential
+                target_cred = await Credential.get(migrate_to)
+                for model_row in linked:
+                    model_id = str(model_row.get("id", ""))
+                    if model_id:
+                        await repo_query(
+                            "UPDATE $model_id SET credential = $target_id",
+                            {
+                                "model_id": ensure_record_id(model_id),
+                                "target_id": ensure_record_id(target_cred.id),
+                            },
+                        )
+            elif linked:
+                # Cascade-delete linked models
+                for model_row in linked:
+                    model_id = str(model_row.get("id", ""))
+                    if model_id:
+                        await repo_delete(model_id)
+                        deleted_models += 1
 
             # Delete the credential itself
             await repo_delete(credential_id)

@@ -152,7 +152,7 @@ class Credential(ObjectModel):
                         name=row.get("name", "Unknown"),
                         provider=row.get("provider", "unknown"),
                         modalities=row.get("modalities", []),
-                        decryption_error=f"Failed to decrypt API key. The encryption key may have changed. Error: {e}",
+                        decryption_error="Failed to decrypt API key. The encryption key may have changed.",
                     )
                     # Preserve the DB id, created, updated from the raw row
                     if row.get("id"):

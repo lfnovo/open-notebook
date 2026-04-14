@@ -13,7 +13,10 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: ghcr.io/nsguga/open-notebook:v1-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
@@ -33,4 +36,3 @@ services:
     depends_on:
       - surrealdb
     restart: always
-    pull_policy: always

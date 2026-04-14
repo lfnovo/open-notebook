@@ -227,7 +227,7 @@ async def bump_version() -> None:
     new_version = current_version + 1
 
     await repo_query(
-        "CREATE type::thing('_sbl_migrations', $version) SET version = $version, applied_at = time::now();",
+        "CREATE _sbl_migrations:{version} SET version = $version, applied_at = time::now();",
         {"version": new_version},
     )
 
@@ -237,6 +237,6 @@ async def lower_version() -> None:
     current_version = await get_latest_version()
     if current_version > 0:
         await repo_query(
-            "DELETE type::thing('_sbl_migrations', $version);",
+            "DELETE _sbl_migrations:{version};",
             {"version": current_version},
         )

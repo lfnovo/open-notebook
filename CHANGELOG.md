@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-04-14
+
+### Fixed
+- Credentials endpoint no longer crashes (500) when encryption key doesn't match stored credentials (#740)
+- Broken credentials are now shown with a decryption warning and can still be deleted
+- DELETE endpoint for broken credentials supports model migration (`migrate_to` parameter)
+
 ## [1.8.4] - 2026-04-09
 
 ### Security

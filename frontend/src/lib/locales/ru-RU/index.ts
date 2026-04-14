@@ -915,6 +915,8 @@ export const ruRU = {
     configUpdateSuccess: "Конфигурация успешно обновлена",
     configDeleteSuccess: "Конфигурация успешно удалена",
     apiKeyEditHint: "Оставьте пустым, чтобы сохранить текущий API-ключ",
+    decryptionError: "Ошибка расшифровки",
+    decryptionErrorDescription: "API-ключ этих учётных данных не удалось расшифровать. Возможно, ключ шифрования был изменён. Удалите эти учётные данные и создайте заново с правильным ключом.",
   },
   setupBanner: {
     encryptionRequired: "Ключ шифрования не настроен",

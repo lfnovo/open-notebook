@@ -915,6 +915,8 @@ export const zhCN = {
     configUpdateSuccess: "配置更新成功",
     configDeleteSuccess: "配置删除成功",
     apiKeyEditHint: "留空以保留现有 API 密钥",
+    decryptionError: "解密错误",
+    decryptionErrorDescription: "此凭证的 API 密钥无法解密。加密密钥可能已更改。请删除此凭证并使用正确的密钥重新创建。",
   },
   setupBanner: {
     encryptionRequired: "未配置加密密钥",

@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Key,
   ShieldAlert,
+  AlertTriangle,
   Plus,
   Edit,
   Trash2,
@@ -822,7 +823,7 @@ function CredentialItem({
             <Button
               variant="ghost" size="sm"
               onClick={() => testCredential(credential.id)}
-              disabled={isTestPending}
+              disabled={isTestPending || !!credential.decryption_error}
               title={t.apiKeys.testConnection}
             >
               {isTestPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
@@ -831,12 +832,13 @@ function CredentialItem({
             <Button
               variant="ghost" size="sm"
               onClick={() => setDiscoverOpen(true)}
+              disabled={!!credential.decryption_error}
               title={t.apiKeys.syncModels}
             >
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">Models</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} title={t.common.edit}>
+            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} disabled={!!credential.decryption_error} title={t.common.edit}>
               <Edit className="h-4 w-4" />
             </Button>
             <Button
@@ -849,6 +851,17 @@ function CredentialItem({
             </Button>
           </div>
         </div>
+
+        {/* Decryption error warning */}
+        {credential.decryption_error && (
+          <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">{t.apiKeys.decryptionError}</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+              {t.apiKeys.decryptionErrorDescription}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Linked models grouped by type */}
         {linkedModels.length > 0 && (

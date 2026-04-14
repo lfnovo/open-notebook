@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "fuse.js": "^7.3.0"
+  }
+}

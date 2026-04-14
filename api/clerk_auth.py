@@ -127,6 +127,9 @@ class ClerkAuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
 
+        if not self.jwks_url or not self.issuer:
+            return await call_next(request)
+
         auth_header = request.headers.get("Authorization")
         if not auth_header:
             return JSONResponse(

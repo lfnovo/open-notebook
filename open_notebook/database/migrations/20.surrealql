@@ -1,0 +1,7 @@
+-- Migration 20: Force question_paper, question_book, question_bank to SCHEMALESS
+-- Previous migration 18 used DEFINE TABLE without IF NOT EXISTS but the existing
+-- SCHEMAFULL definition was not overridden. Use OVERWRITE to force the change.
+
+DEFINE TABLE OVERWRITE question_paper SCHEMALESS;
+DEFINE TABLE OVERWRITE question_book SCHEMALESS;
+DEFINE TABLE OVERWRITE question_bank SCHEMALESS;

@@ -1,0 +1,30 @@
+-- Migration 15: Question Paper Generator
+-- Adds question_bank table for persistent question storage with vector search
+-- Adds question_paper table for storing generated papers and job tracking
+
+DEFINE TABLE IF NOT EXISTS question_bank SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS topic ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS question ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS type ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS difficulty ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS answer ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS explanation ON question_bank TYPE string;
+DEFINE FIELD IF NOT EXISTS options ON question_bank TYPE option<array>;
+DEFINE FIELD IF NOT EXISTS embedding ON question_bank TYPE option<array>;
+DEFINE FIELD IF NOT EXISTS created ON question_bank TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS updated ON question_bank TYPE option<datetime>;
+DEFINE INDEX IF NOT EXISTS question_bank_embedding ON question_bank FIELDS embedding MTREE DIMENSION 1536;
+
+DEFINE TABLE IF NOT EXISTS question_paper SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS topic ON question_paper TYPE string;
+DEFINE FIELD IF NOT EXISTS difficulty ON question_paper TYPE string;
+DEFINE FIELD IF NOT EXISTS target_marks ON question_paper TYPE int;
+DEFINE FIELD IF NOT EXISTS section_config ON question_paper TYPE object;
+DEFINE FIELD IF NOT EXISTS final_paper ON question_paper TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS answer_key ON question_paper TYPE option<array>;
+DEFINE FIELD IF NOT EXISTS coverage_gaps ON question_paper TYPE option<array>;
+DEFINE FIELD IF NOT EXISTS status ON question_paper TYPE string DEFAULT 'pending';
+DEFINE FIELD IF NOT EXISTS error_message ON question_paper TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS command ON question_paper TYPE option<record>;
+DEFINE FIELD IF NOT EXISTS created ON question_paper TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS updated ON question_paper TYPE option<datetime>;

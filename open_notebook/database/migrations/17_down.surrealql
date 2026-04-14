@@ -1,0 +1,3 @@
+-- Rollback migration 17
+DEFINE FIELD IF NOT EXISTS section_config ON question_paper TYPE object;
+DEFINE FIELD IF NOT EXISTS final_paper ON question_paper TYPE option<object>;

@@ -1,0 +1,4 @@
+-- Migration 15 rollback: Remove Question Paper Generator tables
+
+REMOVE TABLE IF EXISTS question_bank;
+REMOVE TABLE IF EXISTS question_paper;

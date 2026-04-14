@@ -1,0 +1,16 @@
+-- Migration 19: Remove strict field definitions from question_paper/book/bank tables
+-- The tables are already SCHEMALESS (migration 18) but DEFINE FIELD statements
+-- still enforce type constraints on individual fields, causing nested dict values
+-- to be rejected or stripped. Removing the field definitions lets SCHEMALESS
+-- handle all fields freely.
+
+REMOVE FIELD IF EXISTS section_config ON question_paper;
+REMOVE FIELD IF EXISTS final_paper ON question_paper;
+REMOVE FIELD IF EXISTS answer_key ON question_paper;
+REMOVE FIELD IF EXISTS coverage_gaps ON question_paper;
+
+REMOVE FIELD IF EXISTS chapters ON question_book;
+REMOVE FIELD IF EXISTS full_text ON question_book;
+
+REMOVE FIELD IF EXISTS options ON question_bank;
+REMOVE FIELD IF EXISTS embedding ON question_bank;

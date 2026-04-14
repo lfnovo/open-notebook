@@ -1,0 +1,8 @@
+-- Migration 18: Convert question_paper and question_book to SCHEMALESS
+-- The question_paper table has complex nested fields (section_config, final_paper)
+-- that SurrealDB SCHEMAFULL mode strips when no sub-fields are explicitly defined.
+-- SCHEMALESS allows arbitrary nested structures without field-level schema constraints.
+
+DEFINE TABLE question_paper SCHEMALESS;
+DEFINE TABLE question_book SCHEMALESS;
+DEFINE TABLE question_bank SCHEMALESS;

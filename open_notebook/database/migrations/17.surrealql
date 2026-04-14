@@ -1,0 +1,7 @@
+-- Migration 17: Fix question paper object fields to be FLEXIBLE
+-- In SurrealDB SCHEMAFULL mode, TYPE object without FLEXIBLE silently
+-- drops all sub-fields since none are explicitly defined. This migration
+-- adds FLEXIBLE to allow arbitrary nested keys.
+
+DEFINE FIELD IF NOT EXISTS section_config ON question_paper FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS final_paper ON question_paper FLEXIBLE TYPE option<object>;

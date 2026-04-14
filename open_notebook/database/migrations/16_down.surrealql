@@ -1,0 +1,2 @@
+-- Migration 16 rollback
+REMOVE TABLE IF EXISTS question_book;

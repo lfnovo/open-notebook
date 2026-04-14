@@ -45,11 +45,15 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
+from api.routers import question_paper as question_paper_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
 from open_notebook.utils.encryption import get_secret_from_env
 
 # Import commands to register them in the API process
 try:
+    import commands.source_commands  # noqa: F401
+    import commands.embedding_commands  # noqa: F401
+    import commands.question_paper_commands  # noqa: F401
     logger.info("Commands imported in API process")
 except Exception as e:
     logger.error(f"Failed to import commands in API process: {e}")
@@ -280,6 +284,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(question_paper_router.router, prefix="/api", tags=["question-paper"])
 
 
 @app.get("/")

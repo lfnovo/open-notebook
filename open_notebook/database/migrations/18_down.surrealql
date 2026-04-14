@@ -1,0 +1,2 @@
+-- Rollback migration 18 (no-op — reverting to SCHEMAFULL would lose flexibility)
+-- Tables remain SCHEMALESS

@@ -41,6 +41,7 @@ import {
   Plus,
   Wrench,
   Command,
+  ClipboardList,
 } from 'lucide-react'
 
 const getNavigation = (t: TranslationKeys) => [
@@ -61,6 +62,7 @@ const getNavigation = (t: TranslationKeys) => [
     title: t.navigation.create,
     items: [
       { name: t.navigation.podcasts, href: '/podcasts', icon: Mic },
+      { name: t.navigation.questionPaper, href: '/question-paper', icon: ClipboardList },
     ],
   },
   {

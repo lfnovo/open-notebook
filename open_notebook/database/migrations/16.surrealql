@@ -1,0 +1,10 @@
+-- Migration 16: Question Book — stores uploaded books/PDFs for question generation
+-- Each record holds extracted full text + detected chapter structure
+
+DEFINE TABLE IF NOT EXISTS question_book SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS title ON question_book TYPE string;
+DEFINE FIELD IF NOT EXISTS file_path ON question_book TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS full_text ON question_book TYPE string;
+DEFINE FIELD IF NOT EXISTS chapters ON question_book TYPE array;
+DEFINE FIELD IF NOT EXISTS created ON question_book TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS updated ON question_book TYPE option<datetime>;

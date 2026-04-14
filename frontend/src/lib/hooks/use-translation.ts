@@ -19,7 +19,8 @@ export function useTranslation() {
   const languageRef = useRef(i18n.language)
   languageRef.current = i18n.language
   
-  // Loop detection
+  // Loop detection — counts reset every 100ms (not 1s) to avoid false positives
+  // when many components re-render rapidly (e.g. chapter deselection + polling).
   const accessCounts = useRef<Record<string, number>>({})
   const lastResetTime = useRef(Date.now())
 
@@ -56,9 +57,11 @@ export function useTranslation() {
 
       return new Proxy(proxyTarget, {
         get(target, prop) {
-          // Reset counters every 1s
+          // Reset counters every 100ms so they don't accumulate across many re-renders.
+          // The previous 1-second window caused false-positive loop detection when
+          // components re-rendered rapidly (e.g. chapter deselection + polling).
           const now = Date.now()
-          if (now - lastResetTime.current > 1000) {
+          if (now - lastResetTime.current > 100) {
             accessCounts.current = {}
             lastResetTime.current = now
           }
@@ -66,8 +69,11 @@ export function useTranslation() {
           if (typeof prop === 'string') {
              const key = path ? `${path}.${prop}` : prop;
              accessCounts.current[key] = (accessCounts.current[key] || 0) + 1;
-             
-             if (accessCounts.current[key] > 1000) {
+
+             // Only fire when a SINGLE key is accessed more than 50 times within a
+             // 100ms window — that's a genuine render-phase infinite loop, not
+             // just many components re-rendering at once.
+             if (accessCounts.current[key] > 50) {
                console.error(`[useTranslation] INFINITE LOOP DETECTED on key: "${key}". Breaking recursion.`);
                return key; // Force break
              }

@@ -14,14 +14,8 @@ services:
     ports:
       - "8502:8502"
       - "5055:5055"
-    environment:
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=some-string
-      - SURREAL_URL=ws://surrealdb:8000/rpc
-      - SURREAL_USER=root
-      - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
-      - ANTHROPIC_API_KEY=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
+    env_file:
+      - .env
     volumes:
       - ./notebook_data:/app/data
     depends_on:

@@ -31,6 +31,14 @@ services:
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
+
+      # Two-domain setup (API + Web)
+      # API: Browser calls this directly
+      - API_URL=${SERVICE_URL_OPEN_NOTEBOOK}
+      # Frontend: Browser calls frontend at this URL (set SERVICE_URL_OPEN_NOTEBOOK_WEB in Coolify)
+      - NEXT_PUBLIC_API_URL=${SERVICE_URL_OPEN_NOTEBOOK_WEB}
+      # Internal: Next.js server-side proxy to FastAPI
+      - INTERNAL_API_URL=http://localhost:5055
     volumes:
       - ./notebook_data:/app/data
     depends_on:

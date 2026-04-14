@@ -1,6 +1,12 @@
 import axios, { AxiosResponse } from 'axios'
 import { getApiUrl } from '@/lib/config'
 
+let getClerkToken: (() => Promise<string | null>) | null = null
+
+export function setTokenGetter(getter: (() => Promise<string | null>) | null) {
+  getClerkToken = getter
+}
+
 // API client with runtime-configurable base URL
 // The base URL is fetched from the API config endpoint on first request
 // Timeout increased to 10 minutes (600000ms = 600s) to accommodate slow LLM operations
@@ -23,7 +29,14 @@ apiClient.interceptors.request.use(async (config) => {
     config.baseURL = `${apiUrl}/api`
   }
 
-  if (typeof window !== 'undefined') {
+  // Use Clerk token if available, fall back to legacy auth
+  if (getClerkToken) {
+    const token = await getClerkToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+  } else if (typeof window !== 'undefined') {
+    // Legacy fallback for non-Clerk environments
     const authStorage = localStorage.getItem('auth-storage')
     if (authStorage) {
       try {
@@ -53,10 +66,8 @@ apiClient.interceptors.response.use(
   (response: AxiosResponse) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear auth and redirect to login
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth-storage')
-        window.location.href = '/login'
+        window.location.href = '/sign-in'
       }
     }
     return Promise.reject(error)

@@ -1,0 +1,37 @@
+-- Migration 16: Workspace domain model
+-- Creates workspace and workspace_member tables
+-- Adds workspace_id to existing tables (source, note, source_embedding, chat_session)
+
+DEFINE TABLE workspace SCHEMAFULL;
+DEFINE FIELD name ON workspace TYPE string;
+DEFINE FIELD description ON workspace TYPE option<string>;
+DEFINE FIELD visibility ON workspace TYPE string ASSERT $value IN ["private", "shared", "community"];
+DEFINE FIELD owner_id ON workspace TYPE string;
+DEFINE FIELD org_id ON workspace TYPE option<string>;
+DEFINE FIELD created ON workspace TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated ON workspace TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_workspace_owner ON workspace FIELDS owner_id;
+DEFINE INDEX idx_workspace_org ON workspace FIELDS org_id;
+
+DEFINE TABLE workspace_member SCHEMAFULL;
+DEFINE FIELD workspace_id ON workspace_member TYPE record<workspace>;
+DEFINE FIELD user_id ON workspace_member TYPE string;
+DEFINE FIELD role ON workspace_member TYPE string ASSERT $value IN ["owner", "editor", "viewer"];
+DEFINE FIELD created ON workspace_member TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated ON workspace_member TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_wm_user ON workspace_member FIELDS user_id;
+DEFINE INDEX idx_wm_workspace ON workspace_member FIELDS workspace_id;
+DEFINE INDEX idx_wm_unique ON workspace_member FIELDS workspace_id, user_id UNIQUE;
+
+DEFINE FIELD workspace_id ON source TYPE option<record<workspace>>;
+DEFINE FIELD graph_status ON source TYPE option<string>;
+DEFINE INDEX idx_source_workspace ON source FIELDS workspace_id;
+
+DEFINE FIELD workspace_id ON note TYPE option<record<workspace>>;
+DEFINE INDEX idx_note_workspace ON note FIELDS workspace_id;
+
+DEFINE FIELD workspace_id ON source_embedding TYPE option<record<workspace>>;
+DEFINE INDEX idx_embedding_workspace ON source_embedding FIELDS workspace_id;
+
+DEFINE FIELD workspace_id ON chat_session TYPE option<record<workspace>>;
+DEFINE INDEX idx_chat_workspace ON chat_session FIELDS workspace_id;

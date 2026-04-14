@@ -106,18 +106,13 @@ class AsyncMigrationManager:
             AsyncMigration.from_file("open_notebook/database/migrations/8.surrealql"),
             AsyncMigration.from_file("open_notebook/database/migrations/9.surrealql"),
             AsyncMigration.from_file("open_notebook/database/migrations/10.surrealql"),
-            AsyncMigration.from_file(
-                "open_notebook/database/migrations/11.surrealql"
-            ),
-            AsyncMigration.from_file(
-                "open_notebook/database/migrations/12.surrealql"
-            ),
-            AsyncMigration.from_file(
-                "open_notebook/database/migrations/13.surrealql"
-            ),
-            AsyncMigration.from_file(
-                "open_notebook/database/migrations/14.surrealql"
-            ),
+            AsyncMigration.from_file("open_notebook/database/migrations/11.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/12.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/13.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/14.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/15.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/16.surrealql"),
+            AsyncMigration.from_file("open_notebook/database/migrations/17.surrealql"),
         ]
         self.down_migrations = [
             AsyncMigration.from_file(
@@ -161,6 +156,15 @@ class AsyncMigrationManager:
             ),
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/14_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/15_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/16_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/17_down.surrealql"
             ),
         ]
         self.runner = AsyncMigrationRunner(
@@ -223,8 +227,7 @@ async def bump_version() -> None:
     new_version = current_version + 1
 
     await repo_query(
-        "CREATE type::thing('_sbl_migrations', $version) SET version = $version, applied_at = time::now();",
-        {"version": new_version},
+        f"CREATE _sbl_migrations:{new_version} SET version = {new_version}, applied_at = time::now();",
     )
 
 
@@ -233,6 +236,5 @@ async def lower_version() -> None:
     current_version = await get_latest_version()
     if current_version > 0:
         await repo_query(
-            "DELETE type::thing('_sbl_migrations', $version);",
-            {"version": current_version},
+            f"DELETE _sbl_migrations:{current_version};",
         )

@@ -41,6 +41,8 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
+    "PyJWT[crypto]>=2.8.0",
+    "jwcrypto>=1.5.0",
 ]
 
 [tool.setuptools]
@@ -48,6 +50,15 @@ package-dir = {"open_notebook" = "open_notebook"}
 
 
 [project.optional-dependencies]
+raganything = [
+    "raganything>=0.1.0",
+]
+lightrag = [
+    "lightrag-hku>=1.0.0",
+]
+mcp = [
+    "mcp>=1.0.0",
+]
 dev = [
     "ipykernel>=6.29.5",
     "ruff>=0.5.5",

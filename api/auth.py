@@ -1,3 +1,11 @@
+"""
+DEPRECATED: Password-based authentication middleware.
+
+This module is superseded by api/clerk_auth.py which uses Clerk JWT verification.
+Kept for reference only — do not use PasswordAuthMiddleware in new code.
+See api/clerk_auth.py for the active authentication middleware.
+"""
+
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request

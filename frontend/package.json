@@ -12,6 +12,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.39.1",
     "@hookform/resolvers": "^5.1.1",
     "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-accordion": "^1.2.12",
@@ -58,19 +59,19 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "^3.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
     "jsdom": "^26.0.0",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
-    "vitest": "^3.0.0",
-    "@vitest/ui": "^3.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "@testing-library/react": "^16.2.0",
-    "@testing-library/jest-dom": "^6.6.3"
+    "vitest": "^3.0.0"
   }
 }

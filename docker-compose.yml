@@ -1,10 +1,10 @@
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v2
+    image: surrealdb/surrealdb:v3.0.5
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     volumes:
       - ./surreal_data:/mydata
     environment:
@@ -13,14 +13,17 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: open-notebook:local
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
     environment:
       # REQUIRED: Change this to your own secret string
       # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
 
       # Database connection (default values - no need to change)
       - SURREAL_URL=ws://surrealdb:8000/rpc
@@ -28,9 +31,16 @@ services:
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
+
+      # Two-domain setup (API + Web)
+      # API: Browser calls this directly
+      - API_URL=${SERVICE_URL_OPEN_NOTEBOOK}
+      # Frontend: Browser calls frontend at this URL (set SERVICE_URL_OPEN_NOTEBOOK_WEB in Coolify)
+      - NEXT_PUBLIC_API_URL=${SERVICE_URL_OPEN_NOTEBOOK_WEB}
+      # Internal: Next.js server-side proxy to FastAPI
+      - INTERNAL_API_URL=http://localhost:5055
     volumes:
       - ./notebook_data:/app/data
     depends_on:
       - surrealdb
     restart: always
-    pull_policy: always

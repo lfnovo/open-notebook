@@ -139,6 +139,7 @@ specs/
 
 *.local.yml
 **/*.local.md
+.agents/
+.memory/
 .harness/
-
 .mcp.json

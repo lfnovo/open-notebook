@@ -28,7 +28,7 @@ import { TranslationKeys } from '@/lib/locales'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
 import {
-  Book,
+  FolderOpen,
   Search,
   Mic,
   Bot,
@@ -53,7 +53,7 @@ const getNavigation = (t: TranslationKeys) => [
   {
     title: t.navigation.process,
     items: [
-      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
+      { name: 'Workspaces' /* TODO: add i18n key */, href: '/workspaces', icon: FolderOpen },
       { name: t.navigation.askAndSearch, href: '/search', icon: Search },
     ],
   },
@@ -74,7 +74,7 @@ const getNavigation = (t: TranslationKeys) => [
   },
 ] as const
 
-type CreateTarget = 'source' | 'notebook' | 'podcast'
+type CreateTarget = 'source' | 'notebook' | 'podcast' | 'workspace'
 
 export function AppSidebar() {
   const { t } = useTranslation()
@@ -82,7 +82,7 @@ export function AppSidebar() {
   const pathname = usePathname()
   const { logout } = useAuth()
   const { isCollapsed, toggleCollapse } = useSidebarStore()
-  const { openSourceDialog, openNotebookDialog, openPodcastDialog } = useCreateDialogs()
+  const { openSourceDialog, openNotebookDialog, openPodcastDialog, openWorkspaceDialog } = useCreateDialogs()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
@@ -101,6 +101,8 @@ export function AppSidebar() {
       openNotebookDialog()
     } else if (target === 'podcast') {
       openPodcastDialog()
+    } else if (target === 'workspace') {
+      openWorkspaceDialog()
     }
   }
 
@@ -219,12 +221,12 @@ export function AppSidebar() {
                 <DropdownMenuItem
                   onSelect={(event) => {
                     event.preventDefault()
-                    handleCreateSelection('notebook')
+                    handleCreateSelection('workspace')
                   }}
                   className="gap-2"
                 >
-                   <Book className="h-4 w-4" />
-                  {t.common.notebook}
+                   <FolderOpen className="h-4 w-4" />
+                  Workspace
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {

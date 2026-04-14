@@ -1,0 +1,2 @@
+-- Rollback: remove command table
+REMOVE TABLE IF EXISTS command;

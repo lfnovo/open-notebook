@@ -138,6 +138,7 @@ class SourcesService:
         delete_source: bool = False,
         notebooks: Optional[List[str]] = None,
         async_processing: bool = False,
+        workspace_id: Optional[str] = None,
     ) -> Union[Source, SourceProcessingResult]:
         """
         Create a new source with support for async processing.

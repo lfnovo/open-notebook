@@ -170,6 +170,7 @@ class TestSaveSourceTitlePreservation:
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "My Custom Research Title"
+        mock_source.workspace_id = None
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
@@ -199,6 +200,7 @@ class TestSaveSourceTitlePreservation:
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "Processing..."
+        mock_source.workspace_id = None
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
@@ -228,6 +230,7 @@ class TestSaveSourceTitlePreservation:
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = None
+        mock_source.workspace_id = None
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
@@ -257,6 +260,7 @@ class TestSaveSourceTitlePreservation:
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = ""
+        mock_source.workspace_id = None
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 

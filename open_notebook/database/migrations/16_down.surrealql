@@ -1,0 +1,18 @@
+-- Rollback migration 16: Remove workspace domain model
+-- Removes workspace_id from existing tables, drops workspace_member and workspace tables
+
+REMOVE INDEX idx_chat_workspace ON TABLE chat_session;
+REMOVE FIELD workspace_id ON TABLE chat_session;
+
+REMOVE INDEX idx_embedding_workspace ON TABLE source_embedding;
+REMOVE FIELD workspace_id ON TABLE source_embedding;
+
+REMOVE INDEX idx_note_workspace ON TABLE note;
+REMOVE FIELD workspace_id ON TABLE note;
+
+REMOVE INDEX idx_source_workspace ON TABLE source;
+REMOVE FIELD graph_status ON TABLE source;
+REMOVE FIELD workspace_id ON TABLE source;
+
+REMOVE TABLE workspace_member;
+REMOVE TABLE workspace;

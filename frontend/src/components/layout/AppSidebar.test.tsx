@@ -22,7 +22,7 @@ describe('AppSidebar', () => {
     
     // Check for navigation items (using actual locale values)
     expect(screen.getByText(/Sources/i)).toBeDefined()
-    expect(screen.getByText(/Notebooks/i)).toBeDefined()
+    expect(screen.getByText(/Workspaces/i)).toBeDefined()
   })
 
   it('toggles collapse state when clicking handle', () => {

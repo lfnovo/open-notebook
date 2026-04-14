@@ -1,5 +1,6 @@
+import asyncio
 import operator
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from ai_prompter import Prompter
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
@@ -17,6 +18,16 @@ from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
 
 
+# Lazy import for optional dependency
+def _get_graph_service():
+    try:
+        from open_notebook.services.graph_service import GraphService
+
+        return GraphService
+    except ImportError:
+        return None
+
+
 class SubGraphState(TypedDict):
     question: str
     term: str
@@ -24,6 +35,7 @@ class SubGraphState(TypedDict):
     results: dict
     answer: str
     ids: list  # Added for provide_answer function
+    workspace_ids: Optional[list]
 
 
 class Search(BaseModel):
@@ -46,6 +58,7 @@ class ThreadState(TypedDict):
     strategy: Strategy
     answers: Annotated[list, operator.add]
     final_answer: str
+    workspace_ids: Optional[list]
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -81,6 +94,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
 
 
 async def trigger_queries(state: ThreadState, config: RunnableConfig):
+    workspace_ids = state.get("workspace_ids")
     return [
         Send(
             "provide_answer",
@@ -88,7 +102,7 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
                 "question": state["question"],
                 "instructions": s.instructions,
                 "term": s.term,
-                # "type": s.type,
+                "workspace_ids": workspace_ids,
             },
         )
         for s in state["strategy"].searches
@@ -97,17 +111,67 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
 
 async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     try:
-        payload = state
-        # if state["type"] == "text":
-        #     results = text_search(state["term"], 10, True, True)
-        # else:
-        results = await vector_search(state["term"], 10, True, True)
-        if len(results) == 0:
+        payload = dict(state)
+        workspace_ids = state.get("workspace_ids")
+
+        all_results: list = []
+
+        if workspace_ids:
+            # Query each workspace in parallel via GraphService + vector_search
+            GraphService = _get_graph_service()
+
+            async def _query_workspace(ws_id: str) -> list:
+                ws_results: list = []
+                # Try GraphService (optional LightRAG)
+                if GraphService is not None:
+                    try:
+                        graph_result = await GraphService.query(ws_id, state["term"])
+                        if graph_result:
+                            ws_results.append(
+                                {
+                                    "id": f"graph:{ws_id}",
+                                    "content": graph_result,
+                                    "workspace_id": ws_id,
+                                    "score": 1.0,
+                                }
+                            )
+                    except Exception:
+                        pass  # Graceful degradation
+                # Vector search scoped to workspace
+                vs_results = await vector_search(
+                    state["term"], 10, True, True, workspace_id=ws_id
+                )
+                ws_results.extend(vs_results)
+                return ws_results
+
+            tasks = [_query_workspace(ws_id) for ws_id in workspace_ids]
+            gathered = await asyncio.gather(*tasks, return_exceptions=True)
+            for batch in gathered:
+                if isinstance(batch, list):
+                    all_results.extend(batch)
+
+            # Deduplicate by id
+            seen_ids: set = set()
+            deduped: list = []
+            for r in all_results:
+                rid = r.get("id")
+                if rid and rid not in seen_ids:
+                    seen_ids.add(rid)
+                    deduped.append(r)
+            all_results = deduped
+        else:
+            # Fallback: global vector search (backward compat)
+            all_results = await vector_search(state["term"], 10, True, True)
+
+        if len(all_results) == 0:
             return {"answers": []}
-        payload["results"] = results
-        ids = [r["id"] for r in results]
+
+        payload["results"] = all_results
+        ids = [r["id"] for r in all_results]
         payload["ids"] = ids
-        system_prompt = Prompter(prompt_template="ask/query_process").render(data=payload)  # type: ignore[arg-type]
+        system_prompt = Prompter(prompt_template="ask/query_process").render(
+            data=payload
+        )  # type: ignore[arg-type]
         model = await provision_langchain_model(
             system_prompt,
             config.get("configurable", {}).get("answer_model"),

@@ -1,0 +1,12 @@
+DEFINE TABLE mcp_api_key SCHEMAFULL;
+DEFINE FIELD key_hash ON mcp_api_key TYPE string;
+DEFINE FIELD user_id ON mcp_api_key TYPE string;
+DEFINE FIELD workspace_ids ON mcp_api_key TYPE array;
+DEFINE FIELD workspace_ids.* ON mcp_api_key TYPE string;
+DEFINE FIELD label ON mcp_api_key TYPE option<string>;
+DEFINE FIELD expires_at ON mcp_api_key TYPE option<string>;
+DEFINE FIELD revoked ON mcp_api_key TYPE bool DEFAULT false;
+DEFINE FIELD created ON mcp_api_key TYPE string;
+DEFINE FIELD updated ON mcp_api_key TYPE string;
+DEFINE INDEX idx_mcp_api_key_user ON mcp_api_key FIELDS user_id;
+DEFINE INDEX idx_mcp_api_key_hash ON mcp_api_key FIELDS key_hash UNIQUE;

@@ -58,6 +58,10 @@ WORKDIR /app
 # Runtime stage
 FROM python:3.12-slim-bookworm AS runtime
 
+LABEL org.opencontainers.image.source="https://github.com/nsguga/open-notebook"
+LABEL org.opencontainers.image.description="Open Notebook - Privacy-focused research assistant"
+LABEL org.opencontainers.image.licenses="MIT"
+
 # Install only runtime system dependencies (no build tools)
 # Add Node.js 20.x LTS for running frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \

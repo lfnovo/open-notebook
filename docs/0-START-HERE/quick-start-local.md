@@ -30,7 +30,7 @@ Create a new folder `open-notebook-local` and add this file:
 ```yaml
 services:
   surrealdb:
-    image: surrealdb/surrealdb:v2
+    image: surrealdb/surrealdb:v3
     command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
     ports:
       - "8000:8000"

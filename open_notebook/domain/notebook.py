@@ -14,6 +14,8 @@ from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
 
 class Notebook(ObjectModel):
+    """DEPRECATED: Use Workspace instead. Kept for migration compatibility."""
+
     table_name: ClassVar[str] = "notebook"
     name: str
     description: str
@@ -238,6 +240,7 @@ class Asset(BaseModel):
 class SourceEmbedding(ObjectModel):
     table_name: ClassVar[str] = "source_embedding"
     content: str
+    workspace_id: Optional[str] = None
 
     async def get_source(self) -> "Source":
         try:
@@ -293,6 +296,11 @@ class Source(ObjectModel):
     title: Optional[str] = None
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
+    workspace_id: Optional[str] = None
+    graph_status: Optional[str] = Field(
+        default=None,
+        description="Knowledge-graph status: None, ready, warning, or failed",
+    )
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
@@ -450,9 +458,7 @@ class Source(ObjectModel):
         except ValueError:
             raise
         except Exception as e:
-            logger.error(
-                f"Failed to submit embed_source job for source {self.id}: {e}"
-            )
+            logger.error(f"Failed to submit embed_source job for source {self.id}: {e}")
             logger.exception(e)
             raise DatabaseOperationError(e)
 
@@ -514,7 +520,7 @@ class Source(ObjectModel):
         return data
 
     async def delete(self) -> bool:
-        """Delete source and clean up associated file, embeddings, and insights."""
+        """Delete source and clean up associated file, embeddings, insights, and graph data."""
         # Clean up uploaded file if it exists
         if self.asset and self.asset.file_path:
             file_path = Path(self.asset.file_path)
@@ -550,6 +556,14 @@ class Source(ObjectModel):
                 "Continuing with source deletion."
             )
 
+        # TODO: Per-source graph cleanup requires LightRAG entity-level deletion (future work).
+        # LightRAG v1 does not support per-document removal, so we log and skip.
+        if self.workspace_id:
+            logger.warning(
+                f"Graph data cleanup skipped for source {self.id} in workspace "
+                f"{self.workspace_id}: per-source deletion not yet supported"
+            )
+
         # Call parent delete to remove database record
         return await super().delete()
 
@@ -559,6 +573,7 @@ class Note(ObjectModel):
     title: Optional[str] = None
     note_type: Optional[Literal["human", "ai"]] = None
     content: Optional[str] = None
+    workspace_id: Optional[str] = None
 
     @field_validator("content")
     @classmethod
@@ -615,6 +630,7 @@ class ChatSession(ObjectModel):
     nullable_fields: ClassVar[set[str]] = {"model_override"}
     title: Optional[str] = None
     model_override: Optional[str] = None
+    workspace_id: Optional[str] = None
 
     async def relate_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
@@ -628,18 +644,34 @@ class ChatSession(ObjectModel):
 
 
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    workspace_id: Optional[str] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
+        # Increase fetch limit when workspace filtering to compensate for post-filter reduction
+        fetch_limit = results * 5 if workspace_id else results
         search_results = await repo_query(
             """
             select *
             from fn::text_search($keyword, $results, $source, $note)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            {
+                "keyword": keyword,
+                "results": fetch_limit,
+                "source": source,
+                "note": note,
+            },
         )
+        if workspace_id:
+            search_results = [
+                r for r in search_results if r.get("workspace_id") == workspace_id
+            ]
+            search_results = search_results[:results]  # Re-apply limit after filtering
         return search_results
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
@@ -653,6 +685,7 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    workspace_id: Optional[str] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
@@ -661,18 +694,25 @@ async def vector_search(
 
         # Use unified embedding function (handles chunking if query is very long)
         embed = await generate_embedding(keyword)
+        # Increase fetch limit when workspace filtering to compensate for post-filter reduction
+        fetch_limit = results * 5 if workspace_id else results
         search_results = await repo_query(
             """
             SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
             """,
             {
                 "embed": embed,
-                "results": results,
+                "results": fetch_limit,
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
             },
         )
+        if workspace_id:
+            search_results = [
+                r for r in search_results if r.get("workspace_id") == workspace_id
+            ]
+            search_results = search_results[:results]  # Re-apply limit after filtering
         return search_results
     except Exception as e:
         logger.error(f"Error performing vector search: {str(e)}")

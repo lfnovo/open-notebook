@@ -1,0 +1,1 @@
+2026/04/14-15:02:22.133874 25f8 [WARN] [db/db_impl/db_impl_open.cc:2688] DB::Open() failed: IO error: Failed to create lock file: surreal_data/LOCK: The process cannot access the file because it is being used by another process.

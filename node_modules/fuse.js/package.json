@@ -1,0 +1,117 @@
+{
+  "name": "fuse.js",
+  "author": {
+    "name": "Kiro Risk",
+    "email": "kirollos@gmail.com",
+    "url": "http://kiro.me"
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/krisk"
+  },
+  "type": "module",
+  "main": "./dist/fuse.cjs",
+  "module": "./dist/fuse.mjs",
+  "unpkg": "./dist/fuse.mjs",
+  "jsdelivr": "./dist/fuse.mjs",
+  "types": "./dist/fuse.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/fuse.d.ts",
+      "import": "./dist/fuse.mjs",
+      "require": "./dist/fuse.cjs"
+    },
+    "./min": {
+      "types": "./dist/fuse.d.ts",
+      "import": "./dist/fuse.min.mjs",
+      "require": "./dist/fuse.min.cjs"
+    },
+    "./basic": {
+      "types": "./dist/fuse.d.ts",
+      "import": "./dist/fuse.basic.mjs",
+      "require": "./dist/fuse.basic.cjs"
+    },
+    "./min-basic": {
+      "types": "./dist/fuse.d.ts",
+      "import": "./dist/fuse.basic.min.mjs",
+      "require": "./dist/fuse.basic.min.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "version": "7.3.0",
+  "description": "Lightweight fuzzy-search",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/krisk/Fuse.git"
+  },
+  "homepage": "http://fusejs.io",
+  "keywords": [
+    "fuzzy",
+    "search",
+    "bitap"
+  ],
+  "scripts": {
+    "dev": "rollup -w -c scripts/configs.cjs --environment TARGET:esm-dev-full",
+    "dev:cjs": "rollup -w -c scripts/configs.cjs --environment TARGET:commonjs-dev-full",
+    "build": "rm -r dist && mkdir dist && node ./scripts/build.main.cjs",
+    "test": "vitest run",
+    "typecheck": "tsc -p src/tsconfig.json --noEmit",
+    "lint": "eslint src test",
+    "release": "./scripts/release.sh",
+    "docs:bump": "node ./scripts/bump-docs.cjs",
+    "docs:dev": "vuepress dev docs",
+    "docs:build": "vuepress build docs",
+    "docs:release": "./scripts/deploy-docs.sh",
+    "prepare": "husky install"
+  },
+  "standard-version": {
+    "scripts": {
+      "postbump": "npm run build && npm run lint && npm run test 2>/dev/null",
+      "precommit": "git add dist/*.cjs dist/*.mjs dist/*.d.ts"
+    }
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ]
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.12",
+    "@babel/preset-typescript": "7.18.6",
+    "@commitlint/cli": "^17.4.2",
+    "@commitlint/config-conventional": "^17.4.2",
+    "@monaco-editor/loader": "^1.3.2",
+    "@rollup/plugin-babel": "^7.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@sapphire/stopwatch": "^1.5.0",
+    "@sapphire/utilities": "^3.11.0",
+    "@snippetors/vuepress-plugin-tabs": "1.2.3",
+    "@vuepress/plugin-google-analytics": "2.0.0-beta.60",
+    "@vuepress/plugin-pwa": "2.0.0-beta.60",
+    "@vuepress/plugin-register-components": "2.0.0-beta.60",
+    "@vuepress/plugin-search": "2.0.0-beta.60",
+    "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
+    "husky": "^8.0.3",
+    "monaco-editor": "^0.34.1",
+    "prettier": "2.8.3",
+    "replace-in-file": "^6.3.5",
+    "rollup": "^4.60.1",
+    "rollup-plugin-dts": "^6.4.1",
+    "standard-version": "^9.5.0",
+    "terser": "^5.16.1",
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.0",
+    "vitest": "^2.1.9",
+    "vuepress": "2.0.0-beta.60",
+    "vuepress-plugin-google-adsense2": "1.0.2"
+  },
+  "engines": {
+    "node": ">=10"
+  }
+}

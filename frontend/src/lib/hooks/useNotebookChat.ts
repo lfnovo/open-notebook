@@ -60,14 +60,19 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     enabled: !!notebookId && !!currentSessionId
   })
 
-  // Update messages when current session changes, but not during active
-  // streaming — the optimistic user message would be overwritten by the
-  // server state which does not yet include the in-flight turn.
+  // Track isSending in a ref so the sync effect reads it without depending
+  // on it. We only react to currentSession changes (e.g., a fresh session
+  // fetch), not to isSending toggles — otherwise stopping a stream would
+  // re-fire this effect with stale session data and overwrite the locally
+  // preserved partial response immediately after setIsSending(false).
+  const isSendingRef = useRef(false)
+  isSendingRef.current = isSending
+
   useEffect(() => {
-    if (currentSession?.messages && !isSending) {
+    if (currentSession?.messages && !isSendingRef.current) {
       setMessages(currentSession.messages)
     }
-  }, [currentSession, isSending])
+  }, [currentSession])
 
   // Auto-select most recent session when sessions are loaded
   useEffect(() => {
@@ -281,8 +286,14 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
         }
       }
 
-      // Refetch session to get authoritative message list from server
-      await refetchCurrentSession()
+      // Refetch canonical session state and apply it explicitly. The sync
+      // effect may skip the cache-driven update because isSending can still
+      // be true when the re-render fires (awaits break React batching), so
+      // set messages directly from the fresh data to avoid that race.
+      const freshSession = await refetchCurrentSession()
+      if (freshSession.data?.messages) {
+        setMessages(freshSession.data.messages)
+      }
     } catch (err: unknown) {
       // AbortError is expected when user stops streaming; keep optimistic
       // user message so they can see what they asked, and refetch session

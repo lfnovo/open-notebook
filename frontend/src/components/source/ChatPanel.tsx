@@ -102,9 +102,16 @@ export function ChatPanel({
     }
   }
 
-  // Auto-scroll to bottom when new messages arrive or streaming content updates
+  // Auto-scroll to bottom: smooth on new messages, instant during streaming
+  // (per-token smooth scroll causes jank and prevents users from staying
+  // scrolled up to read earlier content).
+  const lastMessageCountRef = useRef(messages.length)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const messageAdded = messages.length !== lastMessageCountRef.current
+    lastMessageCountRef.current = messages.length
+    messagesEndRef.current?.scrollIntoView({
+      behavior: messageAdded ? 'smooth' : 'auto',
+    })
   }, [messages, streamingContent])
 
   const handleSend = () => {

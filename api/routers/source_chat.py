@@ -155,7 +155,9 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
             if session_id_raw:
                 session_id = str(session_id_raw)
 
-                session_result = await repo_query(f"SELECT * FROM {session_id_raw}")
+                session_result = await repo_query(
+                    "SELECT * FROM $id", {"id": ensure_record_id(session_id)}
+                )
                 if session_result and len(session_result) > 0:
                     session_data = session_result[0]
 

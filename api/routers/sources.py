@@ -43,21 +43,30 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
     file_path = Path(upload_folder)
     file_path.mkdir(parents=True, exist_ok=True)
 
+    # Strip directory components to prevent path traversal
+    safe_filename = os.path.basename(original_filename)
+    if not safe_filename:
+        raise ValueError("Invalid filename")
+
     # Split filename and extension
-    stem = Path(original_filename).stem
-    suffix = Path(original_filename).suffix
+    stem = Path(safe_filename).stem
+    suffix = Path(safe_filename).suffix
 
     # Check if file exists and generate unique name
     counter = 0
     while True:
         if counter == 0:
-            new_filename = original_filename
+            new_filename = safe_filename
         else:
             new_filename = f"{stem} ({counter}){suffix}"
 
         full_path = file_path / new_filename
-        if not full_path.exists():
-            return str(full_path)
+        # Verify resolved path stays within upload folder
+        resolved = full_path.resolve()
+        if not str(resolved).startswith(str(file_path.resolve()) + os.sep):
+            raise ValueError("Invalid filename: path traversal detected")
+        if not resolved.exists():
+            return str(resolved)
         counter += 1
 
 
@@ -324,6 +333,14 @@ async def create_source(
                 raise HTTPException(
                     status_code=400,
                     detail="File upload or file_path is required for upload type",
+                )
+            # Validate file_path is within the uploads directory to prevent LFI
+            uploads_resolved = Path(UPLOADS_FOLDER).resolve()
+            file_resolved = Path(final_file_path).resolve()
+            if not str(file_resolved).startswith(str(uploads_resolved) + os.sep):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid file path: must be within the uploads directory",
                 )
             content_state["file_path"] = final_file_path
             content_state["delete_source"] = source_data.delete_source

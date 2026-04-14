@@ -76,6 +76,9 @@ class Credential(ObjectModel):
             config["api_key"] = self.api_key.get_secret_value()
         if self.base_url:
             config["base_url"] = self.base_url
+            # For Azure, base_url from the UI form maps to endpoint
+            if self.provider and self.provider.lower() == "azure" and not self.endpoint:
+                config["endpoint"] = self.base_url
         if self.endpoint:
             config["endpoint"] = self.endpoint
         if self.api_version:

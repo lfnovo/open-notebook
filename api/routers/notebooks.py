@@ -24,13 +24,38 @@ async def get_notebooks(
 ):
     """Get all notebooks with optional filtering and ordering."""
     try:
+        # Validate order_by against allowlist to prevent SurrealQL injection
+        allowed_fields = {"name", "created", "updated"}
+        allowed_directions = {"asc", "desc"}
+
+        parts = order_by.strip().lower().split()
+        if len(parts) == 1:
+            if parts[0] not in allowed_fields:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid order_by field: '{order_by}'. Allowed fields: {', '.join(sorted(allowed_fields))}",
+                )
+            validated_order_by = parts[0]
+        elif len(parts) == 2:
+            if parts[0] not in allowed_fields or parts[1] not in allowed_directions:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid order_by: '{order_by}'. Allowed fields: {', '.join(sorted(allowed_fields))}. Allowed directions: asc, desc",
+                )
+            validated_order_by = f"{parts[0]} {parts[1]}"
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid order_by format: '{order_by}'. Expected 'field' or 'field direction'",
+            )
+
         # Build the query with counts
         query = f"""
             SELECT *,
             count(<-reference.in) as source_count,
             count(<-artifact.in) as note_count
             FROM notebook
-            ORDER BY {order_by}
+            ORDER BY {validated_order_by}
         """
 
         result = await repo_query(query)
@@ -52,6 +77,8 @@ async def get_notebooks(
             )
             for nb in result
         ]
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
         raise HTTPException(

@@ -50,6 +50,7 @@
     "react-hook-form": "^7.60.0",
     "react-i18next": "^16.5.0",
     "react-markdown": "^10.1.0",
+    "react-resizable-panels": "^4.10.0",
     "remark-gfm": "^4.0.1",
     "sonner": "^2.0.6",
     "tailwind-merge": "^3.3.1",

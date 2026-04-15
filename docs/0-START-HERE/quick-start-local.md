@@ -231,8 +231,7 @@ Check if GPU is available:
 # Show available GPUs
 docker exec open-notebook-local-ollama-1 ollama ps
 
-# Enable GPU in docker-compose.yml:
-# - OLLAMA_NUM_GPU=1
+# Enable GPU in docker-compose.yml
 ```
 
 Then restart: `docker compose restart ollama`

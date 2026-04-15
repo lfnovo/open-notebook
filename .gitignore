@@ -1,11 +1,15 @@
 .env
 prompts/patterns/user/
 /notebooks/
+.env
+prompts/patterns/user/
+/notebooks/
 data/
 .uploads/
 sqlite-db/
 surreal-data/
 docker.env
+notebook_data/
 notebook_data/
 # Python-specific
 *.py[cod]
@@ -13,6 +17,7 @@ __pycache__/
 *.so
 todo.md
 temp/
+google-credentials.json
 google-credentials.json
 # Distribution / packaging
 .Python
@@ -22,6 +27,8 @@ dist/
 downloads/
 eggs/
 .eggs/
+/lib/
+/lib64/
 /lib/
 /lib64/
 parts/

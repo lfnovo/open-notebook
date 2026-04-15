@@ -41,4 +41,3 @@ yarn-error.log*
 next-env.d.ts
 
 doc_exports/
-node-modules/

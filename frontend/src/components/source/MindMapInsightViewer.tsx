@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import * as d3 from 'd3'
 import { mindmapApi, MindMapNode } from '@/lib/api/mindmap'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Button } from '@/components/ui/button'
 import {
-  ChevronRight, AlertCircle, RefreshCw,
+  AlertCircle, RefreshCw,
   BookOpen, X, ZoomIn, ZoomOut, Maximize2, Network, ImageIcon,
 } from 'lucide-react'
 
@@ -36,6 +36,44 @@ function saveCachedNodeSummary(sourceId: string, nodeName: string, context: stri
 function pickNode(parsed: unknown): MindMapNode | null {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
   const obj = parsed as Record<string, unknown>
+
+  // ── Timeline / event-list schemas ──────────────────────────────────────────
+
+  // Helper: convert an event array into MindMapNode children
+  function eventsToChildren(evArr: Record<string, unknown>[]): MindMapNode[] {
+    return evArr.map((ev) => {
+      const dateRange = [ev.start_date ?? ev.date ?? ev.year, ev.end_date]
+        .filter(Boolean).join(' – ')
+      const eventText = String(ev.event ?? ev.description ?? ev.title ?? ev.label ?? '')
+      const label = dateRange ? `${dateRange}: ${eventText}` : eventText
+      return { label: label.trim() }
+    })
+  }
+
+  // { name, life_events: [...] }
+  if (typeof obj.name === 'string' && Array.isArray(obj.life_events)) {
+    return { label: obj.name as string, children: eventsToChildren(obj.life_events as Record<string, unknown>[]) }
+  }
+
+  // { name, events: [...] }
+  if (typeof obj.name === 'string' && Array.isArray(obj.events)) {
+    return { label: obj.name as string, children: eventsToChildren(obj.events as Record<string, unknown>[]) }
+  }
+
+  // { events: [...] }  — no name at root, infer label from first event or use "Timeline"
+  if (!obj.name && Array.isArray(obj.events)) {
+    const children = eventsToChildren(obj.events as Record<string, unknown>[])
+    const rootLabel = typeof obj.title === 'string' ? obj.title : 'Timeline'
+    return { label: rootLabel, children }
+  }
+
+  // { life_events: [...] } — no name
+  if (!obj.name && Array.isArray(obj.life_events)) {
+    const children = eventsToChildren(obj.life_events as Record<string, unknown>[])
+    const rootLabel = typeof obj.title === 'string' ? obj.title : 'Timeline'
+    return { label: rootLabel, children }
+  }
+
   const rootTitleKey = Object.keys(obj).find(k => k.toLowerCase().replace(/[\s_-]/g, '') === 'roottitle')
   if (rootTitleKey && typeof obj[rootTitleKey] === 'string') {
     const rootLabel = obj[rootTitleKey] as string
@@ -59,6 +97,43 @@ function pickNode(parsed: unknown): MindMapNode | null {
       }
     }
   }
+
+  // ── NEW FALLBACK: Generic arbitrary JSON tree ──────────────────────────────
+  // Handles generic structures like {"Subject Name": {"Category": ["Event 1", "Event 2"]}}
+  const keys = Object.keys(obj);
+  if (keys.length === 1) {
+    const rootLabel = keys[0];
+    const rootContent = obj[rootLabel];
+
+    const buildTree = (label: string, data: unknown): MindMapNode => {
+      if (Array.isArray(data)) {
+        return {
+          label,
+          children: data.map(item => {
+            if (typeof item === 'string') return { label: item };
+            if (typeof item === 'object' && item !== null) {
+              const itemKeys = Object.keys(item);
+              if (itemKeys.length === 1) return buildTree(itemKeys[0], (item as any)[itemKeys[0]]);
+              return { label: 'Details', children: itemKeys.map(k => buildTree(k, (item as any)[k])) };
+            }
+            return { label: String(item) };
+          }).filter(Boolean) as MindMapNode[]
+        };
+      }
+      if (typeof data === 'object' && data !== null) {
+        return {
+          label,
+          children: Object.entries(data).map(([k, v]) => buildTree(k, v))
+        };
+      }
+      return { label: `${label}: ${data}` };
+    };
+
+    if (typeof rootContent === 'object' && rootContent !== null) {
+       return buildTree(rootLabel, rootContent);
+    }
+  }
+
   return null
 }
 
@@ -68,17 +143,50 @@ function extractMindMapJson(raw: unknown): MindMapNode {
     if (node) return node
   }
   if (typeof raw !== 'string') throw new Error(`Unsupported content type: ${typeof raw}`)
-  let text = raw.replace(/<think>[\s\S]*?<\/think>/gi, '')
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-  if (fenceMatch) text = fenceMatch[1]
+
+  // Unescape common escape sequences that LLMs emit
+  let text = raw
+    .replace(/\\n/g, '\n')
+    .replace(/\\t/g, '\t')
+    .replace(/\\"/g, '"')
+    .replace(/\\'/g, "'")
+
+  // Strip <think> blocks
+  text = text.replace(/<think>[\s\S]*?<\/think>/gi, '')
+
+  // FIX: Handle malformed JSON where LLM uses Sets { "string", "string" } instead of Arrays [ "string", "string" ]
+  const strPattern = '"(?:\\\\.|[^"\\\\])*"';
+  const setPattern = new RegExp(`\\{\\s*(${strPattern}(?:\\s*,\\s*${strPattern})*)\\s*\\}`, 'g');
+  text = text.replace(setPattern, '[$1]');
+
+  // Try extracting from a markdown code fence first
+  // Using RegExp with `{3}` to avoid markdown formatting conflicts
+  const fenceRegex = new RegExp('`{3}(?:json)?\\s*([\\s\\S]*?)\\s*`{3}');
+  const fenceMatch = text.match(fenceRegex);
+  if (fenceMatch) {
+    const fenced = fenceMatch[1].trim()
+    try {
+      const node = pickNode(JSON.parse(fenced))
+      if (node) return node
+    } catch {}
+  }
+
+  // If the whole string is a JSON-encoded string (starts/ends with quotes), unwrap it
   const tr = text.trim()
   if (tr.startsWith('"') && tr.endsWith('"')) {
-    try { const inner = JSON.parse(tr); if (typeof inner === 'string') text = inner } catch {}
+    try {
+      const inner = JSON.parse(tr)
+      if (typeof inner === 'string') text = inner
+    } catch {}
   }
+
+  // Try parsing the full text directly
   try {
     const node = pickNode(JSON.parse(text.trim()))
     if (node) return node
   } catch {}
+
+  // Scan for all top-level JSON objects and pick the largest valid one
   const candidates: { node: MindMapNode; len: number }[] = []
   let depth = 0, start = -1, inString = false, escape = false
   for (let i = 0; i < text.length; i++) {
@@ -120,7 +228,6 @@ function FormattedText({ text }: { text: string }) {
     </span>
   )
 }
-
 function SummaryContent({ text }: { text: string }) {
   const cleaned = text.replace(/^#{1,6}\s+(.+)$/gm, '**$1**').replace(/^-{3,}$/gm, '').replace(/\n{3,}/g, '\n\n').trim()
   return (

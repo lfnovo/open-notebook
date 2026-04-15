@@ -65,18 +65,18 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       setMessages(prevMessages => {
         // If we have local messages, merge with server messages to avoid losing optimistic updates
         const serverMessages = currentSession.messages || []
-        
+
         // Create a map of server messages by ID
         const serverMap = new Map(serverMessages.map(m => [m.id, m]))
-        
+
         // Keep all local messages that aren't already on server (optimistic messages)
         const optimisticMessages = prevMessages.filter(m => !serverMap.has(m.id))
-        
+
         // Combine server messages + any optimistic messages
         return [...serverMessages, ...optimisticMessages]
       })
     }
-    
+
     // ✅ Load persisted suggested questions when session loads
     if (currentSession?.suggested_questions && currentSession.suggested_questions.length > 0) {
       console.log('💡 [Hook] Loading persisted suggestions from session:', currentSession.suggested_questions)
@@ -252,7 +252,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     try {
       // Build context and send message
       const context = await buildContext()
-      
+
       // Use streaming API with token callback and suggested questions callback
       await chatApi.sendMessageStream({
         session_id: sessionId,
@@ -282,7 +282,7 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
       // Refetch current session to get updated data
       console.log('🔄 [Hook] Refetching session after stream completes...')
       const updatedSession = await refetchCurrentSession()
-      
+
       // Load persisted suggestions from session after refetch
       if (updatedSession?.data?.suggested_questions) {
         console.log('💾 [Hook] Loaded persisted suggestions from session:', updatedSession.data.suggested_questions)
@@ -380,6 +380,6 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     switchSession,
     sendMessage,
     setModelOverride,
-    refetchSessions
+    // refetchSessions
   }
 }

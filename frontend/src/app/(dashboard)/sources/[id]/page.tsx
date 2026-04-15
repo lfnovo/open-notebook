@@ -91,7 +91,7 @@
 'use client'
 
 import { useRouter, useParams } from 'next/navigation'
-import { useCallback, useState } from 'react' // Added useState
+import { SetStateAction, useCallback, useState } from 'react' // Added useState
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Settings2 } from 'lucide-react' // Added icon
 import { useSourceChat } from '@/lib/hooks/useSourceChat'
@@ -149,12 +149,12 @@ export default function SourceDetailPage() {
           {/* 🔧 Styled Header with "Tune" Icon */}
           <div className="flex justify-between items-center p-3 border-b bg-gray-50">
             <h3 className="text-sm font-semibold text-gray-700">Chat</h3>
-            <button 
+            <button
               onClick={() => setIsConfigOpen(true)}
               className="p-2 hover:bg-gray-200 rounded-full transition-colors"
               title="Configure notebook"
             >
-              <Settings2 className="h-5 w-5 text-gray-600" /> 
+              <Settings2 className="h-5 w-5 text-gray-600" />
             </button>
           </div>
 
@@ -178,9 +178,9 @@ export default function SourceDetailPage() {
 
       {/* Configuration Modal */}
       {isConfigOpen && (
-        <ConfigureChatModal 
+        <ConfigureChatModal
           currentConfig={chatConfig}
-          onSave={(newConfig) => {
+          onSave={(newConfig: SetStateAction<{ goal: string; length: string }>) => {
             setChatConfig(newConfig)
             setIsConfigOpen(false)
           }}

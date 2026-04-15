@@ -16,16 +16,16 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:latest
-    container_name: kavach-kafka
+    container_name: kafka
     ports:
-      - "9093:9093"
-      - "29093:29093"
+      - "9094:9094"
+      - "29094:29094"
     environment:
       KAFKA_NODE_ID: "1"
       KAFKA_PROCESS_ROLES: "broker,controller"
       KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:29094"
-      KAFKA_LISTENERS: "CONTROLLER://localhost:29094,PLAINTEXT://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:29093"
-      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:29093"
+      KAFKA_LISTENERS: "CONTROLLER://localhost:29094,PLAINTEXT://0.0.0.0:9094,PLAINTEXT_HOST://0.0.0.0:29094"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9094,PLAINTEXT_HOST://localhost:29094"
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT"
@@ -97,7 +97,7 @@ services:
       SURREAL_DATABASE: "open_notebook"
       OLLAMA_BASE_URL: "http://ollama:11434"
       OLLAMA_API_URL: "http://ollama:11434"
-      KAFKA_BOOTSTRAP_SERVERS: "kafka:9093"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9094"
       GIT_PYTHON_REFRESH: "quiet"
 
     volumes:

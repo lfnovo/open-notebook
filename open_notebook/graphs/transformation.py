@@ -2,6 +2,7 @@ from ai_prompter import Prompter
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
+from loguru import logger
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
@@ -30,6 +31,21 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     try:
         if not content:
             content = source.full_text
+
+        # Guard: if content is still empty after loading from source, fail early
+        # with a clear message rather than sending an empty prompt to the LLM.
+        if not content or not str(content).strip():
+            raise ValueError(
+                f"Source '{getattr(source, 'id', 'unknown')}' has no extracted text. "
+                "The document may not have been processed yet, or text extraction failed. "
+                "Please wait for processing to complete and try again."
+            )
+
+        logger.info(
+            f"run_transformation: source={getattr(source, 'id', 'N/A')} "
+            f"transformation='{transformation.title}' "
+            f"content_length={len(str(content))} chars"
+        )
         transformation_template_text = transformation.prompt
         default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
         if default_prompts.transformation_instructions:

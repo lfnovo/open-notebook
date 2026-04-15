@@ -12,7 +12,7 @@ export function ConfigureChatModal({ currentConfig, onSave, onClose }: any) {
           <h2 className="text-xl font-semibold">Configure chat</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-black text-2xl">×</button>
         </div>
-        
+
         <p className="text-gray-600 text-sm mb-6">Notebooks can be customised to help you achieve different goals.</p>
 
         <div className="space-y-6">
@@ -50,7 +50,7 @@ export function ConfigureChatModal({ currentConfig, onSave, onClose }: any) {
         </div>
 
         <div className="flex justify-end mt-8">
-          <button 
+          <button
             onClick={() => onSave({ goal, length })}
             className="bg-blue-600 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-700"
           >

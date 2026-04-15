@@ -87,6 +87,9 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy the source code
 COPY . /app
 
+# Patch content_core office processor with improved table extraction
+COPY patches/content_core_office.py /app/.venv/lib/python3.12/site-packages/content_core/processors/office.py
+
 # Copy pre-downloaded tiktoken encoding
 COPY --from=builder /app/tiktoken-cache /app/tiktoken-cache
 

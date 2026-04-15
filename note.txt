@@ -8,3 +8,18 @@ zookeeper: C:\kafka\kafka> .\bin\windows\zookeeper-server-start.bat .\config\zoo
 kafka server :  C:\kafka\kafka> .\bin\windows\kafka-server-start.bat .\config\server.properties
 
 surreal-commands-worker: uv run --env-file .env surreal-commands-worker --import-modules commands
+
+
+
+git hub
+# 1. Switch to your branch (if not already)
+git checkout bhavesh
+
+# 2. Add changes
+git add .
+
+# 3. Commit changes
+git commit -m "your message"
+
+# 4. Push bhavesh branch to origin
+git push origin bhavesh

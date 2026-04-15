@@ -111,6 +111,21 @@ export interface CreateSourceRequest {
   async_processing?: boolean
 }
 
+export interface CreateCommonGraphRequest {
+  source_ids: string[]
+  title?: string
+}
+
+export interface CommonGraphResponse {
+  id: string
+  title?: string
+  source_ids: string[]
+  status: string
+  message?: string
+  created: string
+  updated: string
+}
+
 export interface UpdateNoteRequest {
   title?: string
   content?: string

@@ -85,10 +85,10 @@ interface BatchProgress {
   currentItem?: string
 }
 
-export function AddSourceDialog({ 
-  open, 
-  onOpenChange, 
-  defaultNotebookId 
+export function AddSourceDialog({
+  open,
+  onOpenChange,
+  defaultNotebookId
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
@@ -150,7 +150,7 @@ export function AddSourceDialog({
 
       // Reset form with proper embed value based on settings
       const embedValue = settings.default_embedding_option === 'always' ||
-                         (settings.default_embedding_option === 'ask')
+        (settings.default_embedding_option === 'ask')
 
       reset({
         notebooks: defaultNotebookId ? [defaultNotebookId] : [],
@@ -225,7 +225,7 @@ export function AddSourceDialog({
         }
         if (selectedType === 'text') {
           return !!watchedContent && watchedContent.trim() !== '' &&
-                 !!watchedTitle && watchedTitle.trim() !== ''
+            !!watchedTitle && watchedTitle.trim() !== ''
         }
         if (selectedType === 'upload') {
           if (watchedFile instanceof FileList) {
@@ -502,7 +502,7 @@ export function AddSourceDialog({
                       </span>
                     )}
                   </div>
-                   <span className="text-muted-foreground">
+                  <span className="text-muted-foreground">
                     {batchProgress.completed + batchProgress.failed} / {batchProgress.total}
                   </span>
                 </div>
@@ -561,7 +561,7 @@ export function AddSourceDialog({
                 onClearUrlErrors={handleClearUrlErrors}
               />
             )}
-            
+
             {currentStep === 2 && (
               <NotebooksStep
                 notebooks={notebooks}
@@ -570,7 +570,7 @@ export function AddSourceDialog({
                 loading={notebooksLoading}
               />
             )}
-            
+
             {currentStep === 3 && (
               <ProcessingStep
                 // @ts-expect-error - Type inference issue with zod schema
@@ -586,9 +586,9 @@ export function AddSourceDialog({
 
           {/* Navigation */}
           <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={handleClose}
             >
               {t.common.cancel}

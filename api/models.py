@@ -423,6 +423,21 @@ class CreateSourceInsightRequest(BaseModel):
     )
 
 
+class CommonGraphCreate(BaseModel):
+    source_ids: List[str] = Field(..., description="List of source IDs to include in the common graph")
+    title: Optional[str] = Field(None, description="Optional title for the common graph")
+
+
+class CommonGraphResponse(BaseModel):
+    id: str
+    title: Optional[str]
+    source_ids: List[str]
+    status: str
+    message: Optional[str]
+    created: str
+    updated: str
+
+
 # Source status response
 class SourceStatusResponse(BaseModel):
     status: Optional[str] = Field(None, description="Processing status")

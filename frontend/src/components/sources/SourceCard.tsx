@@ -5,6 +5,7 @@ import { SourceListResponse } from '@/lib/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +47,8 @@ interface SourceCardProps {
   onRefresh?: () => void
   className?: string
   showRemoveFromNotebook?: boolean
+  selected?: boolean
+  onSelect?: (sourceId: string, checked: boolean) => void
   contextMode?: ContextMode
   onContextModeChange?: (mode: ContextMode) => void
 }
@@ -121,6 +124,8 @@ export function SourceCard({
   onRefresh,
   className,
   showRemoveFromNotebook = false,
+  selected = false,
+  onSelect,
   contextMode,
   onContextModeChange
 }: SourceCardProps) {
@@ -197,7 +202,14 @@ export function SourceCard({
   const sourceType = getSourceType(source)
   const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
   
-   const title = source.title || t.sources.untitledSource
+  const title = source.title || t.sources.untitledSource
+  const selectedValue = !!selected
+
+  const handleSelectChange = (checked: boolean | 'indeterminate' | undefined) => {
+    if (onSelect) {
+      onSelect(source.id, checked === true)
+    }
+  }
 
   const handleRetry = () => {
     if (onRetry) {
@@ -242,8 +254,16 @@ export function SourceCard({
       <CardContent className="px-4 py-3 min-h-[80px]">
         {/* Header with status indicator */}
         <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="flex-1 min-w-0">
-            {/* Status badge - only show if not completed */}
+          <div className="flex items-start gap-2 flex-1 min-w-0">
+            <Checkbox
+              checked={selectedValue}
+              onCheckedChange={handleSelectChange}
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Select source ${title}`}
+              className="mt-1"
+            />
+            <div className="flex-1 min-w-0">
+              {/* Status badge - only show if not completed */}
             {!isCompleted && (
               <div className="flex items-center gap-2 mb-2">
                 <div className={cn(
@@ -369,53 +389,54 @@ export function SourceCard({
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {showRemoveFromNotebook && (
-                <>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveFromNotebook()
-                    }}
-                    disabled={!onRemoveFromNotebook}
-                  >
-                    <Unlink className="h-4 w-4 mr-2" />
-                    {t.sources.removeFromNotebook}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
+              <DropdownMenuContent align="end" className="w-48">
+                {showRemoveFromNotebook && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveFromNotebook()
+                      }}
+                      disabled={!onRemoveFromNotebook}
+                    >
+                      <Unlink className="h-4 w-4 mr-2" />
+                      {t.sources.removeFromNotebook}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
-              {isFailed && (
-                <>
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRetry()
-                    }}
-                    disabled={!onRetry}
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    {t.sources.retryProcessing}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </>
-              )}
+                {isFailed && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRetry()
+                      }}
+                      disabled={!onRetry}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {t.sources.retryProcessing}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
 
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleDelete()
-                }}
-                disabled={!onDelete}
-                className="text-red-600 focus:text-red-600"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t.sources.deleteSource}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleDelete()
+                  }}
+                  disabled={!onDelete}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t.sources.deleteSource}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
         </div>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {(isFailed as any) && (

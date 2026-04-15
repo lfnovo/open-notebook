@@ -139,3 +139,7 @@ specs/
 
 *.local.yml
 **/*.local.md
+node-modules/
+.env
+.venv/
+dist/

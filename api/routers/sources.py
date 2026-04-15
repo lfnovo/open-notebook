@@ -19,6 +19,8 @@ from surreal_commands import execute_command_sync, submit_command
 from api.command_service import CommandService
 from api.models import (
     AssetModel,
+    CommonGraphCreate,
+    CommonGraphResponse,
     CreateSourceInsightRequest,
     InsightCreationResponse,
     SourceCreate,
@@ -278,6 +280,113 @@ async def get_sources(
     except Exception as e:
         logger.error(f"Error fetching sources: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching sources: {str(e)}")
+
+
+def _parse_source_ids(source_ids: List[str]) -> List[str]:
+    return [str(ensure_record_id(source_id)) for source_id in source_ids]
+
+
+@router.post("/common-graphs", response_model=CommonGraphResponse)
+async def create_common_graph(request: CommonGraphCreate):
+    if not request.source_ids or len(request.source_ids) < 2:
+        raise HTTPException(
+            status_code=400,
+            detail="At least two source IDs are required to create a common graph.",
+        )
+
+    # Validate each source ID exists
+    validated_source_ids: list[str] = []
+    for source_id in request.source_ids:
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Source not found: {source_id}",
+            )
+        validated_source_ids.append(str(source.id))
+
+    try:
+        graph_record = await repo_create(
+            "common_graph",
+            {
+                "title": request.title or "Common graph",
+                "source_ids": [ensure_record_id(source_id) for source_id in validated_source_ids],
+                "status": "created",
+                "message": "Common graph saved successfully.",
+            },
+        )
+
+        return CommonGraphResponse(
+            id=str(graph_record["id"]),
+            title=graph_record.get("title"),
+            source_ids=[str(item) for item in graph_record.get("source_ids", [])],
+            status=graph_record.get("status", "created"),
+            message=graph_record.get("message"),
+            created=str(graph_record["created"]),
+            updated=str(graph_record["updated"]),
+        )
+    except Exception as e:
+        logger.error(f"Failed to create common graph: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create common graph: {str(e)}",
+        )
+
+
+@router.get("/common-graphs", response_model=List[CommonGraphResponse])
+async def list_common_graphs():
+    try:
+        result = await repo_query("SELECT * FROM common_graph")
+        graphs: list[CommonGraphResponse] = []
+        for row in result:
+            graphs.append(
+                CommonGraphResponse(
+                    id=str(row["id"]),
+                    title=row.get("title"),
+                    source_ids=[str(item) for item in row.get("source_ids", [])],
+                    status=row.get("status", "created"),
+                    message=row.get("message"),
+                    created=str(row["created"]),
+                    updated=str(row["updated"]),
+                )
+            )
+        return graphs
+    except Exception as e:
+        logger.error(f"Failed to list common graphs: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list common graphs: {str(e)}",
+        )
+
+
+@router.get("/common-graphs/{graph_id}", response_model=CommonGraphResponse)
+async def get_common_graph(graph_id: str):
+    try:
+        result = await repo_query(
+            "SELECT * FROM $id",
+            {"id": ensure_record_id(graph_id)},
+        )
+        if not result:
+            raise HTTPException(status_code=404, detail="Common graph not found")
+
+        row = result[0]
+        return CommonGraphResponse(
+            id=str(row["id"]),
+            title=row.get("title"),
+            source_ids=[str(item) for item in row.get("source_ids", [])],
+            status=row.get("status", "created"),
+            message=row.get("message"),
+            created=str(row["created"]),
+            updated=str(row["updated"]),
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get common graph: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get common graph: {str(e)}",
+        )
 
 
 @router.post("/sources", response_model=SourceResponse)

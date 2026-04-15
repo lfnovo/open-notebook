@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { SourceListResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -50,6 +51,7 @@ export function SourcesColumn({
   fetchNextPage,
 }: SourcesColumnProps) {
   const { t } = useTranslation()
+  const router = useRouter()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [addExistingDialogOpen, setAddExistingDialogOpen] = useState(false)
@@ -57,6 +59,7 @@ export function SourcesColumn({
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([])
 
   const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
@@ -97,6 +100,24 @@ export function SourcesColumn({
   const handleDeleteClick = (sourceId: string) => {
     setSourceToDelete(sourceId)
     setDeleteDialogOpen(true)
+  }
+
+  const handleSourceSelect = (sourceId: string, checked: boolean) => {
+    setSelectedSourceIds((prev) => {
+      if (checked) {
+        return prev.includes(sourceId) ? prev : [...prev, sourceId]
+      }
+      return prev.filter((id) => id !== sourceId)
+    })
+  }
+
+  const selectedCount = selectedSourceIds.length
+  const canCreateCommonGraph = selectedCount >= 2
+
+  const handleCreateCommonGraph = () => {
+    if (!canCreateCommonGraph) return
+    const ids = selectedSourceIds.map(encodeURIComponent).join(',')
+    router.push(`/sources/common-graph?ids=${ids}`)
   }
 
   const handleDeleteConfirm = async () => {
@@ -141,6 +162,11 @@ export function SourcesColumn({
     }
   }
 
+  useEffect(() => {
+    if (!sources) return
+    setSelectedSourceIds((prev) => prev.filter((id) => sources.some((source) => source.id === id)))
+  }, [sources])
+
   const handleSourceClick = (sourceId: string) => {
     openModal('source', sourceId)
   }
@@ -177,6 +203,14 @@ export function SourcesColumn({
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!canCreateCommonGraph}
+                  onClick={handleCreateCommonGraph}
+                >
+                  {selectedCount >= 2 ? `Create graph (${selectedCount})` : 'Select 2+ sources'}
+                </Button>
                 {collapseButton}
               </div>
             </div>
@@ -205,6 +239,8 @@ export function SourcesColumn({
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
+                    selected={selectedSourceIds.includes(source.id)}
+                    onSelect={handleSourceSelect}
                     contextMode={contextSelections?.[source.id]}
                     onContextModeChange={onContextModeChange
                       ? (mode) => onContextModeChange(source.id, mode)

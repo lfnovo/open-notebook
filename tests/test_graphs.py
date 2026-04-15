@@ -144,6 +144,57 @@ class TestTransformationGraph:
         with pytest.raises(AssertionError, match="No content to transform"):
             await run_transformation(state, config)
 
+    @pytest.mark.asyncio
+    async def test_run_transformation_includes_safe_instructions(self, monkeypatch):
+        """Test transformation prompt includes anti-hallucination instructions."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        from open_notebook.domain.transformation import Transformation
+
+        mock_transformation = Transformation(
+            name="test",
+            title="Test Transformation",
+            description="Test",
+            prompt="Summarize the input text.",
+            apply_default=False,
+        )
+
+        mock_chain = MagicMock()
+        mock_chain.ainvoke = AsyncMock(return_value=MagicMock(content="Hello world"))
+
+        async def fake_provision(prompt, model_id, mode, max_tokens):
+            fake_provision.called_prompt = prompt
+            return mock_chain
+
+        async def fake_get_instance():
+            return Transformation.__config__.fields  # placeholder
+
+        monkeypatch.setattr(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            fake_provision,
+        )
+        async def fake_default_prompts():
+            from open_notebook.domain.transformation import DefaultPrompts
+
+            return DefaultPrompts(transformation_instructions=None)
+
+        monkeypatch.setattr(
+            "open_notebook.graphs.transformation.DefaultPrompts.get_instance",
+            fake_default_prompts,
+        )
+
+        state = {
+            "input_text": "INTERROGATION REPORT\nNAME:- Ankit ...",
+            "transformation": mock_transformation,
+            "source": None,
+        }
+        config = {"configurable": {"model_id": None}}
+
+        result = await run_transformation(state, config)
+
+        assert result["output"] == "Hello world"
+        assert "Do NOT invent or add any names" in fake_provision.called_prompt
+
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
         assert transformation_graph is not None

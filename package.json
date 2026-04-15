@@ -1,5 +1,11 @@
 {
   "dependencies": {
     "fuse.js": "^7.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "autoprefixer": "^10.5.0",
+    "postcss": "^8.5.9",
+    "tailwindcss": "^3.4.19"
   }
 }

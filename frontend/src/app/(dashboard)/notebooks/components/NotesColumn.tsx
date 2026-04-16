@@ -51,8 +51,8 @@ export function NotesColumn({
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleNotes, t.common.notes),
-    [toggleNotes, t.common.notes]
+    () => createCollapseButton(toggleNotes, t('common.notes')),
+    [toggleNotes, t('common.notes')]
   )
 
   const handleDeleteClick = (noteId: string) => {
@@ -78,12 +78,12 @@ export function NotesColumn({
         isCollapsed={notesCollapsed}
         onToggle={toggleNotes}
         collapsedIcon={StickyNote}
-        collapsedLabel={t.common.notes}
+        collapsedLabel={t('common.notes')}
       >
         <Card className="h-full flex flex-col flex-1 overflow-hidden">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{t.common.notes}</CardTitle>
+              <CardTitle className="text-lg">{t('common.notes')}</CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
@@ -93,7 +93,7 @@ export function NotesColumn({
                   }}
                 >
                   <Plus className="h-4 w-4 mr-2" />
-                  {t.common.writeNote}
+                  {t('common.writeNote')}
                 </Button>
                 {collapseButton}
               </div>
@@ -108,8 +108,8 @@ export function NotesColumn({
             ) : !notes || notes.length === 0 ? (
               <EmptyState
                 icon={StickyNote}
-                title={t.notebooks.noNotesYet}
-                description={t.sources.createFirstNote}
+                title={t('notebooks.noNotesYet')}
+                description={t('sources.createFirstNote')}
               />
             ) : (
               <div className="space-y-3">
@@ -127,7 +127,7 @@ export function NotesColumn({
                           <User className="h-4 w-4 text-muted-foreground" />
                         )}
                         <Badge variant="secondary" className="text-xs">
-                          {note.note_type === 'ai' ? t.common.aiGenerated : t.common.human}
+                          {note.note_type === 'ai' ? t('common.aiGenerated') : t('common.human')}
                         </Badge>
                       </div>
 
@@ -171,7 +171,7 @@ export function NotesColumn({
                               className="text-red-600 focus:text-red-600"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t.notebooks.deleteNote}
+                              {t('notebooks.deleteNote')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -212,9 +212,9 @@ export function NotesColumn({
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title={t.notebooks.deleteNote}
-        description={t.notebooks.deleteNoteConfirm}
-        confirmText={t.common.delete}
+        title={t('notebooks.deleteNote')}
+        description={t('notebooks.deleteNoteConfirm')}
+        confirmText={t('common.delete')}
         onConfirm={handleDeleteConfirm}
         isLoading={deleteNote.isPending}
         confirmVariant="destructive"

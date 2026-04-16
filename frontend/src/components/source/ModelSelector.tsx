@@ -67,8 +67,8 @@ export function ModelSelector({
     if (defaultModel) {
       return defaultModel.name
     }
-    return t.common.default
-  }, [currentModel, languageModels, defaultModel, t.common.default])
+    return t('common.default')
+  }, [currentModel, languageModels, defaultModel, t('common.default')])
 
   const handleSave = () => {
     onModelChange(selectedModel === 'default' ? undefined : selectedModel)
@@ -100,26 +100,26 @@ export function ModelSelector({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5" />
-            {t.common.modelConfiguration}
+            {t('common.modelConfiguration')}
           </DialogTitle>
           <DialogDescription>
-            {t.transformations.overrideModelDesc}
+            {t('transformations.overrideModelDesc')}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="model">{t.common.model}</Label>
+            <Label htmlFor="model">{t('common.model')}</Label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger id="model">
-                <SelectValue placeholder={t.models.selectModelPlaceholder} />
+                <SelectValue placeholder={t('models.selectModelPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">
                   <div className="flex items-center justify-between w-full">
                     <span>
                       {defaultModel 
-                        ? `${t.common.default} (${defaultModel.name})` 
-                        : t.transformations.systemDefault}
+                        ? `${t('common.default')} (${defaultModel.name})` 
+                        : t('transformations.systemDefault')}
                     </span>
                     {defaultModel?.provider && (
                       <span className="text-xs text-muted-foreground ml-2">
@@ -150,7 +150,7 @@ export function ModelSelector({
           {selectedModel && selectedModel !== 'default' && (
             <div className="rounded-lg bg-muted p-3">
               <p className="text-sm text-muted-foreground">
-                {t.transformations.sessionUseReplacement.replace(
+                {t('transformations.sessionUseReplacement').replace(
                   '{name}', 
                   languageModels.find(m => m.id === selectedModel)?.name || selectedModel
                 )}
@@ -160,10 +160,10 @@ export function ModelSelector({
         </div>
         <DialogFooter className="flex justify-between">
           <Button variant="outline" onClick={handleReset}>
-            {t.common.resetToDefault}
+            {t('common.resetToDefault')}
           </Button>
           <Button onClick={handleSave}>
-            {t.common.saveChanges}
+            {t('common.saveChanges')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -73,7 +73,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
       <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between gap-2">
-            <span>{t.sources.sourceInsight}</span>
+            <span>{t('sources.sourceInsight')}</span>
             <div className="flex items-center gap-2">
               {displayInsight?.insight_type && (
                 <Badge variant="outline" className="text-xs uppercase">
@@ -88,7 +88,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                   className="gap-1"
                 >
                   <FileText className="h-3 w-3" />
-                  {t.sources.viewSource}
+                  {t('sources.viewSource')}
                 </Button>
               )}
             </div>
@@ -98,8 +98,8 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
         {showDeleteConfirm ? (
           <div className="flex flex-col items-center justify-center py-8 gap-4">
             <p className="text-center text-muted-foreground">
-              {t.sources.deleteInsightConfirm.split(/[?？]/)[0]}?<br />
-              <span className="text-sm">{t.sources.deleteInsightConfirm.split(/[?？]/)[1]?.trim() || t.common.deleteForever}</span>
+              {t('sources.deleteInsightConfirm').split(/[?？]/)[0]}?<br />
+              <span className="text-sm">{t('sources.deleteInsightConfirm').split(/[?？]/)[1]?.trim() || t('common.deleteForever')}</span>
             </p>
             <div className="flex gap-2">
               <Button
@@ -107,14 +107,14 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
               >
-                {t.common.cancel}
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleDelete}
                 disabled={isDeleting}
               >
-                {isDeleting ? t.common.deleting : t.common.delete}
+                {isDeleting ? t('common.deleting') : t('common.delete')}
               </Button>
             </div>
           </div>
@@ -122,7 +122,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
           <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
-                <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+                <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
               </div>
             ) : displayInsight ? (
               <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
@@ -145,7 +145,7 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                 </ReactMarkdown>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">{t.sources.noInsightSelected}</p>
+              <p className="text-sm text-muted-foreground">{t('sources.noInsightSelected')}</p>
             )}
           </div>
         )}

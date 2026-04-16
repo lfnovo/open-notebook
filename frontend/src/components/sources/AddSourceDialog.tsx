@@ -93,9 +93,9 @@ export function AddSourceDialog({
   const { t } = useTranslation()
 
   const WIZARD_STEPS: readonly WizardStep[] = [
-    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
-    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
-    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
+    { number: 1, title: t('sources.addSource'), description: t('sources.processDescription') },
+    { number: 2, title: t('navigation.notebooks'), description: t('notebooks.searchPlaceholder') },
+    { number: 3, title: t('navigation.process'), description: t('sources.processDescription') },
   ]
 
   // Simplified state management
@@ -389,29 +389,29 @@ export function AddSourceDialog({
 
       if (isBatchMode) {
         // Batch submission
-        setProcessingStatus({ message: t.sources.processingFiles })
+        setProcessingStatus({ message: t('sources.processingFiles') })
         const results = await submitBatch(data)
 
         // Show summary toast
         if (results.failed === 0) {
-          toast.success(t.sources.batchSuccess.replace('{count}', results.success.toString()))
+          toast.success(t('sources.batchSuccess').replace('{count}', results.success.toString()))
         } else if (results.success === 0) {
-          toast.error(t.sources.batchFailed.replace('{count}', results.failed.toString()))
+          toast.error(t('sources.batchFailed').replace('{count}', results.failed.toString()))
         } else {
-          toast.warning(t.sources.batchPartial.replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
+          toast.warning(t('sources.batchPartial').replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
         }
 
         handleClose()
       } else {
         // Single source submission
-        setProcessingStatus({ message: t.sources.submittingSource })
+        setProcessingStatus({ message: t('sources.submittingSource') })
         await submitSingleSource(data)
         handleClose()
       }
     } catch (error) {
       console.error('Error creating source:', error)
       setProcessingStatus({
-        message: t.common.error,
+        message: t('common.error'),
       })
       timeoutRef.current = setTimeout(() => {
         setProcessing(false)
@@ -461,12 +461,12 @@ export function AddSourceDialog({
         <DialogContent className="sm:max-w-[500px]" showCloseButton={true}>
           <DialogHeader>
             <DialogTitle>
-              {batchProgress ? t.sources.processingFiles : t.sources.statusProcessing}
+              {batchProgress ? t('sources.processingFiles') : t('sources.statusProcessing')}
             </DialogTitle>
             <DialogDescription>
               {batchProgress
-                ? t.sources.processingBatchSources.replace('{count}', batchProgress.total.toString())
-                : t.sources.processingSource
+                ? t('sources.processingBatchSources').replace('{count}', batchProgress.total.toString())
+                : t('sources.processingSource')
               }
             </DialogDescription>
           </DialogHeader>
@@ -475,7 +475,7 @@ export function AddSourceDialog({
             <div className="flex items-center gap-3">
               <LoaderIcon className="h-5 w-5 animate-spin text-primary" />
               <span className="text-sm text-muted-foreground">
-                {processingStatus?.message || t.common.processing}
+                {processingStatus?.message || t('common.processing')}
               </span>
             </div>
 
@@ -493,12 +493,12 @@ export function AddSourceDialog({
                   <div className="flex items-center gap-4">
                     <span className="flex items-center gap-1.5 text-green-600">
                       <CheckCircleIcon className="h-4 w-4" />
-                      {batchProgress.completed} {t.common.completed}
+                      {batchProgress.completed} {t('common.completed')}
                     </span>
                     {batchProgress.failed > 0 && (
                       <span className="flex items-center gap-1.5 text-destructive">
                         <XCircleIcon className="h-4 w-4" />
-                        {batchProgress.failed} {t.common.failed}
+                        {batchProgress.failed} {t('common.failed')}
                       </span>
                     )}
                   </div>
@@ -509,7 +509,7 @@ export function AddSourceDialog({
 
                 {batchProgress.currentItem && (
                   <p className="text-xs text-muted-foreground truncate">
-                    {t.common.current}: {batchProgress.currentItem}
+                    {t('common.current')}: {batchProgress.currentItem}
                   </p>
                 )}
               </>
@@ -536,9 +536,9 @@ export function AddSourceDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[700px] p-0">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle>{t.sources.addNew}</DialogTitle>
+          <DialogTitle>{t('sources.addNew')}</DialogTitle>
           <DialogDescription>
-            {t.sources.processDescription}
+            {t('sources.processDescription')}
           </DialogDescription>
         </DialogHeader>
 
@@ -591,7 +591,7 @@ export function AddSourceDialog({
               variant="outline" 
               onClick={handleClose}
             >
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
 
             <div className="flex gap-2">
@@ -601,7 +601,7 @@ export function AddSourceDialog({
                   variant="outline"
                   onClick={handlePrevStep}
                 >
-                  {t.common.back}
+                  {t('common.back')}
                 </Button>
               )}
 
@@ -613,7 +613,7 @@ export function AddSourceDialog({
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >
-                  {t.common.next}
+                  {t('common.next')}
                 </Button>
               )}
 
@@ -623,7 +623,7 @@ export function AddSourceDialog({
                 disabled={!currentStepValid || createSource.isPending}
                 className="min-w-[120px]"
               >
-                {createSource.isPending ? t.common.adding : t.common.done}
+                {createSource.isPending ? t('common.adding') : t('common.done')}
               </Button>
             </div>
           </div>

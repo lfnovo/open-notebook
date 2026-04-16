@@ -26,25 +26,25 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { ModelSelector } from '@/components/common/ModelSelector'
 
-import { TranslationKeys } from '@/lib/locales'
+import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
-const speakerConfigSchema = (t: TranslationKeys) => z.object({
-  name: z.string().min(1, t.common.nameRequired || 'Name is required'),
-  voice_id: z.string().min(1, t.podcasts.voiceIdRequired || 'Voice ID is required'),
-  backstory: z.string().min(1, t.podcasts.backstoryRequired || 'Backstory is required'),
-  personality: z.string().min(1, t.podcasts.personalityRequired || 'Personality is required'),
+const speakerConfigSchema = (t: TFunction) => z.object({
+  name: z.string().min(1, t('common.nameRequired') || 'Name is required'),
+  voice_id: z.string().min(1, t('podcasts.voiceIdRequired') || 'Voice ID is required'),
+  backstory: z.string().min(1, t('podcasts.backstoryRequired') || 'Backstory is required'),
+  personality: z.string().min(1, t('podcasts.personalityRequired') || 'Personality is required'),
   voice_model: z.string().nullable().optional(),
 })
 
-const speakerProfileSchema = (t: TranslationKeys) => z.object({
-  name: z.string().min(1, t.common.nameRequired || 'Name is required'),
+const speakerProfileSchema = (t: TFunction) => z.object({
+  name: z.string().min(1, t('common.nameRequired') || 'Name is required'),
   description: z.string().optional(),
-  voice_model: z.string().min(1, t.podcasts.voiceModelRequired || 'Voice model is required'),
+  voice_model: z.string().min(1, t('podcasts.voiceModelRequired') || 'Voice model is required'),
   speakers: z
     .array(speakerConfigSchema(t))
-    .min(1, t.podcasts.speakerCountMin || 'At least one speaker is required')
-    .max(4, t.podcasts.speakerCountMax || 'You can configure up to 4 speakers'),
+    .min(1, t('podcasts.speakerCountMin') || 'At least one speaker is required')
+    .max(4, t('podcasts.speakerCountMax') || 'You can configure up to 4 speakers'),
 })
 
 export type SpeakerProfileFormValues = z.infer<ReturnType<typeof speakerProfileSchema>>
@@ -157,29 +157,29 @@ export function SpeakerProfileFormDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? t.podcasts.editSpeakerProfile : t.podcasts.createSpeakerProfile}
+            {isEdit ? t('podcasts.editSpeakerProfile') : t('podcasts.createSpeakerProfile')}
           </DialogTitle>
           <DialogDescription>
-            {t.podcasts.speakerProfileFormDesc}
+            {t('podcasts.speakerProfileFormDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-2">
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">{t.podcasts.profileName} *</Label>
-              <Input id="name" placeholder={t.podcasts.profileNamePlaceholder} {...register('name')} />
+              <Label htmlFor="name">{t('podcasts.profileName')} *</Label>
+              <Input id="name" placeholder={t('podcasts.profileNamePlaceholder')} {...register('name')} />
               {errors.name ? (
                 <p className="text-xs text-red-600">{errors.name.message}</p>
               ) : null}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">{t.common.description}</Label>
+              <Label htmlFor="description">{t('common.description')}</Label>
               <Textarea
                 id="description"
                 rows={3}
-                placeholder={t.podcasts.descriptionPlaceholder}
+                placeholder={t('podcasts.descriptionPlaceholder')}
                 {...register('description')}
               />
             </div>
@@ -188,7 +188,7 @@ export function SpeakerProfileFormDialog({
           <div className="space-y-4">
             <div>
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {t.podcasts.voiceModel}
+                {t('podcasts.voiceModel')}
               </h3>
               <Separator className="mt-2" />
             </div>
@@ -198,11 +198,11 @@ export function SpeakerProfileFormDialog({
               render={({ field }) => (
                 <div>
                   <ModelSelector
-                    label={`${t.podcasts.voiceModel} *`}
+                    label={`${t('podcasts.voiceModel')} *`}
                     modelType="text_to_speech"
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder={t.podcasts.selectVoiceModel}
+                    placeholder={t('podcasts.selectVoiceModel')}
                   />
                   {errors.voice_model ? (
                     <p className="text-xs text-red-600 mt-1">
@@ -218,10 +218,10 @@ export function SpeakerProfileFormDialog({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  {t.podcasts.speakers}
+                  {t('podcasts.speakers')}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  {t.podcasts.speakersDesc}
+                  {t('podcasts.speakersDesc')}
                 </p>
               </div>
               <Button
@@ -231,7 +231,7 @@ export function SpeakerProfileFormDialog({
                 onClick={() => append({ ...EMPTY_SPEAKER })}
                 disabled={fields.length >= 4}
               >
-                <Plus className="mr-2 h-4 w-4" /> {t.podcasts.addSpeaker}
+                <Plus className="mr-2 h-4 w-4" /> {t('podcasts.addSpeaker')}
               </Button>
             </div>
             <Separator />
@@ -240,7 +240,7 @@ export function SpeakerProfileFormDialog({
               <div key={field.id} className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">
-                    {t.podcasts.speakerNumber.replace('{number}', (index + 1).toString())}
+                    {t('podcasts.speakerNumber').replace('{number}', (index + 1).toString())}
                   </p>
                   <Button
                     type="button"
@@ -250,16 +250,16 @@ export function SpeakerProfileFormDialog({
                     disabled={fields.length <= 1}
                     className="text-destructive"
                   >
-                    <Trash2 className="mr-2 h-4 w-4" /> {t.common.remove}
+                    <Trash2 className="mr-2 h-4 w-4" /> {t('common.remove')}
                   </Button>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor={`speaker-name-${index}`}>{t.common.name} *</Label>
+                    <Label htmlFor={`speaker-name-${index}`}>{t('common.name')} *</Label>
                     <Input
                       id={`speaker-name-${index}`}
                       {...register(`speakers.${index}.name` as const)}
-                      placeholder={t.podcasts.hostPlaceholder.replace('{number}', (index + 1).toString())}
+                      placeholder={t('podcasts.hostPlaceholder').replace('{number}', (index + 1).toString())}
                       autoComplete="off"
                     />
                     {errors.speakers?.[index]?.name ? (
@@ -269,7 +269,7 @@ export function SpeakerProfileFormDialog({
                     ) : null}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor={`speaker-voice-${index}`}>{t.podcasts.voiceId} *</Label>
+                    <Label htmlFor={`speaker-voice-${index}`}>{t('podcasts.voiceId')} *</Label>
                     <Input
                       id={`speaker-voice-${index}`}
                       {...register(`speakers.${index}.voice_id` as const)}
@@ -284,11 +284,11 @@ export function SpeakerProfileFormDialog({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`speaker-backstory-${index}`}>{t.podcasts.backstory} *</Label>
+                  <Label htmlFor={`speaker-backstory-${index}`}>{t('podcasts.backstory')} *</Label>
                   <Textarea
                     id={`speaker-backstory-${index}`}
                     rows={3}
-                    placeholder={t.podcasts.backstoryPlaceholder}
+                    placeholder={t('podcasts.backstoryPlaceholder')}
                     {...register(`speakers.${index}.backstory` as const)}
                     autoComplete="off"
                   />
@@ -299,11 +299,11 @@ export function SpeakerProfileFormDialog({
                   ) : null}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor={`speaker-personality-${index}`}>{t.podcasts.personality} *</Label>
+                  <Label htmlFor={`speaker-personality-${index}`}>{t('podcasts.personality')} *</Label>
                   <Textarea
                     id={`speaker-personality-${index}`}
                     rows={3}
-                    placeholder={t.podcasts.personalityPlaceholder}
+                    placeholder={t('podcasts.personalityPlaceholder')}
                     {...register(`speakers.${index}.personality` as const)}
                     autoComplete="off"
                   />
@@ -319,11 +319,11 @@ export function SpeakerProfileFormDialog({
                   render={({ field: vmField }) => (
                     <div>
                       <ModelSelector
-                        label={t.podcasts.perSpeakerTtsOverride}
+                        label={t('podcasts.perSpeakerTtsOverride')}
                         modelType="text_to_speech"
                         value={vmField.value ?? ''}
                         onChange={(v) => vmField.onChange(v || null)}
-                        placeholder={t.podcasts.useProfileDefault}
+                        placeholder={t('podcasts.useProfileDefault')}
                       />
                     </div>
                   )}
@@ -342,14 +342,14 @@ export function SpeakerProfileFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={disableSubmit}>
               {isSubmitting
-                ? t.common.saving
+                ? t('common.saving')
                 : isEdit
-                  ? t.common.saveChanges
-                  : t.podcasts.createProfile}
+                  ? t('common.saveChanges')
+                  : t('podcasts.createProfile')}
             </Button>
           </div>
         </form>

@@ -45,7 +45,7 @@ export function SaveToNotebooksDialog({
 
   const handleSave = async () => {
     if (selectedNotebooks.length === 0) {
-      toast.error(t.searchPage.selectNotebook)
+      toast.error(t('searchPage.selectNotebook'))
       return
     }
 
@@ -60,11 +60,11 @@ export function SaveToNotebooksDialog({
         })
       }
 
-      toast.success(t.searchPage.saveSuccess)
+      toast.success(t('searchPage.saveSuccess'))
       setSelectedNotebooks([])
       onOpenChange(false)
     } catch {
-      toast.error(t.searchPage.saveError)
+      toast.error(t('searchPage.saveError'))
     }
   }
 
@@ -78,9 +78,9 @@ export function SaveToNotebooksDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{t.searchPage.saveToNotebooks}</DialogTitle>
+          <DialogTitle>{t('searchPage.saveToNotebooks')}</DialogTitle>
           <DialogDescription>
-            {t.searchPage.selectNotebook}
+            {t('searchPage.selectNotebook')}
           </DialogDescription>
         </DialogHeader>
 
@@ -94,14 +94,14 @@ export function SaveToNotebooksDialog({
               items={notebookItems}
               selectedIds={selectedNotebooks}
               onToggle={handleToggle}
-              emptyMessage={t.sources.noNotebooksFound}
+              emptyMessage={t('sources.noNotebooksFound')}
             />
           )}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleSave}
@@ -110,10 +110,10 @@ export function SaveToNotebooksDialog({
             {createNote.isPending ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                {t.searchPage.saving}
+                {t('searchPage.saving')}
               </>
             ) : (
-              t.searchPage.saveToNotebook
+              t('searchPage.saveToNotebook')
             )}
           </Button>
         </DialogFooter>

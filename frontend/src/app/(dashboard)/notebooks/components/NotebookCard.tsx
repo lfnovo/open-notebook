@@ -55,7 +55,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                 </CardTitle>
                 {notebook.archived && (
                   <Badge variant="secondary" className="mt-1">
-                    {t.notebooks.archived}
+                    {t('notebooks.archived')}
                   </Badge>
                 )}
               </div>
@@ -76,12 +76,12 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     {notebook.archived ? (
                       <>
                         <ArchiveRestore className="h-4 w-4 mr-2" />
-                        {t.notebooks.unarchive}
+                        {t('notebooks.unarchive')}
                       </>
                     ) : (
                       <>
                         <Archive className="h-4 w-4 mr-2" />
-                        {t.notebooks.archive}
+                        {t('notebooks.archive')}
                       </>
                     )}
                   </DropdownMenuItem>
@@ -93,7 +93,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                     className="text-red-600"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
-                    {t.common.delete}
+                    {t('common.delete')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -102,11 +102,11 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
           
           <CardContent>
             <CardDescription className="line-clamp-2 text-sm">
-              {notebook.description || t.chat.noDescription}
+              {notebook.description || t('chat.noDescription')}
             </CardDescription>
 
             <div className="mt-3 text-xs text-muted-foreground">
-              {t.common.updated.replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
+              {t('common.updated').replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
                 addSuffix: true,
                 locale: getDateLocale(language)
               }))}

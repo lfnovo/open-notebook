@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ConfirmDialog } from './ConfirmDialog'
 
-// useTranslation is mocked globally in setup.ts
+// useTranslation is mocked globally in setup.ts (t returns the key string)
 
 describe('ConfirmDialog', () => {
   const onConfirmMock = vi.fn()
@@ -18,20 +18,19 @@ describe('ConfirmDialog', () => {
 
   it('should render correct titles and descriptions', () => {
     render(<ConfirmDialog {...defaultProps} />)
-    
+
     expect(screen.getByText('Test Title')).toBeInTheDocument()
     expect(screen.getByText('Test Description')).toBeInTheDocument()
-    // Localized text from our setup.ts mock should be visible
-    expect(screen.getByText('Confirm')).toBeInTheDocument()
-    expect(screen.getByText('Cancel')).toBeInTheDocument()
+    expect(screen.getByText('common.confirm')).toBeInTheDocument()
+    expect(screen.getByText('common.cancel')).toBeInTheDocument()
   })
 
   it('should call onConfirm when confirm button is clicked', () => {
     render(<ConfirmDialog {...defaultProps} />)
-    
-    const confirmBtn = screen.getByText('Confirm')
+
+    const confirmBtn = screen.getByText('common.confirm')
     fireEvent.click(confirmBtn)
-    
+
     expect(onConfirmMock).toHaveBeenCalledTimes(1)
   })
 
@@ -42,10 +41,10 @@ describe('ConfirmDialog', () => {
 
   it('should show loading state and disable buttons', () => {
     render(<ConfirmDialog {...defaultProps} isLoading={true} />)
-    
-    const confirmBtn = screen.getByText('Confirm').closest('button')
-    const cancelBtn = screen.getByText('Cancel').closest('button')
-    
+
+    const confirmBtn = screen.getByText('common.confirm').closest('button')
+    const cancelBtn = screen.getByText('common.cancel').closest('button')
+
     expect(confirmBtn).toBeDisabled()
     expect(cancelBtn).toBeDisabled()
   })

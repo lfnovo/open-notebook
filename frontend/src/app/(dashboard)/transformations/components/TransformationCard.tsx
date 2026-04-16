@@ -49,7 +49,7 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                     )}
                   </div>
                   {transformation.apply_default && (
-                    <Badge variant="secondary">{t.common.default}</Badge>
+                    <Badge variant="secondary">{t('common.default')}</Badge>
                   )}
                 </div>
               </CollapsibleTrigger>
@@ -58,13 +58,13 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
                 {onPlayground && (
                   <Button variant="outline" size="sm" onClick={onPlayground}>
                     <Wand2 className="h-4 w-4 mr-2" />
-                    {t.transformations.playground}
+                    {t('transformations.playground')}
                   </Button>
                 )}
                 {onEdit && (
                   <Button variant="outline" size="sm" onClick={onEdit}>
                     <Edit className="h-4 w-4 mr-2" />
-                    {t.common.edit}
+                    {t('common.edit')}
                   </Button>
                 )}
                 <Button
@@ -82,19 +82,19 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
           <CollapsibleContent>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-muted-foreground">{t.common.title}</p>
-                <p className="text-sm font-medium">{transformation.title || t.sources.untitledSource}</p>
+                <p className="text-sm text-muted-foreground">{t('common.title')}</p>
+                <p className="text-sm font-medium">{transformation.title || t('sources.untitledSource')}</p>
               </div>
 
               {transformation.description && (
                 <div>
-                  <p className="text-sm text-muted-foreground">{t.common.description}</p>
+                  <p className="text-sm text-muted-foreground">{t('common.description')}</p>
                   <p className="text-sm leading-6">{transformation.description}</p>
                 </div>
               )}
 
               <div>
-                <p className="text-sm text-muted-foreground">{t.transformations.systemPrompt}</p>
+                <p className="text-sm text-muted-foreground">{t('transformations.systemPrompt')}</p>
                 <pre className="mt-2 whitespace-pre-wrap rounded-md bg-muted p-3 text-sm font-mono">
                   {transformation.prompt}
                 </pre>
@@ -107,9 +107,9 @@ export function TransformationCard({ transformation, onPlayground, onEdit }: Tra
       <ConfirmDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
-        title={t.sources.delete}
-        description={t.transformations.deleteConfirm}
-        confirmText={t.common.delete}
+        title={t('sources.delete')}
+        description={t('transformations.deleteConfirm')}
+        confirmText={t('common.delete')}
         confirmVariant="destructive"
         onConfirm={handleDelete}
         isLoading={deleteTransformation.isPending}

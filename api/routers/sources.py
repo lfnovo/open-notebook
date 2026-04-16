@@ -1,7 +1,11 @@
 import asyncio
 import os
+import re
+from collections import Counter
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
+
+import spacy
 
 from fastapi import (
     APIRouter,
@@ -33,12 +37,12 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.common_graph import CommonGraph
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, NotFoundError
 from urllib.parse import unquote
 from pydantic import BaseModel
-from typing import Dict, Any
 
 router = APIRouter()
 
@@ -152,6 +156,143 @@ def parse_source_form_data(
         raise
 
     return source_data, file
+
+
+COMMON_GRAPH_BLOCKLIST = {
+    'said', 'told', 'asked', 'went', 'came', 'met', 'along', 'namely',
+    'thereafter', 'stayed', 'rented', 'months', 'case', 'near', 'brother',
+    'associates', 'car', 'village', 'person', 'people', 'man', 'men',
+    'woman', 'women', 'one', 'another', 'other', 'some', 'many', 'most',
+    'few', 'first', 'last', 'next', 'time', 'times', 'day', 'days', 'year',
+    'years', 'back', 'good', 'new', 'still', 'really', 'very',
+    'may', 'might', 'shall', 'should', 'would', 'could', 'need', 'needed',
+    'needs', 'want', 'wanted', 'wants', 'get', 'gets', 'got', 'make', 'makes',
+    'made', 'take', 'takes', 'took', 'taken', 'say', 'says', 'go', 'goes',
+    'gone', 'see', 'sees', 'saw', 'seen', 'know', 'knows', 'knew', 'known',
+    'think', 'thinks', 'thought', 'feel', 'feels', 'felt', 'look', 'looks',
+    'looked', 'help', 'helps', 'helped', 'show', 'shows', 'showed', 'shown',
+}
+
+_spacy_nlp: Optional[spacy.language.Language] = None
+
+
+def _get_spacy_nlp() -> Optional[spacy.language.Language]:
+    global _spacy_nlp
+    if _spacy_nlp is not None:
+        return _spacy_nlp
+
+    try:
+        _spacy_nlp = spacy.load("en_core_web_sm")
+        return _spacy_nlp
+    except OSError:
+        logger.warning(
+            "spaCy model 'en_core_web_sm' is missing. "
+            "Falling back to regex-based term extraction. "
+            "Install it with: python -m spacy download en_core_web_sm"
+        )
+        return None
+
+
+def _extract_terms_fallback(text: str) -> Counter[str]:
+    cleaned = re.sub(r"[^a-z0-9\s]", " ", text.lower())
+    tokens = [token for token in cleaned.split() if len(token) > 2 and token not in COMMON_GRAPH_BLOCKLIST]
+    return Counter(tokens)
+
+
+def _extract_terms(text: str) -> Counter[str]:
+    if not text:
+        return Counter()
+
+    nlp_model = _get_spacy_nlp()
+    if nlp_model is None:
+        return _extract_terms_fallback(text)
+
+    doc = nlp_model(text)
+    term_freq: Counter[str] = Counter()
+
+    for ent in doc.ents:
+        if ent.label_ in {"PERSON", "GPE", "LOC", "ORG"}:
+            term = ent.text.lower().strip()
+            if len(term) > 2 and term not in COMMON_GRAPH_BLOCKLIST:
+                term_freq[term] += 3
+
+    for chunk in doc.noun_chunks:
+        term = chunk.root.lemma_.lower().strip()
+        if (
+            len(term) > 2
+            and not chunk.root.is_stop
+            and term not in COMMON_GRAPH_BLOCKLIST
+            and not term.isnumeric()
+        ):
+            term_freq[term] += 1
+
+    return term_freq
+
+
+def _build_common_graph_metadata(sources: List[Source]) -> Dict[str, Any]:
+    term_counters = []
+    source_ids = []
+    for source in sources:
+        text = source.full_text or source.title or ''
+        term_counters.append(_extract_terms(text))
+        source_ids.append(source.id or '')
+
+    if not term_counters:
+        return {}
+
+    common_terms = set(term_counters[0].keys())
+    for counter in term_counters[1:]:
+        common_terms &= set(counter.keys())
+
+    nodes: List[Dict[str, Any]] = []
+    links: List[Dict[str, Any]] = []
+
+    for idx, source in enumerate(sources):
+        nodes.append(
+            {
+                'id': f'source:{idx}',
+                'label': source.title or source.id or f'Source {idx + 1}',
+                'type': 'source',
+                'source_id': source.id,
+            }
+        )
+
+    if not common_terms:
+        return {
+            'common_terms': [],
+            'graph': {'nodes': nodes, 'links': []},
+        }
+
+    term_scores = {
+        term: sum(counter[term] for counter in term_counters)
+        for term in common_terms
+    }
+    selected_terms = sorted(term_scores.items(), key=lambda item: item[1], reverse=True)[:15]
+
+    for term, score in selected_terms:
+        term_id = f'term:{term}'
+        nodes.append(
+            {
+                'id': term_id,
+                'label': term,
+                'type': 'term',
+                'weight': score,
+            }
+        )
+        for source_idx, counter in enumerate(term_counters):
+            if counter[term] > 0:
+                links.append(
+                    {
+                        'source': f'source:{source_idx}',
+                        'target': term_id,
+                        'weight': counter[term],
+                    }
+                )
+
+    return {
+        'common_terms': [term for term, _ in selected_terms],
+        'graph': {'nodes': nodes, 'links': links},
+    }
 
 
 @router.get("/sources", response_model=List[SourceListResponse])
@@ -280,113 +421,6 @@ async def get_sources(
     except Exception as e:
         logger.error(f"Error fetching sources: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching sources: {str(e)}")
-
-
-def _parse_source_ids(source_ids: List[str]) -> List[str]:
-    return [str(ensure_record_id(source_id)) for source_id in source_ids]
-
-
-@router.post("/common-graphs", response_model=CommonGraphResponse)
-async def create_common_graph(request: CommonGraphCreate):
-    if not request.source_ids or len(request.source_ids) < 2:
-        raise HTTPException(
-            status_code=400,
-            detail="At least two source IDs are required to create a common graph.",
-        )
-
-    # Validate each source ID exists
-    validated_source_ids: list[str] = []
-    for source_id in request.source_ids:
-        source = await Source.get(source_id)
-        if not source:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Source not found: {source_id}",
-            )
-        validated_source_ids.append(str(source.id))
-
-    try:
-        graph_record = await repo_create(
-            "common_graph",
-            {
-                "title": request.title or "Common graph",
-                "source_ids": [ensure_record_id(source_id) for source_id in validated_source_ids],
-                "status": "created",
-                "message": "Common graph saved successfully.",
-            },
-        )
-
-        return CommonGraphResponse(
-            id=str(graph_record["id"]),
-            title=graph_record.get("title"),
-            source_ids=[str(item) for item in graph_record.get("source_ids", [])],
-            status=graph_record.get("status", "created"),
-            message=graph_record.get("message"),
-            created=str(graph_record["created"]),
-            updated=str(graph_record["updated"]),
-        )
-    except Exception as e:
-        logger.error(f"Failed to create common graph: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create common graph: {str(e)}",
-        )
-
-
-@router.get("/common-graphs", response_model=List[CommonGraphResponse])
-async def list_common_graphs():
-    try:
-        result = await repo_query("SELECT * FROM common_graph")
-        graphs: list[CommonGraphResponse] = []
-        for row in result:
-            graphs.append(
-                CommonGraphResponse(
-                    id=str(row["id"]),
-                    title=row.get("title"),
-                    source_ids=[str(item) for item in row.get("source_ids", [])],
-                    status=row.get("status", "created"),
-                    message=row.get("message"),
-                    created=str(row["created"]),
-                    updated=str(row["updated"]),
-                )
-            )
-        return graphs
-    except Exception as e:
-        logger.error(f"Failed to list common graphs: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list common graphs: {str(e)}",
-        )
-
-
-@router.get("/common-graphs/{graph_id}", response_model=CommonGraphResponse)
-async def get_common_graph(graph_id: str):
-    try:
-        result = await repo_query(
-            "SELECT * FROM $id",
-            {"id": ensure_record_id(graph_id)},
-        )
-        if not result:
-            raise HTTPException(status_code=404, detail="Common graph not found")
-
-        row = result[0]
-        return CommonGraphResponse(
-            id=str(row["id"]),
-            title=row.get("title"),
-            source_ids=[str(item) for item in row.get("source_ids", [])],
-            status=row.get("status", "created"),
-            message=row.get("message"),
-            created=str(row["created"]),
-            updated=str(row["updated"]),
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Failed to get common graph: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get common graph: {str(e)}",
-        )
 
 
 @router.post("/sources", response_model=SourceResponse)
@@ -669,6 +703,84 @@ async def create_source_json(source_data: SourceCreate):
     # Convert to form data format and call main endpoint
     form_data = (source_data, None)
     return await create_source(form_data)
+
+
+@router.post(
+    "/sources/common-graphs",
+    response_model=CommonGraphResponse,
+    status_code=201,
+)
+async def create_common_graph(request: CommonGraphCreate):
+    """Create a persistent common graph from selected sources."""
+    try:
+        if not request.source_ids or len(request.source_ids) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="At least two source IDs are required to create a common graph.",
+            )
+
+        source_objects: List[Source] = []
+        for source_id in request.source_ids:
+            try:
+                source = await Source.get(source_id)
+            except NotFoundError:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Source {source_id} not found",
+                )
+            source_objects.append(source)
+
+        graph_metadata = _build_common_graph_metadata(source_objects)
+        metadata = {"created_from": "common_graph_ui", **graph_metadata}
+
+        common_graph = CommonGraph(
+            title=request.title,
+            source_ids=request.source_ids,
+            status="completed",
+            metadata=metadata,
+        )
+        await common_graph.save()
+
+        return CommonGraphResponse(
+            id=common_graph.id or "",
+            title=common_graph.title,
+            source_ids=common_graph.source_ids,
+            status=common_graph.status,
+            metadata=common_graph.metadata,
+            created=str(common_graph.created),
+            updated=str(common_graph.updated),
+        )
+    except HTTPException:
+        raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating common graph: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating common graph: {str(e)}",
+        )
+
+
+@router.get("/sources/common-graphs/{common_graph_id}", response_model=CommonGraphResponse)
+async def get_common_graph(common_graph_id: str):
+    """Retrieve a previously saved common graph."""
+    try:
+        common_graph = await CommonGraph.get(common_graph_id)
+        return CommonGraphResponse(
+            id=common_graph.id or "",
+            title=common_graph.title,
+            source_ids=common_graph.source_ids,
+            status=common_graph.status,
+            metadata=common_graph.metadata,
+            created=str(common_graph.created),
+            updated=str(common_graph.updated),
+        )
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error fetching common graph {common_graph_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching common graph: {str(e)}")
 
 
 async def _resolve_source_file(source_id: str) -> tuple[str, str]:

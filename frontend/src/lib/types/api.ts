@@ -118,10 +118,10 @@ export interface CreateCommonGraphRequest {
 
 export interface CommonGraphResponse {
   id: string
-  title?: string
+  title?: string | null
   source_ids: string[]
   status: string
-  message?: string
+  metadata?: Record<string, unknown> | null
   created: string
   updated: string
 }

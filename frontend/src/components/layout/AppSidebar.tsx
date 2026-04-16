@@ -147,7 +147,7 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <Image src="/logo(1).svg" alt="Kavach" width={50} height={36} className="object-contain" />
+                <Image src="/logo(1).svg" alt="Kavach" width={50} height={36} className="object-contain w-[50px] h-[36px]" />
                 <p className="font-semibold text-sm tracking-wide">NOTEBOOKS</p>
               </div>
               <Button

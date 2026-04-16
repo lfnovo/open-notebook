@@ -1,0 +1,10 @@
+-- Migration 15: Add common_graph table
+
+DEFINE TABLE IF NOT EXISTS common_graph SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS title ON TABLE common_graph TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS source_ids ON TABLE common_graph TYPE option<array<string>>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE common_graph TYPE option<string> DEFAULT "started" VALUE $before OR "started";
+DEFINE FIELD IF NOT EXISTS metadata ON TABLE common_graph TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS created ON common_graph DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON common_graph DEFAULT time::now() VALUE time::now();

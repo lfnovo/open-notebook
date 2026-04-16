@@ -330,6 +330,23 @@ class SourceUpdate(BaseModel):
     topics: Optional[List[str]] = Field(None, description="Source topics")
 
 
+class CommonGraphCreate(BaseModel):
+    source_ids: List[str] = Field(
+        ..., description="List of source IDs to use for the common graph"
+    )
+    title: Optional[str] = Field(None, description="Optional title for the common graph")
+
+
+class CommonGraphResponse(BaseModel):
+    id: str
+    title: Optional[str] = None
+    source_ids: List[str]
+    status: str
+    metadata: Optional[Dict[str, Any]] = None
+    created: str
+    updated: str
+
+
 class SourceResponse(BaseModel):
     id: str
     title: Optional[str]
@@ -421,21 +438,6 @@ class CreateSourceInsightRequest(BaseModel):
     model_id: Optional[str] = Field(
         None, description="Model ID (uses default if not provided)"
     )
-
-
-class CommonGraphCreate(BaseModel):
-    source_ids: List[str] = Field(..., description="List of source IDs to include in the common graph")
-    title: Optional[str] = Field(None, description="Optional title for the common graph")
-
-
-class CommonGraphResponse(BaseModel):
-    id: str
-    title: Optional[str]
-    source_ids: List[str]
-    status: str
-    message: Optional[str]
-    created: str
-    updated: str
 
 
 # Source status response

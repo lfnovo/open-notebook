@@ -1,6 +1,7 @@
 {
   "dependencies": {
-    "fuse.js": "^7.3.0"
+    "fuse.js": "^7.3.0",
+    "react-force-graph-2d": "^1.29.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.19",

@@ -335,6 +335,8 @@ class CommonGraphCreate(BaseModel):
         ..., description="List of source IDs to use for the common graph"
     )
     title: Optional[str] = Field(None, description="Optional title for the common graph")
+    model_id: Optional[str] = Field(None, description="LLM model ID to use for NLP extraction")
+    prompt: Optional[str] = Field(None, description="Custom prompt for extracting common activities/entities")
 
 
 class CommonGraphResponse(BaseModel):

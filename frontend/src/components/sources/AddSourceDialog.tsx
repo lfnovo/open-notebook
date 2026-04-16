@@ -71,6 +71,7 @@ interface AddSourceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultNotebookId?: string
+  onSuccess?: () => void
 }
 
 interface ProcessingState {
@@ -88,7 +89,8 @@ interface BatchProgress {
 export function AddSourceDialog({ 
   open, 
   onOpenChange, 
-  defaultNotebookId 
+  defaultNotebookId,
+  onSuccess
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
@@ -401,11 +403,13 @@ export function AddSourceDialog({
           toast.warning(t.sources.batchPartial.replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
         }
 
+        onSuccess?.()
         handleClose()
       } else {
         // Single source submission
         setProcessingStatus({ message: t.sources.submittingSource })
         await submitSingleSource(data)
+        onSuccess?.()
         handleClose()
       }
     } catch (error) {

@@ -114,6 +114,8 @@ export interface CreateSourceRequest {
 export interface CreateCommonGraphRequest {
   source_ids: string[]
   title?: string
+  model_id?: string
+  prompt?: string
 }
 
 export interface CommonGraphResponse {

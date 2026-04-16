@@ -30,8 +30,15 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
     try:
         if not content:
             content = source.full_text
-        transformation_template_text = transformation.prompt
-        default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
+        safe_transformation_instructions = (
+            "You are a precise summarization assistant. "
+            "Summarize ONLY the information contained in the input text. "
+            "Do NOT invent or add any names, events, dates, or details not explicitly present. "
+            "If the input does not contain enough information for a dense summary, say that clearly."
+        )
+        transformation_template_text = f"{safe_transformation_instructions}\n\n{transformation.prompt}"
+
+        default_prompts: DefaultPrompts = await DefaultPrompts.get_instance()
         if default_prompts.transformation_instructions:
             transformation_template_text = f"{default_prompts.transformation_instructions}\n\n{transformation_template_text}"
 

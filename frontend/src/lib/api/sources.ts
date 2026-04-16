@@ -7,6 +7,8 @@ import {
   SourceResponse,
   SourceStatusResponse,
   CreateSourceRequest, 
+  CreateCommonGraphRequest,
+  CommonGraphResponse,
   UpdateSourceRequest 
 } from '@/lib/types/api'
 
@@ -97,6 +99,16 @@ export const sourcesApi = {
 
   retry: async (id: string) => {
     const response = await apiClient.post<SourceResponse>(`/sources/${id}/retry`)
+    return response.data
+  },
+
+  createCommonGraph: async (data: CreateCommonGraphRequest) => {
+    const response = await apiClient.post<CommonGraphResponse>('/sources/common-graphs', data)
+    return response.data
+  },
+
+  getCommonGraph: async (id: string) => {
+    const response = await apiClient.get<CommonGraphResponse>(`/sources/common-graphs/${encodeURIComponent(id)}`)
     return response.data
   },
 

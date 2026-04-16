@@ -1,0 +1,3 @@
+-- Rollback Migration 15: Remove common_graph table
+
+REMOVE TABLE IF EXISTS common_graph;

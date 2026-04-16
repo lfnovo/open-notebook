@@ -1,7 +1,11 @@
 import asyncio
 import os
+import re
+from collections import Counter
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
+
+import spacy
 
 from fastapi import (
     APIRouter,
@@ -19,6 +23,8 @@ from surreal_commands import execute_command_sync, submit_command
 from api.command_service import CommandService
 from api.models import (
     AssetModel,
+    CommonGraphCreate,
+    CommonGraphResponse,
     CreateSourceInsightRequest,
     InsightCreationResponse,
     SourceCreate,
@@ -31,12 +37,12 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.domain.common_graph import CommonGraph
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, NotFoundError
 from urllib.parse import unquote
 from pydantic import BaseModel
-from typing import Dict, Any
 
 router = APIRouter()
 
@@ -150,6 +156,378 @@ def parse_source_form_data(
         raise
 
     return source_data, file
+
+
+COMMON_GRAPH_BLOCKLIST = {
+    'said', 'told', 'asked', 'went', 'came', 'met', 'along', 'namely',
+    'thereafter', 'stayed', 'rented', 'months', 'case', 'near', 'brother',
+    'associates', 'car', 'village', 'person', 'people', 'man', 'men',
+    'woman', 'women', 'one', 'another', 'other', 'some', 'many', 'most',
+    'few', 'first', 'last', 'next', 'time', 'times', 'day', 'days', 'year',
+    'years', 'back', 'good', 'new', 'still', 'really', 'very',
+    'may', 'might', 'shall', 'should', 'would', 'could', 'need', 'needed',
+    'needs', 'want', 'wanted', 'wants', 'get', 'gets', 'got', 'make', 'makes',
+    'made', 'take', 'takes', 'took', 'taken', 'say', 'says', 'go', 'goes',
+    'gone', 'see', 'sees', 'saw', 'seen', 'know', 'knows', 'knew', 'known',
+    'think', 'thinks', 'thought', 'feel', 'feels', 'felt', 'look', 'looks',
+    'looked', 'help', 'helps', 'helped', 'show', 'shows', 'showed', 'shown',
+}
+
+_spacy_nlp: Optional[spacy.language.Language] = None
+
+
+def _get_spacy_nlp() -> Optional[spacy.language.Language]:
+    global _spacy_nlp
+    if _spacy_nlp is not None:
+        return _spacy_nlp
+
+    try:
+        _spacy_nlp = spacy.load("en_core_web_sm")
+        return _spacy_nlp
+    except OSError:
+        logger.warning(
+            "spaCy model 'en_core_web_sm' is missing. "
+            "Falling back to regex-based term extraction. "
+            "Install it with: python -m spacy download en_core_web_sm"
+        )
+        return None
+
+
+def _extract_terms_fallback(text: str) -> Counter[str]:
+    cleaned = re.sub(r"[^a-z0-9\s]", " ", text.lower())
+    tokens = [token for token in cleaned.split() if len(token) > 2 and token not in COMMON_GRAPH_BLOCKLIST]
+    return Counter(tokens)
+
+
+def _extract_terms(text: str) -> Counter[str]:
+    if not text:
+        return Counter()
+
+    nlp_model = _get_spacy_nlp()
+    if nlp_model is None:
+        return _extract_terms_fallback(text)
+
+    doc = nlp_model(text)
+    term_freq: Counter[str] = Counter()
+
+    for ent in doc.ents:
+        if ent.label_ in {"PERSON", "GPE", "LOC", "ORG"}:
+            term = ent.text.lower().strip()
+            if len(term) > 2 and term not in COMMON_GRAPH_BLOCKLIST:
+                term_freq[term] += 3
+
+    for chunk in doc.noun_chunks:
+        term = chunk.root.lemma_.lower().strip()
+        if (
+            len(term) > 2
+            and not chunk.root.is_stop
+            and term not in COMMON_GRAPH_BLOCKLIST
+            and not term.isnumeric()
+        ):
+            term_freq[term] += 1
+
+    return term_freq
+
+
+def _build_common_graph_metadata(sources: List[Source]) -> Dict[str, Any]:
+    term_counters = []
+    source_ids = []
+    for source in sources:
+        text = source.full_text or source.title or ''
+        term_counters.append(_extract_terms(text))
+        source_ids.append(source.id or '')
+
+    if not term_counters:
+        return {}
+
+    common_terms = set(term_counters[0].keys())
+    for counter in term_counters[1:]:
+        common_terms &= set(counter.keys())
+
+    nodes: List[Dict[str, Any]] = []
+    links: List[Dict[str, Any]] = []
+
+    for idx, source in enumerate(sources):
+        nodes.append(
+            {
+                'id': f'source:{idx}',
+                'label': source.title or source.id or f'Source {idx + 1}',
+                'type': 'source',
+                'source_id': source.id,
+            }
+        )
+
+    if not common_terms:
+        return {
+            'common_terms': [],
+            'graph': {'nodes': nodes, 'links': []},
+        }
+
+    term_scores = {
+        term: sum(counter[term] for counter in term_counters)
+        for term in common_terms
+    }
+    selected_terms = sorted(term_scores.items(), key=lambda item: item[1], reverse=True)[:15]
+
+    for term, score in selected_terms:
+        term_id = f'term:{term}'
+        nodes.append(
+            {
+                'id': term_id,
+                'label': term,
+                'type': 'term',
+                'weight': score,
+            }
+        )
+        for source_idx, counter in enumerate(term_counters):
+            if counter[term] > 0:
+                links.append(
+                    {
+                        'source': f'source:{source_idx}',
+                        'target': term_id,
+                        'weight': counter[term],
+                    }
+                )
+
+    return {
+        'common_terms': [term for term, _ in selected_terms],
+        'graph': {'nodes': nodes, 'links': links},
+    }
+
+
+# Per-document extraction prompt — used in step 1
+PER_DOC_EXTRACT_PROMPT = (
+    "You are an expert entity extraction system for investigative documents.\n"
+    "Extract ALL important entities from the document below.\n"
+    "Focus on:\n"
+    "- People (full names of individuals)\n"
+    "- Places (cities, villages, addresses, districts)\n"
+    "- Organizations (police units, companies, groups)\n"
+    "- Key activities or events (crimes, arrests, meetings, transactions)\n"
+    "- Significant objects (vehicles, weapons, items)\n"
+    "Rules:\n"
+    "- Keep labels concise (1-4 words).\n"
+    "- Use proper names, not pronouns.\n"
+    "- Maximum 25 items.\n"
+    "Return ONLY a valid JSON array of strings. No explanation.\n"
+    "Example: [\"Ankit Kumar\", \"Delhi\", \"arms smuggling\", \"blue Honda\"]"
+)
+
+# Default prompt used when user provides custom prompt with {{documents_input}}
+DEFAULT_COMMON_GRAPH_PROMPT = (
+    "You are an expert entity and activity extraction system designed to build a "
+    "\"Common Graph\" from one or more documents.\n"
+    "Input: You will receive one or multiple documents.\n"
+    "Your task: Extract the most important and relevant elements across ALL documents combined.\n"
+    "Focus ONLY on:\n"
+    "- People (individual names)\n"
+    "- Places (cities, locations, addresses)\n"
+    "- Organizations (companies, institutions, groups)\n"
+    "- Key activities or events (crimes, meetings, transactions, incidents)\n"
+    "- Significant objects (vehicles, weapons, important items)\n"
+    "Instructions:\n"
+    "- Analyze ALL documents together as a single dataset.\n"
+    "- Merge duplicate or similar entities.\n"
+    "- Prioritize entities/events that appear frequently or are important.\n"
+    "- Include both common entities and critical unique entities.\n"
+    "- Keep labels concise (1 to 4 words max).\n"
+    "- Avoid vague terms.\n"
+    "- Do not repeat items.\n"
+    "- Maximum 20 items total.\n"
+    "Output Format:\n"
+    "- Return ONLY a valid JSON array of strings.\n"
+    "- No explanations, no extra text.\n"
+    "Example Output: [\"John Smith\", \"New York City\", \"financial fraud\"]\n"
+    "Now process the following documents:\n"
+    "{{documents_input}}"
+)
+
+
+async def _extract_entities_per_doc(source, model_id, re_mod, json_mod, provision_fn, SystemMessage, HumanMessage):
+    """Extract entities from a single document using LLM."""
+    text = source.full_text or source.title or ''
+    if not text.strip():
+        return []
+    truncated = text[:4000]
+    try:
+        payload = [
+            SystemMessage(content=PER_DOC_EXTRACT_PROMPT),
+            HumanMessage(content=truncated),
+        ]
+        chain = await provision_fn(str(payload), model_id, "transformation", max_tokens=512)
+        response = await chain.ainvoke(payload)
+        raw = str(response.content if hasattr(response, 'content') else response).strip()
+        if '```' in raw:
+            raw = re_mod.sub(r'```(?:json)?\s*', '', raw).strip()
+        a, b = raw.find('['), raw.rfind(']')
+        if a != -1 and b != -1:
+            parsed = json_mod.loads(raw[a:b+1])
+            return [str(e).strip() for e in parsed if e and len(str(e).strip()) > 1]
+    except Exception as ex:
+        logger.warning(f"[CommonGraph] Per-doc extraction failed: {ex}")
+    return []
+
+
+def _normalize(s):
+    """Lowercase + strip for comparison."""
+    return s.lower().strip()
+
+
+async def _build_common_graph_metadata_llm(
+    sources,
+    model_id,
+    prompt=None,
+):
+    """
+    Two-step extraction:
+    1. Extract entities per document
+    2. Find common entities (appear in 2+ docs) + important unique ones
+    3. Build graph with source nodes + entity nodes, colored by which docs mention them
+    """
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from open_notebook.ai.provision import provision_langchain_model
+    import json as _json
+    import re as _re
+
+    # If user provided a custom prompt with {{documents_input}}, use single-pass mode
+    base_prompt = prompt or DEFAULT_COMMON_GRAPH_PROMPT
+    use_custom_prompt = prompt is not None and '{{documents_input}}' in base_prompt
+
+    if use_custom_prompt:
+        # Single-pass: user's custom prompt
+        combined_parts = []
+        for idx, source in enumerate(sources):
+            text = source.full_text or source.title or ''
+            combined_parts.append(
+                f"--- Document {idx + 1}: {source.title or f'Source {idx + 1}'} ---\n{text[:3500]}"
+            )
+        documents_input = "\n\n".join(combined_parts)
+        final_prompt = base_prompt.replace('{{documents_input}}', documents_input)
+        system_msg = "You are an expert entity extraction system. Return ONLY a valid JSON array of strings."
+        user_msg = final_prompt
+
+        entities_all = []
+        try:
+            payload = [SystemMessage(content=system_msg), HumanMessage(content=user_msg)]
+            chain = await provision_langchain_model(str(payload), model_id, "transformation", max_tokens=1024)
+            response = await chain.ainvoke(payload)
+            raw = str(response.content if hasattr(response, 'content') else response).strip()
+            logger.info(f"[CommonGraph] Custom prompt response: {raw[:400]}")
+            if '```' in raw:
+                raw = _re.sub(r'```(?:json)?\s*', '', raw).strip()
+            a, b = raw.find('['), raw.rfind(']')
+            if a != -1 and b != -1:
+                parsed = _json.loads(raw[a:b+1])
+                entities_all = [str(e).strip() for e in parsed if e and len(str(e).strip()) > 1]
+        except Exception as e:
+            logger.warning(f"[CommonGraph] Custom prompt failed: {e}, falling back to NLP")
+            return _build_common_graph_metadata(sources)
+
+        if not entities_all:
+            return _build_common_graph_metadata(sources)
+
+        # For custom prompt, check which sources mention each entity
+        nodes, links = [], []
+        for idx, source in enumerate(sources):
+            nodes.append({'id': f'source:{idx}', 'label': source.title or f'Source {idx+1}', 'type': 'source', 'source_id': source.id})
+
+        for i, entity in enumerate(entities_all[:20]):
+            eid = f'entity:{i}'
+            el = entity.lower()
+            matches = [idx for idx, s in enumerate(sources) if el in (s.full_text or s.title or '').lower()]
+            if not matches:
+                matches = list(range(len(sources)))
+            nodes.append({'id': eid, 'label': entity, 'type': 'entity', 'weight': len(matches), 'common': len(matches) > 1})
+            for src_idx in matches:
+                links.append({'source': f'source:{src_idx}', 'target': eid, 'type': 'mentions', 'weight': 1})
+
+        return {'common_terms': entities_all[:20], 'graph': {'nodes': nodes, 'links': links}, 'graph_type': 'flat'}
+
+    # ── TWO-STEP MODE (default) ──────────────────────────────────────────────
+    # Step 1: Extract entities per document
+    per_doc_entities = []
+    for source in sources:
+        entities = await _extract_entities_per_doc(
+            source, model_id, _re, _json, provision_langchain_model, SystemMessage, HumanMessage
+        )
+        per_doc_entities.append(entities)
+        logger.info(f"[CommonGraph] Doc '{source.title}': {len(entities)} entities: {entities[:8]}")
+
+    if not any(per_doc_entities):
+        logger.warning("[CommonGraph] No entities extracted from any doc, falling back to NLP")
+        return _build_common_graph_metadata(sources)
+
+    # Step 2: Find common entities (appear in 2+ docs) using normalized comparison
+    # Build a map: normalized_label -> {canonical_label, doc_indices}
+    entity_map: dict = {}
+    for doc_idx, entities in enumerate(per_doc_entities):
+        for entity in entities:
+            norm = _normalize(entity)
+            if norm not in entity_map:
+                entity_map[norm] = {'label': entity, 'doc_indices': set(), 'count': 0}
+            entity_map[norm]['doc_indices'].add(doc_idx)
+            entity_map[norm]['count'] += 1
+
+    # Separate common (2+ docs) from unique (1 doc)
+    common_entities = {k: v for k, v in entity_map.items() if len(v['doc_indices']) >= 2}
+    unique_entities = {k: v for k, v in entity_map.items() if len(v['doc_indices']) == 1}
+
+    logger.info(f"[CommonGraph] Common entities ({len(common_entities)}): {list(common_entities.keys())[:10]}")
+    logger.info(f"[CommonGraph] Unique entities ({len(unique_entities)}): {list(unique_entities.keys())[:5]}")
+
+    # Sort common by doc coverage (most common first), then by count
+    sorted_common = sorted(common_entities.values(), key=lambda x: (-len(x['doc_indices']), -x['count']))
+    # Sort unique by count (most frequent first), take top ones
+    sorted_unique = sorted(unique_entities.values(), key=lambda x: -x['count'])
+
+    # Build final entity list: all common + top unique to fill up to 25
+    final_entities = sorted_common[:20]
+    remaining_slots = max(0, 25 - len(final_entities))
+    final_entities += sorted_unique[:remaining_slots]
+
+    if not final_entities:
+        return _build_common_graph_metadata(sources)
+
+    # Step 3: Build graph
+    nodes, links = [], []
+
+    for idx, source in enumerate(sources):
+        nodes.append({
+            'id': f'source:{idx}',
+            'label': source.title or f'Source {idx+1}',
+            'type': 'source',
+            'source_id': source.id,
+        })
+
+    for i, ent in enumerate(final_entities):
+        eid = f'entity:{i}'
+        doc_indices = sorted(ent['doc_indices'])
+        is_common = len(doc_indices) >= 2
+        nodes.append({
+            'id': eid,
+            'label': ent['label'],
+            'type': 'entity',
+            'weight': len(doc_indices),
+            'common': is_common,
+        })
+        for src_idx in doc_indices:
+            links.append({
+                'source': f'source:{src_idx}',
+                'target': eid,
+                'type': 'mentions',
+                'weight': 1,
+            })
+
+    common_terms = [e['label'] for e in final_entities]
+    logger.info(f"[CommonGraph] Final graph: {len(nodes)} nodes, {len(links)} links")
+
+    return {
+        'common_terms': common_terms,
+        'graph': {'nodes': nodes, 'links': links},
+        'graph_type': 'flat',
+        'common_count': len(sorted_common),
+        'unique_count': len(final_entities) - len(sorted_common),
+    }
 
 
 @router.get("/sources", response_model=List[SourceListResponse])
@@ -560,6 +938,88 @@ async def create_source_json(source_data: SourceCreate):
     # Convert to form data format and call main endpoint
     form_data = (source_data, None)
     return await create_source(form_data)
+
+
+@router.post(
+    "/sources/common-graphs",
+    response_model=CommonGraphResponse,
+    status_code=201,
+)
+async def create_common_graph(request: CommonGraphCreate):
+    """Create a persistent common graph from selected sources."""
+    try:
+        if not request.source_ids or len(request.source_ids) < 2:
+            raise HTTPException(
+                status_code=400,
+                detail="At least two source IDs are required to create a common graph.",
+            )
+
+        source_objects: List[Source] = []
+        for source_id in request.source_ids:
+            try:
+                source = await Source.get(source_id)
+            except NotFoundError:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Source {source_id} not found",
+                )
+            source_objects.append(source)
+
+        graph_metadata = await _build_common_graph_metadata_llm(
+            source_objects,
+            model_id=request.model_id,
+            prompt=request.prompt,
+        ) if request.model_id else _build_common_graph_metadata(source_objects)
+        metadata = {"created_from": "common_graph_ui", **graph_metadata}
+
+        common_graph = CommonGraph(
+            title=request.title,
+            source_ids=request.source_ids,
+            status="completed",
+            metadata=metadata,
+        )
+        await common_graph.save()
+
+        return CommonGraphResponse(
+            id=common_graph.id or "",
+            title=common_graph.title,
+            source_ids=common_graph.source_ids,
+            status=common_graph.status,
+            metadata=common_graph.metadata,
+            created=str(common_graph.created),
+            updated=str(common_graph.updated),
+        )
+    except HTTPException:
+        raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating common graph: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error creating common graph: {str(e)}",
+        )
+
+
+@router.get("/sources/common-graphs/{common_graph_id}", response_model=CommonGraphResponse)
+async def get_common_graph(common_graph_id: str):
+    """Retrieve a previously saved common graph."""
+    try:
+        common_graph = await CommonGraph.get(common_graph_id)
+        return CommonGraphResponse(
+            id=common_graph.id or "",
+            title=common_graph.title,
+            source_ids=common_graph.source_ids,
+            status=common_graph.status,
+            metadata=common_graph.metadata,
+            created=str(common_graph.created),
+            updated=str(common_graph.updated),
+        )
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error fetching common graph {common_graph_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error fetching common graph: {str(e)}")
 
 
 async def _resolve_source_file(source_id: str) -> tuple[str, str]:

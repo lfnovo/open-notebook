@@ -1,11 +1,15 @@
 .env
 prompts/patterns/user/
 /notebooks/
+.env
+prompts/patterns/user/
+/notebooks/
 data/
 .uploads/
 sqlite-db/
 surreal-data/
 docker.env
+notebook_data/
 notebook_data/
 # Python-specific
 *.py[cod]
@@ -13,6 +17,7 @@ __pycache__/
 *.so
 todo.md
 temp/
+google-credentials.json
 google-credentials.json
 # Distribution / packaging
 .Python
@@ -24,6 +29,8 @@ eggs/
 .eggs/
 /lib/
 /lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -32,15 +39,15 @@ share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-
+surreal_data/
 # PyInstaller
 *.manifest
 *.spec
-
+frontend/node_modules/
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
+*.sst
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -54,17 +61,19 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-
+**/node_modules/
 # Jupyter Notebook
 .ipynb_checkpoints
 
 # IPython
 profile_default/
 ipython_config.py
-
+kavach_db/
 # Environments
 .env
 .venv
+env.bak/
+venv.bak/
 env/
 venv/
 ENV/
@@ -139,3 +148,7 @@ specs/
 
 *.local.yml
 **/*.local.md
+node-modules/
+.env
+.venv/
+dist/

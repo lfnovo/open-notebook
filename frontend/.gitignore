@@ -9,27 +9,27 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
-
+surreal_data/
 # testing
 /coverage
-
+node_modules/
 # next.js
 /.next/
 /out/
-
+frontend/node_modules/
 # production
 /build
-
+**/node_modules/
 # misc
 .DS_Store
 *.pem
-
+kavach_db/
 # debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
+kavach_db/
 # env files (can opt-in for committing if needed)
 .env*
 
@@ -39,5 +39,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
+*.sst
 doc_exports/

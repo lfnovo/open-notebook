@@ -101,11 +101,27 @@ export function useCreateSource() {
             queryKey: QUERY_KEYS.sources(notebookId),
             refetchType: 'active' // Refetch active queries immediately
           })
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            refetchType: 'active'
+          })
+          queryClient.refetchQueries({
+            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            exact: true
+          })
         })
       } else if (variables.notebook_id) {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.sources(variables.notebook_id),
           refetchType: 'active'
+        })
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
+          refetchType: 'active'
+        })
+        queryClient.refetchQueries({
+          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
+          exact: true
         })
       }
 
@@ -113,6 +129,10 @@ export function useCreateSource() {
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.sources(),
         refetchType: 'active'
+      })
+      queryClient.refetchQueries({
+        queryKey: QUERY_KEYS.sources(),
+        exact: true
       })
 
       // Show different messages based on processing mode
@@ -302,6 +322,8 @@ export function useAddSourcesToNotebook() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources(notebookId) })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId) })
+      queryClient.refetchQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId), exact: true })
       // Invalidate each affected source
       sourceIds.forEach(sourceId => {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
@@ -355,6 +377,8 @@ export function useRemoveSourceFromNotebook() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources(notebookId) })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId) })
+      queryClient.refetchQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId), exact: true })
       // Also invalidate the specific source
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
 

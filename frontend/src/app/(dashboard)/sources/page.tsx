@@ -12,6 +12,7 @@ import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } fr
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
@@ -25,6 +26,7 @@ export default function SourcesPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([])
   const [sortBy, setSortBy] = useState<'created' | 'updated'>('updated')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
@@ -38,6 +40,33 @@ export default function SourcesPage() {
   const loadingMoreRef = useRef(false)
   const hasMoreRef = useRef(true)
   const PAGE_SIZE = 30
+
+  const handleToggleSourceSelection = useCallback((sourceId: string, checked: boolean) => {
+    setSelectedSourceIds((prev) => {
+      if (checked) {
+        return prev.includes(sourceId) ? prev : [...prev, sourceId]
+      }
+      return prev.filter((id) => id !== sourceId)
+    })
+  }, [])
+
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedSourceIds(sources.map((source) => source.id))
+    } else {
+      setSelectedSourceIds([])
+    }
+  }, [sources])
+
+  const selectedCount = selectedSourceIds.length
+  const canCreateCommonGraph = selectedCount >= 2
+  const allVisibleSelected = sources.length > 0 && sources.every((source) => selectedSourceIds.includes(source.id))
+
+  const handleCreateCommonGraph = useCallback(() => {
+    if (!canCreateCommonGraph) return
+    const queryString = selectedSourceIds.map(encodeURIComponent).join(',')
+    router.push(`/sources/common-graph?ids=${queryString}`)
+  }, [canCreateCommonGraph, router, selectedSourceIds])
 
   const fetchSources = useCallback(async (reset = false) => {
     try {
@@ -293,6 +322,28 @@ export default function SourcesPage() {
           </p>
         </div>
 
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-medium">
+              {selectedCount > 0
+                ? `${selectedCount} source${selectedCount === 1 ? '' : 's'} selected`
+                : 'Select sources to create a common graph.'}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {canCreateCommonGraph
+                ? 'You can now create a common graph for the selected sources.'
+                : 'Select at least two sources to enable common graph creation.'}
+            </p>
+          </div>
+          <Button
+            variant="default"
+            disabled={!canCreateCommonGraph}
+            onClick={handleCreateCommonGraph}
+          >
+            Create common graph
+          </Button>
+        </div>
+
         <div ref={scrollContainerRef} className="flex-1 rounded-md border overflow-auto">
           <table
             ref={tableRef}
@@ -300,6 +351,7 @@ export default function SourcesPage() {
             className="w-full min-w-[800px] outline-none table-fixed"
           >
             <colgroup>
+              <col className="w-[60px]" />
               <col className="w-[120px]" />
               <col className="w-auto" />
               <col className="w-[140px]" />
@@ -309,6 +361,13 @@ export default function SourcesPage() {
             </colgroup>
             <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b bg-muted/50">
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={(value) => handleSelectAll(value === true)}
+                    aria-label="Select all sources"
+                  />
+                </th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   {t.common.type}
                 </th>
@@ -358,6 +417,13 @@ export default function SourcesPage() {
                       : "hover:bg-muted/50"
                   )}
                 >
+                  <td className="h-12 px-4" onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedSourceIds.includes(source.id)}
+                      onCheckedChange={(value) => handleToggleSourceSelection(source.id, value === true)}
+                      aria-label={`Select source ${source.title || t.sources.untitledSource}`}
+                    />
+                  </td>
                   <td className="h-12 px-4">
                     <div className="flex items-center gap-2">
                       {getSourceIcon(source)}

@@ -36,6 +36,7 @@ import { ContextToggle } from '@/components/common/ContextToggle'
 import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 import { MindMapDialog } from '@/components/source/MindMapDialog'
 import { InfographicDialog } from '@/components/source/InfographicDialog'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -48,6 +49,9 @@ interface SourceCardProps {
   showRemoveFromNotebook?: boolean
   contextMode?: ContextMode
   onContextModeChange?: (mode: ContextMode) => void
+  selectable?: boolean
+  selected?: boolean
+  onSelectChange?: (selected: boolean) => void
 }
 
 const SOURCE_TYPE_ICONS = {
@@ -122,7 +126,10 @@ export function SourceCard({
   className,
   showRemoveFromNotebook = false,
   contextMode,
-  onContextModeChange
+  onContextModeChange,
+  selectable = false,
+  selected = false,
+  onSelectChange,
 }: SourceCardProps) {
   const { t } = useTranslation()
   const statusConfigMap = getStatusConfig(t)
@@ -223,6 +230,12 @@ export function SourceCard({
     }
   }
 
+  const handleSelectionChange = (checked: boolean) => {
+    if (onSelectChange) {
+      onSelectChange(checked)
+    }
+  }
+
   const isProcessing: boolean = currentStatus === 'new' || currentStatus === 'running' || currentStatus === 'queued'
   const isFailed: boolean = currentStatus === 'failed'
   const isCompleted: boolean = currentStatus === 'completed'
@@ -242,10 +255,19 @@ export function SourceCard({
       <CardContent className="px-4 py-3 min-h-[80px]">
         {/* Header with status indicator */}
         <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="flex-1 min-w-0">
-            {/* Status badge - only show if not completed */}
-            {!isCompleted && (
-              <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-start gap-3 min-w-0">
+            {selectable && (
+              <Checkbox
+                checked={!!selected}
+                onCheckedChange={(value) => handleSelectionChange(value === true)}
+                aria-label={`Select source ${title}`}
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              {/* Status badge - only show if not completed */}
+              {!isCompleted && (
+                <div className="flex items-center gap-2 mb-2">
                 <div className={cn(
                   'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
                   statusConfig.bgColor,
@@ -315,6 +337,7 @@ export function SourceCard({
                   )}
                 </>
               )}
+            </div>
             </div>
           </div>
 
@@ -415,8 +438,8 @@ export function SourceCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          </div>
         </div>
+      </div>
         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         {(isFailed as any) && (
           <div className="flex gap-2 pt-2 border-t">

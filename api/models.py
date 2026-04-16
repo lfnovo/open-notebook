@@ -330,6 +330,25 @@ class SourceUpdate(BaseModel):
     topics: Optional[List[str]] = Field(None, description="Source topics")
 
 
+class CommonGraphCreate(BaseModel):
+    source_ids: List[str] = Field(
+        ..., description="List of source IDs to use for the common graph"
+    )
+    title: Optional[str] = Field(None, description="Optional title for the common graph")
+    model_id: Optional[str] = Field(None, description="LLM model ID to use for NLP extraction")
+    prompt: Optional[str] = Field(None, description="Custom prompt for extracting common activities/entities")
+
+
+class CommonGraphResponse(BaseModel):
+    id: str
+    title: Optional[str] = None
+    source_ids: List[str]
+    status: str
+    metadata: Optional[Dict[str, Any]] = None
+    created: str
+    updated: str
+
+
 class SourceResponse(BaseModel):
     id: str
     title: Optional[str]

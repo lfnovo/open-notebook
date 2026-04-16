@@ -110,7 +110,6 @@ function SafeContent({ text, noContentLabel }: { text: string; noContentLabel: s
 
 // ─── Smart Document Renderer ───────────────────────────────────────────────
 function renderInline(raw: string): React.ReactNode {
-  // Strip leading asterisks noise like **** or ***
   const clean = raw.replace(/\*{3,}/g, '').trim()
   const parts = clean.split(/(\*{1,2}[^*]+\*{1,2})/g)
   return parts.map((part, i) => {
@@ -120,16 +119,22 @@ function renderInline(raw: string): React.ReactNode {
   })
 }
 
-function SmartDocumentRenderer({ text }: { text: string }) {
+function SmartDocumentRenderer({
+  text,
+  highlight
+}: {
+  text: string
+  highlight?: (text: string) => React.ReactNode
+}) {
   const lines = text.replace(/\r\n/g, '\n').split('\n')
 
   type Block =
-    | { type: 'section';    label: string }
+    | { type: 'section'; label: string }
     | { type: 'subheading'; text: string }
-    | { type: 'keyval';     key: string; value: string }
-    | { type: 'bullet';     text: string }
-    | { type: 'timeline';   year: string; title: string; detail: string }
-    | { type: 'paragraph';  text: string }
+    | { type: 'keyval'; key: string; value: string }
+    | { type: 'bullet'; text: string }
+    | { type: 'timeline'; year: string; title: string; detail: string }
+    | { type: 'paragraph'; text: string }
 
   const blocks: Block[] = []
 
@@ -137,33 +142,27 @@ function SmartDocumentRenderer({ text }: { text: string }) {
     const line = rawLine.trim()
     if (!line) continue
 
-    // ── PART section header
     const partM = line.match(/^\*{0,2}(PART\s*[-–—\s]*(?:I{1,3}V?|VI{0,3}|IX|X{1,3}|\d+)[^*]*)\*{0,2}$/i)
     if (partM) {
       blocks.push({ type: 'section', label: partM[1].replace(/\*+/g, '').trim().toUpperCase() })
       continue
     }
 
-    // ── Bold-only line = sub-heading
     const headM = line.match(/^\*{1,2}([^*\n]{2,80})\*{1,2}$/)
     if (headM) {
       blocks.push({ type: 'subheading', text: headM[1].trim() })
       continue
     }
 
-    // ── Key : Value  (e.g. "Date of birth : 21 Oct" or "**Name**:- Value")
     const kvM = line.match(/^\*{0,2}([^*:|\n]{2,40})\*{0,2}\s*:[-\s]\*{0,2}\s*(.+)$/)
     if (kvM) {
       blocks.push({ type: 'keyval', key: kvM[1].replace(/\*/g, '').trim(), value: kvM[2].replace(/\*/g, '').trim() })
       continue
     }
 
-    // ── Timeline: year at start
     const yrM = line.match(/^((?:19|20)\d{2}(?:[–\-]\d{2,4})?)[:\s,.\-–]+((?:\*{1,2}[^*\n]+\*{1,2})?[^\n]*)/)
     if (yrM) {
-      // Next line might be detail — handle as single block; detail collected later
       const rest = yrM[2].replace(/\*{1,2}/g, '').trim()
-      // If the rest starts with bold, treat that as the title
       const titleM = yrM[2].match(/^\*{1,2}([^*]+)\*{1,2}(.*)/)
       if (titleM) {
         blocks.push({ type: 'timeline', year: yrM[1], title: titleM[1].trim(), detail: titleM[2].trim() })
@@ -173,7 +172,6 @@ function SmartDocumentRenderer({ text }: { text: string }) {
       continue
     }
 
-    // ── Bullet
     if (/^[-•]\s+/.test(line)) {
       blocks.push({ type: 'bullet', text: line.replace(/^[-•]\s+/, '') })
       continue
@@ -182,7 +180,6 @@ function SmartDocumentRenderer({ text }: { text: string }) {
     blocks.push({ type: 'paragraph', text: line })
   }
 
-  // ── Attach consecutive paragraphs after timeline as its detail
   for (let i = 0; i < blocks.length - 1; i++) {
     if (blocks[i].type === 'timeline' && blocks[i + 1].type === 'paragraph') {
       const b = blocks[i] as Extract<Block, { type: 'timeline' }>
@@ -191,12 +188,11 @@ function SmartDocumentRenderer({ text }: { text: string }) {
     }
   }
 
-  // ── Group consecutive same-type blocks
   type Group =
-    | { kind: 'section';  label: string }
+    | { kind: 'section'; label: string }
     | { kind: 'subheading'; text: string }
-    | { kind: 'keyvals';  pairs: { key: string; value: string }[] }
-    | { kind: 'bullets';  items: string[] }
+    | { kind: 'keyvals'; pairs: { key: string; value: string }[] }
+    | { kind: 'bullets'; items: string[] }
     | { kind: 'timeline'; items: { year: string; title: string; detail: string }[] }
     | { kind: 'paragraph'; text: string }
 
@@ -215,15 +211,14 @@ function SmartDocumentRenderer({ text }: { text: string }) {
       if (last?.kind === 'timeline') { last.items.push(b); continue }
       groups.push({ kind: 'timeline', items: [b] }); continue
     }
-    if (b.type === 'section')    { groups.push({ kind: 'section',    label: b.label }); continue }
-    if (b.type === 'subheading') { groups.push({ kind: 'subheading', text: b.text  }); continue }
-    if (b.type === 'paragraph')  { groups.push({ kind: 'paragraph',  text: b.text  }); continue }
+    if (b.type === 'section') { groups.push({ kind: 'section', label: b.label }); continue }
+    if (b.type === 'subheading') { groups.push({ kind: 'subheading', text: b.text }); continue }
+    if (b.type === 'paragraph') { groups.push({ kind: 'paragraph', text: b.text }); continue }
   }
 
   return (
     <div>
       {groups.map((g, i) => {
-        /* ── Section divider ── */
         if (g.kind === 'section') return (
           <div key={i} className={`flex items-center gap-3 ${i > 0 ? 'mt-9' : 'mt-1'} mb-4`}>
             <div className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
@@ -234,14 +229,12 @@ function SmartDocumentRenderer({ text }: { text: string }) {
           </div>
         )
 
-        /* ── Sub-heading ── */
         if (g.kind === 'subheading') return (
           <p key={i} className="text-[13px] font-bold text-slate-700 dark:text-slate-200 mt-5 mb-2 uppercase tracking-wide">
             {g.text}
           </p>
         )
 
-        /* ── Key-value grid ── */
         if (g.kind === 'keyvals') return (
           <div key={i} className="grid grid-cols-2 gap-x-6 gap-y-3 mb-5 bg-slate-50 dark:bg-slate-800/40 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
             {g.pairs.map((kv, j) => (
@@ -253,7 +246,6 @@ function SmartDocumentRenderer({ text }: { text: string }) {
           </div>
         )
 
-        /* ── Bullet list ── */
         if (g.kind === 'bullets') return (
           <ul key={i} className="mb-4 space-y-2">
             {g.items.map((item, j) => (
@@ -267,7 +259,6 @@ function SmartDocumentRenderer({ text }: { text: string }) {
           </ul>
         )
 
-        /* ── Timeline ── */
         if (g.kind === 'timeline') return (
           <div key={i} className="relative mb-5 mt-2">
             <div className="absolute left-[52px] top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
@@ -296,10 +287,9 @@ function SmartDocumentRenderer({ text }: { text: string }) {
           </div>
         )
 
-        /* ── Paragraph ── */
         if (g.kind === 'paragraph') return (
           <p key={i} className="text-sm text-slate-600 dark:text-slate-300 leading-[1.85] mb-3">
-            {renderInline(g.text)}
+            {highlight ? highlight(g.text) : renderInline(g.text)}
           </p>
         )
 
@@ -315,6 +305,7 @@ interface SourceDetailContentProps {
   onChatClick?: () => void
   onClose?: () => void
 }
+
 export default function SystemPromptEditor() {
   const [content, setContent] = useState(`You are an expert information designer...`)
   const [viewMode, setViewMode] = useState<'editor' | 'split' | 'preview'>('split')
@@ -340,7 +331,6 @@ export default function SystemPromptEditor() {
 
   return (
     <div className="flex flex-col h-[600px] w-full border rounded-xl overflow-hidden bg-background shadow-sm">
-      {/* 1. Header & Toolbar */}
       <div className="flex items-center justify-between px-3 py-2 border-b bg-muted/10">
         <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
           <h2 className="text-sm font-semibold mr-4 shrink-0">System Prompt</h2>
@@ -357,8 +347,6 @@ export default function SystemPromptEditor() {
           <ToolbarButton icon={<List className="h-4 w-4" />} onClick={() => insertFormat('- ')} />
           <ToolbarButton icon={<ListOrdered className="h-4 w-4" />} onClick={() => insertFormat('1. ')} />
         </div>
-
-        {/* 2. Layout Switcher (The 3 Buttons) */}
         <div className="flex items-center border rounded-md p-1 bg-background">
           <Button variant={viewMode === 'editor' ? 'secondary' : 'ghost'} size="icon" className="h-7 w-7" onClick={showEditorOnly} title="Editor Only">
             <ChevronLeft className="h-4 w-4" />
@@ -372,7 +360,6 @@ export default function SystemPromptEditor() {
         </div>
       </div>
 
-      {/* 3. Main Content Area */}
       <div className="flex-1 overflow-hidden h-full">
         {viewMode === 'editor' && (
           <div className="h-full p-4 overflow-y-auto">
@@ -398,7 +385,6 @@ export default function SystemPromptEditor() {
 
         {viewMode === 'split' && (
           <ResizablePanelGroup direction="horizontal">
-            {/* Editor Panel */}
             <ResizablePanel defaultSize={50} minSize={20}>
               <div className="h-full p-4 overflow-y-auto">
                 <textarea
@@ -410,10 +396,7 @@ export default function SystemPromptEditor() {
                 />
               </div>
             </ResizablePanel>
-
             <ResizableHandle withHandle className="bg-border" />
-
-            {/* Preview Panel */}
             <ResizablePanel defaultSize={50} minSize={20}>
               <div className="h-full p-6 bg-slate-50 dark:bg-slate-900/50 overflow-y-auto border-l">
                 <div className="prose prose-sm xl:prose-base dark:prose-invert max-w-none">
@@ -430,8 +413,6 @@ export default function SystemPromptEditor() {
   )
 }
 
-
-// Sub-component for Toolbar Buttons
 function ToolbarButton({ icon, onClick }: { icon: React.ReactNode, onClick?: () => void }) {
   return (
     <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={onClick}>
@@ -439,7 +420,6 @@ function ToolbarButton({ icon, onClick }: { icon: React.ReactNode, onClick?: () 
     </Button>
   )
 }
-
 
 export function SourceDetailContent({
   sourceId,
@@ -465,7 +445,7 @@ export function SourceDetailContent({
   const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
   const [deletingInsight, setDeletingInsight] = useState(false)
   const [isMarkdownView, setIsMarkdownView] = useState(false)
-
+  const [searchQuery, setSearchQuery] = useState('')
 
   const fetchSource = useCallback(async () => {
     try {
@@ -486,6 +466,63 @@ export function SourceDetailContent({
       setLoading(false)
     }
   }, [sourceId, t])
+
+  // ─── Fuzzy search helpers ─────────────────────────────────────────────────
+
+  const normalize = (str: string) =>
+    str.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+  const levenshtein = (a: string, b: string): number => {
+    const matrix = Array.from({ length: b.length + 1 }, () =>
+      new Array(a.length + 1).fill(0)
+    )
+    for (let i = 0; i <= a.length; i++) matrix[0][i] = i
+    for (let j = 0; j <= b.length; j++) matrix[j][0] = j
+    for (let j = 1; j <= b.length; j++) {
+      for (let i = 1; i <= a.length; i++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + cost
+        )
+      }
+    }
+    return matrix[b.length][a.length]
+  }
+
+  const isMatch = (word: string, query: string): boolean => {
+    const w = normalize(word)
+    const q = normalize(query)
+    if (!w || !q) return false
+    if (w === q) return true
+    if (w.startsWith(q) || q.startsWith(w)) return true
+    if (Math.abs(w.length - q.length) > 2) return false
+    return levenshtein(w, q) <= 2
+  }
+
+  // ─── FIX: closure captures searchQuery so SmartDocumentRenderer
+  //     can call highlight(text) with just one argument ────────────────────
+  const highlightText = useCallback(
+    (text: string): React.ReactNode => {
+      if (!searchQuery) return text
+      const tokens = text.split(/(\s+)/)
+      return tokens.map((token, i) => {
+        // Check the bare word (strip punctuation) against the query
+        const word = token.replace(/[^a-zA-Z0-9]/g, '')
+        if (word && isMatch(word, searchQuery)) {
+          return (
+            <span key={i} style={{ background: 'yellow', borderRadius: '2px' }}>
+              {token}
+            </span>
+          )
+        }
+        return token
+      })
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [searchQuery]
+  )
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -527,30 +564,24 @@ export function SourceDetailContent({
       const response = await insightsApi.create(sourceId, {
         transformation_id: selectedTransformation
       })
-      // Show toast for async operation
       toast.success(t.sources.insightGenerationStarted)
       setSelectedTransformation('')
 
-      // Poll for command completion if we have a command_id
       if (response.command_id) {
-        // Poll in background (don't block UI)
         insightsApi.waitForCommand(response.command_id, {
-          maxAttempts: 120, // Up to 4 minutes (120 * 2s)
+          maxAttempts: 120,
           intervalMs: 2000
         }).then(success => {
           if (success) {
             void fetchInsights()
-            // Invalidate sources queries so notebook page refreshes with updated insights_count
             queryClient.invalidateQueries({ queryKey: ['sources'] })
           }
         }).catch(err => {
           console.error('Error waiting for insight command:', err)
         })
       } else {
-        // Fallback: refresh after delay if no command_id
         setTimeout(() => {
           void fetchInsights()
-          // Also invalidate sources queries
           queryClient.invalidateQueries({ queryKey: ['sources'] })
         }, 5000)
       }
@@ -611,21 +642,15 @@ export function SourceDetailContent({
   }
 
   const extractFilename = (pathOrUrl: string | undefined, fallback: string) => {
-    if (!pathOrUrl) {
-      return fallback
-    }
+    if (!pathOrUrl) return fallback
     const segments = pathOrUrl.split(/[/\\]/)
     return segments.pop() || fallback
   }
 
   const parseContentDisposition = (header?: string | null) => {
-    if (!header) {
-      return null
-    }
+    if (!header) return null
     const match = header.match(/filename\*?=([^;]+)/i)
-    if (!match) {
-      return null
-    }
+    if (!match) return null
     const value = match[1].trim()
     if (value.toLowerCase().startsWith("utf-8''")) {
       return decodeURIComponent(value.slice(7))
@@ -634,9 +659,7 @@ export function SourceDetailContent({
   }
 
   const handleDownloadFile = async () => {
-    if (!source?.asset?.file_path || isDownloadingFile || fileAvailable === false) {
-      return
-    }
+    if (!source?.asset?.file_path || isDownloadingFile || fileAvailable === false) return
 
     try {
       setIsDownloadingFile(true)
@@ -704,7 +727,6 @@ export function SourceDetailContent({
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
       /youtube\.com\/watch\?.*v=([^&\n?#]+)/
     ]
-
     for (const pattern of patterns) {
       const match = url.match(pattern)
       if (match) return match[1]
@@ -724,7 +746,6 @@ export function SourceDetailContent({
 
   const handleDelete = async () => {
     if (!source) return
-
     if (confirm(t.sources.deleteSourceConfirm || t.common.confirm)) {
       try {
         await sourcesApi.delete(source.id)
@@ -777,7 +798,6 @@ export function SourceDetailContent({
               {getSourceType()}
             </Badge>
 
-            {/* Chat with source button - only in modal */}
             {showChatButton && onChatClick && (
               <Button variant="outline" size="sm" onClick={onChatClick}>
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -911,12 +931,17 @@ export function SourceDetailContent({
             </Card>
 
             {isMarkdownView && source.full_text && (
-              <div
-                className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-slate-900 w-full h-full overflow-hidden"
-              >
+              <div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-slate-900 w-full h-full overflow-hidden">
                 {/* ─── Header ─── */}
                 <div className="flex items-center justify-between px-8 py-5 bg-slate-900 dark:bg-slate-950 shrink-0 border-b border-b-slate-800 shadow-sm relative z-10">
                   <div className="flex items-center gap-4">
+                    <input
+                      type="text"
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="ml-4 px-3 py-1.5 text-sm rounded-md bg-white/10 text-white placeholder:text-slate-400 outline-none border border-white/20"
+                    />
                     <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-inner">
                       <Sparkles className="h-5 w-5 text-white" />
                     </div>
@@ -930,14 +955,22 @@ export function SourceDetailContent({
                     className="h-9 w-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-slate-300 hover:text-white transition-all ring-1 ring-white/10"
                     aria-label="Close"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
                   </button>
                 </div>
 
                 {/* ─── Body ─── */}
                 <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0a0c10]">
                   <div className="max-w-[1100px] w-full mx-auto bg-white dark:bg-slate-900 min-h-full px-12 py-10 shadow-sm border-x border-slate-200 dark:border-slate-800">
-                    <SmartDocumentRenderer text={source.full_text} />
+                    {/*
+                      FIX: Pass highlight as a closure that captures searchQuery.
+                      SmartDocumentRenderer calls highlight(text) with 1 arg —
+                      the closure supplies searchQuery from state automatically.
+                    */}
+                    <SmartDocumentRenderer
+                      text={source.full_text}
+                      highlight={highlightText}
+                    />
                   </div>
                 </div>
 
@@ -969,7 +1002,6 @@ export function SourceDetailContent({
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Create New Insight */}
                 <div className="rounded-lg border bg-muted/30 p-4">
                   <Label
                     htmlFor="transformation-select"
@@ -1016,7 +1048,6 @@ export function SourceDetailContent({
                   </div>
                 </div>
 
-                {/* Insights List */}
                 {loadingInsights ? (
                   <div className="flex items-center justify-center py-8">
                     <LoadingSpinner />
@@ -1068,7 +1099,6 @@ export function SourceDetailContent({
                 <CardTitle>{t.sources.details}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Embedding Alert */}
                 {!source.embedded && (
                   <Alert>
                     <AlertCircle className="h-4 w-4" />
@@ -1091,7 +1121,6 @@ export function SourceDetailContent({
                   </Alert>
                 )}
 
-                {/* Source Information */}
                 <div className="space-y-4">
                   {source.asset?.url && (
                     <div>
@@ -1100,22 +1129,10 @@ export function SourceDetailContent({
                         <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
                           {source.asset.url}
                         </code>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleCopyUrl}
-                        >
-                          {copied ? (
-                            <CheckCircle className="h-4 w-4" />
-                          ) : (
-                            <Copy className="h-4 w-4" />
-                          )}
+                        <Button size="sm" variant="outline" onClick={handleCopyUrl}>
+                          {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={handleOpenExternal}
-                        >
+                        <Button size="sm" variant="outline" onClick={handleOpenExternal}>
                           <ExternalLink className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1143,11 +1160,11 @@ export function SourceDetailContent({
                               : t.common.download}
                         </Button>
                       </div>
-                      {fileAvailable === false ? (
+                      {fileAvailable === false && (
                         <p className="text-xs text-muted-foreground">
                           {t.sources.fileUnavailableDesc}
                         </p>
-                      ) : null}
+                      )}
                     </div>
                   )}
 
@@ -1165,7 +1182,6 @@ export function SourceDetailContent({
                   )}
                 </div>
 
-                {/* Metadata */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-semibold">{t.sources.metadata}</h3>
@@ -1206,7 +1222,6 @@ export function SourceDetailContent({
               </CardContent>
             </Card>
 
-            {/* Notebook Associations */}
             <NotebookAssociations
               sourceId={sourceId}
               currentNotebookIds={source.notebooks || []}
@@ -1219,9 +1234,7 @@ export function SourceDetailContent({
       <SourceInsightDialog
         open={Boolean(selectedInsight)}
         onOpenChange={(open) => {
-          if (!open) {
-            setSelectedInsight(null)
-          }
+          if (!open) setSelectedInsight(null)
         }}
         insight={selectedInsight ?? undefined}
         onDelete={async (insightId) => {

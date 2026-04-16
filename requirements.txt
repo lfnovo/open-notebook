@@ -17,7 +17,8 @@ numpy
 pymupdf
 
 # --- NLP & Text Processing ---
-# spacy
+spacy
+# spacy model is required: python -m spacy download en_core_web_sm
 nltk
 pytextrank
 

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Plus, FileText, Link2, ChevronDown, Loader2 } from 'lucide-react'
+import { Plus, FileText, Link2, ChevronDown, Loader2, GitFork } from 'lucide-react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
@@ -23,6 +23,7 @@ import { ContextMode } from '../[id]/page'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { CommonGraphModal } from '@/components/sources/CommonGraphModal'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -57,6 +58,8 @@ export function SourcesColumn({
   const [sourceToDelete, setSourceToDelete] = useState<string | null>(null)
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false)
   const [sourceToRemove, setSourceToRemove] = useState<string | null>(null)
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([])
+  const [commonGraphOpen, setCommonGraphOpen] = useState(false)
 
   const { openModal } = useModalManager()
   const deleteSource = useDeleteSource()
@@ -133,6 +136,22 @@ export function SourcesColumn({
     }
   }
 
+  const handleToggleSourceSelection = (sourceId: string, checked: boolean) => {
+    setSelectedSourceIds((prev) => {
+      if (checked) {
+        return prev.includes(sourceId) ? prev : [...prev, sourceId]
+      }
+      return prev.filter((id) => id !== sourceId)
+    })
+  }
+
+  const canCreateCommonGraph = selectedSourceIds.length >= 2
+
+  const handleCreateCommonGraph = () => {
+    if (!canCreateCommonGraph) return
+    setCommonGraphOpen(true)
+  }
+
   const handleRetry = async (sourceId: string) => {
     try {
       await retrySource.mutateAsync(sourceId)
@@ -155,30 +174,46 @@ export function SourcesColumn({
       >
         <Card className="h-full flex flex-col flex-1 overflow-hidden">
           <CardHeader className="pb-3 flex-shrink-0">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{t.navigation.sources}</CardTitle>
-              <div className="flex items-center gap-2">
-                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button size="sm">
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t.sources.addSource}
-                      <ChevronDown className="h-4 w-4 ml-2" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t.sources.addSource}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
-                      <Link2 className="h-4 w-4 mr-2" />
-                      {t.sources.addExistingTitle}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                {collapseButton}
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-lg">{t.navigation.sources}</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={!canCreateCommonGraph}
+                    onClick={handleCreateCommonGraph}
+                    title="Create common graph"
+                  >
+                    <GitFork className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="sm">
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t.sources.addSource}
+                        <ChevronDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t.sources.addSource}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
+                        <Link2 className="h-4 w-4 mr-2" />
+                        {t.sources.addExistingTitle}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  {collapseButton}
+                </div>
               </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedSourceIds.length > 0
+                  ? `${selectedSourceIds.length} source${selectedSourceIds.length === 1 ? '' : 's'} selected`
+                  : 'Select at least two sources to create a common graph.'}
+              </p>
             </div>
           </CardHeader>
 
@@ -210,6 +245,9 @@ export function SourcesColumn({
                       ? (mode) => onContextModeChange(source.id, mode)
                       : undefined
                     }
+                    selectable={true}
+                    selected={selectedSourceIds.includes(source.id)}
+                    onSelectChange={(checked) => handleToggleSourceSelection(source.id, checked)}
                   />
                 ))}
                 {/* Loading indicator for infinite scroll */}
@@ -228,6 +266,7 @@ export function SourcesColumn({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         defaultNotebookId={notebookId}
+        onSuccess={onRefresh}
       />
 
       <AddExistingSourceDialog
@@ -257,6 +296,12 @@ export function SourcesColumn({
         onConfirm={handleRemoveConfirm}
         isLoading={removeFromNotebook.isPending}
         confirmVariant="default"
+      />
+
+      <CommonGraphModal
+        open={commonGraphOpen}
+        onOpenChange={setCommonGraphOpen}
+        sourceIds={selectedSourceIds}
       />
     </>
   )

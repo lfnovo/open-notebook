@@ -11,6 +11,7 @@ interface AddSourceButtonProps {
   size?: 'sm' | 'default' | 'lg'
   className?: string
   iconOnly?: boolean
+  onSuccess?: () => void
 }
 
 export function AddSourceButton({ 
@@ -18,7 +19,8 @@ export function AddSourceButton({
   variant = 'default',
   size = 'default',
   className,
-  iconOnly = false
+  iconOnly = false,
+  onSuccess
 }: AddSourceButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
 
@@ -38,6 +40,7 @@ export function AddSourceButton({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         defaultNotebookId={defaultNotebookId}
+        onSuccess={onSuccess}
       />
     </>
   )

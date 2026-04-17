@@ -181,16 +181,20 @@ def _get_spacy_nlp() -> Optional[spacy.language.Language]:
     if _spacy_nlp is not None:
         return _spacy_nlp
 
-    try:
-        _spacy_nlp = spacy.load("en_core_web_sm")
-        return _spacy_nlp
-    except OSError:
-        logger.warning(
-            "spaCy model 'en_core_web_sm' is missing. "
-            "Falling back to regex-based term extraction. "
-            "Install it with: python -m spacy download en_core_web_sm"
-        )
-        return None
+    # Try transformer model first (most accurate for person NER)
+    for model_name in ("en_core_web_trf", "en_core_web_lg", "en_core_web_md", "en_core_web_sm"):
+        try:
+            _spacy_nlp = spacy.load(model_name)
+            logger.info(f"[spaCy] Loaded model: {model_name}")
+            return _spacy_nlp
+        except OSError:
+            continue
+
+    logger.warning(
+        "No spaCy model found. "
+        "Install with: python -m spacy download en_core_web_trf"
+    )
+    return None
 
 
 def _extract_terms_fallback(text: str) -> Counter[str]:
@@ -295,239 +299,739 @@ def _build_common_graph_metadata(sources: List[Source]) -> Dict[str, Any]:
     }
 
 
-# Per-document extraction prompt — used in step 1
-PER_DOC_EXTRACT_PROMPT = (
-    "You are an expert entity extraction system for investigative documents.\n"
-    "Extract ALL important entities from the document below.\n"
-    "Focus on:\n"
-    "- People (full names of individuals)\n"
-    "- Places (cities, villages, addresses, districts)\n"
-    "- Organizations (police units, companies, groups)\n"
-    "- Key activities or events (crimes, arrests, meetings, transactions)\n"
-    "- Significant objects (vehicles, weapons, items)\n"
-    "Rules:\n"
-    "- Keep labels concise (1-4 words).\n"
-    "- Use proper names, not pronouns.\n"
-    "- Maximum 25 items.\n"
-    "Return ONLY a valid JSON array of strings. No explanation.\n"
-    "Example: [\"Ankit Kumar\", \"Delhi\", \"arms smuggling\", \"blue Honda\"]"
-)
+# ── Comprehensive entity extraction: persons, activities, relationships ──────
+# Uses BERT (all-MiniLM-L6-v2) for semantic matching + IR patterns for extraction
 
-# Default prompt used when user provides custom prompt with {{documents_input}}
-DEFAULT_COMMON_GRAPH_PROMPT = (
-    "You are an expert entity and activity extraction system designed to build a "
-    "\"Common Graph\" from one or more documents.\n"
-    "Input: You will receive one or multiple documents.\n"
-    "Your task: Extract the most important and relevant elements across ALL documents combined.\n"
-    "Focus ONLY on:\n"
-    "- People (individual names)\n"
-    "- Places (cities, locations, addresses)\n"
-    "- Organizations (companies, institutions, groups)\n"
-    "- Key activities or events (crimes, meetings, transactions, incidents)\n"
-    "- Significant objects (vehicles, weapons, important items)\n"
-    "Instructions:\n"
-    "- Analyze ALL documents together as a single dataset.\n"
-    "- Merge duplicate or similar entities.\n"
-    "- Prioritize entities/events that appear frequently or are important.\n"
-    "- Include both common entities and critical unique entities.\n"
-    "- Keep labels concise (1 to 4 words max).\n"
-    "- Avoid vague terms.\n"
-    "- Do not repeat items.\n"
-    "- Maximum 20 items total.\n"
-    "Output Format:\n"
-    "- Return ONLY a valid JSON array of strings.\n"
-    "- No explanations, no extra text.\n"
-    "Example Output: [\"John Smith\", \"New York City\", \"financial fraud\"]\n"
-    "Now process the following documents:\n"
-    "{{documents_input}}"
-)
+_sbert_model = None
 
 
-async def _extract_entities_per_doc(source, model_id, re_mod, json_mod, provision_fn, SystemMessage, HumanMessage):
-    """Extract entities from a single document using LLM."""
-    text = source.full_text or source.title or ''
-    if not text.strip():
-        return []
-    truncated = text[:4000]
+def _get_sbert_model():
+    global _sbert_model
+    if _sbert_model is not None:
+        return _sbert_model
     try:
-        payload = [
-            SystemMessage(content=PER_DOC_EXTRACT_PROMPT),
-            HumanMessage(content=truncated),
-        ]
-        chain = await provision_fn(str(payload), model_id, "transformation", max_tokens=512)
-        response = await chain.ainvoke(payload)
-        raw = str(response.content if hasattr(response, 'content') else response).strip()
-        if '```' in raw:
-            raw = re_mod.sub(r'```(?:json)?\s*', '', raw).strip()
-        a, b = raw.find('['), raw.rfind(']')
-        if a != -1 and b != -1:
-            parsed = json_mod.loads(raw[a:b+1])
-            return [str(e).strip() for e in parsed if e and len(str(e).strip()) > 1]
-    except Exception as ex:
-        logger.warning(f"[CommonGraph] Per-doc extraction failed: {ex}")
-    return []
+        from sentence_transformers import SentenceTransformer
+        _sbert_model = SentenceTransformer('all-MiniLM-L6-v2')
+        logger.info("[CommonGraph] Loaded all-MiniLM-L6-v2")
+        return _sbert_model
+    except Exception as e:
+        logger.warning(f"[CommonGraph] BERT load failed: {e}")
+        return None
+
+
+_WORD_BLOCKLIST = {
+    'name', 'names', 'full', 'alias', 'parentage', 'address', 'occupation',
+    'age', 'status', 'education', 'contact', 'mobile', 'email', 'mail',
+    'residence', 'resident', 'permanent', 'present', 'current', 'date',
+    'sir', 'mr', 'mrs', 'ms', 'dr', 'shri', 'smt', 'km', 'late',
+    'son', 'daughter', 'wife', 'husband', 'brother', 'sister',
+    'father', 'mother', 'uncle', 'aunt', 'nephew', 'niece',
+    'accused', 'victim', 'complainant', 'witness', 'suspect', 'informer',
+    'officer', 'inspector', 'constable', 'head', 'sub', 'senior', 'junior',
+    'police', 'judge', 'advocate', 'counsel', 'magistrate', 'station',
+    'india', 'delhi', 'haryana', 'rajasthan', 'punjab', 'gujarat', 'mumbai',
+    'uttar', 'pradesh', 'madhya', 'bihar', 'bengal', 'chennai', 'kolkata',
+    'district', 'village', 'city', 'town', 'road', 'street', 'nagar',
+    'colony', 'sector', 'phase', 'block', 'flat', 'house', 'near',
+    'the', 'and', 'or', 'of', 'in', 'at', 'to', 'for', 'with', 'from',
+    'said', 'told', 'asked', 'stated', 'mentioned', 'informed', 'reported',
+    'case', 'fir', 'section', 'act', 'ipc', 'crpc', 'court',
+    'unknown', 'male', 'female', 'married', 'unmarried', 'single',
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december',
+}
+
+
+def _clean_person_name(raw):
+    """Clean, validate and properly space a person name."""
+    import re as _re
+    # Normalize whitespace
+    s = _re.sub(r'\s+', ' ', raw.strip())
+    # Remove trailing punctuation
+    s = s.rstrip('.,;:()[]')
+    # Must be 3-60 chars
+    if len(s) < 3 or len(s) > 60:
+        return ''
+    # Must start with uppercase
+    if not s[0].isupper():
+        return ''
+    # Must have at least one alpha char
+    if not any(c.isalpha() for c in s):
+        return ''
+    # Check blocklist
+    norm = s.lower()
+    words = [w for w in norm.split() if w.isalpha()]
+    if not words:
+        return ''
+    if all(w in _WORD_BLOCKLIST for w in words):
+        return ''
+    if words[0] in _WORD_BLOCKLIST:
+        return ''
+    return s
+
+
+def _take_name_words(raw, max_words=4):
+    """
+    Take up to max_words words from raw that form a valid person name.
+    Stops at lowercase words, blocklist words, or numbers.
+    Handles '@' alias notation (e.g. 'Sandeep @ Kala Jathedi').
+    """
+    import re as _re
+    # Split on whitespace
+    words = raw.strip().split()
+    clean = []
+    i = 0
+    while i < len(words) and len(clean) < max_words:
+        w = words[i]
+        # Handle @ alias separator
+        if w == '@' and clean:
+            clean.append(w)
+            i += 1
+            continue
+        # Strip non-alpha from word for checking
+        alpha = _re.sub(r'[^a-zA-Z]', '', w)
+        if not alpha:
+            break
+        # Stop at blocklist
+        if alpha.lower() in _WORD_BLOCKLIST:
+            break
+        # Stop at lowercase start (unless it's after @)
+        if not alpha[0].isupper() and (not clean or clean[-1] != '@'):
+            break
+        clean.append(w)
+        i += 1
+    # Remove trailing @
+    while clean and clean[-1] == '@':
+        clean.pop()
+    return ' '.join(clean).strip()
+
+
+def _extract_all_entities(text):
+    """
+    Extract from IR document text:
+    - persons (named individuals with roles)
+    - activities (crimes, weapons, drugs, events, transactions)
+    - relationships (family, associates, gang members)
+
+    Returns:
+        persons: dict {norm -> {label, role}}
+        activities: list of {label, type}
+        relations: list of {from, to, type, label}
+    """
+    import re as _re
+
+    persons = {}
+    activities = []
+    relations = []
+    seen_rel = set()
+    seen_act = set()
+    current_main = None
+
+    lines = text.split('\n')
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # ── Structured field patterns (Name:, Accused:, etc.) ────────────
+        for pat, role in [
+            (r'^(?:Name|Full\s*Name)\s*[:\-]\s*(.+)', 'main'),
+            (r'^Accused\s*[:\-]\s*(.+)', 'accused'),
+            (r'^(?:Victim|Complainant)\s*[:\-]\s*(.+)', 'victim'),
+            (r'^(?:Witness|Informer)\s*[:\-]\s*(.+)', 'witness'),
+            (r'^Suspect\s*[:\-]\s*(.+)', 'suspect'),
+        ]:
+            m = _re.match(pat, line, _re.IGNORECASE)
+            if m:
+                raw = m.group(1).strip()
+                name = _clean_person_name(_take_name_words(raw))
+                if name:
+                    norm = name.lower()
+                    if norm not in persons:
+                        persons[norm] = {'label': name, 'role': role}
+                    if role in ('main', 'accused', 'victim', 'witness'):
+                        current_main = name
+
+        # ── Honorific prefix (Sh., Smt., Mr., etc.) ──────────────────────
+        for m in _re.finditer(
+            r'\b(?:Sh\.|Shri|Smt\.|Km\.|Mr\.|Mrs\.|Dr\.)\s+([A-Z][a-zA-Z\s@]{2,40})',
+            line
+        ):
+            name = _clean_person_name(_take_name_words(m.group(1)))
+            if name:
+                norm = name.lower()
+                if norm not in persons:
+                    persons[norm] = {'label': name, 'role': 'person'}
+
+        # ── Verb + name (arrested, nabbed, etc.) ─────────────────────────
+        for m in _re.finditer(
+            r'\b(?:arrested|nabbed|apprehended|detained|identified)\s+([A-Z][a-zA-Z\s@]{2,40})',
+            line, _re.IGNORECASE
+        ):
+            name = _clean_person_name(_take_name_words(m.group(1)))
+            if name:
+                norm = name.lower()
+                if norm not in persons:
+                    persons[norm] = {'label': name, 'role': 'accused'}
+
+        # ── Family relationship patterns ──────────────────────────────────
+        for pat, rel_label in [
+            (r'\bS/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bD/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bW/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'husband'),
+            (r'\bSon\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bDaughter\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bWife\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'husband'),
+            (r'\bBrother\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'brother'),
+            (r'\bSister\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'sister'),
+            (r'\bMother\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'mother'),
+            (r'\bFather\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+        ]:
+            for m in _re.finditer(pat, line, _re.IGNORECASE):
+                rel_name = _clean_person_name(_take_name_words(m.group(1)))
+                if rel_name and current_main:
+                    norm_r = rel_name.lower()
+                    if norm_r not in persons:
+                        persons[norm_r] = {'label': rel_name, 'role': 'relative'}
+                    key = (current_main.lower(), norm_r, rel_label)
+                    if key not in seen_rel:
+                        seen_rel.add(key)
+                        relations.append({
+                            'from': current_main,
+                            'to': rel_name,
+                            'type': 'family',
+                            'label': rel_label,
+                        })
+
+        # ── Associate/gang patterns ───────────────────────────────────────
+        for pat, rel_label in [
+            (r'\b(?:associate|associates)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'associate'),
+            (r'\b(?:gang\s+member|gang\s+associate)\s+([A-Z][a-zA-Z\s@]{2,40})', 'gang member'),
+            (r'\b(?:friend|close\s+friend)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'friend'),
+            (r'\b(?:co-accused|co\s+accused)\s+([A-Z][a-zA-Z\s@]{2,40})', 'co-accused'),
+            (r'\b(?:partner|accomplice)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'accomplice'),
+        ]:
+            for m in _re.finditer(pat, line, _re.IGNORECASE):
+                assoc_name = _clean_person_name(_take_name_words(m.group(1)))
+                if assoc_name and current_main:
+                    norm_a = assoc_name.lower()
+                    if norm_a not in persons:
+                        persons[norm_a] = {'label': assoc_name, 'role': 'associate'}
+                    key = (current_main.lower(), norm_a, rel_label)
+                    if key not in seen_rel:
+                        seen_rel.add(key)
+                        relations.append({
+                            'from': current_main,
+                            'to': assoc_name,
+                            'type': 'associate',
+                            'label': rel_label,
+                        })
+
+        # ── Activity patterns ─────────────────────────────────────────────
+        line_lower = line.lower()
+        for keywords, act_type in [
+            (['robbery', 'theft', 'murder', 'assault', 'kidnapping', 'extortion',
+              'fraud', 'smuggling', 'trafficking', 'dacoity', 'rape', 'abduction',
+              'cheating', 'forgery', 'bribery', 'loot', 'snatching'], 'crime'),
+            (['pistol', 'revolver', 'rifle', 'gun', 'knife', 'sword', 'bomb',
+              'explosive', 'weapon', 'arms', 'ammunition', 'cartridge'], 'weapon'),
+            (['drugs', 'drug', 'narcotics', 'heroin', 'cocaine', 'ganja',
+              'smack', 'charas', 'afeem', 'opium', 'mdma'], 'drug'),
+            (['money laundering', 'hawala', 'ransom', 'extortion money',
+              'cash recovery', 'illegal payment'], 'transaction'),
+            (['meeting', 'encounter', 'arrest', 'raid', 'recovery', 'seizure',
+              'incident', 'attack', 'firing', 'chase', 'escape'], 'event'),
+        ]:
+            for kw in keywords:
+                if kw in line_lower and kw not in seen_act:
+                    seen_act.add(kw)
+                    activities.append({'label': kw, 'type': act_type})
+
+    return persons, activities, relations
+
+
+def _get_sentences(text):
+    lines = []
+    for line in text.split('\n'):
+        line = line.strip()
+        if len(line) > 20 and not line.endswith(':'):
+            lines.append(line)
+    return lines
 
 
 def _normalize(s):
-    """Lowercase + strip for comparison."""
     return s.lower().strip()
 
 
-async def _build_common_graph_metadata_llm(
-    sources,
-    model_id,
-    prompt=None,
-):
+def _extract_personal_details(text):
+    """Extract personal details fields from IR document."""
+    import re as _re
+    details = {}
+    field_patterns = [
+        (r'^(?:Name|Full\s*Name)\s*[:\-]\s*(.+)', 'Name'),
+        (r'^(?:Age|DOB|Date\s*of\s*Birth)\s*[:\-]\s*(.+)', 'Age/DOB'),
+        (r'^(?:Address|Residence|Permanent\s*Address|Present\s*Address)\s*[:\-]\s*(.+)', 'Address'),
+        (r'^(?:Occupation|Profession)\s*[:\-]\s*(.+)', 'Occupation'),
+        (r'^(?:Education|Qualification)\s*[:\-]\s*(.+)', 'Education'),
+        (r'^(?:Mobile|Contact|Phone)\s*[:\-]\s*(.+)', 'Contact'),
+        (r'^(?:Email|E-mail)\s*[:\-]\s*(.+)', 'Email'),
+        (r'^(?:Nationality|Religion|Caste)\s*[:\-]\s*(.+)', 'Nationality'),
+        (r'^(?:Marital\s*Status|Status)\s*[:\-]\s*(.+)', 'Marital Status'),
+        (r'^(?:FIR|Case\s*No|Case\s*Number)\s*[:\-]\s*(.+)', 'Case No'),
+        (r'^(?:Section|Sections|Offence)\s*[:\-]\s*(.+)', 'Offence'),
+        (r'^(?:Police\s*Station|PS)\s*[:\-]\s*(.+)', 'Police Station'),
+        (r'^(?:District)\s*[:\-]\s*(.+)', 'District'),
+        (r'^(?:State)\s*[:\-]\s*(.+)', 'State'),
+        (r'^(?:Accused|Victim|Complainant|Witness)\s*[:\-]\s*(.+)', 'Role'),
+    ]
+    for line in text.split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        for pat, field_name in field_patterns:
+            m = _re.match(pat, line, _re.IGNORECASE)
+            if m and field_name not in details:
+                val = m.group(1).strip().rstrip('.,;')
+                if val and len(val) < 200:
+                    details[field_name] = val
+    return details
+
+
+def _build_personal_graph(source_idx, source_title, details):
+    """Build a star graph: center=person, spokes=personal detail fields."""
+    nodes = []
+    links = []
+
+    # Center node = the person
+    person_name = details.get('Name', source_title.replace('.docx', '').replace('.doc', '').strip())
+    center_id = f'center:{source_idx}'
+    nodes.append({
+        'id': center_id,
+        'label': person_name,
+        'type': 'person',
+        'role': details.get('Role', 'main'),
+        'common': True,
+        'weight': 3,
+    })
+
+    # Detail nodes
+    skip_fields = {'Name', 'Role'}
+    for i, (field, value) in enumerate(details.items()):
+        if field in skip_fields:
+            continue
+        nid = f'detail:{source_idx}:{i}'
+        # Truncate long values
+        display_val = value if len(value) <= 30 else value[:28] + '…'
+        nodes.append({
+            'id': nid,
+            'label': display_val,
+            'type': 'detail',
+            'field': field,
+            'weight': 1,
+            'common': False,
+        })
+        links.append({
+            'source': center_id,
+            'target': nid,
+            'type': 'detail',
+            'label': field,
+            'weight': 1,
+        })
+
+    return {'nodes': nodes, 'links': links}
+
+
+def _build_family_graph(source_idx, source_title, persons, relations):
+    """Build family tree graph for a source document."""
+    nodes = []
+    links = []
+    node_ids = {}
+
+    # Find main person
+    main_person = None
+    for norm, info in persons.items():
+        if info['role'] in ('main', 'accused', 'victim'):
+            main_person = info['label']
+            break
+    if not main_person and persons:
+        main_person = list(persons.values())[0]['label']
+    if not main_person:
+        main_person = source_title.replace('.docx', '').strip()
+
+    # Center = main person
+    center_id = f'fam_center:{source_idx}'
+    node_ids[main_person.lower()] = center_id
+    nodes.append({
+        'id': center_id,
+        'label': main_person,
+        'type': 'person',
+        'role': 'main',
+        'common': True,
+        'weight': 3,
+    })
+
+    # Family relations only
+    family_labels = {'father', 'mother', 'husband', 'wife', 'brother', 'sister', 'son', 'daughter', 'uncle', 'aunt'}
+    for rel in relations:
+        if rel['type'] != 'family':
+            continue
+        rel_name = rel['to']
+        rel_label = rel['label']
+        norm_r = rel_name.lower()
+        if norm_r not in node_ids:
+            nid = f'fam_rel:{source_idx}:{len(node_ids)}'
+            node_ids[norm_r] = nid
+            nodes.append({
+                'id': nid,
+                'label': rel_name,
+                'type': 'relative',
+                'role': rel_label,
+                'common': False,
+                'weight': 1,
+            })
+        from_id = node_ids.get(rel['from'].lower(), center_id)
+        to_id = node_ids[norm_r]
+        links.append({
+            'source': from_id,
+            'target': to_id,
+            'type': 'family',
+            'label': rel_label,
+            'weight': 2,
+        })
+
+    # Also add relatives found in persons dict
+    for norm, info in persons.items():
+        if info['role'] == 'relative' and norm not in node_ids:
+            nid = f'fam_rel:{source_idx}:{len(node_ids)}'
+            node_ids[norm] = nid
+            nodes.append({
+                'id': nid,
+                'label': info['label'],
+                'type': 'relative',
+                'role': 'relative',
+                'common': False,
+                'weight': 1,
+            })
+            links.append({
+                'source': center_id,
+                'target': nid,
+                'type': 'family',
+                'label': 'relative',
+                'weight': 1,
+            })
+
+    return {'nodes': nodes, 'links': links}
+
+
+def _build_associates_graph(source_idx, source_title, persons, relations, activities):
+    """Build associates/gang/friends graph for a source document."""
+    nodes = []
+    links = []
+    node_ids = {}
+
+    # Find main person
+    main_person = None
+    for norm, info in persons.items():
+        if info['role'] in ('main', 'accused', 'victim'):
+            main_person = info['label']
+            break
+    if not main_person and persons:
+        main_person = list(persons.values())[0]['label']
+    if not main_person:
+        main_person = source_title.replace('.docx', '').strip()
+
+    center_id = f'assoc_center:{source_idx}'
+    node_ids[main_person.lower()] = center_id
+    nodes.append({
+        'id': center_id,
+        'label': main_person,
+        'type': 'person',
+        'role': 'main',
+        'common': True,
+        'weight': 3,
+    })
+
+    # Associates, gang, friends, co-accused
+    assoc_types = {'associate', 'gang member', 'friend', 'co-accused', 'accomplice'}
+    for rel in relations:
+        if rel['type'] not in ('associate',) and rel['label'] not in assoc_types:
+            continue
+        assoc_name = rel['to']
+        norm_a = assoc_name.lower()
+        if norm_a not in node_ids:
+            nid = f'assoc:{source_idx}:{len(node_ids)}'
+            node_ids[norm_a] = nid
+            nodes.append({
+                'id': nid,
+                'label': assoc_name,
+                'type': 'person',
+                'role': rel['label'],
+                'common': False,
+                'weight': 1,
+            })
+        from_id = node_ids.get(rel['from'].lower(), center_id)
+        to_id = node_ids[norm_a]
+        links.append({
+            'source': from_id,
+            'target': to_id,
+            'type': 'associate',
+            'label': rel['label'],
+            'weight': 2,
+        })
+
+    # Add all accused persons as associates if no explicit relations found
+    if len(nodes) <= 1:
+        for norm, info in persons.items():
+            if info['role'] in ('accused', 'suspect') and norm != main_person.lower():
+                if norm not in node_ids:
+                    nid = f'assoc:{source_idx}:{len(node_ids)}'
+                    node_ids[norm] = nid
+                    nodes.append({
+                        'id': nid,
+                        'label': info['label'],
+                        'type': 'person',
+                        'role': info['role'],
+                        'common': False,
+                        'weight': 1,
+                    })
+                    links.append({
+                        'source': center_id,
+                        'target': nid,
+                        'type': 'associate',
+                        'label': info['role'],
+                        'weight': 1,
+                    })
+
+    # Activity nodes connected to center
+    for i, act in enumerate(activities[:10]):
+        nid = f'assoc_act:{source_idx}:{i}'
+        nodes.append({
+            'id': nid,
+            'label': act['label'],
+            'type': 'activity',
+            'activity_type': act['type'],
+            'common': False,
+            'weight': 1,
+        })
+        links.append({
+            'source': center_id,
+            'target': nid,
+            'type': 'activity',
+            'label': act['type'],
+            'weight': 1,
+        })
+
+    return {'nodes': nodes, 'links': links}
+
+
+async def _build_common_graph_metadata_llm(sources, model_id, prompt=None):
     """
-    Two-step extraction:
-    1. Extract entities per document
-    2. Find common entities (appear in 2+ docs) + important unique ones
-    3. Build graph with source nodes + entity nodes, colored by which docs mention them
+    Comprehensive graph: persons + activities + relationships.
+    BERT semantic matching finds cross-doc connections.
     """
-    from langchain_core.messages import HumanMessage, SystemMessage
-    from open_notebook.ai.provision import provision_langchain_model
-    import json as _json
     import re as _re
 
-    # If user provided a custom prompt with {{documents_input}}, use single-pass mode
-    base_prompt = prompt or DEFAULT_COMMON_GRAPH_PROMPT
-    use_custom_prompt = prompt is not None and '{{documents_input}}' in base_prompt
+    all_persons = []
+    all_activities = []
+    all_relations = []
+    all_sentences = []
 
-    if use_custom_prompt:
-        # Single-pass: user's custom prompt
-        combined_parts = []
-        for idx, source in enumerate(sources):
-            text = source.full_text or source.title or ''
-            combined_parts.append(
-                f"--- Document {idx + 1}: {source.title or f'Source {idx + 1}'} ---\n{text[:3500]}"
-            )
-        documents_input = "\n\n".join(combined_parts)
-        final_prompt = base_prompt.replace('{{documents_input}}', documents_input)
-        system_msg = "You are an expert entity extraction system. Return ONLY a valid JSON array of strings."
-        user_msg = final_prompt
-
-        entities_all = []
-        try:
-            payload = [SystemMessage(content=system_msg), HumanMessage(content=user_msg)]
-            chain = await provision_langchain_model(str(payload), model_id, "transformation", max_tokens=1024)
-            response = await chain.ainvoke(payload)
-            raw = str(response.content if hasattr(response, 'content') else response).strip()
-            logger.info(f"[CommonGraph] Custom prompt response: {raw[:400]}")
-            if '```' in raw:
-                raw = _re.sub(r'```(?:json)?\s*', '', raw).strip()
-            a, b = raw.find('['), raw.rfind(']')
-            if a != -1 and b != -1:
-                parsed = _json.loads(raw[a:b+1])
-                entities_all = [str(e).strip() for e in parsed if e and len(str(e).strip()) > 1]
-        except Exception as e:
-            logger.warning(f"[CommonGraph] Custom prompt failed: {e}, falling back to NLP")
-            return _build_common_graph_metadata(sources)
-
-        if not entities_all:
-            return _build_common_graph_metadata(sources)
-
-        # For custom prompt, check which sources mention each entity
-        nodes, links = [], []
-        for idx, source in enumerate(sources):
-            nodes.append({'id': f'source:{idx}', 'label': source.title or f'Source {idx+1}', 'type': 'source', 'source_id': source.id})
-
-        for i, entity in enumerate(entities_all[:20]):
-            eid = f'entity:{i}'
-            el = entity.lower()
-            matches = [idx for idx, s in enumerate(sources) if el in (s.full_text or s.title or '').lower()]
-            if not matches:
-                matches = list(range(len(sources)))
-            nodes.append({'id': eid, 'label': entity, 'type': 'entity', 'weight': len(matches), 'common': len(matches) > 1})
-            for src_idx in matches:
-                links.append({'source': f'source:{src_idx}', 'target': eid, 'type': 'mentions', 'weight': 1})
-
-        return {'common_terms': entities_all[:20], 'graph': {'nodes': nodes, 'links': links}, 'graph_type': 'flat'}
-
-    # ── TWO-STEP MODE (default) ──────────────────────────────────────────────
-    # Step 1: Extract entities per document
-    per_doc_entities = []
     for source in sources:
-        entities = await _extract_entities_per_doc(
-            source, model_id, _re, _json, provision_langchain_model, SystemMessage, HumanMessage
+        text = source.full_text or source.title or ''
+        persons, activities, relations = _extract_all_entities(text)
+        all_persons.append(persons)
+        all_activities.append(activities)
+        all_relations.append(relations)
+        all_sentences.append(_get_sentences(text))
+        logger.info(
+            f"[CommonGraph] '{source.title}': "
+            f"{len(persons)} persons, {len(activities)} activities, {len(relations)} relations"
         )
-        per_doc_entities.append(entities)
-        logger.info(f"[CommonGraph] Doc '{source.title}': {len(entities)} entities: {entities[:8]}")
 
-    if not any(per_doc_entities):
-        logger.warning("[CommonGraph] No entities extracted from any doc, falling back to NLP")
+    # ── BERT semantic matching ────────────────────────────────────────────
+    sbert = _get_sbert_model()
+    if sbert is not None and len(sources) >= 2:
+        try:
+            from sentence_transformers import util as su
+            for i in range(len(sources)):
+                for j in range(i + 1, len(sources)):
+                    si = all_sentences[i][:200]
+                    sj = all_sentences[j][:200]
+                    if not si or not sj:
+                        continue
+                    ei = sbert.encode(si, convert_to_tensor=True, show_progress_bar=False)
+                    ej = sbert.encode(sj, convert_to_tensor=True, show_progress_bar=False)
+                    scores = su.cos_sim(ei, ej)
+                    for a in range(len(si)):
+                        for b in range(len(sj)):
+                            if float(scores[a][b]) > 0.72:
+                                for sent, doc_idx in [(si[a], i), (sj[b], j)]:
+                                    p, act, rel = _extract_all_entities(sent)
+                                    for norm, info in p.items():
+                                        if norm not in all_persons[doc_idx]:
+                                            all_persons[doc_idx][norm] = info
+                                    for a_item in act:
+                                        if a_item not in all_activities[doc_idx]:
+                                            all_activities[doc_idx].append(a_item)
+        except Exception as e:
+            logger.warning(f"[CommonGraph] BERT matching failed: {e}")
+
+    # ── Build unified maps ────────────────────────────────────────────────
+    person_map = {}
+    for doc_idx, persons in enumerate(all_persons):
+        for norm, info in persons.items():
+            if norm not in person_map:
+                person_map[norm] = {'label': info['label'], 'role': info['role'], 'doc_indices': set()}
+            person_map[norm]['doc_indices'].add(doc_idx)
+
+    activity_map = {}
+    for doc_idx, activities in enumerate(all_activities):
+        for act in activities:
+            key = act['label']
+            if key not in activity_map:
+                activity_map[key] = {'label': act['label'], 'type': act['type'], 'doc_indices': set()}
+            activity_map[key]['doc_indices'].add(doc_idx)
+
+    if not person_map and not activity_map:
+        logger.warning("[CommonGraph] Nothing extracted, falling back to term extraction")
         return _build_common_graph_metadata(sources)
 
-    # Step 2: Find common entities (appear in 2+ docs) using normalized comparison
-    # Build a map: normalized_label -> {canonical_label, doc_indices}
-    entity_map: dict = {}
-    for doc_idx, entities in enumerate(per_doc_entities):
-        for entity in entities:
-            norm = _normalize(entity)
-            if norm not in entity_map:
-                entity_map[norm] = {'label': entity, 'doc_indices': set(), 'count': 0}
-            entity_map[norm]['doc_indices'].add(doc_idx)
-            entity_map[norm]['count'] += 1
+    # ── Build graph ───────────────────────────────────────────────────────
+    nodes = []
+    links = []
+    node_ids = {}
 
-    # Separate common (2+ docs) from unique (1 doc)
-    common_entities = {k: v for k, v in entity_map.items() if len(v['doc_indices']) >= 2}
-    unique_entities = {k: v for k, v in entity_map.items() if len(v['doc_indices']) == 1}
-
-    logger.info(f"[CommonGraph] Common entities ({len(common_entities)}): {list(common_entities.keys())[:10]}")
-    logger.info(f"[CommonGraph] Unique entities ({len(unique_entities)}): {list(unique_entities.keys())[:5]}")
-
-    # Sort common by doc coverage (most common first), then by count
-    sorted_common = sorted(common_entities.values(), key=lambda x: (-len(x['doc_indices']), -x['count']))
-    # Sort unique by count (most frequent first), take top ones
-    sorted_unique = sorted(unique_entities.values(), key=lambda x: -x['count'])
-
-    # Build final entity list: all common + top unique to fill up to 25
-    final_entities = sorted_common[:20]
-    remaining_slots = max(0, 25 - len(final_entities))
-    final_entities += sorted_unique[:remaining_slots]
-
-    if not final_entities:
-        return _build_common_graph_metadata(sources)
-
-    # Step 3: Build graph
-    nodes, links = [], []
-
+    # Source nodes
     for idx, source in enumerate(sources):
+        nid = f'source:{idx}'
         nodes.append({
-            'id': f'source:{idx}',
-            'label': source.title or f'Source {idx+1}',
+            'id': nid,
+            'label': source.title or f'Source {idx + 1}',
             'type': 'source',
             'source_id': source.id,
         })
 
-    for i, ent in enumerate(final_entities):
-        eid = f'entity:{i}'
-        doc_indices = sorted(ent['doc_indices'])
-        is_common = len(doc_indices) >= 2
+    # Person nodes — sorted: common first, then by label
+    sorted_persons = sorted(
+        person_map.values(),
+        key=lambda x: (-len(x['doc_indices']), x['label'])
+    )
+    for i, ent in enumerate(sorted_persons):
+        norm = ent['label'].lower()
+        nid = f'person:{i}'
+        node_ids[norm] = nid
+        is_common = len(ent['doc_indices']) >= 2
         nodes.append({
-            'id': eid,
+            'id': nid,
             'label': ent['label'],
-            'type': 'entity',
-            'weight': len(doc_indices),
+            'type': 'person',
+            'role': ent['role'],
+            'weight': len(ent['doc_indices']),
             'common': is_common,
         })
-        for src_idx in doc_indices:
+        for src_idx in sorted(ent['doc_indices']):
             links.append({
                 'source': f'source:{src_idx}',
-                'target': eid,
-                'type': 'mentions',
+                'target': nid,
+                'type': 'appears_in',
                 'weight': 1,
             })
 
-    common_terms = [e['label'] for e in final_entities]
-    logger.info(f"[CommonGraph] Final graph: {len(nodes)} nodes, {len(links)} links")
+    # Activity nodes
+    sorted_acts = sorted(
+        activity_map.values(),
+        key=lambda x: (-len(x['doc_indices']), x['label'])
+    )
+    for i, act in enumerate(sorted_acts):
+        nid = f'activity:{i}'
+        node_ids[act['label']] = nid
+        is_common = len(act['doc_indices']) >= 2
+        nodes.append({
+            'id': nid,
+            'label': act['label'],
+            'type': 'activity',
+            'activity_type': act['type'],
+            'weight': len(act['doc_indices']),
+            'common': is_common,
+        })
+        for src_idx in sorted(act['doc_indices']):
+            links.append({
+                'source': f'source:{src_idx}',
+                'target': nid,
+                'type': 'appears_in',
+                'weight': 1,
+            })
+
+    # Relationship links
+    seen_links = set()
+    for doc_relations in all_relations:
+        for rel in doc_relations:
+            from_norm = rel['from'].lower()
+            to_norm = rel['to'].lower()
+            from_id = node_ids.get(from_norm)
+            to_id = node_ids.get(to_norm)
+
+            if to_id is None:
+                rid = f'relative:{len(node_ids)}'
+                node_ids[to_norm] = rid
+                to_id = rid
+                nodes.append({
+                    'id': rid,
+                    'label': rel['to'],
+                    'type': 'relative',
+                    'role': rel['type'],
+                    'weight': 1,
+                    'common': False,
+                })
+
+            if from_id and to_id:
+                link_key = f'{from_id}|{to_id}|{rel["label"]}'
+                if link_key not in seen_links:
+                    seen_links.add(link_key)
+                    links.append({
+                        'source': from_id,
+                        'target': to_id,
+                        'type': rel['type'],
+                        'label': rel['label'],
+                        'weight': 2,
+                    })
+
+    common_terms = [e['label'] for e in sorted_persons if e.get('common')]
+    common_terms += [a['label'] for a in sorted_acts if a.get('common')]
+
+    # ── Build 3 separate graphs per source ───────────────────────────────
+    personal_graphs = []
+    family_graphs = []
+    associates_graphs = []
+
+    for src_idx, source in enumerate(sources):
+        text = source.full_text or source.title or ''
+        details = _extract_personal_details(text)
+        pg = _build_personal_graph(src_idx, source.title or f'Source {src_idx+1}', details)
+        fg = _build_family_graph(src_idx, source.title or f'Source {src_idx+1}', all_persons[src_idx], all_relations[src_idx])
+        ag = _build_associates_graph(src_idx, source.title or f'Source {src_idx+1}', all_persons[src_idx], all_relations[src_idx], all_activities[src_idx])
+        personal_graphs.append({'source_title': source.title or f'Source {src_idx+1}', 'graph': pg})
+        family_graphs.append({'source_title': source.title or f'Source {src_idx+1}', 'graph': fg})
+        associates_graphs.append({'source_title': source.title or f'Source {src_idx+1}', 'graph': ag})
+
+    logger.info(
+        f"[CommonGraph] Final: {len(nodes)} nodes, {len(links)} links, "
+        f"{sum(1 for n in nodes if n.get('common'))} common"
+    )
 
     return {
         'common_terms': common_terms,
         'graph': {'nodes': nodes, 'links': links},
-        'graph_type': 'flat',
-        'common_count': len(sorted_common),
-        'unique_count': len(final_entities) - len(sorted_common),
+        'graph_type': 'network',
+        'person_count': len(sorted_persons),
+        'activity_count': len(sorted_acts),
+        'common_count': sum(1 for n in nodes if n.get('common')),
+        'personal_graphs': personal_graphs,
+        'family_graphs': family_graphs,
+        'associates_graphs': associates_graphs,
     }
+
 
 
 @router.get("/sources", response_model=List[SourceListResponse])
@@ -1060,6 +1564,342 @@ def _is_source_file_available(source: Source) -> Optional[bool]:
 
     return os.path.exists(resolved_path)
 
+
+@router.get("/sources/{source_id}/profile-graph")
+async def get_source_profile_graph(source_id: str, model_id: Optional[str] = Query(None)):
+    """Dynamically extract personal details, family, and associates using LLM."""
+    try:
+        source = await Source.get(source_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Source not found")
+
+        text = source.full_text or source.title or ''
+
+        # Try LLM extraction first if model available
+        if model_id:
+            try:
+                result = await _extract_profile_graph_llm(text, model_id)
+                result['source_id'] = source_id
+                result['source_title'] = source.title or 'Unknown'
+                return result
+            except Exception as e:
+                logger.warning(f"LLM profile extraction failed: {e}, falling back to regex")
+
+        # Fallback to regex
+        result = _extract_profile_graph(text)
+        result['source_id'] = source_id
+        result['source_title'] = source.title or 'Unknown'
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting profile graph: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def _extract_profile_graph_llm(text: str, model_id: str) -> dict:
+    """
+    Use LLM to dynamically extract ALL fields present in the document.
+    Returns structured data without hardcoded field names.
+    """
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from open_notebook.ai.provision import provision_langchain_model
+    import json as _json
+    import re as _re
+
+    system_prompt = """You are an expert at extracting structured information from Indian Police Investigation Reports (IR) and case documents.
+
+Analyze the document carefully and extract EVERY piece of personal information about the PRIMARY SUBJECT (main accused/victim).
+
+Return a JSON object with exactly this structure:
+{
+  "main_person": "full name of the primary subject",
+  "personal": {
+    "Name": "full name",
+    "Alias": "alias or nick name if any",
+    "Age": "age",
+    "Date of Birth": "DOB",
+    "Gender": "Male/Female",
+    "Parentage": "father's name (S/O or D/O)",
+    "Address": "full address",
+    "Occupation": "job/work",
+    "Education": "qualification",
+    "Mobile": "phone number",
+    "Marital Status": "married/unmarried",
+    "Complexion": "fair/dark/wheatish",
+    "Height": "height",
+    "Eyes": "eye color",
+    "Hair": "hair color/type",
+    "Build": "body build",
+    "Mark of Identification": "any marks/moles/tattoos",
+    "Facebook ID": "facebook profile if mentioned",
+    "Criminal Record": "previous cases if any",
+    "Case No": "FIR/case number",
+    "Sections": "IPC sections",
+    "Police Station": "PS name",
+    "District": "district",
+    "State": "state",
+    "Role": "accused/victim/witness"
+  },
+  "family": [...],
+  "associates": [...]
+}
+
+IMPORTANT:
+- Only include fields that are ACTUALLY PRESENT in the document
+- Extract the EXACT values as written in the document
+- Do NOT include fields that are not in the document — omit them entirely
+- Do NOT use null, None, or empty string values — skip missing fields
+- For personal dict: use the field names exactly as shown above
+- Return ONLY the JSON object, no explanation, no markdown"""
+
+    truncated = text[:6000]
+    payload = [
+        SystemMessage(content=system_prompt),
+        HumanMessage(content=truncated),
+    ]
+
+    chain = await provision_langchain_model(str(payload), model_id, "transformation", max_tokens=2048)
+    response = await chain.ainvoke(payload)
+    raw = str(response.content if hasattr(response, 'content') else response).strip()
+    logger.info(f"[ProfileGraph] LLM raw response (first 500): {raw[:500]}")
+
+    # Strip markdown fences
+    if '```' in raw:
+        raw = _re.sub(r'```(?:json)?\s*', '', raw).strip()
+
+    # Extract JSON object
+    start = raw.find('{')
+    end = raw.rfind('}')
+    if start == -1 or end == -1:
+        raise ValueError(f"No JSON object in LLM response: {raw[:200]}")
+
+    json_str = raw[start:end + 1]
+
+    # Fix common LLM JSON issues:
+    # 1. Replace Python None with null
+    json_str = json_str.replace(': None', ': null').replace(':None', ':null')
+    # 2. Replace trailing commas before } or ]
+    json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
+    # 3. Replace single quotes with double quotes (carefully)
+    # Only do this if standard parse fails
+    try:
+        data = _json.loads(json_str)
+    except _json.JSONDecodeError as e:
+        logger.warning(f"[ProfileGraph] JSON parse error: {e}, trying cleanup")
+        # Remove null values that might be causing issues
+        json_str = _re.sub(r'"[^"]+"\s*:\s*null\s*,?\s*', '', json_str)
+        json_str = _re.sub(r',\s*([}\]])', r'\1', json_str)
+        data = _json.loads(json_str)
+
+    # Normalize
+    personal = data.get('personal', {})
+    if not isinstance(personal, dict):
+        personal = {}
+    # Ensure all values are strings (LLM may return numbers, lists, etc.)
+    personal = {
+        str(k): str(v) if not isinstance(v, (list, dict)) else ', '.join(str(i) for i in v) if isinstance(v, list) else str(v)
+        for k, v in personal.items()
+        if v is not None and str(v).strip()
+    }
+
+    family = []
+    for p in data.get('family', []):
+        if isinstance(p, dict) and p.get('name'):
+            family.append({
+                'name': str(p.get('name', '')).strip(),
+                'relation': str(p.get('relation', 'relative')).strip(),
+                'gender': str(p.get('gender', 'male')).strip(),
+                'details': str(p.get('details', '')).strip(),
+            })
+
+    associates = []
+    for p in data.get('associates', []):
+        if isinstance(p, dict) and p.get('name'):
+            associates.append({
+                'name': str(p.get('name', '')).strip(),
+                'relation': str(p.get('relation', 'associate')).strip(),
+                'gender': str(p.get('gender', 'male')).strip(),
+                'details': str(p.get('details', '')).strip(),
+            })
+
+    logger.info(f"[ProfileGraph] LLM extracted: {len(personal)} fields, {len(family)} family, {len(associates)} associates")
+
+    return {
+        'main_person': str(data.get('main_person', '')).strip(),
+        'personal': personal,
+        'family': family,
+        'associates': associates,
+    }
+
+
+def _extract_profile_graph(text: str) -> dict:
+    """
+    Comprehensive regex extraction from IR documents.
+    Extracts ALL fields present — not just predefined ones.
+    """
+    import re as _re
+
+    personal = {}
+    family = []
+    associates = []
+    seen = set()
+
+    def _guess_gender(name: str, relation: str) -> str:
+        female_rel = {'mother', 'wife', 'sister', 'daughter', 'aunt', 'niece', 'girlfriend', 'smt', 'km', 'beti', 'behen', 'mata'}
+        male_rel = {'father', 'husband', 'brother', 'son', 'uncle', 'nephew', 'boyfriend', 'sh', 'shri', 'beta', 'bhai', 'pita'}
+        rl = relation.lower()
+        if any(r in rl for r in female_rel): return 'female'
+        if any(r in rl for r in male_rel): return 'male'
+        female_sfx = ('a', 'i', 'devi', 'bai', 'kumari', 'rani', 'priya', 'lata', 'vati', 'wati')
+        if any(name.lower().endswith(s) for s in female_sfx): return 'female'
+        return 'male'
+
+    def _clean(s: str) -> str:
+        s = _re.sub(r'\s+', ' ', s.strip())
+        return s.rstrip('.,;:()[]').strip()
+
+    def _take_name(raw: str) -> str:
+        words = raw.strip().split()[:5]
+        clean = []
+        bl = {'unknown', 'nil', 'n/a', 'na', 'not', 'available', 'mentioned', 'none', '-'}
+        for w in words:
+            alpha = _re.sub(r'[^a-zA-Z@]', '', w)
+            if not alpha or alpha.lower() in bl: break
+            if not (alpha[0].isupper() or alpha == '@'): break
+            clean.append(w)
+        while clean and clean[-1] == '@': clean.pop()
+        return ' '.join(clean).strip()
+
+    # ── Step 1: Extract ALL "Field: Value" pairs dynamically ──────────────
+    # This catches ANY field in the document, not just predefined ones
+    field_value_pattern = _re.compile(
+        r'^([A-Za-z][A-Za-z\s/\(\)]{1,40}?)\s*[:\-]\s*(.+)$',
+        _re.MULTILINE
+    )
+
+    # Fields to skip (they are not personal details)
+    skip_fields = {
+        'note', 'remarks', 'description', 'summary', 'details', 'information',
+        'subject', 'report', 'date', 'time', 'place', 'location', 'source',
+        'reference', 'sr no', 'serial', 'sl no', 'page', 'section',
+    }
+
+    # Multi-line field accumulator (for address etc.)
+    lines = text.split('\n')
+    current_field = None
+    current_value_parts = []
+    current_person_name = None
+
+    def _flush_field():
+        nonlocal current_field, current_value_parts
+        if current_field and current_value_parts:
+            val = _clean(' '.join(current_value_parts))
+            if val and val.lower() not in ('nil', 'n/a', 'na', 'unknown', '-', 'none', ''):
+                personal[current_field] = val
+                if current_field.lower() in ('name', 'full name') and not current_person_name:
+                    pass  # handled below
+        current_field = None
+        current_value_parts = []
+
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            _flush_field()
+            continue
+
+        # Check if this line is a "Field: Value" pattern
+        m = _re.match(r'^([A-Za-z][A-Za-z\s/\(\)\.]{1,40}?)\s*[:\-]\s*(.+)$', line_stripped, _re.IGNORECASE)
+        if m:
+            field_raw = m.group(1).strip()
+            value_raw = m.group(2).strip()
+            field_lower = field_raw.lower().strip()
+
+            # Skip non-personal fields
+            if any(s in field_lower for s in skip_fields):
+                _flush_field()
+                continue
+
+            # Flush previous field
+            _flush_field()
+
+            # Normalize field name
+            field_name = _re.sub(r'\s+', ' ', field_raw).title()
+
+            val = _clean(value_raw)
+            if val and val.lower() not in ('nil', 'n/a', 'na', 'unknown', '-', 'none', ''):
+                current_field = field_name
+                current_value_parts = [val]
+
+                # Track main person name
+                if field_lower in ('name', 'full name', 'accused', 'victim', 'complainant') and not current_person_name:
+                    current_person_name = _take_name(val)
+
+        elif current_field and line_stripped and not line_stripped.startswith('#'):
+            # Continuation of previous field value (e.g. multi-line address)
+            current_value_parts.append(line_stripped)
+
+    _flush_field()
+
+    # ── Step 2: Extract family relationships ──────────────────────────────
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+
+        for pat, relation in [
+            (r'\bS/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bD/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bW/O\s+([A-Z][a-zA-Z\s@]{2,40})', 'husband'),
+            (r'\bSon\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bDaughter\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'\bWife\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'husband'),
+            (r'\bBrother\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'brother'),
+            (r'\bSister\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'sister'),
+            (r'\bMother\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'mother'),
+            (r'\bFather\s+of\s+([A-Z][a-zA-Z\s@]{2,40})', 'father'),
+            (r'^(?:Father|Papa|Pita)\s*[:\-]\s*(.+)', 'father'),
+            (r'^(?:Mother|Maa|Mata)\s*[:\-]\s*(.+)', 'mother'),
+            (r'^(?:Wife|Patni|Spouse)\s*[:\-]\s*(.+)', 'wife'),
+            (r'^(?:Husband|Pati)\s*[:\-]\s*(.+)', 'husband'),
+            (r'^(?:Brother|Bhai)\s*[:\-]\s*(.+)', 'brother'),
+            (r'^(?:Sister|Behen)\s*[:\-]\s*(.+)', 'sister'),
+            (r'^(?:Son|Beta)\s*[:\-]\s*(.+)', 'son'),
+            (r'^(?:Daughter|Beti)\s*[:\-]\s*(.+)', 'daughter'),
+            (r'^(?:Parentage)\s*[:\-]\s*(.+)', 'father'),
+        ]:
+            for m in _re.finditer(pat, line, _re.IGNORECASE):
+                name = _take_name(m.group(1))
+                if name and name.lower() not in seen:
+                    seen.add(name.lower())
+                    family.append({'name': name, 'relation': relation, 'gender': _guess_gender(name, relation), 'details': ''})
+
+    # ── Step 3: Extract associates ────────────────────────────────────────
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+
+        for pat, relation in [
+            (r'\b(?:associate|associates)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'associate'),
+            (r'\b(?:gang\s+member|gang\s+associate)\s+([A-Z][a-zA-Z\s@]{2,40})', 'gang member'),
+            (r'\b(?:friend|close\s+friend)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'friend'),
+            (r'\b(?:co-accused|co\s+accused)\s+([A-Z][a-zA-Z\s@]{2,40})', 'co-accused'),
+            (r'\b(?:partner|accomplice)\s+(?:of\s+)?([A-Z][a-zA-Z\s@]{2,40})', 'accomplice'),
+        ]:
+            for m in _re.finditer(pat, line, _re.IGNORECASE):
+                name = _take_name(m.group(1))
+                if name and name.lower() not in seen:
+                    seen.add(name.lower())
+                    associates.append({'name': name, 'relation': relation, 'gender': _guess_gender(name, relation), 'details': ''})
+
+    logger.info(f"[ProfileGraph] Regex extracted: {len(personal)} personal fields, {len(family)} family, {len(associates)} associates")
+    logger.info(f"[ProfileGraph] Personal fields: {list(personal.keys())}")
+
+    return {
+        'personal': personal,
+        'family': family,
+        'associates': associates,
+        'main_person': current_person_name or personal.get('Name', personal.get('Accused', personal.get('Victim', ''))),
+    }
 
 @router.get("/sources/{source_id}", response_model=SourceResponse)
 async def get_source(source_id: str, include_text: bool = True):

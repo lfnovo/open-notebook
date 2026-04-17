@@ -27,6 +27,7 @@ import {
   GitBranch,
   Newspaper,
   Lightbulb,
+  Network,
 } from 'lucide-react'
 import { useSourceStatus } from '@/lib/hooks/use-sources'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -37,6 +38,7 @@ import { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
 import { MindMapDialog } from '@/components/source/MindMapDialog'
 import { InfographicDialog } from '@/components/source/InfographicDialog'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ProfileGraphModal } from '@/components/sources/ProfileGraphModal'
 
 interface SourceCardProps {
   source: SourceListResponse
@@ -141,6 +143,7 @@ export function SourceCard({
   const [wasProcessing, setWasProcessing] = useState(false)
   const [mindMapOpen, setMindMapOpen] = useState(false)
   const [infographicOpen, setInfographicOpen] = useState(false)
+  const [profileGraphOpen, setProfileGraphOpen] = useState(false)
   // Once we've seen a terminal status, stop polling entirely
   const [terminalStatus, setTerminalStatus] = useState<string | null>(
     sourceWithStatus.status === 'completed' || sourceWithStatus.status === 'failed'
@@ -248,7 +251,7 @@ export function SourceCard({
       )}
       onClick={(e) => {
         // Don't open source detail if a dialog is already open
-        if (mindMapOpen || infographicOpen) return
+        if (mindMapOpen || infographicOpen || profileGraphOpen) return
         handleCardClick()
       }}
     >
@@ -380,6 +383,20 @@ export function SourceCard({
               <Newspaper className="h-4 w-4" />
             </Button>
 
+            {/* Profile Graph button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 text-muted-foreground hover:text-blue-600 hover:bg-blue-50 transition-colors"
+              title="Profile Graph — Personal, Family & Associates"
+              onClick={(e) => {
+                e.stopPropagation()
+                setProfileGraphOpen(true)
+              }}
+            >
+              <Network className="h-4 w-4" />
+            </Button>
+
             {/* Actions dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -490,6 +507,15 @@ export function SourceCard({
           onOpenChange={setInfographicOpen}
           sourceId={source.id}
           sourceTitle={source.title}
+        />
+
+        {/* Profile Graph Dialog */}
+        <ProfileGraphModal
+          open={profileGraphOpen}
+          onOpenChange={setProfileGraphOpen}
+          sourceId={source.id}
+          sourceTitle={source.title || undefined}
+          sourceImageUrl={source.asset?.url || undefined}
         />
       </div>
     </Card>

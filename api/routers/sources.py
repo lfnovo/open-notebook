@@ -1662,7 +1662,7 @@ IMPORTANT:
     chain = await provision_langchain_model(str(payload), model_id, "transformation", max_tokens=2048)
     response = await chain.ainvoke(payload)
     raw = str(response.content if hasattr(response, 'content') else response).strip()
-    logger.info(f"[ProfileGraph] LLM raw response (first 500): {raw[:500]}")
+    logger.info(f"[ProfileGraph] LLM raw response: {raw}")
 
     # Strip markdown fences
     if '```' in raw:

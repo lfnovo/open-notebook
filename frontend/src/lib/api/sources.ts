@@ -9,6 +9,7 @@ import {
   CreateSourceRequest, 
   CreateCommonGraphRequest,
   CommonGraphResponse,
+  ProfileGraphData,
   UpdateSourceRequest 
 } from '@/lib/types/api'
 
@@ -109,6 +110,11 @@ export const sourcesApi = {
 
   getCommonGraph: async (id: string) => {
     const response = await apiClient.get<CommonGraphResponse>(`/sources/common-graphs/${encodeURIComponent(id)}`)
+    return response.data
+  },
+
+  getProfileGraph: async (sourceId: string) => {
+    const response = await apiClient.get<ProfileGraphData>(`/sources/${encodeURIComponent(sourceId)}/profile-graph`)
     return response.data
   },
 

@@ -28,7 +28,11 @@ import { toast } from 'sonner'
 
 const COMMON_GRAPH_TRANSFORMATION_NAME = 'common_graph_extraction'
 
-const DEFAULT_PROMPT = `You are an expert entity and activity extraction system designed to build a "Common Graph" from one or more documents.Input:You will receive one or multiple documents. These may contain overlapping or repeated information.Your task:Extract the most important and relevant elements across ALL documents combined, and identify the COMMON or UNIQUE key entities and activities.Focus ONLY on:- People (individual names)- Places (cities, locations, addresses)- Organizations (companies, institutions, groups)- Key activities or events (crimes, meetings, transactions, incidents)- Significant objects (vehicles, weapons, important items)Instructions:- Analyze ALL documents together as a single dataset.- Merge duplicate or similar entities (e.g., "NYC" and "New York City" → "New York City").- Prioritize entities/events that appear frequently or are important across documents.- Include both:- Common entities (appear in multiple documents)- Critical unique entities (important even if mentioned once)- Keep labels concise (1 to 4 words max).- Avoid vague terms (e.g., "meeting" → prefer "business meeting" if possible).- Do not repeat items.- Maximum 20 items total.Output Format:- Return ONLY a valid JSON array of strings.- No explanations, no extra text.Example Output:["John Smith", "New York City", "ABC Corp", "financial fraud", "blue sedan"]Now process the following documents:{{documents_input}}`
+// No hardcoded default — prompt always comes from saved transformation
+const FALLBACK_PROMPT_HINT = `(Prompt loaded from Transformations)
+
+Note: Person name extraction uses NLP (spaCy) for accuracy.
+The prompt here is saved as a transformation for reference/customization.`
 
 const SOURCE_LINK_COLORS = [
   { line: 'rgba(168,85,247,0.6)', glow: '#a855f7' },
@@ -38,12 +42,31 @@ const SOURCE_LINK_COLORS = [
   { line: 'rgba(251,191,36,0.6)', glow: '#fbbf24' },
 ]
 
+const NODE_TYPE_COLORS: Record<string, string> = {
+  source: '#a855f7',
+  person: '#0ea5e9',
+  relative: '#22c55e',
+  activity: '#f59e0b',
+  entity: '#94a3b8',
+  term: '#94a3b8',
+}
+
+const ACTIVITY_TYPE_COLORS: Record<string, string> = {
+  crime: '#ef4444',
+  weapon: '#dc2626',
+  drug: '#f97316',
+  transaction: '#eab308',
+  event: '#8b5cf6',
+}
+
 type GraphNode = {
   id: string
   label: string
-  type: 'source' | 'entity' | 'term'
+  type: 'source' | 'person' | 'relative' | 'activity' | 'entity' | 'term'
   common?: boolean
   weight?: number
+  role?: string
+  activity_type?: string
   x?: number
   y?: number
 }
@@ -107,32 +130,35 @@ function NetworkGraphViewer({ graph }: { graph: GraphData }) {
     const isConnected = connectedNodeIds.has(node.id)
     const dimmed = hoverNode && !isHovered && !isConnected
     const isSource = node.type === 'source'
-    const radius = isSource ? 36 : (node.common ? 22 : 16)
+    const isPerson = node.type === 'person'
+    const isRelative = node.type === 'relative'
+    const isActivity = node.type === 'activity'
+    const radius = isSource ? 36 : isPerson ? (node.common ? 22 : 18) : isRelative ? 14 : isActivity ? (node.common ? 18 : 14) : 16
 
     ctx.globalAlpha = dimmed ? 0.08 : 1
-    if (isHovered) {
-      ctx.shadowColor = isSource ? SOURCE_LINK_COLORS[getSourceIdx(node.id) % SOURCE_LINK_COLORS.length].glow : '#94a3b8'
-      ctx.shadowBlur = 28
-    }
+    const nodeColor = isActivity
+      ? (ACTIVITY_TYPE_COLORS[node.activity_type || ''] || '#f59e0b')
+      : (NODE_TYPE_COLORS[node.type] || '#94a3b8')
+    if (isHovered) { ctx.shadowColor = nodeColor; ctx.shadowBlur = 28 }
 
     ctx.beginPath()
     ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI)
-    ctx.fillStyle = isSource
-      ? SOURCE_LINK_COLORS[getSourceIdx(node.id) % SOURCE_LINK_COLORS.length].glow
-      : (node.common ? 'rgba(148,163,184,0.95)' : 'rgba(100,116,139,0.7)')
+    if (isSource) ctx.fillStyle = SOURCE_LINK_COLORS[getSourceIdx(node.id) % SOURCE_LINK_COLORS.length].glow
+    else if (isPerson) ctx.fillStyle = node.common ? '#0ea5e9' : 'rgba(14,165,233,0.7)'
+    else if (isRelative) ctx.fillStyle = 'rgba(34,197,94,0.85)'
+    else if (isActivity) ctx.fillStyle = ACTIVITY_TYPE_COLORS[node.activity_type || ''] || '#f59e0b'
+    else ctx.fillStyle = node.common ? 'rgba(148,163,184,0.95)' : 'rgba(100,116,139,0.7)'
     ctx.fill()
-    ctx.strokeStyle = isHovered ? '#fff' : (node.common && !isSource ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)')
-    ctx.lineWidth = isHovered ? 2.5 : (node.common && !isSource ? 1.5 : 0.8)
+    ctx.strokeStyle = isHovered ? '#fff' : 'rgba(255,255,255,0.25)'
+    ctx.lineWidth = isHovered ? 2.5 : (node.common ? 1.5 : 0.8)
     ctx.stroke()
     ctx.shadowBlur = 0
 
     const label = node.label || ''
     if (isSource) {
       const words = label.replace(/\.docx?$/i, '').split(/[\s_-]+/)
-      ctx.fillStyle = '#fff'
-      ctx.font = 'bold 10px Sans-Serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'middle'
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 10px Sans-Serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       const half = Math.ceil(words.length / 2)
       const l1 = words.slice(0, half).join(' ').slice(0, 14)
       const l2 = words.slice(half).join(' ').slice(0, 14)
@@ -140,30 +166,54 @@ function NetworkGraphViewer({ graph }: { graph: GraphData }) {
       else ctx.fillText(l1, node.x, node.y)
     } else {
       const disp = label.length > 18 ? label.slice(0, 16) + '…' : label
-      ctx.fillStyle = 'rgba(226,232,240,0.9)'
-      ctx.font = '10px Sans-Serif'
-      ctx.textAlign = 'center'
-      ctx.textBaseline = 'top'
-      ctx.fillText(disp, node.x, node.y + radius + 3)
-    }
+      ctx.fillStyle = 'rgba(226,232,240,0.95)'
+      ctx.font = `${isPerson ? 'bold ' : ''}10px Sans-Serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+      ctx.fillText(disp, node.x, node.y + radius + 3)    }
     ctx.globalAlpha = 1
   }, [hoverNode, connectedNodeIds, getSourceIdx])
 
   const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
     const s = link.source, t = link.target
     if (!s?.x || !t?.x) return
+    const isRelationLink = link.type === 'relation'
     const srcNodeId = getNodeId(s).startsWith('source:') ? getNodeId(s) : getNodeId(t)
     const isHighlighted = hoverNode && (getNodeId(s) === hoverNode.id || getNodeId(t) === hoverNode.id)
     const dimmed = hoverNode && !isHighlighted
-    const col = SOURCE_LINK_COLORS[getSourceIdx(srcNodeId) % SOURCE_LINK_COLORS.length]
+
     ctx.globalAlpha = dimmed ? 0.03 : (isHighlighted ? 0.95 : 0.5)
-    ctx.strokeStyle = isHighlighted ? col.glow : col.line
-    ctx.lineWidth = isHighlighted ? 2 : 1
+
+    if (isRelationLink) {
+      ctx.strokeStyle = isHighlighted ? '#22c55e' : 'rgba(34,197,94,0.6)'
+      ctx.lineWidth = isHighlighted ? 2 : 1.2
+      ctx.setLineDash([5, 3])
+    } else {
+      const col = SOURCE_LINK_COLORS[getSourceIdx(srcNodeId) % SOURCE_LINK_COLORS.length]
+      ctx.strokeStyle = isHighlighted ? col.glow : col.line
+      ctx.lineWidth = isHighlighted ? 2 : 1
+      ctx.setLineDash([])
+    }
     ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.stroke()
+    ctx.setLineDash([])
+
+    // Show relation label on hover
+    if (isHighlighted && isRelationLink && link.label) {
+      const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2
+      ctx.globalAlpha = 1
+      const tw = ctx.measureText(link.label).width + 8
+      ctx.fillStyle = 'rgba(0,0,0,0.75)'
+      ctx.fillRect(mx - tw / 2, my - 9, tw, 16)
+      ctx.fillStyle = '#22c55e'
+      ctx.font = 'bold 9px Sans-Serif'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(link.label, mx, my)
+    }
     ctx.globalAlpha = 1
   }, [hoverNode, getSourceIdx])
 
-  const entityNodes = graph.nodes.filter((n) => n.type === 'entity' || n.type === 'term')
+  const entityNodes = graph.nodes.filter((n) => n.type === 'person' || n.type === 'entity' || n.type === 'term')
+  const relativeNodes = graph.nodes.filter((n) => n.type === 'relative')
+  const activityNodes = graph.nodes.filter((n) => n.type === 'activity')
   const sourceNodes = graph.nodes.filter((n) => n.type === 'source')
 
   return (
@@ -201,13 +251,18 @@ function NetworkGraphViewer({ graph }: { graph: GraphData }) {
             </span>
           ))}
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-full bg-slate-400" />
-            Common ({entityNodes.filter((n: any) => n.common).length})
+            <span className="inline-block h-3 w-3 rounded-full bg-sky-400" />
+            Persons ({entityNodes.filter((n: any) => n.common).length} common / {entityNodes.filter((n: any) => !n.common).length} unique)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded-full bg-slate-600" />
-            Unique ({entityNodes.filter((n: any) => !n.common).length})
+            <span className="inline-block h-3 w-3 rounded-full bg-green-500" />
+            Relatives ({relativeNodes.length})
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-3 w-3 rounded-full bg-amber-400" />
+            Activities ({activityNodes.filter((n: any) => n.common).length} common / {activityNodes.filter((n: any) => !n.common).length} unique)
+          </span>
+          <span className="flex items-center gap-1.5 text-green-400">- - relation</span>
         </div>
         <div className="flex items-center gap-2">
           {selectedNode && <span className="rounded border border-slate-600 bg-slate-800 text-white px-2 py-0.5 font-medium">{selectedNode.label}</span>}
@@ -226,7 +281,7 @@ interface CommonGraphModalProps {
 
 export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphModalProps) {
   const [selectedModelId, setSelectedModelId] = useState('')
-  const [prompt, setPrompt] = useState(DEFAULT_PROMPT)
+  const [prompt, setPrompt] = useState('')
   const [isBuilding, setIsBuilding] = useState(false)
   const [buildResult, setBuildResult] = useState<CommonGraphResponse | null>(null)
   const [buildError, setBuildError] = useState<string | null>(null)
@@ -258,6 +313,7 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
       setPrompt(existing.prompt)
       setSavedTransformationId(existing.id)
     }
+    // If no saved transformation, prompt stays empty — NLP handles extraction
   }, [transformations])
 
   // Auto-build when modal opens with sources
@@ -283,8 +339,10 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
   }, [buildResult])
 
   const graphHasContent = Boolean(graphData?.nodes?.length && graphData?.links?.length)
-  const entityCount = useMemo(() => graphData?.nodes?.filter((n) => n.type === 'entity' || n.type === 'term').length ?? 0, [graphData])
+  const entityCount = useMemo(() => graphData?.nodes?.filter((n) => n.type === 'person' || n.type === 'entity' || n.type === 'term').length ?? 0, [graphData])
   const commonCount = useMemo(() => graphData?.nodes?.filter((n: any) => n.common).length ?? 0, [graphData])
+  const relativeCount = useMemo(() => graphData?.nodes?.filter((n: any) => n.type === 'relative').length ?? 0, [graphData])
+  const activityCount = useMemo(() => graphData?.nodes?.filter((n: any) => n.type === 'activity').length ?? 0, [graphData])
 
   const handleBuild = async () => {
     if (isBuilding || sourceIds.length < 2 || !selectedModelId) return
@@ -295,7 +353,7 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
       const result = await sourcesApi.createCommonGraph({
         source_ids: sourceIds,
         model_id: selectedModelId,
-        prompt: prompt !== DEFAULT_PROMPT ? prompt : undefined,
+        // prompt not sent — backend uses NLP for extraction
       })
       const saved = result.id ? await sourcesApi.getCommonGraph(result.id) : result
       setBuildResult(saved)
@@ -313,29 +371,30 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
       await updateDefaults.mutateAsync({ default_transformation_model: selectedModelId })
     }
 
-    // Save prompt to transformations
-    try {
-      if (savedTransformationId) {
-        await updateTransformation.mutateAsync({
-          id: savedTransformationId,
-          data: { prompt, name: COMMON_GRAPH_TRANSFORMATION_NAME, title: 'Common Graph Extraction' }
-        })
-      } else {
-        const created = await createTransformation.mutateAsync({
-          name: COMMON_GRAPH_TRANSFORMATION_NAME,
-          title: 'Common Graph Extraction',
-          description: 'Prompt used for extracting entities from documents to build a common graph',
-          prompt,
-          apply_default: false,
-        })
-        setSavedTransformationId(created.id)
+    // Save prompt to transformations (for reference/future use)
+    if (prompt.trim()) {
+      try {
+        if (savedTransformationId) {
+          await updateTransformation.mutateAsync({
+            id: savedTransformationId,
+            data: { prompt, name: COMMON_GRAPH_TRANSFORMATION_NAME, title: 'Common Graph Extraction' }
+          })
+        } else {
+          const created = await createTransformation.mutateAsync({
+            name: COMMON_GRAPH_TRANSFORMATION_NAME,
+            title: 'Common Graph Extraction',
+            description: 'Reference prompt for common graph entity extraction (NLP handles actual extraction)',
+            prompt,
+            apply_default: false,
+          })
+          setSavedTransformationId(created.id)
+        }
+        toast.success('Settings saved')
+      } catch {
+        toast.error('Failed to save settings')
       }
-      toast.success('Settings saved to Transformations')
-    } catch {
-      toast.error('Failed to save settings')
     }
 
-    // Rebuild with new settings
     handleBuild()
   }
 
@@ -359,8 +418,10 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
             <Badge variant="secondary">{sourceIds.length} sources</Badge>
             {graphHasContent && (
               <>
-                <Badge variant="outline" className="text-slate-500 border-slate-300">{entityCount} entities</Badge>
+                <Badge variant="outline" className="text-sky-500 border-sky-400">{entityCount} persons</Badge>
+                <Badge variant="outline" className="text-amber-500 border-amber-400">{activityCount} activities</Badge>
                 <Badge variant="outline" className="text-green-600 border-green-400">{commonCount} common</Badge>
+                {relativeCount > 0 && <Badge variant="outline" className="text-emerald-500 border-emerald-400">{relativeCount} relatives</Badge>}
               </>
             )}
           </div>
@@ -442,10 +503,10 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
                   <Label className="text-sm font-semibold">Extraction Prompt</Label>
                   <p className="text-xs text-muted-foreground">Pick a transformation or use the default common graph prompt.</p>
                   <Select
-                    value={savedTransformationId || '__default__'}
+                    value={savedTransformationId || '__none__'}
                     onValueChange={(val) => {
-                      if (val === '__default__') {
-                        setPrompt(DEFAULT_PROMPT)
+                      if (val === '__none__') {
+                        setPrompt('')
                         setSavedTransformationId(null)
                       } else {
                         const t = transformations.find((t) => t.id === val)
@@ -457,10 +518,8 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
                       <SelectValue placeholder="Select a transformation…" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="__default__">
-                        <div className="flex items-center gap-2">
-                          <span>Default common graph prompt</span>
-                        </div>
+                      <SelectItem value="__none__">
+                        <span className="text-muted-foreground">None (NLP only)</span>
                       </SelectItem>
                       {transformations.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
@@ -476,16 +535,17 @@ export function CommonGraphModal({ open, onOpenChange, sourceIds }: CommonGraphM
 
                 {/* Prompt preview / edit */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold">Prompt preview</Label>
+                  <Label className="text-sm font-semibold">Prompt (saved to Transformations)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    This prompt is saved as a transformation for reference. Person name extraction uses NLP (spaCy) for accuracy — not the LLM.
+                  </p>
                   <Textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={14}
                     className="font-mono text-xs"
+                    placeholder="Optional: add notes or instructions here. Actual extraction uses NLP."
                   />
-                  <Button variant="ghost" size="sm" onClick={() => { setPrompt(DEFAULT_PROMPT); setSavedTransformationId(null) }} className="text-xs h-7">
-                    Reset to default
-                  </Button>
                 </div>
               </div>
 

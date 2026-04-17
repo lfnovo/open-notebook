@@ -118,6 +118,21 @@ export interface CreateCommonGraphRequest {
   prompt?: string
 }
 
+export interface ProfileGraphPerson {
+  name: string
+  relation: string
+  gender: 'male' | 'female'
+}
+
+export interface ProfileGraphData {
+  source_id: string
+  source_title: string
+  main_person: string
+  personal: Record<string, string>
+  family: ProfileGraphPerson[]
+  associates: ProfileGraphPerson[]
+}
+
 export interface CommonGraphResponse {
   id: string
   title?: string | null

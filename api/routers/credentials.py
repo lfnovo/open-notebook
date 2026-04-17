@@ -27,16 +27,22 @@ from pydantic import SecretStr
 from api.credentials_service import (
     credential_to_response,
     discover_with_config,
-    migrate_from_env as svc_migrate_from_env,
-    migrate_from_provider_config as svc_migrate_from_provider_config,
+    get_provider_status,
     register_models,
     require_encryption_key,
-    test_credential as svc_test_credential,
     validate_url,
 )
 from api.credentials_service import (
     get_env_status as svc_get_env_status,
-    get_provider_status,
+)
+from api.credentials_service import (
+    migrate_from_env as svc_migrate_from_env,
+)
+from api.credentials_service import (
+    migrate_from_provider_config as svc_migrate_from_provider_config,
+)
+from api.credentials_service import (
+    test_credential as svc_test_credential,
 )
 from api.models import (
     CreateCredentialRequest,
@@ -48,6 +54,7 @@ from api.models import (
     RegisterModelsResponse,
     UpdateCredentialRequest,
 )
+from open_notebook.database.repository import ensure_record_id, repo_delete, repo_query
 from open_notebook.domain.credential import Credential
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
@@ -248,7 +255,6 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
 @router.delete("/{credential_id}", response_model=CredentialDeleteResponse)
 async def delete_credential(
     credential_id: str,
-    delete_models: bool = Query(False, description="Also delete linked models"),
     migrate_to: Optional[str] = Query(
         None, description="Migrate linked models to this credential ID"
     ),
@@ -257,23 +263,57 @@ async def delete_credential(
     Delete a credential.
 
     If the credential has linked models:
-    - Pass delete_models=true to delete them
-    - Pass migrate_to=<credential_id> to reassign them
-    - Without either, returns 409 with linked model info
+    - Pass migrate_to=<credential_id> to reassign them to another credential
+    - Otherwise, linked models are cascade-deleted automatically
     """
     try:
-        cred = await Credential.get(credential_id)
-        linked_models = await cred.get_linked_models()
-
-        if linked_models and not delete_models and not migrate_to:
-            raise HTTPException(
-                status_code=409,
-                detail={
-                    "message": f"Credential has {len(linked_models)} linked model(s)",
-                    "model_ids": [m.id for m in linked_models],
-                    "model_names": [f"{m.provider}/{m.name}" for m in linked_models],
-                },
+        try:
+            cred = await Credential.get(credential_id)
+        except ValueError as decrypt_err:
+            # Credential exists but can't be decrypted (wrong encryption key).
+            # Fall back to direct DB operations for deletion.
+            logger.warning(
+                f"Cannot decrypt credential {credential_id}, "
+                f"falling back to direct delete: {decrypt_err}"
             )
+
+            # Query linked models
+            linked = await repo_query(
+                "SELECT * FROM model WHERE credential = $cred_id",
+                {"cred_id": ensure_record_id(credential_id)},
+            )
+            deleted_models = 0
+
+            if linked and migrate_to:
+                # Migrate models to another credential
+                target_cred = await Credential.get(migrate_to)
+                for model_row in linked:
+                    model_id = str(model_row.get("id", ""))
+                    if model_id:
+                        await repo_query(
+                            "UPDATE $model_id SET credential = $target_id",
+                            {
+                                "model_id": ensure_record_id(model_id),
+                                "target_id": ensure_record_id(target_cred.id),
+                            },
+                        )
+            elif linked:
+                # Cascade-delete linked models
+                for model_row in linked:
+                    model_id = str(model_row.get("id", ""))
+                    if model_id:
+                        await repo_delete(model_id)
+                        deleted_models += 1
+
+            # Delete the credential itself
+            await repo_delete(credential_id)
+
+            return CredentialDeleteResponse(
+                message="Credential deleted successfully",
+                deleted_models=deleted_models,
+            )
+
+        linked_models = await cred.get_linked_models()
 
         deleted_models = 0
 
@@ -284,8 +324,8 @@ async def delete_credential(
                 model.credential = target_cred.id
                 await model.save()
 
-        elif linked_models and delete_models:
-            # Delete linked models
+        elif linked_models:
+            # Cascade-delete linked models (default behavior when no migrate_to)
             for model in linked_models:
                 await model.delete()
                 deleted_models += 1

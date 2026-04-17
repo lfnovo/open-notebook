@@ -31,7 +31,7 @@ from api.models import (
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import Notebook, Source
+from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 
@@ -43,21 +43,30 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
     file_path = Path(upload_folder)
     file_path.mkdir(parents=True, exist_ok=True)
 
+    # Strip directory components to prevent path traversal
+    safe_filename = os.path.basename(original_filename)
+    if not safe_filename:
+        raise ValueError("Invalid filename")
+
     # Split filename and extension
-    stem = Path(original_filename).stem
-    suffix = Path(original_filename).suffix
+    stem = Path(safe_filename).stem
+    suffix = Path(safe_filename).suffix
 
     # Check if file exists and generate unique name
     counter = 0
     while True:
         if counter == 0:
-            new_filename = original_filename
+            new_filename = safe_filename
         else:
             new_filename = f"{stem} ({counter}){suffix}"
 
         full_path = file_path / new_filename
-        if not full_path.exists():
-            return str(full_path)
+        # Verify resolved path stays within upload folder
+        resolved = full_path.resolve()
+        if not str(resolved).startswith(str(file_path.resolve()) + os.sep):
+            raise ValueError("Invalid filename: path traversal detected")
+        if not resolved.exists():
+            return str(resolved)
         counter += 1
 
 
@@ -325,6 +334,14 @@ async def create_source(
                     status_code=400,
                     detail="File upload or file_path is required for upload type",
                 )
+            # Validate file_path is within the uploads directory to prevent LFI
+            uploads_resolved = Path(UPLOADS_FOLDER).resolve()
+            file_resolved = Path(final_file_path).resolve()
+            if not str(file_resolved).startswith(str(uploads_resolved) + os.sep):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid file path: must be within the uploads directory",
+                )
             content_state["file_path"] = final_file_path
             content_state["delete_source"] = source_data.delete_source
         elif source_data.type == "text":
@@ -353,10 +370,19 @@ async def create_source(
             # ASYNC PATH: Create source record first, then queue command
             logger.info("Using async processing path")
 
-            # Create minimal source record - let SurrealDB generate the ID
+            # Create source record with asset - let SurrealDB generate the ID
+            # Persist asset before save so it's available for retry if processing fails
+            if source_data.type == "link":
+                source_asset = Asset(url=source_data.url)
+            elif source_data.type == "upload":
+                source_asset = Asset(file_path=file_path or source_data.file_path)
+            else:
+                source_asset = None
+
             source = Source(
                 title=source_data.title or "Processing...",
                 topics=[],
+                asset=source_asset,
             )
             await source.save()
 

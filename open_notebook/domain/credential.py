@@ -53,6 +53,7 @@ class Credential(ObjectModel):
     provider: str
     modalities: List[str] = []
     api_key: Optional[SecretStr] = None
+    decryption_error: Optional[str] = None
     base_url: Optional[str] = None
     endpoint: Optional[str] = None
     api_version: Optional[str] = None
@@ -76,6 +77,9 @@ class Credential(ObjectModel):
             config["api_key"] = self.api_key.get_secret_value()
         if self.base_url:
             config["base_url"] = self.base_url
+            # For Azure, base_url from the UI form maps to endpoint
+            if self.provider and self.provider.lower() == "azure" and not self.endpoint:
+                config["endpoint"] = self.base_url
         if self.endpoint:
             config["endpoint"] = self.endpoint
         if self.api_version:
@@ -130,18 +134,47 @@ class Credential(ObjectModel):
 
     @classmethod
     async def get_all(cls, order_by=None) -> List["Credential"]:
-        """Override get_all() to handle api_key decryption."""
-        instances = await super().get_all(order_by=order_by)
-        for instance in instances:
-            if instance.api_key:
-                raw = (
-                    instance.api_key.get_secret_value()
-                    if isinstance(instance.api_key, SecretStr)
-                    else instance.api_key
+        """Override get_all() to handle api_key decryption with per-row error handling."""
+        order_clause = f" ORDER BY {order_by}" if order_by else ""
+        results = await repo_query(
+            f"SELECT * FROM {cls.table_name}{order_clause}",
+            {},
+        )
+        credentials = []
+        for row in results:
+            try:
+                cred = cls._from_db_row(row)
+                credentials.append(cred)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to decrypt credential {row.get('id', 'unknown')}: {e}"
                 )
-                decrypted = decrypt_value(raw)
-                object.__setattr__(instance, "api_key", SecretStr(decrypted))
-        return instances
+                # Create a minimal credential with error info from raw DB fields
+                try:
+                    error_cred = cls(
+                        name=row.get("name", "Unknown"),
+                        provider=row.get("provider", "unknown"),
+                        modalities=row.get("modalities", []),
+                        decryption_error="Failed to decrypt API key. The encryption key may have changed.",
+                    )
+                    # Preserve the DB id, created, updated from the raw row
+                    if row.get("id"):
+                        object.__setattr__(error_cred, "id", str(row["id"]))
+                    if row.get("created"):
+                        object.__setattr__(error_cred, "created", row["created"])
+                    if row.get("updated"):
+                        object.__setattr__(error_cred, "updated", row["updated"])
+                    # Mark that it had an api_key (even though we can't decrypt it)
+                    if row.get("api_key"):
+                        object.__setattr__(
+                            error_cred, "api_key", SecretStr("UNDECRYPTABLE")
+                        )
+                    credentials.append(error_cred)
+                except Exception as inner_e:
+                    logger.error(
+                        f"Failed to create error credential for {row.get('id', 'unknown')}: {inner_e}"
+                    )
+        return credentials
 
     async def get_linked_models(self) -> list:
         """Get all models linked to this credential."""
@@ -159,6 +192,8 @@ class Credential(ObjectModel):
         """Override to encrypt api_key before storage."""
         data = {}
         for key, value in self.model_dump().items():
+            if key == "decryption_error":
+                continue
             if key == "api_key":
                 # Handle SecretStr: extract, encrypt, store
                 if self.api_key:

@@ -32,7 +32,7 @@ export function InlineEdit({
   const generatedId = useId()
   const id = providedId || generatedId
   const { t } = useTranslation()
-  const defaultEmptyText = emptyText || t.common.clickToEdit
+  const defaultEmptyText = emptyText || t('common.clickToEdit')
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState(value)
   const [isSaving, setIsSaving] = useState(false)

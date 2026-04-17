@@ -17,7 +17,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 - Multiple installation routes
 - Docker Compose (recommended)
 - From source (developers)
-- Single container (shared hosting)
+- ~~Single container~~ (deprecated, see Docker Compose)
 
 ### I want to understand how it works
 → Read this: **[2-CORE-CONCEPTS](2-CORE-CONCEPTS/index.md)**
@@ -77,7 +77,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 
 **[1-INSTALLATION](1-INSTALLATION/index.md)** — Getting it running
 - Multiple installation routes
-- Docker, single-container, from-source
+- Docker Compose (recommended), from-source
 - Requirements and setup
 
 **[2-CORE-CONCEPTS](2-CORE-CONCEPTS/index.md)** — Understanding the system

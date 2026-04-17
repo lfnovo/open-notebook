@@ -327,7 +327,7 @@ docker compose up -d
 Looking for different configurations? Check out our [examples/](../../examples/) folder:
 
 - **[Ollama Setup](../../examples/docker-compose-ollama.yml)** - Run local AI models (free, private)
-- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, not recommended)
+- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, will be removed in v2)
 - **[Development](../../examples/docker-compose-dev.yml)** - For contributors and developers
 
 Each example includes detailed comments and usage instructions.

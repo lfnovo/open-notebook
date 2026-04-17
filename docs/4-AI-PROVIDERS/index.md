@@ -1,6 +1,6 @@
 # AI Providers - Comparison & Selection Guide
 
-Open Notebook supports 15+ AI providers. This guide helps you **choose the right provider** for your needs.
+Open Notebook supports 17+ AI providers. This guide helps you **choose the right provider** for your needs.
 
 > 💡 **Just want to set up a provider?** Skip to the [Configuration Guide](../5-CONFIGURATION/ai-providers.md) for detailed setup instructions.
 
@@ -54,6 +54,24 @@ Open Notebook supports 15+ AI providers. This guide helps you **choose the right
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#openrouter)
 
+**DashScope (Qwen)**
+- Cost: ~$0.01-0.06 per 1K tokens
+- Speed: Fast
+- Quality: Good
+- Best for: Users in Asia, Alibaba Cloud ecosystem
+- Advantage: Competitive pricing, strong multilingual support
+
+→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#dashscope-qwen)
+
+**MiniMax**
+- Cost: Varies by model
+- Speed: Fast
+- Quality: Good
+- Best for: Long context tasks (204K tokens)
+- Advantage: Very long context window
+
+→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#minimax)
+
 ### Local / Self-Hosted (Free)
 
 **Ollama (Recommended for Local)**
@@ -98,6 +116,8 @@ Open Notebook supports 15+ AI providers. This guide helps you **choose the right
 | **Google** | Very Fast | $$ | Good-Excellent | Low | 5 min | 2M |
 | **Groq** | Ultra Fast | $ | Good | Low | 5 min | 32K |
 | **OpenRouter** | Varies | Varies | Varies | Low | 5 min | Varies |
+| **DashScope** | Fast | $ | Good | Low | 5 min | Varies |
+| **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
 | **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
 | **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |
 | **Azure** | Very Fast | $$ | Excellent | High | 10 min | 128K |

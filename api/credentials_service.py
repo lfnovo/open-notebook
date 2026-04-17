@@ -57,6 +57,8 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
     "openai_compatible": {
         "required_any": ["OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"],
     },
+    "dashscope": {"required": ["DASHSCOPE_API_KEY"]},
+    "minimax": {"required": ["MINIMAX_API_KEY"]},
 }
 
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
@@ -74,6 +76,8 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "vertex": ["language", "embedding"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "dashscope": ["language"],
+    "minimax": ["language"],
 }
 
 
@@ -219,6 +223,7 @@ def credential_to_response(cred: Credential, model_count: int = 0) -> Credential
         created=str(cred.created) if cred.created else "",
         updated=str(cred.updated) if cred.updated else "",
         model_count=model_count,
+        decryption_error=cred.decryption_error,
     )
 
 
@@ -512,6 +517,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         "deepseek": "https://api.deepseek.com/models",
         "xai": "https://api.x.ai/v1/models",
         "openrouter": "https://openrouter.ai/api/v1/models",
+        "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+        "minimax": "https://api.minimax.io/v1/models",
     }
 
     if provider == "ollama":

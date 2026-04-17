@@ -60,7 +60,7 @@ export function useSourceChat(sourceId: string) {
     onSuccess: (newSession) => {
       queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       setCurrentSessionId(newSession.id)
-      toast.success(t.chat.sessionCreated)
+      toast.success(t('chat.sessionCreated'))
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
@@ -75,7 +75,7 @@ export function useSourceChat(sourceId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sourceChatSessions', sourceId] })
       queryClient.invalidateQueries({ queryKey: ['sourceChatSession', sourceId, currentSessionId] })
-      toast.success(t.chat.sessionUpdated)
+      toast.success(t('chat.sessionUpdated'))
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };
@@ -93,7 +93,7 @@ export function useSourceChat(sourceId: string) {
         setCurrentSessionId(null)
         setMessages([])
       }
-      toast.success(t.chat.sessionDeleted)
+      toast.success(t('chat.sessionDeleted'))
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { detail?: string } }, message?: string };

@@ -22,6 +22,7 @@ import {
   RefreshCw,
   Key,
   ShieldAlert,
+  AlertTriangle,
   Plus,
   Edit,
   Trash2,
@@ -75,12 +76,14 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
   openai_compatible: 'OpenAI Compatible',
+  dashscope: 'DashScope (Qwen)',
+  minimax: 'MiniMax',
 }
 
 // All providers in display order
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
-  'xai', 'openrouter', 'voyage', 'elevenlabs', 'ollama',
+  'xai', 'openrouter', 'dashscope', 'minimax', 'voyage', 'elevenlabs', 'ollama',
   'azure', 'vertex', 'openai_compatible',
 ]
 
@@ -100,6 +103,8 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
   openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  dashscope: ['language'],
+  minimax: ['language'],
 }
 
 // Documentation links
@@ -117,6 +122,8 @@ const PROVIDER_DOCS: Record<string, string> = {
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
+  dashscope: 'https://help.aliyun.com/zh/model-studio/getting-started/',
+  minimax: 'https://platform.minimaxi.com/document/Guides',
 }
 
 const TYPE_ICONS: Record<ModelType, React.ReactNode> = {
@@ -248,14 +255,14 @@ function CredentialFormDialog({
         <DialogHeader>
           <DialogTitle>
             {isEditing
-              ? t.apiKeys.editConfig.replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)
-              : t.apiKeys.addConfig.replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)}
+              ? t('apiKeys.editConfig').replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)
+              : t('apiKeys.addConfig').replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="cred-name">{t.apiKeys.configName}</Label>
+            <Label htmlFor="cred-name">{t('apiKeys.configName')}</Label>
             <input
               id="cred-name"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -264,14 +271,14 @@ function CredentialFormDialog({
               placeholder={`${PROVIDER_DISPLAY_NAMES[provider] || provider} Production`}
               disabled={isSubmitting}
             />
-            <p className="text-xs text-muted-foreground">{t.apiKeys.configNameHint}</p>
+            <p className="text-xs text-muted-foreground">{t('apiKeys.configNameHint')}</p>
           </div>
 
           {/* Vertex fields */}
           {isVertex ? (
             <>
               <div className="space-y-2">
-                <Label htmlFor="vertex-project">{t.apiKeys.vertexProject}</Label>
+                <Label htmlFor="vertex-project">{t('apiKeys.vertexProject')}</Label>
                 <input
                   id="vertex-project"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -282,7 +289,7 @@ function CredentialFormDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vertex-location">{t.apiKeys.vertexLocation}</Label>
+                <Label htmlFor="vertex-location">{t('apiKeys.vertexLocation')}</Label>
                 <input
                   id="vertex-location"
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -294,8 +301,8 @@ function CredentialFormDialog({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="vertex-creds">
-                  {t.apiKeys.vertexCredentials}
-                  <span className="text-muted-foreground font-normal ml-1">({t.common.optional})</span>
+                  {t('apiKeys.vertexCredentials')}
+                  <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>
                 </Label>
                 <input
                   id="vertex-creds"
@@ -311,8 +318,8 @@ function CredentialFormDialog({
             /* API Key */
             <div className="space-y-2">
               <Label htmlFor="api-key">
-                {t.models.apiKey}
-                {!requiresApiKey && <span className="text-muted-foreground font-normal ml-1">({t.common.optional})</span>}
+                {t('models.apiKey')}
+                {!requiresApiKey && <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>}
               </Label>
               <div className="relative">
                 <input
@@ -334,10 +341,10 @@ function CredentialFormDialog({
                   {showApiKey ? 'Hide' : 'Show'}
                 </button>
               </div>
-              {isEditing && <p className="text-xs text-muted-foreground">{t.apiKeys.apiKeyEditHint}</p>}
+              {isEditing && <p className="text-xs text-muted-foreground">{t('apiKeys.apiKeyEditHint')}</p>}
               {docsUrl && (
                 <a href={docsUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                  {t.apiKeys.getApiKey} &rarr;
+                  {t('apiKeys.getApiKey')} &rarr;
                 </a>
               )}
             </div>
@@ -346,7 +353,7 @@ function CredentialFormDialog({
           {/* Base URL (non-Vertex) */}
           {!isVertex && (
             <div className="space-y-2">
-              <Label htmlFor="base-url" className="text-muted-foreground">{t.apiKeys.baseUrl}</Label>
+              <Label htmlFor="base-url" className="text-muted-foreground">{t('apiKeys.baseUrl')}</Label>
               <input
                 id="base-url"
                 type="url"
@@ -356,18 +363,18 @@ function CredentialFormDialog({
                 placeholder={isOllama ? 'http://localhost:11434' : 'https://api.example.com/v1'}
                 disabled={isSubmitting}
               />
-              <p className="text-xs text-muted-foreground">{t.apiKeys.baseUrlOverrideHint}</p>
+              <p className="text-xs text-muted-foreground">{t('apiKeys.baseUrlOverrideHint')}</p>
             </div>
           )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isSubmitting}>
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!isValid || isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              {isEditing ? t.common.save : t.apiKeys.addConfig}
+              {isEditing ? t('common.save') : t('apiKeys.addConfig')}
             </Button>
           </div>
         </form>
@@ -511,7 +518,7 @@ function DiscoverModelsDialog({
       <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {t.models.discoverModels} - {PROVIDER_DISPLAY_NAMES[credential.provider] || credential.provider}
+            {t('models.discoverModels')} - {PROVIDER_DISPLAY_NAMES[credential.provider] || credential.provider}
           </DialogTitle>
           <DialogDescription>
             {credential.name}
@@ -531,7 +538,7 @@ function DiscoverModelsDialog({
           <div className="space-y-4">
             {/* Model type selector */}
             <div className="space-y-2">
-              <Label>{t.models.modelType}</Label>
+              <Label>{t('models.modelType')}</Label>
               <Select value={selectedType} onValueChange={(v) => setSelectedType(v as ModelType)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -547,14 +554,14 @@ function DiscoverModelsDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">{t.models.modelTypeHint}</p>
+              <p className="text-xs text-muted-foreground">{t('models.modelTypeHint')}</p>
             </div>
 
             {/* Search input */}
             <input
               type="text"
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm placeholder:text-muted-foreground"
-              placeholder={t.models.searchOrAddModel}
+              placeholder={t('models.searchOrAddModel')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -563,7 +570,7 @@ function DiscoverModelsDialog({
             {filteredModels.length > 0 && (
               <div className="flex items-center justify-between">
                 <Button variant="outline" size="sm" onClick={toggleAll}>
-                  {filteredModels.every(m => selectedModels.has(m.name)) ? t.common.remove : t.common.addSelected}
+                  {filteredModels.every(m => selectedModels.has(m.name)) ? t('common.remove') : t('common.addSelected')}
                   {' '}({selectedModels.size}/{filteredModels.length})
                 </Button>
               </div>
@@ -600,13 +607,13 @@ function DiscoverModelsDialog({
                   />
                   <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="truncate">
-                    {t.models.addCustomModel.replace('{name}', searchQuery.trim())}
+                    {t('models.addCustomModel').replace('{name}', searchQuery.trim())}
                   </span>
                 </label>
               )}
 
               {filteredModels.length === 0 && !showCustomOption && (
-                <p className="text-center py-4 text-muted-foreground text-sm">{t.models.noModelsFound}</p>
+                <p className="text-center py-4 text-muted-foreground text-sm">{t('models.noModelsFound')}</p>
               )}
             </div>
           </div>
@@ -614,14 +621,14 @@ function DiscoverModelsDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleRegister}
             disabled={totalSelected === 0 || registerModels.isPending}
           >
             {registerModels.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {t.common.add} ({totalSelected})
+            {t('common.add')} ({totalSelected})
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -678,9 +685,9 @@ function DeleteCredentialDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t.apiKeys.deleteConfig}</DialogTitle>
+          <DialogTitle>{t('apiKeys.deleteConfig')}</DialogTitle>
           <DialogDescription>
-            {t.apiKeys.deleteConfigConfirm.replace('{name}', credential.name)}
+            {t('apiKeys.deleteConfigConfirm').replace('{name}', credential.name)}
           </DialogDescription>
         </DialogHeader>
 
@@ -710,7 +717,7 @@ function DeleteCredentialDialog({
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t.common.cancel}
+            {t('common.cancel')}
           </Button>
           {credential.model_count > 0 && migrateToId && (
             <Button onClick={handleMigrate} disabled={deleteCredential.isPending}>
@@ -724,7 +731,7 @@ function DeleteCredentialDialog({
             disabled={deleteCredential.isPending}
           >
             {deleteCredential.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {credential.model_count > 0 ? 'Delete with Models' : t.common.delete}
+            {credential.model_count > 0 ? 'Delete with Models' : t('common.delete')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -762,8 +769,8 @@ function CredentialItem({
   const testResult = testResults[credential.id]
 
   // Extract translations used in model badge loops to avoid excessive Proxy accesses
-  const testModelLabel = t.models.testModel
-  const deleteModelLabel = t.models.deleteModel
+  const testModelLabel = t('models.testModel')
+  const deleteModelLabel = t('models.deleteModel')
 
   // Check which models are defaults
   const defaultSlots: Record<string, string> = {}
@@ -816,8 +823,8 @@ function CredentialItem({
             <Button
               variant="ghost" size="sm"
               onClick={() => testCredential(credential.id)}
-              disabled={isTestPending}
-              title={t.apiKeys.testConnection}
+              disabled={isTestPending || !!credential.decryption_error}
+              title={t('apiKeys.testConnection')}
             >
               {isTestPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
               <span className="hidden sm:inline text-xs">Test</span>
@@ -825,24 +832,36 @@ function CredentialItem({
             <Button
               variant="ghost" size="sm"
               onClick={() => setDiscoverOpen(true)}
-              title={t.apiKeys.syncModels}
+              disabled={!!credential.decryption_error}
+              title={t('apiKeys.syncModels')}
             >
               <Bot className="h-4 w-4" />
               <span className="hidden sm:inline text-xs">Models</span>
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} title={t.common.edit}>
+            <Button variant="ghost" size="sm" onClick={() => setEditOpen(true)} disabled={!!credential.decryption_error} title={t('common.edit')}>
               <Edit className="h-4 w-4" />
             </Button>
             <Button
               variant="ghost" size="sm"
               onClick={() => setDeleteOpen(true)}
               className="text-destructive hover:text-destructive hover:bg-destructive/10"
-              title={t.common.delete}
+              title={t('common.delete')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
+
+        {/* Decryption error warning */}
+        {credential.decryption_error && (
+          <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="text-amber-800 dark:text-amber-200">{t('apiKeys.decryptionError')}</AlertTitle>
+            <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+              {t('apiKeys.decryptionErrorDescription')}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Linked models grouped by type */}
         {linkedModels.length > 0 && (
@@ -994,12 +1013,12 @@ function ProviderSection({
             {hasCredentials ? (
               <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300">
                 <Check className="mr-1 h-3 w-3" />
-                {t.apiKeys.configured}
+                {t('apiKeys.configured')}
               </Badge>
             ) : (
               <Badge variant="outline" className="text-muted-foreground border-dashed">
                 <X className="mr-1 h-3 w-3" />
-                {t.apiKeys.notConfigured}
+                {t('apiKeys.notConfigured')}
               </Badge>
             )}
           </div>
@@ -1024,7 +1043,7 @@ function ProviderSection({
           disabled={!encryptionReady}
         >
           <Plus className="h-4 w-4" />
-          {t.apiKeys.addConfig}
+          {t('apiKeys.addConfig')}
         </Button>
       </CardContent>
 
@@ -1079,16 +1098,16 @@ function DefaultModelSelectors({
   }
 
   const primaryConfigs: DefaultConfig[] = [
-    { key: 'default_chat_model', label: t.models.chatModelLabel, description: t.models.chatModelDesc, modelType: 'language', required: true, id: `${generatedId}-chat` },
-    { key: 'default_embedding_model', label: t.models.embeddingModelLabel, description: t.models.embeddingModelDesc, modelType: 'embedding', required: true, id: `${generatedId}-embed` },
-    { key: 'default_text_to_speech_model', label: t.models.ttsModelLabel, description: t.models.ttsModelDesc, modelType: 'text_to_speech', id: `${generatedId}-tts` },
-    { key: 'default_speech_to_text_model', label: t.models.sttModelLabel, description: t.models.sttModelDesc, modelType: 'speech_to_text', id: `${generatedId}-stt` },
+    { key: 'default_chat_model', label: t('models.chatModelLabel'), description: t('models.chatModelDesc'), modelType: 'language', required: true, id: `${generatedId}-chat` },
+    { key: 'default_embedding_model', label: t('models.embeddingModelLabel'), description: t('models.embeddingModelDesc'), modelType: 'embedding', required: true, id: `${generatedId}-embed` },
+    { key: 'default_text_to_speech_model', label: t('models.ttsModelLabel'), description: t('models.ttsModelDesc'), modelType: 'text_to_speech', id: `${generatedId}-tts` },
+    { key: 'default_speech_to_text_model', label: t('models.sttModelLabel'), description: t('models.sttModelDesc'), modelType: 'speech_to_text', id: `${generatedId}-stt` },
   ]
 
   const advancedConfigs: DefaultConfig[] = [
-    { key: 'default_transformation_model', label: t.models.transformationModelLabel, description: t.models.transformationModelDesc, modelType: 'language', required: true, id: `${generatedId}-transform` },
-    { key: 'default_tools_model', label: t.models.toolsModelLabel, description: t.models.toolsModelDesc, modelType: 'language', id: `${generatedId}-tools` },
-    { key: 'large_context_model', label: t.models.largeContextModelLabel, description: t.models.largeContextModelDesc, modelType: 'language', id: `${generatedId}-large` },
+    { key: 'default_transformation_model', label: t('models.transformationModelLabel'), description: t('models.transformationModelDesc'), modelType: 'language', required: true, id: `${generatedId}-transform` },
+    { key: 'default_tools_model', label: t('models.toolsModelLabel'), description: t('models.toolsModelDesc'), modelType: 'language', id: `${generatedId}-tools` },
+    { key: 'large_context_model', label: t('models.largeContextModelLabel'), description: t('models.largeContextModelDesc'), modelType: 'language', id: `${generatedId}-large` },
   ]
 
   const defaultConfigs = [...primaryConfigs, ...advancedConfigs]
@@ -1126,15 +1145,15 @@ function DefaultModelSelectors({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t.models.defaultAssignments}</CardTitle>
-        <CardDescription>{t.models.defaultAssignmentsDesc}</CardDescription>
+        <CardTitle>{t('models.defaultAssignments')}</CardTitle>
+        <CardDescription>{t('models.defaultAssignmentsDesc')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {missingRequired.length > 0 && (
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between gap-4">
-              <span>{t.models.missingRequiredModels.replace('{models}', missingRequired.join(', '))}</span>
+              <span>{t('models.missingRequiredModels').replace('{models}', missingRequired.join(', '))}</span>
               <Button
                 variant="outline" size="sm"
                 onClick={() => autoAssign.mutate()}
@@ -1142,7 +1161,7 @@ function DefaultModelSelectors({
                 className="shrink-0 gap-1.5"
               >
                 {autoAssign.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Wand2 className="h-3.5 w-3.5" />}
-                {autoAssign.isPending ? t.models.autoAssigning : t.models.autoAssign}
+                {autoAssign.isPending ? t('models.autoAssigning') : t('models.autoAssign')}
               </Button>
             </AlertDescription>
           </Alert>
@@ -1172,8 +1191,8 @@ function DefaultModelSelectors({
                     >
                       <SelectValue placeholder={
                         config.required && !isValid && available.length > 0
-                          ? t.models.requiredModelPlaceholder
-                          : t.models.selectModelPlaceholder
+                          ? t('models.requiredModelPlaceholder')
+                          : t('models.selectModelPlaceholder')
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -1200,7 +1219,7 @@ function DefaultModelSelectors({
 
         {/* Advanced models: Transformation, Tools, Large Context */}
         <div className="border-t pt-3">
-          <p className="text-xs text-muted-foreground mb-3">{t.navigation.advanced}</p>
+          <p className="text-xs text-muted-foreground mb-3">{t('navigation.advanced')}</p>
             <div className="grid gap-3 sm:grid-cols-3">
               {advancedConfigs.map(config => {
                 const available = getModelsForType(config.modelType)
@@ -1224,8 +1243,8 @@ function DefaultModelSelectors({
                         >
                           <SelectValue placeholder={
                             config.required && !isValid && available.length > 0
-                              ? t.models.requiredModelPlaceholder
-                              : t.models.selectModelPlaceholder
+                              ? t('models.requiredModelPlaceholder')
+                              : t('models.selectModelPlaceholder')
                           } />
                         </SelectTrigger>
                         <SelectContent>
@@ -1336,19 +1355,19 @@ export default function ApiKeysPage() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Key className="h-6 w-6" />
-              {t.apiKeys.title}
+              {t('apiKeys.title')}
             </h1>
-            <p className="text-muted-foreground mt-1">{t.apiKeys.description}</p>
+            <p className="text-muted-foreground mt-1">{t('apiKeys.description')}</p>
           </div>
 
           {/* Encryption warning */}
           {!encryptionReady && (
             <Alert className="border-red-500/50 bg-red-50 dark:bg-red-950/20">
               <ShieldAlert className="h-4 w-4 text-red-600 dark:text-red-400" />
-              <AlertTitle className="text-red-800 dark:text-red-200">{t.apiKeys.encryptionRequired}</AlertTitle>
+              <AlertTitle className="text-red-800 dark:text-red-200">{t('apiKeys.encryptionRequired')}</AlertTitle>
               <AlertDescription className="text-red-700 dark:text-red-300">
                 <code className="text-xs bg-red-100 dark:bg-red-900/30 px-1 py-0.5 rounded">
-                  {t.apiKeys.encryptionRequiredDescription}
+                  {t('apiKeys.encryptionRequiredDescription')}
                 </code>
               </AlertDescription>
             </Alert>
@@ -1385,7 +1404,7 @@ export default function ApiKeysPage() {
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline"
             >
-              {t.apiKeys.learnMore}
+              {t('apiKeys.learnMore')}
             </a>
           </div>
         </div>

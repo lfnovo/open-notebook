@@ -74,17 +74,17 @@ export function SpeakerProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t.podcasts.speakerProfilesTitle}</h2>
+          <h2 className="text-lg font-semibold">{t('podcasts.speakerProfilesTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            {t.podcasts.speakerProfilesDesc}
+            {t('podcasts.speakerProfilesDesc')}
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>{t.podcasts.createSpeaker}</Button>
+        <Button onClick={() => setCreateOpen(true)}>{t('podcasts.createSpeaker')}</Button>
       </div>
 
       {sortedProfiles.length === 0 ? (
         <div className="rounded-lg border border-dashed bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-          {t.podcasts.noSpeakerProfiles}
+          {t('podcasts.noSpeakerProfiles')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -105,12 +105,12 @@ export function SpeakerProfilesPanel({
                         {unconfigured ? (
                           <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
                             <AlertTriangle className="h-3 w-3 mr-1" />
-                            {t.podcasts.setupRequired}
+                            {t('podcasts.setupRequired')}
                           </Badge>
                         ) : null}
                       </div>
                       <CardDescription className="text-sm text-muted-foreground">
-                        {profile.description || t.podcasts.noDescription}
+                        {profile.description || t('podcasts.noDescription')}
                       </CardDescription>
                     </div>
                     <Badge variant="outline" className="text-xs">
@@ -118,7 +118,7 @@ export function SpeakerProfilesPanel({
                         ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
                         : (profile.tts_provider
                           ? `${profile.tts_provider} / ${profile.tts_model}`
-                          : t.podcasts.notConfigured)}
+                          : t('podcasts.notConfigured'))}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -127,8 +127,8 @@ export function SpeakerProfilesPanel({
                       className="text-xs"
                     >
                       {usageCount > 0
-                        ? (usageCount === 1 ? t.podcasts.usedByCount_one : t.podcasts.usedByCount_other.replace('{count}', usageCount.toString()))
-                        : t.podcasts.unused}
+                        ? (usageCount === 1 ? t('podcasts.usedByCount_one') : t('podcasts.usedByCount_other').replace('{count}', usageCount.toString()))
+                        : t('podcasts.unused')}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -149,7 +149,7 @@ export function SpeakerProfilesPanel({
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
-                              {t.podcasts.voiceId}: {speaker.voice_id}
+                              {t('podcasts.voiceId')}: {speaker.voice_id}
                             </span>
                             {speaker.voice_model ? (
                               <Badge variant="secondary" className="text-xs">
@@ -159,10 +159,10 @@ export function SpeakerProfilesPanel({
                           </div>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">{t.podcasts.backstory}:</span> {speaker.backstory}
+                          <span className="font-semibold">{t('podcasts.backstory')}:</span> {speaker.backstory}
                         </p>
                         <p className="mt-2 text-xs text-muted-foreground whitespace-pre-wrap">
-                          <span className="font-semibold">{t.podcasts.personality}:</span> {speaker.personality}
+                          <span className="font-semibold">{t('podcasts.personality')}:</span> {speaker.personality}
                         </p>
                       </div>
                     ))}
@@ -174,7 +174,7 @@ export function SpeakerProfilesPanel({
                       size="sm"
                       onClick={() => setEditProfile(profile)}
                     >
-                      <Edit3 className="mr-2 h-4 w-4" /> {t.podcasts.edit}
+                      <Edit3 className="mr-2 h-4 w-4" /> {t('podcasts.edit')}
                     </Button>
                     <AlertDialog>
                       <DropdownMenu>
@@ -198,7 +198,7 @@ export function SpeakerProfilesPanel({
                             disabled={duplicateProfile.isPending}
                           >
                             <Copy className="h-4 w-4 mr-2" />
-                            {t.podcasts.duplicate}
+                            {t('podcasts.duplicate')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild>
@@ -207,30 +207,30 @@ export function SpeakerProfilesPanel({
                               disabled={deleteDisabled}
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t.podcasts.delete}
+                              {t('podcasts.delete')}
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>{t.podcasts.deleteSpeakerProfileTitle}</AlertDialogTitle>
+                          <AlertDialogTitle>{t('podcasts.deleteSpeakerProfileTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t.podcasts.deleteSpeakerProfileDesc.replace('{name}', profile.name)}
+                            {t('podcasts.deleteSpeakerProfileDesc').replace('{name}', profile.name)}
                           </AlertDialogDescription>
                           {deleteDisabled ? (
                             <p className="mt-2 text-sm text-muted-foreground">
-                              {t.podcasts.deleteSpeakerDisabledHint}
+                              {t('podcasts.deleteSpeakerDisabledHint')}
                             </p>
                           ) : null}
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => deleteProfile.mutate(profile.id)}
                             disabled={deleteDisabled || deleteProfile.isPending}
                           >
-                            {deleteProfile.isPending ? t.podcasts.deleting : t.podcasts.delete}
+                            {deleteProfile.isPending ? t('podcasts.deleting') : t('podcasts.delete')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

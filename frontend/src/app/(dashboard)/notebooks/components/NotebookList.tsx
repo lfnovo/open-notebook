@@ -45,8 +45,8 @@ export function NotebookList({
     return (
       <EmptyState
         icon={Book}
-        title={emptyTitle ?? t.common.noResults}
-        description={emptyDescription ?? t.chat.startByCreating}
+        title={emptyTitle ?? t('common.noResults')}
+        description={emptyDescription ?? t('chat.startByCreating')}
         action={onAction && actionLabel ? (
           <Button onClick={onAction} variant="outline" className="mt-4">
             <Plus className="h-4 w-4 mr-2" />

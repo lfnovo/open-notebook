@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-04-14
+
+### Fixed
+- Credentials endpoint no longer crashes (500) when encryption key doesn't match stored credentials (#740)
+- Broken credentials are now shown with a decryption warning and can still be deleted
+- DELETE endpoint for broken credentials supports model migration (`migrate_to` parameter)
+
+## [1.8.4] - 2026-04-09
+
+### Security
+- Fix Remote Code Execution (RCE) via Jinja2 Server-Side Template Injection in transformations (CVSS 9.2 Critical)
+- Fix arbitrary file write via path traversal in file upload (CVSS 7.0 High)
+- Fix arbitrary file read via Local File Inclusion in source creation (CVSS 8.2 High)
+
+### Dependencies
+- Bump ai-prompter to >=0.4.0 (uses Jinja2 SandboxedEnvironment to prevent SSTI)
+
+## [1.8.3] - 2026-04-07
+
+### Security
+- Fix SurrealDB injection via unsanitized `order_by` query parameter in `GET /api/notebooks` (CVSS 8.7 High)
+- Add allowlist validation for sorting parameters in notebooks endpoint
+- Replace f-string query interpolation with parameterized `$variable` binding in source chat and migration queries
+- Add defensive validation in `get_all()` base method to prevent injection via `order_by` parameter
+
+## [1.8.2] - 2026-04-06
+
+### Added
+- DashScope (Qwen) and MiniMax provider support via Esperanto v2.20.0 (#725)
+- Source list auto-refresh after adding a new source via URL, file upload, or text (#721)
+
+### Fixed
+- Source asset persistence — failed sources now persist their asset (URL/file path), making them identifiable and retryable (#722)
+- Source title preservation — user-set custom titles are no longer overwritten after background processing (#722)
+- Credential cascade delete — deleting a credential now removes linked models instead of returning a 409 error (#722)
+- Podcast directory names — uses UUID for episode directories, fixing filesystem errors with special characters (#666)
+- Tiktoken offline handling — API no longer crashes in air-gapped environments (#622)
+- SurrealDB healthcheck — removed incompatible healthcheck from Docker Compose (#656)
+- Esperanto embedding fixes — base_url/api_key config issues across multiple embedding providers (#664, #665)
+
+### Docs
+- Deprecated single-container Docker image in favor of Docker Compose (#723)
+
+### Dependencies
+- Bump esperanto to >=2.20.0
+
 ## [1.8.1] - 2026-03-10
 
 ### Added

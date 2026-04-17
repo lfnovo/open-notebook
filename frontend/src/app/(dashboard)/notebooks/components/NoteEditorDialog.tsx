@@ -124,12 +124,12 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
           isEditorFullscreen && "!max-w-screen !max-h-screen border-none w-screen h-screen"
       )}>
         <DialogTitle className="sr-only">
-          {isEditing ? t.sources.editNote : t.sources.createNote}
+          {isEditing ? t('sources.editNote') : t('sources.createNote')}
         </DialogTitle>
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col min-w-0">
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+              <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
             </div>
           ) : (
             <>
@@ -139,8 +139,8 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   name="title"
                   value={watchTitle ?? ''}
                   onSave={(value) => setValue('title', value || '')}
-                  placeholder={t.sources.addTitle}
-                  emptyText={t.sources.untitledNote}
+                  placeholder={t('sources.addTitle')}
+                  emptyText={t('sources.untitledNote')}
                   className="text-xl font-semibold"
                   inputClassName="text-xl font-semibold"
                 />
@@ -160,7 +160,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                       value={field.value}
                       onChange={field.onChange}
                       height={420}
-                      placeholder={t.sources.writeNotePlaceholder}
+                      placeholder={t('sources.writeNotePlaceholder')}
                       className={cn(
                           "w-full h-full min-h-[420px] max-h-[500px] overflow-hidden [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full [&_.w-md-editor-content]:overflow-y-auto",
                           !isEditorFullscreen && "rounded-md border"
@@ -177,17 +177,17 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
 
           <div className="border-t px-6 py-4 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleClose}>
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button
               type="submit"
               disabled={isSaving || (isEditing && noteLoading)}
             >
               {isSaving
-                ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                ? isEditing ? `${t('common.saving')}...` : `${t('common.creating')}...`
                 : isEditing
-                  ? t.sources.saveNote
-                  : t.sources.createNoteBtn}
+                  ? t('sources.saveNote')
+                  : t('sources.createNoteBtn')}
             </Button>
           </div>
         </form>

@@ -60,7 +60,7 @@ export function SessionManager({
   const { data: models } = useModels()
 
   // Helper to get model name from ID
-  const customModelLabel = t.common.customModel
+  const customModelLabel = t('common.customModel')
   const getModelName = useMemo(() => {
     return (modelId: string) => {
       const model = models?.find(m => m.id === modelId)
@@ -108,7 +108,7 @@ export function SessionManager({
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              {t.chat.sessions}
+              {t('chat.sessions')}
             </span>
             <Button
               size="sm"
@@ -126,7 +126,7 @@ export function SessionManager({
                 <Input
                   value={newSessionTitle}
                   onChange={(e) => setNewSessionTitle(e.target.value)}
-                  placeholder={t.chat.sessionTitlePlaceholder}
+                  placeholder={t('chat.sessionTitlePlaceholder')}
                   className="mb-2"
                   autoFocus
                   onKeyPress={(e) => {
@@ -135,7 +135,7 @@ export function SessionManager({
                 />
                 <div className="flex gap-2">
                   <Button size="sm" onClick={handleCreateSession}>
-                    {t.common.create}
+                    {t('common.create')}
                   </Button>
                   <Button
                     size="sm"
@@ -145,7 +145,7 @@ export function SessionManager({
                       setNewSessionTitle('')
                     }}
                   >
-                    {t.common.cancel}
+                    {t('common.cancel')}
                   </Button>
                 </div>
               </div>
@@ -153,13 +153,13 @@ export function SessionManager({
 
             {loadingSessions ? (
               <div className="text-center py-8 text-muted-foreground">
-                {t.common.loading}
+                {t('common.loading')}
               </div>
             ) : sessions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-sm">{t.chat.noSessions}</p>
-                <p className="text-xs mt-2">{t.chat.createToStart}</p>
+                <p className="text-sm">{t('chat.noSessions')}</p>
+                <p className="text-xs mt-2">{t('chat.createToStart')}</p>
               </div>
             ) : (
               <div className="space-y-2 pb-4">
@@ -231,7 +231,7 @@ export function SessionManager({
                         </div>
                         {session.message_count != null && session.message_count > 0 && (
                           <Badge variant="secondary" className="mt-2 text-xs">
-                            {t.chat.messagesCount.replace('{count}', session.message_count.toString())}
+                            {t('chat.messagesCount').replace('{count}', session.message_count.toString())}
                           </Badge>
                         )}
                         {session.model_override && (
@@ -252,15 +252,15 @@ export function SessionManager({
       <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t.chat.deleteSession}</AlertDialogTitle>
+            <AlertDialogTitle>{t('chat.deleteSession')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t.chat.deleteSessionDesc}
+              {t('chat.deleteSessionDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteConfirm}>
-              {t.common.delete}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

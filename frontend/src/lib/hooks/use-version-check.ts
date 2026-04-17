@@ -26,12 +26,12 @@ export function useVersionCheck() {
         const dismissKey = `version_notification_dismissed_${config.latestVersion}`
         if (sessionStorage.getItem(dismissKey)) return
 
-        toast.info(t.advanced.updateAvailable.replace('{version}', config.latestVersion), {
-          description: t.advanced.updateAvailableDesc,
+        toast.info(t('advanced.updateAvailable').replace('{version}', config.latestVersion), {
+          description: t('advanced.updateAvailableDesc'),
           duration: Infinity,
           closeButton: true,
           action: {
-            label: t.advanced.viewOnGithub,
+            label: t('advanced.viewOnGithub'),
             onClick: () => window.open('https://github.com/lfnovo/open-notebook', '_blank'),
           },
           onDismiss: () => sessionStorage.setItem(dismissKey, 'true'),

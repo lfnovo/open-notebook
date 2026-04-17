@@ -49,18 +49,18 @@ export function TransformationPlayground({ transformations, selectedTransformati
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>{t.transformations.playground}</CardTitle>
+          <CardTitle>{t('transformations.playground')}</CardTitle>
           <CardDescription>
-            {t.transformations.desc}
+            {t('transformations.desc')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="transformation">{t.navigation.transformation}</Label>
+              <Label htmlFor="transformation">{t('navigation.transformation')}</Label>
               <Select name="transformation" value={selectedId} onValueChange={setSelectedId}>
                 <SelectTrigger id="transformation">
-                  <SelectValue placeholder={t.transformations.selectToStart} />
+                  <SelectValue placeholder={t('transformations.selectToStart')} />
                 </SelectTrigger>
                 <SelectContent>
                   {transformations?.map((transformation) => (
@@ -74,24 +74,24 @@ export function TransformationPlayground({ transformations, selectedTransformati
 
             <div>
               <ModelSelector
-                label={t.transformations.model}
+                label={t('transformations.model')}
                 name="model"
                 modelType="language"
                 value={modelId}
                 onChange={setModelId}
-                placeholder={t.transformations.selectModel}
+                placeholder={t('transformations.selectModel')}
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="input">{t.transformations.inputLabel}</Label>
+            <Label htmlFor="input">{t('transformations.inputLabel')}</Label>
             <Textarea
               id="input"
               name="input"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder={t.transformations.inputPlaceholder}
+              placeholder={t('transformations.inputPlaceholder')}
               rows={8}
               className="font-mono text-sm"
             />
@@ -106,12 +106,12 @@ export function TransformationPlayground({ transformations, selectedTransformati
               {executeTransformation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  {t.transformations.running}
+                  {t('transformations.running')}
                 </>
               ) : (
                 <>
                   <Play className="h-4 w-4 mr-2" />
-                  {t.transformations.runTest}
+                  {t('transformations.runTest')}
                 </>
               )}
             </Button>
@@ -119,7 +119,7 @@ export function TransformationPlayground({ transformations, selectedTransformati
 
           {output && (
             <div className="space-y-2">
-              <span className="text-sm font-medium leading-none">{t.transformations.outputLabel}</span>
+              <span className="text-sm font-medium leading-none">{t('transformations.outputLabel')}</span>
               <Card>
                 <ScrollArea className="h-[400px]">
                   <CardContent className="pt-6">

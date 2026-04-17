@@ -83,25 +83,25 @@ export function EpisodeProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t.podcasts.episodeProfilesTitle}</h2>
+          <h2 className="text-lg font-semibold">{t('podcasts.episodeProfilesTitle')}</h2>
           <p className="text-sm text-muted-foreground">
-            {t.podcasts.episodeProfilesDesc}
+            {t('podcasts.episodeProfilesDesc')}
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} disabled={disableCreate}>
-          {t.podcasts.createProfile}
+          {t('podcasts.createProfile')}
         </Button>
       </div>
 
       {disableCreate ? (
         <p className="rounded-lg border border-dashed bg-amber-50 p-4 text-sm text-amber-900">
-          {t.podcasts.createSpeakerFirst}
+          {t('podcasts.createSpeakerFirst')}
         </p>
       ) : null}
 
       {sortedProfiles.length === 0 ? (
         <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
-          {t.podcasts.noEpisodeProfiles}
+          {t('podcasts.noEpisodeProfiles')}
         </div>
       ) : (
         <div className="space-y-4">
@@ -123,12 +123,12 @@ export function EpisodeProfilesPanel({
                       {unconfigured ? (
                         <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" />
-                          {t.podcasts.setupRequired}
+                          {t('podcasts.setupRequired')}
                         </Badge>
                       ) : null}
                     </div>
                     <CardDescription className="text-sm text-muted-foreground">
-                      {profile.description || t.podcasts.noDescription}
+                      {profile.description || t('podcasts.noDescription')}
                     </CardDescription>
                   </div>
                   <div className="flex items-center gap-1">
@@ -137,7 +137,7 @@ export function EpisodeProfilesPanel({
                       size="sm"
                       onClick={() => setEditProfile(profile)}
                     >
-                      <Edit3 className="mr-2 h-4 w-4" /> {t.podcasts.edit}
+                      <Edit3 className="mr-2 h-4 w-4" /> {t('podcasts.edit')}
                     </Button>
                     <AlertDialog>
                       <DropdownMenu>
@@ -161,31 +161,31 @@ export function EpisodeProfilesPanel({
                             disabled={duplicateProfile.isPending}
                           >
                             <Copy className="h-4 w-4 mr-2" />
-                            {t.podcasts.duplicate}
+                            {t('podcasts.duplicate')}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-destructive focus:text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
-                              {t.podcasts.delete}
+                              {t('podcasts.delete')}
                             </DropdownMenuItem>
                           </AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>{t.podcasts.deleteProfileTitle}</AlertDialogTitle>
+                          <AlertDialogTitle>{t('podcasts.deleteProfileTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t.podcasts.deleteProfileDesc.replace('{name}', profile.name)}
+                            {t('podcasts.deleteProfileDesc').replace('{name}', profile.name)}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>{t.common.cancel}</AlertDialogCancel>
+                          <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => deleteProfile.mutate(profile.id)}
                             disabled={deleteProfile.isPending}
                           >
-                            {deleteProfile.isPending ? t.podcasts.deleting : t.podcasts.delete}
+                            {deleteProfile.isPending ? t('podcasts.deleting') : t('podcasts.delete')}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -197,45 +197,45 @@ export function EpisodeProfilesPanel({
                   <div className="grid gap-3 md:grid-cols-2">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t.podcasts.outlineModel}
+                        {t('podcasts.outlineModel')}
                       </p>
                       <p className="text-foreground">
                         {profile.outline_llm
                           ? (modelNameMap[profile.outline_llm] ?? profile.outline_llm)
                           : (profile.outline_provider && profile.outline_model
                             ? `${profile.outline_provider} / ${profile.outline_model}`
-                            : t.podcasts.notConfigured)}
+                            : t('podcasts.notConfigured'))}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t.podcasts.transcriptModel}
+                        {t('podcasts.transcriptModel')}
                       </p>
                       <p className="text-foreground">
                         {profile.transcript_llm
                           ? (modelNameMap[profile.transcript_llm] ?? profile.transcript_llm)
                           : (profile.transcript_provider && profile.transcript_model
                             ? `${profile.transcript_provider} / ${profile.transcript_model}`
-                            : t.podcasts.notConfigured)}
+                            : t('podcasts.notConfigured'))}
                       </p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t.podcasts.segments}
+                        {t('podcasts.segments')}
                       </p>
                       <p className="text-foreground">{profile.num_segments}</p>
                     </div>
                     {profile.language ? (
                       <div>
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                          {t.podcasts.language}
+                          {t('podcasts.language')}
                         </p>
                         <p className="text-foreground">{profile.language}</p>
                       </div>
                     ) : null}
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t.podcasts.speakerProfile}
+                        {t('podcasts.speakerProfile')}
                       </p>
                       <div className="flex items-center gap-2 text-foreground">
                         <Users className="h-4 w-4" />
@@ -256,7 +256,7 @@ export function EpisodeProfilesPanel({
                   {profile.default_briefing ? (
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {t.podcasts.defaultBriefingTitle}
+                        {t('podcasts.defaultBriefingTitle')}
                       </p>
                       <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                         {profile.default_briefing}

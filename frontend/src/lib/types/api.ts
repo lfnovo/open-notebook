@@ -122,6 +122,7 @@ export interface ProfileGraphPerson {
   name: string
   relation: string
   gender: 'male' | 'female'
+  details?: string
 }
 
 export interface ProfileGraphData {

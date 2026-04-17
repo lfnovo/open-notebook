@@ -113,8 +113,9 @@ export const sourcesApi = {
     return response.data
   },
 
-  getProfileGraph: async (sourceId: string) => {
-    const response = await apiClient.get<ProfileGraphData>(`/sources/${encodeURIComponent(sourceId)}/profile-graph`)
+  getProfileGraph: async (sourceId: string, modelId?: string) => {
+    const params = modelId ? { model_id: modelId } : {}
+    const response = await apiClient.get<ProfileGraphData>(`/sources/${encodeURIComponent(sourceId)}/profile-graph`, { params })
     return response.data
   },
 

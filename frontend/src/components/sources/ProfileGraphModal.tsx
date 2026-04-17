@@ -4,326 +4,317 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d'
 import { sourcesApi } from '@/lib/api/sources'
 import { ProfileGraphData } from '@/lib/types/api'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { User, Users, UserCheck, RefreshCw } from 'lucide-react'
+import { User, Users, UserCheck, RefreshCw, X } from 'lucide-react'
+import { useModels, useModelDefaults } from '@/lib/hooks/use-models'
+import { PersonalMindMap, nodeImageStore as personalNodeImageStore } from './PersonalMindMap'
 
-// ── Avatar image cache ────────────────────────────────────────────────────────
-const imageCache = new Map<string, HTMLImageElement | null>()
+// ── Image store ───────────────────────────────────────────────────────────────
+const nodeImageStore = new Map<string, string>()
+const loadedImages = new Map<string, HTMLImageElement | null>()
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
-  if (imageCache.has(src)) return Promise.resolve(imageCache.get(src)!)
+function loadImg(src: string): Promise<HTMLImageElement | null> {
+  if (loadedImages.has(src)) return Promise.resolve(loadedImages.get(src)!)
   return new Promise((resolve) => {
     const img = new Image()
     img.crossOrigin = 'anonymous'
-    img.onload = () => { imageCache.set(src, img); resolve(img) }
-    img.onerror = () => { imageCache.set(src, null); resolve(null) }
+    img.onload = () => { loadedImages.set(src, img); resolve(img) }
+    img.onerror = () => { loadedImages.set(src, null); resolve(null) }
     img.src = src
   })
 }
 
-// ── Draw avatar node ──────────────────────────────────────────────────────────
-function drawAvatarNode(
+// ── Draw avatar ───────────────────────────────────────────────────────────────
+function drawAvatar(
   ctx: CanvasRenderingContext2D,
-  x: number, y: number,
-  radius: number,
-  label: string,
-  sublabel: string,
-  image: HTMLImageElement | null,
-  gender: 'male' | 'female' | 'center',
-  isHovered: boolean,
-  dimmed: boolean,
-  isCenter: boolean,
+  x: number, y: number, r: number,
+  label: string, sublabel: string,
+  img: HTMLImageElement | null,
+  gender: 'male' | 'female',
+  isCenter: boolean, isHovered: boolean, dimmed: boolean,
 ) {
-  ctx.globalAlpha = dimmed ? 0.15 : 1
+  if (!isFinite(x) || !isFinite(y) || !isFinite(r) || r <= 0) return
+  ctx.globalAlpha = dimmed ? 0.18 : 1
 
-  // Shadow / glow
-  if (isHovered || isCenter) {
-    ctx.shadowColor = isCenter ? '#3b82f6' : '#60a5fa'
-    ctx.shadowBlur = isCenter ? 24 : 16
+  // Glow for center
+  if (isCenter) {
+    const g = ctx.createRadialGradient(x, y, r, x, y, r + 16)
+    g.addColorStop(0, 'rgba(59,130,246,0.45)')
+    g.addColorStop(1, 'rgba(59,130,246,0)')
+    ctx.beginPath(); ctx.arc(x, y, r + 16, 0, 2 * Math.PI)
+    ctx.fillStyle = g; ctx.fill()
   }
 
   // Outer ring
-  ctx.beginPath()
-  ctx.arc(x, y, radius + 3, 0, 2 * Math.PI)
-  ctx.fillStyle = isCenter ? '#3b82f6' : (isHovered ? '#60a5fa' : '#e2e8f0')
+  ctx.beginPath(); ctx.arc(x, y, r + 3, 0, 2 * Math.PI)
+  ctx.fillStyle = isCenter ? '#3b82f6' : (isHovered ? '#60a5fa' : '#cbd5e1')
   ctx.fill()
 
-  // White inner ring
-  ctx.beginPath()
-  ctx.arc(x, y, radius + 1, 0, 2 * Math.PI)
-  ctx.fillStyle = '#ffffff'
-  ctx.fill()
+  // White gap
+  ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, 2 * Math.PI)
+  ctx.fillStyle = '#fff'; ctx.fill()
 
-  // Clip circle for avatar
+  // Photo or silhouette
   ctx.save()
-  ctx.beginPath()
-  ctx.arc(x, y, radius, 0, 2 * Math.PI)
-  ctx.clip()
-
-  if (image) {
-    // Draw photo
-    ctx.drawImage(image, x - radius, y - radius, radius * 2, radius * 2)
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.clip()
+  if (img) {
+    ctx.drawImage(img, x - r, y - r, r * 2, r * 2)
   } else {
-    // Draw gender icon background
-    ctx.fillStyle = isCenter ? '#dbeafe' : (gender === 'female' ? '#fce7f3' : '#dbeafe')
-    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
-
-    // Draw silhouette
-    const color = isCenter ? '#3b82f6' : (gender === 'female' ? '#ec4899' : '#3b82f6')
-    ctx.fillStyle = color
-
-    // Head
-    ctx.beginPath()
-    ctx.arc(x, y - radius * 0.2, radius * 0.38, 0, 2 * Math.PI)
-    ctx.fill()
-
-    // Body
-    ctx.beginPath()
-    ctx.ellipse(x, y + radius * 0.55, radius * 0.42, radius * 0.38, 0, 0, 2 * Math.PI)
-    ctx.fill()
+    ctx.fillStyle = gender === 'female' ? '#fdf2f8' : '#eff6ff'
+    ctx.fillRect(x - r, y - r, r * 2, r * 2)
+    ctx.fillStyle = gender === 'female' ? '#ec4899' : '#3b82f6'
+    ctx.beginPath(); ctx.arc(x, y - r * 0.18, r * 0.36, 0, 2 * Math.PI); ctx.fill()
+    ctx.beginPath(); ctx.ellipse(x, y + r * 0.52, r * 0.4, r * 0.36, 0, 0, 2 * Math.PI); ctx.fill()
   }
-
   ctx.restore()
-  ctx.shadowBlur = 0
 
-  // Label below node
-  if (label) {
-    const disp = label.length > 14 ? label.slice(0, 12) + '…' : label
-    ctx.fillStyle = isCenter ? '#1e40af' : '#1e293b'
-    ctx.font = `${isCenter ? 'bold ' : ''}11px Sans-Serif`
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(disp, x, y + radius + 5)
-  }
+  // Name
+  const nd = label.length > 14 ? label.slice(0, 12) + '…' : label
+  ctx.fillStyle = isCenter ? '#1d4ed8' : '#1e293b'
+  ctx.font = `${isCenter ? 'bold ' : ''}${isCenter ? 12 : 11}px Sans-Serif`
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+  ctx.fillText(nd, x, y + r + 5)
 
-  // Sublabel (relation)
+  // Sublabel
   if (sublabel && !isCenter) {
-    ctx.fillStyle = '#64748b'
-    ctx.font = '9px Sans-Serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'top'
-    ctx.fillText(sublabel, x, y + radius + 18)
+    ctx.fillStyle = '#64748b'; ctx.font = '9px Sans-Serif'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+    ctx.fillText(sublabel, x, y + r + 19)
   }
-
   ctx.globalAlpha = 1
 }
 
-// ── Graph types ───────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 type PNode = {
-  id: string
-  label: string
-  sublabel: string
-  gender: 'male' | 'female' | 'center'
-  isCenter: boolean
-  imageUrl?: string
-  x?: number
-  y?: number
+  id: string; label: string; sublabel: string
+  gender: 'male' | 'female'; isCenter: boolean
+  details?: string
+  x?: number; y?: number
 }
-
 type PLink = { source: string | PNode; target: string | PNode; label?: string }
+function gid(n: string | PNode): string { return typeof n === 'string' ? n : n.id }
 
-function getNodeId(n: string | PNode): string {
-  return typeof n === 'string' ? n : n.id
-}
-
-// ── Avatar Network Graph ──────────────────────────────────────────────────────
-function AvatarGraph({
-  nodes,
-  links,
-  centerImageUrl,
-}: {
-  nodes: PNode[]
-  links: PLink[]
-  centerImageUrl?: string
-}) {
+// ── Avatar Graph ──────────────────────────────────────────────────────────────
+function AvatarGraph({ nodes, links }: { nodes: PNode[]; links: PLink[] }) {
   const graphRef = useRef<ForceGraphMethods | null>(null)
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const [dimensions, setDimensions] = useState({ width: 800, height: 560 })
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [dims, setDims] = useState({ w: 800, h: 560 })
   const [hoverNode, setHoverNode] = useState<PNode | null>(null)
   const [selectedNode, setSelectedNode] = useState<PNode | null>(null)
-  const [images, setImages] = useState<Map<string, HTMLImageElement | null>>(new Map())
+  const [selectedPos, setSelectedPos] = useState<{ x: number; y: number } | null>(null)
+  const [nodeImgs, setNodeImgs] = useState<Map<string, HTMLImageElement | null>>(new Map())
+  const [, forceUpdate] = useState(0)
 
-  // Load images
+  // Load stored images on mount
   useEffect(() => {
-    const toLoad: Array<{ id: string; url: string }> = []
-    nodes.forEach((n) => {
-      if (n.imageUrl) toLoad.push({ id: n.id, url: n.imageUrl })
-    })
-    if (centerImageUrl) toLoad.push({ id: '__center__', url: centerImageUrl })
-
-    Promise.all(
-      toLoad.map(async ({ id, url }) => {
-        const img = await loadImage(url)
-        return { id, img }
-      })
-    ).then((results) => {
-      const map = new Map<string, HTMLImageElement | null>()
-      results.forEach(({ id, img }) => map.set(id, img))
-      setImages(map)
-    })
-  }, [nodes, centerImageUrl])
+    const toLoad: { id: string; url: string }[] = []
+    nodes.forEach((n) => { const u = nodeImageStore.get(n.id); if (u) toLoad.push({ id: n.id, url: u }) })
+    if (!toLoad.length) return
+    Promise.all(toLoad.map(async ({ id, url }) => ({ id, img: await loadImg(url) })))
+      .then((res) => setNodeImgs((prev) => { const m = new Map(prev); res.forEach(({ id, img }) => m.set(id, img)); return m }))
+  }, [nodes])
 
   useEffect(() => {
-    const el = containerRef.current
-    if (!el) return
+    const el = containerRef.current; if (!el) return
     const obs = new ResizeObserver((e) => {
       const r = e[0].contentRect
-      setDimensions({ width: Math.max(400, Math.round(r.width)), height: Math.max(400, Math.round(r.height)) })
+      setDims({ w: Math.max(400, Math.round(r.width)), h: Math.max(400, Math.round(r.height)) })
     })
-    obs.observe(el)
-    return () => obs.disconnect()
+    obs.observe(el); return () => obs.disconnect()
   }, [])
 
   useEffect(() => {
-    const fg = graphRef.current
-    if (!fg) return
-    fg.d3Force('charge')?.strength(-400)
-    fg.d3Force('link')?.distance(130)
-  }, [dimensions])
+    const fg = graphRef.current; if (!fg) return
+    fg.d3Force('charge')?.strength(-450)
+    fg.d3Force('link')?.distance(160)
+  }, [dims])
 
   const connectedIds = useMemo(() => {
     if (!hoverNode) return new Set<string>()
     const ids = new Set<string>()
-    links.forEach((l) => {
-      const s = getNodeId(l.source), t = getNodeId(l.target)
-      if (s === hoverNode.id) ids.add(t)
-      if (t === hoverNode.id) ids.add(s)
-    })
+    links.forEach((l) => { const s = gid(l.source), t = gid(l.target); if (s === hoverNode.id) ids.add(t); if (t === hoverNode.id) ids.add(s) })
     return ids
   }, [links, hoverNode])
 
+  // Upload image for a node
+  const handleUpload = useCallback((nodeId: string, file: File) => {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const url = e.target?.result as string
+      nodeImageStore.set(nodeId, url)
+      loadedImages.delete(url)
+      loadImg(url).then((img) => {
+        setNodeImgs((prev) => new Map(prev).set(nodeId, img))
+        forceUpdate((n) => n + 1)
+      })
+    }
+    reader.readAsDataURL(file)
+  }, [])
+
   const nodeCanvasObject = useCallback((node: any, ctx: CanvasRenderingContext2D) => {
     const isHovered = hoverNode?.id === node.id
+    const isSelected = selectedNode?.id === node.id
     const isConnected = connectedIds.has(node.id)
     const dimmed = !!(hoverNode && !isHovered && !isConnected)
-    const radius = node.isCenter ? 36 : 24
-    const img = node.isCenter ? (images.get('__center__') ?? null) : (node.imageUrl ? images.get(node.id) ?? null : null)
-
-    drawAvatarNode(
-      ctx, node.x, node.y, radius,
-      node.label, node.sublabel,
-      img, node.gender,
-      isHovered, dimmed, node.isCenter
-    )
-  }, [hoverNode, connectedIds, images])
+    const r = node.isCenter ? 38 : 26
+    const img = nodeImgs.get(node.id) ?? null
+    drawAvatar(ctx, node.x, node.y, r, node.label, node.sublabel, img, node.gender, node.isCenter, isHovered || isSelected, dimmed)
+  }, [hoverNode, selectedNode, connectedIds, nodeImgs])
 
   const linkCanvasObject = useCallback((link: any, ctx: CanvasRenderingContext2D) => {
     const s = link.source, t = link.target
     if (!s?.x || !t?.x) return
-    const isHighlighted = hoverNode && (getNodeId(s) === hoverNode.id || getNodeId(t) === hoverNode.id)
-    const dimmed = hoverNode && !isHighlighted
-
-    ctx.globalAlpha = dimmed ? 0.05 : (isHighlighted ? 0.9 : 0.35)
-    ctx.strokeStyle = isHighlighted ? '#3b82f6' : '#94a3b8'
-    ctx.lineWidth = isHighlighted ? 2 : 1
+    const isHl = hoverNode && (gid(s) === hoverNode.id || gid(t) === hoverNode.id)
+    const dimmed = hoverNode && !isHl
+    ctx.globalAlpha = dimmed ? 0.05 : (isHl ? 0.85 : 0.3)
+    ctx.strokeStyle = isHl ? '#3b82f6' : '#94a3b8'
+    ctx.lineWidth = isHl ? 2 : 1.2
     ctx.beginPath(); ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y); ctx.stroke()
-
-    // Relation label on hover
-    if (isHighlighted && link.label) {
+    if (link.label) {
       const mx = (s.x + t.x) / 2, my = (s.y + t.y) / 2
-      ctx.globalAlpha = 1
+      ctx.globalAlpha = dimmed ? 0.08 : (isHl ? 1 : 0.65)
       const tw = ctx.measureText(link.label).width + 10
-      ctx.fillStyle = 'rgba(255,255,255,0.92)'
-      ctx.fillRect(mx - tw / 2, my - 9, tw, 16)
-      ctx.strokeStyle = '#cbd5e1'
-      ctx.lineWidth = 0.5
-      ctx.strokeRect(mx - tw / 2, my - 9, tw, 16)
-      ctx.fillStyle = '#3b82f6'
-      ctx.font = 'bold 9px Sans-Serif'
+      ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fillRect(mx - tw / 2, my - 8, tw, 15)
+      ctx.fillStyle = isHl ? '#1d4ed8' : '#475569'
+      ctx.font = `${isHl ? 'bold ' : ''}9px Sans-Serif`
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText(link.label, mx, my)
     }
     ctx.globalAlpha = 1
   }, [hoverNode])
 
+  // Convert canvas coords to container-relative screen coords
+  const canvasToScreen = useCallback((cx: number, cy: number) => {
+    const fg = graphRef.current as any
+    if (!fg) return null
+    try {
+      const zoom = fg.zoom?.() ?? 1
+      const pan = fg.centerAt?.() ?? { x: 0, y: 0 }
+      const el = containerRef.current
+      if (!el) return null
+      const rect = el.getBoundingClientRect()
+      const sx = (cx - pan.x) * zoom + rect.width / 2
+      const sy = (cy - pan.y) * zoom + rect.height / 2
+      return { x: sx, y: sy }
+    } catch { return null }
+  }, [])
+
+  const handleNodeClick = useCallback((node: any) => {
+    const n = node as PNode
+    if (selectedNode?.id === n.id) {
+      setSelectedNode(null); setSelectedPos(null); return
+    }
+    setSelectedNode(n)
+    // Try to get screen position
+    const pos = canvasToScreen(n.x ?? 0, n.y ?? 0)
+    setSelectedPos(pos)
+  }, [selectedNode, canvasToScreen])
+
   return (
-    <div className="flex flex-col h-full gap-2">
-      <div ref={containerRef} className="flex-1 min-h-0 rounded-xl overflow-hidden border bg-slate-50">
+    <div className="relative flex flex-col h-full gap-0">
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file && selectedNode) handleUpload(selectedNode.id, file)
+          e.target.value = ''
+        }}
+      />
+
+      <div ref={containerRef} className="flex-1 min-h-0 rounded-xl overflow-hidden" style={{ background: '#f1f5f9' }}>
         <ForceGraph2D
           ref={graphRef}
-          width={dimensions.width}
-          height={dimensions.height}
+          width={dims.w}
+          height={dims.h}
           graphData={{ nodes, links }}
-          nodeLabel={(n: any) => `${n.label}${n.sublabel ? ` (${n.sublabel})` : ''}`}
+          nodeLabel={() => ''}
           nodeCanvasObject={nodeCanvasObject}
           nodeCanvasObjectMode={() => 'replace'}
           nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-            const r = node.isCenter ? 40 : 28
+            if (!isFinite(node.x) || !isFinite(node.y)) return
             ctx.fillStyle = color
-            ctx.beginPath(); ctx.arc(node.x, node.y, r, 0, 2 * Math.PI); ctx.fill()
+            ctx.beginPath(); ctx.arc(node.x, node.y, node.isCenter ? 44 : 32, 0, 2 * Math.PI); ctx.fill()
           }}
           linkCanvasObject={linkCanvasObject}
           linkCanvasObjectMode={() => 'replace'}
           onNodeHover={(n) => setHoverNode(n ? (n as PNode) : null)}
-          onNodeClick={(n) => setSelectedNode(selectedNode?.id === (n as PNode).id ? null : (n as PNode))}
-          onEngineStop={() => graphRef.current?.zoomToFit(500, 60)}
-          backgroundColor="#f8fafc"
+          onNodeClick={handleNodeClick}
+          onEngineStop={() => graphRef.current?.zoomToFit(500, 80)}
+          backgroundColor="#f1f5f9"
           cooldownTicks={120}
         />
       </div>
+
+      {/* Detail popup — positioned near node or bottom-center */}
       {selectedNode && (
-        <div className="flex-shrink-0 rounded-lg border bg-white px-3 py-2 text-sm flex items-center gap-2">
-          <span className="font-semibold">{selectedNode.label}</span>
-          {selectedNode.sublabel && <Badge variant="outline">{selectedNode.sublabel}</Badge>}
-          <span className="text-muted-foreground text-xs">{selectedNode.gender}</span>
+        <div
+          className="absolute z-20 w-72 rounded-2xl bg-white shadow-2xl border border-slate-100 overflow-hidden"
+          style={
+            selectedPos
+              ? {
+                  left: Math.min(Math.max(selectedPos.x - 144, 8), dims.w - 296),
+                  top: Math.min(selectedPos.y + 50, dims.h - 200),
+                }
+              : { bottom: 12, left: '50%', transform: 'translateX(-50%)' }
+          }
+        >
+          {/* Header with photo */}
+          <div className={`flex items-center gap-3 p-4 ${selectedNode.gender === 'female' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+            {/* Clickable avatar — click to upload */}
+            <button
+              className="relative flex-shrink-0 group"
+              title="Click to upload photo"
+              onClick={() => fileRef.current?.click()}
+            >
+              <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-white shadow-md">
+                {nodeImageStore.get(selectedNode.id) ? (
+                  <img src={nodeImageStore.get(selectedNode.id)} alt={selectedNode.label} className="h-full w-full object-cover" />
+                ) : (
+                  <div className={`h-full w-full flex items-center justify-center ${selectedNode.gender === 'female' ? 'bg-pink-100' : 'bg-blue-100'}`}>
+                    <User className={`h-7 w-7 ${selectedNode.gender === 'female' ? 'text-pink-400' : 'text-blue-400'}`} />
+                  </div>
+                )}
+              </div>
+              {/* Upload overlay on hover */}
+              <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <span className="text-white text-xs font-medium">📷</span>
+              </div>
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-slate-900 text-sm leading-tight">{selectedNode.label}</p>
+              {selectedNode.sublabel && (
+                <Badge variant="outline" className="mt-1 text-xs capitalize border-slate-300">{selectedNode.sublabel}</Badge>
+              )}
+            </div>
+
+            <button onClick={() => { setSelectedNode(null); setSelectedPos(null) }} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Details */}
+          {selectedNode.details && (
+            <div className="px-4 py-3 text-sm text-slate-600 border-t border-slate-100 leading-relaxed">
+              {selectedNode.details}
+            </div>
+          )}
+
+          {!selectedNode.details && (
+            <div className="px-4 py-2 text-xs text-slate-400 border-t border-slate-100">
+              No additional details available.
+            </div>
+          )}
         </div>
       )}
     </div>
   )
-}
-
-// ── Personal Details Card ─────────────────────────────────────────────────────
-function PersonalDetailsView({ data, mainPerson }: { data: Record<string, string>; mainPerson: string }) {
-  const fields = [
-    { key: 'name', label: 'Name' },
-    { key: 'alias', label: 'Alias / Nick Name' },
-    { key: 'age', label: 'Age' },
-    { key: 'dob', label: 'Date of Birth' },
-    { key: 'gender', label: 'Gender' },
-    { key: 'marital_status', label: 'Marital Status' },
-    { key: 'occupation', label: 'Occupation' },
-    { key: 'education', label: 'Education' },
-    { key: 'address', label: 'Address' },
-    { key: 'mobile', label: 'Mobile' },
-    { key: 'email', label: 'Email' },
-    { key: 'nationality', label: 'Nationality / Religion' },
-    { key: 'role', label: 'Role in Case' },
-    { key: 'case_no', label: 'Case / FIR No.' },
-    { key: 'crime', label: 'Crime / Offence' },
-  ]
-
-  const hasData = fields.some((f) => data[f.key])
-
-  if (!hasData) {
-    return (
-      <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-        No personal details found in this document.
-      </div>
-    )
-  }
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 overflow-y-auto">
-      {fields.filter((f) => data[f.key]).map((f) => (
-        <div key={f.key} className="rounded-lg border bg-white p-3">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-1">{f.label}</p>
-          <p className="text-sm font-semibold text-foreground">{data[f.key]}</p>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-// ── Main Modal ────────────────────────────────────────────────────────────────
-interface ProfileGraphModalProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  sourceId: string
-  sourceTitle?: string
-  sourceImageUrl?: string
 }
 
 export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, sourceImageUrl }: ProfileGraphModalProps) {
@@ -332,62 +323,61 @@ export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, s
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState('personal')
 
+  const { data: models = [] } = useModels()
+  const { data: defaults } = useModelDefaults()
+  const modelId = useMemo(() => {
+    return defaults?.default_transformation_model || models.find((m) => m.type === 'language')?.id || ''
+  }, [defaults, models])
+
   useEffect(() => {
     if (!open || !sourceId) return
-    setLoading(true)
-    setError(null)
-    sourcesApi.getProfileGraph(sourceId)
+    setLoading(true); setError(null)
+    sourcesApi.getProfileGraph(sourceId, modelId || undefined)
       .then((d) => { setData(d); setLoading(false) })
-      .catch((e) => { setError(e?.response?.data?.detail || e?.message || 'Failed to load'); setLoading(false) })
-  }, [open, sourceId])
+      .catch((e) => { setError(e?.response?.data?.detail || e?.message || 'Failed'); setLoading(false) })
+  }, [open, sourceId, modelId])
 
   useEffect(() => {
     if (!open) { setData(null); setActiveTab('personal') }
   }, [open])
 
-  // Build family graph
+  const centerGender = useMemo((): 'male' | 'female' =>
+    (data?.personal?.gender || data?.personal?.Gender || '').toLowerCase().includes('female') ? 'female' : 'male',
+    [data]
+  )
+
+  const centerNode = useMemo((): PNode => ({
+    id: `center_${sourceId}`,
+    label: data?.main_person || sourceTitle || 'Main',
+    sublabel: data?.personal?.role || data?.personal?.Role || '',
+    gender: centerGender,
+    isCenter: true,
+    details: '',
+  }), [data, sourceId, sourceTitle, centerGender])
+
   const familyGraph = useMemo(() => {
     if (!data) return { nodes: [], links: [] }
-    const mainName = data.main_person || data.source_title
-    const centerNode: PNode = {
-      id: 'center',
-      label: mainName,
-      sublabel: data.personal?.role || 'main',
-      gender: data.personal?.gender?.toLowerCase().includes('female') ? 'female' : 'male',
-      isCenter: true,
-      imageUrl: sourceImageUrl,
-    }
     const nodes: PNode[] = [centerNode]
     const links: PLink[] = []
     data.family.forEach((p, i) => {
-      const nid = `family:${i}`
-      nodes.push({ id: nid, label: p.name, sublabel: p.relation, gender: p.gender, isCenter: false })
-      links.push({ source: 'center', target: nid, label: p.relation })
+      const nid = `fam_${sourceId}_${i}`
+      nodes.push({ id: nid, label: p.name, sublabel: p.relation, gender: p.gender as 'male' | 'female', isCenter: false, details: p.details })
+      links.push({ source: centerNode.id, target: nid, label: p.relation })
     })
     return { nodes, links }
-  }, [data, sourceImageUrl])
+  }, [data, centerNode, sourceId])
 
-  // Build associates graph
   const associatesGraph = useMemo(() => {
     if (!data) return { nodes: [], links: [] }
-    const mainName = data.main_person || data.source_title
-    const centerNode: PNode = {
-      id: 'center',
-      label: mainName,
-      sublabel: data.personal?.role || 'main',
-      gender: data.personal?.gender?.toLowerCase().includes('female') ? 'female' : 'male',
-      isCenter: true,
-      imageUrl: sourceImageUrl,
-    }
     const nodes: PNode[] = [centerNode]
     const links: PLink[] = []
     data.associates.forEach((p, i) => {
-      const nid = `assoc:${i}`
-      nodes.push({ id: nid, label: p.name, sublabel: p.relation, gender: p.gender, isCenter: false })
-      links.push({ source: 'center', target: nid, label: p.relation })
+      const nid = `assoc_${sourceId}_${i}`
+      nodes.push({ id: nid, label: p.name, sublabel: p.relation, gender: p.gender as 'male' | 'female', isCenter: false, details: p.details })
+      links.push({ source: centerNode.id, target: nid, label: p.relation })
     })
     return { nodes, links }
-  }, [data, sourceImageUrl])
+  }, [data, centerNode, sourceId])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -400,43 +390,33 @@ export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, s
           margin: 0, borderRadius: 0, transform: 'none', translate: 'none',
         }}
       >
-        <DialogHeader className="flex-shrink-0 px-6 pt-4 pb-3 border-b">
-          <DialogTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Profile Graph — {sourceTitle || 'Source'}
+        <DialogHeader className="flex-shrink-0 px-6 pt-4 pb-3 border-b bg-white">
+          <DialogTitle className="flex items-center gap-2 flex-wrap">
+            <User className="h-5 w-5 text-blue-500" />
+            <span>Profile — {sourceTitle || 'Source'}</span>
             {data && (
               <>
-                <Badge variant="outline" className="text-blue-600 border-blue-300">
-                  {data.main_person || 'Unknown'}
-                </Badge>
-                {data.family.length > 0 && (
-                  <Badge variant="outline" className="text-green-600 border-green-300">
-                    {data.family.length} family
-                  </Badge>
-                )}
-                {data.associates.length > 0 && (
-                  <Badge variant="outline" className="text-amber-600 border-amber-300">
-                    {data.associates.length} associates
-                  </Badge>
-                )}
+                <Badge variant="outline" className="text-blue-600 border-blue-300 font-normal">{data.main_person || 'Unknown'}</Badge>
+                {data.family.length > 0 && <Badge variant="outline" className="text-green-600 border-green-300">{data.family.length} family</Badge>}
+                {data.associates.length > 0 && <Badge variant="outline" className="text-amber-600 border-amber-300">{data.associates.length} associates</Badge>}
               </>
             )}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden bg-slate-50">
           {loading ? (
             <div className="flex h-full items-center justify-center gap-3">
               <RefreshCw className="h-6 w-6 animate-spin text-blue-500" />
-              <span className="text-muted-foreground">Extracting profile data…</span>
+              <span className="text-slate-500">Extracting profile with AI…</span>
             </div>
           ) : error ? (
-            <div className="flex h-full items-center justify-center">
-              <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">{error}</div>
+            <div className="flex h-full items-center justify-center p-8">
+              <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 max-w-md text-center">{error}</div>
             </div>
           ) : data ? (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-              <TabsList className="mx-6 mt-3 flex-shrink-0">
+              <TabsList className="mx-6 mt-3 flex-shrink-0 bg-white border">
                 <TabsTrigger value="personal" className="flex items-center gap-1.5">
                   <UserCheck className="h-4 w-4" /> Personal Details
                 </TabsTrigger>
@@ -448,28 +428,20 @@ export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, s
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="personal" className="flex-1 min-h-0 overflow-y-auto mx-6 mt-3">
-                <PersonalDetailsView data={data.personal} mainPerson={data.main_person} />
+              <TabsContent value="personal" className="flex-1 min-h-0 overflow-hidden">
+                <PersonalMindMap data={data.personal} mainPerson={data.main_person} sourceId={sourceId} sourceImageUrl={sourceImageUrl} />
               </TabsContent>
 
-              <TabsContent value="family" className="flex-1 min-h-0 p-4">
-                {data.family.length > 0 ? (
-                  <AvatarGraph nodes={familyGraph.nodes} links={familyGraph.links} centerImageUrl={sourceImageUrl} />
-                ) : (
-                  <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-                    No family members found in this document.
-                  </div>
-                )}
+              <TabsContent value="family" className="flex-1 min-h-0 p-4 overflow-hidden">
+                {data.family.length > 0
+                  ? <AvatarGraph nodes={familyGraph.nodes} links={familyGraph.links} />
+                  : <div className="flex h-40 items-center justify-center text-slate-400 text-sm">No family members found.</div>}
               </TabsContent>
 
-              <TabsContent value="associates" className="flex-1 min-h-0 p-4">
-                {data.associates.length > 0 ? (
-                  <AvatarGraph nodes={associatesGraph.nodes} links={associatesGraph.links} centerImageUrl={sourceImageUrl} />
-                ) : (
-                  <div className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-                    No friends or associates found in this document.
-                  </div>
-                )}
+              <TabsContent value="associates" className="flex-1 min-h-0 p-4 overflow-hidden">
+                {data.associates.length > 0
+                  ? <AvatarGraph nodes={associatesGraph.nodes} links={associatesGraph.links} />
+                  : <div className="flex h-40 items-center justify-center text-slate-400 text-sm">No friends or associates found.</div>}
               </TabsContent>
             </Tabs>
           ) : null}

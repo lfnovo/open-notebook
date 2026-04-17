@@ -32,6 +32,7 @@ services:
   surrealdb:
     image: surrealdb/surrealdb:v2
     command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
+    user: root
     ports:
       - "8000:8000"
     volumes:
@@ -65,10 +66,15 @@ services:
       - "11434:11434"
     volumes:
       - ./ollama_models:/root/.ollama
-    environment:
-      # Optional: set GPU support if available
-      - OLLAMA_NUM_GPU=0
     restart: always
+    # Optional: set GPU support if available
+    #deploy:
+    #  resources:
+    #    reservations:
+    #      devices:
+    #        - driver: nvidia
+    #          count: 1
+    #          capabilities: [gpu]
 
 ```
 
@@ -225,8 +231,7 @@ Check if GPU is available:
 # Show available GPUs
 docker exec open-notebook-local-ollama-1 ollama ps
 
-# Enable GPU in docker-compose.yml:
-# - OLLAMA_NUM_GPU=1
+# Enable GPU in docker-compose.yml
 ```
 
 Then restart: `docker compose restart ollama`

@@ -317,7 +317,13 @@ function AvatarGraph({ nodes, links }: { nodes: PNode[]; links: PLink[] }) {
   )
 }
 
-export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, sourceImageUrl }: ProfileGraphModalProps) {
+export function ProfileGraphModal({ open, onOpenChange, sourceId, sourceTitle, sourceImageUrl }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  sourceId: string
+  sourceTitle?: string
+  sourceImageUrl?: string
+}) {
   const [data, setData] = useState<ProfileGraphData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

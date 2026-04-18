@@ -1,4 +1,4 @@
-backend_start : uv run uvicorn api.main:app --host 127.0.0.1 --port 5055
+backend_start : uv run uvicorn api.main:app --host 0.0.0.0 --port 5055 --reload
 
 surrealdb_start : C:\surrealdb\surreal.exe start --log info --user root --pass root rocksdb://./surreal_data
 

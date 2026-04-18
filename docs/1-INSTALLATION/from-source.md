@@ -16,13 +16,13 @@ Clone the repository and run locally. **For developers and contributors.**
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/lfnovo/open-notebook.git
-cd open-notebook
+git clone https://github.com/lfnovo/agent-book.git
+cd agent-book
 
 # If you forked it:
-git clone https://github.com/YOUR_USERNAME/open-notebook.git
-cd open-notebook
-git remote add upstream https://github.com/lfnovo/open-notebook.git
+git clone https://github.com/YOUR_USERNAME/agent-book.git
+cd agent-book
+git remote add upstream https://github.com/lfnovo/agent-book.git
 ```
 
 ### 2. Install Python Dependencies
@@ -38,8 +38,8 @@ If you prefer using **Conda** to manage your environments, follow these steps in
 
 ```bash
 # Create and activate the environment
-conda create -n open-notebook python=3.11 -y
-conda activate open-notebook
+conda create -n agent-book python=3.11 -y
+conda activate agent-book
 
 # Install uv inside conda to maintain compatibility with the Makefile
 conda install -c conda-forge uv nodejs -y
@@ -177,4 +177,4 @@ uv run uvicorn api.main:app --port 5056
 ## Getting Help
 
 - **Discord**: [Community](https://discord.gg/37XJPXfz2w)
-- **Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Issues**: [GitHub Issues](https://github.com/lfnovo/agent-book/issues)

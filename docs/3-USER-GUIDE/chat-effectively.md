@@ -541,7 +541,7 @@ For deep analysis: Sonnet/Opus worth the cost
 
 Chat is fundamentally different from asking ChatGPT directly:
 
-| Aspect | ChatGPT | Open Notebook Chat |
+| Aspect | ChatGPT | AgentBook Chat |
 |--------|---------|-------------------|
 | **Source control** | None (uses training) | You control which sources are visible |
 | **Cost control** | Per token | Per token, but context is your choice |

@@ -26,7 +26,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 - Stores provider-model pairs for AI factory instantiation
 
 #### DefaultModels (RecordModel)
-- Singleton configuration record (record_id: `open_notebook:default_models`)
+- Singleton configuration record (record_id: `agent_book:default_models`)
 - Fields: default_chat_model, default_transformation_model, large_context_model, default_text_to_speech_model, default_speech_to_text_model, default_embedding_model, default_tools_model
 - `get_instance()`: Always fetches fresh from database (overrides parent caching for real-time updates)
 - Returns fresh instance on each call (no singleton cache)
@@ -81,10 +81,10 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 ## Key Dependencies
 
 - `esperanto`: AIFactory.create_language(), create_embedding(), create_speech_to_text(), create_text_to_speech()
-- `open_notebook.database.repository`: repo_query, ensure_record_id
-- `open_notebook.domain.base`: ObjectModel, RecordModel base classes
-- `open_notebook.domain.credential`: Credential for database-stored API keys
-- `open_notebook.utils`: token_count() for context size detection
+- `agent_book.database.repository`: repo_query, ensure_record_id
+- `agent_book.domain.base`: ObjectModel, RecordModel base classes
+- `agent_book.domain.credential`: Credential for database-stored API keys
+- `agent_book.utils`: token_count() for context size detection
 - `loguru`: Logging for model selection decisions
 
 ## Important Quirks & Gotchas
@@ -110,7 +110,7 @@ All models use Esperanto library as provider abstraction (OpenAI, Anthropic, Goo
 ## Usage Example
 
 ```python
-from open_notebook.ai.models import model_manager
+from agent_book.ai.models import model_manager
 
 # Get default chat model
 chat_model = await model_manager.get_default_model("chat")
@@ -122,7 +122,7 @@ embedding_model = await model_manager.get_model("model:openai_embedding")
 embedding_model = await model_manager.get_embedding_model(temperature=0.1)
 
 # Provision model for LangGraph (auto-detects large context)
-from open_notebook.ai.provision import provision_langchain_model
+from agent_book.ai.provision import provision_langchain_model
 langchain_model = await provision_langchain_model(
     content=long_text,
     model_id=None,  # Use default

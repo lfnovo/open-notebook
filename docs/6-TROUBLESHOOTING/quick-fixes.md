@@ -358,7 +358,7 @@ docker compose up
 
 1. **Keep backups** — Export your notebooks regularly
 2. **Monitor logs** — Check `docker compose logs` periodically
-3. **Update regularly** — Pull latest image: `docker pull lfnovo/open_notebook:latest`
+3. **Update regularly** — Pull latest image: `docker pull lfnovo/agent_book:latest`
 4. **Document changes** — Keep notes on what you configured
 5. **Test after updates** — Verify everything works
 
@@ -369,4 +369,4 @@ docker compose up
 - **Look up your exact error** in [Troubleshooting Index](index.md)
 - **Check the FAQ** in [FAQ](faq.md)
 - **Check logs:** `docker compose logs | head -50`
-- **Ask for help:** [Discord](https://discord.gg/37XJPXfz2w) or [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Ask for help:** [Discord](https://discord.gg/37XJPXfz2w) or [GitHub Issues](https://github.com/lfnovo/agent-book/issues)

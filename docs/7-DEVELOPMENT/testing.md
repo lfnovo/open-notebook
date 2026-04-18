@@ -1,6 +1,6 @@
 # Testing Guide
 
-This document provides guidelines for writing tests in Open Notebook. Testing is critical to maintaining code quality and preventing regressions.
+This document provides guidelines for writing tests in AgentBook. Testing is critical to maintaining code quality and preventing regressions.
 
 ## Testing Philosophy
 
@@ -30,7 +30,7 @@ We use **pytest** with async support for all Python tests:
 ```python
 import pytest
 from httpx import AsyncClient
-from open_notebook.domain.notebook import Notebook
+from agent_book.domain.notebook import Notebook
 
 @pytest.mark.asyncio
 async def test_create_notebook():
@@ -175,7 +175,7 @@ uv run pytest tests/test_notebooks.py::test_create_notebook
 ### Run with Coverage Report
 
 ```bash
-uv run pytest --cov=open_notebook
+uv run pytest --cov=agent_book
 ```
 
 ### Run Only Unit Tests
@@ -362,7 +362,7 @@ async def test_protected_endpoint(client_with_auth):
 - Aim for 70%+ overall coverage
 - 90%+ coverage for critical business logic
 - Don't obsess over 100% - focus on meaningful tests
-- Use `--cov` flag to check coverage: `uv run pytest --cov=open_notebook`
+- Use `--cov` flag to check coverage: `uv run pytest --cov=agent_book`
 
 ## Async Test Patterns
 

@@ -1,6 +1,6 @@
 """
-API client for Open Notebook API.
-This module provides a client interface to interact with the Open Notebook API.
+API client for AgentBook API.
+This module provides a client interface to interact with the AgentBook API.
 """
 
 import os
@@ -11,7 +11,7 @@ from loguru import logger
 
 
 class APIClient:
-    """Client for Open Notebook API."""
+    """Client for AgentBook API."""
 
     def __init__(self, base_url: Optional[str] = None):
         self.base_url = base_url or os.getenv("API_BASE_URL", "http://127.0.0.1:5055")

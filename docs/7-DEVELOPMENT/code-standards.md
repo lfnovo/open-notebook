@@ -1,6 +1,6 @@
 # Code Standards
 
-This document outlines coding standards and best practices for Open Notebook contributions. All code should follow these guidelines to ensure consistency, readability, and maintainability.
+This document outlines coding standards and best practices for AgentBook contributions. All code should follow these guidelines to ensure consistency, readability, and maintainability.
 
 ## Python Standards
 
@@ -51,7 +51,7 @@ def fetch_data(url: str) -> Dict[str, Any]:
 Use structured error handling with custom exceptions:
 
 ```python
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from agent_book.exceptions import DatabaseOperationError, InvalidInputError
 
 async def create_notebook(name: str, description: str) -> Notebook:
     """Create a new notebook with validation."""
@@ -99,7 +99,7 @@ async def vector_search(
 Notebook domain model and operations.
 
 This module contains the core Notebook class and related operations for
-managing research notebooks within the Open Notebook system.
+managing research notebooks within the AgentBook system.
 """
 ```
 
@@ -108,7 +108,7 @@ managing research notebooks within the Open Notebook system.
 class Notebook(BaseModel):
     """A research notebook containing sources, notes, and chat sessions.
 
-    Notebooks are the primary organizational unit in Open Notebook, allowing
+    Notebooks are the primary organizational unit in AgentBook, allowing
     users to group related research materials and maintain separate contexts
     for different projects.
 
@@ -241,7 +241,7 @@ async def create_notebook(notebook: NotebookCreate):
 Use the repository pattern consistently:
 
 ```python
-from open_notebook.database.repository import repo_create, repo_query, repo_update
+from agent_book.database.repository import repo_create, repo_query, repo_update
 
 # Create records
 async def create_notebook(data: Dict[str, Any]) -> Dict[str, Any]:

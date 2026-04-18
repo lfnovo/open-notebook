@@ -1,6 +1,6 @@
 # Quick Start - OpenAI (5 minutes)
 
-Get Open Notebook running with OpenAI's GPT models. Fast, powerful, and simple.
+Get AgentBook running with OpenAI's GPT models. Fast, powerful, and simple.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ Get Open Notebook running with OpenAI's GPT models. Fast, powerful, and simple.
 
 ## Step 1: Create Configuration (1 min)
 
-Create a new folder `open-notebook` and add this file:
+Create a new folder `agent-book` and add this file:
 
 **docker-compose.yml**:
 ```yaml
@@ -29,8 +29,8 @@ services:
     volumes:
       - ./surreal_data:/mydata
 
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     ports:
       - "8502:8502"  # Web UI
@@ -43,8 +43,8 @@ services:
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=password
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
+      - SURREAL_NAMESPACE=agent_book
+      - SURREAL_DATABASE=agent_book
     volumes:
       - ./notebook_data:/app/data
     depends_on:
@@ -60,7 +60,7 @@ services:
 
 ## Step 2: Start Services (1 min)
 
-Open terminal in your `open-notebook` folder:
+Open terminal in your `agent-book` folder:
 
 ```bash
 docker compose up -d
@@ -70,14 +70,14 @@ Wait 15-20 seconds for services to start.
 
 ---
 
-## Step 3: Access Open Notebook (instant)
+## Step 3: Access AgentBook (instant)
 
 Open your browser:
 ```
 http://localhost:8502
 ```
 
-You should see the Open Notebook interface!
+You should see the AgentBook interface!
 
 ---
 

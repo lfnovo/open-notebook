@@ -1,11 +1,11 @@
 """
-Authentication router for Open Notebook API.
+Authentication router for AgentBook API.
 Provides endpoints to check authentication status.
 """
 
 from fastapi import APIRouter
 
-from open_notebook.utils.encryption import get_secret_from_env
+from agent_book.utils.encryption import get_secret_from_env
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

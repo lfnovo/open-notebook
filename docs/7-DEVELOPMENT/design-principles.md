@@ -1,24 +1,24 @@
 # Design Principles & Project Vision
 
-This document outlines the core principles, vision, and design philosophy that guide Open Notebook's development. All contributors should read and understand these principles before proposing changes or new features.
+This document outlines the core principles, vision, and design philosophy that guide AgentBook's development. All contributors should read and understand these principles before proposing changes or new features.
 
 ## 🎯 Project Vision
 
-Open Notebook aims to be a **privacy-focused, self-hosted alternative to Google's Notebook LM** that empowers users to:
+AgentBook aims to be a **privacy-focused, self-hosted alternative to Google's Notebook LM** that empowers users to:
 
 1. **Own their research data** - Full control over where data lives and who can access it
 2. **Choose their AI providers** - Freedom to use any AI provider or run models locally
 3. **Customize their workflows** - Flexibility to adapt the tool to different research needs
 4. **Access their work anywhere** - Through web UI, API, or integrations
 
-### What Open Notebook IS
+### What AgentBook IS
 
 - A **research assistant** for managing and understanding content
 - A **platform** that connects various AI providers
 - A **privacy-first** tool that keeps your data under your control
 - An **extensible system** with APIs and customization options
 
-### What Open Notebook IS NOT
+### What AgentBook IS NOT
 
 - A document editor (use Google Docs, Notion, etc. for that)
 - A file storage system (use Dropbox, S3, etc. for that)

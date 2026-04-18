@@ -74,7 +74,7 @@ An episode profile defines the structure and tone.
 **Option A: Use Preset Profile**
 
 ```
-Open Notebook provides preset profiles:
+AgentBook provides preset profiles:
 
 Academic Presentation (Monologue)
 ├─ 1 speaker
@@ -140,7 +140,7 @@ Speakers are the "voice" of your podcast.
 **Option A: Use Preset Speakers**
 
 ```
-Open Notebook provides preset profiles:
+AgentBook provides preset profiles:
 
 "Expert Alex"
 - Expertise: Deep knowledge
@@ -675,4 +675,4 @@ After: Same research, multiple formats (read/listen)
 
 Podcasts aren't just for entertainment—they're a tool for making research more accessible, shareable, and consumable.
 
-That's why they're important for Open Notebook.
+That's why they're important for AgentBook.

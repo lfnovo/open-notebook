@@ -8,7 +8,7 @@ that already have the new fields populated.
 
 from loguru import logger
 
-from open_notebook.database.repository import repo_query
+from agent_book.database.repository import repo_query
 
 
 async def _find_model_record(
@@ -34,7 +34,7 @@ async def _find_or_create_model(
         return model_id
 
     # Try to find a credential for this provider and auto-create the model
-    from open_notebook.domain.credential import Credential
+    from agent_book.domain.credential import Credential
 
     credentials = await Credential.get_by_provider(provider)
     if not credentials:
@@ -46,7 +46,7 @@ async def _find_or_create_model(
 
     # Use the first credential for the provider
     credential = credentials[0]
-    from open_notebook.ai.models import Model
+    from agent_book.ai.models import Model
 
     model = Model(
         name=model_name,
@@ -98,7 +98,7 @@ async def migrate_podcast_profiles() -> None:
                         outline_provider, outline_model, "language"
                     )
                     if model_id:
-                        from open_notebook.database.repository import ensure_record_id
+                        from agent_book.database.repository import ensure_record_id
 
                         updates["outline_llm"] = ensure_record_id(model_id)
 
@@ -110,12 +110,12 @@ async def migrate_podcast_profiles() -> None:
                         transcript_provider, transcript_model, "language"
                     )
                     if model_id:
-                        from open_notebook.database.repository import ensure_record_id
+                        from agent_book.database.repository import ensure_record_id
 
                         updates["transcript_llm"] = ensure_record_id(model_id)
 
             if updates:
-                from open_notebook.database.repository import repo_update
+                from agent_book.database.repository import repo_update
 
                 await repo_update("episode_profile", str(raw["id"]), updates)
                 ep_migrated += 1
@@ -162,7 +162,7 @@ async def migrate_podcast_profiles() -> None:
                 tts_provider, tts_model, "text_to_speech"
             )
             if model_id:
-                from open_notebook.database.repository import ensure_record_id, repo_update
+                from agent_book.database.repository import ensure_record_id, repo_update
 
                 await repo_update(
                     "speaker_profile",

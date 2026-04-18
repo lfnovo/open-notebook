@@ -1,6 +1,6 @@
-# AI Context & RAG - How Open Notebook Uses Your Research
+# AI Context & RAG - How AgentBook Uses Your Research
 
-Open Notebook uses different approaches to make AI models aware of your research depending on the feature. This section explains **RAG** (used in Ask) and **full-content context** (used in Chat).
+AgentBook uses different approaches to make AI models aware of your research depending on the feature. This section explains **RAG** (used in Ask) and **full-content context** (used in Chat).
 
 ---
 
@@ -23,7 +23,7 @@ Open Notebook uses different approaches to make AI models aware of your research
 - Pro: Private, free
 - Con: AI doesn't know anything about your specific topic
 
-### Open Notebook's Dual Approach
+### AgentBook's Dual Approach
 
 **For Chat**: Sends the entire selected content to the LLM
 - Simple and transparent: You select sources, they're sent in full
@@ -41,7 +41,7 @@ Open Notebook uses different approaches to make AI models aware of your research
 
 ### Stage 1: Content Preparation
 
-When you upload a source, Open Notebook prepares it for retrieval:
+When you upload a source, AgentBook prepares it for retrieval:
 
 ```
 1. EXTRACT TEXT
@@ -147,7 +147,7 @@ SYSTEM ADDS CITATIONS:
 
 ## Two Search Modes: Exact vs. Semantic
 
-Open Notebook provides two different search strategies for different goals.
+AgentBook provides two different search strategies for different goals.
 
 ### 1. Text Search (Keyword Matching)
 
@@ -197,7 +197,7 @@ Why? The vectors are semantically similar to your concept.
 
 ## Context Management: Your Control Panel
 
-Here's where Open Notebook is different: **You decide what the AI sees.**
+Here's where AgentBook is different: **You decide what the AI sees.**
 
 ### The Three Levels
 
@@ -349,7 +349,7 @@ AI:
 
 ## What This Means: Privacy by Design
 
-Open Notebook's RAG approach gives you something you don't get with ChatGPT or Claude directly:
+AgentBook's RAG approach gives you something you don't get with ChatGPT or Claude directly:
 
 **You control the boundary between:**
 - What stays private (on your system)
@@ -425,7 +425,7 @@ This is why semantic search finds conceptually similar content even when words a
 
 ## Summary
 
-Open Notebook gives you **two ways** to work with AI:
+AgentBook gives you **two ways** to work with AI:
 
 ### Chat (Full-Content)
 - Sends entire selected sources to LLM

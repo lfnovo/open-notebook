@@ -2,9 +2,9 @@ from esperanto import LanguageModel
 from langchain_core.language_models.chat_models import BaseChatModel
 from loguru import logger
 
-from open_notebook.ai.models import model_manager
-from open_notebook.exceptions import ConfigurationError
-from open_notebook.utils import token_count
+from agent_book.ai.models import model_manager
+from agent_book.exceptions import ConfigurationError
+from agent_book.utils import token_count
 
 
 async def provision_langchain_model(

@@ -20,7 +20,7 @@ Run text-to-speech locally for free, private podcast generation using OpenAI-com
 [Speaches](https://github.com/speaches-ai/speaches) is an open-source, OpenAI-compatible TTS server.
 
 > **💡 Ready-made Docker Compose files available:**
-> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + Open Notebook
+> - **[docker-compose-speaches.yml](../../examples/docker-compose-speaches.yml)** - Speaches + AgentBook
 > - **[docker-compose-full-local.yml](../../examples/docker-compose-full-local.yml)** - Speaches + Ollama (100% local setup)
 >
 > These include complete setup instructions and configuration examples. Just copy and run!
@@ -72,7 +72,7 @@ curl "http://localhost:8969/v1/audio/speech" -s \
 
 Play `test.mp3` to verify.
 
-### Step 4: Configure Open Notebook
+### Step 4: Configure AgentBook
 
 **Via Settings UI (Recommended):**
 1. Go to **Settings** → **API Keys**
@@ -82,7 +82,7 @@ Play `test.mp3` to verify.
 
 **Legacy (Deprecated) — Environment variables:**
 ```yaml
-# In your Open Notebook docker-compose.yml
+# In your AgentBook docker-compose.yml
 environment:
   - OPENAI_COMPATIBLE_BASE_URL_TTS=http://host.docker.internal:8969/v1
 ```
@@ -92,7 +92,7 @@ environment:
 export OPENAI_COMPATIBLE_BASE_URL_TTS=http://localhost:8969/v1
 ```
 
-### Step 5: Add Model in Open Notebook
+### Step 5: Add Model in AgentBook
 
 1. Go to **Settings** → **Models**
 2. Click **Add Model** in Text-to-Speech section
@@ -177,11 +177,11 @@ volumes:
 
 When configuring your OpenAI-Compatible credential in **Settings → API Keys**, use the appropriate TTS base URL for your setup:
 
-### Open Notebook in Docker (macOS/Windows)
+### AgentBook in Docker (macOS/Windows)
 
 **TTS Base URL:** `http://host.docker.internal:8969/v1`
 
-### Open Notebook in Docker (Linux)
+### AgentBook in Docker (Linux)
 
 **TTS Base URL (Option 1 — Docker bridge IP):** `http://172.17.0.1:8969/v1`
 
@@ -236,8 +236,8 @@ docker compose down && docker compose up -d
 # Test Speaches is running
 curl http://localhost:8969/v1/models
 
-# From inside Open Notebook container
-docker exec -it open-notebook curl http://host.docker.internal:8969/v1/models
+# From inside AgentBook container
+docker exec -it agent-book curl http://host.docker.internal:8969/v1/models
 ```
 
 ### Model Not Found

@@ -1,5 +1,5 @@
 [project]
-name = "open-notebook"
+name = "agent-book"
 version = "1.8.5"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
@@ -44,7 +44,7 @@ dependencies = [
 ]
 
 [tool.setuptools]
-package-dir = {"open_notebook" = "open_notebook"}
+package-dir = {"agent_book" = "agent_book"}
 
 
 [project.optional-dependencies]

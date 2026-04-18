@@ -1,6 +1,6 @@
-# User Guide - How to Use Open Notebook
+# User Guide - How to Use AgentBook
 
-This guide covers practical, step-by-step usage of Open Notebook features. You already understand the concepts; now learn how to actually use them.
+This guide covers practical, step-by-step usage of AgentBook features. You already understand the concepts; now learn how to actually use them.
 
 > **Prerequisite**: Review [2-CORE-CONCEPTS](../2-CORE-CONCEPTS/index.md) first to understand the mental models (notebooks, sources, notes, chat, transformations, podcasts).
 

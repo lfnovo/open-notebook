@@ -125,9 +125,9 @@ Note: Changes require restart of the application.
 
 ## Key Dependencies
 
-- `open_notebook.domain.notebook`: Source, Note, SourceInsight models; vector_search function
-- `open_notebook.ai.models`: model_manager for embedding model access
-- `open_notebook.exceptions`: DatabaseOperationError, NotFoundError
+- `agent_book.domain.notebook`: Source, Note, SourceInsight models; vector_search function
+- `agent_book.ai.models`: model_manager for embedding model access
+- `agent_book.exceptions`: DatabaseOperationError, NotFoundError
 - `langchain_text_splitters`: HTMLHeaderTextSplitter, MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 - `numpy`: Mean pooling calculations
 - `tiktoken`: Token encoding for GPT models
@@ -158,7 +158,7 @@ Note: Changes require restart of the application.
 
 ### Chunking
 ```python
-from open_notebook.utils.chunking import chunk_text, detect_content_type, ContentType
+from agent_book.utils.chunking import chunk_text, detect_content_type, ContentType
 
 # Auto-detect content type and chunk
 chunks = chunk_text(long_text, file_path="document.md")
@@ -169,7 +169,7 @@ chunks = chunk_text(html_content, content_type=ContentType.HTML)
 
 ### Embedding
 ```python
-from open_notebook.utils.embedding import generate_embedding, generate_embeddings
+from agent_book.utils.embedding import generate_embedding, generate_embeddings
 
 # Single text (handles chunking + mean pooling automatically)
 embedding = await generate_embedding(long_text)
@@ -180,7 +180,7 @@ embeddings = await generate_embeddings(["text1", "text2", "text3"])
 
 ### Context Building
 ```python
-from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
+from agent_book.utils.context_builder import ContextBuilder, ContextConfig
 
 config = ContextConfig(
     sources={"source:123": "full", "source:456": "summary"},
@@ -215,7 +215,7 @@ for item in context_items:
 
 **Usage Example**:
 ```python
-from open_notebook.utils.encryption import encrypt_value, decrypt_value
+from agent_book.utils.encryption import encrypt_value, decrypt_value
 
 # Encrypt before storing in database
 encrypted_api_key = encrypt_value(api_key)

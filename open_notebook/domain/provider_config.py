@@ -14,9 +14,9 @@ from typing import ClassVar, Dict, List, Optional
 
 from pydantic import Field, SecretStr, field_validator
 
-from open_notebook.database.repository import ensure_record_id, repo_query, repo_upsert
-from open_notebook.domain.base import RecordModel
-from open_notebook.utils.encryption import decrypt_value, encrypt_value
+from agent_book.database.repository import ensure_record_id, repo_query, repo_upsert
+from agent_book.domain.base import RecordModel
+from agent_book.utils.encryption import decrypt_value, encrypt_value
 
 
 class ProviderCredential:
@@ -185,7 +185,7 @@ class ProviderConfig(RecordModel):
         default = config.get_default_config("openai")
     """
 
-    record_id: ClassVar[str] = "open_notebook:provider_configs"
+    record_id: ClassVar[str] = "agent_book:provider_configs"
 
     # Store credentials organized by provider name
     # Structure: {"openai": [ProviderCredential, ...], "anthropic": [...], ...}
@@ -434,7 +434,7 @@ class ProviderConfig(RecordModel):
         and encryption.
         """
         data = self._prepare_save_data()
-        await repo_upsert("open_notebook", self.record_id, data)
+        await repo_upsert("agent_book", self.record_id, data)
         return self
 
     @classmethod

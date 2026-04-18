@@ -9,9 +9,9 @@ from esperanto import (
 )
 from loguru import logger
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.base import ObjectModel, RecordModel
-from open_notebook.exceptions import ConfigurationError
+from agent_book.database.repository import ensure_record_id, repo_query
+from agent_book.domain.base import ObjectModel, RecordModel
+from agent_book.exceptions import ConfigurationError
 
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
 
@@ -50,7 +50,7 @@ class Model(ObjectModel):
         """Get the Credential object linked to this model, if any."""
         if not self.credential:
             return None
-        from open_notebook.domain.credential import Credential
+        from agent_book.domain.credential import Credential
 
         try:
             return await Credential.get(self.credential)
@@ -60,7 +60,7 @@ class Model(ObjectModel):
 
 
 class DefaultModels(RecordModel):
-    record_id: ClassVar[str] = "open_notebook:default_models"
+    record_id: ClassVar[str] = "agent_book:default_models"
     default_chat_model: Optional[str] = None
     default_transformation_model: Optional[str] = None
     large_context_model: Optional[str] = None
@@ -132,12 +132,12 @@ class ModelManager:
                     f"Falling back to env vars."
                 )
                 # Fall back to env var provisioning
-                from open_notebook.ai.key_provider import provision_provider_keys
+                from agent_book.ai.key_provider import provision_provider_keys
 
                 await provision_provider_keys(model.provider)
         else:
             # No credential linked - use env var fallback
-            from open_notebook.ai.key_provider import provision_provider_keys
+            from agent_book.ai.key_provider import provision_provider_keys
 
             await provision_provider_keys(model.provider)
 

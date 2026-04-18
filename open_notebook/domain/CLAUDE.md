@@ -58,7 +58,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
   - **One record per credential**: Each credential (e.g., "My OpenAI Key", "Work Anthropic") is a separate `Credential` record in SurrealDB
   - **Fields**: name, provider, modalities (list), api_key (SecretStr), base_url, endpoint, api_version, endpoint_llm/embedding/stt/tts, project, location, credentials_path
   - **SecretStr protection**: API key field uses Pydantic's `SecretStr` (values masked in logs/repr)
-  - **Encryption integration**: Uses `encrypt_value()`/`decrypt_value()` from `open_notebook.utils.encryption`
+  - **Encryption integration**: Uses `encrypt_value()`/`decrypt_value()` from `agent_book.utils.encryption`
     - Keys encrypted with Fernet before database storage
     - Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` environment variable (warns if not set)
   - **Key methods**:
@@ -83,8 +83,8 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 
 - `surrealdb`: RecordID type for relationships
 - `pydantic`: Validation and field_validator decorators
-- `open_notebook.database.repository`: CRUD and relationship functions
-- `open_notebook.ai.models`: ModelManager for embeddings
+- `agent_book.database.repository`: CRUD and relationship functions
+- `agent_book.ai.models`: ModelManager for embeddings
 - `surreal_commands`: Async job submission (vectorization, insights)
 - `loguru`: Logging
 

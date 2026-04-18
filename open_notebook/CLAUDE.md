@@ -1,10 +1,10 @@
-# Open Notebook - Root CLAUDE.md
+# AgentBook - Root CLAUDE.md
 
-This file provides architectural guidance for contributors working on Open Notebook at the project level.
+This file provides architectural guidance for contributors working on AgentBook at the project level.
 
 ## Project Overview
 
-**Open Notebook** is an open-source, privacy-focused alternative to Google's Notebook LM. It's an AI-powered research assistant enabling users to upload multi-modal content (PDFs, audio, video, web pages), generate intelligent notes, search semantically, chat with AI models, and produce professional podcasts—all with complete control over data and choice of AI providers.
+**AgentBook** is an open-source, privacy-focused alternative to Google's Notebook LM. It's an AI-powered research assistant enabling users to upload multi-modal content (PDFs, audio, video, web pages), generate intelligent notes, search semantically, chat with AI models, and produce professional podcasts—all with complete control over data and choice of AI providers.
 
 **Key Values**: Privacy-first, multi-provider AI support, fully self-hosted option, open-source transparency.
 
@@ -59,7 +59,7 @@ User documentation is at @docs/
 - **Build Tool**: Webpack (via Next.js)
 - **i18n compatible**: All front-end changes must also consider the translation keys
 
-### API Backend (`api/` + `open_notebook/`)
+### API Backend (`api/` + `agent_book/`)
 - **Framework**: FastAPI 0.104+
 - **Language**: Python 3.11+
 - **Workflows**: LangGraph state machines
@@ -194,7 +194,7 @@ See dedicated CLAUDE.md files for detailed guidance:
 5. Test via http://localhost:5055/docs
 
 ### Add a New LangGraph Workflow
-1. Create `open_notebook/graphs/workflow_name.py`
+1. Create `agent_book/graphs/workflow_name.py`
 2. Define StateDict and node functions
 3. Build graph with `.add_node()` / `.add_edge()`
 4. Invoke in service: `graph.ainvoke({"input": ...}, config={"..."})`
@@ -217,9 +217,9 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 ## Support & Community
 
-- **Documentation**: https://open-notebook.ai
+- **Documentation**: https://book.agnxxt.com
 - **Discord**: https://discord.gg/37XJPXfz2w
-- **Issues**: https://github.com/lfnovo/open-notebook/issues
+- **Issues**: https://github.com/lfnovo/agent-book/issues
 - **License**: MIT (see LICENSE)
 
 

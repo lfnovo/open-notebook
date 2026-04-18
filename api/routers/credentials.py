@@ -54,8 +54,8 @@ from api.models import (
     RegisterModelsResponse,
     UpdateCredentialRequest,
 )
-from open_notebook.database.repository import ensure_record_id, repo_delete, repo_query
-from open_notebook.domain.credential import Credential
+from agent_book.database.repository import ensure_record_id, repo_delete, repo_query
+from agent_book.domain.credential import Credential
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 

@@ -5,12 +5,12 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command, submit_command
 
-from open_notebook.ai.models import model_manager
-from open_notebook.database.repository import ensure_record_id, repo_insert, repo_query
-from open_notebook.exceptions import ConfigurationError
-from open_notebook.domain.notebook import Note, Source, SourceInsight
-from open_notebook.utils.chunking import ContentType, chunk_text, detect_content_type
-from open_notebook.utils.embedding import generate_embedding, generate_embeddings
+from agent_book.ai.models import model_manager
+from agent_book.database.repository import ensure_record_id, repo_insert, repo_query
+from agent_book.exceptions import ConfigurationError
+from agent_book.domain.notebook import Note, Source, SourceInsight
+from agent_book.utils.chunking import ContentType, chunk_text, detect_content_type
+from agent_book.utils.embedding import generate_embedding, generate_embeddings
 
 
 def full_model_dump(model):
@@ -120,7 +120,7 @@ class EmbedSourceOutput(CommandOutput):
 
 @command(
     "embed_note",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -212,7 +212,7 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
 
 @command(
     "embed_insight",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -306,7 +306,7 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
 
 @command(
     "embed_source",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -442,7 +442,7 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
 
 @command(
     "create_insight",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",
@@ -505,7 +505,7 @@ async def create_insight_command(
 
         # 2. Submit embedding command (fire-and-forget)
         submit_command(
-            "open_notebook",
+            "agent_book",
             "embed_insight",
             {"insight_id": insight_id},
         )
@@ -619,7 +619,7 @@ async def collect_items_for_rebuild(
     return items
 
 
-@command("rebuild_embeddings", app="open_notebook", retry=None)
+@command("rebuild_embeddings", app="agent_book", retry=None)
 async def rebuild_embeddings_command(
     input_data: RebuildEmbeddingsInput,
 ) -> RebuildEmbeddingsOutput:
@@ -692,7 +692,7 @@ async def rebuild_embeddings_command(
         for idx, source_id in enumerate(items["sources"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "agent_book",
                     "embed_source",
                     {"source_id": source_id},
                 )
@@ -712,7 +712,7 @@ async def rebuild_embeddings_command(
         for idx, note_id in enumerate(items["notes"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "agent_book",
                     "embed_note",
                     {"note_id": note_id},
                 )
@@ -732,7 +732,7 @@ async def rebuild_embeddings_command(
         for idx, insight_id in enumerate(items["insights"], 1):
             try:
                 submit_command(
-                    "open_notebook",
+                    "agent_book",
                     "embed_insight",
                     {"insight_id": insight_id},
                 )

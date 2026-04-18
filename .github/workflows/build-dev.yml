@@ -27,8 +27,8 @@ permissions:
   packages: write
 
 env:
-  GHCR_IMAGE: ghcr.io/lfnovo/open-notebook
-  DOCKERHUB_IMAGE: lfnovo/open_notebook
+  GHCR_IMAGE: ghcr.io/lfnovo/agent-book
+  DOCKERHUB_IMAGE: lfnovo/agent_book
 
 jobs:
   extract-version:

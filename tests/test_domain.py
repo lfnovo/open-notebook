@@ -1,5 +1,5 @@
 """
-Unit tests for the open_notebook.domain module.
+Unit tests for the agent_book.domain module.
 
 This test suite focuses on validation logic, business rules, and data structures
 that can be tested without database mocking.
@@ -12,13 +12,13 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import ValidationError
 
-from open_notebook.ai.models import ModelManager
-from open_notebook.domain.base import RecordModel
-from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Note, Notebook, Source
-from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
-from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
+from agent_book.ai.models import ModelManager
+from agent_book.domain.base import RecordModel
+from agent_book.domain.content_settings import ContentSettings
+from agent_book.domain.notebook import Asset, Note, Notebook, Source
+from agent_book.domain.transformation import Transformation
+from agent_book.exceptions import InvalidInputError
+from agent_book.podcasts.models import EpisodeProfile, SpeakerProfile
 
 # ============================================================================
 # TEST SUITE 1: RecordModel Singleton Pattern
@@ -228,11 +228,11 @@ class TestSourceDomain:
         """Test that vectorize() submits embed_source command when text is valid."""
         source = Source(id="source:test_valid", title="Test", full_text="Real content")
         with patch(
-            "open_notebook.domain.notebook.submit_command", return_value="command:123"
+            "agent_book.domain.notebook.submit_command", return_value="command:123"
         ) as mock_submit:
             result = await source.vectorize()
             mock_submit.assert_called_once_with(
-                "open_notebook",
+                "agent_book",
                 "embed_source",
                 {"source_id": "source:test_valid"},
             )
@@ -370,7 +370,7 @@ class TestContentSettings:
         """Test ContentSettings has proper defaults."""
         settings = ContentSettings()
 
-        assert settings.record_id == "open_notebook:content_settings"
+        assert settings.record_id == "agent_book:content_settings"
         assert settings.default_content_processing_engine_doc == "auto"
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"

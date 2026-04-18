@@ -8,9 +8,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from surreal_commands import submit_command
 from surrealdb import RecordID
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.base import ObjectModel
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from agent_book.database.repository import ensure_record_id, repo_query
+from agent_book.domain.base import ObjectModel
+from agent_book.exceptions import DatabaseOperationError, InvalidInputError
 
 
 class Notebook(ObjectModel):
@@ -434,7 +434,7 @@ class Source(ObjectModel):
 
             # Submit the embed_source command
             command_id = submit_command(
-                "open_notebook",
+                "agent_book",
                 "embed_source",
                 {"source_id": str(self.id)},
             )
@@ -485,7 +485,7 @@ class Source(ObjectModel):
             # Submit create_insight command (fire-and-forget)
             # Command handles retries internally for transaction conflicts
             command_id = submit_command(
-                "open_notebook",
+                "agent_book",
                 "create_insight",
                 {
                     "source_id": str(self.id),
@@ -583,7 +583,7 @@ class Note(ObjectModel):
         # Submit embedding command (fire-and-forget) if note has content
         if self.id and self.content and self.content.strip():
             command_id = submit_command(
-                "open_notebook",
+                "agent_book",
                 "embed_note",
                 {"note_id": str(self.id)},
             )
@@ -657,7 +657,7 @@ async def vector_search(
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
-        from open_notebook.utils.embedding import generate_embedding
+        from agent_book.utils.embedding import generate_embedding
 
         # Use unified embedding function (handles chunking if query is very long)
         embed = await generate_embedding(keyword)

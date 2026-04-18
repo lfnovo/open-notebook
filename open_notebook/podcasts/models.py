@@ -4,8 +4,8 @@ from loguru import logger
 from pydantic import ConfigDict, Field, field_validator
 from surrealdb import RecordID
 
-from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.base import ObjectModel
+from agent_book.database.repository import ensure_record_id, repo_query
+from agent_book.domain.base import ObjectModel
 
 
 async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
@@ -14,7 +14,7 @@ async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
     Used by resolve_outline_config, resolve_transcript_config, resolve_tts_config,
     and per-speaker TTS overrides.
     """
-    from open_notebook.ai.models import Model
+    from agent_book.ai.models import Model
 
     model = await Model.get(model_id)
     config: dict = {}
@@ -23,7 +23,7 @@ async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
         if credential:
             config = credential.to_esperanto_config()
     if not config:
-        from open_notebook.ai.key_provider import provision_provider_keys
+        from agent_book.ai.key_provider import provision_provider_keys
 
         await provision_provider_keys(model.provider)
     return (model.provider, model.name, config)

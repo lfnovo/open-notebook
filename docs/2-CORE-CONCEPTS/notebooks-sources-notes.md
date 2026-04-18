@@ -1,6 +1,6 @@
 # Notebooks, Sources, and Notes - The Container Model
 
-Open Notebook organizes research in three connected layers. Understanding this hierarchy is key to using the system effectively.
+AgentBook organizes research in three connected layers. Understanding this hierarchy is key to using the system effectively.
 
 ## The Three-Layer Structure
 

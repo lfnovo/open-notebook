@@ -5,14 +5,14 @@ from loguru import logger
 from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.database.repository import ensure_record_id
-from open_notebook.domain.notebook import Source
-from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import ConfigurationError
+from agent_book.database.repository import ensure_record_id
+from agent_book.domain.notebook import Source
+from agent_book.domain.transformation import Transformation
+from agent_book.exceptions import ConfigurationError
 
 try:
-    from open_notebook.graphs.source import source_graph
-    from open_notebook.graphs.transformation import graph as transform_graph
+    from agent_book.graphs.source import source_graph
+    from agent_book.graphs.transformation import graph as transform_graph
 except ImportError as e:
     logger.error(f"Failed to import graphs: {e}")
     raise ValueError("graphs not available")
@@ -48,7 +48,7 @@ class SourceProcessingOutput(CommandOutput):
 
 @command(
     "process_source",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 15,  # Handle deep queues (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
@@ -180,7 +180,7 @@ class RunTransformationOutput(CommandOutput):
 
 @command(
     "run_transformation",
-    app="open_notebook",
+    app="agent_book",
     retry={
         "max_attempts": 5,
         "wait_strategy": "exponential_jitter",

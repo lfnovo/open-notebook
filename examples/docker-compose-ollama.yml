@@ -7,7 +7,7 @@
 #   1. Copy this file to your project folder as docker-compose.yml
 #   2. Change OPEN_NOTEBOOK_ENCRYPTION_KEY below
 #   3. Run: docker compose up -d
-#   4. Pull a model: docker exec open_notebook-ollama-1 ollama pull mistral
+#   4. Pull a model: docker exec agent_book-ollama-1 ollama pull mistral
 #   5. Configure Ollama in UI: Settings → API Keys → Add Ollama (URL: http://ollama:11434)
 
 services:
@@ -33,8 +33,8 @@ services:
     restart: always
     pull_policy: always
 
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -46,8 +46,8 @@ services:
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
+      - SURREAL_NAMESPACE=agent_book
+      - SURREAL_DATABASE=agent_book
 
       # Ollama connection
       - OLLAMA_BASE_URL=http://ollama:11434

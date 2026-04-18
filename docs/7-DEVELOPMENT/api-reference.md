@@ -1,6 +1,6 @@
 # API Reference
 
-Complete REST API for Open Notebook. All endpoints are served from the API backend (default: `http://localhost:5055`).
+Complete REST API for AgentBook. All endpoints are served from the API backend (default: `http://localhost:5055`).
 
 **Base URL**: `http://localhost:5055` (development) or environment-specific production URL
 

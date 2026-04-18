@@ -1,5 +1,5 @@
 class OpenNotebookError(Exception):
-    """Base exception class for Open Notebook errors."""
+    """Base exception class for AgentBook errors."""
 
     pass
 

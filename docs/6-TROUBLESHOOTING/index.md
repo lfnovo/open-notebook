@@ -159,7 +159,7 @@ Include:
 4. Your setup: Docker/local, provider, OS
 5. What you've already tried
 
-→ [Report on GitHub](https://github.com/lfnovo/open-notebook/issues)
+→ [Report on GitHub](https://github.com/lfnovo/agent-book/issues)
 
 ---
 
@@ -237,4 +237,4 @@ SURREAL_COMMANDS_MAX_TASKS=2
 
 **Then:**
 - **Discord**: https://discord.gg/37XJPXfz2w (fastest response)
-- **GitHub Issues**: https://github.com/lfnovo/open-notebook/issues
+- **GitHub Issues**: https://github.com/lfnovo/agent-book/issues

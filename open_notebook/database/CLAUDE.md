@@ -111,7 +111,7 @@ Both leverage connection context manager for lifecycle management and automatic 
 ## Usage Example
 
 ```python
-from open_notebook.database.repository import repo_create, repo_query, repo_update
+from agent_book.database.repository import repo_create, repo_query, repo_update
 
 # Create
 record = await repo_create("notebooks", {"title": "Research"})

@@ -12,7 +12,7 @@ import { I18nProvider } from "@/components/providers/I18nProvider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Open Notebook",
+  title: "AgentBook",
   description: "Privacy-focused research and knowledge management",
 };
 

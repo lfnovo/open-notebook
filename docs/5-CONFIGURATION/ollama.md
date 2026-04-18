@@ -1,6 +1,6 @@
 # Ollama Setup Guide
 
-Ollama provides free, local AI models that run on your own hardware. This guide covers everything you need to know about setting up Ollama with Open Notebook, including different deployment scenarios and network configurations.
+Ollama provides free, local AI models that run on your own hardware. This guide covers everything you need to know about setting up Ollama with AgentBook, including different deployment scenarios and network configurations.
 
 ## Why Choose Ollama?
 
@@ -36,7 +36,7 @@ ollama pull phi4              # Microsoft's efficient model
 ollama pull mxbai-embed-large  # Best embedding model for Ollama
 ```
 
-### 3. Configure Open Notebook
+### 3. Configure AgentBook
 
 **Via Settings UI (Recommended):**
 1. Go to **Settings** → **API Keys**
@@ -61,15 +61,15 @@ When adding an Ollama credential in **Settings → API Keys**, you need to enter
 
 ### Scenario 1: Local Installation (Same Machine)
 
-When both Open Notebook and Ollama run directly on your machine:
+When both AgentBook and Ollama run directly on your machine:
 
 **Base URL to enter in Settings → API Keys:** `http://localhost:11434`
 
 Alternative: `http://127.0.0.1:11434` (use if you have DNS resolution issues with localhost)
 
-### Scenario 2: Open Notebook in Docker, Ollama on Host
+### Scenario 2: AgentBook in Docker, Ollama on Host
 
-When Open Notebook runs in Docker but Ollama runs on your host machine:
+When AgentBook runs in Docker but Ollama runs on your host machine:
 
 **Base URL to enter in Settings → API Keys:** `http://host.docker.internal:11434`
 
@@ -87,8 +87,8 @@ On Linux, `host.docker.internal` doesn't resolve automatically like it does on m
 ```yaml
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     # ... other settings ...
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -111,7 +111,7 @@ httpcore.ConnectError: [Errno -2] Name or service not known
 
 ### Scenario 3: Both in Docker (Same Compose)
 
-When both Open Notebook and Ollama run in the same Docker Compose stack:
+When both AgentBook and Ollama run in the same Docker Compose stack:
 
 **Base URL to enter in Settings → API Keys:** `http://ollama:11434`
 
@@ -119,10 +119,10 @@ When both Open Notebook and Ollama run in the same Docker Compose stack:
 
 ```yaml
 # Requires surrealdb service — see full base setup:
-# https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# https://github.com/lfnovo/agent-book/blob/main/docker-compose.yml
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     ports:
       - "8502:8502"
@@ -249,7 +249,7 @@ ollama pull qwen3
 
 **⚠️ IMPORTANT: Model names must exactly match the output of `ollama list`**
 
-This is the most common cause of "Failed to send message" errors. Open Notebook requires the **exact model name** as it appears in Ollama.
+This is the most common cause of "Failed to send message" errors. AgentBook requires the **exact model name** as it appears in Ollama.
 
 **Step 1: Get the exact model name**
 ```bash
@@ -264,7 +264,7 @@ gemma3:12b                  f4031aab637d    8.1 GB    2 months ago
 qwen3:32b                   030ee887880f    20 GB     9 days ago
 ```
 
-**Step 2: Use the exact name when adding the model in Open Notebook**
+**Step 2: Use the exact name when adding the model in AgentBook**
 
 | ✅ Correct | ❌ Wrong |
 |-----------|----------|
@@ -272,9 +272,9 @@ qwen3:32b                   030ee887880f    20 GB     9 days ago
 | `qwen3:32b` | `qwen3-32b` (wrong format) |
 | `mxbai-embed-large:latest` | `mxbai-embed-large` (missing tag) |
 
-**Note:** Some models use `:latest` as the default tag. If `ollama list` shows `model:latest`, you must use `model:latest` in Open Notebook, not just `model`.
+**Note:** Some models use `:latest` as the default tag. If `ollama list` shows `model:latest`, you must use `model:latest` in AgentBook, not just `model`.
 
-**Step 3: Configure in Open Notebook**
+**Step 3: Configure in AgentBook**
 
 1. Go to **Settings → Models**
 2. Click **Add Model**
@@ -286,7 +286,7 @@ qwen3:32b                   030ee887880f    20 GB     9 days ago
 
 ### Common Issues
 
-**1. "Ollama unavailable" in Open Notebook**
+**1. "Ollama unavailable" in AgentBook**
 
 **Check Ollama is running:**
 ```bash
@@ -298,12 +298,12 @@ Check **Settings → API Keys** for an Ollama credential with the correct base U
 
 **⚠️ IMPORTANT: Enable external connections (most common fix):**
 ```bash
-# If Open Notebook runs in Docker or on a different machine,
+# If AgentBook runs in Docker or on a different machine,
 # Ollama must bind to all interfaces, not just localhost
 export OLLAMA_HOST=0.0.0.0:11434
 ollama serve
 ```
-> **Why this is needed:** By default, Ollama only accepts connections from `localhost` (127.0.0.1). When Open Notebook runs in Docker or on a different machine, it can't reach Ollama unless you configure `OLLAMA_HOST=0.0.0.0:11434` to accept external connections.
+> **Why this is needed:** By default, Ollama only accepts connections from `localhost` (127.0.0.1). When AgentBook runs in Docker or on a different machine, it can't reach Ollama unless you configure `OLLAMA_HOST=0.0.0.0:11434` to accept external connections.
 
 **Restart Ollama:**
 ```bash
@@ -318,10 +318,10 @@ ollama serve
 
 **2. Docker networking issues**
 
-**From inside Open Notebook container, test Ollama:**
+**From inside AgentBook container, test Ollama:**
 ```bash
 # Get into container
-docker exec -it open-notebook bash
+docker exec -it agent-book bash
 
 # Test connection
 curl http://host.docker.internal:11434/api/tags
@@ -384,10 +384,10 @@ Error executing chat: Model is not a LanguageModel: None
 
 **Causes (in order of likelihood):**
 
-1. **Model name mismatch**: The model name in Open Notebook doesn't exactly match `ollama list`
+1. **Model name mismatch**: The model name in AgentBook doesn't exactly match `ollama list`
 2. **No default model configured**: You haven't set a default chat model in Settings → Models
-3. **Model was deleted**: You removed the model from Ollama but didn't update Open Notebook's defaults
-4. **Model record deleted**: The model was removed from Open Notebook but is still set as default
+3. **Model was deleted**: You removed the model from Ollama but didn't update AgentBook's defaults
+4. **Model record deleted**: The model was removed from AgentBook but is still set as default
 
 **Solutions:**
 
@@ -396,7 +396,7 @@ Error executing chat: Model is not a LanguageModel: None
 # Get exact model names from Ollama
 ollama list
 
-# Compare with what's configured in Open Notebook
+# Compare with what's configured in AgentBook
 # Go to Settings → Models and verify the names match EXACTLY
 ```
 
@@ -408,7 +408,7 @@ ollama list
 
 **Check 3: Refresh after changes**
 If you've added/removed models in Ollama:
-1. Refresh the Open Notebook page
+1. Refresh the AgentBook page
 2. Go to Settings → Models
 3. Re-add any missing models with exact names from `ollama list`
 4. Re-select default models if needed
@@ -428,8 +428,8 @@ If you see `Name or service not known` errors on Linux, add `extra_hosts` to you
 ```yaml
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -443,7 +443,7 @@ This maps `host.docker.internal` to your host machine's IP. macOS/Windows Docker
 **2. Host networking on Linux (alternative):**
 ```bash
 # Use host networking if host.docker.internal doesn't work
-docker run --network host lfnovo/open_notebook:v1-latest  # for quick testing only
+docker run --network host lfnovo/agent_book:v1-latest  # for quick testing only
 ```
 Then in **Settings → API Keys**, use base URL: `http://localhost:11434`
 
@@ -455,7 +455,7 @@ networks:
     driver: bridge
 
 services:
-  open-notebook:
+  agent-book:
     networks:
       - ollama_network
     environment:
@@ -542,7 +542,7 @@ export OLLAMA_MAX_QUEUE=512            # Request queue size
 export OLLAMA_NUM_PARALLEL=4           # Parallel request handling
 export OLLAMA_FLASH_ATTENTION=1        # Enable flash attention (if supported)
 
-# Open Notebook configuration (configure via Settings → API Keys instead)
+# AgentBook configuration (configure via Settings → API Keys instead)
 # OLLAMA_API_BASE=http://localhost:11434  # Deprecated — use Settings UI
 ```
 
@@ -572,8 +572,8 @@ export ESPERANTO_SSL_VERIFY=false
 ```yaml
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
@@ -603,7 +603,7 @@ EOF
 ollama create my-research-model -f Modelfile
 ```
 
-**Use in Open Notebook:**
+**Use in AgentBook:**
 1. Go to Models
 2. Add new model: `my-research-model`
 3. Set as default for specific tasks
@@ -733,7 +733,7 @@ fi
 **Community Resources:**
 - [Ollama GitHub](https://github.com/jmorganca/ollama) - Official repository
 - [Ollama Discord](https://discord.gg/ollama) - Community support
-- [Open Notebook Discord](https://discord.gg/37XJPXfz2w) - Integration help
+- [AgentBook Discord](https://discord.gg/37XJPXfz2w) - Integration help
 
 **Debugging Resources:**
 - Check Ollama logs for error messages
@@ -741,4 +741,4 @@ fi
 - Verify environment variables
 - Monitor system resources
 
-This comprehensive guide should help you successfully deploy and optimize Ollama with Open Notebook. Start with the Quick Start section and refer to specific scenarios as needed.
+This comprehensive guide should help you successfully deploy and optimize Ollama with AgentBook. Start with the Quick Start section and refer to specific scenarios as needed.

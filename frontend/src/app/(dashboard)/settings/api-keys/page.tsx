@@ -121,7 +121,7 @@ const PROVIDER_DOCS: Record<string, string> = {
   elevenlabs: 'https://elevenlabs.io/app/settings/api-keys',
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
-  openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
+  openai_compatible: 'https://github.com/lfnovo/agent-book/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
   dashscope: 'https://help.aliyun.com/zh/model-studio/getting-started/',
   minimax: 'https://platform.minimaxi.com/document/Guides',
 }
@@ -1399,7 +1399,7 @@ export default function ApiKeysPage() {
           {/* Help link */}
           <div className="border-t pt-4">
             <a
-              href="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md"
+              href="https://github.com/lfnovo/agent-book/blob/main/docs/5-CONFIGURATION/ai-providers.md"
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline"

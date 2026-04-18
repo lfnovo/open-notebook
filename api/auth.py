@@ -6,7 +6,7 @@ from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from open_notebook.utils.encryption import get_secret_from_env
+from agent_book.utils.encryption import get_secret_from_env
 
 
 class PasswordAuthMiddleware(BaseHTTPMiddleware):

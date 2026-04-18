@@ -1,6 +1,6 @@
 # Development
 
-Welcome to the Open Notebook development documentation! Whether you're contributing code, understanding our architecture, or maintaining the project, you'll find guidance here.
+Welcome to the AgentBook development documentation! Whether you're contributing code, understanding our architecture, or maintaining the project, you'll find guidance here.
 
 ## 🎯 Pick Your Path
 
@@ -33,7 +33,7 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 - Key components and workflows
 - Design patterns we use
 
-For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guidance.
+For deeper dives, check `/agent_book/` CLAUDE.md for component-specific guidance.
 
 ---
 

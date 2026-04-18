@@ -12,7 +12,7 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
-from open_notebook.exceptions import (
+from agent_book.exceptions import (
     AuthenticationError,
     ConfigurationError,
     ExternalServiceError,
@@ -45,8 +45,8 @@ from api.routers import (
     transformations,
 )
 from api.routers import commands as commands_router
-from open_notebook.database.async_migrate import AsyncMigrationManager
-from open_notebook.utils.encryption import get_secret_from_env
+from agent_book.database.async_migrate import AsyncMigrationManager
+from agent_book.utils.encryption import get_secret_from_env
 
 # Import commands to register them in the API process
 try:
@@ -100,7 +100,7 @@ async def lifespan(app: FastAPI):
 
     # Run podcast profile data migration (legacy strings -> Model registry)
     try:
-        from open_notebook.podcasts.migration import migrate_podcast_profiles
+        from agent_book.podcasts.migration import migrate_podcast_profiles
 
         await migrate_podcast_profiles()
     except Exception as e:
@@ -117,8 +117,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Open Notebook API",
-    description="API for Open Notebook - Research Assistant",
+    title="AgentBook API",
+    description="API for AgentBook - Research Assistant",
     lifespan=lifespan,
 )
 
@@ -248,7 +248,7 @@ async def external_service_error_handler(request: Request, exc: ExternalServiceE
 
 
 @app.exception_handler(OpenNotebookError)
-async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
+async def agent_book_error_handler(request: Request, exc: OpenNotebookError):
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc)},
@@ -284,7 +284,7 @@ app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 @app.get("/")
 async def root():
-    return {"message": "Open Notebook API is running"}
+    return {"message": "AgentBook API is running"}
 
 
 @app.get("/health")

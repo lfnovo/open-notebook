@@ -1,15 +1,15 @@
 # Database - SurrealDB Configuration
 
-Open Notebook uses SurrealDB for its database needs. 
+AgentBook uses SurrealDB for its database needs. 
 
 ---
 
 ## Default Configuration
 
-Open Notebook should work out of the box with SurrealDB as long as the environment variables are correctly setup. 
+AgentBook should work out of the box with SurrealDB as long as the environment variables are correctly setup. 
 
 
-### DB running in the same docker compose as Open Notebook (recommended)
+### DB running in the same docker compose as AgentBook (recommended)
 
 The example above is for when you are running SurrealDB as a separate docker container, which is the method described [here](../1-INSTALLATION/docker-compose.md) (and our recommended method). 
 
@@ -17,11 +17,11 @@ The example above is for when you are running SurrealDB as a separate docker con
 SURREAL_URL="ws://surrealdb:8000/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
-SURREAL_NAMESPACE="open_notebook"
-SURREAL_DATABASE="open_notebook"
+SURREAL_NAMESPACE="agent_book"
+SURREAL_DATABASE="agent_book"
 ```
 
-### DB running in the host machine and Open Notebook running in Docker
+### DB running in the host machine and AgentBook running in Docker
 
 If ON is running in docker and SurrealDB is on your host machine, you need to point to it. 
 
@@ -29,11 +29,11 @@ If ON is running in docker and SurrealDB is on your host machine, you need to po
 SURREAL_URL="ws://your-machine-ip:8000/rpc" #or host.docker.internal
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
-SURREAL_NAMESPACE="open_notebook"
-SURREAL_DATABASE="open_notebook"
+SURREAL_NAMESPACE="agent_book"
+SURREAL_DATABASE="agent_book"
 ```
 
-### Open Notebook and Surreal are running on the same machine
+### AgentBook and Surreal are running on the same machine
 
 If you are running both services locally or if you are using the deprecated [single container setup](../1-INSTALLATION/single-container.md)
 
@@ -41,8 +41,8 @@ If you are running both services locally or if you are using the deprecated [sin
 SURREAL_URL="ws://localhost:8000/rpc"
 SURREAL_USER="root"
 SURREAL_PASSWORD="root"
-SURREAL_NAMESPACE="open_notebook"
-SURREAL_DATABASE="open_notebook"
+SURREAL_NAMESPACE="agent_book"
+SURREAL_DATABASE="agent_book"
 ```
 
 ## Multiple databases

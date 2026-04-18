@@ -6,7 +6,7 @@ All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
 
 **Best for:** PikaPods, Railway, shared hosting, minimal setups
 
-> **Alternative Registry:** Images available on both Docker Hub (`lfnovo/open_notebook:v1-latest-single`) and GitHub Container Registry (`ghcr.io/lfnovo/open-notebook:v1-latest-single`).
+> **Alternative Registry:** Images available on both Docker Hub (`lfnovo/agent_book:v1-latest-single`) and GitHub Container Registry (`ghcr.io/lfnovo/agent-book:v1-latest-single`).
 
 ## Prerequisites
 
@@ -21,8 +21,8 @@ All-in-one container setup. **Simpler than Docker Compose, but less flexible.**
 ```yaml
 # docker-compose.yml
 services:
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest-single
+  agent_book:
+    image: lfnovo/agent_book:v1-latest-single
     pull_policy: always
     ports:
       - "8502:8502"  # Web UI (React frontend)
@@ -32,8 +32,8 @@ services:
       - SURREAL_URL=ws://localhost:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
+      - SURREAL_NAMESPACE=agent_book
+      - SURREAL_DATABASE=agent_book
     volumes:
       - ./data:/app/data
     restart: always
@@ -56,27 +56,27 @@ Then configure your AI provider:
 
 **PikaPods:**
 1. Click "New App"
-2. Search "Open Notebook"
+2. Search "AgentBook"
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Click "Deploy"
 5. Open the app → Go to **Settings → API Keys** to configure your AI provider
 
 **Railway:**
 1. Create new project
-2. Add `lfnovo/open_notebook:v1-latest-single`
+2. Add `lfnovo/agent_book:v1-latest-single`
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Deploy
 5. Open the app → Go to **Settings → API Keys** to configure your AI provider
 
 **Render:**
 1. Create new Web Service
-2. Use Docker image: `lfnovo/open_notebook:v1-latest-single`
+2. Use Docker image: `lfnovo/agent_book:v1-latest-single`
 3. Set environment variables in dashboard (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Configure persistent disk for `/app/data` and `/mydata`
 
 **DigitalOcean App Platform:**
 1. Create new app from Docker Hub
-2. Use image: `lfnovo/open_notebook:v1-latest-single`
+2. Use image: `lfnovo/agent_book:v1-latest-single`
 3. Set port to 8502
 4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 5. Configure persistent storage
@@ -91,7 +91,7 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 
 **Coolify:**
 1. Add new service → Docker Image
-2. Image: `lfnovo/open_notebook:v1-latest-single`
+2. Image: `lfnovo/agent_book:v1-latest-single`
 3. Port: 8502
 4. Add environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 5. Enable persistent volumes
@@ -107,8 +107,8 @@ heroku config:set OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 | `SURREAL_URL` | Database | `ws://localhost:8000/rpc` |
 | `SURREAL_USER` | DB user | `root` |
 | `SURREAL_PASSWORD` | DB password | `root` |
-| `SURREAL_NAMESPACE` | DB namespace | `open_notebook` |
-| `SURREAL_DATABASE` | DB name | `open_notebook` |
+| `SURREAL_NAMESPACE` | DB namespace | `agent_book` |
+| `SURREAL_DATABASE` | DB name | `agent_book` |
 | `API_URL` | External URL (for remote access) | `https://myapp.example.com` |
 
 AI provider API keys are configured via the **Settings → API Keys** UI after deployment.

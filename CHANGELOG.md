@@ -159,7 +159,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security Enhancements**
   - Docker secrets support via `_FILE` suffix pattern (e.g., `OPEN_NOTEBOOK_PASSWORD_FILE`)
   - Default encryption key derived from "0p3n-N0t3b0ok" for easy setup (change in production!)
-  - Default password "open-notebook-change-me" for out-of-box experience (change in production!)
+  - Default password "agent-book-change-me" for out-of-box experience (change in production!)
   - URL validation for SSRF protection - blocks private IPs and localhost (except for Ollama which runs locally)
   - Security warnings logged when using default credentials
 
@@ -232,7 +232,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Content-type aware text chunking with automatic HTML, Markdown, and plain text detection (#350, #142)
 - Unified embedding generation with mean pooling for large content that exceeds model context limits
 - Dedicated embedding commands: `embed_note`, `embed_insight`, `embed_source`
-- New utility modules: `chunking.py` and `embedding.py` in `open_notebook/utils/`
+- New utility modules: `chunking.py` and `embedding.py` in `agent_book/utils/`
 - Japanese (ja-JP) language support (#450)
 
 ### Changed

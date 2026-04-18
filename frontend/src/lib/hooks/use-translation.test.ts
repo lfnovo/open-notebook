@@ -17,7 +17,7 @@ describe('useTranslation Hook', () => {
     vi.clearAllMocks()
     ;(useI18nTranslation as unknown as { mockReturnValue: (v: unknown) => void }).mockReturnValue({
       t: (key: string) => {
-        if (key === 'common.appName') return 'Open Notebook'
+        if (key === 'common.appName') return 'AgentBook'
         return key
       },
       i18n: {
@@ -30,7 +30,7 @@ describe('useTranslation Hook', () => {
   it('should return standard t() function for translations', () => {
     const { result } = renderHook(() => useTranslation())
     expect(result.current.language).toBe('en-US')
-    expect(result.current.t('common.appName')).toBe('Open Notebook')
+    expect(result.current.t('common.appName')).toBe('AgentBook')
   })
 
   it('should allow changing language via setLanguage', () => {

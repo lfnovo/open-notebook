@@ -36,7 +36,7 @@
 ## Dependencies
 
 **External**: `surreal_commands` (command decorator, job queue, submit_command), `loguru`, `pydantic`, `podcast_creator`
-**Internal**: `open_notebook.domain.notebook` (Source, Note, SourceInsight), `open_notebook.utils.chunking` (chunk_text, detect_content_type), `open_notebook.utils.embedding` (generate_embedding, generate_embeddings), `open_notebook.database.repository` (repo_query, repo_insert)
+**Internal**: `agent_book.domain.notebook` (Source, Note, SourceInsight), `agent_book.utils.chunking` (chunk_text, detect_content_type), `agent_book.utils.embedding` (generate_embedding, generate_embeddings), `agent_book.database.repository` (repo_query, repo_insert)
 
 ## Quirks & Edge Cases
 
@@ -49,7 +49,7 @@
 ## Code Example
 
 ```python
-@command("process_source", app="open_notebook", retry={
+@command("process_source", app="agent_book", retry={
     "max_attempts": 5,
     "wait_strategy": "exponential_jitter",
     "stop_on": [ValueError],  # Don't retry validation errors

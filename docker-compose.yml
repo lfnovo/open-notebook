@@ -12,8 +12,8 @@ services:
     restart: always
     pull_policy: always
 
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API
@@ -26,8 +26,8 @@ services:
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
+      - SURREAL_NAMESPACE=agent_book
+      - SURREAL_DATABASE=agent_book
     volumes:
       - ./notebook_data:/app/data
     depends_on:

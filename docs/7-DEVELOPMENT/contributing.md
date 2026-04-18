@@ -1,6 +1,6 @@
-# Contributing to Open Notebook
+# Contributing to AgentBook
 
-Thank you for your interest in contributing to Open Notebook! We welcome contributions from developers of all skill levels. This guide will help you understand our contribution workflow and what makes a good contribution.
+Thank you for your interest in contributing to AgentBook! We welcome contributions from developers of all skill levels. This guide will help you understand our contribution workflow and what makes a good contribution.
 
 ## 🚨 Issue-First Workflow
 
@@ -28,18 +28,18 @@ By participating in this project, you are expected to uphold our Code of Conduct
 ### Reporting Bugs
 
 1. **Search existing issues** - Check if the bug was already reported
-2. **Create a bug report** - Use the [Bug Report template](https://github.com/lfnovo/open-notebook/issues/new?template=bug_report.yml)
+2. **Create a bug report** - Use the [Bug Report template](https://github.com/lfnovo/agent-book/issues/new?template=bug_report.yml)
 3. **Provide details** - Include:
    - Steps to reproduce
    - Expected vs actual behavior
    - Logs, screenshots, or error messages
-   - Your environment (OS, Docker version, Open Notebook version)
+   - Your environment (OS, Docker version, AgentBook version)
 4. **Indicate if you want to fix it** - Check the "I would like to work on this" box if you're interested
 
 ### Suggesting Features
 
 1. **Search existing issues** - Check if the feature was already suggested
-2. **Create a feature request** - Use the [Feature Request template](https://github.com/lfnovo/open-notebook/issues/new?template=feature_request.yml)
+2. **Create a feature request** - Use the [Feature Request template](https://github.com/lfnovo/agent-book/issues/new?template=feature_request.yml)
 3. **Explain the value** - Describe why this feature would be helpful
 4. **Propose implementation** - If you have ideas on how to implement it, share them
 5. **Indicate if you want to build it** - Check the "I would like to work on this" box if you're interested
@@ -196,6 +196,6 @@ We recognize contributions through:
 
 ---
 
-Thank you for contributing to Open Notebook! Your contributions help make research more accessible and private for everyone.
+Thank you for contributing to AgentBook! Your contributions help make research more accessible and private for everyone.
 
 For questions about this guide or contributing in general, please reach out on [Discord](https://discord.gg/37XJPXfz2w) or open a GitHub Discussion.

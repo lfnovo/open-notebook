@@ -42,7 +42,7 @@ body:
         Please provide any error messages, logs, or screenshots that might help us understand the issue.
 
         **How to get logs:**
-        - Docker: `docker compose logs -f open_notebook`
+        - Docker: `docker compose logs -f agent_book`
         - Check browser console (F12 → Console tab)
       placeholder: |
         Paste logs here or drag and drop screenshots.
@@ -54,7 +54,7 @@ body:
   - type: dropdown
     id: version
     attributes:
-      label: Open Notebook Version
+      label: AgentBook Version
       description: Which version are you using?
       options:
         - v1-latest (Docker)
@@ -101,4 +101,4 @@ body:
         1. A maintainer will review your bug report
         2. If you checked the box above and want to fix it, please propose your solution approach
         3. Wait for assignment before starting development
-        4. See our [Contributing Guide](https://github.com/lfnovo/open-notebook/blob/main/CONTRIBUTING.md) for more details
+        4. See our [Contributing Guide](https://github.com/lfnovo/agent-book/blob/main/CONTRIBUTING.md) for more details

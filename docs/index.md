@@ -1,6 +1,6 @@
-# Open Notebook Documentation
+# AgentBook Documentation
 
-Welcome to Open Notebook - a privacy-focused AI research assistant. This documentation is organized for different needs.
+Welcome to AgentBook - a privacy-focused AI research assistant. This documentation is organized for different needs.
 
 ---
 
@@ -8,7 +8,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 
 ### I'm brand new
 → Start here: **[0-START-HERE](0-START-HERE/index.md)**
-- Learn what Open Notebook is
+- Learn what AgentBook is
 - Pick your setup path (OpenAI, cloud, local/Ollama)
 - 5-minute quick start
 
@@ -71,7 +71,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 ### By Section
 
 **[0-START-HERE](0-START-HERE/index.md)** — Entry point
-- What is Open Notebook?
+- What is AgentBook?
 - Quick start guides (3 routes)
 - First 5 minutes
 
@@ -133,7 +133,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 - Configuration reference? → [5-CONFIGURATION](5-CONFIGURATION/index.md)
 - Provider setup? → [4-AI-PROVIDERS](4-AI-PROVIDERS/index.md)
 
-**Using Open Notebook**
+**Using AgentBook**
 - How to use features? → [3-USER-GUIDE](3-USER-GUIDE/index.md)
 - Understanding concepts? → [2-CORE-CONCEPTS](2-CORE-CONCEPTS/index.md)
 - Chat not working? → [6-TROUBLESHOOTING - AI Issues](6-TROUBLESHOOTING/ai-chat-issues.md)
@@ -160,7 +160,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 3. [2-CORE-CONCEPTS/index.md](2-CORE-CONCEPTS/index.md) — Understand concepts
 4. [3-USER-GUIDE/index.md](3-USER-GUIDE/index.md) — Learn features
 
-**Result:** Fully understand how to use Open Notebook
+**Result:** Fully understand how to use AgentBook
 
 ### Path 2: Get Running Fast (15 minutes)
 1. [0-START-HERE](0-START-HERE/index.md) — Pick your path
@@ -257,7 +257,7 @@ A: → [7-DEVELOPMENT](../7-DEVELOPMENT/index.md) — Contributing guide
 ## 📞 Getting Help
 
 - **Discord Community** — https://discord.gg/37XJPXfz2w
-- **GitHub Issues** — https://github.com/lfnovo/open-notebook/issues
+- **GitHub Issues** — https://github.com/lfnovo/agent-book/issues
 - **Documentation** — You're reading it!
 
 ---
@@ -275,7 +275,7 @@ A: → [7-DEVELOPMENT](../7-DEVELOPMENT/index.md) — Contributing guide
 
 ## 🎯 Start Here
 
-**First time using Open Notebook?**
+**First time using AgentBook?**
 → Go to **[0-START-HERE](0-START-HERE/index.md)**
 
 **Experienced, looking for specific help?**
@@ -286,4 +286,4 @@ A: → [7-DEVELOPMENT](../7-DEVELOPMENT/index.md) — Contributing guide
 
 ---
 
-Last updated: January 2026 | Open Notebook v1.2.4+
+Last updated: January 2026 | AgentBook v1.2.4+

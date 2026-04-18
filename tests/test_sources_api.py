@@ -6,8 +6,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from open_notebook.config import UPLOADS_FOLDER
-from open_notebook.domain.notebook import Source
+from agent_book.config import UPLOADS_FOLDER
+from agent_book.domain.notebook import Source
 
 
 @pytest.fixture

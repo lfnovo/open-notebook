@@ -10,14 +10,14 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.graph.message import add_messages
 from typing_extensions import TypedDict
 
-from open_notebook.ai.provision import provision_langchain_model
-from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
-from open_notebook.domain.notebook import Source, SourceInsight
-from open_notebook.exceptions import OpenNotebookError
-from open_notebook.utils import clean_thinking_content
-from open_notebook.utils.context_builder import ContextBuilder
-from open_notebook.utils.error_classifier import classify_error
-from open_notebook.utils.text_utils import extract_text_content
+from agent_book.ai.provision import provision_langchain_model
+from agent_book.config import LANGGRAPH_CHECKPOINT_FILE
+from agent_book.domain.notebook import Source, SourceInsight
+from agent_book.exceptions import OpenNotebookError
+from agent_book.utils import clean_thinking_content
+from agent_book.utils.context_builder import ContextBuilder
+from agent_book.utils.error_classifier import classify_error
+from agent_book.utils.text_utils import extract_text_content
 
 
 class SourceChatState(TypedDict):

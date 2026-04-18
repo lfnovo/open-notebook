@@ -33,7 +33,7 @@ Transformations apply the same analysis to multiple sources at once. Instead of 
 
 ## Built-in Transformations
 
-Open Notebook includes ready-to-use templates:
+AgentBook includes ready-to-use templates:
 
 ### Summary
 

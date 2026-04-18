@@ -1,6 +1,6 @@
 # Chat vs. Ask vs. Transformations - Which Tool for Which Job?
 
-Open Notebook offers different ways to work with your research. Understanding when to use each is key to using the system effectively.
+AgentBook offers different ways to work with your research. Understanding when to use each is key to using the system effectively.
 
 ---
 
@@ -350,4 +350,4 @@ CHAT → Save as Note → TRANSFORMATIONS
 | "I want to build a knowledge base" | **TRANSFORMATIONS** | Create structured note from each source |
 | "I want to iterate on understanding" | **CHAT** | Multiple questions, refine thinking |
 
-The key insight: **Different questions need different tools.** Open Notebook gives you all three because research rarely fits one mode.
+The key insight: **Different questions need different tools.** AgentBook gives you all three because research rarely fits one mode.

@@ -2,7 +2,7 @@
 
 Problems with AI models, chat, and response quality.
 
-> **Note:** Open Notebook now shows descriptive error messages for AI provider failures. Instead of a generic "An unexpected error occurred", you'll see specific messages like "Authentication failed. Please check your API key" or "Rate limit exceeded. Please wait a moment and try again." These messages help you diagnose and fix issues faster.
+> **Note:** AgentBook now shows descriptive error messages for AI provider failures. Instead of a generic "An unexpected error occurred", you'll see specific messages like "Authentication failed. Please check your API key" or "Rate limit exceeded. Please wait a moment and try again." These messages help you diagnose and fix issues faster.
 
 ---
 
@@ -35,7 +35,7 @@ ollama list
 # NAME                   SIZE      MODIFIED
 # gemma3:12b            8.1 GB    2 months ago
 
-# The model name in Open Notebook must be EXACTLY "gemma3:12b"
+# The model name in AgentBook must be EXACTLY "gemma3:12b"
 # NOT "gemma3" or "gemma3-12b"
 ```
 
@@ -57,7 +57,7 @@ ollama list
 # and you have access to the model
 ```
 
-> **Tip:** This error often occurs when you delete a model from Ollama but forget to update the default models in Open Notebook. Always re-configure defaults after removing models.
+> **Tip:** This error often occurs when you delete a model from Ollama but forget to update the default models in AgentBook. Always re-configure defaults after removing models.
 
 ---
 

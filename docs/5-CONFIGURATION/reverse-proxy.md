@@ -1,12 +1,12 @@
 # Reverse Proxy Configuration
 
-Deploy Open Notebook behind nginx, Caddy, Traefik, or other reverse proxies with custom domains and HTTPS.
+Deploy AgentBook behind nginx, Caddy, Traefik, or other reverse proxies with custom domains and HTTPS.
 
 ---
 
 ## Simplified Setup (v1.1+)
 
-Starting with v1.1, Open Notebook uses Next.js rewrites to simplify configuration. **You only need to proxy to one port** - Next.js handles internal API routing automatically.
+Starting with v1.1, AgentBook uses Next.js rewrites to simplify configuration. **You only need to proxy to one port** - Next.js handles internal API routing automatically.
 
 ### How It Works
 
@@ -37,7 +37,7 @@ server {
 
     # Single location block - that's it!
     location / {
-        proxy_pass http://open-notebook:8502;
+        proxy_pass http://agent-book:8502;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -61,7 +61,7 @@ server {
 
 ```caddy
 notebook.example.com {
-    reverse_proxy open-notebook:8502 {
+    reverse_proxy agent-book:8502 {
         transport http {
             read_timeout 600s
             write_timeout 600s
@@ -76,10 +76,10 @@ Caddy handles HTTPS automatically. The timeout settings ensure long-running oper
 
 ```yaml
 # Add this to your docker-compose.yml alongside the surrealdb service
-# See full base setup: https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# See full base setup: https://github.com/lfnovo/agent-book/blob/main/docker-compose.yml
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
@@ -161,14 +161,14 @@ When `API_URL` is not set, the Next.js frontend:
 
 ## Complete Docker Compose Example
 
-> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml) for the complete setup.
+> **Note:** This example only shows the agent-book and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/lfnovo/agent-book/blob/main/docker-compose.yml) for the complete setup.
 
 ```yaml
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
-    container_name: open-notebook
+    container_name: agent-book
     environment:
       - API_URL=https://notebook.example.com
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
@@ -190,7 +190,7 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./ssl:/etc/nginx/ssl:ro
     depends_on:
-      - open-notebook
+      - agent-book
     restart: unless-stopped
 ```
 
@@ -205,7 +205,7 @@ events {
 
 http {
     upstream notebook {
-        server open-notebook:8502;
+        server agent-book:8502;
     }
 
     # HTTP redirect
@@ -265,7 +265,7 @@ If external scripts or integrations need direct API access, route `/api/*` direc
 ```nginx
 # Direct API access (for external integrations)
 location /api/ {
-    proxy_pass http://open-notebook:5055/api/;
+    proxy_pass http://agent-book:5055/api/;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -275,7 +275,7 @@ location /api/ {
 
 # Frontend (handles all other traffic)
 location / {
-    proxy_pass http://open-notebook:8502;
+    proxy_pass http://agent-book:8502;
     # ... same headers as above
 }
 ```
@@ -288,11 +288,11 @@ location / {
 
 ### Remote Server Access (LAN/VPS)
 
-Accessing Open Notebook from a different machine on your network:
+Accessing AgentBook from a different machine on your network:
 
 **Step 1: Get your server IP**
 ```bash
-# On the server running Open Notebook:
+# On the server running AgentBook:
 hostname -I
 # or
 ifconfig | grep "inet "
@@ -309,8 +309,8 @@ API_URL=http://192.168.1.100:5055
 ```yaml
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     environment:
       - API_URL=http://192.168.1.100:5055
@@ -340,8 +340,8 @@ Host the API and frontend on different subdomains:
 ```yaml
 # Add to your docker-compose.yml (requires surrealdb service, see installation guide)
 services:
-  open-notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent-book:
+    image: lfnovo/agent_book:v1-latest
     pull_policy: always
     environment:
       - API_URL=https://api.notebook.example.com
@@ -360,7 +360,7 @@ server {
     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
     location / {
-        proxy_pass http://open-notebook:8502;
+        proxy_pass http://agent-book:8502;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -381,7 +381,7 @@ server {
     ssl_certificate_key /etc/nginx/ssl/privkey.pem;
 
     location / {
-        proxy_pass http://open-notebook:5055;
+        proxy_pass http://agent-book:5055;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -403,7 +403,7 @@ For complex deployments with separate frontend and API containers:
 ```yaml
 services:
   frontend:
-    image: lfnovo/open_notebook_frontend:v1-latest
+    image: lfnovo/agent_book_frontend:v1-latest
     pull_policy: always
     environment:
       - API_URL=https://notebook.example.com
@@ -411,7 +411,7 @@ services:
       - "8502:8502"
 
   api:
-    image: lfnovo/open_notebook_api:v1-latest
+    image: lfnovo/agent_book_api:v1-latest
     pull_policy: always
     environment:
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
@@ -510,7 +510,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 1. **Check API_URL is set**:
    ```bash
-   docker exec open-notebook env | grep API_URL
+   docker exec agent-book env | grep API_URL
    ```
 
 2. **Verify reverse proxy reaches container**:
@@ -544,7 +544,7 @@ proxy_set_header Connection 'upgrade';
 ### 502 Bad Gateway
 
 1. Check container is running: `docker ps`
-2. Check container logs: `docker logs open-notebook`
+2. Check container logs: `docker logs agent-book`
 3. Verify nginx can reach container (same network)
 
 ### Timeout Errors
@@ -554,7 +554,7 @@ proxy_set_header Connection 'upgrade';
 - `Timeout after 30000ms` errors
 - Operations fail after exactly 30 seconds
 
-**Cause:** Your reverse proxy has a default timeout (often 30s) that's shorter than Open Notebook's operations.
+**Cause:** Your reverse proxy has a default timeout (often 30s) that's shorter than AgentBook's operations.
 
 **Solutions by proxy:**
 
@@ -566,7 +566,7 @@ proxy_send_timeout 600s;
 
 **Caddy:**
 ```caddy
-reverse_proxy open-notebook:8502 {
+reverse_proxy agent-book:8502 {
     transport http {
         read_timeout 600s
         write_timeout 600s
@@ -626,7 +626,7 @@ curl https://your-domain.com/api/config
 
 **Step 3: Check Docker logs**
 ```bash
-docker logs open-notebook
+docker logs agent-book
 
 # Look for:
 # - Frontend startup: "▲ Next.js ready on http://0.0.0.0:8502"
@@ -636,7 +636,7 @@ docker logs open-notebook
 
 **Step 4: Verify environment variable**
 ```bash
-docker exec open-notebook env | grep API_URL
+docker exec agent-book env | grep API_URL
 
 # Should show:
 # API_URL=https://your-domain.com
@@ -664,7 +664,7 @@ Check browser console (F12) - should see: `✅ [Config] Runtime API URL from ser
 ```nginx
 # Only needed for versions ≤ 1.0.10
 location = /config {
-    proxy_pass http://open-notebook:8502;
+    proxy_pass http://agent-book:8502;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -685,7 +685,7 @@ Error creating source. Please try again.
 When uploading files, your reverse proxy may reject the request due to body size limits *before* it reaches the application. Since the error happens at the proxy level, CORS headers are not included in the response.
 
 **Version Requirement:**
-- **Open Notebook v1.3.2+** is required for file uploads >10MB
+- **AgentBook v1.3.2+** is required for file uploads >10MB
 - Uses Next.js 16+ which supports the `proxyClientMaxBodySize` configuration option
 - Check your version: Settings → About (bottom of settings page)
 
@@ -734,7 +734,7 @@ When uploading files, your reverse proxy may reject the request due to body size
    apiVersion: networking.k8s.io/v1
    kind: Ingress
    metadata:
-     name: open-notebook
+     name: agent-book
      annotations:
        nginx.ingress.kubernetes.io/proxy-body-size: "100m"
        # Add CORS headers for error responses
@@ -748,7 +748,7 @@ When uploading files, your reverse proxy may reject the request due to body size
        request_body {
            max_size 100MB
        }
-       reverse_proxy open-notebook:8502 {
+       reverse_proxy agent-book:8502 {
            transport http {
                read_timeout 600s
                write_timeout 600s
@@ -757,7 +757,7 @@ When uploading files, your reverse proxy may reject the request due to body size
    }
    ```
 
-**Note:** Open Notebook's API includes CORS headers in error responses, but this only works for errors that reach the application. Proxy-level errors (like 413 from nginx) need to be configured at the proxy level.
+**Note:** AgentBook's API includes CORS headers in error responses, but this only works for errors that reach the application. Proxy-level errors (like 413 from nginx) need to be configured at the proxy level.
 
 ---
 
@@ -791,7 +791,7 @@ Response to preflight request doesn't pass access control check
    ```nginx
    # Make sure this works:
    location /api/ {
-       proxy_pass http://open-notebook:5055/api/;  # Note the trailing slash!
+       proxy_pass http://agent-book:5055/api/;  # Note the trailing slash!
    }
    ```
 
@@ -870,18 +870,18 @@ curl -H "Authorization: Bearer your-password-here" \
    - Test API: `curl https://your-domain.com/api/config`
    - Verify authentication works
    - Check long-running operations (podcast generation)
-9. **Monitor logs** regularly: `docker logs open-notebook`
+9. **Monitor logs** regularly: `docker logs agent-book`
 10. **Don't include `/api` in API_URL** - the system adds this automatically
 
 ---
 
 ## Legacy Configurations (Pre-v1.1)
 
-If you're running Open Notebook **version 1.0.x or earlier**, you may need to use the legacy two-port configuration where you explicitly route `/api/*` to port 5055.
+If you're running AgentBook **version 1.0.x or earlier**, you may need to use the legacy two-port configuration where you explicitly route `/api/*` to port 5055.
 
 **Check your version:**
 ```bash
-docker exec open-notebook cat /app/package.json | grep version
+docker exec agent-book cat /app/package.json | grep version
 ```
 
 **If version < 1.1.0**, you may need:

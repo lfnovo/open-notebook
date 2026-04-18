@@ -6,8 +6,8 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import TypedDict
 
-from open_notebook.ai.provision import provision_langchain_model
-from open_notebook.utils.text_utils import clean_thinking_content, extract_text_content
+from agent_book.ai.provision import provision_langchain_model
+from agent_book.utils.text_utils import clean_thinking_content, extract_text_content
 
 
 class PatternChainState(TypedDict):

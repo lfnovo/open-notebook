@@ -2,13 +2,13 @@
 
 Configure AI provider credentials through the Settings UI. No file editing required.
 
-> **Credential System**: Open Notebook uses encrypted credentials stored in the database. Each credential connects to a provider and allows you to discover, register, and test models.
+> **Credential System**: AgentBook uses encrypted credentials stored in the database. Each credential connects to a provider and allows you to discover, register, and test models.
 
 ---
 
 ## Overview
 
-Open Notebook manages AI provider access through a **credential-based system**:
+AgentBook manages AI provider access through a **credential-based system**:
 
 1. You create a **credential** for each provider (API key + settings)
 2. Credentials are **encrypted** and stored in the database
@@ -42,7 +42,7 @@ Both password and encryption key support Docker secrets:
 ```yaml
 # docker-compose.yml
 services:
-  open_notebook:
+  agent_book:
     environment:
       - OPEN_NOTEBOOK_PASSWORD_FILE=/run/secrets/app_password
       - OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE=/run/secrets/encryption_key
@@ -145,7 +145,7 @@ Navigation: Settings → API Keys
 
 1. Select the models you want to use
 2. Click **Register Models**
-3. The models are now available throughout Open Notebook
+3. The models are now available throughout AgentBook
 
 ---
 
@@ -302,7 +302,7 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 | Setting | Default Value | Production Recommendation |
 |---------|---------------|---------------------------|
-| Password | `open-notebook-change-me` | Set `OPEN_NOTEBOOK_PASSWORD` |
+| Password | `agent-book-change-me` | Set `OPEN_NOTEBOOK_PASSWORD` |
 | Encryption Key | None (must be set) | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` to any secret string |
 
 **For production deployments, always set custom credentials.**

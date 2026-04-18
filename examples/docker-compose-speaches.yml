@@ -18,8 +18,8 @@
 #   5. Configure in UI: Settings → API Keys → Add OpenAI-Compatible
 #
 # Full documentation:
-# - TTS setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
-# - STT setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-stt.md
+# - TTS setup: https://github.com/lfnovo/agent-book/blob/main/docs/5-CONFIGURATION/local-tts.md
+# - STT setup: https://github.com/lfnovo/agent-book/blob/main/docs/5-CONFIGURATION/local-stt.md
 
 services:
   surrealdb:
@@ -46,8 +46,8 @@ services:
     # For GPU acceleration, use: ghcr.io/speaches-ai/speaches:latest-cuda
     # and add GPU device mapping (see docs/5-CONFIGURATION/local-tts.md)
 
-  open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+  agent_book:
+    image: lfnovo/agent_book:v1-latest
     ports:
       - "8502:8502"
       - "5055:5055"
@@ -59,8 +59,8 @@ services:
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=root
       - SURREAL_PASSWORD=root
-      - SURREAL_NAMESPACE=open_notebook
-      - SURREAL_DATABASE=open_notebook
+      - SURREAL_NAMESPACE=agent_book
+      - SURREAL_DATABASE=agent_book
     volumes:
       - ./notebook_data:/app/data
     depends_on:

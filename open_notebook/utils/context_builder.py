@@ -1,5 +1,5 @@
 """
-Generic ContextBuilder for the Open Notebook project.
+Generic ContextBuilder for the AgentBook project.
 
 This module provides a flexible ContextBuilder class that can handle any parameters
 and build context from sources, notebooks, insights, and notes.
@@ -12,8 +12,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from loguru import logger
 
-from open_notebook.domain.notebook import Note, Notebook, Source
-from open_notebook.exceptions import DatabaseOperationError, NotFoundError
+from agent_book.domain.notebook import Note, Notebook, Source
+from agent_book.exceptions import DatabaseOperationError, NotFoundError
 
 from .token_utils import token_count
 

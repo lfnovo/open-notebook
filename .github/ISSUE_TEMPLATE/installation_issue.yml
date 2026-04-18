@@ -10,13 +10,13 @@ body:
 
         **Please try these resources first:**
 
-        1. 🤖 **[Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant)** - Our AI assistant can help you troubleshoot most installation issues instantly!
+        1. 🤖 **[Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-agent-book-installation-assistant)** - Our AI assistant can help you troubleshoot most installation issues instantly!
 
-        2. 📚 **[Installation Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/getting-started/installation.md)** - Comprehensive setup instructions
+        2. 📚 **[Installation Guide](https://github.com/lfnovo/agent-book/blob/main/docs/getting-started/installation.md)** - Comprehensive setup instructions
 
-        3. 🐋 **[Docker Deployment Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/deployment/docker.md)** - Detailed Docker setup
+        3. 🐋 **[Docker Deployment Guide](https://github.com/lfnovo/agent-book/blob/main/docs/deployment/docker.md)** - Detailed Docker setup
 
-        4. 🦙 **Ollama Issues?** Read our [Ollama Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ollama.md) first
+        4. 🦙 **Ollama Issues?** Read our [Ollama Guide](https://github.com/lfnovo/agent-book/blob/main/docs/features/ollama.md) first
 
         5. 💬 **[Discord Community](https://discord.gg/37XJPXfz2w)** - Get real-time help from the community
 
@@ -28,7 +28,7 @@ body:
     id: installation-method
     attributes:
       label: Installation Method
-      description: How are you trying to install Open Notebook?
+      description: How are you trying to install AgentBook?
       options:
         - Docker (docker-compose - recommended)
         - Docker (single container - v1-latest-single, deprecated)
@@ -55,9 +55,9 @@ body:
         Please provide relevant logs. **This is very important for diagnosing issues!**
 
         **How to get logs:**
-        - Docker single container: `docker logs open-notebook`
+        - Docker single container: `docker logs agent-book`
         - Docker Compose: `docker compose logs -f`
-        - Specific service: `docker compose logs -f open_notebook`
+        - Specific service: `docker compose logs -f agent_book`
       placeholder: |
         Paste your logs here. Include the full error message and stack trace if available.
       render: shell
@@ -74,8 +74,8 @@ body:
         **⚠️ IMPORTANT: Redact any sensitive information (API keys, passwords, etc.)**
       placeholder: |
         services:
-          open_notebook:
-            image: lfnovo/open_notebook:v1-latest-single
+          agent_book:
+            image: lfnovo/agent_book:v1-latest-single
             ports:
               - "8502:8502"
               - "5055:5055"
@@ -138,9 +138,9 @@ body:
       label: Pre-submission Checklist
       description: Please confirm you've tried these steps
       options:
-        - label: I tried the [Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant)
+        - label: I tried the [Installation Assistant ChatGPT](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-agent-book-installation-assistant)
           required: false
-        - label: I read the relevant documentation ([Installation Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/getting-started/installation.md) or [Ollama Guide](https://github.com/lfnovo/open-notebook/blob/main/docs/features/ollama.md))
+        - label: I read the relevant documentation ([Installation Guide](https://github.com/lfnovo/agent-book/blob/main/docs/getting-started/installation.md) or [Ollama Guide](https://github.com/lfnovo/agent-book/blob/main/docs/features/ollama.md))
           required: false
         - label: I searched existing issues to see if this was already reported
           required: true

@@ -8,7 +8,7 @@ Complete setup instructions for each AI provider via the **Settings UI**.
 
 ## How Provider Setup Works
 
-Open Notebook uses a **credential-based system** for managing AI providers:
+AgentBook uses a **credential-based system** for managing AI providers:
 
 1. **Get your API key** from the provider's website
 2. **Open Settings** → **API Keys** → **Add Credential**
@@ -32,7 +32,7 @@ Open Notebook uses a **credential-based system** for managing AI providers:
 3. Create new API key (starts with "sk-proj-")
 4. Add $5+ credits to account
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **OpenAI**
@@ -42,7 +42,7 @@ Open Notebook uses a **credential-based system** for managing AI providers:
 7. Click **Discover Models** to find available models
 8. Click **Register Models** to make them available
 
-**Available Models (in Open Notebook):**
+**Available Models (in AgentBook):**
 - `gpt-4o` — Best quality, fast (latest version)
 - `gpt-4o-mini` — Fast, cheap, good for testing
 - `o1` — Advanced reasoning model (slower, more expensive)
@@ -77,7 +77,7 @@ Heavy use: $50-100+/month
 3. Go to API keys section
 4. Create new API key (starts with "sk-ant-")
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **Anthropic**
@@ -124,7 +124,7 @@ Opus: $10-50+/month
 2. Create account or login
 3. Create new API key
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **Google Gemini**
@@ -162,7 +162,7 @@ Opus: $10-50+/month
 2. Create account or login
 3. Create new API key
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **Groq**
@@ -206,7 +206,7 @@ Opus: $10-50+/month
 3. Add credits to your account
 4. Create new API key
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **OpenRouter**
@@ -259,7 +259,7 @@ Heavy use: Depends on models chosen
 3. Navigate to API Keys section
 4. Create a new API key
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **DashScope (Qwen)**
@@ -293,7 +293,7 @@ Heavy use: Depends on models chosen
 3. Navigate to API Keys section
 4. Create a new API key
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **MiniMax**
@@ -330,7 +330,7 @@ Heavy use: Depends on models chosen
 2. Run Ollama in background: `ollama serve`
 3. Download a model: `ollama pull mistral`
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **Ollama**
@@ -401,7 +401,7 @@ CPU-only:
 4. Go to "Local Server" tab
 5. Start server (default port: 1234)
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Go to **Settings** → **API Keys**
 2. Click **Add Credential**
 3. Select provider: **OpenAI-Compatible**
@@ -445,7 +445,7 @@ See [OpenAI-Compatible Setup](openai-compatible.md) for detailed instructions.
 
 **Cost:** Same as OpenAI (usage-based)
 
-**Configure in Open Notebook:**
+**Configure in AgentBook:**
 1. Create Azure OpenAI service in Azure portal
 2. Deploy GPT-4/3.5-turbo model
 3. Get your endpoint and key
@@ -470,7 +470,7 @@ See [OpenAI-Compatible Setup](openai-compatible.md) for detailed instructions.
 
 ## Embeddings (For Search/Semantic Features)
 
-By default, Open Notebook uses the LLM provider's embeddings. Embedding models are discovered and registered through the same credential system — when you discover models from a credential, embedding models are included alongside language models.
+By default, AgentBook uses the LLM provider's embeddings. Embedding models are discovered and registered through the same credential system — when you discover models from a credential, embedding models are included alongside language models.
 
 ---
 

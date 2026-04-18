@@ -1,13 +1,13 @@
 # Developer Guide
 
-This guide is for developers working on Open Notebook. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
+This guide is for developers working on AgentBook. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
 
 ## Quick Start for Development
 
 ```bash
 # 1. Clone and setup
-git clone https://github.com/lfnovo/open-notebook.git
-cd open-notebook
+git clone https://github.com/lfnovo/agent-book.git
+cd agent-book
 
 # 2. Copy environment files
 cp .env.example .env
@@ -135,13 +135,13 @@ make docker-build-local
 ```
 
 This creates two tags:
-- `lfnovo/open_notebook:<version>` (from pyproject.toml)
-- `lfnovo/open_notebook:local`
+- `lfnovo/agent_book:<version>` (from pyproject.toml)
+- `lfnovo/agent_book:local`
 
 ### Run Locally
 
 ```bash
-docker run -p 5055:5055 -p 3000:3000 lfnovo/open_notebook:local
+docker run -p 5055:5055 -p 3000:3000 lfnovo/agent_book:local
 ```
 
 ### When to Use
@@ -246,7 +246,7 @@ cd frontend && npm install package-name
 
 ### Adding a New Language (i18n)
 
-Open Notebook supports internationalization. To add a new language:
+AgentBook supports internationalization. To add a new language:
 
 1. **Create locale file**: Copy an existing locale as template
    ```bash
@@ -355,10 +355,10 @@ make docker-build-local
 ## Project Structure
 
 ```
-open-notebook/
+agent-book/
 ├── api/                    # FastAPI backend
 ├── frontend/               # Next.js React frontend
-├── open_notebook/          # Python core library
+├── agent_book/          # Python core library
 │   ├── domain/            # Domain models
 │   ├── graphs/            # LangGraph workflows
 │   ├── ai/                # AI provider integration
@@ -372,7 +372,7 @@ open-notebook/
 See component-specific CLAUDE.md files for detailed architecture:
 - [frontend/CLAUDE.md](frontend/CLAUDE.md)
 - [api/CLAUDE.md](api/CLAUDE.md)
-- [open_notebook/CLAUDE.md](open_notebook/CLAUDE.md)
+- [agent_book/CLAUDE.md](agent_book/CLAUDE.md)
 
 ---
 
@@ -385,7 +385,7 @@ See component-specific CLAUDE.md files for detailed architecture:
 SURREAL_URL=ws://localhost:8000
 SURREAL_USER=root
 SURREAL_PASS=root
-SURREAL_DB=open_notebook
+SURREAL_DB=agent_book
 SURREAL_NS=production
 
 # AI Provider (at least one required)
@@ -438,9 +438,9 @@ make clean-cache
 
 ## Resources
 
-- **Documentation:** https://open-notebook.ai
+- **Documentation:** https://book.agnxxt.com
 - **Discord:** https://discord.gg/37XJPXfz2w
-- **Issues:** https://github.com/lfnovo/open-notebook/issues
+- **Issues:** https://github.com/lfnovo/agent-book/issues
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Maintainer Guide:** [MAINTAINER_GUIDE.md](MAINTAINER_GUIDE.md)
 

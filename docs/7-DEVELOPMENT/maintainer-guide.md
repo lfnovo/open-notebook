@@ -320,7 +320,7 @@ We'd love to have you contribute in other ways! Check out:
 - Help wanted issues
 - Our roadmap
 
-Thanks again for your interest in Open Notebook!
+Thanks again for your interest in AgentBook!
 ```
 
 ### Closing a Stale Issue

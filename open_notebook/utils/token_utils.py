@@ -1,11 +1,11 @@
 """
-Token utilities for Open Notebook.
+Token utilities for AgentBook.
 Handles token counting and cost calculations for language models.
 """
 
 import os
 
-from open_notebook.config import TIKTOKEN_CACHE_DIR
+from agent_book.config import TIKTOKEN_CACHE_DIR
 
 # Set tiktoken cache directory before importing tiktoken to ensure
 # tokenizer encodings are cached persistently in the data folder

@@ -1,6 +1,6 @@
 # Frontend Architecture
 
-Next.js React application providing UI for Open Notebook research assistant. Three-layer architecture: **pages** (Next.js App Router), **components** (feature-specific UI), and **lib** (data fetching, state management, utilities).
+Next.js React application providing UI for AgentBook research assistant. Three-layer architecture: **pages** (Next.js App Router), **components** (feature-specific UI), and **lib** (data fetching, state management, utilities).
 
 ## High-Level Data Flow
 

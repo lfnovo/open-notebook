@@ -23,7 +23,7 @@ But you can do much better...
 
 ## Two Search Modes Explained
 
-Open Notebook has two fundamentally different search approaches.
+AgentBook has two fundamentally different search approaches.
 
 ### Search Type 1: TEXT SEARCH (Keyword Matching)
 

@@ -12,10 +12,10 @@ from api.models import (
     TransformationResponse,
     TransformationUpdate,
 )
-from open_notebook.ai.models import Model
-from open_notebook.domain.transformation import DefaultPrompts, Transformation
-from open_notebook.exceptions import InvalidInputError, OpenNotebookError
-from open_notebook.graphs.transformation import graph as transformation_graph
+from agent_book.ai.models import Model
+from agent_book.domain.transformation import DefaultPrompts, Transformation
+from agent_book.exceptions import InvalidInputError, OpenNotebookError
+from agent_book.graphs.transformation import graph as transformation_graph
 
 router = APIRouter()
 

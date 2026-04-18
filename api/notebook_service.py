@@ -7,7 +7,7 @@ from typing import List, Optional
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.notebook import Notebook
+from agent_book.domain.notebook import Notebook
 
 
 class NotebookService:

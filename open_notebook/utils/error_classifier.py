@@ -7,7 +7,7 @@ error messages and appropriate exception types.
 
 from loguru import logger
 
-from open_notebook.exceptions import (
+from agent_book.exceptions import (
     AuthenticationError,
     ConfigurationError,
     ExternalServiceError,

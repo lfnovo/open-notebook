@@ -1,12 +1,12 @@
 name: ✨ Feature Suggestion
-description: Suggest a new feature or improvement for Open Notebook
+description: Suggest a new feature or improvement for AgentBook
 title: "[Feature]: "
 labels: ["enhancement", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to suggest a feature! Your ideas help make Open Notebook better for everyone.
+        Thanks for taking the time to suggest a feature! Your ideas help make AgentBook better for everyone.
 
   - type: textarea
     id: feature-description
@@ -61,5 +61,5 @@ body:
         1. A maintainer will review your feature request
         2. If approved and you checked the box above, the issue will be assigned to you
         3. Please wait for assignment before starting development
-        4. See our [Contributing Guide](https://github.com/lfnovo/open-notebook/blob/main/CONTRIBUTING.md) for more details
+        4. See our [Contributing Guide](https://github.com/lfnovo/agent-book/blob/main/CONTRIBUTING.md) for more details
 

@@ -1,8 +1,8 @@
-# Open Notebook Architecture
+# AgentBook Architecture
 
 ## High-Level Overview
 
-Open Notebook follows a three-tier architecture with clear separation of concerns:
+AgentBook follows a three-tier architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -39,7 +39,7 @@ Open Notebook follows a three-tier architecture with clear separation of concern
 
 ## Detailed Architecture
 
-Open Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
+AgentBook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
 
 **Core Philosophy**:
 - Privacy-first: Users control their data and AI provider choice
@@ -269,9 +269,9 @@ ChatSession
 
 ## LangGraph Workflows
 
-LangGraph is a state machine library that orchestrates multi-step AI workflows. Open Notebook uses five core workflows:
+LangGraph is a state machine library that orchestrates multi-step AI workflows. AgentBook uses five core workflows:
 
-### 1. **Source Processing Workflow** (`open_notebook/graphs/source.py`)
+### 1. **Source Processing Workflow** (`agent_book/graphs/source.py`)
 
 **Purpose**: Ingest content (PDF, URL, text) and prepare for search/insights.
 
@@ -310,7 +310,7 @@ Output (Source record with embeddings)
 
 ---
 
-### 2. **Chat Workflow** (`open_notebook/graphs/chat.py`)
+### 2. **Chat Workflow** (`agent_book/graphs/chat.py`)
 
 **Purpose**: Conduct multi-turn conversations with AI model, referencing notebook context.
 
@@ -354,7 +354,7 @@ Output (complete message)
 
 ---
 
-### 3. **Ask Workflow** (`open_notebook/graphs/ask.py`)
+### 3. **Ask Workflow** (`agent_book/graphs/ask.py`)
 
 **Purpose**: Answer user questions by searching sources and synthesizing responses.
 
@@ -392,7 +392,7 @@ Output (final answer)
 
 ---
 
-### 4. **Transformation Workflow** (`open_notebook/graphs/transformation.py`)
+### 4. **Transformation Workflow** (`agent_book/graphs/transformation.py`)
 
 **Purpose**: Apply custom transformations to sources (extract summaries, key points, etc).
 
@@ -421,7 +421,7 @@ Output (insight with type + content)
 
 ---
 
-### 5. **Prompt Workflow** (`open_notebook/graphs/prompt.py`)
+### 5. **Prompt Workflow** (`agent_book/graphs/prompt.py`)
 
 **Purpose**: Generic LLM task execution (e.g., auto-generate note titles, analyze content).
 
@@ -442,7 +442,7 @@ Output (completion)
 
 ### ModelManager: Centralized Factory
 
-Located in `open_notebook/ai/models.py`, ModelManager handles:
+Located in `agent_book/ai/models.py`, ModelManager handles:
 
 1. **Provider Detection**: Check environment variables for available providers
 2. **Model Selection**: Choose best model based on context size and task
@@ -452,7 +452,7 @@ Located in `open_notebook/ai/models.py`, ModelManager handles:
 
 **Usage**:
 ```python
-from open_notebook.ai.provision import provision_langchain_model
+from agent_book.ai.provision import provision_langchain_model
 
 # Get best LLM for context size
 model = await provision_langchain_model(
@@ -511,7 +511,7 @@ result = await graph.ainvoke(
 
 ### 1. **Domain-Driven Design (DDD)**
 
-**Domain Objects** (`open_notebook/domain/`):
+**Domain Objects** (`agent_book/domain/`):
 - `Notebook`: Research container with relationships to sources/notes
 - `Source`: Content item (PDF, URL, text) with embeddings
 - `Note`: User-created or AI-generated research note
@@ -519,7 +519,7 @@ result = await graph.ainvoke(
 - `Transformation`: Custom rule for extracting insights
 
 **Repository Pattern**:
-- Database access layer (`open_notebook/database/repository.py`)
+- Database access layer (`agent_book/database/repository.py`)
 - `repo_query()`: Execute SurrealQL queries
 - `repo_create()`: Insert records
 - `repo_upsert()`: Merge records
@@ -603,7 +603,7 @@ For async background tasks (source processing), use Surreal-Commands job queue:
 ```python
 # Submit job
 command_id = await CommandService.submit_command_job(
-    app="open_notebook",
+    app="agent_book",
     command="process_source",
     input={...}
 )
@@ -839,7 +839,7 @@ Async job submission (source processing, podcast generation) prevents request ti
 
 ### Adding a New Workflow
 
-1. Create `open_notebook/graphs/workflow_name.py`
+1. Create `agent_book/graphs/workflow_name.py`
 2. Define StateDict and node functions
 3. Build graph with `.add_node()` / `.add_edge()`
 4. Create service in `api/workflow_service.py`
@@ -848,7 +848,7 @@ Async job submission (source processing, podcast generation) prevents request ti
 
 ### Adding a New Data Model
 
-1. Create model in `open_notebook/domain/model_name.py`
+1. Create model in `agent_book/domain/model_name.py`
 2. Inherit from BaseModel (domain object)
 3. Implement `save()`, `get()`, `delete()` methods (CRUD)
 4. Add repository functions if complex queries needed
@@ -888,4 +888,4 @@ Async job submission (source processing, podcast generation) prevents request ti
 
 ## Summary
 
-Open Notebook's architecture provides a solid foundation for privacy-focused, AI-powered research. The separation of concerns (frontend/API/database), async-first design, and multi-provider flexibility enable rapid development and easy deployment. LangGraph workflows orchestrate complex AI tasks, while Esperanto abstracts provider details. The result is a scalable, maintainable system that puts users in control of their data and AI provider choice.
+AgentBook's architecture provides a solid foundation for privacy-focused, AI-powered research. The separation of concerns (frontend/API/database), async-first design, and multi-provider flexibility enable rapid development and easy deployment. LangGraph workflows orchestrate complex AI tasks, while Esperanto abstracts provider details. The result is a scalable, maintainable system that puts users in control of their data and AI provider choice.

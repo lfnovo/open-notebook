@@ -6,7 +6,7 @@ configuration. It reads from Credential records (individual per-provider
 credentials) and falls back to environment variables for backward compatibility.
 
 Usage:
-    from open_notebook.ai.key_provider import provision_provider_keys
+    from agent_book.ai.key_provider import provision_provider_keys
 
     # Call before model provisioning to set env vars from DB
     await provision_provider_keys("openai")
@@ -17,7 +17,7 @@ from typing import Optional
 
 from loguru import logger
 
-from open_notebook.domain.credential import Credential
+from agent_book.domain.credential import Credential
 
 
 # =============================================================================

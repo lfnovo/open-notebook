@@ -2,7 +2,7 @@ from typing import ClassVar, Optional
 
 from pydantic import Field
 
-from open_notebook.domain.base import ObjectModel, RecordModel
+from agent_book.domain.base import ObjectModel, RecordModel
 
 
 class Transformation(ObjectModel):
@@ -15,7 +15,7 @@ class Transformation(ObjectModel):
 
 
 class DefaultPrompts(RecordModel):
-    record_id: ClassVar[str] = "open_notebook:default_prompts"
+    record_id: ClassVar[str] = "agent_book:default_prompts"
     transformation_instructions: Optional[str] = Field(
         None, description="Instructions for executing a transformation"
     )

@@ -9,11 +9,11 @@ from langgraph.types import Send
 from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
-from open_notebook.ai.models import Model, ModelManager
-from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Source
-from open_notebook.domain.transformation import Transformation
-from open_notebook.graphs.transformation import graph as transform_graph
+from agent_book.ai.models import Model, ModelManager
+from agent_book.domain.content_settings import ContentSettings
+from agent_book.domain.notebook import Asset, Source
+from agent_book.domain.transformation import Transformation
+from agent_book.graphs.transformation import graph as transform_graph
 
 
 class SourceState(TypedDict):

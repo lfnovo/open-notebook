@@ -10,7 +10,7 @@ from pydantic import (
     model_validator,
 )
 
-from open_notebook.database.repository import (
+from agent_book.database.repository import (
     ensure_record_id,
     repo_create,
     repo_delete,
@@ -19,7 +19,7 @@ from open_notebook.database.repository import (
     repo_update,
     repo_upsert,
 )
-from open_notebook.exceptions import (
+from agent_book.exceptions import (
     DatabaseOperationError,
     InvalidInputError,
     NotFoundError,

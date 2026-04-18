@@ -4,8 +4,8 @@ contact_links:
     url: https://discord.gg/37XJPXfz2w
     about: Get help from the community and share ideas
   - name: 🤖 Installation Assistant (ChatGPT)
-    url: https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant
+    url: https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-agent-book-installation-assistant
     about: CustomGPT that knows all our docs. Really useful. Try it.
   - name: 📚 Documentation
-    url: https://github.com/lfnovo/open-notebook/tree/main/docs
+    url: https://github.com/lfnovo/agent-book/tree/main/docs
     about: Browse our comprehensive documentation

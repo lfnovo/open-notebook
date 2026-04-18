@@ -1,6 +1,6 @@
 # Quick Start - Development
 
-Get Open Notebook running locally in 5 minutes.
+Get AgentBook running locally in 5 minutes.
 
 ## Prerequisites
 
@@ -13,11 +13,11 @@ Get Open Notebook running locally in 5 minutes.
 
 ```bash
 # Fork the repository on GitHub first, then clone your fork
-git clone https://github.com/YOUR_USERNAME/open-notebook.git
-cd open-notebook
+git clone https://github.com/YOUR_USERNAME/agent-book.git
+cd agent-book
 
 # Add upstream remote for updates
-git remote add upstream https://github.com/lfnovo/open-notebook.git
+git remote add upstream https://github.com/lfnovo/agent-book.git
 ```
 
 ## 2. Install Dependencies (2 min)
@@ -51,7 +51,7 @@ cd frontend && npm run dev
 
 - **API Health**: http://localhost:5055/health → should return `{"status": "ok"}`
 - **API Docs**: http://localhost:5055/docs → interactive API documentation
-- **Frontend**: http://localhost:3000 → Open Notebook UI
+- **Frontend**: http://localhost:3000 → AgentBook UI
 
 **All three show up?** ✅ You're ready to develop!
 
@@ -59,7 +59,7 @@ cd frontend && npm run dev
 
 ## Next Steps
 
-- **First Issue?** Pick a [good first issue](https://github.com/lfnovo/open-notebook/issues?q=label%3A%22good+first+issue%22)
+- **First Issue?** Pick a [good first issue](https://github.com/lfnovo/agent-book/issues?q=label%3A%22good+first+issue%22)
 - **Understand the code?** Read [Architecture Overview](architecture.md)
 - **Make changes?** Follow [Contributing Guide](contributing.md)
 - **Setup details?** See [Development Setup](development-setup.md)

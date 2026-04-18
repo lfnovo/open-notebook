@@ -104,4 +104,4 @@ Before submitting, please verify:
 
 ---
 
-**Thank you for contributing to Open Notebook!** 🎉
+**Thank you for contributing to AgentBook!** 🎉

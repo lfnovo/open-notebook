@@ -1,6 +1,6 @@
 # ContextBuilder
 
-A flexible and generic ContextBuilder class for the Open Notebook project that can handle any parameters and build context from sources, notebooks, insights, and notes.
+A flexible and generic ContextBuilder class for the AgentBook project that can handle any parameters and build context from sources, notebooks, insights, and notes.
 
 ## Features
 
@@ -14,7 +14,7 @@ A flexible and generic ContextBuilder class for the Open Notebook project that c
 ## Basic Usage
 
 ```python
-from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
+from agent_book.utils.context_builder import ContextBuilder, ContextConfig
 
 # Simple notebook context
 builder = ContextBuilder(notebook_id="notebook:123")
@@ -32,7 +32,7 @@ context = await builder.build()
 ## Convenience Functions
 
 ```python
-from open_notebook.utils.context_builder import (
+from agent_book.utils.context_builder import (
     build_notebook_context,
     build_source_context,
     build_mixed_context
@@ -61,7 +61,7 @@ context = await build_mixed_context(
 ## Advanced Configuration
 
 ```python
-from open_notebook.utils.context_builder import ContextConfig
+from agent_book.utils.context_builder import ContextConfig
 
 # Custom configuration
 config = ContextConfig(
@@ -93,7 +93,7 @@ context = await builder.build()
 ## Programmatic Item Management
 
 ```python
-from open_notebook.utils.context_builder import ContextItem
+from agent_book.utils.context_builder import ContextItem
 
 builder = ContextBuilder()
 
@@ -171,7 +171,7 @@ The ContextBuilder follows these design principles:
 
 ## Integration
 
-The ContextBuilder integrates seamlessly with the existing Open Notebook architecture:
+The ContextBuilder integrates seamlessly with the existing AgentBook architecture:
 
 - Uses existing domain models (`Source`, `Notebook`, `Note`)
 - Leverages the repository pattern for database access

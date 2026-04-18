@@ -14,7 +14,7 @@ import httpx
 from esperanto.factory import AIFactory
 from loguru import logger
 
-from open_notebook.domain.credential import Credential
+from agent_book.domain.credential import Credential
 
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
@@ -373,12 +373,12 @@ async def test_individual_model(model) -> Tuple[bool, str]:
     Test a specific model configuration end-to-end by making a real API call.
 
     Args:
-        model: A Model instance (from open_notebook.ai.models)
+        model: A Model instance (from agent_book.ai.models)
 
     Returns:
         Tuple of (success: bool, message: str)
     """
-    from open_notebook.ai.models import ModelManager
+    from agent_book.ai.models import ModelManager
 
     try:
         manager = ModelManager()
@@ -415,7 +415,7 @@ async def test_individual_model(model) -> Tuple[bool, str]:
                 voice = "alloy"  # fallback
 
             result = await esp_model.agenerate_speech(
-                text="Hello from Open Notebook", voice=voice
+                text="Hello from AgentBook", voice=voice
             )
             if result and hasattr(result, "content"):
                 size = len(result.content)

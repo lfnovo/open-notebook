@@ -1,5 +1,5 @@
 """
-Unified embedding utilities for Open Notebook.
+Unified embedding utilities for AgentBook.
 
 Provides centralized embedding generation with support for:
 - Single text embedding (with automatic chunking and mean pooling for large texts)
@@ -25,7 +25,7 @@ EMBEDDING_RETRY_DELAY = 2  # seconds
 # Lazy import to avoid circular dependency:
 # utils -> embedding -> models -> key_provider -> provider_config -> utils
 if TYPE_CHECKING:
-    from open_notebook.ai.models import ModelManager
+    from agent_book.ai.models import ModelManager
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
@@ -109,7 +109,7 @@ async def generate_embeddings(
         return []
 
     # Lazy import to avoid circular dependency
-    from open_notebook.ai.models import model_manager
+    from agent_book.ai.models import model_manager
 
     embedding_model = await model_manager.get_embedding_model()
     if not embedding_model:

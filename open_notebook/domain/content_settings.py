@@ -2,11 +2,11 @@ from typing import ClassVar, List, Literal, Optional
 
 from pydantic import Field
 
-from open_notebook.domain.base import RecordModel
+from agent_book.domain.base import RecordModel
 
 
 class ContentSettings(RecordModel):
-    record_id: ClassVar[str] = "open_notebook:content_settings"
+    record_id: ClassVar[str] = "agent_book:content_settings"
     default_content_processing_engine_doc: Optional[
         Literal["auto", "docling", "simple"]
     ] = Field("auto", description="Default Content Processing Engine for Documents")

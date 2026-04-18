@@ -8,7 +8,7 @@ from typing import Dict, List, Optional, Union
 from loguru import logger
 
 from api.client import api_client
-from open_notebook.domain.notebook import Asset, Source
+from agent_book.domain.notebook import Asset, Source
 
 
 @dataclass

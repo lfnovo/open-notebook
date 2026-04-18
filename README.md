@@ -11,14 +11,14 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/lfnovo/agent-book">
+  <a href="https://github.com/agentnxt/open-notebook">
     <img src="docs/assets/hero.svg" alt="Logo">
   </a>
 
   <h3 align="center">AgentBook</h3>
 
   <p align="center">
-    An open source, privacy-focused alternative to Google's Notebook LM!
+    A fork of <a href="https://github.com/lfnovo/open-notebook">Open Notebook</a> by Luis Novo — privacy-focused AI research assistant!
     <br /><strong>Join our <a href="https://discord.gg/37XJPXfz2w">Discord server</a> for help, to share workflow ideas, and suggest features!</strong>
     <br />
     <a href="https://www.book.agnxxt.com"><strong>Checkout our website »</strong></a>
@@ -35,19 +35,10 @@
 </div>
 
 <p align="center">
-<a href="https://trendshift.io/repositories/14536" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14536" alt="lfnovo%2Fagent-book | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 
 <div align="center">
   <!-- Keep these links. Translations will automatically update with the README. -->
-  <a href="https://zdoc.app/de/lfnovo/agent-book">Deutsch</a> | 
-  <a href="https://zdoc.app/es/lfnovo/agent-book">Español</a> | 
-  <a href="https://zdoc.app/fr/lfnovo/agent-book">français</a> | 
-  <a href="https://zdoc.app/ja/lfnovo/agent-book">日本語</a> | 
-  <a href="https://zdoc.app/ko/lfnovo/agent-book">한국어</a> | 
-  <a href="https://zdoc.app/pt/lfnovo/agent-book">Português</a> | 
-  <a href="https://zdoc.app/ru/lfnovo/agent-book">Русский</a> | 
-  <a href="https://zdoc.app/zh/lfnovo/agent-book">中文</a>
 </div>
 
 ## A private, multi-model, 100% local, full-featured alternative to Notebook LM
@@ -184,7 +175,7 @@ Done! You're ready to create your first notebook.
 - **🤖 AI Installation Assistant**: [CustomGPT to help you install](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-agent-book-installation-assistant)
 - **🆘 Troubleshooting**: [5-minute troubleshooting guide](docs/6-TROUBLESHOOTING/quick-fixes.md)
 - **💬 Community Support**: [Discord Server](https://discord.gg/37XJPXfz2w)
-- **🐛 Report Issues**: [GitHub Issues](https://github.com/lfnovo/agent-book/issues)
+- **🐛 Report Issues**: [GitHub Issues](https://github.com/agentnxt/open-notebook/issues)
 
 ---
 
@@ -288,7 +279,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **Enhanced Citations**: Improved layout and finer control for source citations
 - **Multiple Chat Sessions**: Manage different conversations within notebooks
 
-See the [open issues](https://github.com/lfnovo/agent-book/issues) for a full list of proposed features and known issues.
+See the [open issues](https://github.com/agentnxt/open-notebook/issues) for a full list of proposed features and known issues.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -303,7 +294,7 @@ See the [open issues](https://github.com/lfnovo/agent-book/issues) for a full li
 
 ### Join the Community
 - 💬 **[Discord Server](https://discord.gg/37XJPXfz2w)** - Get help, share ideas, and connect with other users
-- 🐛 **[GitHub Issues](https://github.com/lfnovo/agent-book/issues)** - Report bugs and request features
+- 🐛 **[GitHub Issues](https://github.com/agentnxt/open-notebook/issues)** - Report bugs and request features
 - ⭐ **Star this repo** - Show your support and help others discover AgentBook
 
 ### Contributing
@@ -328,7 +319,7 @@ AgentBook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 
 **Community Support**:
 - 💬 [Discord Server](https://discord.gg/37XJPXfz2w) - Get help, share ideas, and connect with users
-- 🐛 [GitHub Issues](https://github.com/lfnovo/agent-book/issues) - Report bugs and request features
+- 🐛 [GitHub Issues](https://github.com/agentnxt/open-notebook/issues) - Report bugs and request features
 - 🌐 [Website](https://www.book.agnxxt.com) - Learn more about the project
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -337,15 +328,15 @@ AgentBook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/lfnovo/agent-book.svg?style=for-the-badge
-[contributors-url]: https://github.com/lfnovo/agent-book/graphs/contributors
+[contributors-url]: https://github.com/agentnxt/open-notebook/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/lfnovo/agent-book.svg?style=for-the-badge
-[forks-url]: https://github.com/lfnovo/agent-book/network/members
+[forks-url]: https://github.com/agentnxt/open-notebook/network/members
 [stars-shield]: https://img.shields.io/github/stars/lfnovo/agent-book.svg?style=for-the-badge
-[stars-url]: https://github.com/lfnovo/agent-book/stargazers
+[stars-url]: https://github.com/agentnxt/open-notebook/stargazers
 [issues-shield]: https://img.shields.io/github/issues/lfnovo/agent-book.svg?style=for-the-badge
-[issues-url]: https://github.com/lfnovo/agent-book/issues
+[issues-url]: https://github.com/agentnxt/open-notebook/issues
 [license-shield]: https://img.shields.io/github/license/lfnovo/agent-book.svg?style=for-the-badge
-[license-url]: https://github.com/lfnovo/agent-book/blob/master/LICENSE.txt
+[license-url]: https://github.com/agentnxt/open-notebook/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/lfnovo
 [product-screenshot]: images/screenshot.png

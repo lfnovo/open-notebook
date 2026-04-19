@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-04-14
+
 ### Changed
 - Embedding chunking is now token-based instead of character-based, improving chunk sizing consistency for CJK and mixed-language content (#542, #749)
 - `OPEN_NOTEBOOK_CHUNK_SIZE` and `OPEN_NOTEBOOK_CHUNK_OVERLAP` semantics changed from characters to tokens; default reduced from 1200 characters to 400 tokens to stay safely below the 512-token ceiling of BERT-family embedders (e.g. mxbai-embed-large) after accounting for tokenizer mismatch and splitter overshoot. Existing stored embeddings are unaffected; only new ingestions use the new chunking.
-
-## [1.8.5] - 2026-04-14
 
 ### Fixed
 - Credentials endpoint no longer crashes (500) when encryption key doesn't match stored credentials (#740)

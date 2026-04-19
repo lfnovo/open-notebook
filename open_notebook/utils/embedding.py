@@ -20,6 +20,7 @@ from loguru import logger
 from .chunking import CHUNK_SIZE, ContentType, chunk_text
 from .token_utils import token_count
 
+
 def _get_embedding_batch_size() -> int:
     """
     Read the embedding batch size from the environment.

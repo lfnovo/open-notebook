@@ -27,6 +27,7 @@ export const caES = {
     russian: "Русский",
     bengali: "বাংলা",
     catalan: "Català",
+    spanish: "Español",
     source: "Font",
     notebook: "Quadern",
     podcast: "Podcast",

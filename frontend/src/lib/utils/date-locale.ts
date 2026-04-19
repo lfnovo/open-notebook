@@ -1,4 +1,4 @@
-import { zhCN, enUS, zhTW, ptBR, ja, fr, ru, bn, ca, Locale } from 'date-fns/locale'
+import { zhCN, enUS, zhTW, ptBR, ja, fr, ru, bn, ca, es, Locale } from 'date-fns/locale'
 
 /**
  * Mapping of language codes to date-fns locales.
@@ -14,6 +14,7 @@ const LOCALE_MAP: Record<string, Locale> = {
   'ru-RU': ru,
   'bn-IN': bn,
   'ca-ES': ca,
+  'es-ES': es,
 }
 
 /**

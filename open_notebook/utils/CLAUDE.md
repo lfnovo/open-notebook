@@ -24,20 +24,20 @@ Each utility is stateless and can be imported independently.
 
 The chunking behavior can be configured via environment variables:
 
-- **OPEN_NOTEBOOK_CHUNK_SIZE**: Maximum chunk size in tokens (default: 512)
+- **OPEN_NOTEBOOK_CHUNK_SIZE**: Maximum chunk size in tokens (default: 400)
   - Minimum: 100 tokens
   - Warnings: Values > 8192 tokens or invalid values
-  - Use case: Conservative cross-provider baseline for embedding models with smaller token windows
+  - Use case: Conservative baseline that leaves headroom below 512-token embedders (e.g. mxbai-embed-large). Buffer accounts for tokenizer mismatch between our `o200k_base` measurement and the embedder's own tokenizer, plus occasional splitter overshoot and special tokens.
 
 - **OPEN_NOTEBOOK_CHUNK_OVERLAP**: Overlap between chunks in tokens (default: 15% of CHUNK_SIZE)
   - Must be: >= 0 and < CHUNK_SIZE
   - Warnings: Invalid values or values >= CHUNK_SIZE
   - Use case: Control how much context is shared between adjacent chunks
 
-Example for models with small context windows:
+Example for embedders with larger context windows (e.g. OpenAI text-embedding-3 family, 8191 tokens):
 ```bash
-export OPEN_NOTEBOOK_CHUNK_SIZE=512
-export OPEN_NOTEBOOK_CHUNK_OVERLAP=50
+export OPEN_NOTEBOOK_CHUNK_SIZE=1500
+export OPEN_NOTEBOOK_CHUNK_OVERLAP=150
 ```
 
 Note: Changes require restart of the application.
@@ -63,7 +63,7 @@ Note: Changes require restart of the application.
 
 ### chunking.py
 - **ContentType**: Enum (HTML, MARKDOWN, PLAIN)
-- **CHUNK_SIZE**: Configurable via `OPEN_NOTEBOOK_CHUNK_SIZE` env var (default: 512)
+- **CHUNK_SIZE**: Configurable via `OPEN_NOTEBOOK_CHUNK_SIZE` env var (default: 400)
 - **CHUNK_OVERLAP**: Configurable via `OPEN_NOTEBOOK_CHUNK_OVERLAP` env var (default: 15% of CHUNK_SIZE)
 - **detect_content_type_from_extension(file_path)**: Detect type from file extension
 - **detect_content_type_from_heuristics(text)**: Detect type from content patterns (returns type + confidence)
@@ -137,7 +137,7 @@ Note: Changes require restart of the application.
 
 - **Token count estimation**: Uses `o200k_base` encoding; may differ slightly from actual model tokens
 - **Chunk size semantics changed**: `OPEN_NOTEBOOK_CHUNK_SIZE` and `OPEN_NOTEBOOK_CHUNK_OVERLAP` are token-based, not character-based
-- **Default chunk size**: The token-based default is 512 to keep a safer common baseline across OpenAI and local embedding providers
+- **Default chunk size**: The token-based default is 400 — leaves ~20% margin below the 512-token ceiling of BERT-family embedders (e.g. mxbai-embed-large) to absorb tokenizer mismatch (we measure with `o200k_base`, they tokenize with WordPiece), splitter overshoot, and special tokens
 - **Content type detection order**: Extension checked first, then heuristics; high-confidence heuristics (≥0.8) can override PLAIN extensions
 - **Mean pooling normalization**: Each embedding normalized before mean, result normalized after
 - **Priority weights default**: If not specified, ContextConfig uses default weights (source=1, note=0.8, insight=1.2)

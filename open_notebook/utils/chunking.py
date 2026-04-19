@@ -9,7 +9,7 @@ Key functions:
 - chunk_text(): Splits text into chunks using appropriate splitter for content type
 
 Environment Variables:
-    OPEN_NOTEBOOK_CHUNK_SIZE: Maximum chunk size in tokens (default: 512)
+    OPEN_NOTEBOOK_CHUNK_SIZE: Maximum chunk size in tokens (default: 400)
     OPEN_NOTEBOOK_CHUNK_OVERLAP: Overlap between chunks in tokens (default: 15% of CHUNK_SIZE)
 """
 
@@ -51,9 +51,9 @@ def _get_chunk_size() -> int:
         except ValueError:
             logger.warning(
                 f"Invalid OPEN_NOTEBOOK_CHUNK_SIZE value: '{chunk_size_str}'. "
-                f"Using default: 512"
+                f"Using default: 400"
             )
-    return 512
+    return 400
 
 
 def _get_chunk_overlap(chunk_size: int) -> int:

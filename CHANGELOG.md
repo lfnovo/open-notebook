@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` environment variable to override the embedding batch size; default remains `50`. Helps with CPU-only local embedding and stricter OpenAI-compatible endpoints (#735)
 - `CORS_ORIGINS` environment variable to configure the API's allowed origins (comma-separated). Default remains `*` for backward compatibility; the API now logs a startup warning prompting users to set it for production deployments. Exception responses honor the configured origins when explicitly set (#585, #597, #730)
+- `OPEN_NOTEBOOK_MIN_CHUNK_SIZE` environment variable (default: 5 tokens) to filter out degenerate tiny chunks before embedding. Set to `0` to disable.
+
+### Fixed
+- URL source embedding no longer crashes with `TypeError: float() argument must be a string or a real number, not 'NoneType'` when header-based splitters emit single-character fragments from complex HTML pages (e.g. Wikipedia, Project Gutenberg). Such chunks are now filtered before being sent to the embedding provider (#764)
 
 ## [1.8.5] - 2026-04-14
 

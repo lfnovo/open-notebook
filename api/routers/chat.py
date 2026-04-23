@@ -1,8 +1,10 @@
 import asyncio
+import json
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -406,6 +408,133 @@ async def execute_chat(request: ExecuteChatRequest):
             f"  Traceback:\n{traceback.format_exc()}"
         )
         raise HTTPException(status_code=500, detail=f"Error executing chat: {str(e)}")
+
+
+async def _stream_execute_chat(
+    request: ExecuteChatRequest,
+) -> AsyncGenerator[str, None]:
+    from ai_prompter import Prompter
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
+    from open_notebook.ai.provision import provision_langchain_model
+    from open_notebook.utils import clean_thinking_content
+    from open_notebook.utils.error_classifier import classify_error
+    from open_notebook.utils.text_utils import extract_text_content
+
+    # Initialize before try so the finally block can reference them even if an
+    # exception is raised before model provisioning completes.
+    accumulated = ""
+    persisted = False
+    state_values: Dict[str, Any] = {}
+    full_session_id = ""
+    session: Optional[ChatSession] = None
+
+    try:
+        full_session_id = (
+            request.session_id
+            if request.session_id.startswith("chat_session:")
+            else f"chat_session:{request.session_id}"
+        )
+        session = await ChatSession.get(full_session_id)
+        if not session:
+            yield f'data: {json.dumps({"type": "error", "message": "Session not found"})}\n\n'
+            return
+
+        model_override = (
+            request.model_override
+            if request.model_override is not None
+            else getattr(session, "model_override", None)
+        )
+
+        current_state = await asyncio.to_thread(
+            chat_graph.get_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
+        )
+
+        state_values = (
+            dict(current_state.values) if current_state else {}
+        )
+        state_values["messages"] = list(state_values.get("messages", []))
+        state_values["context"] = request.context
+        state_values["model_override"] = model_override
+        state_values["messages"].append(HumanMessage(content=request.message))
+
+        yield f'data: {json.dumps({"type": "user_message", "content": request.message})}\n\n'
+
+        system_prompt = Prompter(prompt_template="chat/system").render(
+            data=state_values  # type: ignore[arg-type]
+        )
+        payload = [SystemMessage(content=system_prompt)] + state_values["messages"]
+
+        model = await provision_langchain_model(
+            str(payload), model_override, "chat", max_tokens=8192
+        )
+
+        async for chunk in model.astream(payload):
+            content = getattr(chunk, "content", "") or ""
+            # Some providers (Anthropic, etc.) return content as a list of
+            # content-block dicts rather than a string. Normalize to string.
+            if isinstance(content, list):
+                content = "".join(
+                    c.get("text", "") if isinstance(c, dict) else str(c)
+                    for c in content
+                )
+            if content:
+                accumulated += content
+                yield f'data: {json.dumps({"type": "token", "content": content})}\n\n'
+
+        cleaned_content = clean_thinking_content(extract_text_content(accumulated))
+        await asyncio.to_thread(
+            chat_graph.update_state,
+            config=RunnableConfig(configurable={"thread_id": full_session_id}),
+            values={"messages": state_values["messages"] + [AIMessage(content=cleaned_content)]},
+        )
+        await session.save()
+        persisted = True
+
+        yield f'data: {json.dumps({"type": "complete"})}\n\n'
+
+    except Exception as e:
+        logger.error(
+            f"Error streaming chat: {str(e)}\n"
+            f"  Session ID: {request.session_id}\n"
+            f"  Traceback:\n{traceback.format_exc()}"
+        )
+        # Use classify_error to map raw exceptions to a user-friendly message
+        # and avoid leaking internal details to the client.
+        _, user_message = classify_error(e)
+        yield f'data: {json.dumps({"type": "error", "message": user_message})}\n\n'
+    finally:
+        if accumulated and not persisted and full_session_id:
+            try:
+                cleaned = clean_thinking_content(extract_text_content(accumulated))
+                if cleaned:
+                    await asyncio.to_thread(
+                        chat_graph.update_state,
+                        config=RunnableConfig(configurable={"thread_id": full_session_id}),
+                        values={"messages": state_values.get("messages", []) + [AIMessage(content=cleaned)]},
+                    )
+                    if session is not None:
+                        await session.save()
+            except Exception:
+                pass
+
+
+@router.post("/chat/execute/stream")
+async def execute_chat_stream(request: ExecuteChatRequest):
+    """Execute a chat request and stream the AI response as Server-Sent Events."""
+    return StreamingResponse(
+        _stream_execute_chat(request),
+        media_type="text/plain",
+        headers={
+            # Prevent intermediate proxies from compressing or buffering the
+            # stream; required for per-token delivery through Next.js rewrite
+            # proxy which otherwise applies gzip (buffered) when the client
+            # sends Accept-Encoding: gzip.
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)

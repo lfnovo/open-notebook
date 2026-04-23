@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Bot, User, Send, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
+import { Bot, User, Send, Square, Loader2, FileText, Lightbulb, StickyNote, Clock } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import {
@@ -35,6 +35,10 @@ interface NotebookContextStats {
 interface ChatPanelProps {
   messages: SourceChatMessage[]
   isStreaming: boolean
+  // Partial content of the AI response currently being generated (SSE token deltas)
+  streamingContent?: string
+  // Stop in-flight streaming response (cancel client + server generation)
+  onStop?: () => void
   contextIndicators: SourceChatContextIndicator | null
   onSendMessage: (message: string, modelOverride?: string) => void
   modelOverride?: string
@@ -59,6 +63,8 @@ interface ChatPanelProps {
 export function ChatPanel({
   messages,
   isStreaming,
+  streamingContent,
+  onStop,
   contextIndicators,
   onSendMessage,
   modelOverride,
@@ -96,10 +102,17 @@ export function ChatPanel({
     }
   }
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom: smooth on new messages, instant during streaming
+  // (per-token smooth scroll causes jank and prevents users from staying
+  // scrolled up to read earlier content).
+  const lastMessageCountRef = useRef(messages.length)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    const messageAdded = messages.length !== lastMessageCountRef.current
+    lastMessageCountRef.current = messages.length
+    messagesEndRef.current?.scrollIntoView({
+      behavior: messageAdded ? 'smooth' : 'auto',
+    })
+  }, [messages, streamingContent])
 
   const handleSend = () => {
     if (input.trim() && !isStreaming) {
@@ -230,8 +243,15 @@ export function ChatPanel({
                     <Bot className="h-4 w-4" />
                   </div>
                 </div>
-                <div className="rounded-lg px-4 py-2 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                <div className="rounded-lg px-4 py-2 bg-muted min-w-0 max-w-[85%]">
+                  {streamingContent ? (
+                    <AIMessageContent
+                      content={streamingContent}
+                      onReferenceClick={handleReferenceClick}
+                    />
+                  ) : (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  )}
                 </div>
               </div>
             )}
@@ -299,22 +319,33 @@ export function ChatPanel({
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend').replace('{key}', keyHint)})`}
-              disabled={isStreaming}
               className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
               rows={1}
             />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isStreaming}
-              size="icon"
-              className="h-[40px] w-[40px] flex-shrink-0"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
+            {isStreaming && onStop ? (
+              <Button
+                onClick={onStop}
+                size="icon"
+                variant="destructive"
+                className="h-[40px] w-[40px] flex-shrink-0"
+                aria-label="Stop"
+              >
+                <Square className="h-4 w-4 fill-current" />
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSend}
+                disabled={!input.trim() || isStreaming}
+                size="icon"
+                className="h-[40px] w-[40px] flex-shrink-0"
+              >
+                {isStreaming ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

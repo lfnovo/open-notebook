@@ -155,7 +155,7 @@ User documentation is at @docs/
 
 See dedicated CLAUDE.md files for detailed guidance:
 
-- **[frontend/CLAUDE.md](../frontend/CLAUDE.md)**: React/Next.js architecture, state management, API integration
+- **[frontend/src/CLAUDE.md](../frontend/src/CLAUDE.md)**: React/Next.js architecture, state management, API integration
 - **[api/CLAUDE.md](../api/CLAUDE.md)**: FastAPI structure, service pattern, endpoint development
 - **[domain/CLAUDE.md](domain/CLAUDE.md)**: Data models, repository pattern, search functions
 - **[ai/CLAUDE.md](ai/CLAUDE.md)**: ModelManager, AI provider integration, Esperanto usage
@@ -167,7 +167,7 @@ See dedicated CLAUDE.md files for detailed guidance:
 ## Documentation Map
 
 - **[README.md](../README.md)**: Project overview, features, quick start
-- **[docs/index.md](../docs/index.md)**: Complete user & deployment documentation
+- **<https://open-notebook.ai>**: Complete user & deployment documentation
 - **[CONFIGURATION.md](../CONFIGURATION.md)**: Environment variables, model configuration
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)**: Contribution guidelines
 - **[MAINTAINER_GUIDE.md](../MAINTAINER_GUIDE.md)**: Release & maintenance procedures

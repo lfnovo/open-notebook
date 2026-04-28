@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/lfnovo-open-notebook-badge.png)](https://mseep.ai/app/lfnovo-open-notebook)
+
 <a id="readme-top"></a>
 
 <!-- [![Contributors][contributors-shield]][contributors-url] -->

@@ -480,6 +480,12 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     api_key = config.get("api_key")
     base_url = config.get("base_url")
 
+    def models_endpoint(url: str) -> str:
+        trimmed = url.rstrip("/")
+        if trimmed.endswith("/models"):
+            return trimmed
+        return f"{trimmed}/models"
+
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
         "anthropic": [
@@ -546,7 +552,9 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 headers["Authorization"] = f"Bearer {api_key}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{base_url.rstrip('/')}/models", headers=headers, timeout=30.0,
+                    models_endpoint(base_url),
+                    headers=headers,
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -618,6 +626,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
+    if provider == "openai" and base_url:
+        discovery_url = models_endpoint(base_url)
     if not discovery_url or not api_key:
         return []
 

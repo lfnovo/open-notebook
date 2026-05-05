@@ -438,6 +438,7 @@ export interface NotebookResponse {
   note_count: number
   password?: string | null
   creator_name?: string | null
+  creator_username?: string | null
   owner_id?: string | null
   visibility?: 'private' | 'team' | 'public'
 }

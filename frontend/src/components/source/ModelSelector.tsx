@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dialog'
 import { Settings2, Sparkles } from 'lucide-react'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
+import { useTeamModelDefaults, useTeams } from '@/lib/hooks/use-teams'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useAuthStore } from '@/lib/stores/auth-store'
@@ -43,6 +44,17 @@ export function ModelSelector({
   const { data: defaults } = useModelDefaults()
   const role = useAuthStore((state) => state.role)
   const canCustomizeModels = role === 'admin'
+  const { data: teamsData } = useTeams()
+  const singleWorkspaceTeamId = useMemo(() => {
+    if (canCustomizeModels) return undefined
+    const workspaceTeams =
+      teamsData?.items.filter(
+        (team) => team.type === 'workspace' && Boolean(team.current_user_role)
+      ) || []
+    return workspaceTeams.length === 1 ? workspaceTeams[0].id : undefined
+  }, [canCustomizeModels, teamsData?.items])
+  const { data: teamDefaults } = useTeamModelDefaults(singleWorkspaceTeamId)
+  const effectiveDefaults = singleWorkspaceTeamId ? teamDefaults || defaults : defaults
 
   useEffect(() => {
     setSelectedModel(currentModel || 'default')
@@ -59,9 +71,9 @@ export function ModelSelector({
   }, [models])
 
   const defaultModel = useMemo(() => {
-    if (!defaults?.default_chat_model) return undefined
-    return languageModels.find(model => model.id === defaults.default_chat_model)
-  }, [defaults?.default_chat_model, languageModels])
+    if (!effectiveDefaults?.default_chat_model) return undefined
+    return languageModels.find(model => model.id === effectiveDefaults.default_chat_model)
+  }, [effectiveDefaults?.default_chat_model, languageModels])
 
   const currentModelName = useMemo(() => {
     if (currentModel) {

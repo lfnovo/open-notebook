@@ -15,6 +15,18 @@ import {
 
 const NOTEBOOK_SOURCES_PAGE_SIZE = 30
 
+function invalidateSourceCollectionQueries(queryClient: ReturnType<typeof useQueryClient>, deletedSourceId?: string) {
+  queryClient.invalidateQueries({
+    predicate: (query) => {
+      const key = query.queryKey
+      if (!Array.isArray(key) || key[0] !== 'sources') return false
+      if (deletedSourceId && key[1] === deletedSourceId) return false
+      if (key[2] === 'status') return false
+      return true
+    },
+  })
+}
+
 export function useSources(notebookId?: string) {
   return useQuery({
     queryKey: QUERY_KEYS.sources(notebookId),
@@ -191,10 +203,9 @@ export function useDeleteSource() {
   return useMutation({
     mutationFn: (id: string) => sourcesApi.delete(id),
     onSuccess: (_, id) => {
-      // Invalidate ALL sources queries (both general and notebook-specific)
-      queryClient.invalidateQueries({ queryKey: ['sources'] })
-      // Also invalidate the specific source
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(id) })
+      queryClient.removeQueries({ queryKey: ['sources', id, 'status'] })
+      queryClient.removeQueries({ queryKey: QUERY_KEYS.source(id) })
+      invalidateSourceCollectionQueries(queryClient, id)
       
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('sourcesUpdated'))

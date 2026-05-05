@@ -67,6 +67,8 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
+import { canDeleteSource } from '@/lib/utils/source-delete-eligibility'
+import { useProfile } from '@/lib/hooks/use-profile'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/source/NotebookAssociations'
 
@@ -85,6 +87,7 @@ export function SourceDetailContent({
 }: SourceDetailContentProps) {
   const { t, language } = useTranslation()
   const queryClient = useQueryClient()
+  const { data: profile } = useProfile()
   const [source, setSource] = useState<SourceDetailResponse | null>(null)
   const [insights, setInsights] = useState<SourceInsightResponse[]>([])
   const [transformations, setTransformations] = useState<Transformation[]>([])
@@ -358,6 +361,7 @@ export function SourceDetailContent({
 
   const handleDelete = async () => {
     if (!source) return
+    if (!canDeleteSource(source, profile?.id)) return
 
     if (confirm(t.sources.deleteSourceConfirm || t.common.confirm)) {
       try {
@@ -453,6 +457,7 @@ export function SourceDetailContent({
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={handleDelete}
+                  disabled={!canDeleteSource(source, profile?.id)}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   {t.sources.deleteSource}

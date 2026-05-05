@@ -23,6 +23,8 @@ import { ContextMode } from '../[id]/page'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { canDeleteSource } from '@/lib/utils/source-delete-eligibility'
 
 interface SourcesColumnProps {
   sources?: SourceListResponse[]
@@ -62,6 +64,7 @@ export function SourcesColumn({
   const deleteSource = useDeleteSource()
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
+  const { data: profile } = useProfile()
 
   // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
@@ -95,12 +98,21 @@ export function SourcesColumn({
   }, [handleScroll])
   
   const handleDeleteClick = (sourceId: string) => {
+    const source = sources?.find((item) => item.id === sourceId)
+    if (!source || !canDeleteSource(source, profile?.id)) return
+
     setSourceToDelete(sourceId)
     setDeleteDialogOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
     if (!sourceToDelete) return
+    const source = sources?.find((item) => item.id === sourceToDelete)
+    if (!source || !canDeleteSource(source, profile?.id)) {
+      setDeleteDialogOpen(false)
+      setSourceToDelete(null)
+      return
+    }
 
     try {
       await deleteSource.mutateAsync(sourceToDelete)
@@ -200,7 +212,7 @@ export function SourcesColumn({
                     key={source.id}
                     source={source}
                     onClick={handleSourceClick}
-                    onDelete={handleDeleteClick}
+                    onDelete={canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
                     onRetry={handleRetry}
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}

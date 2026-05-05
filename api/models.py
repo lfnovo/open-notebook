@@ -46,6 +46,7 @@ class NotebookResponse(BaseModel):
     note_count: int
     password: Optional[str] = None
     creator_name: Optional[str] = None
+    creator_username: Optional[str] = None
     owner_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
 

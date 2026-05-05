@@ -53,6 +53,24 @@ async def resolve_explicit_team_context(
     return team_id
 
 
+async def resolve_actor_default_team_context(
+    *, actor: Optional[CurrentUser]
+) -> Optional[str]:
+    if actor is None or actor.role == "admin":
+        return None
+
+    team_ids = await TeamRepository.user_team_ids(actor.id)
+    workspace_team_ids: list[str] = []
+    for team_id in team_ids:
+        team = await TeamRepository.get_team(team_id)
+        if team and team.get("type") == "workspace":
+            workspace_team_ids.append(team_id)
+
+    if len(workspace_team_ids) == 1:
+        return workspace_team_ids[0]
+    return None
+
+
 async def resolve_team_context(
     *,
     actor: Optional[CurrentUser],
@@ -72,4 +90,4 @@ async def resolve_team_context(
         )
         if team_id:
             return await resolve_explicit_team_context(actor=actor, team_id=team_id)
-    return None
+    return await resolve_actor_default_team_context(actor=actor)

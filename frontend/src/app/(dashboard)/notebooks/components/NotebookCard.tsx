@@ -20,6 +20,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { ShareDialog } from '@/components/share/ShareDialog'
 import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
+import { useProfile } from '@/lib/hooks/use-profile'
 
 interface NotebookCardProps {
   notebook: NotebookResponse
@@ -32,6 +33,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   const [visibility, setVisibility] = useState(notebook.visibility)
   const router = useRouter()
   const updateNotebook = useUpdateNotebook()
+  const { data: profile } = useProfile()
+  const creatorLabel = notebook.creator_username || notebook.creator_name
+  const canDeleteNotebook = !notebook.owner_id || profile?.id === notebook.owner_id
 
   const tVisibilityPrivate = t.visibility?.private ?? 'Private'
   const tVisibilityTeam = t.visibility?.team ?? 'Team'
@@ -94,6 +98,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       variant="ghost"
                       size="sm"
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={t.notebooks.actions}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
@@ -113,7 +118,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
+                      disabled={!canDeleteNotebook}
                       onClick={(e) => {
+                        if (!canDeleteNotebook) return
                         e.stopPropagation()
                         setShowDeleteDialog(true)
                       }}
@@ -140,10 +147,10 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                   locale: getDateLocale(language)
                 }))}
               </span>
-              {notebook.creator_name && (
+              {creatorLabel && (
                 <span className="flex items-center gap-1">
                   <User className="h-3 w-3" />
-                  {notebook.creator_name}
+                  {t.notebooks.createdBy}: {creatorLabel}
                 </span>
               )}
             </div>

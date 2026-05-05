@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse, BulkDeleteResponse } from '@/lib/types/api'
@@ -19,6 +19,8 @@ import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { ShareDialog } from '@/components/share/ShareDialog'
 import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { canDeleteSource, deletableSourceIds } from '@/lib/utils/source-delete-eligibility'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -43,6 +45,8 @@ export default function SourcesPage() {
   const router = useRouter()
   const tableRef = useRef<HTMLTableElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const { data: profile } = useProfile()
+  const currentUserId = profile?.id
   
   // Pagination state
   const [page, setPage] = useState(1)
@@ -191,6 +195,9 @@ export default function SourcesPage() {
 
   // Selection handlers
   const toggleSelect = (sourceId: string) => {
+    const source = sources.find(s => s.id === sourceId)
+    if (!source || !canDeleteSource(source, currentUserId)) return
+
     setSelectedIds(prev => {
       const next = new Set(prev)
       if (next.has(sourceId)) {
@@ -203,21 +210,39 @@ export default function SourcesPage() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === sources.length) {
+    const ids = deletableSourceIds(sources, currentUserId)
+    if (ids.length === 0) return
+
+    if (ids.every(id => selectedIds.has(id))) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(sources.map(s => s.id)))
+      setSelectedIds(new Set(ids))
     }
   }
 
-  const isAllSelected = sources.length > 0 && selectedIds.size === sources.length
+  const deletableIds = useMemo(
+    () => deletableSourceIds(sources, currentUserId),
+    [sources, currentUserId]
+  )
+  const selectedDeletableIds = useMemo(
+    () => Array.from(selectedIds).filter(id => deletableIds.includes(id)),
+    [selectedIds, deletableIds]
+  )
+  const isAllSelected = deletableIds.length > 0 && deletableIds.every(id => selectedIds.has(id))
+
+  useEffect(() => {
+    setSelectedIds(prev => {
+      const next = new Set(Array.from(prev).filter(id => deletableIds.includes(id)))
+      return next.size === prev.size ? prev : next
+    })
+  }, [sources, currentUserId, deletableIds])
 
   // Bulk delete handler
   const handleBulkDelete = async () => {
-    if (selectedIds.size === 0) return
+    if (selectedDeletableIds.length === 0) return
     setBulkDeleting(true)
     try {
-      const result: BulkDeleteResponse = await sourcesApi.bulkDelete(Array.from(selectedIds))
+      const result: BulkDeleteResponse = await sourcesApi.bulkDelete(selectedDeletableIds)
       if (result.failed_count === 0) {
         toast.success(t.sources.bulkDeleteSuccess.replace('{count}', String(result.deleted_count)))
       } else {
@@ -360,13 +385,14 @@ export default function SourcesPage() {
             variant="outline"
             size="sm"
             onClick={toggleSelectAll}
+            disabled={deletableIds.length === 0}
           >
             {isAllSelected ? t.sources.deselectAll : t.sources.selectAll}
           </Button>
-          {selectedIds.size > 0 && (
+          {selectedDeletableIds.length > 0 && (
             <>
               <span className="text-sm text-muted-foreground ml-2">
-                {t.sources.selected.replace('{count}', String(selectedIds.size))}
+                {t.sources.selected.replace('{count}', String(selectedDeletableIds.length))}
               </span>
               <Button
                 variant="destructive"
@@ -466,6 +492,7 @@ export default function SourcesPage() {
                     <Checkbox
                       checked={selectedIds.has(source.id)}
                       onCheckedChange={() => toggleSelect(source.id)}
+                      disabled={!canDeleteSource(source, currentUserId)}
                       aria-label={`Select ${source.title || tUntitledSource}`}
                     />
                   </td>
@@ -576,7 +603,7 @@ export default function SourcesPage() {
         open={bulkDeleteDialog}
         onOpenChange={setBulkDeleteDialog}
         title={t.sources?.bulkDelete ?? 'Delete Selected'}
-        description={(t.sources?.bulkDeleteConfirm ?? 'Are you sure you want to delete {count} source(s)?').replace('{count}', String(selectedIds.size))}
+        description={(t.sources?.bulkDeleteConfirm ?? 'Are you sure you want to delete {count} source(s)?').replace('{count}', String(selectedDeletableIds.length))}
         confirmText={t.common?.delete ?? 'Delete'}
         confirmVariant="destructive"
         onConfirm={handleBulkDelete}

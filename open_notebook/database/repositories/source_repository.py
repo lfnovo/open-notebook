@@ -162,8 +162,8 @@ class SourceRepository:
         pagination_clause = "LIMIT $limit START $offset" if include_pagination else ""
         query = f"""
             SELECT id, asset, created, title, updated, topics, command, owner_id, visibility,
-            (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
-            (SELECT VALUE count() FROM reference WHERE in = $parent.id GROUP ALL)[0].count OR 0 AS reference_count,
+            (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0] OR 0 AS insights_count,
+            (SELECT VALUE count() FROM reference WHERE in = $parent.id GROUP ALL)[0] OR 0 AS reference_count,
             (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded,
             (SELECT VALUE id FROM kg_entity WHERE source_id = type::string($parent.id) LIMIT 1) != [] AS kg_extracted
             FROM source

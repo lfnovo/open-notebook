@@ -43,6 +43,7 @@ class NotebookRepository:
 
         query = f"""
             SELECT *,
+            (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] as creator_username,
             count(<-reference.in) as source_count,
             count(<-artifact.in) as note_count
             FROM notebook
@@ -59,6 +60,7 @@ class NotebookRepository:
     async def get_with_counts(notebook_id: str) -> Optional[dict[str, Any]]:
         query = """
             SELECT *,
+            (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] as creator_username,
             count(<-reference.in) as source_count,
             count(<-artifact.in) as note_count
             FROM $notebook_id

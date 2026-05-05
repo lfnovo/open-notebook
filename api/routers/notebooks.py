@@ -32,6 +32,7 @@ def _notebook_to_response(nb: dict) -> NotebookResponse:
         note_count=nb.get("note_count", 0),
         password=nb.get("password"),
         creator_name=nb.get("creator_name"),
+        creator_username=nb.get("creator_username"),
         owner_id=nb.get("owner_id"),
         visibility=nb.get("visibility", "private"),
     )
@@ -144,6 +145,7 @@ async def get_public_notebooks(
 async def create_notebook(request: Request, notebook: NotebookCreate):
     """Create a new notebook. Sets owner_id from authenticated user."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    username: Optional[str] = getattr(request.state, "username", None)
     try:
         new_notebook = Notebook(
             name=notebook.name,
@@ -166,6 +168,7 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
             note_count=0,  # New notebook has no notes
             password=new_notebook.password,
             creator_name=new_notebook.creator_name,
+            creator_username=username,
             owner_id=new_notebook.owner_id,
             visibility=new_notebook.visibility,
         )
@@ -249,6 +252,7 @@ async def update_notebook(
 ):
     """Update a notebook. Requires ownership."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    username: Optional[str] = getattr(request.state, "username", None)
     try:
         notebook = await Notebook.get(notebook_id)
         if not notebook:
@@ -294,6 +298,7 @@ async def update_notebook(
             note_count=0,
             password=notebook.password,
             creator_name=notebook.creator_name,
+            creator_username=username,
             owner_id=notebook.owner_id,
             visibility=notebook.visibility,
         )
@@ -315,6 +320,7 @@ async def update_notebook_visibility(request: Request, notebook_id: str):
     Requires ownership. Returns the updated notebook.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    username: Optional[str] = getattr(request.state, "username", None)
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -356,6 +362,7 @@ async def update_notebook_visibility(request: Request, notebook_id: str):
             note_count=0,
             password=notebook.password,
             creator_name=notebook.creator_name,
+            creator_username=username,
             owner_id=notebook.owner_id,
             visibility=notebook.visibility,
         )

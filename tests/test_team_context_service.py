@@ -86,6 +86,72 @@ async def test_resource_team_context_returns_none_when_ambiguous(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_team_context_falls_back_to_single_workspace_membership(monkeypatch):
+    monkeypatch.setattr(
+        team_context_service.ShareRepository,
+        "list_resource_grants",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        team_context_service.TeamRepository,
+        "user_team_ids",
+        AsyncMock(return_value=["team:research", team_context_service.PUBLIC_TEAM_ID]),
+    )
+    monkeypatch.setattr(
+        team_context_service.TeamRepository,
+        "get_team",
+        AsyncMock(
+            side_effect=[
+                {"id": "team:research", "type": "workspace"},
+                {"id": team_context_service.PUBLIC_TEAM_ID, "type": "system"},
+            ]
+        ),
+    )
+
+    team_id = await team_context_service.resolve_team_context(
+        actor=user(),
+        resource_type="notebook",
+        resource_id="notebook:private",
+    )
+
+    assert team_id == "team:research"
+
+
+@pytest.mark.asyncio
+async def test_team_context_does_not_guess_when_user_has_multiple_workspace_teams(
+    monkeypatch,
+):
+    monkeypatch.setattr(
+        team_context_service.ShareRepository,
+        "list_resource_grants",
+        AsyncMock(return_value=[]),
+    )
+    monkeypatch.setattr(
+        team_context_service.TeamRepository,
+        "user_team_ids",
+        AsyncMock(return_value=["team:research", "team:ops"]),
+    )
+    monkeypatch.setattr(
+        team_context_service.TeamRepository,
+        "get_team",
+        AsyncMock(
+            side_effect=[
+                {"id": "team:research", "type": "workspace"},
+                {"id": "team:ops", "type": "workspace"},
+            ]
+        ),
+    )
+
+    team_id = await team_context_service.resolve_team_context(
+        actor=user(),
+        resource_type="notebook",
+        resource_id="notebook:private",
+    )
+
+    assert team_id is None
+
+
+@pytest.mark.asyncio
 async def test_explicit_team_context_requires_membership(monkeypatch):
     monkeypatch.setattr(
         team_context_service.TeamRepository,

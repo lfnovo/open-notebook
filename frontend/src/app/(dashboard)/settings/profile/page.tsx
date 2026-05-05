@@ -143,7 +143,7 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                  <Button type="button" variant="outline" onClick={logout}>
+                  <Button type="button" variant="destructive" onClick={logout}>
                     <LogOut className="h-4 w-4" />
                     {t.common.signOut}
                   </Button>

@@ -358,10 +358,7 @@ export function AppSidebar() {
               <TooltipTrigger asChild>
                 <Link
                   href="/settings/profile"
-                  className={cn(
-                    'flex h-9 w-full items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent',
-                    isAdmin ? 'text-red-600' : 'text-blue-600'
-                  )}
+                  className="flex h-9 w-full items-center justify-center rounded-md bg-blue-600 text-white shadow-xs transition-colors hover:bg-blue-700"
                   aria-label={profileLabel}
                 >
                   <UserCircle className="h-4 w-4" />
@@ -372,10 +369,7 @@ export function AppSidebar() {
           ) : (
             <Link
               href="/settings/profile"
-              className={cn(
-                'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-sidebar-accent',
-                isAdmin ? 'text-red-600' : 'text-blue-600'
-              )}
+              className="flex w-full items-center gap-2 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-xs transition-colors hover:bg-blue-700"
             >
               <UserCircle className="h-4 w-4" />
               <span className="truncate">{profileLabel}</span>

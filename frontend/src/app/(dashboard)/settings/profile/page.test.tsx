@@ -56,7 +56,7 @@ describe('ProfilePage', () => {
     expect(screen.getByLabelText('Username')).toHaveValue('admin')
     expect(screen.getByText('Language')).toBeInTheDocument()
     expect(screen.getByText('Theme')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Sign Out' })).toHaveClass('bg-destructive')
   })
 
   it('saves language and theme as profile fields', async () => {

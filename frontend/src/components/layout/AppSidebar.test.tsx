@@ -87,23 +87,25 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Teams')).toBeInTheDocument()
   })
 
-  it('keeps username profile link blue for non-admin users', () => {
+  it('shows the username profile link as a blue button for non-admin users', () => {
     useAuthStore.setState({ role: 'user' })
 
     render(<AppSidebar />)
 
     const profileLink = screen.getByRole('link', { name: 'testuser' })
-    expect(profileLink).toHaveClass('text-blue-600')
+    expect(profileLink).toHaveClass('bg-blue-600')
+    expect(profileLink).toHaveClass('text-white')
     expect(screen.queryByText('Teams')).not.toBeInTheDocument()
   })
 
-  it('shows admin username in red and removes standalone controls from the sidebar footer', () => {
+  it('shows admin username as a blue button and removes standalone controls from the sidebar footer', () => {
     useAuthStore.setState({ role: 'admin', displayName: null, username: 'admin' })
 
     render(<AppSidebar />)
 
     const profileLink = screen.getByRole('link', { name: 'admin' })
-    expect(profileLink).toHaveClass('text-red-600')
+    expect(profileLink).toHaveClass('bg-blue-600')
+    expect(profileLink).toHaveClass('text-white')
     expect(screen.queryByRole('button', { name: 'Sign Out' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Theme' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Language' })).not.toBeInTheDocument()

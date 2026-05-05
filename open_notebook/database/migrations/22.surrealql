@@ -1,0 +1,17 @@
+-- Migration 22: Team-scoped model and transformation allowlists
+
+DEFINE TABLE IF NOT EXISTS team_model SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS team ON TABLE team_model TYPE record<team>;
+DEFINE FIELD IF NOT EXISTS model ON TABLE team_model TYPE record<model>;
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE team_model TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE team_model TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_team_model_team_model ON TABLE team_model COLUMNS team, model UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_team_model_team ON TABLE team_model COLUMNS team;
+
+DEFINE TABLE IF NOT EXISTS team_transformation SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS team ON TABLE team_transformation TYPE record<team>;
+DEFINE FIELD IF NOT EXISTS transformation ON TABLE team_transformation TYPE record<transformation>;
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE team_transformation TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE team_transformation TYPE datetime DEFAULT time::now();
+DEFINE INDEX IF NOT EXISTS idx_team_transformation_team_transformation ON TABLE team_transformation COLUMNS team, transformation UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_team_transformation_team ON TABLE team_transformation COLUMNS team;

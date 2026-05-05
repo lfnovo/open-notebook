@@ -15,6 +15,7 @@ interface InlineEditProps {
   id?: string
   name?: string
   autocomplete?: string
+  disabled?: boolean
 }
 
 export function InlineEdit({
@@ -27,7 +28,8 @@ export function InlineEdit({
   emptyText,
   id: providedId,
   name,
-  autocomplete = 'off'
+  autocomplete = 'off',
+  disabled = false
 }: InlineEditProps) {
   const generatedId = useId()
   const id = providedId || generatedId
@@ -86,13 +88,16 @@ export function InlineEdit({
     return (
       <button
         type="button"
+        disabled={disabled}
         className={cn(
           "cursor-pointer hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1 transition-colors text-left w-full break-all",
+          disabled && "cursor-default hover:bg-transparent opacity-80",
           className
         )}
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          if (disabled) return
           setIsEditing(true)
         }}
       >

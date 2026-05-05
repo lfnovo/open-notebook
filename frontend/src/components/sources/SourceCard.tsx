@@ -201,6 +201,11 @@ export function SourceCard({
   const isProcessing: boolean = currentStatus === 'new' || currentStatus === 'running' || currentStatus === 'queued'
   const isFailed: boolean = currentStatus === 'failed'
   const isCompleted: boolean = currentStatus === 'completed'
+  const hasActionMenuActions = Boolean(
+    (showRemoveFromNotebook && onRemoveFromNotebook) ||
+      (isFailed && onRetry) ||
+      onDelete
+  )
 
   return (
     <Card
@@ -303,6 +308,8 @@ export function SourceCard({
                   size="sm"
                   className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()}
+                  disabled={!hasActionMenuActions}
+                  aria-label={t.common.actions}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>

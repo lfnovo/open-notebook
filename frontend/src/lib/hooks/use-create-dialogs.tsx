@@ -31,9 +31,15 @@ export function CreateDialogsProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
-      <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
-      <CreateNotebookDialog open={notebookDialogOpen} onOpenChange={setNotebookDialogOpen} />
-      <GeneratePodcastDialog open={podcastDialogOpen} onOpenChange={setPodcastDialogOpen} />
+      {sourceDialogOpen && (
+        <AddSourceDialog open={sourceDialogOpen} onOpenChange={setSourceDialogOpen} />
+      )}
+      {notebookDialogOpen && (
+        <CreateNotebookDialog open={notebookDialogOpen} onOpenChange={setNotebookDialogOpen} />
+      )}
+      {podcastDialogOpen && (
+        <GeneratePodcastDialog open={podcastDialogOpen} onOpenChange={setPodcastDialogOpen} />
+      )}
     </CreateDialogsContext.Provider>
   )
 }

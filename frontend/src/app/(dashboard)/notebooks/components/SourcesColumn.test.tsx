@@ -50,13 +50,16 @@ vi.mock('@/components/sources/SourceCard', () => ({
   SourceCard: ({
     source,
     onDelete,
+    onRemoveFromNotebook,
   }: {
     source: SourceListResponse
     onDelete?: (sourceId: string) => void
+    onRemoveFromNotebook?: (sourceId: string) => void
   }) => (
     <div
       data-testid={`source-card-${source.id}`}
       data-delete-enabled={onDelete ? 'true' : 'false'}
+      data-remove-enabled={onRemoveFromNotebook ? 'true' : 'false'}
     >
       {source.title}
     </div>
@@ -99,6 +102,26 @@ describe('SourcesColumn', () => {
     )
     expect(screen.getByTestId('source-card-source:other')).toHaveAttribute(
       'data-delete-enabled',
+      'false'
+    )
+  })
+
+  it('disables source removal and deletion when the notebook cannot be managed', () => {
+    render(
+      <SourcesColumn
+        sources={[source({ id: 'source:owned', title: 'Owned' })]}
+        isLoading={false}
+        notebookId="notebook:team-owned"
+        canManageNotebook={false}
+      />
+    )
+
+    expect(screen.getByTestId('source-card-source:owned')).toHaveAttribute(
+      'data-delete-enabled',
+      'false'
+    )
+    expect(screen.getByTestId('source-card-source:owned')).toHaveAttribute(
+      'data-remove-enabled',
       'false'
     )
   })

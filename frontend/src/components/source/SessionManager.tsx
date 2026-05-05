@@ -37,7 +37,7 @@ interface SessionManagerProps {
   onCreateSession: (title: string) => void
   onSelectSession: (sessionId: string) => void
   onUpdateSession: (sessionId: string, title: string) => void
-  onDeleteSession: (sessionId: string) => void
+  onDeleteSession?: (sessionId: string) => void
   loadingSessions: boolean
 }
 
@@ -95,7 +95,7 @@ export function SessionManager({
   }
 
   const handleDeleteConfirm = () => {
-    if (deleteConfirmId) {
+    if (deleteConfirmId && onDeleteSession) {
       onDeleteSession(deleteConfirmId)
       setDeleteConfirmId(null)
     }
@@ -217,6 +217,7 @@ export function SessionManager({
                               variant="ghost"
                               className="h-6 w-6 p-0"
                               onClick={() => setDeleteConfirmId(session.id)}
+                              disabled={!onDeleteSession}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>

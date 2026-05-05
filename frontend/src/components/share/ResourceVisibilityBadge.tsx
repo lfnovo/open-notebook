@@ -11,6 +11,7 @@ interface ResourceVisibilityBadgeProps {
   title: string
   onClick: (event: MouseEvent<HTMLButtonElement>) => void
   className?: string
+  disabled?: boolean
 }
 
 const visibilityConfig = {
@@ -36,6 +37,7 @@ export function ResourceVisibilityBadge({
   title,
   onClick,
   className,
+  disabled = false,
 }: ResourceVisibilityBadgeProps) {
   const config = visibilityConfig[visibility]
   const Icon = config.icon
@@ -44,9 +46,11 @@ export function ResourceVisibilityBadge({
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors',
         config.className,
+        disabled && 'cursor-not-allowed opacity-60 hover:bg-muted hover:text-muted-foreground',
         className
       )}
       title={title}

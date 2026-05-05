@@ -24,11 +24,13 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { cn } from '@/lib/utils'
 
 interface NotesColumnProps {
   notes?: NoteResponse[]
   isLoading: boolean
   notebookId: string
+  canManageNotebook?: boolean
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (noteId: string, mode: ContextMode) => void
 }
@@ -37,6 +39,7 @@ export function NotesColumn({
   notes,
   isLoading,
   notebookId,
+  canManageNotebook = true,
   contextSelections,
   onContextModeChange
 }: NotesColumnProps) {
@@ -56,12 +59,18 @@ export function NotesColumn({
   )
 
   const handleDeleteClick = (noteId: string) => {
+    if (!canManageNotebook) return
     setNoteToDelete(noteId)
     setDeleteDialogOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return
+    if (!canManageNotebook) {
+      setDeleteDialogOpen(false)
+      setNoteToDelete(null)
+      return
+    }
 
     try {
       await deleteNote.mutateAsync(noteToDelete)
@@ -89,9 +98,11 @@ export function NotesColumn({
                 <Button
                   size="sm"
                   onClick={() => {
+                    if (!canManageNotebook) return
                     setEditingNote(null)
                     setShowAddDialog(true)
                   }}
+                  disabled={!canManageNotebook}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {t.common.writeNote}
@@ -117,8 +128,13 @@ export function NotesColumn({
                 {notes.map((note) => (
                   <div
                     key={note.id}
-                    className="p-3 border rounded-lg card-hover group relative cursor-pointer"
-                    onClick={() => setEditingNote(note)}
+                    className={cn(
+                      'p-3 border rounded-lg card-hover group relative',
+                      canManageNotebook ? 'cursor-pointer' : 'cursor-default'
+                    )}
+                    onClick={() => {
+                      if (canManageNotebook) setEditingNote(note)
+                    }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -159,12 +175,15 @@ export function NotesColumn({
                               size="sm"
                               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => e.stopPropagation()}
+                              disabled={!canManageNotebook}
+                              aria-label={t.common.actions}
                             >
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
+                              disabled={!canManageNotebook}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 handleDeleteClick(note.id)

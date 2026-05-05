@@ -67,5 +67,6 @@ describe('SourceCard', () => {
       'aria-disabled',
       'true'
     )
+    expect(screen.getByLabelText('Actions')).toBeDisabled()
   })
 })

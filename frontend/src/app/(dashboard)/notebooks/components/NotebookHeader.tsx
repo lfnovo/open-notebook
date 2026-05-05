@@ -14,9 +14,10 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface NotebookHeaderProps {
   notebook: NotebookResponse
+  canManageNotebook?: boolean
 }
 
-export function NotebookHeader({ notebook }: NotebookHeaderProps) {
+export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookHeaderProps) {
   const { t, language } = useTranslation()
   const dfLocale = getDateLocale(language)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -24,6 +25,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   const updateNotebook = useUpdateNotebook()
 
   const handleUpdateName = async (name: string) => {
+    if (!canManageNotebook) return
     if (!name || name === notebook.name) return
     
     await updateNotebook.mutateAsync({
@@ -33,6 +35,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   }
 
   const handleUpdateDescription = async (description: string) => {
+    if (!canManageNotebook) return
     if (description === notebook.description) return
     
     await updateNotebook.mutateAsync({
@@ -42,6 +45,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   }
 
   const handleArchiveToggle = () => {
+    if (!canManageNotebook) return
     updateNotebook.mutate({
       id: notebook.id,
       data: { archived: !notebook.archived }
@@ -62,6 +66,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 className="text-2xl font-bold"
                 inputClassName="text-2xl font-bold"
                 placeholder={t.notebooks.namePlaceholder}
+                disabled={!canManageNotebook}
               />
               {notebook.archived && (
                 <Badge variant="secondary">{t.notebooks.archived}</Badge>
@@ -72,6 +77,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 variant="outline"
                 size="sm"
                 onClick={handleArchiveToggle}
+                disabled={!canManageNotebook}
               >
                 {notebook.archived ? (
                   <>
@@ -90,6 +96,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
                 className="text-red-600 hover:text-red-700"
+                disabled={!canManageNotebook}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t.common.delete}
@@ -107,6 +114,7 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
             placeholder={t.notebooks.addDescription}
             multiline
             emptyText={t.notebooks.addDescription}
+            disabled={!canManageNotebook}
           />
           
           <div className="text-sm text-muted-foreground">

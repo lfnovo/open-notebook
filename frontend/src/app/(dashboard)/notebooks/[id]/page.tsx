@@ -1,7 +1,6 @@
 'use client'
 
 import { use, useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
 import { NotesColumn } from '../components/NotesColumn'
@@ -18,6 +17,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare, Lock } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { useProfile } from '@/lib/hooks/use-profile'
+import { canManageNotebook as canManageNotebookResource } from '@/lib/utils/notebook-permissions'
 
 export type ContextMode = 'off' | 'insights' | 'full'
 
@@ -34,6 +35,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
   const notebookId = resolvedParams?.id ? decodeURIComponent(resolvedParams.id) : ''
 
   const { data: notebook, isLoading: notebookLoading } = useNotebook(notebookId)
+  const { data: profile } = useProfile()
   const {
     sources,
     isLoading: sourcesLoading,
@@ -188,10 +190,12 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
     )
   }
 
+  const canManageNotebook = canManageNotebookResource(notebook, profile?.id)
+
   return (
           <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 p-6 pb-0">
-          <NotebookHeader notebook={notebook} />
+          <NotebookHeader notebook={notebook} canManageNotebook={canManageNotebook} />
         </div>
 
         <div className="flex-1 p-6 pt-6 overflow-x-auto flex flex-col">
@@ -228,6 +232,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                     onRefresh={refetchSources}
                     contextSelections={contextSelections.sources}
                     onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                    canManageNotebook={canManageNotebook}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
@@ -238,6 +243,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                     notes={notes}
                     isLoading={notesLoading}
                     notebookId={notebookId}
+                    canManageNotebook={canManageNotebook}
                     contextSelections={contextSelections.notes}
                     onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
                   />
@@ -248,6 +254,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                     contextSelections={contextSelections}
                     sources={sources}
                     sourcesLoading={sourcesLoading}
+                    canManageNotebook={canManageNotebook}
                   />
                 )}
               </div>
@@ -272,6 +279,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                 onRefresh={refetchSources}
                 contextSelections={contextSelections.sources}
                 onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                canManageNotebook={canManageNotebook}
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}
@@ -285,6 +293,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                 contextSelections={contextSelections}
                 sources={sources}
                 sourcesLoading={sourcesLoading}
+                canManageNotebook={canManageNotebook}
               />
             </div>
 
@@ -297,6 +306,7 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                 notes={notes}
                 isLoading={notesLoading}
                 notebookId={notebookId}
+                canManageNotebook={canManageNotebook}
                 contextSelections={contextSelections.notes}
                 onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
               />

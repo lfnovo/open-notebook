@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from api.auth import current_user_from_request
+from api.routers.notebooks import _check_notebook_access
 from api.services.model_policy_service import ensure_model_selection_allowed
 from api.services.team_context_service import resolve_team_context
 from open_notebook.config import LANGGRAPH_CHAT_CHECKPOINT_FILE
@@ -30,6 +31,27 @@ async def _notebook_id_for_session(session_id: str) -> Optional[str]:
         {"session_id": ensure_record_id(session_id)},
     )
     return str(notebook_query[0]["out"]) if notebook_query else None
+
+
+async def _ensure_session_notebook_owner(
+    session_id: str, user_id: Optional[str]
+) -> Optional[str]:
+    notebook_id = await _notebook_id_for_session(session_id)
+    if not notebook_id:
+        return None
+
+    notebook = await Notebook.get(notebook_id)
+    if not notebook:
+        raise HTTPException(status_code=404, detail="Notebook not found")
+
+    if not _check_notebook_access(
+        {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
+        user_id,
+        require_owner=True,
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return notebook_id
 
 
 # Request/Response models
@@ -375,7 +397,7 @@ async def update_session(
 
 
 @router.delete("/chat/sessions/{session_id}", response_model=SuccessResponse)
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, http_request: Request):
     """Delete a chat session."""
     try:
         # Ensure session_id has proper table prefix
@@ -387,6 +409,11 @@ async def delete_session(session_id: str):
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
+
+        actor = current_user_from_request(http_request)
+        await _ensure_session_notebook_owner(
+            full_session_id, actor.id if actor else None
+        )
 
         await session.delete()
 

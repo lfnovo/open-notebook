@@ -8,7 +8,12 @@ import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
 vi.mock('@/lib/hooks/use-notes')
 vi.mock('@/lib/hooks/useNotebookChat')
 vi.mock('@/components/source/ChatPanel', () => ({
-  ChatPanel: () => <div data-testid="chat-panel" />
+  ChatPanel: ({ onDeleteSession }: { onDeleteSession?: (sessionId: string) => void }) => (
+    <div
+      data-testid="chat-panel"
+      data-delete-session-enabled={onDeleteSession ? 'true' : 'false'}
+    />
+  )
 }))
 
 // Type-safe mock factory for useNotes hook
@@ -59,5 +64,20 @@ describe('ChatColumn', () => {
 
     // Should show chat panel
     expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
+  })
+
+  it('does not expose session deletion when the notebook cannot be managed', () => {
+    vi.mocked(useNotes).mockReturnValue(createNotesMock({ isLoading: false }))
+    vi.mocked(useNotebookChat).mockReturnValue({
+      ...createChatMock(),
+      deleteSession: vi.fn(),
+    })
+
+    render(<ChatColumn {...baseProps} sourcesLoading={false} canManageNotebook={false} />)
+
+    expect(screen.getByTestId('chat-panel')).toHaveAttribute(
+      'data-delete-session-enabled',
+      'false'
+    )
   })
 })

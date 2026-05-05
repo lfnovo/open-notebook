@@ -34,6 +34,7 @@ interface SourcesColumnProps {
   onRefresh?: () => void
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
+  canManageNotebook?: boolean
   // Pagination props
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
@@ -47,6 +48,7 @@ export function SourcesColumn({
   onRefresh,
   contextSelections,
   onContextModeChange,
+  canManageNotebook = true,
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
@@ -98,6 +100,7 @@ export function SourcesColumn({
   }, [handleScroll])
   
   const handleDeleteClick = (sourceId: string) => {
+    if (!canManageNotebook) return
     const source = sources?.find((item) => item.id === sourceId)
     if (!source || !canDeleteSource(source, profile?.id)) return
 
@@ -107,6 +110,11 @@ export function SourcesColumn({
 
   const handleDeleteConfirm = async () => {
     if (!sourceToDelete) return
+    if (!canManageNotebook) {
+      setDeleteDialogOpen(false)
+      setSourceToDelete(null)
+      return
+    }
     const source = sources?.find((item) => item.id === sourceToDelete)
     if (!source || !canDeleteSource(source, profile?.id)) {
       setDeleteDialogOpen(false)
@@ -125,12 +133,18 @@ export function SourcesColumn({
   }
 
   const handleRemoveFromNotebook = (sourceId: string) => {
+    if (!canManageNotebook) return
     setSourceToRemove(sourceId)
     setRemoveDialogOpen(true)
   }
 
   const handleRemoveConfirm = async () => {
     if (!sourceToRemove) return
+    if (!canManageNotebook) {
+      setRemoveDialogOpen(false)
+      setSourceToRemove(null)
+      return
+    }
 
     try {
       await removeFromNotebook.mutateAsync({
@@ -170,20 +184,29 @@ export function SourcesColumn({
             <div className="flex items-center justify-between gap-2">
               <CardTitle className="text-lg">{t.navigation.sources}</CardTitle>
               <div className="flex items-center gap-2">
-                <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenu
+                  open={dropdownOpen}
+                  onOpenChange={(open) => setDropdownOpen(canManageNotebook && open)}
+                >
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm">
+                    <Button size="sm" disabled={!canManageNotebook}>
                       <Plus className="h-4 w-4 mr-2" />
                       {t.sources.addSource}
                       <ChevronDown className="h-4 w-4 ml-2" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}>
+                    <DropdownMenuItem
+                      disabled={!canManageNotebook}
+                      onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}
+                    >
                       <Plus className="h-4 w-4 mr-2" />
                       {t.sources.addSource}
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}>
+                    <DropdownMenuItem
+                      disabled={!canManageNotebook}
+                      onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}
+                    >
                       <Link2 className="h-4 w-4 mr-2" />
                       {t.sources.addExistingTitle}
                     </DropdownMenuItem>
@@ -212,9 +235,9 @@ export function SourcesColumn({
                     key={source.id}
                     source={source}
                     onClick={handleSourceClick}
-                    onDelete={canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
-                    onRetry={handleRetry}
-                    onRemoveFromNotebook={handleRemoveFromNotebook}
+                    onDelete={canManageNotebook && canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
+                    onRetry={canManageNotebook ? handleRetry : undefined}
+                    onRemoveFromNotebook={canManageNotebook ? handleRemoveFromNotebook : undefined}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
                     contextMode={contextSelections?.[source.id]}

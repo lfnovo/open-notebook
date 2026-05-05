@@ -21,6 +21,7 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { ShareDialog } from '@/components/share/ShareDialog'
 import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
 import { useProfile } from '@/lib/hooks/use-profile'
+import { canManageNotebook } from '@/lib/utils/notebook-permissions'
 
 interface NotebookCardProps {
   notebook: NotebookResponse
@@ -35,7 +36,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   const updateNotebook = useUpdateNotebook()
   const { data: profile } = useProfile()
   const creatorLabel = notebook.creator_username || notebook.creator_name
-  const canDeleteNotebook = !notebook.owner_id || profile?.id === notebook.owner_id
+  const canManage = canManageNotebook(notebook, profile?.id)
 
   const tVisibilityPrivate = t.visibility?.private ?? 'Private'
   const tVisibilityTeam = t.visibility?.team ?? 'Team'
@@ -48,6 +49,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!canManage) return
     updateNotebook.mutate({
       id: notebook.id,
       data: { archived: !notebook.archived }
@@ -56,6 +58,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
+    if (!canManage) return
     setShowShareDialog(true)
   }
 
@@ -90,6 +93,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                   labels={visibilityLabels}
                   title={t.sharing?.title || 'Share'}
                   onClick={handleShare}
+                  disabled={!canManage}
                 />
 
                 <DropdownMenu>
@@ -99,12 +103,13 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       size="sm"
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-label={t.notebooks.actions}
+                      disabled={!canManage}
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleArchiveToggle}>
+                    <DropdownMenuItem disabled={!canManage} onClick={handleArchiveToggle}>
                       {notebook.archived ? (
                         <>
                           <ArchiveRestore className="h-4 w-4 mr-2" />
@@ -118,9 +123,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      disabled={!canDeleteNotebook}
+                      disabled={!canManage}
                       onClick={(e) => {
-                        if (!canDeleteNotebook) return
+                        if (!canManage) return
                         e.stopPropagation()
                         setShowDeleteDialog(true)
                       }}

@@ -16,9 +16,16 @@ interface ChatColumnProps {
   contextSelections: ContextSelections
   sources: SourceListResponse[]
   sourcesLoading: boolean
+  canManageNotebook?: boolean
 }
 
-export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoading }: ChatColumnProps) {
+export function ChatColumn({
+  notebookId,
+  contextSelections,
+  sources,
+  sourcesLoading,
+  canManageNotebook = true,
+}: ChatColumnProps) {
   const { t } = useTranslation()
 
   // Fetch notes for this notebook
@@ -106,7 +113,7 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
       onCreateSession={(title) => chat.createSession(title)}
       onSelectSession={chat.switchSession}
       onUpdateSession={(sessionId, title) => chat.updateSession(sessionId, { title })}
-      onDeleteSession={chat.deleteSession}
+      onDeleteSession={canManageNotebook ? chat.deleteSession : undefined}
       loadingSessions={chat.loadingSessions}
       notebookContextStats={contextStats}
       notebookId={notebookId}

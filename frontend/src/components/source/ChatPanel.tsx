@@ -138,7 +138,7 @@ export function ChatPanel({
             <Bot className="h-5 w-5" />
             {title || (contextType === 'source' ? t.chat.chatWith.replace('{name}', t.navigation.sources) : t.chat.chatWith.replace('{name}', t.common.notebook))}
           </CardTitle>
-          {onSelectSession && onCreateSession && onDeleteSession && (
+          {onSelectSession && onCreateSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
               <Button
                 variant="ghost"
@@ -161,7 +161,7 @@ export function ChatPanel({
                     setSessionManagerOpen(false)
                   }}
                   onUpdateSession={(sessionId, title) => onUpdateSession?.(sessionId, title)}
-                  onDeleteSession={(sessionId) => onDeleteSession?.(sessionId)}
+                  onDeleteSession={onDeleteSession}
                   loadingSessions={loadingSessions}
                 />
               </DialogContent>

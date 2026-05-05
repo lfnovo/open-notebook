@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Globe2, Loader2, Share2, Trash2, Users } from 'lucide-react'
 import { PUBLIC_TEAM_ID, ShareGrant, ShareResourceType } from '@/lib/api/share-grants'
+import type { ResourceVisibility } from '@/lib/types/api'
 import {
   useCreateShareGrant,
   useDeleteShareGrant,
@@ -35,7 +36,8 @@ interface ShareDialogProps {
   resourceType: ShareResourceType
   resourceId: string
   resourceTitle: string
-  onChanged?: (visibility: 'private' | 'public') => void
+  resourceVisibility?: ResourceVisibility
+  onChanged?: (visibility: ResourceVisibility) => void
 }
 
 const EMPTY_TEAMS: NonNullable<ReturnType<typeof useTeams>['data']>['items'] = []
@@ -50,12 +52,32 @@ function grantLabel(grant: ShareGrant, teamNames: Map<string, string>, t: Return
   return grant.target_id
 }
 
+function deriveVisibilityFromGrants(
+  grants: ShareGrant[],
+  fallback: ResourceVisibility = 'private'
+): ResourceVisibility {
+  if (grants.some((grant) => grant.target_type === 'team' && grant.target_id === PUBLIC_TEAM_ID)) {
+    return 'public'
+  }
+  if (fallback === 'public') {
+    return 'public'
+  }
+  if (grants.some((grant) => grant.target_type === 'team')) {
+    return 'team'
+  }
+  if (fallback === 'team') {
+    return 'team'
+  }
+  return 'private'
+}
+
 export function ShareDialog({
   open,
   onOpenChange,
   resourceType,
   resourceId,
   resourceTitle,
+  resourceVisibility = 'private',
   onChanged,
 }: ShareDialogProps) {
   const { t } = useTranslation()
@@ -66,6 +88,7 @@ export function ShareDialog({
   const [selectedTeamId, setSelectedTeamId] = useState('')
   const [confirmPublic, setConfirmPublic] = useState(false)
   const [confirmRevokeGrant, setConfirmRevokeGrant] = useState<ShareGrant | null>(null)
+  const [localVisibility, setLocalVisibility] = useState<ResourceVisibility>(resourceVisibility)
 
   const teams = teamsData?.items ?? EMPTY_TEAMS
   const teamNames = useMemo(
@@ -75,6 +98,12 @@ export function ShareDialog({
   const publicGrant = (grants || []).find(
     (grant) => grant.target_type === 'team' && grant.target_id === PUBLIC_TEAM_ID
   )
+  const currentVisibility = deriveVisibilityFromGrants(grants || [], localVisibility)
+  const visibilityLabels = {
+    private: t.visibility?.private ?? 'Private',
+    team: t.visibility?.team ?? 'Team',
+    public: t.visibility?.public ?? 'Public',
+  }
   const shareableTeams = teams.filter(
     (team) =>
       team.type !== 'system' &&
@@ -88,6 +117,10 @@ export function ShareDialog({
       setConfirmRevokeGrant(null)
     }
   }, [open])
+
+  useEffect(() => {
+    setLocalVisibility(resourceVisibility)
+  }, [resourceId, resourceVisibility])
 
   const isPending = createGrant.isPending || deleteGrant.isPending
 
@@ -103,6 +136,7 @@ export function ShareDialog({
       {
         onSuccess: () => {
           setConfirmPublic(false)
+          setLocalVisibility('public')
           onChanged?.('public')
         },
       }
@@ -120,7 +154,12 @@ export function ShareDialog({
         permission: 'read',
       },
       {
-        onSuccess: () => setSelectedTeamId(''),
+        onSuccess: () => {
+          setSelectedTeamId('')
+          const nextVisibility = publicGrant ? 'public' : 'team'
+          setLocalVisibility(nextVisibility)
+          onChanged?.(nextVisibility)
+        },
       }
     )
   }
@@ -128,9 +167,10 @@ export function ShareDialog({
   const revokeGrant = (grant: ShareGrant) => {
     deleteGrant.mutate(grant.id, {
       onSuccess: () => {
-        if (grant.target_type === 'team' && grant.target_id === PUBLIC_TEAM_ID) {
-          onChanged?.('private')
-        }
+        const remainingGrants = (grants || []).filter((item) => item.id !== grant.id)
+        const nextVisibility = deriveVisibilityFromGrants(remainingGrants)
+        setLocalVisibility(nextVisibility)
+        onChanged?.(nextVisibility)
         setConfirmRevokeGrant(null)
       },
     })
@@ -149,9 +189,16 @@ export function ShareDialog({
 
           <div className="space-y-5">
             <div>
-              <div className="text-sm font-medium">{resourceTitle}</div>
-              <div className="text-sm text-muted-foreground">
-                {resourceType === 'source' ? t.common.source : t.common.notebook}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="text-sm font-medium">{resourceTitle}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {resourceType === 'source' ? t.common.source : t.common.notebook}
+                  </div>
+                </div>
+                <Badge variant="outline" className="w-fit">
+                  {t.visibility?.label ?? 'Visibility'}: {visibilityLabels[currentVisibility]}
+                </Badge>
               </div>
             </div>
 

@@ -15,6 +15,8 @@ from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.base import ObjectModel
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
+ResourceVisibility = Literal["private", "team", "public"]
+
 
 class Notebook(ObjectModel):
     table_name: ClassVar[str] = "notebook"
@@ -24,7 +26,7 @@ class Notebook(ObjectModel):
     password: Optional[str] = None
     creator_name: Optional[str] = None
     owner_id: Optional[Union[str, RecordID]] = None
-    visibility: Literal["private", "public"] = "private"
+    visibility: ResourceVisibility = "private"
 
     @field_validator("name")
     @classmethod
@@ -246,7 +248,7 @@ class Source(ObjectModel):
         default=None, description="Link to surreal-commands processing job"
     )
     owner_id: Optional[Union[str, RecordID]] = None
-    visibility: Literal["private", "public"] = "private"
+    visibility: ResourceVisibility = "private"
 
     @field_validator("command", mode="before")
     @classmethod

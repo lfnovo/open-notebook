@@ -1,0 +1,4 @@
+-- Migration 24: Add team visibility state for shared resources
+
+DEFINE FIELD OVERWRITE visibility ON TABLE source TYPE string DEFAULT 'private' ASSERT $value IN ['private', 'team', 'public'];
+DEFINE FIELD OVERWRITE visibility ON TABLE notebook TYPE string DEFAULT 'private' ASSERT $value IN ['private', 'team', 'public'];

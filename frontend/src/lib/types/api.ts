@@ -1,3 +1,5 @@
+export type ResourceVisibility = 'private' | 'team' | 'public'
+
 export interface NotebookResponse {
   id: string
   name: string
@@ -10,7 +12,7 @@ export interface NotebookResponse {
   password?: string | null
   creator_name?: string | null
   owner_id?: string | null
-  visibility: 'private' | 'public'
+  visibility: ResourceVisibility
 }
 
 export interface NoteResponse {
@@ -43,7 +45,7 @@ export interface SourceListResponse {
   status?: string
   processing_info?: Record<string, unknown>
   owner_id?: string | null
-  visibility: 'private' | 'public'
+  visibility: ResourceVisibility
 }
 
 export interface SourceDetailResponse extends SourceListResponse {

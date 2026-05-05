@@ -453,6 +453,8 @@ export const enUS = {
     label: "Visibility",
     private: "Private",
     privateDesc: "Only you can see this",
+    team: "Team",
+    teamDesc: "Members of selected teams can view this",
     public: "Public",
     publicDesc: "Anyone can discover and view this",
   },

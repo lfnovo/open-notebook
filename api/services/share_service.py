@@ -29,6 +29,43 @@ def _grant_response(row: dict) -> ShareGrantResponse:
     )
 
 
+def _resource_table(resource_type: str) -> str:
+    if resource_type == "source":
+        return "source"
+    if resource_type == "notebook":
+        return "notebook"
+    raise InvalidInputError("Invalid resource type")
+
+
+def _is_public_grant(grant: dict) -> bool:
+    return grant.get("target_type") == "team" and grant.get("target_id") == PUBLIC_TEAM_ID
+
+
+def _visibility_from_grants(grants: list[dict]) -> str:
+    if any(_is_public_grant(grant) for grant in grants):
+        return "public"
+    if any(
+        grant.get("target_type") == "team" and grant.get("target_id") != PUBLIC_TEAM_ID
+        for grant in grants
+    ):
+        return "team"
+    return "private"
+
+
+async def _resource_visibility(resource_type: str, resource_id: str) -> str:
+    if resource_type == "source":
+        source = await Source.get(resource_id)
+        if not source:
+            raise NotFoundError("Source not found")
+        return source.visibility
+    if resource_type == "notebook":
+        notebook = await Notebook.get(resource_id)
+        if not notebook:
+            raise NotFoundError("Notebook not found")
+        return notebook.visibility
+    raise InvalidInputError("Invalid resource type")
+
+
 async def _resource_owner(resource_type: str, resource_id: str) -> str | None:
     if resource_type == "source":
         source = await Source.get(resource_id)
@@ -118,10 +155,20 @@ async def create_share_grant_use_case(
     )
 
     if request.target_type == "team" and request.target_id == PUBLIC_TEAM_ID:
-        table = "source" if request.resource_type == "source" else "notebook"
+        table = _resource_table(request.resource_type)
         await repo_update(table, request.resource_id, {"visibility": "public"})
         action = "share.public_enabled"
     else:
+        if request.target_type == "team":
+            current_visibility = await _resource_visibility(
+                request.resource_type, request.resource_id
+            )
+            if current_visibility != "public":
+                await repo_update(
+                    _resource_table(request.resource_type),
+                    request.resource_id,
+                    {"visibility": "team"},
+                )
         action = "share.created"
 
     await AuditLogRepository.create(
@@ -156,7 +203,10 @@ async def delete_share_grant_use_case(
         raise NotFoundError("Share grant not found")
     await _ensure_share_manager(grant["resource_type"], grant["resource_id"], actor)
 
-    is_public = grant.get("target_type") == "team" and grant.get("target_id") == PUBLIC_TEAM_ID
+    is_public = _is_public_grant(grant)
+    existing_grants = await ShareRepository.list_resource_grants(
+        resource_type=grant["resource_type"], resource_id=grant["resource_id"]
+    )
     preserved_count = 0
     affected_reference_count = 0
     if is_public:
@@ -183,11 +233,8 @@ async def delete_share_grant_use_case(
                     if preserved:
                         preserved_count += 1
             if grant["resource_type"] == "notebook":
-                existing_notebook_grants = await ShareRepository.list_resource_grants(
-                    resource_type="notebook", resource_id=grant["resource_id"]
-                )
                 source_ids = await ShareRepository.notebook_source_ids(grant["resource_id"])
-                for notebook_grant in existing_notebook_grants:
+                for notebook_grant in existing_grants:
                     target_type = notebook_grant.get("target_type")
                     target_id = notebook_grant.get("target_id")
                     if target_type == "team" and target_id == PUBLIC_TEAM_ID:
@@ -208,9 +255,19 @@ async def delete_share_grant_use_case(
 
     await ShareRepository.delete_grant(grant_id)
 
+    remaining_grants = [
+        existing_grant
+        for existing_grant in existing_grants
+        if str(existing_grant.get("id")) != grant_id
+    ]
+    next_visibility = _visibility_from_grants(remaining_grants)
+    await repo_update(
+        _resource_table(grant["resource_type"]),
+        grant["resource_id"],
+        {"visibility": next_visibility},
+    )
+
     if is_public:
-        table = "source" if grant["resource_type"] == "source" else "notebook"
-        await repo_update(table, grant["resource_id"], {"visibility": "private"})
         action = "share.public_revoked"
     else:
         action = "share.revoked"

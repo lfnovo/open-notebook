@@ -1,0 +1,7 @@
+-- Migration 24 rollback: Restore two-state resource visibility
+
+UPDATE source SET visibility = 'private' WHERE visibility = 'team';
+UPDATE notebook SET visibility = 'private' WHERE visibility = 'team';
+
+DEFINE FIELD OVERWRITE visibility ON TABLE source TYPE string DEFAULT 'private' ASSERT $value IN ['private', 'public'];
+DEFINE FIELD OVERWRITE visibility ON TABLE notebook TYPE string DEFAULT 'private' ASSERT $value IN ['private', 'public'];

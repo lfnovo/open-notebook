@@ -7,7 +7,7 @@ import { SourceListResponse, BulkDeleteResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown, Eye, Share2 } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { ShareDialog } from '@/components/share/ShareDialog'
+import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -255,7 +256,13 @@ export default function SourcesPage() {
   const tYes = t.sources?.yes ?? 'Yes'
   const tNo = t.sources?.no ?? 'No'
   const tVisibilityPrivate = t.visibility?.private ?? 'Private'
+  const tVisibilityTeam = t.visibility?.team ?? 'Team'
   const tVisibilityPublic = t.visibility?.public ?? 'Public'
+  const visibilityLabels = {
+    private: tVisibilityPrivate,
+    team: tVisibilityTeam,
+    public: tVisibilityPublic,
+  }
   const tSourcesKgExtracted = t.sources?.kgExtracted ?? 'KG Extracted'
   const tSourcesKgExtractQueued = t.sources?.kgExtractQueued ?? 'KG extraction queued'
 
@@ -483,25 +490,12 @@ export default function SourcesPage() {
                     </div>
                   </td>
                   <td className="h-12 px-2" onClick={(e) => e.stopPropagation()}>
-                    {source.visibility === 'public' ? (
-                      <button
-                        onClick={() => setShareDialog({ open: true, source })}
-                        className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                        title={t.sharing?.title || 'Share'}
-                      >
-                        <Eye className="h-3 w-3" />
-                        {tVisibilityPublic}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => setShareDialog({ open: true, source })}
-                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground cursor-pointer border-0"
-                        title={t.sharing?.title || 'Share'}
-                      >
-                        <Share2 className="h-3 w-3" />
-                        {tVisibilityPrivate}
-                      </button>
-                    )}
+                    <ResourceVisibilityBadge
+                      visibility={source.visibility}
+                      labels={visibilityLabels}
+                      title={t.sharing?.title || 'Share'}
+                      onClick={() => setShareDialog({ open: true, source })}
+                    />
                   </td>
                   <td className="h-12 px-2 text-muted-foreground text-sm hidden sm:table-cell">
                     {formatDistanceToNow(new Date(source.created), { 
@@ -596,10 +590,16 @@ export default function SourcesPage() {
           resourceType="source"
           resourceId={shareDialog.source.id}
           resourceTitle={shareDialog.source.title || tUntitledSource}
+          resourceVisibility={shareDialog.source.visibility}
           onChanged={(visibility) => {
             const sourceId = shareDialog.source?.id
             if (!sourceId) return
             setSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility } : s))
+            setShareDialog(prev =>
+              prev.source?.id === sourceId
+                ? { ...prev, source: { ...prev.source, visibility } }
+                : prev
+            )
           }}
         />
       )}

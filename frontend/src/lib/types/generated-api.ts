@@ -413,7 +413,7 @@ export interface NotebookResponse {
   password?: string | null
   creator_name?: string | null
   owner_id?: string | null
-  visibility?: 'private' | 'public'
+  visibility?: 'private' | 'team' | 'public'
 }
 
 export interface NotebookUpdate {
@@ -662,7 +662,7 @@ export interface SourceListResponse {
   status?: string | null
   processing_info?: Record<string, unknown> | null
   owner_id?: string | null
-  visibility?: 'private' | 'public'
+  visibility?: 'private' | 'team' | 'public'
 }
 
 export interface SourceResponse {
@@ -682,7 +682,7 @@ export interface SourceResponse {
   processing_info?: Record<string, unknown> | null
   notebooks?: string[] | null
   owner_id?: string | null
-  visibility?: 'private' | 'public'
+  visibility?: 'private' | 'team' | 'public'
 }
 
 export interface SourceStatusResponse {

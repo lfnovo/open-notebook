@@ -3,7 +3,61 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from api.auth import CurrentUser
-from api.services.share_service import delete_share_grant_use_case
+from api.models import ShareGrantCreateRequest
+from api.services.share_service import (
+    create_share_grant_use_case,
+    delete_share_grant_use_case,
+)
+
+
+@pytest.mark.asyncio
+@patch("api.services.share_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.share_service.repo_update", new_callable=AsyncMock)
+@patch("api.services.share_service.ShareRepository.create_grant", new_callable=AsyncMock)
+@patch("api.services.share_service.TeamRepository.get_team", new_callable=AsyncMock)
+@patch("api.services.share_service._resource_visibility", new_callable=AsyncMock)
+@patch("api.services.share_service._resource_owner", new_callable=AsyncMock)
+async def test_team_share_sets_resource_visibility_to_team(
+    mock_owner,
+    mock_visibility,
+    mock_get_team,
+    mock_create_grant,
+    mock_repo_update,
+    mock_audit,
+):
+    mock_owner.return_value = "app_user:owner"
+    mock_visibility.return_value = "private"
+    mock_get_team.return_value = {
+        "id": "team:research",
+        "name": "Research",
+        "type": "workspace",
+    }
+    mock_create_grant.return_value = {
+        "id": "share_grant:team",
+        "resource_type": "source",
+        "resource_id": "source:abc",
+        "target_type": "team",
+        "target_id": "team:research",
+        "permission": "read",
+    }
+
+    actor = CurrentUser(id="app_user:owner", username="owner", role="user")
+
+    response = await create_share_grant_use_case(
+        ShareGrantCreateRequest(
+            resource_type="source",
+            resource_id="source:abc",
+            target_type="team",
+            target_id="team:research",
+        ),
+        actor=actor,
+    )
+
+    assert response.id == "share_grant:team"
+    mock_repo_update.assert_awaited_once_with(
+        "source", "source:abc", {"visibility": "team"}
+    )
+    mock_audit.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -11,6 +65,7 @@ from api.services.share_service import delete_share_grant_use_case
 @patch("api.services.share_service.repo_update", new_callable=AsyncMock)
 @patch("api.services.share_service.ShareRepository.delete_grant", new_callable=AsyncMock)
 @patch("api.services.share_service.ShareRepository.create_grant", new_callable=AsyncMock)
+@patch("api.services.share_service.ShareRepository.list_resource_grants", new_callable=AsyncMock)
 @patch("api.services.share_service.ShareRepository.referencing_notebook_owner_ids", new_callable=AsyncMock)
 @patch("api.services.share_service.ShareRepository.get_grant", new_callable=AsyncMock)
 @patch("api.services.share_service._resource_owner", new_callable=AsyncMock)
@@ -18,6 +73,7 @@ async def test_public_revoke_preserves_existing_reference_owners(
     mock_owner,
     mock_get_grant,
     mock_reference_owners,
+    mock_list_grants,
     mock_create_grant,
     mock_delete_grant,
     mock_repo_update,
@@ -34,6 +90,15 @@ async def test_public_revoke_preserves_existing_reference_owners(
         "target_id": "team:public",
     }
     mock_reference_owners.return_value = ["app_user:reader"]
+    mock_list_grants.return_value = [
+        {
+            "id": "share_grant:public",
+            "resource_type": "source",
+            "resource_id": "source:abc",
+            "target_type": "team",
+            "target_id": "team:public",
+        }
+    ]
     mock_create_grant.return_value = {"id": "share_grant:reader"}
 
     actor = CurrentUser(id="app_user:owner", username="owner", role="user")
@@ -130,6 +195,6 @@ async def test_public_notebook_revoke_preserves_source_access_for_existing_grant
         created_by="app_user:owner",
     )
     mock_repo_update.assert_awaited_once_with(
-        "notebook", "notebook:abc", {"visibility": "private"}
+        "notebook", "notebook:abc", {"visibility": "team"}
     )
     assert mock_audit.await_args.kwargs["metadata"]["preserved_grants_count"] == 2

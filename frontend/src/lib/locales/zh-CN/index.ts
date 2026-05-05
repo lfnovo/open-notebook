@@ -451,6 +451,8 @@ export const zhCN = {
     label: "可见性",
     private: "私密",
     privateDesc: "只有你能看到",
+    team: "团队",
+    teamDesc: "所选团队成员可以查看",
     public: "公开",
     publicDesc: "任何人都可以发现和查看",
   },

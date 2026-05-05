@@ -5,7 +5,7 @@ import { NotebookResponse } from '@/lib/types/api'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote, Lock, User, Eye, Share2 } from 'lucide-react'
+import { MoreHorizontal, Archive, ArchiveRestore, Trash2, FileText, StickyNote, Lock, User } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ import { useState } from 'react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { ShareDialog } from '@/components/share/ShareDialog'
+import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
 
 interface NotebookCardProps {
   notebook: NotebookResponse
@@ -33,7 +34,13 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   const updateNotebook = useUpdateNotebook()
 
   const tVisibilityPrivate = t.visibility?.private ?? 'Private'
+  const tVisibilityTeam = t.visibility?.team ?? 'Team'
   const tVisibilityPublic = t.visibility?.public ?? 'Public'
+  const visibilityLabels = {
+    private: tVisibilityPrivate,
+    team: tVisibilityTeam,
+    public: tVisibilityPublic,
+  }
 
   const handleArchiveToggle = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -74,26 +81,12 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
               </div>
               
               <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                {/* Visibility badge */}
-                {visibility === 'public' ? (
-                  <button
-                    onClick={handleShare}
-                    className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                    title={t.sharing?.title || 'Share'}
-                  >
-                    <Eye className="h-3 w-3" />
-                    {tVisibilityPublic}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleShare}
-                    className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground cursor-pointer border-0"
-                    title={t.sharing?.title || 'Share'}
-                  >
-                    <Share2 className="h-3 w-3" />
-                    {tVisibilityPrivate}
-                  </button>
-                )}
+                <ResourceVisibilityBadge
+                  visibility={visibility}
+                  labels={visibilityLabels}
+                  title={t.sharing?.title || 'Share'}
+                  onClick={handleShare}
+                />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -182,6 +175,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
         resourceType="notebook"
         resourceId={notebook.id}
         resourceTitle={notebook.name}
+        resourceVisibility={visibility}
         onChanged={setVisibility}
       />
     </>

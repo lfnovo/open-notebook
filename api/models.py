@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+ResourceVisibility = Literal["private", "team", "public"]
+
 
 # Notebook models
 class NotebookCreate(BaseModel):
@@ -45,7 +47,7 @@ class NotebookResponse(BaseModel):
     password: Optional[str] = None
     creator_name: Optional[str] = None
     owner_id: Optional[str] = None
-    visibility: Literal["private", "public"] = "private"
+    visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")
     @classmethod
@@ -393,7 +395,7 @@ class SourceResponse(BaseModel):
     # Notebook associations
     notebooks: Optional[List[str]] = None
     owner_id: Optional[str] = None
-    visibility: Literal["private", "public"] = "private"
+    visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")
     @classmethod
@@ -422,7 +424,7 @@ class SourceListResponse(BaseModel):
     status: Optional[str] = None
     processing_info: Optional[Dict[str, Any]] = None
     owner_id: Optional[str] = None
-    visibility: Literal["private", "public"] = "private"
+    visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")
     @classmethod

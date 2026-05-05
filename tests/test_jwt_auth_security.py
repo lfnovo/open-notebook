@@ -70,6 +70,26 @@ async def test_validate_jwt_token_accepts_current_user_version(
     assert payload["username"] == "admin"
 
 
+@pytest.mark.asyncio
+@patch("api.jwt_auth.find_user_by_username", new_callable=AsyncMock)
+@patch("api.jwt_auth.get_secret_from_env", return_value="test-jwt-secret-with-sufficient-length-32")
+async def test_validate_jwt_token_rejects_disabled_user(
+    mock_get_secret,
+    mock_find_user,
+):
+    user = {
+        "id": "app_user:admin",
+        "username": "admin",
+        "status": "active",
+        "updated": datetime(2026, 4, 24, 8, 0, 0, tzinfo=timezone.utc),
+    }
+    token = create_jwt_token("admin", "app_user:admin", user)
+
+    mock_find_user.return_value = {**user, "status": "disabled"}
+
+    assert await validate_jwt_token(token) is None
+
+
 @patch("api.verification.get_secret_from_env", return_value="verification-secret-with-sufficient-length")
 def test_hash_verification_code_is_deterministic_and_not_plaintext(mock_get_secret):
     raw = "123456"

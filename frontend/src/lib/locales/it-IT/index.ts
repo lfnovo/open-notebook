@@ -219,6 +219,7 @@ export const itIT = {
     askAndSearch: "Chiedi e cerca",
     podcasts: "Podcast",
     models: "Modelli",
+    teams: "Team",
     transformations: "Trasformazioni",
     transformation: "Trasformazione",
     settings: "Impostazioni",
@@ -227,6 +228,14 @@ export const itIT = {
     language: "Cambia lingua",
     theme: "Tema",
     ask: "Chiedi",
+  },
+  teams: {
+    description: "Gestisci i team del workspace e i gruppi di condivisione pubblica.",
+    empty: "Nessun team trovato.",
+    members: "Membri",
+    shares: "Condivisioni",
+    system: "Sistema",
+    workspace: "Workspace",
   },
   notebooks: {
     title: "Quaderni",

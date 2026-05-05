@@ -219,6 +219,7 @@ export const jaJP = {
     askAndSearch: "質問と検索",
     podcasts: "ポッドキャスト",
     models: "モデル",
+    teams: "チーム",
     transformations: "トランスフォーメーション",
     transformation: "トランスフォーメーション",
     settings: "設定",
@@ -227,6 +228,14 @@ export const jaJP = {
     language: "言語を切り替え",
     theme: "テーマ",
     ask: "質問",
+  },
+  teams: {
+    description: "ワークスペースのチームと公開共有グループを管理します。",
+    empty: "チームが見つかりません。",
+    members: "メンバー",
+    shares: "共有",
+    system: "システム",
+    workspace: "ワークスペース",
   },
   notebooks: {
     title: "ノートブック",

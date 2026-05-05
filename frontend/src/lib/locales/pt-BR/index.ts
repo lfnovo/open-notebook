@@ -219,6 +219,7 @@ export const ptBR = {
     askAndSearch: "Perguntar e Buscar",
     podcasts: "Podcasts",
     models: "Modelos",
+    teams: "Equipes",
     transformations: "Transformações",
     transformation: "Transformação",
     settings: "Configurações",
@@ -227,6 +228,14 @@ export const ptBR = {
     language: "Alternar idioma",
     theme: "Tema",
     ask: "Perguntar",
+  },
+  teams: {
+    description: "Gerencie equipes do workspace e grupos de compartilhamento público.",
+    empty: "Nenhuma equipe encontrada.",
+    members: "Membros",
+    shares: "Compartilhamentos",
+    system: "Sistema",
+    workspace: "Workspace",
   },
   notebooks: {
     title: "Cadernos",

@@ -27,6 +27,7 @@ from api.services.source_permissions import (
     check_source_access,
     check_source_ownership,
 )
+from api.services.share_service import can_read_resource
 from api.services.source_processing import (
     SOURCE_PROCESSING_TIMEOUT_MESSAGE,
     mark_command_failed,
@@ -307,7 +308,13 @@ async def get_source_response(source_id: str, *, user_id: str | None) -> SourceR
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_access(source.owner_id, source.visibility, user_id):
+    if not await can_read_resource(
+        resource_type="source",
+        resource_id=source.id or source_id,
+        user_id=user_id,
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        visibility=source.visibility,
+    ):
         raise PermissionError("Access denied")
 
     status = None
@@ -354,7 +361,13 @@ async def get_source_status_response(
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_access(source.owner_id, source.visibility, user_id):
+    if not await can_read_resource(
+        resource_type="source",
+        resource_id=source.id or source_id,
+        user_id=user_id,
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        visibility=source.visibility,
+    ):
         raise PermissionError("Access denied")
 
     if not source.command:

@@ -2,6 +2,9 @@ export interface AuthState {
   isAuthenticated: boolean
   token: string | null
   username: string | null
+  role: 'admin' | 'user' | null
+  displayName: string | null
+  status: 'active' | 'disabled' | null
   isLoading: boolean
   error: string | null
 }
@@ -23,4 +26,18 @@ export interface LoginResponse {
   token?: string
   username?: string
   message: string
+}
+
+export interface CurrentUserResponse {
+  id?: string
+  username: string
+  email?: string | null
+  display_name?: string | null
+  role?: 'admin' | 'user'
+  status?: 'active' | 'disabled'
+  locale?: string | null
+  theme?: string | null
+  created: string
+  updated: string
+  last_login_at?: string | null
 }

@@ -40,10 +40,13 @@ from api.routers import (
     podcasts,
     search,
     settings,
+    share_grants,
     source_chat,
     sources,
     speaker_profiles,
+    teams,
     transformations,
+    users,
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
@@ -293,6 +296,9 @@ async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
 
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(users.router, prefix="/api", tags=["users"])
+app.include_router(teams.router, prefix="/api", tags=["teams"])
+app.include_router(share_grants.router, prefix="/api", tags=["share-grants"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])

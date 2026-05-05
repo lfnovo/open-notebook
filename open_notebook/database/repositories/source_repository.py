@@ -21,6 +21,7 @@ class SourceRepository:
         sort_by: str,
         sort_order: str,
         public_only: bool = False,
+        team_ids: Optional[list[str]] = None,
     ) -> list[dict[str, Any]]:
         order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
         conditions = []
@@ -32,8 +33,21 @@ class SourceRepository:
         if public_only:
             conditions.append("visibility = 'public'")
         elif user_id:
-            conditions.append("(owner_id = $user_id) OR (visibility = 'public')")
+            access_conditions = ["(owner_id = $user_id)", "(visibility = 'public')"]
             params["user_id"] = ensure_record_id(user_id)
+            params["user_id_string"] = str(user_id)
+            share_target_conditions = ["(target_type = 'user' AND target_id = $user_id_string)"]
+            if team_ids:
+                share_target_conditions.append(
+                    "(target_type = 'team' AND target_id IN $team_ids)"
+                )
+                params["team_ids"] = team_ids
+            access_conditions.append(
+                "type::string(id) IN (SELECT VALUE resource_id FROM share_grant "
+                "WHERE resource_type = 'source' AND permission IN ['read', 'write', 'owner'] "
+                f"AND ({' OR '.join(share_target_conditions)}))"
+            )
+            conditions.append(f"({' OR '.join(access_conditions)})")
         else:
             conditions.append("visibility = 'public'")
 

@@ -806,9 +806,146 @@ class SetupRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
+    id: Optional[str] = None
     username: str
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    role: Literal["admin", "user"] = "user"
+    status: Literal["active", "disabled"] = "active"
+    locale: Optional[str] = None
+    theme: Optional[str] = None
     created: str
     updated: str
+    last_login_at: Optional[str] = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    display_name: Optional[str] = None
+    locale: Optional[str] = None
+    theme: Optional[str] = None
+
+
+class UserListItem(BaseModel):
+    id: str
+    username: str
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    role: Literal["admin", "user"]
+    status: Literal["active", "disabled"]
+    created: str
+    updated: str
+    last_login_at: Optional[str] = None
+    source_count: int = 0
+    notebook_count: int = 0
+
+
+class UserListResponse(BaseModel):
+    items: List[UserListItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class UserCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    username: str
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    role: Literal["admin", "user"] = "user"
+    password: Optional[str] = None
+
+
+class UserUpdateRequest(BaseModel):
+    display_name: Optional[str] = None
+    role: Optional[Literal["admin", "user"]] = None
+    status: Optional[Literal["active", "disabled"]] = None
+
+
+class UserCreateResponse(UserResponse):
+    temporary_password: Optional[str] = None
+
+
+class ResetUserPasswordResponse(BaseModel):
+    success: bool
+    temporary_password: str
+    message: str
+
+
+class TeamResponse(BaseModel):
+    id: str
+    slug: str
+    name: str
+    type: Literal["workspace", "system"] = "workspace"
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+    member_count: int = 0
+    share_count: int = 0
+
+
+class TeamListResponse(BaseModel):
+    items: List[TeamResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class TeamCreateRequest(BaseModel):
+    name: str
+    slug: Optional[str] = None
+
+
+class TeamUpdateRequest(BaseModel):
+    name: Optional[str] = None
+
+
+class TeamMemberUser(BaseModel):
+    id: str
+    username: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+
+
+class TeamMemberResponse(BaseModel):
+    id: str
+    team: str
+    user: str
+    user_info: Optional[TeamMemberUser] = None
+    role: Literal["owner", "admin", "member", "viewer"]
+    status: Literal["active", "invited", "disabled"]
+    created: str
+    updated: Optional[str] = None
+
+
+class TeamMemberUpsertRequest(BaseModel):
+    user_id: str
+    role: Literal["owner", "admin", "member", "viewer"] = "member"
+    status: Literal["active", "disabled"] = "active"
+
+
+class ShareGrantCreateRequest(BaseModel):
+    resource_type: Literal["source", "notebook"]
+    resource_id: str
+    target_type: Literal["user", "team"]
+    target_id: str
+    permission: Literal["read"] = "read"
+
+
+class ShareGrantResponse(BaseModel):
+    id: str
+    resource_type: Literal["source", "notebook"]
+    resource_id: str
+    target_type: Literal["user", "team"]
+    target_id: str
+    permission: str
+    created_by: Optional[str] = None
+    created: str
+
+
+class DeleteResponse(BaseModel):
+    success: bool
+    message: str
 
 
 class AuthStatusResponse(BaseModel):

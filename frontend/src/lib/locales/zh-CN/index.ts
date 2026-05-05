@@ -271,6 +271,7 @@ export const zhCN = {
     askAndSearch: "询问与搜索",
     podcasts: "播客",
     models: "模型",
+    teams: "团队",
     transformations: "转换",
     transformation: "转换",
     settings: "设置",
@@ -279,6 +280,14 @@ export const zhCN = {
     language: "切换语言",
     theme: "主题",
     ask: "提问",
+  },
+  teams: {
+    description: "管理工作区团队和公开分享组。",
+    empty: "暂无团队。",
+    members: "成员",
+    shares: "分享",
+    system: "系统",
+    workspace: "工作区",
   },
   home: {
     heroTitle: "你的 AI 驱动研究助手",

@@ -33,6 +33,7 @@ from api.services.source_permissions import (
     check_source_ownership as _check_source_ownership,
 )
 from api.services.source_responses import source_list_response_from_row
+from api.services.share_service import can_read_resource
 from api.services.source_service import (
     create_source_and_queue_processing,
     create_source_insight_use_case,
@@ -46,6 +47,7 @@ from api.services.source_service import (
 from api.services.source_uploads import save_uploaded_file
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repositories.source_repository import SourceRepository
+from open_notebook.database.repositories.team_repository import TeamRepository
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError, NotFoundError
 
@@ -87,6 +89,7 @@ async def get_sources(
     Returns sources owned by the user (private + public) plus all public sources.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    team_ids = await TeamRepository.user_team_ids(user_id) if user_id else []
     try:
         # Validate sort parameters
         if sort_by not in ["created", "updated"]:
@@ -106,6 +109,7 @@ async def get_sources(
 
         result = await SourceRepository.list_sources(
             user_id=user_id,
+            team_ids=team_ids,
             notebook_id=notebook_id,
             title_contains=title_contains,
             limit=limit,
@@ -278,7 +282,13 @@ async def check_source_file(request: Request, source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        if not _check_source_access(source.owner_id, source.visibility, user_id):
+        if not await can_read_resource(
+            resource_type="source",
+            resource_id=source.id or source_id,
+            user_id=user_id,
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            visibility=source.visibility,
+        ):
             raise HTTPException(status_code=403, detail="Access denied")
         await _resolve_source_file(source_id)
         return Response(status_code=200)
@@ -322,7 +332,13 @@ async def download_source_file(request: Request, source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        if not _check_source_access(source.owner_id, source.visibility, user_id):
+        if not await can_read_resource(
+            resource_type="source",
+            resource_id=source.id or source_id,
+            user_id=user_id,
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            visibility=source.visibility,
+        ):
             raise HTTPException(status_code=403, detail="Access denied")
         resolved_path, filename = await _resolve_source_file(source_id)
         return FileResponse(
@@ -534,7 +550,13 @@ async def get_source_insights(request: Request, source_id: str):
             raise HTTPException(status_code=404, detail="Source not found")
 
         # Access check
-        if not _check_source_access(source.owner_id, source.visibility, user_id):
+        if not await can_read_resource(
+            resource_type="source",
+            resource_id=source.id or source_id,
+            user_id=user_id,
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            visibility=source.visibility,
+        ):
             raise HTTPException(status_code=403, detail="Access denied")
 
         insights = await source.get_insights()

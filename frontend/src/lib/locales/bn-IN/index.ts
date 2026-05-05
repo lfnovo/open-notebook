@@ -219,6 +219,7 @@ export const bnIN = {
     askAndSearch: "জিজ্ঞাসা ও অনুসন্ধান",
     podcasts: "পডকাস্ট",
     models: "মডেলগুলি",
+    teams: "দল",
     transformations: "ট্রান্সফরমেশনস",
     transformation: "ট্রান্সফরমেশন",
     settings: "সেটিংস",
@@ -227,6 +228,14 @@ export const bnIN = {
     language: "ভাষা টগল",
     theme: "থিম",
     ask: "জিজ্ঞাসা",
+  },
+  teams: {
+    description: "ওয়ার্কস্পেস দল এবং পাবলিক শেয়ারিং গ্রুপ পরিচালনা করুন।",
+    empty: "কোনো দল পাওয়া যায়নি।",
+    members: "সদস্য",
+    shares: "শেয়ার",
+    system: "সিস্টেম",
+    workspace: "ওয়ার্কস্পেস",
   },
   notebooks: {
     title: "নোটবুকগুলি",

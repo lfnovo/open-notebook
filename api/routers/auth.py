@@ -13,12 +13,14 @@ from loguru import logger
 
 from api.auth import invalidate_has_users_cache
 from api.jwt_auth import create_jwt_token, find_user_by_username, validate_jwt_token
+from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from api.models import (
     AuthStatusResponse,
     ChangePasswordRequest,
     ChangePasswordResponse,
     LoginRequest,
     LoginResponse,
+    ProfileUpdateRequest,
     RegisterRequest,
     RegisterResponse,
     ResetPasswordRequest,
@@ -138,7 +140,17 @@ async def setup_admin(request: SetupRequest, http_request: Request):
         async with db_connection() as conn:
             result = parse_record_ids(
                 await conn.query(
-                    "CREATE app_user SET username = $username, hashed_password = $hashed, created = time::now(), updated = time::now()",
+                    """
+                    CREATE app_user SET
+                        username = $username,
+                        display_name = $username,
+                        role = 'admin',
+                        status = 'active',
+                        hashed_password = $hashed,
+                        password_changed_at = time::now(),
+                        created = time::now(),
+                        updated = time::now()
+                    """,
                     {
                         "username": request.username,
                         "hashed": hashed,
@@ -156,7 +168,11 @@ async def setup_admin(request: SetupRequest, http_request: Request):
 
             invalidate_has_users_cache()
             return UserResponse(
+                id=str(user.get("id", "")),
                 username=user.get("username", request.username),
+                display_name=user.get("display_name"),
+                role=user.get("role", "admin"),
+                status=user.get("status", "active"),
                 created=str(user.get("created", "")),
                 updated=str(user.get("updated", "")),
             )
@@ -188,19 +204,61 @@ async def login(request: LoginRequest):
     # Database auth
     user = await find_user_by_username(request.username)
     if not user:
+        await AuditLogRepository.create(
+            action="auth.login.failed",
+            actor_username=request.username,
+            target_type="app_user",
+            target_id=request.username,
+            metadata={"reason": "user_not_found"},
+        )
         return LoginResponse(
             success=False,
             message="Invalid username or password",
         )
 
     if not verify_password(request.password, user.get("hashed_password", "")):
+        await AuditLogRepository.create(
+            action="auth.login.failed",
+            actor_username=request.username,
+            target_type="app_user",
+            target_id=str(user.get("id", request.username)),
+            metadata={"reason": "invalid_password"},
+        )
         return LoginResponse(
             success=False,
             message="Invalid username or password",
         )
 
+    if user.get("status", "active") != "active":
+        await AuditLogRepository.create(
+            action="auth.login.failed",
+            actor_username=request.username,
+            target_type="app_user",
+            target_id=str(user.get("id", request.username)),
+            metadata={"reason": "disabled"},
+        )
+        return LoginResponse(
+            success=False,
+            message="Account is disabled",
+        )
+
     user_id = _get_user_id(user)
     token = create_jwt_token(request.username, user_id, user)
+    try:
+        await repo_update(
+            "app_user",
+            user_id,
+            {"last_login_at": datetime.now(timezone.utc)},
+        )
+        await AuditLogRepository.create(
+            action="auth.login.success",
+            actor_id=user_id,
+            actor_username=request.username,
+            target_type="app_user",
+            target_id=user_id,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record login metadata for {request.username}: {e}")
 
     return LoginResponse(
         success=True,
@@ -265,6 +323,7 @@ async def change_password(request: ChangePasswordRequest, http_request: Request)
                 {
                     "username": username,
                     "hashed_password": hashed,
+                    "password_changed_at": datetime.now(timezone.utc),
                 },
             )
             return ChangePasswordResponse(
@@ -297,8 +356,21 @@ async def change_password(request: ChangePasswordRequest, http_request: Request)
         await repo_update(
             "app_user",
             user_id,
-            {"hashed_password": hashed},
+            {
+                "hashed_password": hashed,
+                "password_changed_at": datetime.now(timezone.utc),
+            },
         )
+        try:
+            await AuditLogRepository.create(
+                action="auth.password.changed",
+                actor_id=user_id,
+                actor_username=username,
+                target_type="app_user",
+                target_id=user_id,
+            )
+        except Exception as audit_error:
+            logger.warning(f"Failed to write password-change audit log: {audit_error}")
         return ChangePasswordResponse(
             success=True,
             message="Password changed successfully",
@@ -336,9 +408,58 @@ async def get_current_user(http_request: Request):
         )
 
     return UserResponse(
+        id=str(user.get("id", "")),
         username=user.get("username", username),
+        email=user.get("email"),
+        display_name=user.get("display_name"),
+        role=user.get("role", "user"),
+        status=user.get("status", "active"),
+        locale=user.get("locale"),
+        theme=user.get("theme"),
         created=str(user.get("created", "")),
         updated=str(user.get("updated", "")),
+        last_login_at=str(user.get("last_login_at", "")) if user.get("last_login_at") else None,
+    )
+
+
+@router.patch("/me", response_model=UserResponse)
+async def update_current_user(request: ProfileUpdateRequest, http_request: Request):
+    auth_header = http_request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing authorization")
+    payload = await validate_jwt_token(auth_header[7:])
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    username = payload.get("username", "")
+    user = await find_user_by_username(username)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_id = _get_user_id(user)
+    updates = {}
+    if request.display_name is not None:
+        updates["display_name"] = request.display_name
+    if request.locale is not None:
+        updates["locale"] = request.locale
+    if request.theme is not None:
+        updates["theme"] = request.theme
+    if updates:
+        updated = await repo_update("app_user", user_id, updates)
+        user = updated[0] if updated else {**user, **updates}
+    return UserResponse(
+        id=str(user.get("id", "")),
+        username=user.get("username", username),
+        email=user.get("email"),
+        display_name=user.get("display_name"),
+        role=user.get("role", "user"),
+        status=user.get("status", "active"),
+        locale=user.get("locale"),
+        theme=user.get("theme"),
+        created=str(user.get("created", "")),
+        updated=str(user.get("updated", "")),
+        last_login_at=str(user.get("last_login_at", ""))
+        if user.get("last_login_at")
+        else None,
     )
 
 
@@ -395,13 +516,22 @@ async def auth_register(request: RegisterRequest):
 
     # Create the user
     hashed = hash_password(request.password)
-    user_id = f"app_user:{request.email}"
-
     try:
         async with db_connection() as conn:
             result = parse_record_ids(
                 await conn.query(
-                    "CREATE app_user SET username = $username, hashed_password = $hashed, created = time::now(), updated = time::now()",
+                    """
+                    CREATE app_user SET
+                        username = $username,
+                        email = $username,
+                        display_name = $username,
+                        role = 'user',
+                        status = 'active',
+                        hashed_password = $hashed,
+                        password_changed_at = time::now(),
+                        created = time::now(),
+                        updated = time::now()
+                    """,
                     {
                         "username": request.email,
                         "hashed": hashed,
@@ -460,7 +590,17 @@ async def auth_reset_password(request: ResetPasswordRequest):
         await repo_update(
             "app_user",
             user_id,
-            {"hashed_password": hashed},
+            {
+                "hashed_password": hashed,
+                "password_changed_at": datetime.now(timezone.utc),
+            },
+        )
+        await AuditLogRepository.create(
+            action="auth.password.reset",
+            actor_id=user_id,
+            actor_username=request.email,
+            target_type="app_user",
+            target_id=user_id,
         )
         logger.info(f"Password reset for user: {request.email}")
         return ResetPasswordResponse(

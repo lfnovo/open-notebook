@@ -17,13 +17,29 @@ class NotebookRepository:
         archived: Optional[bool],
         order_by: str,
         public_only: bool = False,
+        team_ids: Optional[list[str]] = None,
     ) -> list[dict[str, Any]]:
         if public_only or not user_id:
             visibility_filter = "(visibility = 'public')"
             params: dict[str, Any] = {}
         else:
-            visibility_filter = "(owner_id = $user_id) OR (visibility = 'public')"
-            params = {"user_id": ensure_record_id(user_id)}
+            access_conditions = ["(owner_id = $user_id)", "(visibility = 'public')"]
+            params = {
+                "user_id": ensure_record_id(user_id),
+                "user_id_string": str(user_id),
+            }
+            share_target_conditions = ["(target_type = 'user' AND target_id = $user_id_string)"]
+            if team_ids:
+                share_target_conditions.append(
+                    "(target_type = 'team' AND target_id IN $team_ids)"
+                )
+                params["team_ids"] = team_ids
+            access_conditions.append(
+                "type::string(id) IN (SELECT VALUE resource_id FROM share_grant "
+                "WHERE resource_type = 'notebook' AND permission IN ['read', 'write', 'owner'] "
+                f"AND ({' OR '.join(share_target_conditions)}))"
+            )
+            visibility_filter = " OR ".join(access_conditions)
 
         query = f"""
             SELECT *,

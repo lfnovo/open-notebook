@@ -219,6 +219,7 @@ export const frFR = {
     askAndSearch: "Demander et rechercher",
     podcasts: "Podcasts",
     models: "Modèles",
+    teams: "Équipes",
     transformations: "Transformations",
     transformation: "Transformation",
     settings: "Paramètres",
@@ -227,6 +228,14 @@ export const frFR = {
     language: "Changer de langue",
     theme: "Thème",
     ask: "Demander",
+  },
+  teams: {
+    description: "Gérer les équipes de l'espace de travail et les groupes de partage public.",
+    empty: "Aucune équipe trouvée.",
+    members: "Membres",
+    shares: "Partages",
+    system: "Système",
+    workspace: "Espace de travail",
   },
   notebooks: {
     title: "Carnets",

@@ -219,6 +219,7 @@ export const zhTW = {
     askAndSearch: "詢問與搜尋",
     podcasts: "播客",
     models: "模型",
+    teams: "團隊",
     transformations: "轉換",
     transformation: "轉換",
     settings: "設定",
@@ -227,6 +228,14 @@ export const zhTW = {
     language: "切換語言",
     theme: "主題",
     ask: "提問",
+  },
+  teams: {
+    description: "管理工作區團隊和公開分享群組。",
+    empty: "暫無團隊。",
+    members: "成員",
+    shares: "分享",
+    system: "系統",
+    workspace: "工作區",
   },
   notebooks: {
     title: "筆記本",

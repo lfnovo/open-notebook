@@ -219,6 +219,7 @@ export const ruRU = {
     askAndSearch: "Запрос и поиск",
     podcasts: "Подкасты",
     models: "Модели",
+    teams: "Команды",
     transformations: "Трансформации",
     transformation: "Трансформация",
     settings: "Настройки",
@@ -227,6 +228,14 @@ export const ruRU = {
     language: "Переключить язык",
     theme: "Тема",
     ask: "Запрос",
+  },
+  teams: {
+    description: "Управляйте командами рабочей области и группами публичного доступа.",
+    empty: "Команды не найдены.",
+    members: "Участники",
+    shares: "Доступы",
+    system: "Системная",
+    workspace: "Рабочая область",
   },
   notebooks: {
     title: "Блокноты",

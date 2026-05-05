@@ -43,6 +43,7 @@ import {
   Wrench,
   Command,
   Globe,
+  Users,
 } from 'lucide-react'
 
 const getNavigation = (t: TranslationKeys) => [
@@ -69,6 +70,7 @@ const getNavigation = (t: TranslationKeys) => [
     title: t.navigation.manage,
     items: [
       { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
+      { name: t.navigation.teams, href: '/settings/teams', icon: Users },
       { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
       { name: t.navigation.settings, href: '/settings', icon: Settings },
       { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
@@ -83,8 +85,8 @@ export function AppSidebar() {
   const navigation = getNavigation(t)
   const pathname = usePathname()
   const { logout } = useAuth()
-  const { username } = useAuthStore()
-  const isAdmin = username === 'admin'
+  const { role } = useAuthStore()
+  const isAdmin = role === 'admin'
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
 

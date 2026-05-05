@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { getApiUrl } from '@/lib/config'
-import { AuthStatus, LoginResponse } from '@/lib/types/auth'
+import { AuthStatus, CurrentUserResponse, LoginResponse } from '@/lib/types/auth'
 
 interface AuthState {
   isAuthenticated: boolean
   token: string | null
   username: string | null
+  role: 'admin' | 'user' | null
+  displayName: string | null
+  status: 'active' | 'disabled' | null
   isLoading: boolean
   error: string | null
   lastAuthCheck: number | null
@@ -27,6 +30,9 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       token: null,
       username: null,
+      role: null,
+      displayName: null,
+      status: null,
       isLoading: false,
       error: null,
       lastAuthCheck: null,
@@ -59,7 +65,14 @@ export const useAuthStore = create<AuthState>()(
 
           // If auth is not required, mark as authenticated
           if (!required) {
-            set({ isAuthenticated: true, token: 'not-required', username: 'guest' })
+            set({
+              isAuthenticated: true,
+              token: 'not-required',
+              username: 'guest',
+              role: null,
+              displayName: 'Guest',
+              status: 'active',
+            })
           }
 
           return required
@@ -99,6 +112,9 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               username: null,
+              role: null,
+              displayName: null,
+              status: null,
             })
             return false
           }
@@ -110,6 +126,9 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
               token: data.token,
               username: data.username || username,
+              role: null,
+              displayName: data.username || username,
+              status: 'active',
               isLoading: false,
               lastAuthCheck: Date.now(),
               error: null,
@@ -122,6 +141,9 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               username: null,
+              role: null,
+              displayName: null,
+              status: null,
             })
             return false
           }
@@ -143,6 +165,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             token: null,
             username: null,
+            role: null,
+            displayName: null,
+            status: null,
           })
           return false
         }
@@ -153,6 +178,9 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: false,
           token: null,
           username: null,
+          role: null,
+          displayName: null,
+          status: null,
           error: null,
         })
       },
@@ -193,10 +221,13 @@ export const useAuthStore = create<AuthState>()(
           })
 
           if (response.ok) {
-            const user = await response.json()
+            const user: CurrentUserResponse = await response.json()
             set({
               isAuthenticated: true,
               username: user.username || state.username,
+              role: user.role || null,
+              displayName: user.display_name || user.username || state.username,
+              status: user.status || null,
               lastAuthCheck: now,
               isCheckingAuth: false,
             })
@@ -206,6 +237,9 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: false,
               token: null,
               username: null,
+              role: null,
+              displayName: null,
+              status: null,
               lastAuthCheck: null,
               isCheckingAuth: false,
             })
@@ -217,6 +251,9 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             token: null,
             username: null,
+            role: null,
+            displayName: null,
+            status: null,
             lastAuthCheck: null,
             isCheckingAuth: false,
           })
@@ -230,6 +267,9 @@ export const useAuthStore = create<AuthState>()(
         token: state.token,
         isAuthenticated: state.isAuthenticated,
         username: state.username,
+        role: state.role,
+        displayName: state.displayName,
+        status: state.status,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

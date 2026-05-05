@@ -273,6 +273,7 @@ export const enUS = {
     askAndSearch: "Ask and Search",
     podcasts: "Podcasts",
     models: "Models",
+    teams: "Teams",
     transformations: "Transformations",
     transformation: "Transformation",
     settings: "Settings",
@@ -281,6 +282,14 @@ export const enUS = {
     language: "Toggle language",
     theme: "Theme",
     ask: "Ask",
+  },
+  teams: {
+    description: "Manage workspace teams and public sharing groups.",
+    empty: "No teams found.",
+    members: "Members",
+    shares: "Shares",
+    system: "System",
+    workspace: "Workspace",
   },
   home: {
     heroTitle: "Your AI-powered research assistant",

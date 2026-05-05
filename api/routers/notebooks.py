@@ -11,6 +11,8 @@ from api.models import (
     NotebookUpdate,
     NotebookVisibilityUpdate,
 )
+from api.services.share_service import can_read_resource
+from open_notebook.database.repositories.team_repository import TeamRepository
 from open_notebook.database.repositories.notebook_repository import NotebookRepository
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError
@@ -92,11 +94,13 @@ async def get_notebooks(
     Returns notebooks owned by the user (private + public) plus all public notebooks.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    team_ids = await TeamRepository.user_team_ids(user_id) if user_id else []
 
     try:
         validated_order_by = _validate_notebook_order_by(order_by)
         result = await NotebookRepository.list_notebooks(
             user_id=user_id,
+            team_ids=team_ids,
             archived=archived,
             order_by=validated_order_by,
         )
@@ -220,7 +224,13 @@ async def get_notebook(request: Request, notebook_id: str):
         if not nb:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        if not _check_notebook_access(nb, user_id):
+        if not await can_read_resource(
+            resource_type="notebook",
+            resource_id=str(nb.get("id", notebook_id)),
+            user_id=user_id,
+            owner_id=str(nb.get("owner_id")) if nb.get("owner_id") else None,
+            visibility=nb.get("visibility", "private"),
+        ):
             raise HTTPException(status_code=403, detail="Access denied")
 
         return _notebook_to_response(nb)
@@ -381,6 +391,14 @@ async def add_source_to_notebook(request: Request, notebook_id: str, source_id: 
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+        if not await can_read_resource(
+            resource_type="source",
+            resource_id=source.id or source_id,
+            user_id=user_id,
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            visibility=source.visibility,
+        ):
+            raise HTTPException(status_code=403, detail="Source access denied")
 
         await NotebookRepository.link_source(notebook_id, source_id)
 

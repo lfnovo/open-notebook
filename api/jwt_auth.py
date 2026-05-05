@@ -52,9 +52,10 @@ def _normalize_datetime(value: Any) -> Optional[datetime]:
 
 def get_user_auth_version(user: Dict[str, Any]) -> str:
     """Convert the user's latest auth-relevant timestamp into a stable version string."""
+    password_changed_at = _normalize_datetime(user.get("password_changed_at"))
     updated_at = _normalize_datetime(user.get("updated"))
     created_at = _normalize_datetime(user.get("created"))
-    basis = updated_at or created_at or datetime.now(timezone.utc)
+    basis = password_changed_at or updated_at or created_at or datetime.now(timezone.utc)
     return basis.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
@@ -63,6 +64,8 @@ def create_jwt_token(username: str, user_id: str, user: Dict[str, Any]) -> str:
     payload = {
         "sub": user_id,
         "username": username,
+        "role": user.get("role", "user"),
+        "status": user.get("status", "active"),
         "auth_version": get_user_auth_version(user),
         "exp": now + JWT_EXPIRY_SECONDS,
         "iat": now,
@@ -117,6 +120,10 @@ async def validate_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         logger.debug("JWT token user no longer exists")
         return None
 
+    if user.get("status", "active") != "active":
+        logger.info(f"JWT token rejected for inactive user={username}")
+        return None
+
     token_auth_version = payload.get("auth_version")
     current_auth_version = get_user_auth_version(user)
     if token_auth_version != current_auth_version:
@@ -125,4 +132,9 @@ async def validate_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         )
         return None
 
+    payload["sub"] = str(user.get("id", payload.get("sub")))
+    payload["role"] = user.get("role", "user")
+    payload["status"] = user.get("status", "active")
+    payload["display_name"] = user.get("display_name")
+    payload["email"] = user.get("email")
     return payload

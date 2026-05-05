@@ -1,9 +1,10 @@
 import time
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from loguru import logger
+from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -15,6 +16,15 @@ from open_notebook.utils.encryption import get_secret_from_env
 _has_users_cache: Optional[bool] = None
 _cache_time: float = 0
 _CACHE_TTL = 30  # seconds
+
+
+class CurrentUser(BaseModel):
+    id: str
+    username: str
+    role: Literal["admin", "user"] = "user"
+    status: Literal["active", "disabled"] = "active"
+    display_name: Optional[str] = None
+    email: Optional[str] = None
 
 
 def invalidate_has_users_cache() -> None:
@@ -139,12 +149,18 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
             if credentials == self.legacy_password:
                 request.state.user_id = None
                 request.state.username = None
+                request.state.user_role = None
+                request.state.user_status = None
                 return await call_next(request)
 
             payload = await validate_jwt_token(credentials)
             if payload:
                 request.state.user_id = payload.get("sub")
                 request.state.username = payload.get("username")
+                request.state.user_role = payload.get("role", "user")
+                request.state.user_status = payload.get("status", "active")
+                request.state.display_name = payload.get("display_name")
+                request.state.email = payload.get("email")
                 return await call_next(request)
 
             return JSONResponse(
@@ -159,6 +175,8 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
             # No users and no legacy password = no auth required
             request.state.user_id = None
             request.state.username = None
+            request.state.user_role = None
+            request.state.user_status = None
             return await call_next(request)
 
         # Users exist - require JWT
@@ -191,6 +209,10 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
         # Extract user identity for downstream route use
         request.state.user_id = payload.get("sub")
         request.state.username = payload.get("username")
+        request.state.user_role = payload.get("role", "user")
+        request.state.user_status = payload.get("status", "active")
+        request.state.display_name = payload.get("display_name")
+        request.state.email = payload.get("email")
 
         return await call_next(request)
 
@@ -232,3 +254,35 @@ async def check_api_password(
         detail="Invalid authorization",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+async def get_current_user(request: Request) -> CurrentUser:
+    """Return the authenticated database user from middleware state."""
+    user_id = getattr(request.state, "user_id", None)
+    username = getattr(request.state, "username", None)
+    if not user_id or not username:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    status = getattr(request.state, "user_status", "active") or "active"
+    if status != "active":
+        raise HTTPException(status_code=403, detail="User is disabled")
+
+    return CurrentUser(
+        id=str(user_id),
+        username=str(username),
+        role=getattr(request.state, "user_role", "user") or "user",
+        status=status,
+        display_name=getattr(request.state, "display_name", None),
+        email=getattr(request.state, "email", None),
+    )
+
+
+async def require_admin(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
+    """Require a system admin user."""
+    if user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return user

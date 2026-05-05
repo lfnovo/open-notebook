@@ -1,0 +1,114 @@
+-- Migration 21: User roles, teams, share grants, and audit log
+
+-- === app_user extensions ===
+DEFINE FIELD IF NOT EXISTS email ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS display_name ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS role ON TABLE app_user TYPE string DEFAULT 'user';
+DEFINE FIELD IF NOT EXISTS status ON TABLE app_user TYPE string DEFAULT 'active';
+DEFINE FIELD IF NOT EXISTS locale ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS theme ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS last_login_at ON TABLE app_user TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS password_changed_at ON TABLE app_user TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE app_user TYPE option<record<app_user>>;
+
+DEFINE FIELD IF NOT EXISTS role ON TABLE app_user ASSERT $value IN ['admin', 'user'];
+DEFINE FIELD IF NOT EXISTS status ON TABLE app_user ASSERT $value IN ['active', 'disabled'];
+
+DEFINE INDEX IF NOT EXISTS idx_app_user_role ON TABLE app_user COLUMNS role;
+DEFINE INDEX IF NOT EXISTS idx_app_user_status ON TABLE app_user COLUMNS status;
+DEFINE INDEX IF NOT EXISTS idx_app_user_email ON TABLE app_user COLUMNS email UNIQUE;
+
+UPDATE app_user SET
+    role = IF username = 'admin' THEN 'admin' ELSE role END,
+    status = status ?? 'active',
+    display_name = display_name ?? username,
+    email = IF string::contains(username, '@') THEN username ELSE email END,
+    password_changed_at = password_changed_at ?? updated;
+
+-- === Teams ===
+DEFINE TABLE IF NOT EXISTS team SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS slug ON TABLE team TYPE string;
+DEFINE FIELD IF NOT EXISTS name ON TABLE team TYPE string;
+DEFINE FIELD IF NOT EXISTS type ON TABLE team TYPE string DEFAULT 'workspace';
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE team TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE team TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE team TYPE datetime VALUE time::now();
+DEFINE FIELD IF NOT EXISTS type ON TABLE team ASSERT $value IN ['workspace', 'system'];
+DEFINE INDEX IF NOT EXISTS idx_team_slug ON TABLE team COLUMNS slug UNIQUE;
+
+DEFINE TABLE IF NOT EXISTS team_member SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS team ON TABLE team_member TYPE record<team>;
+DEFINE FIELD IF NOT EXISTS user ON TABLE team_member TYPE record<app_user>;
+DEFINE FIELD IF NOT EXISTS role ON TABLE team_member TYPE string DEFAULT 'member';
+DEFINE FIELD IF NOT EXISTS status ON TABLE team_member TYPE string DEFAULT 'active';
+DEFINE FIELD IF NOT EXISTS created ON TABLE team_member TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE team_member TYPE datetime VALUE time::now();
+DEFINE FIELD IF NOT EXISTS role ON TABLE team_member ASSERT $value IN ['owner', 'admin', 'member', 'viewer'];
+DEFINE FIELD IF NOT EXISTS status ON TABLE team_member ASSERT $value IN ['active', 'invited', 'disabled'];
+DEFINE INDEX IF NOT EXISTS idx_team_member_team_user ON TABLE team_member COLUMNS team, user UNIQUE;
+DEFINE INDEX IF NOT EXISTS idx_team_member_user ON TABLE team_member COLUMNS user;
+
+-- === Share grants ===
+DEFINE TABLE IF NOT EXISTS share_grant SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS resource_type ON TABLE share_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS resource_id ON TABLE share_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS target_type ON TABLE share_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS target_id ON TABLE share_grant TYPE string;
+DEFINE FIELD IF NOT EXISTS permission ON TABLE share_grant TYPE string DEFAULT 'read';
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE share_grant TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE share_grant TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS resource_type ON TABLE share_grant ASSERT $value IN ['source', 'notebook'];
+DEFINE FIELD IF NOT EXISTS target_type ON TABLE share_grant ASSERT $value IN ['user', 'team'];
+DEFINE FIELD IF NOT EXISTS permission ON TABLE share_grant ASSERT $value IN ['read', 'write', 'owner'];
+DEFINE INDEX IF NOT EXISTS idx_share_grant_resource ON TABLE share_grant COLUMNS resource_type, resource_id;
+DEFINE INDEX IF NOT EXISTS idx_share_grant_target ON TABLE share_grant COLUMNS target_type, target_id;
+
+UPSERT team:public MERGE {
+    slug: 'public',
+    name: 'Public',
+    type: 'system',
+    updated: time::now()
+};
+
+-- Backfill share grants for existing public resources.
+INSERT INTO share_grant (
+    SELECT
+        'source' AS resource_type,
+        type::string(id) AS resource_id,
+        'team' AS target_type,
+        'team:public' AS target_id,
+        'read' AS permission,
+        owner_id AS created_by,
+        time::now() AS created
+    FROM source
+    WHERE visibility = 'public'
+);
+
+INSERT INTO share_grant (
+    SELECT
+        'notebook' AS resource_type,
+        type::string(id) AS resource_id,
+        'team' AS target_type,
+        'team:public' AS target_id,
+        'read' AS permission,
+        owner_id AS created_by,
+        time::now() AS created
+    FROM notebook
+    WHERE visibility = 'public'
+);
+
+-- === Audit log ===
+DEFINE TABLE IF NOT EXISTS audit_log SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS actor_id ON TABLE audit_log TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS actor_username ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS action ON TABLE audit_log TYPE string;
+DEFINE FIELD IF NOT EXISTS target_type ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS target_id ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS metadata ON TABLE audit_log TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS ip_address ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS user_agent ON TABLE audit_log TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE audit_log TYPE datetime DEFAULT time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_audit_log_actor ON TABLE audit_log COLUMNS actor_id;
+DEFINE INDEX IF NOT EXISTS idx_audit_log_action ON TABLE audit_log COLUMNS action;
+DEFINE INDEX IF NOT EXISTS idx_audit_log_created ON TABLE audit_log COLUMNS created;

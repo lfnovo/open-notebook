@@ -1,0 +1,30 @@
+-- Rollback Migration 21
+
+REMOVE INDEX IF EXISTS idx_audit_log_created ON TABLE audit_log;
+REMOVE INDEX IF EXISTS idx_audit_log_action ON TABLE audit_log;
+REMOVE INDEX IF EXISTS idx_audit_log_actor ON TABLE audit_log;
+REMOVE TABLE IF EXISTS audit_log;
+
+REMOVE INDEX IF EXISTS idx_share_grant_target ON TABLE share_grant;
+REMOVE INDEX IF EXISTS idx_share_grant_resource ON TABLE share_grant;
+REMOVE TABLE IF EXISTS share_grant;
+
+REMOVE INDEX IF EXISTS idx_team_member_user ON TABLE team_member;
+REMOVE INDEX IF EXISTS idx_team_member_team_user ON TABLE team_member;
+REMOVE TABLE IF EXISTS team_member;
+
+REMOVE INDEX IF EXISTS idx_team_slug ON TABLE team;
+REMOVE TABLE IF EXISTS team;
+
+REMOVE INDEX IF EXISTS idx_app_user_email ON TABLE app_user;
+REMOVE INDEX IF EXISTS idx_app_user_status ON TABLE app_user;
+REMOVE INDEX IF EXISTS idx_app_user_role ON TABLE app_user;
+REMOVE FIELD IF EXISTS created_by ON TABLE app_user;
+REMOVE FIELD IF EXISTS password_changed_at ON TABLE app_user;
+REMOVE FIELD IF EXISTS last_login_at ON TABLE app_user;
+REMOVE FIELD IF EXISTS theme ON TABLE app_user;
+REMOVE FIELD IF EXISTS locale ON TABLE app_user;
+REMOVE FIELD IF EXISTS status ON TABLE app_user;
+REMOVE FIELD IF EXISTS role ON TABLE app_user;
+REMOVE FIELD IF EXISTS display_name ON TABLE app_user;
+REMOVE FIELD IF EXISTS email ON TABLE app_user;

@@ -895,6 +895,7 @@ class TeamListResponse(BaseModel):
 
 class TeamCreateRequest(BaseModel):
     name: str
+    owner_id: str
     slug: Optional[str] = None
 
 

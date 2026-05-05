@@ -100,9 +100,13 @@ class TeamRepository:
             DELETE team_member WHERE team = $team_id;
             DELETE team_model WHERE team = $team_id;
             DELETE team_transformation WHERE team = $team_id;
+            DELETE share_grant WHERE target_type = 'team' AND target_id = $team_id_string;
             DELETE $team_id;
             """,
-            {"team_id": ensure_record_id(team_id)},
+            {
+                "team_id": ensure_record_id(team_id),
+                "team_id_string": str(team_id),
+            },
         )
 
     @staticmethod

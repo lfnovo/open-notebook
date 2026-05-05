@@ -2,9 +2,11 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from api.auth import CurrentUser
 from api.models import (
+    TeamCreateRequest,
     TeamModelAllowlistUpdateRequest,
     TeamTransformationAllowlistUpdateRequest,
 )
@@ -14,6 +16,68 @@ from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 def regular_actor(role: str = "user") -> CurrentUser:
     return CurrentUser(id=f"app_user:{role}", username=role, role="user")
+
+
+def system_admin() -> CurrentUser:
+    return CurrentUser(id="app_user:admin", username="admin", role="admin")
+
+
+def test_team_create_request_requires_owner_id():
+    with pytest.raises(ValidationError):
+        TeamCreateRequest(name="Research")
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.create_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.create_team", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team_by_slug", new_callable=AsyncMock)
+@patch("api.services.team_service.UserRepository.get_user", new_callable=AsyncMock)
+async def test_create_team_assigns_requested_owner(
+    mock_get_user,
+    mock_get_team_by_slug,
+    mock_create_team,
+    mock_create_member,
+    mock_audit,
+):
+    mock_get_user.return_value = {"id": "app_user:owner", "status": "active"}
+    mock_get_team_by_slug.return_value = None
+    mock_create_team.return_value = {
+        "id": "team:research",
+        "slug": "research",
+        "name": "Research",
+        "type": "workspace",
+        "created_by": "app_user:admin",
+        "created": "2026-05-05T00:00:00Z",
+        "updated": "2026-05-05T00:00:00Z",
+    }
+
+    response = await team_service.create_team_use_case(
+        TeamCreateRequest(name="Research", owner_id="app_user:owner"),
+        actor=system_admin(),
+    )
+
+    assert response.current_user_role is None
+    assert response.can_manage is True
+    mock_create_member.assert_awaited_once_with(
+        team_id="team:research",
+        user_id="app_user:owner",
+        role="owner",
+        status="active",
+    )
+    mock_audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.UserRepository.get_user", new_callable=AsyncMock)
+async def test_create_team_rejects_disabled_owner(mock_get_user):
+    mock_get_user.return_value = {"id": "app_user:owner", "status": "disabled"}
+
+    with pytest.raises(InvalidInputError):
+        await team_service.create_team_use_case(
+            TeamCreateRequest(name="Research", owner_id="app_user:owner"),
+            actor=system_admin(),
+        )
 
 
 @pytest.mark.asyncio
@@ -262,16 +326,16 @@ async def test_system_admin_can_delete_team_with_members_when_no_shares(
 @patch("api.services.team_service.TeamRepository.delete_team", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.dependency_counts", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
-async def test_system_admin_cannot_delete_team_with_share_grants(
+async def test_system_admin_can_delete_team_with_share_grants(
     mock_get_team,
     mock_dependency_counts,
     mock_delete_team,
 ):
     mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
     mock_dependency_counts.return_value = {"active_members": 1, "share_grants": 1}
-    actor = CurrentUser(id="app_user:admin", username="admin", role="admin")
+    actor = system_admin()
 
-    with pytest.raises(InvalidInputError):
-        await team_service.delete_team_use_case("team:research", actor=actor)
+    response = await team_service.delete_team_use_case("team:research", actor=actor)
 
-    mock_delete_team.assert_not_awaited()
+    assert response.success is True
+    mock_delete_team.assert_awaited_once_with("team:research")

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import TeamsPage from './page'
 import {
@@ -20,6 +20,7 @@ import { useModels } from '@/lib/hooks/use-models'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { enUS } from '@/lib/locales/en-US'
 import { zhCN } from '@/lib/locales/zh-CN'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 vi.mock('@/lib/hooks/use-teams', () => ({
   useTeams: vi.fn(),
@@ -46,6 +47,7 @@ vi.mock('@/lib/hooks/use-transformations', () => ({
 
 describe('TeamsPage', () => {
   beforeEach(() => {
+    useAuthStore.setState({ role: 'admin' })
     vi.mocked(useTeams).mockReturnValue({
       data: {
         items: [
@@ -67,7 +69,21 @@ describe('TeamsPage', () => {
       error: null,
     } as any)
     vi.mocked(useTeamMembers).mockReturnValue({ data: [], isLoading: false, error: null } as any)
-    vi.mocked(useActiveUsers).mockReturnValue({ data: { items: [] }, isLoading: false } as any)
+    vi.mocked(useActiveUsers).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'app_user:owner',
+            username: 'owner',
+            display_name: 'Owner User',
+            email: 'owner@example.com',
+            role: 'user',
+            status: 'active',
+          },
+        ],
+      },
+      isLoading: false,
+    } as any)
     vi.mocked(useCreateTeam).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useUpdateTeam).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useDeleteTeam).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
@@ -131,5 +147,15 @@ describe('TeamsPage', () => {
   it('has localized copy for the team slug label', () => {
     expect(enUS.teams.slugLabel).toBe('Slug')
     expect(zhCN.teams.slugLabel).toBe('标识')
+  })
+
+  it('requires selecting an owner when creating a team', async () => {
+    render(<TeamsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create Team' }))
+
+    expect(await screen.findByText('Owner')).toBeInTheDocument()
+    expect(screen.getByText('Select an owner')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
 })

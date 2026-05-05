@@ -280,6 +280,8 @@ export const zhTW = {
     statusInvited: "已邀請",
     searchTeams: "搜尋團隊...",
     searchUsers: "搜尋啟用使用者...",
+    owner: "擁有者",
+    selectOwner: "選擇擁有者",
     selectUser: "選擇使用者",
     slugLabel: "標識",
     slugPlaceholder: "可選穩定標識",

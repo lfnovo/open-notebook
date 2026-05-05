@@ -280,6 +280,8 @@ export const jaJP = {
     statusInvited: "Invited",
     searchTeams: "Search teams...",
     searchUsers: "Search active users...",
+    owner: "Owner",
+    selectOwner: "Select an owner",
     selectUser: "Select a user",
     slugLabel: "Slug",
     slugPlaceholder: "Optional stable slug",

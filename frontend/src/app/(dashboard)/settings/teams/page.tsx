@@ -202,10 +202,16 @@ function TeamDialog({
   const updateTeam = useUpdateTeam()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
+  const [ownerQuery, setOwnerQuery] = useState('')
+  const [ownerId, setOwnerId] = useState('')
+  const { data: ownerData, isLoading: ownersLoading } = useActiveUsers(ownerQuery)
+  const ownerUsers = ownerData?.items ?? []
 
   useEffect(() => {
     setName(team?.name || '')
     setSlug(team?.slug || '')
+    setOwnerQuery('')
+    setOwnerId('')
   }, [team, open])
 
   const isEditing = !!team
@@ -214,13 +220,14 @@ function TeamDialog({
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (!name.trim() || isPending) return
+    if (!isEditing && !ownerId) return
 
     const onSuccess = () => onOpenChange(false)
     if (team) {
       updateTeam.mutate({ teamId: team.id, data: { name: name.trim() } }, { onSuccess })
     } else {
       createTeam.mutate(
-        { name: name.trim(), slug: slug.trim() || undefined },
+        { name: name.trim(), slug: slug.trim() || undefined, owner_id: ownerId },
         { onSuccess }
       )
     }
@@ -253,11 +260,38 @@ function TeamDialog({
               />
             </div>
           )}
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="team-owner-search">{t.teams.owner}</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="team-owner-search"
+                  value={ownerQuery}
+                  onChange={(event) => setOwnerQuery(event.target.value)}
+                  className="pl-9"
+                  placeholder={t.teams.searchUsers}
+                />
+              </div>
+              <Select value={ownerId} onValueChange={setOwnerId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={ownersLoading ? t.common.loading : t.teams.selectOwner} />
+                </SelectTrigger>
+                <SelectContent>
+                  {ownerUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.display_name || user.username} · {user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t.common.cancel}
             </Button>
-            <Button type="submit" disabled={!name.trim() || isPending}>
+            <Button type="submit" disabled={!name.trim() || isPending || (!isEditing && !ownerId)}>
               {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               {t.common.save}
             </Button>

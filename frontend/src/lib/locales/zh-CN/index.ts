@@ -332,6 +332,8 @@ export const zhCN = {
     statusInvited: "已邀请",
     searchTeams: "搜索团队...",
     searchUsers: "搜索启用用户...",
+    owner: "所有者",
+    selectOwner: "选择所有者",
     selectUser: "选择用户",
     slugLabel: "标识",
     slugPlaceholder: "可选稳定标识",

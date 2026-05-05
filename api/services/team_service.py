@@ -187,6 +187,11 @@ async def create_team_use_case(
     slug = _slugify(request.slug or request.name)
     if slug == "public":
         raise InvalidInputError("'public' is a reserved team slug")
+    owner = await UserRepository.get_user(request.owner_id)
+    if not owner:
+        raise NotFoundError("Owner user not found")
+    if owner.get("status", "active") != "active":
+        raise InvalidInputError("Owner user must be active")
     if await TeamRepository.get_team_by_slug(slug):
         raise InvalidInputError("Team slug already exists")
 
@@ -197,7 +202,7 @@ async def create_team_use_case(
         raise InvalidInputError("Failed to create team")
     await TeamRepository.create_member(
         team_id=str(row["id"]),
-        user_id=actor.id,
+        user_id=request.owner_id,
         role="owner",
         status="active",
     )
@@ -207,10 +212,10 @@ async def create_team_use_case(
         actor_username=actor.username,
         target_type="team",
         target_id=str(row.get("id", "")),
-        metadata={"slug": slug},
+        metadata={"slug": slug, "owner_id": request.owner_id},
     )
     row["member_count"] = 1
-    row["current_user_role"] = "owner"
+    row["current_user_role"] = "owner" if request.owner_id == actor.id else None
     return _team_response(row, actor=actor)
 
 
@@ -253,10 +258,6 @@ async def delete_team_use_case(team_id: str, *, actor: CurrentUser) -> DeleteRes
     if actor.role != "admin":
         raise PermissionError("Admin privileges required")
     deps = await TeamRepository.dependency_counts(team_id)
-    if deps.get("share_grants", 0) > 0:
-        raise InvalidInputError(
-            "Team cannot be deleted while it has share grants"
-        )
     await TeamRepository.delete_team(team_id)
     await AuditLogRepository.create(
         action="team.deleted",

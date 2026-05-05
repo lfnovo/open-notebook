@@ -28,6 +28,7 @@ export interface TeamListResponse {
 
 export interface TeamCreateRequest {
   name: string
+  owner_id: string
   slug?: string
 }
 

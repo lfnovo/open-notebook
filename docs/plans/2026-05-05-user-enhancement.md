@@ -922,8 +922,9 @@ auditLog: {
 - Public 撤回默认策略已落到 `PUBLIC_SHARE_REVOCATION_MODE=preserve_references`，source 撤回会为已有引用 owner 保留只读 grant。
 - 前端 auth-store 已保存 role/displayName/status，sidebar 已改为按 `role === 'admin'` 控制管理入口，并新增 Team 列表页面第一版。
 - Team 管理页面已扩展为可创建/编辑普通 Team、查看成员、添加成员、修改成员 role/status、移除成员；`team:public` 在 UI 中只读展示。
+- 用户管理页面已新增，可搜索/过滤用户、创建用户、编辑 display name/role/status、重置临时密码。
 
-尚未完成的实施项继续按下面 Phase 4/5 推进：完整用户管理 UI、Share Dialog、Audit Log 页面、Notebook 撤回时 source 授权预检/补写的完整闭环。
+尚未完成的实施项继续按下面 Phase 4/5 推进：Share Dialog、Audit Log 页面、Notebook 撤回时 source 授权预检/补写的完整闭环。
 
 ### Phase 1: 后端基础
 

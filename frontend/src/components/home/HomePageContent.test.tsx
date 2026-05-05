@@ -11,7 +11,13 @@ describe('HomePageContent', () => {
     render(<HomePageContent />)
 
     const banner = screen.getByRole('banner')
-    expect(within(banner).getByRole('link', { name: '公开内容' })).toHaveAttribute('href', '/public')
+    const primaryNav = within(banner).getByRole('navigation', { name: '主导航' })
+    const accountNav = within(banner).getByRole('navigation', { name: '账户操作' })
+
+    expect(within(primaryNav).getByRole('link', { name: '公开内容' })).toHaveAttribute('href', '/public')
+    expect(within(accountNav).getByRole('link', { name: '登录' })).toHaveAttribute('href', '/login')
+    expect(within(accountNav).getByRole('link', { name: '注册' })).toHaveAttribute('href', '/register')
+    expect(accountNav.className).toContain('border-l')
     expect(screen.queryByTestId('public-content-explorer')).not.toBeInTheDocument()
 
     const footer = screen.getByRole('contentinfo')

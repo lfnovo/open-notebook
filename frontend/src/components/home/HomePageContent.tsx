@@ -1,41 +1,13 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen, FileText, Brain, ArrowRight, Shield, Sparkles } from 'lucide-react'
+import { GuestHeader } from '@/components/common/GuestHeader'
 
 export function HomePageContent() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
       {/* Nav */}
-      <header className="border-b border-stone-200/60 bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-base text-stone-800">Lumina</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/public"
-              className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
-            >
-              公开内容
-            </Link>
-            <Link
-              href="/login"
-              className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
-            >
-              登录
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm px-4 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
-            >
-              注册
-            </Link>
-          </div>
-        </div>
-      </header>
+      <GuestHeader primaryHref="/public" primaryLabel="公开内容" />
 
       {/* Hero */}
       <div className="px-6 py-10 sm:py-12">

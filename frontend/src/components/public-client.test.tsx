@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { PublicClient } from './public-client'
 
@@ -29,9 +29,14 @@ describe('PublicClient', () => {
   it('provides clear guest guidance with back, login, and registration actions', () => {
     render(<PublicClient />)
 
-    expect(screen.getByRole('link', { name: '返回首页' })).toHaveAttribute('href', '/')
-    expect(screen.getByRole('link', { name: '登录' })).toHaveAttribute('href', '/login')
-    expect(screen.getByRole('link', { name: '注册' })).toHaveAttribute('href', '/register')
+    const banner = screen.getByRole('banner')
+    const primaryNav = within(banner).getByRole('navigation', { name: '主导航' })
+    const accountNav = within(banner).getByRole('navigation', { name: '账户操作' })
+
+    expect(within(primaryNav).getByRole('link', { name: '返回首页' })).toHaveAttribute('href', '/')
+    expect(within(accountNav).getByRole('link', { name: '登录' })).toHaveAttribute('href', '/login')
+    expect(within(accountNav).getByRole('link', { name: '注册' })).toHaveAttribute('href', '/register')
+    expect(accountNav.className).toContain('border-l')
     expect(screen.getByRole('heading', { name: '公开内容' })).toBeInTheDocument()
   })
 })

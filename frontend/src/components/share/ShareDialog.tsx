@@ -10,6 +10,7 @@ import {
 } from '@/lib/hooks/use-share-grants'
 import { useTeams } from '@/lib/hooks/use-teams'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { OperationGuide } from '@/components/common/OperationGuide'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -166,6 +167,16 @@ export function ShareDialog({
                   <AlertTitle>{t.sharing.publicShareNoticeTitle}</AlertTitle>
                   <AlertDescription>{t.sharing.publicShareNotice}</AlertDescription>
                 </Alert>
+
+                <OperationGuide
+                  title={t.sharing.guideTitle}
+                  description={t.sharing.guideDescription}
+                  steps={[
+                    t.sharing.guideChooseTarget,
+                    t.sharing.guideConfirmScope,
+                    t.sharing.guideReviewAccess,
+                  ]}
+                />
 
                 <div className="rounded-md border">
                   <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">

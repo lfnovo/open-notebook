@@ -109,6 +109,18 @@ Configure AI provider API keys directly through the Settings UI.
 
 ---
 
+### 9. [User Management, Teams, and Sharing](user-management-and-sharing.md)
+Operate multi-user access safely with users, teams, public sharing, and audit review.
+
+**Quick links:**
+- Create and disable users
+- Assign team roles
+- Share sources and notebooks
+- Understand public sharing and revocation
+- Review audit events after sensitive changes
+
+---
+
 ## Which Feature for Which Task?
 
 ```
@@ -135,6 +147,9 @@ Task: "I'm exploring a concept without knowing exact words"
 
 Task: "I need to add or change my AI provider API keys"
 → Use: Settings / API Keys (configure providers without editing files)
+
+Task: "I need to add teammates or share a resource"
+→ Use: Settings / Users, Settings / Teams, and the resource Share dialog
 ```
 
 ---

@@ -11,6 +11,7 @@ import {
 } from '@/lib/hooks/use-users'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { OperationGuide } from '@/components/common/OperationGuide'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -288,6 +289,16 @@ export default function UsersPage() {
           </SelectContent>
         </Select>
       </div>
+
+      <OperationGuide
+        title={t.users.guideTitle}
+        description={t.users.guideDescription}
+        steps={[
+          t.users.guideReviewIdentity,
+          t.users.guideApplyLeastPrivilege,
+          t.users.guideVerifyAudit,
+        ]}
+      />
 
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">

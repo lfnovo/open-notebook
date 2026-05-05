@@ -15,6 +15,7 @@ import {
 } from '@/lib/hooks/use-teams'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { OperationGuide } from '@/components/common/OperationGuide'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -432,6 +433,16 @@ export default function TeamsPage() {
           placeholder={t.teams.searchTeams}
         />
       </div>
+
+      <OperationGuide
+        title={t.teams.guideTitle}
+        description={t.teams.guideDescription}
+        steps={[
+          t.teams.guideCreateTeam,
+          t.teams.guideAssignMembers,
+          t.teams.guideReviewShares,
+        ]}
+      />
 
       {error ? (
         <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">

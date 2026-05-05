@@ -281,6 +281,7 @@ export const itIT = {
     searchTeams: "Search teams...",
     searchUsers: "Search active users...",
     selectUser: "Select a user",
+    slugLabel: "Slug",
     slugPlaceholder: "Optional stable slug",
     publicReadOnly: "Public is a system group for web-wide read access and cannot have members managed here.",
     allowedModels: "Allowed models",

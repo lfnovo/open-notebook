@@ -281,6 +281,7 @@ export const zhTW = {
     searchTeams: "搜尋團隊...",
     searchUsers: "搜尋啟用使用者...",
     selectUser: "選擇使用者",
+    slugLabel: "標識",
     slugPlaceholder: "可選穩定標識",
     publicReadOnly: "Public 是用於全網唯讀存取的系統群組，不能在此管理成員。",
     allowedModels: "可用模型",

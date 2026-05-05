@@ -333,6 +333,7 @@ export const zhCN = {
     searchTeams: "搜索团队...",
     searchUsers: "搜索启用用户...",
     selectUser: "选择用户",
+    slugLabel: "标识",
     slugPlaceholder: "可选稳定标识",
     publicReadOnly: "Public 是用于全网只读访问的系统组，不能在这里管理成员。",
     allowedModels: "可用模型",

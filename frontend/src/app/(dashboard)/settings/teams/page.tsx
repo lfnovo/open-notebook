@@ -244,7 +244,7 @@ function TeamDialog({
           </div>
           {!isEditing && (
             <div className="space-y-2">
-              <Label htmlFor="team-slug">Slug</Label>
+              <Label htmlFor="team-slug">{t.teams.slugLabel}</Label>
               <Input
                 id="team-slug"
                 value={slug}

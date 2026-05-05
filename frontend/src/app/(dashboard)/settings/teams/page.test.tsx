@@ -18,6 +18,8 @@ import {
 } from '@/lib/hooks/use-teams'
 import { useModels } from '@/lib/hooks/use-models'
 import { useTransformations } from '@/lib/hooks/use-transformations'
+import { enUS } from '@/lib/locales/en-US'
+import { zhCN } from '@/lib/locales/zh-CN'
 
 vi.mock('@/lib/hooks/use-teams', () => ({
   useTeams: vi.fn(),
@@ -124,5 +126,10 @@ describe('TeamsPage', () => {
     expect(screen.getByLabelText('Summary')).toBeChecked()
     expect(screen.queryByText('Add Config')).not.toBeInTheDocument()
     expect(screen.queryByText('Create Transformation')).not.toBeInTheDocument()
+  })
+
+  it('has localized copy for the team slug label', () => {
+    expect(enUS.teams.slugLabel).toBe('Slug')
+    expect(zhCN.teams.slugLabel).toBe('标识')
   })
 })

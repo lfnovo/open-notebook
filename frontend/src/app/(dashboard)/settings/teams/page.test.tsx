@@ -240,6 +240,8 @@ describe('TeamsPage', () => {
     expect(screen.getAllByText('Members: 3').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Shares: 2').length).toBeGreaterThan(0)
     expect(screen.queryByRole('button', { name: 'Add Member' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Edit Team' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Delete Team' })).not.toBeInTheDocument()
     expect(screen.queryByText('Allowed models')).not.toBeInTheDocument()
     expect(screen.queryByText('Allowed transformations')).not.toBeInTheDocument()
     expect(useTeamMembers).not.toHaveBeenCalled()

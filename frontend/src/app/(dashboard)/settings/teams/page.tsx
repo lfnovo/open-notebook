@@ -675,6 +675,8 @@ export default function TeamsPage() {
                   {teams.map((team) => {
                     const isSelected = team.id === selectedTeamId
                     const isSystem = team.type === 'system'
+                    const canEditTeam = !isSystem && Boolean(team.can_manage)
+                    const canDeleteTeam = !isSystem && isSystemAdmin
                     return (
                       <tr
                         key={team.id}
@@ -694,30 +696,33 @@ export default function TeamsPage() {
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isSystem || !team.can_manage}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setEditingTeam(team)
-                              }}
-                              aria-label={t.teams.editTeam}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              disabled={isSystem || !isSystemAdmin || deleteTeam.isPending}
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                deleteTeam.mutate(team.id)
-                              }}
-                              aria-label={t.teams.deleteTeam}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {canEditTeam && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  setEditingTeam(team)
+                                }}
+                                aria-label={t.teams.editTeam}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            )}
+                            {canDeleteTeam && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={deleteTeam.isPending}
+                                onClick={(event) => {
+                                  event.stopPropagation()
+                                  deleteTeam.mutate(team.id)
+                                }}
+                                aria-label={t.teams.deleteTeam}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

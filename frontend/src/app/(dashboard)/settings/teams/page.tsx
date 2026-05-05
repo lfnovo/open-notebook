@@ -1,15 +1,403 @@
 'use client'
 
-import { Users } from 'lucide-react'
-import { useTeams } from '@/lib/hooks/use-teams'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { Edit, Loader2, Plus, Search, Trash2, UserPlus, Users } from 'lucide-react'
+import { Team, TeamMember, TeamMemberStatus, TeamRole } from '@/lib/api/teams'
+import {
+  useActiveUsers,
+  useCreateTeam,
+  useDeleteTeam,
+  useRemoveTeamMember,
+  useTeamMembers,
+  useTeams,
+  useUpdateTeam,
+  useUpsertTeamMember,
+} from '@/lib/hooks/use-teams'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const TEAM_ROLES: TeamRole[] = ['owner', 'admin', 'member', 'viewer']
+const MEMBER_STATUSES: TeamMemberStatus[] = ['active', 'disabled']
+const EMPTY_TEAMS: Team[] = []
+
+function roleLabel(role: TeamRole, t: ReturnType<typeof useTranslation>['t']) {
+  const labels: Record<TeamRole, string> = {
+    owner: t.teams.roleOwner,
+    admin: t.teams.roleAdmin,
+    member: t.teams.roleMember,
+    viewer: t.teams.roleViewer,
+  }
+  return labels[role]
+}
+
+function statusLabel(status: TeamMemberStatus | 'invited', t: ReturnType<typeof useTranslation>['t']) {
+  const labels = {
+    active: t.teams.statusActive,
+    disabled: t.teams.statusDisabled,
+    invited: t.teams.statusInvited,
+  }
+  return labels[status]
+}
+
+function TeamDialog({
+  open,
+  team,
+  onOpenChange,
+}: {
+  open: boolean
+  team?: Team | null
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const createTeam = useCreateTeam()
+  const updateTeam = useUpdateTeam()
+  const [name, setName] = useState('')
+  const [slug, setSlug] = useState('')
+
+  useEffect(() => {
+    setName(team?.name || '')
+    setSlug(team?.slug || '')
+  }, [team, open])
+
+  const isEditing = !!team
+  const isPending = createTeam.isPending || updateTeam.isPending
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!name.trim() || isPending) return
+
+    const onSuccess = () => onOpenChange(false)
+    if (team) {
+      updateTeam.mutate({ teamId: team.id, data: { name: name.trim() } }, { onSuccess })
+    } else {
+      createTeam.mutate(
+        { name: name.trim(), slug: slug.trim() || undefined },
+        { onSuccess }
+      )
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <DialogHeader>
+            <DialogTitle>{isEditing ? t.teams.editTeam : t.teams.createTeam}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="team-name">{t.common.name}</Label>
+            <Input
+              id="team-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              autoFocus
+            />
+          </div>
+          {!isEditing && (
+            <div className="space-y-2">
+              <Label htmlFor="team-slug">Slug</Label>
+              <Input
+                id="team-slug"
+                value={slug}
+                onChange={(event) => setSlug(event.target.value)}
+                placeholder={t.teams.slugPlaceholder}
+              />
+            </div>
+          )}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t.common.cancel}
+            </Button>
+            <Button type="submit" disabled={!name.trim() || isPending}>
+              {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t.common.save}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function AddMemberDialog({
+  open,
+  teamId,
+  onOpenChange,
+}: {
+  open: boolean
+  teamId: string
+  onOpenChange: (open: boolean) => void
+}) {
+  const { t } = useTranslation()
+  const [query, setQuery] = useState('')
+  const [userId, setUserId] = useState('')
+  const [role, setRole] = useState<TeamRole>('member')
+  const { data, isLoading } = useActiveUsers(query)
+  const upsertMember = useUpsertTeamMember(teamId)
+  const users = data?.items ?? []
+
+  useEffect(() => {
+    if (!open) {
+      setQuery('')
+      setUserId('')
+      setRole('member')
+    }
+  }, [open])
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!userId || upsertMember.isPending) return
+    upsertMember.mutate(
+      { user_id: userId, role, status: 'active' },
+      { onSuccess: () => onOpenChange(false) }
+    )
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <DialogHeader>
+            <DialogTitle>{t.teams.addMember}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="member-search">{t.common.search}</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="member-search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                className="pl-9"
+                placeholder={t.teams.searchUsers}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t.teams.member}</Label>
+            <Select value={userId} onValueChange={setUserId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={isLoading ? t.common.loading : t.teams.selectUser} />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.display_name || user.username} · {user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>{t.teams.role}</Label>
+            <Select value={role} onValueChange={(value) => setRole(value as TeamRole)}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {TEAM_ROLES.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {roleLabel(item, t)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              {t.common.cancel}
+            </Button>
+            <Button type="submit" disabled={!userId || upsertMember.isPending}>
+              {upsertMember.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t.common.add}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function MembersPanel({ team }: { team: Team }) {
+  const { t } = useTranslation()
+  const { data, isLoading, error } = useTeamMembers(team.id)
+  const upsertMember = useUpsertTeamMember(team.id)
+  const removeMember = useRemoveTeamMember(team.id)
+  const [addOpen, setAddOpen] = useState(false)
+  const isSystem = team.type === 'system'
+  const members = data ?? []
+
+  const updateMember = (
+    member: TeamMember,
+    updates: Partial<{ role: TeamRole; status: TeamMemberStatus }>
+  ) => {
+    upsertMember.mutate({
+      user_id: member.user,
+      role: updates.role || member.role,
+      status: updates.status || (member.status === 'invited' ? 'active' : member.status),
+    })
+  }
+
+  return (
+    <div className="min-w-0 flex-1 rounded-md border">
+      <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold tracking-normal">{team.name}</h2>
+            <Badge variant={isSystem ? 'secondary' : 'outline'}>
+              {isSystem ? t.teams.system : t.teams.workspace}
+            </Badge>
+          </div>
+          <p className="text-sm text-muted-foreground">{team.slug}</p>
+        </div>
+        <Button
+          size="sm"
+          onClick={() => setAddOpen(true)}
+          disabled={isSystem}
+        >
+          <UserPlus className="h-4 w-4" />
+          {t.teams.addMember}
+        </Button>
+      </div>
+
+      {isSystem && (
+        <div className="border-b bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          {t.teams.publicReadOnly}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex min-h-48 items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      ) : error ? (
+        <div className="p-4 text-sm text-destructive">{t.common.error}</div>
+      ) : members.length === 0 ? (
+        <div className="p-8 text-center text-sm text-muted-foreground">
+          {t.teams.noMembers}
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/40 text-left">
+              <tr>
+                <th className="px-4 py-3 font-medium">{t.teams.member}</th>
+                <th className="px-4 py-3 font-medium">{t.teams.role}</th>
+                <th className="px-4 py-3 font-medium">{t.teams.status}</th>
+                <th className="w-20 px-4 py-3 text-right font-medium">{t.common.actions}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {members.map((member) => {
+                const user = member.user_info
+                return (
+                  <tr key={member.id} className="border-t">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{user?.display_name || user?.username || member.user}</div>
+                      <div className="text-xs text-muted-foreground">{user?.email || user?.username || member.user}</div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Select
+                        value={member.role}
+                        disabled={isSystem || upsertMember.isPending}
+                        onValueChange={(value) => updateMember(member, { role: value as TeamRole })}
+                      >
+                        <SelectTrigger size="sm" className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TEAM_ROLES.map((role) => (
+                            <SelectItem key={role} value={role}>
+                              {roleLabel(role, t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Select
+                        value={member.status}
+                        disabled={isSystem || upsertMember.isPending}
+                        onValueChange={(value) => updateMember(member, { status: value as TeamMemberStatus })}
+                      >
+                        <SelectTrigger size="sm" className="w-32">
+                          <SelectValue>{statusLabel(member.status, t)}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MEMBER_STATUSES.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {statusLabel(status, t)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={isSystem || removeMember.isPending}
+                        onClick={() => removeMember.mutate(member.user)}
+                        aria-label={t.teams.removeMember}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <AddMemberDialog open={addOpen} teamId={team.id} onOpenChange={setAddOpen} />
+    </div>
+  )
+}
 
 export default function TeamsPage() {
   const { t } = useTranslation()
-  const { data, isLoading, error } = useTeams()
-  const teams = data?.items ?? []
+  const [query, setQuery] = useState('')
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const { data, isLoading, error } = useTeams(query)
+  const deleteTeam = useDeleteTeam()
+  const teams = data?.items ?? EMPTY_TEAMS
+
+  useEffect(() => {
+    if (!teams.length) {
+      setSelectedTeamId(null)
+      return
+    }
+    if (!selectedTeamId || !teams.some((team) => team.id === selectedTeamId)) {
+      setSelectedTeamId(teams[0].id)
+    }
+  }, [selectedTeamId, teams])
+
+  const selectedTeam = useMemo(
+    () => teams.find((team) => team.id === selectedTeamId) || null,
+    [selectedTeamId, teams]
+  )
 
   if (isLoading) {
     return (
@@ -20,13 +408,29 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 p-6">
-      <div className="flex items-center gap-3">
-        <Users className="h-6 w-6 text-muted-foreground" />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-normal">{t.navigation.teams}</h1>
-          <p className="text-sm text-muted-foreground">{t.teams.description}</p>
+    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Users className="h-6 w-6 text-muted-foreground" />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-normal">{t.navigation.teams}</h1>
+            <p className="text-sm text-muted-foreground">{t.teams.description}</p>
+          </div>
         </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4" />
+          {t.teams.createTeam}
+        </Button>
+      </div>
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          className="pl-9"
+          placeholder={t.teams.searchTeams}
+        />
       </div>
 
       {error ? (
@@ -38,35 +442,81 @@ export default function TeamsPage() {
           {t.teams.empty}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-md border">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-left">
-              <tr>
-                <th className="px-4 py-3 font-medium">{t.common.name}</th>
-                <th className="px-4 py-3 font-medium">Slug</th>
-                <th className="px-4 py-3 font-medium">{t.teams.members}</th>
-                <th className="px-4 py-3 font-medium">{t.teams.shares}</th>
-                <th className="px-4 py-3 font-medium">{t.common.type}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {teams.map((team) => (
-                <tr key={team.id} className="border-t">
-                  <td className="px-4 py-3 font-medium">{team.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{team.slug}</td>
-                  <td className="px-4 py-3">{team.member_count}</td>
-                  <td className="px-4 py-3">{team.share_count}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={team.type === 'system' ? 'secondary' : 'outline'}>
-                      {team.type === 'system' ? t.teams.system : t.teams.workspace}
-                    </Badge>
-                  </td>
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="w-full shrink-0 overflow-hidden rounded-md border lg:w-96">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/50 text-left">
+                <tr>
+                  <th className="px-4 py-3 font-medium">{t.common.name}</th>
+                  <th className="px-4 py-3 text-right font-medium">{t.common.actions}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {teams.map((team) => {
+                  const isSelected = team.id === selectedTeamId
+                  const isSystem = team.type === 'system'
+                  return (
+                    <tr
+                      key={team.id}
+                      className={`cursor-pointer border-t ${isSelected ? 'bg-muted/60' : ''}`}
+                      onClick={() => setSelectedTeamId(team.id)}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{team.name}</span>
+                          {isSystem && <Badge variant="secondary">{t.teams.system}</Badge>}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                          <span>{team.slug}</span>
+                          <span>{t.teams.members}: {team.member_count}</span>
+                          <span>{t.teams.shares}: {team.share_count}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={isSystem}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setEditingTeam(team)
+                            }}
+                            aria-label={t.teams.editTeam}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            disabled={isSystem || deleteTeam.isPending}
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              deleteTeam.mutate(team.id)
+                            }}
+                            aria-label={t.teams.deleteTeam}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {selectedTeam && <MembersPanel team={selectedTeam} />}
         </div>
       )}
+
+      <TeamDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <TeamDialog
+        open={!!editingTeam}
+        team={editingTeam}
+        onOpenChange={(open) => !open && setEditingTeam(null)}
+      />
     </div>
   )
 }

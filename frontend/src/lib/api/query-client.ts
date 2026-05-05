@@ -37,4 +37,5 @@ export const QUERY_KEYS = {
   teams: ['teams'] as const,
   teamMembers: (teamId: string) => ['teams', teamId, 'members'] as const,
   users: ['users'] as const,
+  shareGrants: (resourceType: string, resourceId: string) => ['share-grants', resourceType, resourceId] as const,
 }

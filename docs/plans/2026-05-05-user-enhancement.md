@@ -923,8 +923,9 @@ auditLog: {
 - 前端 auth-store 已保存 role/displayName/status，sidebar 已改为按 `role === 'admin'` 控制管理入口，并新增 Team 列表页面第一版。
 - Team 管理页面已扩展为可创建/编辑普通 Team、查看成员、添加成员、修改成员 role/status、移除成员；`team:public` 在 UI 中只读展示。
 - 用户管理页面已新增，可搜索/过滤用户、创建用户、编辑 display name/role/status、重置临时密码。
+- Share Dialog 已新增并接入 Source/Notebook 列表入口，可管理 Public 与 Team 只读授权；公开和撤回公开均包含“可被只读引用/已有引用保留访问”的提示。
 
-尚未完成的实施项继续按下面 Phase 4/5 推进：Share Dialog、Audit Log 页面、Notebook 撤回时 source 授权预检/补写的完整闭环。
+尚未完成的实施项继续按下面 Phase 5 推进：Audit Log 页面、Notebook 撤回时 source 授权预检/补写的完整闭环。
 
 ### Phase 1: 后端基础
 

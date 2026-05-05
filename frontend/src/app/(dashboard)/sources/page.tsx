@@ -8,7 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown, Eye, EyeOff } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown, Eye, Share2 } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { ShareDialog } from '@/components/share/ShareDialog'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -35,6 +36,10 @@ export default function SourcesPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState(false)
   const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [shareDialog, setShareDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
+    open: false,
+    source: null,
+  })
   const router = useRouter()
   const tableRef = useRef<HTMLTableElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
@@ -287,18 +292,6 @@ export default function SourcesPage() {
     }
   }, [t, tSourcesKgExtractQueued])
 
-  const handleMakePublic = async (sourceId: string) => {
-    try {
-      await sourcesApi.makePublic(sourceId)
-      setSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility: 'public' as const } : s))
-      toast.success(t.sources?.makePublicSuccess || "已设为公开")
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } }, message?: string }
-      console.error('Failed to make source public:', error)
-      toast.error(t(getApiErrorKey(error.response?.data?.detail || error.message)))
-    }
-  }
-
   const handleDeleteConfirm = async () => {
     if (!deleteDialog.source) return
 
@@ -498,20 +491,21 @@ export default function SourcesPage() {
                   </td>
                   <td className="h-12 px-2" onClick={(e) => e.stopPropagation()}>
                     {source.visibility === 'public' ? (
-                      <Badge variant="default" className="text-xs gap-1">
+                      <button
+                        onClick={() => setShareDialog({ open: true, source })}
+                        className="inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                        title={t.sharing?.title || 'Share'}
+                      >
                         <Eye className="h-3 w-3" />
                         {tVisibilityPublic}
-                      </Badge>
+                      </button>
                     ) : (
                       <button
-                        onClick={async (e) => {
-                          e.stopPropagation()
-                          handleMakePublic(source.id)
-                        }}
+                        onClick={() => setShareDialog({ open: true, source })}
                         className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-secondary text-secondary-foreground hover:bg-primary hover:text-primary-foreground cursor-pointer border-0"
-                        title={t.sources?.makePublicHint || "点击设为公开"}
+                        title={t.sharing?.title || 'Share'}
                       >
-                        <EyeOff className="h-3 w-3" />
+                        <Share2 className="h-3 w-3" />
                         {tVisibilityPrivate}
                       </button>
                     )}
@@ -601,6 +595,21 @@ export default function SourcesPage() {
         onConfirm={handleBulkDelete}
         isLoading={bulkDeleting}
       />
+
+      {shareDialog.source && (
+        <ShareDialog
+          open={shareDialog.open}
+          onOpenChange={(open) => setShareDialog({ open, source: shareDialog.source })}
+          resourceType="source"
+          resourceId={shareDialog.source.id}
+          resourceTitle={shareDialog.source.title || tUntitledSource}
+          onChanged={(visibility) => {
+            const sourceId = shareDialog.source?.id
+            if (!sourceId) return
+            setSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility } : s))
+          }}
+        />
+      )}
     </AppShell>
   )
 }

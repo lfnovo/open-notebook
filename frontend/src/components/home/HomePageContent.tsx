@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { BookOpen, FileText, Brain, ArrowRight, Shield, Sparkles } from 'lucide-react'
-import { PublicContentExplorer } from '@/components/public-client'
 
 export function HomePageContent() {
   return (
@@ -16,6 +15,12 @@ export function HomePageContent() {
             <span className="font-semibold text-base text-stone-800">Lumina</span>
           </div>
           <div className="flex items-center gap-4">
+            <Link
+              href="/public"
+              className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
+            >
+              公开内容
+            </Link>
             <Link
               href="/login"
               className="text-sm text-stone-600 hover:text-stone-900 transition-colors"
@@ -36,30 +41,6 @@ export function HomePageContent() {
       <div className="px-6 py-10 sm:py-12">
         <HeroBrandSection />
       </div>
-
-      {/* Public Content */}
-      <section className="px-6 pb-12 sm:pb-14">
-        <div className="mx-auto max-w-5xl">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-normal text-stone-900 sm:text-3xl">
-                公开内容
-              </h2>
-              <p className="mt-2 max-w-2xl text-stone-500">
-                浏览社区公开分享的笔记本和来源，无需登录即可查看全网公开知识。
-              </p>
-            </div>
-            <Link
-              href="/public"
-              className="inline-flex items-center gap-2 text-sm font-medium text-stone-600 transition-colors hover:text-stone-900"
-            >
-              查看全部
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <PublicContentExplorer compact />
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="py-12 sm:py-14 px-6">
@@ -173,9 +154,6 @@ export function HomePageContent() {
             </Link>
             <Link href="/register" className="hover:text-stone-600 transition-colors">
               注册
-            </Link>
-            <Link href="/public" className="hover:text-stone-600 transition-colors">
-              公开内容
             </Link>
           </div>
         </div>

@@ -15,10 +15,9 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 
 interface PublicSourcesProps {
   searchQuery?: string
-  compact?: boolean
 }
 
-export function PublicSources({ searchQuery, compact = false }: PublicSourcesProps) {
+export function PublicSources({ searchQuery }: PublicSourcesProps) {
   const { t } = useTranslation()
 
   const { data: sources, isLoading } = useQuery({
@@ -59,7 +58,7 @@ export function PublicSources({ searchQuery, compact = false }: PublicSourcesPro
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(compact ? filtered.slice(0, 3) : filtered).map((source) => (
+        {filtered.map((source) => (
           <PublicSourceCard key={source.id} source={source} />
         ))}
       </div>

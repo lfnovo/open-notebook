@@ -1,0 +1,3 @@
+-- Migration 23: Ensure audit log metadata accepts nested keys
+
+DEFINE FIELD OVERWRITE metadata ON TABLE audit_log TYPE option<object> FLEXIBLE;

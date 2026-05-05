@@ -1,0 +1,3 @@
+-- Migration 23 rollback keeps the version-22 intended audit metadata shape.
+
+DEFINE FIELD OVERWRITE metadata ON TABLE audit_log TYPE option<object> FLEXIBLE;

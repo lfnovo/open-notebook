@@ -239,4 +239,6 @@ class TeamRepository:
                 "team_id_string": str(team_id),
             },
         )
+        if isinstance(result, dict):
+            return result
         return result[0] if result else {"active_members": 0, "share_grants": 0}

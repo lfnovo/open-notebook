@@ -1,6 +1,6 @@
 -- Migration 22: Team-scoped model and transformation allowlists
 
-DEFINE FIELD OVERWRITE metadata ON TABLE audit_log FLEXIBLE TYPE option<object>;
+DEFINE FIELD OVERWRITE metadata ON TABLE audit_log TYPE option<object> FLEXIBLE;
 
 DEFINE TABLE IF NOT EXISTS team_model SCHEMAFULL;
 DEFINE FIELD IF NOT EXISTS team ON TABLE team_model TYPE record<team>;

@@ -45,6 +45,7 @@ import {
   Globe,
   Users,
   UserCog,
+  ScrollText,
 } from 'lucide-react'
 
 const getNavigation = (t: TranslationKeys) => [
@@ -76,6 +77,7 @@ const getNavigation = (t: TranslationKeys) => [
       { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
       { name: t.navigation.settings, href: '/settings', icon: Settings },
       { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
+      { name: t.navigation.auditLog, href: '/advanced/audit-log', icon: ScrollText },
     ],
   },
 ] as const

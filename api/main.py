@@ -24,6 +24,7 @@ api.deepseek_reasoning_patch.apply()
 
 from api.auth import PasswordAuthMiddleware
 from api.routers import (
+    audit_log,
     auth,
     chat,
     config,
@@ -299,6 +300,7 @@ app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(users.router, prefix="/api", tags=["users"])
 app.include_router(teams.router, prefix="/api", tags=["teams"])
 app.include_router(share_grants.router, prefix="/api", tags=["share-grants"])
+app.include_router(audit_log.router, prefix="/api", tags=["audit-log"])
 app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(notebooks.router, prefix="/api", tags=["notebooks"])
 app.include_router(search.router, prefix="/api", tags=["search"])

@@ -943,6 +943,25 @@ class ShareGrantResponse(BaseModel):
     created: str
 
 
+class AuditLogResponse(BaseModel):
+    id: str
+    actor_id: Optional[str] = None
+    actor_username: Optional[str] = None
+    action: str
+    target_type: Optional[str] = None
+    target_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    ip_address: Optional[str] = None
+    user_agent: Optional[str] = None
+    created: str
+
+
+class AuditLogListResponse(BaseModel):
+    items: List[AuditLogResponse]
+    limit: int
+    offset: int
+
+
 class DeleteResponse(BaseModel):
     success: bool
     message: str

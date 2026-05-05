@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import asyncio
 
-from open_notebook.database.repository import db_connection, parse_record_ids
+from open_notebook.database.repository import db_connection, ensure_record_id, parse_record_ids
 
 
 def hash_password(plain: str) -> str:
@@ -80,14 +80,36 @@ async def main():
                 )
             else:
                 await conn.query(
-                    "UPDATE $uid SET hashed_password = $hashed, updated = time::now()",
-                    {"uid": user_id, "hashed": hashed},
+                    """
+                    UPDATE $uid SET
+                        hashed_password = $hashed,
+                        display_name = display_name ?? $username,
+                        role = 'admin',
+                        status = 'active',
+                        password_changed_at = time::now(),
+                        updated = time::now()
+                    """,
+                    {
+                        "uid": ensure_record_id(user_id),
+                        "username": args.username,
+                        "hashed": hashed,
+                    },
                 )
                 print(f"✅ Password reset for admin user '{args.username}' ({user_id}).")
         else:
             result = parse_record_ids(
                 await conn.query(
-                    "CREATE app_user SET username = $username, hashed_password = $hashed, created = time::now(), updated = time::now()",
+                    """
+                    CREATE app_user SET
+                        username = $username,
+                        display_name = $username,
+                        role = 'admin',
+                        status = 'active',
+                        hashed_password = $hashed,
+                        password_changed_at = time::now(),
+                        created = time::now(),
+                        updated = time::now()
+                    """,
                     {"username": args.username, "hashed": hashed},
                 )
             )

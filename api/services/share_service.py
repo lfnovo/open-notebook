@@ -182,6 +182,29 @@ async def delete_share_grant_use_case(
                     )
                     if preserved:
                         preserved_count += 1
+            if grant["resource_type"] == "notebook":
+                existing_notebook_grants = await ShareRepository.list_resource_grants(
+                    resource_type="notebook", resource_id=grant["resource_id"]
+                )
+                source_ids = await ShareRepository.notebook_source_ids(grant["resource_id"])
+                for notebook_grant in existing_notebook_grants:
+                    target_type = notebook_grant.get("target_type")
+                    target_id = notebook_grant.get("target_id")
+                    if target_type == "team" and target_id == PUBLIC_TEAM_ID:
+                        continue
+                    if target_type not in {"user", "team"} or not target_id:
+                        continue
+                    for source_id in source_ids:
+                        preserved = await ShareRepository.create_grant(
+                            resource_type="source",
+                            resource_id=source_id,
+                            target_type=target_type,
+                            target_id=target_id,
+                            permission="read",
+                            created_by=actor.id,
+                        )
+                        if preserved:
+                            preserved_count += 1
 
     await ShareRepository.delete_grant(grant_id)
 

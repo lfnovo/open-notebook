@@ -166,3 +166,11 @@ class ShareRepository:
             if isinstance(notebook, dict) and notebook.get("owner_id"):
                 owner_ids.add(str(notebook["owner_id"]))
         return sorted(owner_ids)
+
+    @staticmethod
+    async def notebook_source_ids(notebook_id: str) -> list[str]:
+        result = await repo_query(
+            "SELECT VALUE type::string(in) FROM reference WHERE out = $notebook_id",
+            {"notebook_id": ensure_record_id(notebook_id)},
+        )
+        return [str(item) for item in result or []]

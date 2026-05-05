@@ -30,7 +30,7 @@ export const zhCN = {
     notebook: "笔记本",
     podcast: "播客",
     quickActions: "快捷操作",
-    quickActionsDesc: "导航、搜索、提问、主题",
+    quickActionsDesc: "导航、搜索、提问",
     appName: "Lumina™ | Yinshi AI",
     add: "添加",
     remove: "移除",
@@ -288,7 +288,7 @@ export const zhCN = {
   },
   profile: {
     title: "个人资料",
-    description: "管理你的显示名称、偏好设置和密码。",
+    description: "管理你的显示名称、密码和退出登录。",
     loadFailed: "加载个人资料失败。",
     saved: "个人资料已保存。",
     username: "用户名",

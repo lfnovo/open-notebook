@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@/lib/hooks/use-auth'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
@@ -24,8 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
-import { LanguageToggle } from '@/components/common/LanguageToggle'
 import { TranslationKeys } from '@/lib/locales'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
@@ -35,7 +32,6 @@ import {
   Bot,
   Shuffle,
   Settings,
-  LogOut,
   ChevronLeft,
   Menu,
   FileText,
@@ -83,12 +79,6 @@ const getNavigation = (
         { name: t.navigation.discover, href: '/discover', icon: Globe },
       ],
     },
-    {
-      title: t.navigation.account,
-      items: [
-        { name: t.navigation.profile, href: '/settings/profile', icon: UserCircle },
-      ],
-    },
   ]
 
   if (isAdmin) {
@@ -128,8 +118,7 @@ type CreateTarget = 'source' | 'notebook'
 export function AppSidebar() {
   const { t } = useTranslation()
   const pathname = usePathname()
-  const { logout } = useAuth()
-  const { role } = useAuthStore()
+  const { role, username } = useAuthStore()
   const isAdmin = role === 'admin'
   const canManageTeams = useCanManageTeams()
   const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams })
@@ -138,6 +127,7 @@ export function AppSidebar() {
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
+  const profileLabel = username || t.navigation.profile
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -363,63 +353,33 @@ export function AppSidebar() {
             </div>
           )}
 
-           <div
-            className={cn(
-              'flex flex-col gap-2',
-              isCollapsed ? 'items-center' : 'items-stretch'
-            )}
-          >
-            {isCollapsed ? (
-              <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <ThemeToggle iconOnly />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{t.common.theme}</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <LanguageToggle iconOnly />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">{t.common.language}</TooltipContent>
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <ThemeToggle />
-                <LanguageToggle />
-              </>
-            )}
-          </div>
-
           {isCollapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-center sidebar-menu-item"
-                  onClick={logout}
-                  aria-label={t.common.signOut}
+                <Link
+                  href="/settings/profile"
+                  className={cn(
+                    'flex h-9 w-full items-center justify-center rounded-md transition-colors hover:bg-sidebar-accent',
+                    isAdmin ? 'text-red-600' : 'text-blue-600'
+                  )}
+                  aria-label={profileLabel}
                 >
-                  <LogOut className="h-4 w-4" />
-                </Button>
+                  <UserCircle className="h-4 w-4" />
+                </Link>
               </TooltipTrigger>
-               <TooltipContent side="right">{t.common.signOut}</TooltipContent>
+               <TooltipContent side="right">{profileLabel}</TooltipContent>
             </Tooltip>
           ) : (
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 sidebar-menu-item"
-              onClick={logout}
-              aria-label={t.common.signOut}
-             >
-              <LogOut className="h-4 w-4" />
-              {t.common.signOut}
-            </Button>
+            <Link
+              href="/settings/profile"
+              className={cn(
+                'flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold transition-colors hover:bg-sidebar-accent',
+                isAdmin ? 'text-red-600' : 'text-blue-600'
+              )}
+            >
+              <UserCircle className="h-4 w-4" />
+              <span className="truncate">{profileLabel}</span>
+            </Link>
           )}
         </div>
       </div>

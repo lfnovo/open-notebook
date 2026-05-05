@@ -30,7 +30,7 @@ export const enUS = {
     notebook: "Notebook",
     podcast: "Podcast",
     quickActions: "Quick actions",
-    quickActionsDesc: "Navigation, search, ask, theme",
+    quickActionsDesc: "Navigation, search, ask",
     appName: "Lumina™ | Yinshi AI",
     add: "Add",
     remove: "Remove",
@@ -290,7 +290,7 @@ export const enUS = {
   },
   profile: {
     title: "Profile",
-    description: "Manage your account display name, preferences, and password.",
+    description: "Manage your account display name, password, and sign out.",
     loadFailed: "Failed to load profile.",
     saved: "Profile saved.",
     username: "Username",

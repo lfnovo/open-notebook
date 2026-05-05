@@ -21,7 +21,11 @@ vi.mock('@/lib/hooks/use-teams', () => ({
 
 describe('AppSidebar', () => {
   beforeEach(() => {
-    useAuthStore.setState({ role: null })
+    useAuthStore.setState({
+      role: null,
+      username: 'testuser',
+      displayName: 'Test User',
+    })
     vi.mocked(useCanManageTeams).mockReturnValue(false)
     vi.mocked(useSidebarStore).mockReturnValue({
       isCollapsed: false,
@@ -73,22 +77,36 @@ describe('AppSidebar', () => {
     expect(screen.queryByText(/Lumina™ | Yinshi AI/i)).toBeNull()
   })
 
-  it('shows profile for all users and team management for admins', () => {
+  it('shows username profile link for all users and team management for admins', () => {
     useAuthStore.setState({ role: 'admin' })
 
     render(<AppSidebar />)
 
-    expect(screen.getByText('Profile')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'testuser' })).toHaveAttribute('href', '/settings/profile')
+    expect(screen.queryByText('Profile')).not.toBeInTheDocument()
     expect(screen.getByText('Teams')).toBeInTheDocument()
   })
 
-  it('keeps profile visible for non-admin users', () => {
+  it('keeps username profile link blue for non-admin users', () => {
     useAuthStore.setState({ role: 'user' })
 
     render(<AppSidebar />)
 
-    expect(screen.getByText('Profile')).toBeInTheDocument()
+    const profileLink = screen.getByRole('link', { name: 'testuser' })
+    expect(profileLink).toHaveClass('text-blue-600')
     expect(screen.queryByText('Teams')).not.toBeInTheDocument()
+  })
+
+  it('shows admin username in red and removes standalone controls from the sidebar footer', () => {
+    useAuthStore.setState({ role: 'admin', displayName: null, username: 'admin' })
+
+    render(<AppSidebar />)
+
+    const profileLink = screen.getByRole('link', { name: 'admin' })
+    expect(profileLink).toHaveClass('text-red-600')
+    expect(screen.queryByRole('button', { name: 'Sign Out' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Theme' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Language' })).not.toBeInTheDocument()
   })
 
   it('places admin management links in their own sidebar group for admins', () => {

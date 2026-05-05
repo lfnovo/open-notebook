@@ -214,6 +214,7 @@ export const bnIN = {
     process: "প্রক্রিয়া",
     create: "তৈরি",
     manage: "ব্যবস্থাপনা",
+    admin: "Admin",
     account: "Account",
     sources: "উৎসগুলি",
     notebooks: "নোটবুকগুলি",

@@ -214,6 +214,7 @@ export const frFR = {
     process: "Traiter",
     create: "Créer",
     manage: "Gérer",
+    admin: "Admin",
     account: "Account",
     sources: "Sources",
     notebooks: "Carnets",

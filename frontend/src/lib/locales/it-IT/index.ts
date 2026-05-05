@@ -214,6 +214,7 @@ export const itIT = {
     process: "Elabora",
     create: "Crea",
     manage: "Gestisci",
+    admin: "Admin",
     account: "Account",
     sources: "Fonti",
     notebooks: "Quaderni",

@@ -214,6 +214,7 @@ export const jaJP = {
     process: "処理",
     create: "作成",
     manage: "管理",
+    admin: "管理者",
     account: "Account",
     sources: "ソース",
     notebooks: "ノートブック",

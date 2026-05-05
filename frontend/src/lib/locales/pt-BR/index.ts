@@ -214,6 +214,7 @@ export const ptBR = {
     process: "Processar",
     create: "Criar",
     manage: "Gerenciar",
+    admin: "Admin",
     account: "Account",
     sources: "Fontes",
     notebooks: "Cadernos",

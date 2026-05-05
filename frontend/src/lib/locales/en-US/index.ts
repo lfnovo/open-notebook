@@ -267,6 +267,7 @@ export const enUS = {
     process: "Process",
     create: "Create",
     manage: "Manage",
+    admin: "Admin",
     account: "Account",
     discover: "Discover",
     sources: "Sources",

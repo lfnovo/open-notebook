@@ -265,6 +265,7 @@ export const zhCN = {
     process: "处理",
     create: "创作",
     manage: "管理",
+    admin: "管理员",
     account: "账号",
     discover: "发现",
     sources: "来源",

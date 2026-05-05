@@ -84,4 +84,20 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Profile')).toBeInTheDocument()
     expect(screen.queryByText('Teams')).not.toBeInTheDocument()
   })
+
+  it('places admin management links in their own sidebar group for admins', () => {
+    useAuthStore.setState({ role: 'admin' })
+
+    render(<AppSidebar />)
+
+    const adminGroup = screen.getByRole('group', { name: 'Admin' })
+    expect(adminGroup).toHaveTextContent('Users')
+    expect(adminGroup).toHaveTextContent('Teams')
+    expect(adminGroup).toHaveTextContent('Audit Log')
+
+    const manageGroup = screen.getByRole('group', { name: 'Manage' })
+    expect(manageGroup).not.toHaveTextContent('Users')
+    expect(manageGroup).not.toHaveTextContent('Teams')
+    expect(manageGroup).not.toHaveTextContent('Audit Log')
+  })
 })

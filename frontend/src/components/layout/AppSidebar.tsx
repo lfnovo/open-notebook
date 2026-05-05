@@ -31,7 +31,6 @@ import { Separator } from '@/components/ui/separator'
 import {
   Book,
   Search,
-  Mic,
   Bot,
   Shuffle,
   Settings,
@@ -48,8 +47,19 @@ import {
   UserCircle,
   ScrollText,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-const getNavigation = (t: TranslationKeys) => [
+type NavigationSection = {
+  title: string
+  adminOnly?: boolean
+  items: Array<{
+    name: string
+    href: string
+    icon: LucideIcon
+  }>
+}
+
+const getNavigation = (t: TranslationKeys): NavigationSection[] => [
   {
     title: t.navigation.collect,
     items: [
@@ -79,15 +89,21 @@ const getNavigation = (t: TranslationKeys) => [
     title: t.navigation.manage,
     items: [
       { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
-      { name: t.navigation.users, href: '/settings/users', icon: UserCog },
-      { name: t.navigation.teams, href: '/settings/teams', icon: Users },
       { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
       { name: t.navigation.settings, href: '/settings', icon: Settings },
       { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
+    ],
+  },
+  {
+    title: t.navigation.admin,
+    adminOnly: true,
+    items: [
+      { name: t.navigation.users, href: '/settings/users', icon: UserCog },
+      { name: t.navigation.teams, href: '/settings/teams', icon: Users },
       { name: t.navigation.auditLog, href: '/advanced/audit-log', icon: ScrollText },
     ],
   },
-] as const
+]
 
 type CreateTarget = 'source' | 'notebook'
 
@@ -98,6 +114,7 @@ export function AppSidebar() {
   const { logout } = useAuth()
   const { role } = useAuthStore()
   const isAdmin = role === 'admin'
+  const visibleNavigation = navigation.filter((section) => !section.adminOnly || isAdmin)
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
 
@@ -245,13 +262,9 @@ export function AppSidebar() {
             </DropdownMenu>
           </div>
 
-          {navigation.map((section, index) => {
-            // Hide management section for non-admin users
-            if (section.title === t.navigation.manage && !isAdmin) {
-              return null
-            }
+          {visibleNavigation.map((section, index) => {
             return (
-            <div key={section.title}>
+            <div key={section.title} role="group" aria-label={section.title}>
               {index > 0 && (
                 <Separator className="my-3" />
               )}
@@ -263,7 +276,13 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname?.startsWith(item.href) || false
+                  const isActive =
+                    pathname === item.href ||
+                    Boolean(
+                      item.href !== '/settings' &&
+                        item.href !== '/advanced' &&
+                        pathname?.startsWith(`${item.href}/`)
+                    )
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}

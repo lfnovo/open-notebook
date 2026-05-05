@@ -214,6 +214,7 @@ export const ruRU = {
     process: "Обработать",
     create: "Создать",
     manage: "Управление",
+    admin: "Администрирование",
     account: "Account",
     sources: "Источники",
     notebooks: "Блокноты",

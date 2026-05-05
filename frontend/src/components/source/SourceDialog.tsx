@@ -49,6 +49,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
           <SourceDetailContent
             sourceId={sourceIdWithPrefix}
             showChatButton={true}
+            showActions={false}
             onChatClick={handleChatClick}
             onClose={handleClose}
           />

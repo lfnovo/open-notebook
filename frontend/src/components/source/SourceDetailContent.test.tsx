@@ -97,4 +97,12 @@ describe('SourceDetailContent', () => {
     const trigger = screen.getByTestId('source-actions-trigger')
     expect(within(trigger).getByRole('button')).toBeDisabled()
   })
+
+  it('hides the source actions menu when actions are disabled by the container', async () => {
+    render(<SourceDetailContent sourceId="source:shared" showActions={false} />)
+
+    await waitFor(() => expect(screen.getByText('Shared Source')).toBeInTheDocument())
+
+    expect(screen.queryByTestId('source-actions-trigger')).not.toBeInTheDocument()
+  })
 })

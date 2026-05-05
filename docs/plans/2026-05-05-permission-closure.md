@@ -4,6 +4,61 @@
 
 This plan closes the gap between `docs/7-DEVELOPMENT/permission-design.md` and the current codebase.
 
+## 2026-05-05 End-of-day Closure Summary
+
+Today's user enhancement batch is closed on branch `codex/user-enhancement`.
+
+Closed product and permission scope:
+
+- Implemented the three current permission levels:
+  - System admin manages system models, credentials/API keys, transformations, global settings, advanced tools, users, teams, and audit surfaces.
+  - Team owner/admin manages team members and team defaults within system-admin-provided model/transformation availability.
+  - Ordinary users and team members use notebooks, sources, notes, chat, search, and public/team/private content without configuring system or team model inventory.
+- Enforced team-aware runtime model behavior for chat, embedding, transformation, tools, and large-context defaults.
+- Blocked ordinary users/team members from bypassing effective system/team defaults through explicit model overrides.
+- Preserved the policy that available models and available transformations are configured only by system admins; team admins select defaults from allowed options but do not configure inventory.
+- Added team/member visibility in navigation: team members see team membership; team managers see editable team management affordances.
+- Closed notebook ownership rules for team notebooks:
+  - Non-owner team members cannot delete notebooks, remove sources from notebooks, delete sources from notebook context, delete chat sessions, edit/delete notes, archive notebooks, edit notebook title/description, or use notebook management action menus.
+  - Destructive action menus are disabled at the trigger level, not only inside the menu.
+- Closed source ownership rules:
+  - Source cards and source details show destructive/management actions only when the current user can manage the source.
+  - Source delete remains stricter than general management because public/referenced source delete policy can block deletion even for the owner.
+  - Source detail opened from a notebook modal hides the top-right action menu so it does not overlap the dialog close button; the standalone source page keeps the action menu.
+- Added creator display on notebook cards using the creator profile login instead of raw owner IDs.
+- Fixed source list counts for insights and references.
+- Fixed source deletion and notebook-source removal permission handling in both list and notebook detail contexts.
+- Removed the extra password-change UI from the system settings page while keeping profile fields for language and theme.
+- Added lazy audit log behavior and UI scrolling/pagination support for audit log review.
+- Fixed profile/team state refresh after switching users.
+- Fixed public/home navigation and unauthenticated public browsing:
+  - Public page no longer uses the authenticated app shell.
+  - Public and home navigation use matching guest styling.
+  - Hidden create dialogs are mounted only when opened, preventing unauthenticated public pages from firing protected API calls and producing console 401 errors.
+
+Backend closure:
+
+- Added backend chat-session delete ownership checks so team members cannot delete sessions attached to notebooks they do not own by bypassing the frontend.
+- Kept backend as the permission source of truth; frontend changes are interaction clarity and early blocking.
+
+Frontend closure:
+
+- Consolidated notebook management checks through `canManageNotebook`.
+- Added source-detail `showActions` mode for modal vs standalone contexts.
+- Disabled `InlineEdit`, visibility controls, action triggers, and session delete controls when the user lacks ownership/management permission.
+- Kept public/guest routes free from authenticated-only background queries.
+
+Verification completed:
+
+- Frontend targeted tests for notebook/source permissions, dialog mounting, public/dashboard layout, and source detail action visibility.
+- Backend tests for visibility access, chat-session ownership, and notes API.
+- `git diff --check`.
+- `npm run lint` with 0 errors and existing warnings only.
+- `npm run build`.
+- Browser console smoke for unauthenticated public routes and authenticated admin routes showed no console errors or failed 4xx/5xx responses after the dialog lazy-mount fix.
+
+Known follow-up work remains tracked in `docs/plans/2026-05-05-user-enhancement-followup-todo.md`.
+
 ## Implementation Update
 
 Closed in this batch:

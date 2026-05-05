@@ -68,6 +68,7 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { canDeleteSource } from '@/lib/utils/source-delete-eligibility'
+import { cn } from '@/lib/utils'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
 import { NotebookAssociations } from '@/components/source/NotebookAssociations'
@@ -75,6 +76,7 @@ import { NotebookAssociations } from '@/components/source/NotebookAssociations'
 interface SourceDetailContentProps {
   sourceId: string
   showChatButton?: boolean
+  showActions?: boolean
   onChatClick?: () => void
   onClose?: () => void
 }
@@ -82,6 +84,7 @@ interface SourceDetailContentProps {
 export function SourceDetailContent({
   sourceId,
   showChatButton = false,
+  showActions = true,
   onChatClick,
   onClose
 }: SourceDetailContentProps) {
@@ -404,7 +407,7 @@ export function SourceDetailContent({
       {/* Header */}
       <div className="pb-4 px-2">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <InlineEdit
               value={source.title || ''}
               onSave={handleUpdateTitle}
@@ -418,7 +421,7 @@ export function SourceDetailContent({
               {t.sources.id}: {source.id}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className={cn('flex items-center gap-2', !showActions && 'pr-12')}>
             {getSourceIcon()}
             <Badge variant="secondary" className="text-sm">
               {getSourceType()}
@@ -432,47 +435,49 @@ export function SourceDetailContent({
               </Button>
             )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" disabled={!canManageSource}>
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {source.asset?.file_path && (
-                  <>
-                    <DropdownMenuItem
-                      onClick={handleDownloadFile}
-                      disabled={!canManageSource || isDownloadingFile || fileAvailable === false}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {fileAvailable === false
-                        ? t.sources.fileUnavailable
-                        : isDownloadingFile
-                          ? t.sources.preparing
-                          : t.sources.downloadFile}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                  </>
-                )}
-                <DropdownMenuItem
-                  onClick={handleEmbedContent}
-                  disabled={!canManageSource || isEmbedding || source.embedded}
-                >
-                  <Database className="mr-2 h-4 w-4" />
-                  {isEmbedding ? t.sources.embedding : source.embedded ? t.sources.alreadyEmbedded : t.sources.embedContent}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-destructive"
-                  onClick={handleDelete}
-                  disabled={!canDeleteCurrentSource}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {t.sources.deleteSource}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {showActions && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" disabled={!canManageSource}>
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {source.asset?.file_path && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={handleDownloadFile}
+                        disabled={!canManageSource || isDownloadingFile || fileAvailable === false}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        {fileAvailable === false
+                          ? t.sources.fileUnavailable
+                          : isDownloadingFile
+                            ? t.sources.preparing
+                            : t.sources.downloadFile}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem
+                    onClick={handleEmbedContent}
+                    disabled={!canManageSource || isEmbedding || source.embedded}
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    {isEmbedding ? t.sources.embedding : source.embedded ? t.sources.alreadyEmbedded : t.sources.embedContent}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-destructive"
+                    onClick={handleDelete}
+                    disabled={!canDeleteCurrentSource}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {t.sources.deleteSource}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
         </div>
       </div>

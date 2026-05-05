@@ -4,12 +4,10 @@ import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiUrl } from '@/lib/config'
-import { useAuthStore } from '@/lib/stores/auth-store'
 
 export function RegisterForm() {
   const { t } = useTranslation()
   const router = useRouter()
-  const { checkAuthRequired } = useAuthStore()
 
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -19,7 +17,6 @@ export function RegisterForm() {
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
-  const [codeSent, setCodeSent] = useState(false)
   const [countdown, setCountdown] = useState(0)
 
   const sendCode = useCallback(async () => {
@@ -35,7 +32,6 @@ export function RegisterForm() {
       })
       const data = await res.json()
       if (res.ok && data.success) {
-        setCodeSent(true)
         setCountdown(60)
         const timer = setInterval(() => {
           setCountdown((c) => {
@@ -92,25 +88,18 @@ export function RegisterForm() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{
-        background: 'radial-gradient(ellipse at 50% 0%, rgba(120,80,60,0.12) 0%, transparent 60%), #FAFAF8',
-      }}>
-        <div className="w-full max-w-md rounded-2xl border border-stone-200/60 bg-white/80 p-8 text-center shadow-xl backdrop-blur-sm">
-          <div className="mb-4 text-5xl">🎉</div>
-          <h2 className="mb-2 text-2xl font-light text-stone-700">{t.auth.registerSuccess}</h2>
-          <p className="text-stone-500">{t.auth.emailSent}</p>
-          <p className="mt-4 text-sm text-stone-400">
-            Redirecting to login...
-          </p>
-        </div>
+      <div className="w-full max-w-md rounded-2xl border border-stone-200/60 bg-white/80 p-8 text-center shadow-xl backdrop-blur-sm">
+        <div className="mb-4 text-5xl">✓</div>
+        <h2 className="mb-2 text-2xl font-light text-stone-700">{t.auth.registerSuccess}</h2>
+        <p className="text-stone-500">{t.auth.emailSent}</p>
+        <p className="mt-4 text-sm text-stone-400">
+          Redirecting to login...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center" style={{
-      background: 'radial-gradient(ellipse at 50% 0%, rgba(120,80,60,0.12) 0%, transparent 60%), #FAFAF8',
-    }}>
       <div className="w-full max-w-md rounded-2xl border border-stone-200/60 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
         <div className="mb-8 text-center">
           <h1 className="mb-2 text-3xl font-light text-stone-700">{t.auth.registerTitle}</h1>
@@ -123,7 +112,7 @@ export function RegisterForm() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4" aria-label="Register form">
           <div>
             <label className="mb-1 block text-sm font-medium text-stone-600">{t.auth.registerEmailPlaceholder}</label>
             <div className="flex gap-2">
@@ -202,7 +191,6 @@ export function RegisterForm() {
             {t.auth.backToLogin}
           </button>
         </div>
-      </div>
     </div>
   )
 }

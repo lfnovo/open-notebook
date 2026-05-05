@@ -69,7 +69,7 @@ export function LoginForm() {
 
   if (!hasHydrated || isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#ece2d4]">
+      <div className="flex w-full max-w-[560px] items-center justify-center rounded-xl border border-stone-200 bg-white/80 p-10 shadow-sm">
         <LoadingSpinner />
       </div>
     )
@@ -77,48 +77,46 @@ export function LoginForm() {
 
   if (authRequired === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#ece2d4] p-4">
-        <Card className="w-full max-w-md border-stone-300/80 bg-[#f7f0e5]/90 shadow-xl shadow-stone-400/10">
-          <CardHeader className="text-center">
-            <CardTitle>{t.common.connectionError}</CardTitle>
-            <CardDescription>
-              {t.common.unableToConnect}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-2 text-red-700 text-sm">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  {error || t.auth.connectErrorHint}
+      <Card className="w-full max-w-md border-stone-300/80 bg-[#f7f0e5]/90 shadow-xl shadow-stone-400/10">
+        <CardHeader className="text-center">
+          <CardTitle>{t.common.connectionError}</CardTitle>
+          <CardDescription>
+            {t.common.unableToConnect}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-start gap-2 text-red-700 text-sm">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                {error || t.auth.connectErrorHint}
+              </div>
+            </div>
+
+            {configInfo && (
+              <div className="space-y-2 text-xs text-stone-600 border-t border-stone-300/80 pt-3">
+                <div className="font-medium">{t.common.diagnosticInfo}:</div>
+                <div className="space-y-1 font-mono">
+                  <div>{t.common.version}: {configInfo.version}</div>
+                  <div>{t.common.built}: {new Date(configInfo.buildTime).toLocaleString(language === 'zh-CN' ? 'zh-CN' : language === 'zh-TW' ? 'zh-TW' : 'en-US')}</div>
+                  <div className="break-all">{t.common.apiUrl}: {configInfo.apiUrl}</div>
+                  <div className="break-all">{t.common.frontendUrl}: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
+                </div>
+                <div className="text-xs pt-2">
+                  {t.common.checkConsoleLogs}
                 </div>
               </div>
+            )}
 
-              {configInfo && (
-                <div className="space-y-2 text-xs text-stone-600 border-t border-stone-300/80 pt-3">
-                  <div className="font-medium">{t.common.diagnosticInfo}:</div>
-                  <div className="space-y-1 font-mono">
-                    <div>{t.common.version}: {configInfo.version}</div>
-                    <div>{t.common.built}: {new Date(configInfo.buildTime).toLocaleString(language === 'zh-CN' ? 'zh-CN' : language === 'zh-TW' ? 'zh-TW' : 'en-US')}</div>
-                    <div className="break-all">{t.common.apiUrl}: {configInfo.apiUrl}</div>
-                    <div className="break-all">{t.common.frontendUrl}: {typeof window !== 'undefined' ? window.location.href : 'N/A'}</div>
-                  </div>
-                  <div className="text-xs pt-2">
-                    {t.common.checkConsoleLogs}
-                  </div>
-                </div>
-              )}
-
-              <Button
-                onClick={() => window.location.reload()}
-                className="w-full bg-slate-600 hover:bg-slate-700"
-              >
-                {t.common.retryConnection}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Button
+              onClick={() => window.location.reload()}
+              className="w-full bg-slate-600 hover:bg-slate-700"
+            >
+              {t.common.retryConnection}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
@@ -134,10 +132,9 @@ export function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-100 px-4 py-8 sm:px-6">
-      <div className="w-full max-w-[560px] text-stone-700">
-          <div className="px-7 py-7 sm:px-8 sm:py-8">
-            <form onSubmit={handleSubmit} className="space-y-5 text-left font-fangsong" aria-label="Login form">
+    <div className="w-full max-w-[560px] text-stone-700">
+        <div className="px-7 py-7 sm:px-8 sm:py-8">
+          <form onSubmit={handleSubmit} className="space-y-5 text-left font-fangsong" aria-label="Login form">
               <label className="sr-only" htmlFor="login-username">{t.auth.usernamePlaceholder}</label>
               <div className="flex h-16 items-center rounded-none border-2 border-black/35 bg-[#fffaf4]/92 px-5 shadow-[0_6px_18px_rgba(84,64,43,0.03)] transition focus-within:border-black/50 focus-within:bg-[#fffaf4] focus-within:shadow-[0_0_0_2px_rgba(60,60,60,0.10)]">
                 <User className="mr-4 h-[22px] w-[22px] flex-shrink-0 text-stone-500" />
@@ -222,16 +219,15 @@ export function LoginForm() {
                   {t.auth.registerNewAccount}
                 </button>
               </div>
-            </form>
-          </div>
-
-          {configInfo && (
-            <div className="pt-3 text-center text-[10px] text-stone-600/45">
-              <div>{t.common.version} {configInfo.version}</div>
-              <div className="font-mono text-[9px] break-all">{configInfo.apiUrl}</div>
-            </div>
-          )}
+          </form>
         </div>
+
+        {configInfo && (
+          <div className="pt-3 text-center text-[10px] text-stone-600/45">
+            <div>{t.common.version} {configInfo.version}</div>
+            <div className="font-mono text-[9px] break-all">{configInfo.apiUrl}</div>
+          </div>
+        )}
     </div>
   )
 }

@@ -28,7 +28,7 @@ vi.mock('@/lib/stores/auth-store', () => ({
 }))
 
 describe('LoginForm', () => {
-  it('uses the refreshed loginpage background, keeps it unscaled, places the card slightly lower, and renders a frameless panel with thicker light-black bordered square inputs', async () => {
+  it('renders as an embedded auth panel instead of owning a standalone full-screen page', async () => {
     const { container } = render(<LoginForm />)
 
     const usernameInput = await screen.findByPlaceholderText('Username / Email / Researcher ID')
@@ -40,22 +40,12 @@ describe('LoginForm', () => {
     expect(screen.queryByRole('heading', { name: 'Lumina' })).not.toBeInTheDocument()
     expect(screen.queryByText('Illuminating Discovery, Advancing Life.')).not.toBeInTheDocument()
 
-    const pageShell = container.firstElementChild as HTMLElement
-    expect(pageShell.getAttribute('style')).toContain('/images/loginpage-bg-new.png')
-    expect(pageShell.getAttribute('style')).not.toContain('/images/loginpage-design.png')
-    expect(pageShell.className).toContain('bg-center')
-    expect(pageShell.className).toContain('bg-contain')
+    const panel = container.firstElementChild as HTMLElement
+    expect(panel.className).not.toContain('min-h-screen')
+    expect(panel.className).toContain('max-w-[560px]')
+    expect(panel.getAttribute('style') || '').not.toContain('loginpage-bg')
 
-    const alignmentLayer = pageShell.querySelector('.justify-center') as HTMLElement
-    expect(alignmentLayer.className).toContain('items-end')
-    expect(alignmentLayer.className).toContain('pb-24')
-
-    const panelWidth = Array.from(pageShell.querySelectorAll('div')).find((element) =>
-      (element as HTMLElement).className.includes('max-w-[560px]')
-    ) as HTMLElement | undefined
-    expect(panelWidth).toBeDefined()
-
-    const framelessPanel = Array.from(pageShell.querySelectorAll('div')).find((element) =>
+    const framelessPanel = Array.from(panel.querySelectorAll('div')).find((element) =>
       (element as HTMLElement).className.includes('px-7 py-7')
     ) as HTMLElement | undefined
     expect(framelessPanel).toBeDefined()

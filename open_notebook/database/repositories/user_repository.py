@@ -9,6 +9,12 @@ class UserRepository:
     """Named app_user queries."""
 
     @staticmethod
+    def _matches_status(row: dict[str, Any], status: Optional[str]) -> bool:
+        if not status:
+            return True
+        return row.get("status", "active") == status
+
+    @staticmethod
     async def list_users(
         *,
         q: Optional[str] = None,
@@ -18,7 +24,7 @@ class UserRepository:
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         conditions = []
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {}
         if q:
             conditions.append(
                 "(string::contains(string::lowercase(username), string::lowercase($q)) "
@@ -29,12 +35,14 @@ class UserRepository:
         if role:
             conditions.append("role = $role")
             params["role"] = role
-        if status:
-            conditions.append("status = $status")
-            params["status"] = status
+        paginate_in_query = status is None
+        if paginate_in_query:
+            params["limit"] = limit
+            params["offset"] = offset
 
         where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
-        return await repo_query(
+        limit_clause = "LIMIT $limit START $offset" if paginate_in_query else ""
+        rows = await repo_query(
             f"""
             SELECT *,
                 (SELECT VALUE count() FROM source WHERE owner_id = $parent.id GROUP ALL)[0] OR 0 AS source_count,
@@ -42,10 +50,14 @@ class UserRepository:
             FROM app_user
             {where_clause}
             ORDER BY created DESC
-            LIMIT $limit START $offset
+            {limit_clause}
             """,
             params,
         )
+        if status:
+            filtered = [row for row in rows if UserRepository._matches_status(row, status)]
+            return filtered[offset : offset + limit]
+        return rows
 
     @staticmethod
     async def count_users(
@@ -66,13 +78,12 @@ class UserRepository:
         if role:
             conditions.append("role = $role")
             params["role"] = role
-        if status:
-            conditions.append("status = $status")
-            params["status"] = status
         where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        if status:
+            rows = await repo_query(f"SELECT * FROM app_user {where_clause}", params)
+            return sum(1 for row in rows if UserRepository._matches_status(row, status))
         result = await repo_query(
-            f"SELECT count() AS count FROM app_user {where_clause} GROUP ALL",
-            params,
+            f"SELECT count() AS count FROM app_user {where_clause} GROUP ALL", params
         )
         return result[0]["count"] if result else 0
 

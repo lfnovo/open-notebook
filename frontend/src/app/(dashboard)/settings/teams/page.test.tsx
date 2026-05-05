@@ -167,4 +167,45 @@ describe('TeamsPage', () => {
     expect(await screen.findByText('Select a user')).toBeInTheDocument()
     expect(useActiveUsers).toHaveBeenCalledWith('', 'team:research', true)
   })
+
+  it('defaults to the first manageable workspace team and keeps the page scrollable', async () => {
+    vi.mocked(useTeams).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'team:public',
+            slug: 'public',
+            name: 'Public',
+            type: 'system',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+            member_count: 0,
+            share_count: 4,
+            current_user_role: null,
+            can_manage: false,
+          },
+          {
+            id: 'team:research',
+            slug: 'research',
+            name: 'Research',
+            type: 'workspace',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+            member_count: 1,
+            share_count: 0,
+            current_user_role: 'admin',
+            can_manage: true,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    } as any)
+
+    const { container } = render(<TeamsPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Research' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add Member' })).toBeEnabled()
+    expect(container.firstElementChild).toHaveClass('overflow-y-auto')
+  })
 })

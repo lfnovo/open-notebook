@@ -564,7 +564,11 @@ export default function TeamsPage() {
       return
     }
     if (!selectedTeamId || !teams.some((team) => team.id === selectedTeamId)) {
-      setSelectedTeamId(teams[0].id)
+      const preferredTeam =
+        teams.find((team) => team.type === 'workspace' && team.can_manage) ||
+        teams.find((team) => team.type === 'workspace') ||
+        teams[0]
+      setSelectedTeamId(preferredTeam.id)
     }
   }, [selectedTeamId, teams])
 
@@ -582,127 +586,129 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Users className="h-6 w-6 text-muted-foreground" />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-normal">{t.navigation.teams}</h1>
-            <p className="text-sm text-muted-foreground">{t.teams.description}</p>
+    <div className="flex-1 overflow-y-auto">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <Users className="h-6 w-6 text-muted-foreground" />
+            <div>
+              <h1 className="text-2xl font-semibold tracking-normal">{t.navigation.teams}</h1>
+              <p className="text-sm text-muted-foreground">{t.teams.description}</p>
+            </div>
           </div>
+          {isSystemAdmin && (
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4" />
+              {t.teams.createTeam}
+            </Button>
+          )}
         </div>
-        {isSystemAdmin && (
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4" />
-            {t.teams.createTeam}
-          </Button>
-        )}
-      </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          className="pl-9"
-          placeholder={t.teams.searchTeams}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            className="pl-9"
+            placeholder={t.teams.searchTeams}
+          />
+        </div>
+
+        <OperationGuide
+          title={t.teams.guideTitle}
+          description={t.teams.guideDescription}
+          steps={[
+            t.teams.guideCreateTeam,
+            t.teams.guideAssignMembers,
+            t.teams.guideReviewShares,
+          ]}
+        />
+
+        {error ? (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            {t.common.error}
+          </div>
+        ) : teams.length === 0 ? (
+          <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
+            {t.teams.empty}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4 lg:flex-row">
+            <div className="w-full shrink-0 overflow-hidden rounded-md border lg:w-96">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 text-left">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">{t.common.name}</th>
+                    <th className="px-4 py-3 text-right font-medium">{t.common.actions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.map((team) => {
+                    const isSelected = team.id === selectedTeamId
+                    const isSystem = team.type === 'system'
+                    return (
+                      <tr
+                        key={team.id}
+                        className={`cursor-pointer border-t ${isSelected ? 'bg-muted/60' : ''}`}
+                        onClick={() => setSelectedTeamId(team.id)}
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{team.name}</span>
+                            {isSystem && <Badge variant="secondary">{t.teams.system}</Badge>}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <span>{team.slug}</span>
+                            <span>{t.teams.members}: {team.member_count}</span>
+                            <span>{t.teams.shares}: {team.share_count}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isSystem || !team.can_manage}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                setEditingTeam(team)
+                              }}
+                              aria-label={t.teams.editTeam}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              disabled={isSystem || !isSystemAdmin || deleteTeam.isPending}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                deleteTeam.mutate(team.id)
+                              }}
+                              aria-label={t.teams.deleteTeam}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {selectedTeam && <MembersPanel team={selectedTeam} />}
+          </div>
+        )}
+
+        <TeamDialog open={createOpen} onOpenChange={setCreateOpen} />
+        <TeamDialog
+          open={!!editingTeam}
+          team={editingTeam}
+          onOpenChange={(open) => !open && setEditingTeam(null)}
         />
       </div>
-
-      <OperationGuide
-        title={t.teams.guideTitle}
-        description={t.teams.guideDescription}
-        steps={[
-          t.teams.guideCreateTeam,
-          t.teams.guideAssignMembers,
-          t.teams.guideReviewShares,
-        ]}
-      />
-
-      {error ? (
-        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          {t.common.error}
-        </div>
-      ) : teams.length === 0 ? (
-        <div className="rounded-md border p-8 text-center text-sm text-muted-foreground">
-          {t.teams.empty}
-        </div>
-      ) : (
-        <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="w-full shrink-0 overflow-hidden rounded-md border lg:w-96">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left">
-                <tr>
-                  <th className="px-4 py-3 font-medium">{t.common.name}</th>
-                  <th className="px-4 py-3 text-right font-medium">{t.common.actions}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teams.map((team) => {
-                  const isSelected = team.id === selectedTeamId
-                  const isSystem = team.type === 'system'
-                  return (
-                    <tr
-                      key={team.id}
-                      className={`cursor-pointer border-t ${isSelected ? 'bg-muted/60' : ''}`}
-                      onClick={() => setSelectedTeamId(team.id)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{team.name}</span>
-                          {isSystem && <Badge variant="secondary">{t.teams.system}</Badge>}
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
-                          <span>{team.slug}</span>
-                          <span>{t.teams.members}: {team.member_count}</span>
-                          <span>{t.teams.shares}: {team.share_count}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isSystem || !team.can_manage}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              setEditingTeam(team)
-                            }}
-                            aria-label={t.teams.editTeam}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            disabled={isSystem || !isSystemAdmin || deleteTeam.isPending}
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              deleteTeam.mutate(team.id)
-                            }}
-                            aria-label={t.teams.deleteTeam}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {selectedTeam && <MembersPanel team={selectedTeam} />}
-        </div>
-      )}
-
-      <TeamDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <TeamDialog
-        open={!!editingTeam}
-        team={editingTeam}
-        onOpenChange={(open) => !open && setEditingTeam(null)}
-      />
     </div>
   )
 }

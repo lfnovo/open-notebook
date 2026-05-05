@@ -13,7 +13,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
 
-export function PublicNotebooks({ searchQuery }: { searchQuery?: string }) {
+export function PublicNotebooks({
+  searchQuery,
+  compact = false,
+}: {
+  searchQuery?: string
+  compact?: boolean
+}) {
   const { t, language } = useTranslation()
   const { data: notebooks, isLoading } = useQuery({
     queryKey: QUERY_KEYS.publicNotebooks,
@@ -52,7 +58,7 @@ export function PublicNotebooks({ searchQuery }: { searchQuery?: string }) {
         <span className="text-sm text-muted-foreground">({filtered.length})</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((notebook) => (
+        {(compact ? filtered.slice(0, 3) : filtered).map((notebook) => (
           <PublicNotebookCard key={notebook.id} notebook={notebook} language={language} />
         ))}
       </div>

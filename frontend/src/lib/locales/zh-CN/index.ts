@@ -425,6 +425,7 @@ export const zhCN = {
     noNotebooksYet: "还没有公开笔记本，成为第一个分享的人吧！",
   },
   public: {
+    title: "公开内容",
     discover: "发现",
     description: "浏览公开分享的笔记本和来源",
     searchPlaceholder: "搜索公开内容...",

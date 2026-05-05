@@ -427,6 +427,7 @@ export const enUS = {
     noNotebooksYet: "No public notebooks yet. Be the first to share!",
   },
   public: {
+    title: "Public Content",
     discover: "Discover",
     description: "Browse publicly shared notebooks and sources",
     searchPlaceholder: "Search public content...",

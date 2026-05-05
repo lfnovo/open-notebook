@@ -12,13 +12,13 @@ import { FileText, Globe, ExternalLink, Upload } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
-import { cn } from '@/lib/utils'
 
 interface PublicSourcesProps {
   searchQuery?: string
+  compact?: boolean
 }
 
-export function PublicSources({ searchQuery }: PublicSourcesProps) {
+export function PublicSources({ searchQuery, compact = false }: PublicSourcesProps) {
   const { t } = useTranslation()
 
   const { data: sources, isLoading } = useQuery({
@@ -59,7 +59,7 @@ export function PublicSources({ searchQuery }: PublicSourcesProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((source) => (
+        {(compact ? filtered.slice(0, 3) : filtered).map((source) => (
           <PublicSourceCard key={source.id} source={source} />
         ))}
       </div>

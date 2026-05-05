@@ -3,7 +3,6 @@
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
 import { ModalProvider } from '@/components/providers/ModalProvider'
 import { CreateDialogsProvider } from '@/lib/hooks/use-create-dialogs'
-import { AppShell } from '@/components/layout/AppShell'
 
 export default function PublicLayout({
   children,
@@ -13,9 +12,7 @@ export default function PublicLayout({
   return (
     <ErrorBoundary>
       <CreateDialogsProvider>
-        <AppShell>
-          {children}
-        </AppShell>
+        {children}
         <ModalProvider />
       </CreateDialogsProvider>
     </ErrorBoundary>

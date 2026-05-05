@@ -45,6 +45,7 @@ import {
   Globe,
   Users,
   UserCog,
+  UserCircle,
   ScrollText,
 } from 'lucide-react'
 
@@ -66,6 +67,12 @@ const getNavigation = (t: TranslationKeys) => [
     title: t.navigation.discover,
     items: [
       { name: t.navigation.discover, href: '/public', icon: Globe },
+    ],
+  },
+  {
+    title: t.navigation.account,
+    items: [
+      { name: t.navigation.profile, href: '/settings/profile', icon: UserCircle },
     ],
   },
   {

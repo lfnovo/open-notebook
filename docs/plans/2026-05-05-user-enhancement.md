@@ -942,13 +942,15 @@ auditLog: {
 - 资源读取和列表查询已接入 owner、public、直接用户 grant、team grant 的统一 read access 判断。
 - Public 撤回默认策略已落到 `PUBLIC_SHARE_REVOCATION_MODE=preserve_references`，source 撤回会为已有引用 owner 保留只读 grant。
 - 前端 auth-store 已保存 role/displayName/status，sidebar 已改为按 `role === 'admin'` 控制管理入口，并新增 Team 列表页面第一版。
+- 登录成功后 auth-store 会立即刷新 `/auth/me`，避免 role 还未同步时隐藏 Team/Users/Audit 管理入口。
+- Profile 页面已新增到 `/settings/profile`，所有登录用户可查看账号信息、修改显示名称/语言/主题偏好并访问修改密码表单。
 - Team 管理页面已扩展为可创建/编辑普通 Team、查看成员、添加成员、修改成员 role/status、移除成员；`team:public` 在 UI 中只读展示。
 - 用户管理页面已新增，可搜索/过滤用户、创建用户、编辑 display name/role/status、重置临时密码。
 - Share Dialog 已新增并接入 Source/Notebook 列表入口，可管理 Public 与 Team 只读授权；公开和撤回公开均包含“可被只读引用/已有引用保留访问”的提示。
 - Audit Log 查询 API 与只读页面已新增，系统 admin 可按 actor/action/target 过滤查看审计事件。
 - 用户管理、Team 管理和 Share Dialog 已补充标准操作引导；用户文档已新增 `user-management-and-sharing.md`，用于串联确认、变更、审计回看。
 
-尚未完成的实施项继续按下面 Phase 5 推进：未归属内容治理、Team 依赖阻塞提示的 UI 细化，以及 profile 偏好页。
+尚未完成的实施项继续按下面 Phase 5 推进：未归属内容治理、Team 依赖阻塞提示的 UI 细化。
 
 ### Phase 1: 后端基础
 

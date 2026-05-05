@@ -122,13 +122,29 @@ export const useAuthStore = create<AuthState>()(
           const data: LoginResponse = await response.json()
 
           if (data.success && data.token) {
+            let currentUser: CurrentUserResponse | null = null
+            try {
+              const meResponse = await fetch(`${apiUrl}/api/auth/me`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${data.token}`,
+                  'Content-Type': 'application/json',
+                },
+              })
+              if (meResponse.ok) {
+                currentUser = await meResponse.json()
+              }
+            } catch (profileError) {
+              console.warn('Unable to load current user after login:', profileError)
+            }
+
             set({
               isAuthenticated: true,
               token: data.token,
-              username: data.username || username,
-              role: null,
-              displayName: data.username || username,
-              status: 'active',
+              username: currentUser?.username || data.username || username,
+              role: currentUser?.role || null,
+              displayName: currentUser?.display_name || currentUser?.username || data.username || username,
+              status: currentUser?.status || 'active',
               isLoading: false,
               lastAuthCheck: Date.now(),
               error: null,

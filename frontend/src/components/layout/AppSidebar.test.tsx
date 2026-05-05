@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -14,6 +15,14 @@ vi.mock('@/components/ui/tooltip', () => ({
 // But setup.ts has some basic mocks, let's see.
 
 describe('AppSidebar', () => {
+  beforeEach(() => {
+    useAuthStore.setState({ role: null })
+    vi.mocked(useSidebarStore).mockReturnValue({
+      isCollapsed: false,
+      toggleCollapse: vi.fn(),
+    } as any)
+  })
+
   it('renders correctly when expanded', () => {
     render(<AppSidebar />)
     
@@ -56,5 +65,23 @@ describe('AppSidebar', () => {
     
     // In collapsed mode, app name shouldn't be visible (as text)
     expect(screen.queryByText(/Lumina™ | Yinshi AI/i)).toBeNull()
+  })
+
+  it('shows profile for all users and team management for admins', () => {
+    useAuthStore.setState({ role: 'admin' })
+
+    render(<AppSidebar />)
+
+    expect(screen.getByText('Profile')).toBeInTheDocument()
+    expect(screen.getByText('Teams')).toBeInTheDocument()
+  })
+
+  it('keeps profile visible for non-admin users', () => {
+    useAuthStore.setState({ role: 'user' })
+
+    render(<AppSidebar />)
+
+    expect(screen.getByText('Profile')).toBeInTheDocument()
+    expect(screen.queryByText('Teams')).not.toBeInTheDocument()
   })
 })

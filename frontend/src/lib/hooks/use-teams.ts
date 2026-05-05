@@ -18,6 +18,15 @@ export function useCanManageTeams() {
   return Boolean(data?.items.some((team) => team.can_manage))
 }
 
+export function useHasTeams() {
+  const { data } = useTeams()
+  return Boolean(
+    data?.items.some(
+      (team) => team.type === 'workspace' && Boolean(team.current_user_role)
+    )
+  )
+}
+
 export function useTeamMembers(teamId?: string) {
   return useQuery({
     queryKey: teamId ? QUERY_KEYS.teamMembers(teamId) : ['teams', 'members', 'none'],

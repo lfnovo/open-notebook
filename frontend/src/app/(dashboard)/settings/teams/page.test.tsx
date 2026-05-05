@@ -47,6 +47,7 @@ vi.mock('@/lib/hooks/use-transformations', () => ({
 
 describe('TeamsPage', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     useAuthStore.setState({ role: 'admin' })
     vi.mocked(useTeams).mockReturnValue({
       data: {
@@ -207,5 +208,42 @@ describe('TeamsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Research' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add Member' })).toBeEnabled()
     expect(container.firstElementChild).toHaveClass('overflow-y-auto')
+  })
+
+  it('shows team members their team without member or allowlist management controls', async () => {
+    useAuthStore.setState({ role: 'user' })
+    vi.mocked(useTeams).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'team:research',
+            slug: 'research',
+            name: 'Research',
+            type: 'workspace',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+            member_count: 3,
+            share_count: 2,
+            current_user_role: 'member',
+            can_manage: false,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    } as any)
+
+    render(<TeamsPage />)
+
+    expect(await screen.findByRole('heading', { name: 'Research' })).toBeInTheDocument()
+    expect(screen.getByText('Member')).toBeInTheDocument()
+    expect(screen.getAllByText('Members: 3').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Shares: 2').length).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: 'Add Member' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Allowed models')).not.toBeInTheDocument()
+    expect(screen.queryByText('Allowed transformations')).not.toBeInTheDocument()
+    expect(useTeamMembers).not.toHaveBeenCalled()
+    expect(useTeamModels).not.toHaveBeenCalled()
+    expect(useTeamTransformations).not.toHaveBeenCalled()
   })
 })

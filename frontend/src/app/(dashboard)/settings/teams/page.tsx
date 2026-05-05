@@ -546,6 +546,35 @@ function MembersPanel({ team }: { team: Team }) {
   )
 }
 
+function TeamMembershipPanel({ team }: { team: Team }) {
+  const { t } = useTranslation()
+  const role = team.current_user_role
+
+  return (
+    <div className="min-w-0 flex-1 rounded-md border p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold tracking-normal">{team.name}</h2>
+            {role && <Badge variant="outline">{roleLabel(role, t)}</Badge>}
+          </div>
+          <p className="text-sm text-muted-foreground">{team.slug}</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+        <div className="rounded-md border p-3">
+          <div className="text-xs text-muted-foreground">{t.teams.members}</div>
+          <div className="mt-1 font-medium">{t.teams.members}: {team.member_count}</div>
+        </div>
+        <div className="rounded-md border p-3">
+          <div className="text-xs text-muted-foreground">{t.teams.shares}</div>
+          <div className="mt-1 font-medium">{t.teams.shares}: {team.share_count}</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TeamsPage() {
   const { t } = useTranslation()
   const role = useAuthStore((state) => state.role)
@@ -698,7 +727,13 @@ export default function TeamsPage() {
               </table>
             </div>
 
-            {selectedTeam && <MembersPanel team={selectedTeam} />}
+            {selectedTeam && (
+              selectedTeam.can_manage ? (
+                <MembersPanel team={selectedTeam} />
+              ) : (
+                <TeamMembershipPanel team={selectedTeam} />
+              )
+            )}
           </div>
         )}
 

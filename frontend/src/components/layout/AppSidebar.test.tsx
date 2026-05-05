@@ -4,7 +4,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useAuthStore } from '@/lib/stores/auth-store'
-import { useCanManageTeams } from '@/lib/hooks/use-teams'
+import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -16,6 +16,7 @@ vi.mock('@/components/ui/tooltip', () => ({
 
 vi.mock('@/lib/hooks/use-teams', () => ({
   useCanManageTeams: vi.fn(() => false),
+  useHasTeams: vi.fn(() => false),
 }))
 // But setup.ts has some basic mocks, let's see.
 
@@ -27,6 +28,7 @@ describe('AppSidebar', () => {
       displayName: 'Test User',
     })
     vi.mocked(useCanManageTeams).mockReturnValue(false)
+    vi.mocked(useHasTeams).mockReturnValue(false)
     vi.mocked(useSidebarStore).mockReturnValue({
       isCollapsed: false,
       toggleCollapse: vi.fn(),
@@ -84,7 +86,7 @@ describe('AppSidebar', () => {
 
     expect(screen.getByRole('link', { name: 'testuser' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.queryByText('Profile')).not.toBeInTheDocument()
-    expect(screen.getByText('Teams')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
   })
 
   it('shows the username profile link as a blue button for non-admin users', () => {
@@ -137,17 +139,34 @@ describe('AppSidebar', () => {
     expect(screen.getByText('Settings')).toBeInTheDocument()
     expect(screen.getByText('Advanced')).toBeInTheDocument()
     expect(screen.getByText('Users')).toBeInTheDocument()
-    expect(screen.getByText('Teams')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
     expect(screen.getByText('Audit Log')).toBeInTheDocument()
   })
 
   it('shows only team management for team managers', () => {
     useAuthStore.setState({ role: 'user' })
     vi.mocked(useCanManageTeams).mockReturnValue(true)
+    vi.mocked(useHasTeams).mockReturnValue(true)
 
     render(<AppSidebar />)
 
-    expect(screen.getByText('Teams')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
+    expect(screen.queryByText('Models')).not.toBeInTheDocument()
+    expect(screen.queryByText('Transformations')).not.toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
+    expect(screen.queryByText('Advanced')).not.toBeInTheDocument()
+    expect(screen.queryByText('Users')).not.toBeInTheDocument()
+    expect(screen.queryByText('Audit Log')).not.toBeInTheDocument()
+  })
+
+  it('shows the teams entry for team members without system management links', () => {
+    useAuthStore.setState({ role: 'user' })
+    vi.mocked(useHasTeams).mockReturnValue(true)
+    vi.mocked(useCanManageTeams).mockReturnValue(false)
+
+    render(<AppSidebar />)
+
+    expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
     expect(screen.queryByText('Models')).not.toBeInTheDocument()
     expect(screen.queryByText('Transformations')).not.toBeInTheDocument()
     expect(screen.queryByText('Settings')).not.toBeInTheDocument()

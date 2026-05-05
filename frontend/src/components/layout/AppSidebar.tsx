@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
-import { useCanManageTeams } from '@/lib/hooks/use-teams'
+import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
 import {
   Tooltip,
   TooltipContent,
@@ -57,7 +57,7 @@ type NavigationSection = {
 
 const getNavigation = (
   t: TranslationKeys,
-  { isAdmin, canManageTeams }: { isAdmin: boolean; canManageTeams: boolean }
+  { isAdmin, canManageTeams, hasTeams }: { isAdmin: boolean; canManageTeams: boolean; hasTeams: boolean }
 ): NavigationSection[] => {
   const navigation: NavigationSection[] = [
     {
@@ -101,9 +101,9 @@ const getNavigation = (
         ],
       }
     )
-  } else if (canManageTeams) {
+  } else if (canManageTeams || hasTeams) {
     navigation.push({
-      title: t.navigation.manage,
+      title: t.navigation.teams,
       items: [
         { name: t.navigation.teams, href: '/settings/teams', icon: Users },
       ],
@@ -121,7 +121,8 @@ export function AppSidebar() {
   const { role, username } = useAuthStore()
   const isAdmin = role === 'admin'
   const canManageTeams = useCanManageTeams()
-  const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams })
+  const hasTeams = useHasTeams()
+  const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams, hasTeams })
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
 

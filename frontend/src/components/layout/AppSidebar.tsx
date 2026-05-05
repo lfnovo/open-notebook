@@ -76,7 +76,7 @@ const getNavigation = (t: TranslationKeys): NavigationSection[] => [
   {
     title: t.navigation.discover,
     items: [
-      { name: t.navigation.discover, href: '/public', icon: Globe },
+      { name: t.navigation.discover, href: '/discover', icon: Globe },
     ],
   },
   {

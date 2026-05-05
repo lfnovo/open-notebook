@@ -100,4 +100,10 @@ describe('AppSidebar', () => {
     expect(manageGroup).not.toHaveTextContent('Teams')
     expect(manageGroup).not.toHaveTextContent('Audit Log')
   })
+
+  it('links sidebar public discovery to the dashboard discover route', () => {
+    render(<AppSidebar />)
+
+    expect(screen.getByRole('link', { name: 'Discover' })).toHaveAttribute('href', '/discover')
+  })
 })

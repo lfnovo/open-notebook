@@ -26,6 +26,64 @@ export function useTeamMembers(teamId?: string) {
   })
 }
 
+export function useTeamModels(teamId?: string) {
+  return useQuery({
+    queryKey: teamId ? QUERY_KEYS.teamModels(teamId) : ['teams', 'models', 'none'],
+    queryFn: () => teamsApi.listModels(teamId as string),
+    enabled: !!teamId,
+  })
+}
+
+export function useUpdateTeamModels(teamId: string) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (modelIds: string[]) => teamsApi.updateModels(teamId, modelIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.teamModels(teamId) })
+      toast({ title: t.common.success, description: t.teams.allowlistSaved })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useTeamTransformations(teamId?: string) {
+  return useQuery({
+    queryKey: teamId ? QUERY_KEYS.teamTransformations(teamId) : ['teams', 'transformations', 'none'],
+    queryFn: () => teamsApi.listTransformations(teamId as string),
+    enabled: !!teamId,
+  })
+}
+
+export function useUpdateTeamTransformations(teamId: string) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (transformationIds: string[]) => teamsApi.updateTransformations(teamId, transformationIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.teamTransformations(teamId) })
+      toast({ title: t.common.success, description: t.teams.allowlistSaved })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
 export function useActiveUsers(q?: string) {
   return useQuery({
     queryKey: [...QUERY_KEYS.users, 'active', q || ''],

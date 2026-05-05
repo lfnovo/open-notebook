@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Edit, Loader2, Plus, Search, Trash2, UserPlus, Users } from 'lucide-react'
+import { Bot, Edit, Loader2, Plus, Search, Trash2, UserPlus, Users, Wand2 } from 'lucide-react'
 import { Team, TeamMember, TeamMemberStatus, TeamRole } from '@/lib/api/teams'
 import {
   useActiveUsers,
@@ -9,15 +9,23 @@ import {
   useDeleteTeam,
   useRemoveTeamMember,
   useTeamMembers,
+  useTeamModels,
+  useTeamTransformations,
   useTeams,
   useUpdateTeam,
+  useUpdateTeamModels,
+  useUpdateTeamTransformations,
   useUpsertTeamMember,
 } from '@/lib/hooks/use-teams'
+import { useModels } from '@/lib/hooks/use-models'
+import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { OperationGuide } from '@/components/common/OperationGuide'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -56,6 +64,128 @@ function statusLabel(status: TeamMemberStatus | 'invited', t: ReturnType<typeof 
     invited: t.teams.statusInvited,
   }
   return labels[status]
+}
+
+function TeamAllowlistPanel({ team }: { team: Team }) {
+  const { t } = useTranslation()
+  const isWorkspace = team.type === 'workspace'
+  const { data: models = [], isLoading: modelsLoading } = useModels()
+  const { data: transformations = [], isLoading: transformationsLoading } = useTransformations()
+  const { data: teamModels } = useTeamModels(isWorkspace ? team.id : undefined)
+  const { data: teamTransformations } = useTeamTransformations(isWorkspace ? team.id : undefined)
+  const updateTeamModels = useUpdateTeamModels(team.id)
+  const updateTeamTransformations = useUpdateTeamTransformations(team.id)
+  const canManage = isWorkspace && Boolean(team.can_manage)
+  const selectedModelIds = teamModels?.model_ids ?? []
+  const selectedTransformationIds = teamTransformations?.transformation_ids ?? []
+
+  const toggleModel = (modelId: string, checked: boolean) => {
+    const next = checked
+      ? Array.from(new Set([...selectedModelIds, modelId]))
+      : selectedModelIds.filter((id) => id !== modelId)
+    updateTeamModels.mutate(next)
+  }
+
+  const toggleTransformation = (transformationId: string, checked: boolean) => {
+    const next = checked
+      ? Array.from(new Set([...selectedTransformationIds, transformationId]))
+      : selectedTransformationIds.filter((id) => id !== transformationId)
+    updateTeamTransformations.mutate(next)
+  }
+
+  if (!isWorkspace) {
+    return null
+  }
+
+  return (
+    <div className="grid gap-4 border-b p-4 lg:grid-cols-2">
+      <section className="min-w-0 space-y-3">
+        <div className="flex items-start gap-2">
+          <Bot className="mt-0.5 h-4 w-4 text-muted-foreground" />
+          <div>
+            <h3 className="text-sm font-semibold tracking-normal">{t.teams.allowedModels}</h3>
+            <p className="text-xs text-muted-foreground">{t.teams.allowedModelsDesc}</p>
+          </div>
+        </div>
+        {modelsLoading ? (
+          <div className="flex min-h-24 items-center justify-center rounded-md border">
+            <LoadingSpinner />
+          </div>
+        ) : models.length === 0 ? (
+          <div className="rounded-md border p-4 text-sm text-muted-foreground">
+            {t.teams.noModelsAvailable}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {models.map((model) => {
+              const inputId = `team-${team.id}-model-${model.id}`
+              return (
+                <div key={model.id} className="flex items-start gap-3 rounded-md border p-3">
+                  <Checkbox
+                    id={inputId}
+                    checked={selectedModelIds.includes(model.id)}
+                    disabled={!canManage || updateTeamModels.isPending}
+                    onCheckedChange={(checked) => toggleModel(model.id, Boolean(checked))}
+                  />
+                  <div className="min-w-0">
+                    <Label htmlFor={inputId} className="cursor-pointer text-sm font-medium">
+                      {model.name}
+                    </Label>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {model.provider} · {model.type}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+
+      <section className="min-w-0 space-y-3">
+        <div className="flex items-start gap-2">
+          <Wand2 className="mt-0.5 h-4 w-4 text-muted-foreground" />
+          <div>
+            <h3 className="text-sm font-semibold tracking-normal">{t.teams.allowedTransformations}</h3>
+            <p className="text-xs text-muted-foreground">{t.teams.allowedTransformationsDesc}</p>
+          </div>
+        </div>
+        {transformationsLoading ? (
+          <div className="flex min-h-24 items-center justify-center rounded-md border">
+            <LoadingSpinner />
+          </div>
+        ) : transformations.length === 0 ? (
+          <div className="rounded-md border p-4 text-sm text-muted-foreground">
+            {t.teams.noTransformationsAvailable}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {transformations.map((transformation) => {
+              const inputId = `team-${team.id}-transformation-${transformation.id}`
+              return (
+                <div key={transformation.id} className="flex items-start gap-3 rounded-md border p-3">
+                  <Checkbox
+                    id={inputId}
+                    checked={selectedTransformationIds.includes(transformation.id)}
+                    disabled={!canManage || updateTeamTransformations.isPending}
+                    onCheckedChange={(checked) => toggleTransformation(transformation.id, Boolean(checked))}
+                  />
+                  <div className="min-w-0">
+                    <Label htmlFor={inputId} className="cursor-pointer text-sm font-medium">
+                      {transformation.title}
+                    </Label>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {transformation.description || transformation.name}
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
+    </div>
+  )
 }
 
 function TeamDialog({
@@ -244,6 +374,7 @@ function MembersPanel({ team }: { team: Team }) {
   const removeMember = useRemoveTeamMember(team.id)
   const [addOpen, setAddOpen] = useState(false)
   const isSystem = team.type === 'system'
+  const canManage = !isSystem && Boolean(team.can_manage)
   const members = data ?? []
 
   const updateMember = (
@@ -272,7 +403,7 @@ function MembersPanel({ team }: { team: Team }) {
         <Button
           size="sm"
           onClick={() => setAddOpen(true)}
-          disabled={isSystem}
+          disabled={!canManage}
         >
           <UserPlus className="h-4 w-4" />
           {t.teams.addMember}
@@ -284,6 +415,8 @@ function MembersPanel({ team }: { team: Team }) {
           {t.teams.publicReadOnly}
         </div>
       )}
+
+      <TeamAllowlistPanel team={team} />
 
       {isLoading ? (
         <div className="flex min-h-48 items-center justify-center">
@@ -318,7 +451,7 @@ function MembersPanel({ team }: { team: Team }) {
                     <td className="px-4 py-3">
                       <Select
                         value={member.role}
-                        disabled={isSystem || upsertMember.isPending}
+                        disabled={!canManage || upsertMember.isPending}
                         onValueChange={(value) => updateMember(member, { role: value as TeamRole })}
                       >
                         <SelectTrigger size="sm" className="w-32">
@@ -336,7 +469,7 @@ function MembersPanel({ team }: { team: Team }) {
                     <td className="px-4 py-3">
                       <Select
                         value={member.status}
-                        disabled={isSystem || upsertMember.isPending}
+                        disabled={!canManage || upsertMember.isPending}
                         onValueChange={(value) => updateMember(member, { status: value as TeamMemberStatus })}
                       >
                         <SelectTrigger size="sm" className="w-32">
@@ -355,7 +488,7 @@ function MembersPanel({ team }: { team: Team }) {
                       <Button
                         variant="ghost"
                         size="icon"
-                        disabled={isSystem || removeMember.isPending}
+                        disabled={!canManage || removeMember.isPending}
                         onClick={() => removeMember.mutate(member.user)}
                         aria-label={t.teams.removeMember}
                       >
@@ -377,6 +510,7 @@ function MembersPanel({ team }: { team: Team }) {
 
 export default function TeamsPage() {
   const { t } = useTranslation()
+  const role = useAuthStore((state) => state.role)
   const [query, setQuery] = useState('')
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
@@ -384,6 +518,7 @@ export default function TeamsPage() {
   const { data, isLoading, error } = useTeams(query)
   const deleteTeam = useDeleteTeam()
   const teams = data?.items ?? EMPTY_TEAMS
+  const isSystemAdmin = role === 'admin'
 
   useEffect(() => {
     if (!teams.length) {
@@ -418,10 +553,12 @@ export default function TeamsPage() {
             <p className="text-sm text-muted-foreground">{t.teams.description}</p>
           </div>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4" />
-          {t.teams.createTeam}
-        </Button>
+        {isSystemAdmin && (
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            {t.teams.createTeam}
+          </Button>
+        )}
       </div>
 
       <div className="relative max-w-md">
@@ -488,7 +625,7 @@ export default function TeamsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={isSystem}
+                            disabled={isSystem || !team.can_manage}
                             onClick={(event) => {
                               event.stopPropagation()
                               setEditingTeam(team)
@@ -500,7 +637,7 @@ export default function TeamsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            disabled={isSystem || deleteTeam.isPending}
+                            disabled={isSystem || !isSystemAdmin || deleteTeam.isPending}
                             onClick={(event) => {
                               event.stopPropagation()
                               deleteTeam.mutate(team.id)

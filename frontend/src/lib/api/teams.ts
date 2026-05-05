@@ -1,4 +1,6 @@
 import apiClient from './client'
+import type { Model } from '@/lib/types/models'
+import type { Transformation } from '@/lib/types/transformations'
 
 export type TeamRole = 'owner' | 'admin' | 'member' | 'viewer'
 export type TeamMemberStatus = 'active' | 'disabled'
@@ -57,6 +59,18 @@ export interface TeamMemberUpsertRequest {
   status?: TeamMemberStatus
 }
 
+export interface TeamModelAllowlistResponse {
+  team_id: string
+  model_ids: string[]
+  models: Model[]
+}
+
+export interface TeamTransformationAllowlistResponse {
+  team_id: string
+  transformation_ids: string[]
+  transformations: Transformation[]
+}
+
 export const teamsApi = {
   list: async (params?: { q?: string; limit?: number; offset?: number }) => {
     const response = await apiClient.get<TeamListResponse>('/teams', { params })
@@ -89,5 +103,29 @@ export const teamsApi = {
 
   removeMember: async (teamId: string, userId: string) => {
     await apiClient.delete(`/teams/${teamId}/members/${userId}`)
+  },
+
+  listModels: async (teamId: string) => {
+    const response = await apiClient.get<TeamModelAllowlistResponse>(`/teams/${teamId}/models`)
+    return response.data
+  },
+
+  updateModels: async (teamId: string, modelIds: string[]) => {
+    const response = await apiClient.put<TeamModelAllowlistResponse>(`/teams/${teamId}/models`, {
+      model_ids: modelIds,
+    })
+    return response.data
+  },
+
+  listTransformations: async (teamId: string) => {
+    const response = await apiClient.get<TeamTransformationAllowlistResponse>(`/teams/${teamId}/transformations`)
+    return response.data
+  },
+
+  updateTransformations: async (teamId: string, transformationIds: string[]) => {
+    const response = await apiClient.put<TeamTransformationAllowlistResponse>(`/teams/${teamId}/transformations`, {
+      transformation_ids: transformationIds,
+    })
+    return response.data
   },
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePage from './page'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -16,9 +16,11 @@ vi.mock('@/components/auth/ChangePasswordForm', () => ({
 
 describe('ProfilePage', () => {
   const logout = vi.fn()
+  const updateProfile = vi.fn()
 
   beforeEach(() => {
     logout.mockClear()
+    updateProfile.mockClear()
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout,
@@ -43,18 +45,35 @@ describe('ProfilePage', () => {
       error: null,
     } as any)
     vi.mocked(useUpdateProfile).mockReturnValue({
-      mutate: vi.fn(),
+      mutate: updateProfile,
       isPending: false,
     } as any)
   })
 
-  it('keeps account settings focused on identity and places sign out here', () => {
+  it('keeps account fields, language, theme, and sign out together in profile', () => {
     render(<ProfilePage />)
 
     expect(screen.getByLabelText('Username')).toHaveValue('admin')
+    expect(screen.getByText('Language')).toBeInTheDocument()
+    expect(screen.getByText('Theme')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Sign Out' })).toBeInTheDocument()
-    expect(screen.queryByText('Language')).not.toBeInTheDocument()
-    expect(screen.queryByText('Theme')).not.toBeInTheDocument()
+  })
+
+  it('saves language and theme as profile fields', async () => {
+    render(<ProfilePage />)
+
+    await waitFor(() => {
+      expect(screen.getAllByText('简体中文').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('Dark').length).toBeGreaterThan(0)
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(updateProfile).toHaveBeenCalledWith({
+      display_name: 'Admin User',
+      locale: 'zh-CN',
+      theme: 'dark',
+    })
   })
 
   it('signs out from the profile page', () => {

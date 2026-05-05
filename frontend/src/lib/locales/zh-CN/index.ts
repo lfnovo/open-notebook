@@ -288,7 +288,7 @@ export const zhCN = {
   },
   profile: {
     title: "个人资料",
-    description: "管理你的显示名称、密码和退出登录。",
+    description: "管理你的显示名称、语言、主题、密码和退出登录。",
     loadFailed: "加载个人资料失败。",
     saved: "个人资料已保存。",
     username: "用户名",

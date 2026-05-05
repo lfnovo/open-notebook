@@ -290,7 +290,7 @@ export const enUS = {
   },
   profile: {
     title: "Profile",
-    description: "Manage your account display name, password, and sign out.",
+    description: "Manage your account display name, language, theme, password, and sign out.",
     loadFailed: "Failed to load profile.",
     saved: "Profile saved.",
     username: "Username",

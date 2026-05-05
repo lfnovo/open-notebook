@@ -8,9 +8,19 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useProfile, useUpdateProfile } from '@/lib/hooks/use-profile'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { languages } from '@/lib/locales'
+
+const THEME_VALUES = ['system', 'light', 'dark'] as const
 
 export default function ProfilePage() {
   const { t } = useTranslation()
@@ -18,18 +28,26 @@ export default function ProfilePage() {
   const { data: profile, isLoading, error } = useProfile()
   const updateProfile = useUpdateProfile()
   const [displayName, setDisplayName] = useState('')
+  const [locale, setLocale] = useState<string | null>(null)
+  const [theme, setTheme] = useState<string | null>(null)
 
   useEffect(() => {
     if (!profile) return
     setDisplayName(profile.display_name || '')
+    setLocale(profile.locale || 'system')
+    setTheme(profile.theme || 'system')
   }, [profile])
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (!profile || updateProfile.isPending) return
+    const selectedLocale = locale ?? profile.locale ?? 'system'
+    const selectedTheme = theme ?? profile.theme ?? 'system'
 
     updateProfile.mutate({
       display_name: displayName.trim() || undefined,
+      locale: selectedLocale === 'system' ? '' : selectedLocale,
+      theme: selectedTheme === 'system' ? '' : selectedTheme,
     })
   }
 
@@ -92,6 +110,37 @@ export default function ProfilePage() {
                     <Label>{t.profile.lastLogin}</Label>
                     <Input value={profile.last_login_at || t.common.unknown} disabled />
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-language">{t.profile.language}</Label>
+                    <Select value={locale ?? profile.locale ?? 'system'} onValueChange={setLocale}>
+                      <SelectTrigger id="profile-language" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="system">{t.profile.systemDefault}</SelectItem>
+                        {languages.map((language) => (
+                          <SelectItem key={language.code} value={language.code}>
+                            {language.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-theme">{t.profile.theme}</Label>
+                    <Select value={theme ?? profile.theme ?? 'system'} onValueChange={setTheme}>
+                      <SelectTrigger id="profile-theme" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {THEME_VALUES.map((value) => (
+                          <SelectItem key={value} value={value}>
+                            {themeLabel(value, t)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
                   <Button type="button" variant="outline" onClick={logout}>
@@ -111,4 +160,10 @@ export default function ProfilePage() {
         </div>
       </div>
   )
+}
+
+function themeLabel(value: string, t: ReturnType<typeof useTranslation>['t']) {
+  if (value === 'light') return t.profile.themeLight
+  if (value === 'dark') return t.profile.themeDark
+  return t.profile.systemDefault
 }

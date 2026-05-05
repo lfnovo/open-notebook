@@ -45,9 +45,9 @@ export default function ProfilePage() {
     const selectedTheme = theme ?? profile.theme ?? 'system'
 
     updateProfile.mutate({
-      display_name: displayName.trim() || undefined,
-      locale: selectedLocale === 'system' ? '' : selectedLocale,
-      theme: selectedTheme === 'system' ? '' : selectedTheme,
+      display_name: displayName.trim() || null,
+      locale: selectedLocale === 'system' ? null : selectedLocale,
+      theme: selectedTheme === 'system' ? null : selectedTheme,
     })
   }
 

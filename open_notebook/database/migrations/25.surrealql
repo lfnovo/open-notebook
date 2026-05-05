@@ -1,0 +1,14 @@
+-- Migration 25: Backfill required user profile fields
+
+UPDATE app_user SET
+    role = IF username = 'admin' THEN 'admin' ELSE role ?? 'user' END,
+    status = status ?? 'active',
+    display_name = display_name ?? username,
+    email = IF email IS NONE AND string::contains(username, '@') THEN username ELSE email END,
+    password_changed_at = password_changed_at ?? updated ?? created ?? time::now()
+WHERE
+    role IS NONE
+    OR status IS NONE
+    OR display_name IS NONE
+    OR (email IS NONE AND string::contains(username, '@'))
+    OR password_changed_at IS NONE;

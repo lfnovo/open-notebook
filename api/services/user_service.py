@@ -20,6 +20,14 @@ from open_notebook.database.repositories.user_repository import UserRepository
 from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 
+def _default_user_role(row: dict) -> str:
+    return row.get("role") or ("admin" if row.get("username") == "admin" else "user")
+
+
+def _default_user_status(row: dict) -> str:
+    return row.get("status") or "active"
+
+
 def _user_response(row: dict, *, temporary_password: Optional[str] = None) -> UserResponse:
     response_cls = UserCreateResponse if temporary_password is not None else UserResponse
     data = dict(
@@ -27,8 +35,8 @@ def _user_response(row: dict, *, temporary_password: Optional[str] = None) -> Us
         username=row.get("username", ""),
         email=row.get("email"),
         display_name=row.get("display_name"),
-        role=row.get("role", "user"),
-        status=row.get("status", "active"),
+        role=_default_user_role(row),
+        status=_default_user_status(row),
         locale=row.get("locale"),
         theme=row.get("theme"),
         created=str(row.get("created", "")),
@@ -48,8 +56,8 @@ def _user_list_item(row: dict) -> UserListItem:
         username=row.get("username", ""),
         email=row.get("email"),
         display_name=row.get("display_name"),
-        role=row.get("role", "user"),
-        status=row.get("status", "active"),
+        role=_default_user_role(row),
+        status=_default_user_status(row),
         created=str(row.get("created", "")),
         updated=str(row.get("updated", "")),
         last_login_at=str(row.get("last_login_at", ""))
@@ -134,8 +142,8 @@ async def update_user_use_case(
     if not row:
         raise NotFoundError("User not found")
 
-    current_role = row.get("role", "user")
-    current_status = row.get("status", "active")
+    current_role = _default_user_role(row)
+    current_status = _default_user_status(row)
     next_role = request.role or current_role
     next_status = request.status or current_status
 
@@ -153,6 +161,10 @@ async def update_user_use_case(
         raise InvalidInputError("Admins cannot disable their own account")
 
     updates = {}
+    if not row.get("role"):
+        updates["role"] = current_role
+    if not row.get("status"):
+        updates["status"] = current_status
     if request.display_name is not None:
         updates["display_name"] = request.display_name
     if request.role is not None:

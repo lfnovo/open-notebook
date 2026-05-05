@@ -1,0 +1,1 @@
+-- Migration 25 rollback: data backfill only, no schema changes to revert.

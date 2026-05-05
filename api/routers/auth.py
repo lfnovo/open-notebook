@@ -78,6 +78,30 @@ def _get_user_id(user: Dict[str, Any]) -> str:
     return str(user_id)
 
 
+def _default_user_role(user: Dict[str, Any]) -> str:
+    return user.get("role") or ("admin" if user.get("username") == "admin" else "user")
+
+
+def _default_user_status(user: Dict[str, Any]) -> str:
+    return user.get("status") or "active"
+
+
+def _required_user_defaults(user: Dict[str, Any]) -> Dict[str, str]:
+    updates = {}
+    if not user.get("role"):
+        updates["role"] = _default_user_role(user)
+    if not user.get("status"):
+        updates["status"] = _default_user_status(user)
+    return updates
+
+
+def _optional_profile_value(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
 @router.get("/status", response_model=AuthStatusResponse)
 async def get_auth_status():
     """
@@ -171,8 +195,8 @@ async def setup_admin(request: SetupRequest, http_request: Request):
                 id=str(user.get("id", "")),
                 username=user.get("username", request.username),
                 display_name=user.get("display_name"),
-                role=user.get("role", "admin"),
-                status=user.get("status", "active"),
+                role=_default_user_role(user),
+                status=_default_user_status(user),
                 created=str(user.get("created", "")),
                 updated=str(user.get("updated", "")),
             )
@@ -229,7 +253,7 @@ async def login(request: LoginRequest):
             message="Invalid username or password",
         )
 
-    if user.get("status", "active") != "active":
+    if _default_user_status(user) != "active":
         await AuditLogRepository.create(
             action="auth.login.failed",
             actor_username=request.username,
@@ -248,7 +272,10 @@ async def login(request: LoginRequest):
         await repo_update(
             "app_user",
             user_id,
-            {"last_login_at": datetime.now(timezone.utc)},
+            {
+                "last_login_at": datetime.now(timezone.utc),
+                **_required_user_defaults(user),
+            },
         )
         await AuditLogRepository.create(
             action="auth.login.success",
@@ -324,6 +351,11 @@ async def change_password(request: ChangePasswordRequest, http_request: Request)
                     "username": username,
                     "hashed_password": hashed,
                     "password_changed_at": datetime.now(timezone.utc),
+                    **(
+                        _required_user_defaults(user)
+                        if users
+                        else {"role": "admin", "status": "active"}
+                    ),
                 },
             )
             return ChangePasswordResponse(
@@ -359,6 +391,7 @@ async def change_password(request: ChangePasswordRequest, http_request: Request)
             {
                 "hashed_password": hashed,
                 "password_changed_at": datetime.now(timezone.utc),
+                **_required_user_defaults(user),
             },
         )
         try:
@@ -412,8 +445,8 @@ async def get_current_user(http_request: Request):
         username=user.get("username", username),
         email=user.get("email"),
         display_name=user.get("display_name"),
-        role=user.get("role", "user"),
-        status=user.get("status", "active"),
+        role=_default_user_role(user),
+        status=_default_user_status(user),
         locale=user.get("locale"),
         theme=user.get("theme"),
         created=str(user.get("created", "")),
@@ -436,13 +469,13 @@ async def update_current_user(request: ProfileUpdateRequest, http_request: Reque
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     user_id = _get_user_id(user)
-    updates = {}
+    updates = _required_user_defaults(user)
     if request.display_name is not None:
-        updates["display_name"] = request.display_name
+        updates["display_name"] = _optional_profile_value(request.display_name)
     if request.locale is not None:
-        updates["locale"] = request.locale
+        updates["locale"] = _optional_profile_value(request.locale)
     if request.theme is not None:
-        updates["theme"] = request.theme
+        updates["theme"] = _optional_profile_value(request.theme)
     if updates:
         updated = await repo_update("app_user", user_id, updates)
         user = updated[0] if updated else {**user, **updates}
@@ -451,8 +484,8 @@ async def update_current_user(request: ProfileUpdateRequest, http_request: Reque
         username=user.get("username", username),
         email=user.get("email"),
         display_name=user.get("display_name"),
-        role=user.get("role", "user"),
-        status=user.get("status", "active"),
+        role=_default_user_role(user),
+        status=_default_user_status(user),
         locale=user.get("locale"),
         theme=user.get("theme"),
         created=str(user.get("created", "")),
@@ -593,6 +626,7 @@ async def auth_reset_password(request: ResetPasswordRequest):
             {
                 "hashed_password": hashed,
                 "password_changed_at": datetime.now(timezone.utc),
+                **_required_user_defaults(user),
             },
         )
         await AuditLogRepository.create(

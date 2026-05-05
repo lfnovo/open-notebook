@@ -76,6 +76,34 @@ describe('ProfilePage', () => {
     })
   })
 
+  it('clears language and theme preferences when system default is selected', async () => {
+    vi.mocked(useProfile).mockReturnValue({
+      data: {
+        id: 'app_user:admin',
+        username: 'admin',
+        display_name: '',
+        email: 'admin@example.com',
+        role: 'admin',
+        status: 'active',
+        last_login_at: '2026-05-05T00:00:00Z',
+        locale: null,
+        theme: null,
+      },
+      isLoading: false,
+      error: null,
+    } as any)
+
+    render(<ProfilePage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(updateProfile).toHaveBeenCalledWith({
+      display_name: null,
+      locale: null,
+      theme: null,
+    })
+  })
+
   it('signs out from the profile page', () => {
     render(<ProfilePage />)
 

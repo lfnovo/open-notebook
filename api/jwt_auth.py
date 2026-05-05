@@ -59,13 +59,21 @@ def get_user_auth_version(user: Dict[str, Any]) -> str:
     return basis.astimezone(timezone.utc).isoformat(timespec="microseconds")
 
 
+def _default_user_role(user: Dict[str, Any]) -> str:
+    return user.get("role") or ("admin" if user.get("username") == "admin" else "user")
+
+
+def _default_user_status(user: Dict[str, Any]) -> str:
+    return user.get("status") or "active"
+
+
 def create_jwt_token(username: str, user_id: str, user: Dict[str, Any]) -> str:
     now = int(time.time())
     payload = {
         "sub": user_id,
         "username": username,
-        "role": user.get("role", "user"),
-        "status": user.get("status", "active"),
+        "role": _default_user_role(user),
+        "status": _default_user_status(user),
         "auth_version": get_user_auth_version(user),
         "exp": now + JWT_EXPIRY_SECONDS,
         "iat": now,
@@ -120,7 +128,7 @@ async def validate_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         logger.debug("JWT token user no longer exists")
         return None
 
-    if user.get("status", "active") != "active":
+    if _default_user_status(user) != "active":
         logger.info(f"JWT token rejected for inactive user={username}")
         return None
 
@@ -133,8 +141,8 @@ async def validate_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
     payload["sub"] = str(user.get("id", payload.get("sub")))
-    payload["role"] = user.get("role", "user")
-    payload["status"] = user.get("status", "active")
+    payload["role"] = _default_user_role(user)
+    payload["status"] = _default_user_status(user)
     payload["display_name"] = user.get("display_name")
     payload["email"] = user.get("email")
     return payload

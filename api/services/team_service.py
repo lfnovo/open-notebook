@@ -253,9 +253,9 @@ async def delete_team_use_case(team_id: str, *, actor: CurrentUser) -> DeleteRes
     if actor.role != "admin":
         raise PermissionError("Admin privileges required")
     deps = await TeamRepository.dependency_counts(team_id)
-    if deps.get("active_members", 0) > 0 or deps.get("share_grants", 0) > 0:
+    if deps.get("share_grants", 0) > 0:
         raise InvalidInputError(
-            "Team cannot be deleted while it has active members or share grants"
+            "Team cannot be deleted while it has share grants"
         )
     await TeamRepository.delete_team(team_id)
     await AuditLogRepository.create(

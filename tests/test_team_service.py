@@ -234,3 +234,44 @@ async def test_unknown_model_id_rejected(
             TeamModelAllowlistUpdateRequest(model_ids=["model:missing"]),
             actor=regular_actor("owner"),
         )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.delete_team", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.dependency_counts", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_system_admin_can_delete_team_with_members_when_no_shares(
+    mock_get_team,
+    mock_dependency_counts,
+    mock_delete_team,
+    mock_audit,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_dependency_counts.return_value = {"active_members": 2, "share_grants": 0}
+    actor = CurrentUser(id="app_user:admin", username="admin", role="admin")
+
+    response = await team_service.delete_team_use_case("team:research", actor=actor)
+
+    assert response.success is True
+    mock_delete_team.assert_awaited_once_with("team:research")
+    mock_audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.delete_team", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.dependency_counts", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_system_admin_cannot_delete_team_with_share_grants(
+    mock_get_team,
+    mock_dependency_counts,
+    mock_delete_team,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_dependency_counts.return_value = {"active_members": 1, "share_grants": 1}
+    actor = CurrentUser(id="app_user:admin", username="admin", role="admin")
+
+    with pytest.raises(InvalidInputError):
+        await team_service.delete_team_use_case("team:research", actor=actor)
+
+    mock_delete_team.assert_not_awaited()

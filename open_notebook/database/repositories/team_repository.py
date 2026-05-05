@@ -4,8 +4,8 @@ from typing import Any, Optional
 
 from open_notebook.database.repository import (
     ensure_record_id,
-    repo_delete,
     repo_query,
+    repo_transaction,
     repo_update,
 )
 
@@ -95,7 +95,15 @@ class TeamRepository:
 
     @staticmethod
     async def delete_team(team_id: str) -> None:
-        await repo_delete(team_id)
+        await repo_transaction(
+            """
+            DELETE team_member WHERE team = $team_id;
+            DELETE team_model WHERE team = $team_id;
+            DELETE team_transformation WHERE team = $team_id;
+            DELETE $team_id;
+            """,
+            {"team_id": ensure_record_id(team_id)},
+        )
 
     @staticmethod
     async def list_members(

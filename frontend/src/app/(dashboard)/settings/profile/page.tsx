@@ -2,7 +2,6 @@
 
 import { FormEvent, useEffect, useState } from 'react'
 import { Loader2, UserCircle } from 'lucide-react'
-import { AppShell } from '@/components/layout/AppShell'
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
@@ -49,8 +48,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 p-6">
           <div className="flex items-center gap-3">
             <UserCircle className="h-6 w-6 text-muted-foreground" />
@@ -153,7 +151,6 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-    </AppShell>
   )
 }
 

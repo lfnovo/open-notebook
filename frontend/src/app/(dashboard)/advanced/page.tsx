@@ -1,6 +1,5 @@
 'use client'
 
-import { AppShell } from '@/components/layout/AppShell'
 import { RebuildEmbeddings } from './components/RebuildEmbeddings'
 import { SystemInfo } from './components/SystemInfo'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -8,8 +7,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 export default function AdvancedPage() {
   const { t } = useTranslation()
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="max-w-4xl mx-auto space-y-6">
             <div>
@@ -24,6 +22,5 @@ export default function AdvancedPage() {
           </div>
         </div>
       </div>
-    </AppShell>
   )
 }

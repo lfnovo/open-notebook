@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from 'react'
 
-import { AppShell } from '@/components/layout/AppShell'
 import { NotebookList } from './components/NotebookList'
 import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw } from 'lucide-react'
@@ -48,7 +47,7 @@ export default function NotebooksPage() {
   const isSearching = normalizedQuery.length > 0
 
   return (
-    <AppShell>
+    <>
       <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
@@ -105,6 +104,6 @@ export default function NotebooksPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
-    </AppShell>
+    </>
   )
 }

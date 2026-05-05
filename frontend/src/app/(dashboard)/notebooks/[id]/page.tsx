@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
-import { AppShell } from '@/components/layout/AppShell'
 import { NotebookHeader } from '../components/NotebookHeader'
 import { SourcesColumn } from '../components/SourcesColumn'
 import { NotesColumn } from '../components/NotesColumn'
@@ -147,19 +146,16 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
 
   if (!notebook) {
     return (
-      <AppShell>
-        <div className="p-6">
+              <div className="p-6">
           <h1 className="text-2xl font-bold mb-4">{t.notebooks.notFound}</h1>
           <p className="text-muted-foreground">{t.notebooks.notFoundDesc}</p>
         </div>
-      </AppShell>
     )
   }
 
   if (notebook.password && !isUnlocked) {
     return (
-      <AppShell>
-        <div className="flex-1 flex flex-col items-center justify-center p-6 h-[calc(100vh-4rem)]">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 h-[calc(100vh-4rem)]">
           <div className="max-w-md w-full space-y-6 bg-card p-8 rounded-xl border shadow-sm">
             <div className="space-y-2 text-center">
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
@@ -189,13 +185,11 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
             </form>
           </div>
         </div>
-      </AppShell>
     )
   }
 
   return (
-    <AppShell>
-      <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 p-6 pb-0">
           <NotebookHeader notebook={notebook} />
         </div>
@@ -310,6 +304,5 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
       </div>
-    </AppShell>
   )
 }

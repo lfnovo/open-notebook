@@ -3,7 +3,6 @@
 import { useMemo, useState } from 'react'
 import { AlertTriangle } from 'lucide-react'
 
-import { AppShell } from '@/components/layout/AppShell'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { EpisodesTab } from '@/components/podcasts/EpisodesTab'
@@ -25,8 +24,7 @@ export default function PodcastsPage() {
   }, [episodeProfiles, speakerProfiles])
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="px-6 py-6 space-y-6">
           <header className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">{t.podcasts.listTitle}</h1>
@@ -74,6 +72,5 @@ export default function PodcastsPage() {
           </Tabs>
         </div>
       </div>
-    </AppShell>
   )
 }

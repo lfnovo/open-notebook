@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Search, ShieldCheck } from 'lucide-react'
-import { AppShell } from '@/components/layout/AppShell'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -43,8 +42,7 @@ export default function AuditLogPage() {
   }
 
   return (
-    <AppShell>
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-6">
         <div className="flex items-center gap-3">
           <ShieldCheck className="h-6 w-6 text-muted-foreground" />
           <div>
@@ -158,6 +156,5 @@ export default function AuditLogPage() {
           </Button>
         </div>
       </div>
-    </AppShell>
   )
 }

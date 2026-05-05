@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useEffect, useId } from 'react'
 import { useForm } from 'react-hook-form'
-import { AppShell } from '@/components/layout/AppShell'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -1321,17 +1320,14 @@ export default function ApiKeysPage() {
 
   if (isLoading) {
     return (
-      <AppShell>
-        <div className="flex items-center justify-center min-h-[60vh]">
+              <div className="flex items-center justify-center min-h-[60vh]">
           <LoadingSpinner size="lg" />
         </div>
-      </AppShell>
     )
   }
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
           {/* Header */}
           <div>
@@ -1379,6 +1375,5 @@ export default function ApiKeysPage() {
           </div>
         </div>
       </div>
-    </AppShell>
   )
 }

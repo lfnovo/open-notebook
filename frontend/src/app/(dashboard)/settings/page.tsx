@@ -1,6 +1,5 @@
 'use client'
 
-import { AppShell } from '@/components/layout/AppShell'
 import { SettingsForm } from './components/SettingsForm'
 import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm'
 import { useSettings } from '@/lib/hooks/use-settings'
@@ -13,8 +12,7 @@ export default function SettingsPage() {
   const { refetch } = useSettings()
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <div className="max-w-4xl">
             <div className="flex items-center gap-4 mb-6">
@@ -31,6 +29,5 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
-    </AppShell>
   )
 }

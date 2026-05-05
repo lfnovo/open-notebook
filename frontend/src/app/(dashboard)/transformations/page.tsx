@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { AppShell } from '@/components/layout/AppShell'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DefaultPromptEditor } from './components/DefaultPromptEditor'
@@ -24,8 +23,7 @@ export default function TransformationsPage() {
   }
 
   return (
-    <AppShell>
-      <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -75,6 +73,5 @@ export default function TransformationsPage() {
         </Tabs>
         </div>
       </div>
-    </AppShell>
   )
 }

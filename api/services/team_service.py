@@ -11,12 +11,23 @@ from api.models import (
     TeamMemberResponse,
     TeamMemberUpsertRequest,
     TeamMemberUser,
+    TeamModelAllowlistResponse,
+    TeamModelAllowlistUpdateRequest,
     TeamResponse,
+    TeamTransformationAllowlistResponse,
+    TeamTransformationAllowlistUpdateRequest,
     TeamUpdateRequest,
+    ModelResponse,
+    TransformationResponse,
+)
+from open_notebook.ai.models import Model
+from open_notebook.database.repositories.team_allowlist_repository import (
+    TeamAllowlistRepository,
 )
 from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from open_notebook.database.repositories.team_repository import TeamRepository
 from open_notebook.database.repositories.user_repository import UserRepository
+from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 
@@ -61,6 +72,61 @@ def _member_response(row: dict) -> TeamMemberResponse:
     )
 
 
+def _model_response(row: dict) -> ModelResponse:
+    return ModelResponse(
+        id=str(row.get("id", "")),
+        name=row.get("name", ""),
+        provider=row.get("provider", ""),
+        type=row.get("type", ""),
+        credential=str(row.get("credential")) if row.get("credential") else None,
+        created=str(row.get("created", "")),
+        updated=str(row.get("updated", "")),
+    )
+
+
+def _transformation_response(row: dict) -> TransformationResponse:
+    return TransformationResponse(
+        id=str(row.get("id", "")),
+        name=row.get("name", ""),
+        title=row.get("title", ""),
+        description=row.get("description", ""),
+        prompt=row.get("prompt", ""),
+        apply_default=bool(row.get("apply_default", False)),
+        created=str(row.get("created", "")),
+        updated=str(row.get("updated", "")),
+    )
+
+
+def _team_model_allowlist_response(
+    team_id: str, rows: list[dict]
+) -> TeamModelAllowlistResponse:
+    models = [
+        _model_response(row["model"])
+        for row in rows
+        if isinstance(row.get("model"), dict)
+    ]
+    return TeamModelAllowlistResponse(
+        team_id=team_id,
+        model_ids=[model.id for model in models],
+        models=models,
+    )
+
+
+def _team_transformation_allowlist_response(
+    team_id: str, rows: list[dict]
+) -> TeamTransformationAllowlistResponse:
+    transformations = [
+        _transformation_response(row["transformation"])
+        for row in rows
+        if isinstance(row.get("transformation"), dict)
+    ]
+    return TeamTransformationAllowlistResponse(
+        team_id=team_id,
+        transformation_ids=[item.id for item in transformations],
+        transformations=transformations,
+    )
+
+
 async def _ensure_team_manager(team_id: str, actor: CurrentUser) -> None:
     if actor.role == "admin":
         return
@@ -70,6 +136,18 @@ async def _ensure_team_manager(team_id: str, actor: CurrentUser) -> None:
         "admin",
     }:
         raise PermissionError("Team owner or admin privileges required")
+
+
+async def _ensure_workspace_team_for_allowlist(
+    team_id: str, actor: CurrentUser
+) -> dict:
+    team = await TeamRepository.get_team(team_id)
+    if not team:
+        raise NotFoundError("Team not found")
+    if team.get("type") == "system":
+        raise InvalidInputError("System teams cannot have managed allowlists")
+    await _ensure_team_manager(team_id, actor)
+    return team
 
 
 async def list_teams_use_case(
@@ -283,3 +361,73 @@ async def remove_member_use_case(
         metadata={"user_id": user_id},
     )
     return DeleteResponse(success=True, message="Team member removed")
+
+
+async def list_team_models_use_case(
+    team_id: str, *, actor: CurrentUser
+) -> TeamModelAllowlistResponse:
+    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    rows = await TeamAllowlistRepository.list_team_models(team_id)
+    return _team_model_allowlist_response(team_id, rows)
+
+
+async def replace_team_models_use_case(
+    team_id: str,
+    request: TeamModelAllowlistUpdateRequest,
+    *,
+    actor: CurrentUser,
+) -> TeamModelAllowlistResponse:
+    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    for model_id in request.model_ids:
+        if not await Model.get(model_id):
+            raise NotFoundError("Model not found")
+
+    rows = await TeamAllowlistRepository.replace_team_models(
+        team_id,
+        request.model_ids,
+        actor.id,
+    )
+    await AuditLogRepository.create(
+        action="team.models_updated",
+        actor_id=actor.id,
+        actor_username=actor.username,
+        target_type="team",
+        target_id=team_id,
+        metadata={"model_ids": request.model_ids},
+    )
+    return _team_model_allowlist_response(team_id, rows)
+
+
+async def list_team_transformations_use_case(
+    team_id: str, *, actor: CurrentUser
+) -> TeamTransformationAllowlistResponse:
+    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    rows = await TeamAllowlistRepository.list_team_transformations(team_id)
+    return _team_transformation_allowlist_response(team_id, rows)
+
+
+async def replace_team_transformations_use_case(
+    team_id: str,
+    request: TeamTransformationAllowlistUpdateRequest,
+    *,
+    actor: CurrentUser,
+) -> TeamTransformationAllowlistResponse:
+    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    for transformation_id in request.transformation_ids:
+        if not await Transformation.get(transformation_id):
+            raise NotFoundError("Transformation not found")
+
+    rows = await TeamAllowlistRepository.replace_team_transformations(
+        team_id,
+        request.transformation_ids,
+        actor.id,
+    )
+    await AuditLogRepository.create(
+        action="team.transformations_updated",
+        actor_id=actor.id,
+        actor_username=actor.username,
+        target_type="team",
+        target_id=team_id,
+        metadata={"transformation_ids": request.transformation_ids},
+    )
+    return _team_transformation_allowlist_response(team_id, rows)

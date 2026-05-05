@@ -924,6 +924,26 @@ class TeamMemberUpsertRequest(BaseModel):
     status: Literal["active", "disabled"] = "active"
 
 
+class TeamModelAllowlistUpdateRequest(BaseModel):
+    model_ids: List[str] = Field(default_factory=list)
+
+
+class TeamModelAllowlistResponse(BaseModel):
+    team_id: str
+    model_ids: List[str]
+    models: List[ModelResponse]
+
+
+class TeamTransformationAllowlistUpdateRequest(BaseModel):
+    transformation_ids: List[str] = Field(default_factory=list)
+
+
+class TeamTransformationAllowlistResponse(BaseModel):
+    team_id: str
+    transformation_ids: List[str]
+    transformations: List[TransformationResponse]
+
+
 class ShareGrantCreateRequest(BaseModel):
     resource_type: Literal["source", "notebook"]
     resource_id: str

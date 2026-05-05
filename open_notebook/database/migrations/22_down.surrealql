@@ -5,3 +5,5 @@ REMOVE TABLE IF EXISTS team_transformation;
 REMOVE INDEX IF EXISTS idx_team_model_team ON TABLE team_model;
 REMOVE INDEX IF EXISTS idx_team_model_team_model ON TABLE team_model;
 REMOVE TABLE IF EXISTS team_model;
+
+DEFINE FIELD OVERWRITE metadata ON TABLE audit_log TYPE option<object>;

@@ -11,15 +11,23 @@ from api.models import (
     TeamListResponse,
     TeamMemberResponse,
     TeamMemberUpsertRequest,
+    TeamModelAllowlistResponse,
+    TeamModelAllowlistUpdateRequest,
     TeamResponse,
+    TeamTransformationAllowlistResponse,
+    TeamTransformationAllowlistUpdateRequest,
     TeamUpdateRequest,
 )
 from api.services.team_service import (
     create_team_use_case,
     delete_team_use_case,
+    list_team_models_use_case,
+    list_team_transformations_use_case,
     list_teams_use_case,
     list_members_use_case,
     remove_member_use_case,
+    replace_team_models_use_case,
+    replace_team_transformations_use_case,
     update_team_use_case,
     upsert_member_use_case,
 )
@@ -90,6 +98,74 @@ async def delete_team(
         raise HTTPException(status_code=403, detail=str(e))
     except InvalidInputError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+@router.get("/{team_id}/models", response_model=TeamModelAllowlistResponse)
+async def list_team_models(
+    team_id: str,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await list_team_models_use_case(team_id, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{team_id}/models", response_model=TeamModelAllowlistResponse)
+async def replace_team_models(
+    team_id: str,
+    request: TeamModelAllowlistUpdateRequest,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await replace_team_models_use_case(team_id, request, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/{team_id}/transformations",
+    response_model=TeamTransformationAllowlistResponse,
+)
+async def list_team_transformations(
+    team_id: str,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await list_team_transformations_use_case(team_id, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put(
+    "/{team_id}/transformations",
+    response_model=TeamTransformationAllowlistResponse,
+)
+async def replace_team_transformations(
+    team_id: str,
+    request: TeamTransformationAllowlistUpdateRequest,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await replace_team_transformations_use_case(team_id, request, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/{team_id}/members", response_model=list[TeamMemberResponse])

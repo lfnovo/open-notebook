@@ -9,9 +9,18 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client():
     """Create test client after environment variables have been cleared by conftest."""
+    from api.auth import CurrentUser, require_admin
     from api.main import app
 
-    return TestClient(app)
+    app.dependency_overrides[require_admin] = lambda: CurrentUser(
+        id="app_user:admin",
+        username="admin",
+        role="admin",
+    )
+    try:
+        yield TestClient(app)
+    finally:
+        app.dependency_overrides.pop(require_admin, None)
 
 
 class TestCredentialCascadeDelete:

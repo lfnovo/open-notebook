@@ -23,12 +23,15 @@ class TeamRepository:
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         conditions = []
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
+        params: dict[str, Any] = {
+            "limit": limit,
+            "offset": offset,
+            "user_id": ensure_record_id(user_id) if user_id else None,
+        }
         if not include_all_for_admin:
             conditions.append(
                 "(type = 'system') OR id IN (SELECT VALUE team FROM team_member WHERE user = $user_id AND status = 'active')"
             )
-            params["user_id"] = ensure_record_id(user_id) if user_id else None
         if q:
             conditions.append(
                 "(string::contains(string::lowercase(name), string::lowercase($q)) "
@@ -40,7 +43,8 @@ class TeamRepository:
             f"""
             SELECT *,
                 (SELECT VALUE count() FROM team_member WHERE team = $parent.id AND status = 'active' GROUP ALL)[0] OR 0 AS member_count,
-                (SELECT VALUE count() FROM share_grant WHERE target_type = 'team' AND target_id = type::string($parent.id) GROUP ALL)[0] OR 0 AS share_count
+                (SELECT VALUE count() FROM share_grant WHERE target_type = 'team' AND target_id = type::string($parent.id) GROUP ALL)[0] OR 0 AS share_count,
+                (SELECT VALUE role FROM team_member WHERE team = $parent.id AND user = $user_id AND status = 'active' LIMIT 1)[0] AS current_user_role
             FROM team
             {where_clause}
             ORDER BY type ASC, name ASC

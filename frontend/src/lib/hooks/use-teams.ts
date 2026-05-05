@@ -13,6 +13,11 @@ export function useTeams(q?: string) {
   })
 }
 
+export function useCanManageTeams() {
+  const { data } = useTeams()
+  return Boolean(data?.items.some((team) => team.can_manage))
+}
+
 export function useTeamMembers(teamId?: string) {
   return useQuery({
     queryKey: teamId ? QUERY_KEYS.teamMembers(teamId) : ['teams', 'members', 'none'],

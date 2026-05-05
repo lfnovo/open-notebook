@@ -36,7 +36,12 @@ def _slugify(value: str) -> str:
     return slug or "team"
 
 
-def _team_response(row: dict) -> TeamResponse:
+def _team_response(row: dict, *, actor: Optional[CurrentUser] = None) -> TeamResponse:
+    current_user_role = row.get("current_user_role")
+    can_manage = current_user_role in {"owner", "admin"}
+    if actor and actor.role == "admin" and row.get("type") != "system":
+        can_manage = True
+
     return TeamResponse(
         id=str(row.get("id", "")),
         slug=row.get("slug", ""),
@@ -47,6 +52,8 @@ def _team_response(row: dict) -> TeamResponse:
         updated=str(row.get("updated", "")),
         member_count=int(row.get("member_count", 0) or 0),
         share_count=int(row.get("share_count", 0) or 0),
+        current_user_role=current_user_role,
+        can_manage=can_manage,
     )
 
 
@@ -165,7 +172,7 @@ async def list_teams_use_case(
         offset=offset,
     )
     return TeamListResponse(
-        items=[_team_response(row) for row in rows],
+        items=[_team_response(row, actor=actor) for row in rows],
         total=len(rows),
         limit=limit,
         offset=offset,
@@ -203,7 +210,8 @@ async def create_team_use_case(
         metadata={"slug": slug},
     )
     row["member_count"] = 1
-    return _team_response(row)
+    row["current_user_role"] = "owner"
+    return _team_response(row, actor=actor)
 
 
 async def update_team_use_case(
@@ -233,7 +241,7 @@ async def update_team_use_case(
             target_id=team_id,
             metadata=updates,
         )
-    return _team_response(row)
+    return _team_response(row, actor=actor)
 
 
 async def delete_team_use_case(team_id: str, *, actor: CurrentUser) -> DeleteResponse:

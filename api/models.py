@@ -882,6 +882,8 @@ class TeamResponse(BaseModel):
     updated: str
     member_count: int = 0
     share_count: int = 0
+    current_user_role: Optional[Literal["owner", "admin", "member", "viewer"]] = None
+    can_manage: bool = False
 
 
 class TeamListResponse(BaseModel):

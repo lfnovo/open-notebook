@@ -17,6 +17,62 @@ def regular_actor(role: str = "user") -> CurrentUser:
 
 
 @pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.list_teams", new_callable=AsyncMock)
+async def test_list_teams_marks_manageable_team_for_team_admin(mock_list_teams):
+    mock_list_teams.return_value = [
+        {
+            "id": "team:research",
+            "slug": "research",
+            "name": "Research",
+            "type": "workspace",
+            "created": "2026-05-05T00:00:00Z",
+            "updated": "2026-05-05T00:00:00Z",
+            "member_count": 3,
+            "share_count": 0,
+            "current_user_role": "admin",
+        }
+    ]
+
+    response = await team_service.list_teams_use_case(
+        actor=regular_actor("admin"),
+        q=None,
+        limit=50,
+        offset=0,
+    )
+
+    assert response.items[0].current_user_role == "admin"
+    assert response.items[0].can_manage is True
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.list_teams", new_callable=AsyncMock)
+async def test_list_teams_does_not_mark_member_as_manager(mock_list_teams):
+    mock_list_teams.return_value = [
+        {
+            "id": "team:research",
+            "slug": "research",
+            "name": "Research",
+            "type": "workspace",
+            "created": "2026-05-05T00:00:00Z",
+            "updated": "2026-05-05T00:00:00Z",
+            "member_count": 3,
+            "share_count": 0,
+            "current_user_role": "member",
+        }
+    ]
+
+    response = await team_service.list_teams_use_case(
+        actor=regular_actor("member"),
+        q=None,
+        limit=50,
+        offset=0,
+    )
+
+    assert response.items[0].current_user_role == "member"
+    assert response.items[0].can_manage is False
+
+
+@pytest.mark.asyncio
 @patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamAllowlistRepository.replace_team_models", new_callable=AsyncMock)
 @patch("api.services.team_service.Model.get", new_callable=AsyncMock)

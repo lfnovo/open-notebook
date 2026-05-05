@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/hooks/use-auth'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
+import { useCanManageTeams } from '@/lib/hooks/use-teams'
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +52,6 @@ import type { LucideIcon } from 'lucide-react'
 
 type NavigationSection = {
   title: string
-  adminOnly?: boolean
   items: Array<{
     name: string
     href: string
@@ -59,62 +59,80 @@ type NavigationSection = {
   }>
 }
 
-const getNavigation = (t: TranslationKeys): NavigationSection[] => [
-  {
-    title: t.navigation.collect,
-    items: [
-      { name: t.navigation.sources, href: '/sources', icon: FileText },
-    ],
-  },
-  {
-    title: t.navigation.process,
-    items: [
-      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
-      { name: t.navigation.askAndSearch, href: '/search', icon: Search },
-    ],
-  },
-  {
-    title: t.navigation.discover,
-    items: [
-      { name: t.navigation.discover, href: '/discover', icon: Globe },
-    ],
-  },
-  {
-    title: t.navigation.account,
-    items: [
-      { name: t.navigation.profile, href: '/settings/profile', icon: UserCircle },
-    ],
-  },
-  {
-    title: t.navigation.manage,
-    items: [
-      { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
-      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
-      { name: t.navigation.settings, href: '/settings', icon: Settings },
-      { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
-    ],
-  },
-  {
-    title: t.navigation.admin,
-    adminOnly: true,
-    items: [
-      { name: t.navigation.users, href: '/settings/users', icon: UserCog },
-      { name: t.navigation.teams, href: '/settings/teams', icon: Users },
-      { name: t.navigation.auditLog, href: '/advanced/audit-log', icon: ScrollText },
-    ],
-  },
-]
+const getNavigation = (
+  t: TranslationKeys,
+  { isAdmin, canManageTeams }: { isAdmin: boolean; canManageTeams: boolean }
+): NavigationSection[] => {
+  const navigation: NavigationSection[] = [
+    {
+      title: t.navigation.collect,
+      items: [
+        { name: t.navigation.sources, href: '/sources', icon: FileText },
+      ],
+    },
+    {
+      title: t.navigation.process,
+      items: [
+        { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
+        { name: t.navigation.askAndSearch, href: '/search', icon: Search },
+      ],
+    },
+    {
+      title: t.navigation.discover,
+      items: [
+        { name: t.navigation.discover, href: '/discover', icon: Globe },
+      ],
+    },
+    {
+      title: t.navigation.account,
+      items: [
+        { name: t.navigation.profile, href: '/settings/profile', icon: UserCircle },
+      ],
+    },
+  ]
+
+  if (isAdmin) {
+    navigation.push(
+      {
+        title: t.navigation.manage,
+        items: [
+          { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
+          { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
+          { name: t.navigation.settings, href: '/settings', icon: Settings },
+          { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
+        ],
+      },
+      {
+        title: t.navigation.admin,
+        items: [
+          { name: t.navigation.users, href: '/settings/users', icon: UserCog },
+          { name: t.navigation.teams, href: '/settings/teams', icon: Users },
+          { name: t.navigation.auditLog, href: '/advanced/audit-log', icon: ScrollText },
+        ],
+      }
+    )
+  } else if (canManageTeams) {
+    navigation.push({
+      title: t.navigation.manage,
+      items: [
+        { name: t.navigation.teams, href: '/settings/teams', icon: Users },
+      ],
+    })
+  }
+
+  return navigation
+}
 
 type CreateTarget = 'source' | 'notebook'
 
 export function AppSidebar() {
   const { t } = useTranslation()
-  const navigation = getNavigation(t)
   const pathname = usePathname()
   const { logout } = useAuth()
   const { role } = useAuthStore()
   const isAdmin = role === 'admin'
-  const visibleNavigation = navigation.filter((section) => !section.adminOnly || isAdmin)
+  const canManageTeams = useCanManageTeams()
+  const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams })
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
 

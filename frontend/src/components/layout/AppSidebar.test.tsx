@@ -4,6 +4,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useAuthStore } from '@/lib/stores/auth-store'
+import { useCanManageTeams } from '@/lib/hooks/use-teams'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -12,11 +13,16 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
+
+vi.mock('@/lib/hooks/use-teams', () => ({
+  useCanManageTeams: vi.fn(() => false),
+}))
 // But setup.ts has some basic mocks, let's see.
 
 describe('AppSidebar', () => {
   beforeEach(() => {
     useAuthStore.setState({ role: null })
+    vi.mocked(useCanManageTeams).mockReturnValue(false)
     vi.mocked(useSidebarStore).mockReturnValue({
       isCollapsed: false,
       toggleCollapse: vi.fn(),
@@ -99,6 +105,49 @@ describe('AppSidebar', () => {
     expect(manageGroup).not.toHaveTextContent('Users')
     expect(manageGroup).not.toHaveTextContent('Teams')
     expect(manageGroup).not.toHaveTextContent('Audit Log')
+  })
+
+  it('shows system management links for system admins', () => {
+    useAuthStore.setState({ role: 'admin' })
+
+    render(<AppSidebar />)
+
+    expect(screen.getByText('Models')).toBeInTheDocument()
+    expect(screen.getByText('Transformations')).toBeInTheDocument()
+    expect(screen.getByText('Settings')).toBeInTheDocument()
+    expect(screen.getByText('Advanced')).toBeInTheDocument()
+    expect(screen.getByText('Users')).toBeInTheDocument()
+    expect(screen.getByText('Teams')).toBeInTheDocument()
+    expect(screen.getByText('Audit Log')).toBeInTheDocument()
+  })
+
+  it('shows only team management for team managers', () => {
+    useAuthStore.setState({ role: 'user' })
+    vi.mocked(useCanManageTeams).mockReturnValue(true)
+
+    render(<AppSidebar />)
+
+    expect(screen.getByText('Teams')).toBeInTheDocument()
+    expect(screen.queryByText('Models')).not.toBeInTheDocument()
+    expect(screen.queryByText('Transformations')).not.toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
+    expect(screen.queryByText('Advanced')).not.toBeInTheDocument()
+    expect(screen.queryByText('Users')).not.toBeInTheDocument()
+    expect(screen.queryByText('Audit Log')).not.toBeInTheDocument()
+  })
+
+  it('hides management links for regular users', () => {
+    useAuthStore.setState({ role: 'user' })
+
+    render(<AppSidebar />)
+
+    expect(screen.queryByText('Models')).not.toBeInTheDocument()
+    expect(screen.queryByText('Transformations')).not.toBeInTheDocument()
+    expect(screen.queryByText('Settings')).not.toBeInTheDocument()
+    expect(screen.queryByText('Advanced')).not.toBeInTheDocument()
+    expect(screen.queryByText('Users')).not.toBeInTheDocument()
+    expect(screen.queryByText('Teams')).not.toBeInTheDocument()
+    expect(screen.queryByText('Audit Log')).not.toBeInTheDocument()
   })
 
   it('links sidebar public discovery to the dashboard discover route', () => {

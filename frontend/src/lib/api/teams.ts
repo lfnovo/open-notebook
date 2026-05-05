@@ -13,6 +13,8 @@ export interface Team {
   updated: string
   member_count: number
   share_count: number
+  current_user_role?: TeamRole | null
+  can_manage?: boolean
 }
 
 export interface TeamListResponse {

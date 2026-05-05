@@ -84,10 +84,16 @@ export function useUpdateTeamTransformations(teamId: string) {
   })
 }
 
-export function useActiveUsers(q?: string) {
+export function useActiveUsers(q?: string, teamId?: string, enabled = true) {
   return useQuery({
-    queryKey: [...QUERY_KEYS.users, 'active', q || ''],
-    queryFn: () => usersApi.list({ q: q || undefined, status: 'active', limit: 20 }),
+    queryKey: teamId
+      ? [...QUERY_KEYS.teams, teamId, 'assignable-users', q || '']
+      : [...QUERY_KEYS.users, 'active', q || ''],
+    queryFn: () =>
+      teamId
+        ? teamsApi.listAssignableUsers(teamId, { q: q || undefined, limit: 20 })
+        : usersApi.list({ q: q || undefined, status: 'active', limit: 20 }),
+    enabled,
   })
 }
 

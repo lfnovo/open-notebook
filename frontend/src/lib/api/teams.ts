@@ -43,6 +43,13 @@ export interface TeamMemberUser {
   email?: string | null
 }
 
+export interface TeamAssignableUserListResponse {
+  items: TeamMemberUser[]
+  total: number
+  limit: number
+  offset: number
+}
+
 export interface TeamMember {
   id: string
   team: string
@@ -94,6 +101,17 @@ export const teamsApi = {
 
   listMembers: async (teamId: string) => {
     const response = await apiClient.get<TeamMember[]>(`/teams/${teamId}/members`)
+    return response.data
+  },
+
+  listAssignableUsers: async (
+    teamId: string,
+    params?: { q?: string; limit?: number; offset?: number }
+  ) => {
+    const response = await apiClient.get<TeamAssignableUserListResponse>(
+      `/teams/${teamId}/assignable-users`,
+      { params }
+    )
     return response.data
   },
 

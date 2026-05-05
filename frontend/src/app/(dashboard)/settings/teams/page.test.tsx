@@ -158,4 +158,13 @@ describe('TeamsPage', () => {
     expect(screen.getByText('Select an owner')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled()
   })
+
+  it('uses the team-scoped active user lookup when adding members', async () => {
+    render(<TeamsPage />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add Member' }))
+
+    expect(await screen.findByText('Select a user')).toBeInTheDocument()
+    expect(useActiveUsers).toHaveBeenCalledWith('', 'team:research', true)
+  })
 })

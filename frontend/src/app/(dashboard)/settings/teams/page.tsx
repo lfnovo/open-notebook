@@ -204,7 +204,12 @@ function TeamDialog({
   const [slug, setSlug] = useState('')
   const [ownerQuery, setOwnerQuery] = useState('')
   const [ownerId, setOwnerId] = useState('')
-  const { data: ownerData, isLoading: ownersLoading } = useActiveUsers(ownerQuery)
+  const isEditing = !!team
+  const { data: ownerData, isLoading: ownersLoading } = useActiveUsers(
+    ownerQuery,
+    undefined,
+    open && !isEditing
+  )
   const ownerUsers = ownerData?.items ?? []
 
   useEffect(() => {
@@ -214,7 +219,6 @@ function TeamDialog({
     setOwnerId('')
   }, [team, open])
 
-  const isEditing = !!team
   const isPending = createTeam.isPending || updateTeam.isPending
 
   const handleSubmit = (event: FormEvent) => {
@@ -315,7 +319,7 @@ function AddMemberDialog({
   const [query, setQuery] = useState('')
   const [userId, setUserId] = useState('')
   const [role, setRole] = useState<TeamRole>('member')
-  const { data, isLoading } = useActiveUsers(query)
+  const { data, isLoading } = useActiveUsers(query, teamId, open)
   const upsertMember = useUpsertTeamMember(teamId)
   const users = data?.items ?? []
 

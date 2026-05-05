@@ -8,6 +8,7 @@ from api.auth import CurrentUser, get_current_user, require_admin
 from api.models import (
     DeleteResponse,
     TeamCreateRequest,
+    TeamAssignableUserListResponse,
     TeamListResponse,
     TeamMemberResponse,
     TeamMemberUpsertRequest,
@@ -22,6 +23,7 @@ from api.services.team_service import (
     create_team_use_case,
     delete_team_use_case,
     list_team_models_use_case,
+    list_team_assignable_users_use_case,
     list_team_transformations_use_case,
     list_teams_use_case,
     list_members_use_case,
@@ -181,6 +183,28 @@ async def list_members(
         )
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
+
+@router.get("/{team_id}/assignable-users", response_model=TeamAssignableUserListResponse)
+async def list_assignable_users(
+    team_id: str,
+    q: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await list_team_assignable_users_use_case(
+            team_id,
+            actor=actor,
+            q=q,
+            limit=limit,
+            offset=offset,
+        )
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/{team_id}/members", response_model=TeamMemberResponse)

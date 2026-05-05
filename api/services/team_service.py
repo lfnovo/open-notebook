@@ -7,6 +7,7 @@ from api.auth import CurrentUser
 from api.models import (
     DeleteResponse,
     TeamCreateRequest,
+    TeamAssignableUserListResponse,
     TeamListResponse,
     TeamMemberResponse,
     TeamMemberUpsertRequest,
@@ -76,6 +77,15 @@ def _member_response(row: dict) -> TeamMemberResponse:
         status=row.get("status", "active"),
         created=str(row.get("created", "")),
         updated=str(row.get("updated", "")) if row.get("updated") else None,
+    )
+
+
+def _team_member_user(row: dict) -> TeamMemberUser:
+    return TeamMemberUser(
+        id=str(row.get("id", "")),
+        username=row.get("username", ""),
+        display_name=row.get("display_name"),
+        email=row.get("email"),
     )
 
 
@@ -280,6 +290,31 @@ async def list_members_use_case(
     await _ensure_team_manager(team_id, actor)
     rows = await TeamRepository.list_members(team_id=team_id, limit=limit, offset=offset)
     return [_member_response(row) for row in rows]
+
+
+async def list_team_assignable_users_use_case(
+    team_id: str,
+    *,
+    actor: CurrentUser,
+    q: Optional[str],
+    limit: int,
+    offset: int,
+) -> TeamAssignableUserListResponse:
+    await _ensure_team_manager(team_id, actor)
+    rows = await UserRepository.list_users(
+        q=q,
+        role=None,
+        status="active",
+        limit=limit,
+        offset=offset,
+    )
+    total = await UserRepository.count_users(q=q, role=None, status="active")
+    return TeamAssignableUserListResponse(
+        items=[_team_member_user(row) for row in rows],
+        total=total,
+        limit=limit,
+        offset=offset,
+    )
 
 
 async def upsert_member_use_case(

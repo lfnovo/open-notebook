@@ -910,6 +910,13 @@ class TeamMemberUser(BaseModel):
     email: Optional[str] = None
 
 
+class TeamAssignableUserListResponse(BaseModel):
+    items: List[TeamMemberUser]
+    total: int
+    limit: int
+    offset: int
+
+
 class TeamMemberResponse(BaseModel):
     id: str
     team: str

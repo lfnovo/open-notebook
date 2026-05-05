@@ -137,6 +137,51 @@ async def test_list_teams_does_not_mark_member_as_manager(mock_list_teams):
 
 
 @pytest.mark.asyncio
+@patch("api.services.team_service.UserRepository.count_users", new_callable=AsyncMock)
+@patch("api.services.team_service.UserRepository.list_users", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_admin_can_list_active_users_for_member_assignment(
+    mock_get_team,
+    mock_get_member,
+    mock_list_users,
+    mock_count_users,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = {"role": "admin", "status": "active"}
+    mock_list_users.return_value = [
+        {
+            "id": "app_user:writer",
+            "username": "writer",
+            "display_name": "Writer",
+            "email": "writer@example.com",
+            "role": "user",
+            "status": "active",
+        }
+    ]
+    mock_count_users.return_value = 1
+
+    response = await team_service.list_team_assignable_users_use_case(
+        "team:research",
+        actor=regular_actor("admin"),
+        q="wri",
+        limit=20,
+        offset=0,
+    )
+
+    assert response.total == 1
+    assert response.items[0].id == "app_user:writer"
+    assert response.items[0].username == "writer"
+    mock_list_users.assert_awaited_once_with(
+        q="wri",
+        role=None,
+        status="active",
+        limit=20,
+        offset=0,
+    )
+
+
+@pytest.mark.asyncio
 @patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamAllowlistRepository.replace_team_models", new_callable=AsyncMock)
 @patch("api.services.team_service.Model.get", new_callable=AsyncMock)

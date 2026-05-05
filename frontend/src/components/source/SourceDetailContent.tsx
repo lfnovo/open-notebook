@@ -154,6 +154,7 @@ export function SourceDetailContent({
   }, [fetchInsights, fetchSource, fetchTransformations, sourceId])
 
   const createInsight = async () => {
+    if (!canManageSource) return
     if (!selectedTransformation) {
       toast.error(t.sources.selectTransformation)
       return
@@ -202,6 +203,7 @@ export function SourceDetailContent({
   const handleDeleteInsight = async (e?: React.MouseEvent) => {
     e?.preventDefault()
     if (!insightToDelete) return
+    if (!canManageSource) return
 
     try {
       setDeletingInsight(true)
@@ -219,6 +221,7 @@ export function SourceDetailContent({
 
   const handleUpdateTitle = async (title: string) => {
     if (!source || title === source.title) return
+    if (!canManageSource) return
 
     try {
       await sourcesApi.update(sourceId, { title })
@@ -233,6 +236,7 @@ export function SourceDetailContent({
 
   const handleEmbedContent = async () => {
     if (!source) return
+    if (!canManageSource) return
 
     try {
       setIsEmbedding(true)
@@ -358,10 +362,14 @@ export function SourceDetailContent({
     if (!source?.asset?.url) return null
     return getYouTubeVideoId(source.asset.url)
   }, [source?.asset?.url])
+  const canManageSource = Boolean(
+    source && (!source.owner_id || source.owner_id === profile?.id)
+  )
+  const canDeleteCurrentSource = Boolean(source && canDeleteSource(source, profile?.id))
 
   const handleDelete = async () => {
     if (!source) return
-    if (!canDeleteSource(source, profile?.id)) return
+    if (!canDeleteCurrentSource) return
 
     if (confirm(t.sources.deleteSourceConfirm || t.common.confirm)) {
       try {
@@ -404,6 +412,7 @@ export function SourceDetailContent({
               inputClassName="text-2xl font-bold"
               placeholder={t.sources.titlePlaceholder}
               emptyText={t.sources.untitledSource}
+              disabled={!canManageSource}
             />
             <p className="mt-1 text-sm text-muted-foreground">
               {t.sources.id}: {source.id}
@@ -425,7 +434,7 @@ export function SourceDetailContent({
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={!canManageSource}>
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -434,7 +443,7 @@ export function SourceDetailContent({
                   <>
                     <DropdownMenuItem
                       onClick={handleDownloadFile}
-                      disabled={isDownloadingFile || fileAvailable === false}
+                      disabled={!canManageSource || isDownloadingFile || fileAvailable === false}
                     >
                       <Download className="mr-2 h-4 w-4" />
                       {fileAvailable === false
@@ -448,7 +457,7 @@ export function SourceDetailContent({
                 )}
                 <DropdownMenuItem
                   onClick={handleEmbedContent}
-                  disabled={isEmbedding || source.embedded}
+                  disabled={!canManageSource || isEmbedding || source.embedded}
                 >
                   <Database className="mr-2 h-4 w-4" />
                   {isEmbedding ? t.sources.embedding : source.embedded ? t.sources.alreadyEmbedded : t.sources.embedContent}
@@ -457,7 +466,7 @@ export function SourceDetailContent({
                 <DropdownMenuItem
                   className="text-destructive"
                   onClick={handleDelete}
-                  disabled={!canDeleteSource(source, profile?.id)}
+                  disabled={!canDeleteCurrentSource}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
                   {t.sources.deleteSource}
@@ -587,7 +596,7 @@ export function SourceDetailContent({
                       name="transformation"
                       value={selectedTransformation}
                       onValueChange={setSelectedTransformation}
-                      disabled={creatingInsight}
+                      disabled={!canManageSource || creatingInsight}
                     >
                       <SelectTrigger id="transformation-select" className="flex-1">
                         <SelectValue placeholder={t.sources.selectTransformation} />
@@ -603,7 +612,7 @@ export function SourceDetailContent({
                     <Button
                       size="sm"
                       onClick={createInsight}
-                      disabled={!selectedTransformation || creatingInsight}
+                      disabled={!canManageSource || !selectedTransformation || creatingInsight}
                     >
                       {creatingInsight ? (
                         <>
@@ -654,6 +663,7 @@ export function SourceDetailContent({
                             variant="outline"
                             onClick={() => setInsightToDelete(insight.id)}
                             className="text-destructive hover:text-destructive"
+                            disabled={!canManageSource}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -684,7 +694,7 @@ export function SourceDetailContent({
                       <div className="mt-3">
                         <Button
                           onClick={handleEmbedContent}
-                          disabled={isEmbedding}
+                          disabled={!canManageSource || isEmbedding}
                           size="sm"
                         >
                           <Database className="mr-2 h-4 w-4" />
@@ -829,6 +839,7 @@ export function SourceDetailContent({
         }}
         insight={selectedInsight ?? undefined}
         onDelete={async (insightId) => {
+          if (!canManageSource) return
           try {
             await insightsApi.delete(insightId)
             toast.success(t.common.success)

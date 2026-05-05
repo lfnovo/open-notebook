@@ -22,11 +22,13 @@ class SourceState(TypedDict):
     source: Source
     transformation: Annotated[list, operator.add]
     embed: bool
+    team_id: Optional[str]
 
 
 class TransformationState(TypedDict):
     source: Source
     transformation: Transformation
+    team_id: Optional[str]
 
 
 async def content_process(state: SourceState) -> dict:
@@ -83,7 +85,7 @@ async def save_source(state: SourceState) -> dict:
     if state["embed"]:
         if source.full_text and source.full_text.strip():
             logger.debug("Embedding content for vector search")
-            await source.vectorize()
+            await source.vectorize(team_id=state.get("team_id"))
         else:
             logger.warning(
                 f"Source {source.id} has no text content to embed, skipping vectorization"
@@ -105,6 +107,7 @@ def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[
             {
                 "source": state["source"],
                 "transformation": t,
+                "team_id": state.get("team_id"),
             },
         )
         for t in to_apply
@@ -124,10 +127,11 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     await submit_command_job(
         "open_notebook",
         "run_transformation",
-        {
-            "source_id": str(source.id),
-            "transformation_id": str(transformation.id)
-        },
+            {
+                "source_id": str(source.id),
+                "transformation_id": str(transformation.id),
+                "team_id": state.get("team_id"),
+            },
         ensure_registered=False,
     )
 

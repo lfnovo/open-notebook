@@ -4,14 +4,17 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { ShieldAlert, AlertTriangle, ArrowRight, ExternalLink } from 'lucide-react'
+import { ShieldAlert, AlertTriangle, ArrowRight } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useCredentialStatus, useEnvStatus } from '@/lib/hooks/use-credentials'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 export function SetupBanner() {
   const { t } = useTranslation()
   const { data: credentialStatus } = useCredentialStatus()
   const { data: envStatus } = useEnvStatus()
+  const role = useAuthStore((state) => state.role)
+  const isAdmin = role === 'admin'
 
   const encryptionReady = credentialStatus?.encryption_configured ?? true
 
@@ -57,17 +60,19 @@ export function SetupBanner() {
           <span className="text-amber-700 dark:text-amber-300">
             {t.setupBanner.migrationDescription.replace('{count}', providersToMigrate.length.toString())}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            asChild
-            className="shrink-0 border-amber-500 text-amber-700 hover:bg-amber-100 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-900/30"
-          >
-            <Link href="/settings/api-keys">
-              {t.setupBanner.goToSettings}
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="shrink-0 border-amber-500 text-amber-700 hover:bg-amber-100 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-900/30"
+            >
+              <Link href="/settings/api-keys">
+                {t.setupBanner.goToSettings}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </AlertDescription>
       </Alert>
     </div>

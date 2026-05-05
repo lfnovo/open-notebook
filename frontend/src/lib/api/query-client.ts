@@ -37,6 +37,7 @@ export const QUERY_KEYS = {
   teams: ['teams'] as const,
   teamMembers: (teamId: string) => ['teams', teamId, 'members'] as const,
   teamModels: (teamId: string) => ['teams', teamId, 'models'] as const,
+  teamModelDefaults: (teamId: string) => ['teams', teamId, 'model-defaults'] as const,
   teamTransformations: (teamId: string) => ['teams', teamId, 'transformations'] as const,
   users: ['users'] as const,
   shareGrants: (resourceType: string, resourceId: string) => ['share-grants', resourceType, resourceId] as const,

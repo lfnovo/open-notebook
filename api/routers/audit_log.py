@@ -42,8 +42,14 @@ async def list_audit_logs(
         limit=limit,
         offset=offset,
     )
+    total = await AuditLogRepository.count_logs(
+        actor_id=actor_id,
+        action=action,
+        target_id=target_id,
+    )
     return AuditLogListResponse(
         items=[_audit_log_response(row) for row in rows],
         limit=limit,
         offset=offset,
+        total=total,
     )

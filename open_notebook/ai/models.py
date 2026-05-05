@@ -206,10 +206,13 @@ class ModelManager:
         )
         return model
 
-    async def get_embedding_model(self, **kwargs) -> Optional[EmbeddingModel]:
+    async def get_embedding_model(
+        self, team_id: Optional[str] = None, **kwargs
+    ) -> Optional[EmbeddingModel]:
         """Get the default embedding model"""
-        defaults = await self.get_defaults()
-        model_id = defaults.default_embedding_model
+        from open_notebook.ai.model_resolution import resolve_default_model_id
+
+        model_id = await resolve_default_model_id("embedding", team_id=team_id)
         if not model_id:
             return None
         model = await self.get_model(model_id, **kwargs)
@@ -218,7 +221,9 @@ class ModelManager:
         )
         return model
 
-    async def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:
+    async def get_default_model(
+        self, model_type: str, team_id: Optional[str] = None, **kwargs
+    ) -> Optional[ModelType]:
         """
         Get the default model for a specific type.
 
@@ -226,25 +231,9 @@ class ModelManager:
             model_type: The type of model to retrieve (e.g., 'chat', 'embedding', etc.)
             **kwargs: Additional arguments to pass to the model constructor
         """
-        defaults = await self.get_defaults()
-        model_id = None
+        from open_notebook.ai.model_resolution import resolve_default_model_id
 
-        if model_type == "chat":
-            model_id = defaults.default_chat_model
-        elif model_type == "transformation":
-            model_id = (
-                defaults.default_transformation_model or defaults.default_chat_model
-            )
-        elif model_type == "tools":
-            model_id = defaults.default_tools_model or defaults.default_chat_model
-        elif model_type == "embedding":
-            model_id = defaults.default_embedding_model
-        elif model_type == "text_to_speech":
-            model_id = defaults.default_text_to_speech_model
-        elif model_type == "speech_to_text":
-            model_id = defaults.default_speech_to_text_model
-        elif model_type == "large_context":
-            model_id = defaults.large_context_model
+        model_id = await resolve_default_model_id(model_type, team_id=team_id)
 
         if not model_id:
             logger.warning(

@@ -16,7 +16,6 @@ import {
 import {
   Book,
   Search,
-  Mic,
   Bot,
   Shuffle,
   Settings,
@@ -31,16 +30,32 @@ import {
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { TranslationKeys } from '@/lib/locales'
+import { useAuthStore } from '@/lib/stores/auth-store'
+import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
 
-const getNavigationItems = (t: TranslationKeys) => [
-  { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
-  { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
-  { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
-  { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
-  { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
-  { name: t.navigation.settings, href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },
-  { name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
-]
+const getNavigationItems = (
+  t: TranslationKeys,
+  { isAdmin, canManageTeams, hasTeams }: { isAdmin: boolean; canManageTeams: boolean; hasTeams: boolean }
+) => {
+  const items = [
+    { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
+    { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
+    { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
+  ]
+
+  if (isAdmin) {
+    items.push(
+      { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
+      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
+      { name: t.navigation.settings, href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },
+      { name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
+    )
+  } else if (canManageTeams || hasTeams) {
+    items.push({ name: t.navigation.teams, href: '/settings/teams', icon: Settings, keywords: ['team', 'members'] })
+  }
+
+  return items
+}
 
 const getCreateItems = (t: TranslationKeys) => [
   { name: t.common.newSource, action: 'source', icon: FileText },
@@ -56,7 +71,13 @@ const getThemeItems = (t: TranslationKeys) => [
 export function CommandPalette() {
   const { t } = useTranslation()
   const commandInputId = useId()
-  const navigationItems = useMemo(() => getNavigationItems(t), [t])
+  const role = useAuthStore((state) => state.role)
+  const canManageTeams = useCanManageTeams()
+  const hasTeams = useHasTeams()
+  const navigationItems = useMemo(
+    () => getNavigationItems(t, { isAdmin: role === 'admin', canManageTeams, hasTeams }),
+    [t, role, canManageTeams, hasTeams]
+  )
   const createItems = useMemo(() => getCreateItems(t), [t])
   const themeItems = useMemo(() => getThemeItems(t), [t])
   

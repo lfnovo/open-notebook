@@ -32,6 +32,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
         model_id = config.get("configurable", {}).get("model_id") or state.get(
             "model_override"
         )
+        team_id = config.get("configurable", {}).get("team_id")
 
         try:
             # Get the model provisioned
@@ -39,6 +40,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
                 str(payload),
                 model_id,
                 "chat",
+                team_id=team_id,
                 max_tokens=8192,
                 streaming=True, # Enable streaming explicitly
             )
@@ -49,6 +51,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
                     str(payload),
                     model_id,
                     "chat",
+                    team_id=team_id,
                     max_tokens=8192,
                     streaming=True, # Enable streaming explicitly
                 )

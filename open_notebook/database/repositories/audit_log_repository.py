@@ -9,6 +9,28 @@ class AuditLogRepository:
     """Named audit-log queries."""
 
     @staticmethod
+    def _filter_clause(
+        *,
+        actor_id: Optional[str] = None,
+        action: Optional[str] = None,
+        target_id: Optional[str] = None,
+    ) -> tuple[str, dict[str, Any]]:
+        conditions = []
+        params: dict[str, Any] = {}
+        if actor_id:
+            conditions.append("actor_id = $actor_id")
+            params["actor_id"] = ensure_record_id(actor_id)
+        if action:
+            conditions.append("action = $action")
+            params["action"] = action
+        if target_id:
+            conditions.append("target_id = $target_id")
+            params["target_id"] = target_id
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        return where_clause, params
+
+    @staticmethod
     async def create(
         *,
         action: str,
@@ -56,19 +78,12 @@ class AuditLogRepository:
         limit: int = 50,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        conditions = []
-        params: dict[str, Any] = {"limit": limit, "offset": offset}
-        if actor_id:
-            conditions.append("actor_id = $actor_id")
-            params["actor_id"] = ensure_record_id(actor_id)
-        if action:
-            conditions.append("action = $action")
-            params["action"] = action
-        if target_id:
-            conditions.append("target_id = $target_id")
-            params["target_id"] = target_id
-
-        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+        where_clause, params = AuditLogRepository._filter_clause(
+            actor_id=actor_id,
+            action=action,
+            target_id=target_id,
+        )
+        params.update({"limit": limit, "offset": offset})
         return await repo_query(
             f"""
             SELECT * FROM audit_log
@@ -78,3 +93,25 @@ class AuditLogRepository:
             """,
             params,
         )
+
+    @staticmethod
+    async def count_logs(
+        *,
+        actor_id: Optional[str] = None,
+        action: Optional[str] = None,
+        target_id: Optional[str] = None,
+    ) -> int:
+        where_clause, params = AuditLogRepository._filter_clause(
+            actor_id=actor_id,
+            action=action,
+            target_id=target_id,
+        )
+        result = await repo_query(
+            f"""
+            SELECT count() AS count FROM audit_log
+            {where_clause}
+            GROUP ALL
+            """,
+            params,
+        )
+        return int(result[0].get("count", 0)) if result else 0

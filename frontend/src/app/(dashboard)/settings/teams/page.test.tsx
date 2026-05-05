@@ -9,10 +9,12 @@ import {
   useRemoveTeamMember,
   useTeamMembers,
   useTeamModels,
+  useTeamModelDefaults,
   useTeamTransformations,
   useTeams,
   useUpdateTeam,
   useUpdateTeamModels,
+  useUpdateTeamModelDefaults,
   useUpdateTeamTransformations,
   useUpsertTeamMember,
 } from '@/lib/hooks/use-teams'
@@ -33,6 +35,8 @@ vi.mock('@/lib/hooks/use-teams', () => ({
   useRemoveTeamMember: vi.fn(),
   useTeamModels: vi.fn(),
   useUpdateTeamModels: vi.fn(),
+  useTeamModelDefaults: vi.fn(),
+  useUpdateTeamModelDefaults: vi.fn(),
   useTeamTransformations: vi.fn(),
   useUpdateTeamTransformations: vi.fn(),
 }))
@@ -91,10 +95,43 @@ describe('TeamsPage', () => {
     vi.mocked(useUpsertTeamMember).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useRemoveTeamMember).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useTeamModels).mockReturnValue({
-      data: { team_id: 'team:research', model_ids: ['model:chat'], models: [] },
+      data: {
+        team_id: 'team:research',
+        model_ids: ['model:chat', 'model:embed'],
+        models: [
+          {
+            id: 'model:chat',
+            name: 'Chat',
+            provider: 'openai',
+            type: 'language',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+          },
+          {
+            id: 'model:embed',
+            name: 'Embed',
+            provider: 'openai',
+            type: 'embedding',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+          },
+        ],
+      },
       isLoading: false,
     } as any)
     vi.mocked(useUpdateTeamModels).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
+    vi.mocked(useTeamModelDefaults).mockReturnValue({
+      data: {
+        team_id: 'team:research',
+        default_chat_model: 'model:chat',
+        default_embedding_model: null,
+        default_transformation_model: null,
+        default_tools_model: null,
+        large_context_model: null,
+      },
+      isLoading: false,
+    } as any)
+    vi.mocked(useUpdateTeamModelDefaults).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useTeamTransformations).mockReturnValue({
       data: {
         team_id: 'team:research',
@@ -111,6 +148,14 @@ describe('TeamsPage', () => {
           name: 'Chat',
           provider: 'openai',
           type: 'language',
+          created: '2026-05-05T00:00:00Z',
+          updated: '2026-05-05T00:00:00Z',
+        },
+        {
+          id: 'model:embed',
+          name: 'Embed',
+          provider: 'openai',
+          type: 'embedding',
           created: '2026-05-05T00:00:00Z',
           updated: '2026-05-05T00:00:00Z',
         },
@@ -143,6 +188,38 @@ describe('TeamsPage', () => {
     expect(screen.getByLabelText('Summary')).toBeChecked()
     expect(screen.queryByText('Add Config')).not.toBeInTheDocument()
     expect(screen.queryByText('Create Transformation')).not.toBeInTheDocument()
+  })
+
+  it('lets team owners choose team default models without changing available model scopes', async () => {
+    useAuthStore.setState({ role: 'user' })
+    vi.mocked(useTeams).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'team:research',
+            slug: 'research',
+            name: 'Research',
+            type: 'workspace',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+            member_count: 1,
+            share_count: 0,
+            current_user_role: 'owner',
+            can_manage: true,
+          },
+        ],
+      },
+      isLoading: false,
+      error: null,
+    } as any)
+
+    render(<TeamsPage />)
+
+    expect(await screen.findByText('Team default models')).toBeInTheDocument()
+    expect(screen.getByText('Chat Model')).toBeInTheDocument()
+    expect(screen.queryByText('Allowed models')).not.toBeInTheDocument()
+    expect(screen.queryByText('Allowed transformations')).not.toBeInTheDocument()
+    expect(useTeamModelDefaults).toHaveBeenCalledWith('team:research')
   })
 
   it('has localized copy for the team slug label', () => {

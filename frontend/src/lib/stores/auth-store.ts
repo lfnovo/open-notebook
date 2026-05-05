@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { queryClient } from '@/lib/api/query-client'
 import { getApiUrl } from '@/lib/config'
 import { AuthStatus, CurrentUserResponse, LoginResponse } from '@/lib/types/auth'
 
@@ -106,6 +107,7 @@ export const useAuthStore = create<AuthState>()(
           if (!response.ok) {
             const errData = await response.json().catch(() => null)
             const message = errData?.detail || `Login failed (${response.status})`
+            queryClient.clear()
             set({
               error: message,
               isLoading: false,
@@ -138,6 +140,7 @@ export const useAuthStore = create<AuthState>()(
               console.warn('Unable to load current user after login:', profileError)
             }
 
+            queryClient.clear()
             set({
               isAuthenticated: true,
               token: data.token,
@@ -151,6 +154,7 @@ export const useAuthStore = create<AuthState>()(
             })
             return true
           } else {
+            queryClient.clear()
             set({
               error: data.message || 'Login failed',
               isLoading: false,
@@ -175,6 +179,7 @@ export const useAuthStore = create<AuthState>()(
             errorMessage = 'An unexpected error occurred during authentication'
           }
 
+          queryClient.clear()
           set({
             error: errorMessage,
             isLoading: false,
@@ -190,6 +195,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        queryClient.clear()
         set({
           isAuthenticated: false,
           token: null,
@@ -249,6 +255,7 @@ export const useAuthStore = create<AuthState>()(
             })
             return true
           } else {
+            queryClient.clear()
             set({
               isAuthenticated: false,
               token: null,
@@ -263,6 +270,7 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error) {
           console.error('checkAuth error:', error)
+          queryClient.clear()
           set({
             isAuthenticated: false,
             token: null,

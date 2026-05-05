@@ -33,6 +33,8 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 - Key components and workflows
 - Design patterns we use
 
+**[Permission Design](permission-design.md)** covers the Lumina role model, configuration boundaries, team defaults, and runtime model resolution rules.
+
 For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guidance.
 
 ---
@@ -57,6 +59,7 @@ For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guida
 | [Code Standards](code-standards.md) | Writing code | Style guides for Python, FastAPI, DB |
 | [Testing](testing.md) | Testing code | How to write and run tests |
 | [Architecture](architecture.md) | Understanding system | System design, tech stack, workflows |
+| [Permission Design](permission-design.md) | Understanding access control | Role model, configuration boundaries, and runtime defaults |
 | [Design Principles](design-principles.md) | All developers | What guides our decisions |
 | [API Reference](api-reference.md) | Building integrations | Complete REST API documentation |
 | [Security](security.md) | All developers | Security practices and vulnerability prevention |

@@ -106,6 +106,7 @@ class EmbedSourceInput(CommandInput):
     """Input for embedding a source (creates multiple chunk embeddings)."""
 
     source_id: str
+    team_id: Optional[str] = None
 
 
 class EmbedSourceOutput(CommandOutput):
@@ -380,7 +381,11 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
         # 5. Generate embeddings for all chunks in batches
         cmd_id = get_command_id(input_data)
         logger.debug(f"Generating embeddings for {total_chunks} chunks")
-        embeddings = await generate_embeddings(chunks, command_id=cmd_id)
+        embeddings = await generate_embeddings(
+            chunks,
+            command_id=cmd_id,
+            team_id=input_data.team_id,
+        )
 
         # Verify we got embeddings for all chunks
         if len(embeddings) != len(chunks):

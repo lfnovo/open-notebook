@@ -34,8 +34,10 @@ from api.services.source_processing import (
     submit_process_source_command,
 )
 from api.services.source_responses import source_list_response_from_row
+from api.services.team_context_service import resolve_resource_team_context
 from commands.source_commands import SourceProcessingInput
 from open_notebook.config import UPLOADS_FOLDER
+from open_notebook.ai.model_resolution import resolve_default_model_id
 from open_notebook.database.repositories.source_repository import SourceRepository
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Asset, Notebook, Source
@@ -81,7 +83,27 @@ def build_source_content_state(
     raise InvalidInputError("Invalid source type. Must be link, upload, or text")
 
 
-async def validate_source_create_request(source_data: SourceCreate) -> list[str]:
+async def resolve_source_team_context(notebook_ids: list[str] | None) -> str | None:
+    """Infer one team context from selected notebooks, if unambiguous."""
+    team_ids = {
+        team_id
+        for team_id in [
+            await resolve_resource_team_context(
+                resource_type="notebook",
+                resource_id=notebook_id,
+            )
+            for notebook_id in notebook_ids or []
+        ]
+        if team_id
+    }
+    return next(iter(team_ids)) if len(team_ids) == 1 else None
+
+
+async def validate_source_create_request(
+    source_data: SourceCreate,
+    *,
+    team_id: str | None = None,
+) -> list[str]:
     """Validate related records and model defaults for source processing."""
     for notebook_id in source_data.notebooks or []:
         notebook = await Notebook.get(notebook_id)
@@ -94,25 +116,25 @@ async def validate_source_create_request(source_data: SourceCreate) -> list[str]
         if not transformation:
             raise NotFoundError(f"Transformation {transformation_id} not found")
 
-    from open_notebook.ai.models import model_manager
-
-    defaults = await model_manager.get_defaults()
-
-    if source_data.embed and not defaults.default_embedding_model:
+    if source_data.embed and not await resolve_default_model_id(
+        "embedding",
+        team_id=team_id,
+    ):
         raise InvalidInputError(
             "Cannot process source: No default embedding model configured. "
             "Please configure one in Settings -> Models."
         )
 
-    if transformation_ids and not (
-        defaults.default_transformation_model or defaults.default_chat_model
+    if transformation_ids and not await resolve_default_model_id(
+        "transformation",
+        team_id=team_id,
     ):
         raise InvalidInputError(
             "Cannot process source: No default transformation or chat model "
             "configured. Please configure one in Settings -> Models."
         )
 
-    if not (defaults.default_tools_model or defaults.default_chat_model):
+    if not await resolve_default_model_id("tools", team_id=team_id):
         raise InvalidInputError(
             "Cannot process source: No default tools or chat model configured "
             "for Knowledge Graph extraction. Please configure one in Settings -> Models."
@@ -263,7 +285,11 @@ async def create_source_and_queue_processing(
 ) -> SourceResponse:
     """Create a source record and queue background processing."""
     content_state = build_source_content_state(source_data, file_path=file_path)
-    transformation_ids = await validate_source_create_request(source_data)
+    team_id = await resolve_source_team_context(source_data.notebooks)
+    transformation_ids = await validate_source_create_request(
+        source_data,
+        team_id=team_id,
+    )
 
     source = Source(
         title=source_data.title or "Processing...",
@@ -284,6 +310,7 @@ async def create_source_and_queue_processing(
             notebook_ids=source_data.notebooks,
             transformations=transformation_ids,
             embed=source_data.embed,
+            team_id=team_id,
         )
         command_id = await submit_process_source_command(command_input.model_dump())
     except Exception:
@@ -527,6 +554,10 @@ async def retry_source_processing_use_case(
     notebook_ids = await notebook_ids_for_source(source.id or source_id)
     if not notebook_ids:
         raise InvalidInputError("Source is not associated with any notebooks")
+    team_id = await resolve_resource_team_context(
+        resource_type="source",
+        resource_id=source.id or source_id,
+    )
 
     command_input = SourceProcessingInput(
         source_id=str(source.id),
@@ -534,6 +565,7 @@ async def retry_source_processing_use_case(
         notebook_ids=notebook_ids,
         transformations=[],
         embed=True,
+        team_id=team_id,
     )
 
     command_id = await submit_process_source_command(command_input.model_dump())

@@ -5,6 +5,7 @@ export interface SearchRequest {
   limit: number
   search_sources: boolean
   search_notes: boolean
+  team_id?: string
   minimum_score: number
 }
 
@@ -32,9 +33,10 @@ export interface SearchResponse {
 // Ask types
 export interface AskRequest {
   question: string
-  strategy_model: string
-  answer_model: string
-  final_answer_model: string
+  strategy_model?: string
+  answer_model?: string
+  final_answer_model?: string
+  team_id?: string
 }
 
 export interface AskResponse {

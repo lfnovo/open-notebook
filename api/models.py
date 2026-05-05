@@ -65,6 +65,7 @@ class SearchRequest(BaseModel):
     limit: int = Field(100, description="Maximum number of results", le=1000)
     search_sources: bool = Field(True, description="Include sources in search")
     search_notes: bool = Field(True, description="Include notes in search")
+    team_id: Optional[str] = Field(None, description="Optional team context")
     minimum_score: float = Field(
         0.2, description="Minimum score for vector search", ge=0, le=1
     )
@@ -78,9 +79,10 @@ class SearchResponse(BaseModel):
 
 class AskRequest(BaseModel):
     question: str = Field(..., description="Question to ask the knowledge base")
-    strategy_model: str = Field(..., description="Model ID for query strategy")
-    answer_model: str = Field(..., description="Model ID for individual answers")
-    final_answer_model: str = Field(..., description="Model ID for final answer")
+    strategy_model: Optional[str] = Field(None, description="Model ID for query strategy")
+    answer_model: Optional[str] = Field(None, description="Model ID for individual answers")
+    final_answer_model: Optional[str] = Field(None, description="Model ID for final answer")
+    team_id: Optional[str] = Field(None, description="Optional team context")
 
 
 class AskResponse(BaseModel):
@@ -946,6 +948,18 @@ class TeamModelAllowlistResponse(BaseModel):
     models: List[ModelResponse]
 
 
+class TeamModelDefaultsUpdateRequest(BaseModel):
+    default_chat_model: Optional[str] = None
+    default_transformation_model: Optional[str] = None
+    large_context_model: Optional[str] = None
+    default_embedding_model: Optional[str] = None
+    default_tools_model: Optional[str] = None
+
+
+class TeamModelDefaultsResponse(TeamModelDefaultsUpdateRequest):
+    team_id: str
+
+
 class TeamTransformationAllowlistUpdateRequest(BaseModel):
     transformation_ids: List[str] = Field(default_factory=list)
 
@@ -992,6 +1006,7 @@ class AuditLogListResponse(BaseModel):
     items: List[AuditLogResponse]
     limit: int
     offset: int
+    total: int
 
 
 class DeleteResponse(BaseModel):

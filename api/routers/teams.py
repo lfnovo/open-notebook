@@ -14,6 +14,8 @@ from api.models import (
     TeamMemberUpsertRequest,
     TeamModelAllowlistResponse,
     TeamModelAllowlistUpdateRequest,
+    TeamModelDefaultsResponse,
+    TeamModelDefaultsUpdateRequest,
     TeamResponse,
     TeamTransformationAllowlistResponse,
     TeamTransformationAllowlistUpdateRequest,
@@ -22,12 +24,14 @@ from api.models import (
 from api.services.team_service import (
     create_team_use_case,
     delete_team_use_case,
+    list_team_model_defaults_use_case,
     list_team_models_use_case,
     list_team_assignable_users_use_case,
     list_team_transformations_use_case,
     list_teams_use_case,
     list_members_use_case,
     remove_member_use_case,
+    update_team_model_defaults_use_case,
     replace_team_models_use_case,
     replace_team_transformations_use_case,
     update_team_use_case,
@@ -125,6 +129,37 @@ async def replace_team_models(
 ):
     try:
         return await replace_team_models_use_case(team_id, request, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/{team_id}/model-defaults", response_model=TeamModelDefaultsResponse)
+async def list_team_model_defaults(
+    team_id: str,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await list_team_model_defaults_use_case(team_id, actor=actor)
+    except NotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except InvalidInputError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{team_id}/model-defaults", response_model=TeamModelDefaultsResponse)
+async def update_team_model_defaults(
+    team_id: str,
+    request: TeamModelDefaultsUpdateRequest,
+    actor: CurrentUser = Depends(get_current_user),
+):
+    try:
+        return await update_team_model_defaults_use_case(team_id, request, actor=actor)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:

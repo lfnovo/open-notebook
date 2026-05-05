@@ -1,8 +1,8 @@
 'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { Bot, Edit, Loader2, Plus, Search, Trash2, UserPlus, Users, Wand2 } from 'lucide-react'
-import { Team, TeamMember, TeamMemberStatus, TeamRole } from '@/lib/api/teams'
+import { Bot, Edit, Loader2, Plus, Search, SlidersHorizontal, Trash2, UserPlus, Users, Wand2, X } from 'lucide-react'
+import { Team, TeamMember, TeamMemberStatus, TeamModelDefaults, TeamRole } from '@/lib/api/teams'
 import {
   useActiveUsers,
   useCreateTeam,
@@ -10,10 +10,12 @@ import {
   useRemoveTeamMember,
   useTeamMembers,
   useTeamModels,
+  useTeamModelDefaults,
   useTeamTransformations,
   useTeams,
   useUpdateTeam,
   useUpdateTeamModels,
+  useUpdateTeamModelDefaults,
   useUpdateTeamTransformations,
   useUpsertTeamMember,
 } from '@/lib/hooks/use-teams'
@@ -66,7 +68,136 @@ function statusLabel(status: TeamMemberStatus | 'invited', t: ReturnType<typeof 
   return labels[status]
 }
 
-function TeamAllowlistPanel({ team }: { team: Team }) {
+type TeamModelDefaultKey = keyof Omit<TeamModelDefaults, 'team_id'>
+
+interface TeamDefaultConfig {
+  key: TeamModelDefaultKey
+  label: string
+  description: string
+  modelType: 'language' | 'embedding'
+}
+
+function TeamDefaultModelsPanel({ team }: { team: Team }) {
+  const { t } = useTranslation()
+  const isWorkspace = team.type === 'workspace'
+  const { data: teamModels } = useTeamModels(isWorkspace ? team.id : undefined)
+  const { data: defaults } = useTeamModelDefaults(isWorkspace ? team.id : undefined)
+  const updateDefaults = useUpdateTeamModelDefaults(team.id)
+  const allowedModels = teamModels?.models ?? []
+
+  const configs: TeamDefaultConfig[] = [
+    {
+      key: 'default_chat_model',
+      label: t.models.chatModelLabel,
+      description: t.models.chatModelDesc,
+      modelType: 'language',
+    },
+    {
+      key: 'default_embedding_model',
+      label: t.models.embeddingModelLabel,
+      description: t.models.embeddingModelDesc,
+      modelType: 'embedding',
+    },
+    {
+      key: 'default_transformation_model',
+      label: t.models.transformationModelLabel,
+      description: t.models.transformationModelDesc,
+      modelType: 'language',
+    },
+    {
+      key: 'default_tools_model',
+      label: t.models.toolsModelLabel,
+      description: t.models.toolsModelDesc,
+      modelType: 'language',
+    },
+    {
+      key: 'large_context_model',
+      label: t.models.largeContextModelLabel,
+      description: t.models.largeContextModelDesc,
+      modelType: 'language',
+    },
+  ]
+
+  const handleChange = (key: TeamModelDefaultKey, value: string | null) => {
+    updateDefaults.mutate({ [key]: value })
+  }
+
+  if (!isWorkspace || !team.can_manage) {
+    return null
+  }
+
+  return (
+    <section className="space-y-4 border-b p-4">
+      <div className="flex items-start gap-2">
+        <SlidersHorizontal className="mt-0.5 h-4 w-4 text-muted-foreground" />
+        <div>
+          <h3 className="text-sm font-semibold tracking-normal">{t.teams.modelDefaults}</h3>
+          <p className="text-xs text-muted-foreground">{t.teams.modelDefaultsDesc}</p>
+        </div>
+      </div>
+
+      {allowedModels.length === 0 ? (
+        <div className="rounded-md border p-4 text-sm text-muted-foreground">
+          {t.teams.noTeamModelsAvailable}
+        </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {configs.map((config) => {
+            const available = allowedModels
+              .filter((model) => model.type === config.modelType)
+              .sort((a, b) => a.name.localeCompare(b.name))
+            const currentValue = defaults?.[config.key] || undefined
+            const currentIsAllowed = currentValue && available.some((model) => model.id === currentValue)
+            const value = currentIsAllowed ? currentValue : undefined
+
+            return (
+              <div key={config.key} className="space-y-1">
+                <Label className="text-xs">{config.label}</Label>
+                <div className="flex gap-1">
+                  <Select
+                    value={value}
+                    onValueChange={(nextValue) => handleChange(config.key, nextValue)}
+                    disabled={updateDefaults.isPending || available.length === 0}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder={t.teams.inheritSystemDefault} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {available.map((model) => (
+                        <SelectItem key={model.id} value={model.id}>
+                          <div className="flex w-full items-center justify-between">
+                            <span>{model.name}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">{model.provider}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {value && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      disabled={updateDefaults.isPending}
+                      onClick={() => handleChange(config.key, null)}
+                      aria-label={t.teams.clearTeamDefault}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[10px] leading-tight text-muted-foreground">{config.description}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function TeamAdminAllowlistPanel({ team }: { team: Team }) {
   const { t } = useTranslation()
   const isWorkspace = team.type === 'workspace'
   const { data: models = [], isLoading: modelsLoading } = useModels()
@@ -75,7 +206,7 @@ function TeamAllowlistPanel({ team }: { team: Team }) {
   const { data: teamTransformations } = useTeamTransformations(isWorkspace ? team.id : undefined)
   const updateTeamModels = useUpdateTeamModels(team.id)
   const updateTeamTransformations = useUpdateTeamTransformations(team.id)
-  const canManage = isWorkspace && Boolean(team.can_manage)
+  const canManage = isWorkspace
   const selectedModelIds = teamModels?.model_ids ?? []
   const selectedTransformationIds = teamTransformations?.transformation_ids ?? []
 
@@ -186,6 +317,16 @@ function TeamAllowlistPanel({ team }: { team: Team }) {
       </section>
     </div>
   )
+}
+
+function TeamAllowlistPanel({ team }: { team: Team }) {
+  const role = useAuthStore((state) => state.role)
+
+  if (role !== 'admin' || team.type !== 'workspace') {
+    return null
+  }
+
+  return <TeamAdminAllowlistPanel team={team} />
 }
 
 function TeamDialog({
@@ -454,6 +595,7 @@ function MembersPanel({ team }: { team: Team }) {
         </div>
       )}
 
+      <TeamDefaultModelsPanel team={team} />
       <TeamAllowlistPanel team={team} />
 
       {isLoading ? (

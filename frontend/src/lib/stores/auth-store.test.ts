@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { queryClient } from '@/lib/api/query-client'
 import { useAuthStore } from './auth-store'
 
 vi.mock('@/lib/config', () => ({
@@ -8,6 +9,7 @@ vi.mock('@/lib/config', () => ({
 describe('auth-store', () => {
   beforeEach(() => {
     localStorage.clear()
+    queryClient.clear()
     useAuthStore.setState({
       isAuthenticated: false,
       token: null,
@@ -60,5 +62,52 @@ describe('auth-store', () => {
     }))
     expect(useAuthStore.getState().role).toBe('admin')
     expect(useAuthStore.getState().displayName).toBe('Admin')
+  })
+
+  it('clears cached user data after a successful login', async () => {
+    queryClient.setQueryData(['auth', 'me', 'old-user'], { username: 'old-user' })
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/auth/login') {
+        return new Response(
+          JSON.stringify({ success: true, token: 'jwt-token', username: 'new-user', message: 'ok' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      if (url === '/api/auth/me') {
+        return new Response(
+          JSON.stringify({
+            id: 'app_user:new-user',
+            username: 'new-user',
+            display_name: 'New User',
+            role: 'user',
+            status: 'active',
+            created: '',
+            updated: '',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response('{}', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const ok = await useAuthStore.getState().login('new-user', 'password')
+
+    expect(ok).toBe(true)
+    expect(queryClient.getQueryData(['auth', 'me', 'old-user'])).toBeUndefined()
+  })
+
+  it('clears cached user data on logout', () => {
+    queryClient.setQueryData(['teams', 'old-user', ''], { items: [] })
+    useAuthStore.setState({
+      isAuthenticated: true,
+      token: 'old-token',
+      username: 'old-user',
+    })
+
+    useAuthStore.getState().logout()
+
+    expect(queryClient.getQueryData(['teams', 'old-user', ''])).toBeUndefined()
+    expect(useAuthStore.getState().isAuthenticated).toBe(false)
   })
 })

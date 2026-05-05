@@ -1,11 +1,15 @@
 import json
 from typing import AsyncGenerator
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
+from api.auth import current_user_from_request
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
+from api.services.model_policy_service import ensure_model_selections_allowed
+from api.services.team_context_service import resolve_explicit_team_context
+from open_notebook.ai.model_resolution import resolve_default_model_id
 from open_notebook.ai.models import Model, model_manager
 from open_notebook.domain.notebook import text_search, vector_search
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
@@ -15,12 +19,17 @@ router = APIRouter()
 
 
 @router.post("/search", response_model=SearchResponse)
-async def search_knowledge_base(search_request: SearchRequest):
+async def search_knowledge_base(search_request: SearchRequest, request: Request):
     """Search the knowledge base using text or vector search."""
     try:
+        actor = current_user_from_request(request)
+        team_id = await resolve_explicit_team_context(
+            actor=actor,
+            team_id=search_request.team_id,
+        )
         if search_request.type == "vector":
             # Check if embedding model is available for vector search
-            if not await model_manager.get_embedding_model():
+            if not await model_manager.get_embedding_model(team_id=team_id):
                 raise HTTPException(
                     status_code=400,
                     detail="Vector search requires an embedding model. Please configure one in the Models section.",
@@ -59,7 +68,11 @@ async def search_knowledge_base(search_request: SearchRequest):
 
 
 async def stream_ask_response(
-    question: str, strategy_model: Model, answer_model: Model, final_answer_model: Model
+    question: str,
+    strategy_model: Model,
+    answer_model: Model,
+    final_answer_model: Model,
+    team_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the ask response as Server-Sent Events."""
     import asyncio
@@ -73,6 +86,7 @@ async def stream_ask_response(
                     strategy_model=strategy_model.id,
                     answer_model=answer_model.id,
                     final_answer_model=final_answer_model.id,
+                    team_id=team_id,
                 )
             ),
             version="v2",
@@ -123,42 +137,78 @@ async def stream_ask_response(
         yield f"data: {json.dumps(error_data)}\n\n"
 
 
+async def _resolve_ask_models(
+    ask_request: AskRequest,
+    request: Request,
+) -> tuple[Model, Model, Model, str | None]:
+    actor = current_user_from_request(request)
+    team_id = await resolve_explicit_team_context(
+        actor=actor,
+        team_id=ask_request.team_id,
+    )
+    default_model_id = await resolve_default_model_id("tools", team_id=team_id)
+    if not default_model_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Ask feature requires a tools or chat model. Please configure one in the Models section.",
+        )
+
+    strategy_model_id = ask_request.strategy_model or default_model_id
+    answer_model_id = ask_request.answer_model or default_model_id
+    final_answer_model_id = ask_request.final_answer_model or default_model_id
+
+    await ensure_model_selections_allowed(
+        actor=actor,
+        model_ids=[strategy_model_id, answer_model_id, final_answer_model_id],
+        default_type="tools",
+        team_id=team_id,
+    )
+
+    strategy_model = await Model.get(strategy_model_id)
+    answer_model = await Model.get(answer_model_id)
+    final_answer_model = await Model.get(final_answer_model_id)
+
+    if not strategy_model:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Strategy model {strategy_model_id} not found",
+        )
+    if not answer_model:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Answer model {answer_model_id} not found",
+        )
+    if not final_answer_model:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Final answer model {final_answer_model_id} not found",
+        )
+
+    if not await model_manager.get_embedding_model(team_id=team_id):
+        raise HTTPException(
+            status_code=400,
+            detail="Ask feature requires an embedding model. Please configure one in the Models section.",
+        )
+
+    return strategy_model, answer_model, final_answer_model, team_id
+
+
 @router.post("/search/ask")
-async def ask_knowledge_base(ask_request: AskRequest):
+async def ask_knowledge_base(ask_request: AskRequest, request: Request):
     """Ask the knowledge base a question using AI models."""
     try:
-        # Validate models exist
-        strategy_model = await Model.get(ask_request.strategy_model)
-        answer_model = await Model.get(ask_request.answer_model)
-        final_answer_model = await Model.get(ask_request.final_answer_model)
-
-        if not strategy_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Strategy model {ask_request.strategy_model} not found",
-            )
-        if not answer_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Answer model {ask_request.answer_model} not found",
-            )
-        if not final_answer_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Final answer model {ask_request.final_answer_model} not found",
-            )
-
-        # Check if embedding model is available
-        if not await model_manager.get_embedding_model():
-            raise HTTPException(
-                status_code=400,
-                detail="Ask feature requires an embedding model. Please configure one in the Models section.",
-            )
+        strategy_model, answer_model, final_answer_model, team_id = (
+            await _resolve_ask_models(ask_request, request)
+        )
 
         # For streaming response
         return StreamingResponse(
             stream_ask_response(
-                ask_request.question, strategy_model, answer_model, final_answer_model
+                ask_request.question,
+                strategy_model,
+                answer_model,
+                final_answer_model,
+                team_id,
             ),
             media_type="text/event-stream",
             headers={
@@ -170,42 +220,20 @@ async def ask_knowledge_base(ask_request: AskRequest):
 
     except HTTPException:
         raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error in ask endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ask operation failed: {str(e)}")
 
 
 @router.post("/search/ask/simple", response_model=AskResponse)
-async def ask_knowledge_base_simple(ask_request: AskRequest):
+async def ask_knowledge_base_simple(ask_request: AskRequest, request: Request):
     """Ask the knowledge base a question and return a simple response (non-streaming)."""
     try:
-        # Validate models exist
-        strategy_model = await Model.get(ask_request.strategy_model)
-        answer_model = await Model.get(ask_request.answer_model)
-        final_answer_model = await Model.get(ask_request.final_answer_model)
-
-        if not strategy_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Strategy model {ask_request.strategy_model} not found",
-            )
-        if not answer_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Answer model {ask_request.answer_model} not found",
-            )
-        if not final_answer_model:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Final answer model {ask_request.final_answer_model} not found",
-            )
-
-        # Check if embedding model is available
-        if not await model_manager.get_embedding_model():
-            raise HTTPException(
-                status_code=400,
-                detail="Ask feature requires an embedding model. Please configure one in the Models section.",
-            )
+        strategy_model, answer_model, final_answer_model, team_id = (
+            await _resolve_ask_models(ask_request, request)
+        )
 
         # Run the ask graph and get final result
         final_answer = None
@@ -216,6 +244,7 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
                     strategy_model=strategy_model.id,
                     answer_model=answer_model.id,
                     final_answer_model=final_answer_model.id,
+                    team_id=team_id,
                 )
             ),
             stream_mode="updates",
@@ -230,6 +259,8 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
 
     except HTTPException:
         raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error in ask simple endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ask operation failed: {str(e)}")

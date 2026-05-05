@@ -1,0 +1,7 @@
+-- Rollback migration 26: Team-scoped default model assignments
+
+REMOVE FIELD default_chat_model ON TABLE team;
+REMOVE FIELD default_embedding_model ON TABLE team;
+REMOVE FIELD default_transformation_model ON TABLE team;
+REMOVE FIELD default_tools_model ON TABLE team;
+REMOVE FIELD large_context_model ON TABLE team;

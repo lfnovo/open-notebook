@@ -8,9 +8,10 @@ export interface AllProvidersSyncResponse {
 
 export interface AskRequest {
   question: string
-  strategy_model: string
-  answer_model: string
-  final_answer_model: string
+  strategy_model?: string | null
+  answer_model?: string | null
+  final_answer_model?: string | null
+  team_id?: string | null
 }
 
 export interface AskResponse {
@@ -21,6 +22,26 @@ export interface AskResponse {
 export interface AssetModel {
   file_path?: string | null
   url?: string | null
+}
+
+export interface AuditLogListResponse {
+  items: AuditLogResponse[]
+  limit: number
+  offset: number
+  total: number
+}
+
+export interface AuditLogResponse {
+  id: string
+  actor_id?: string | null
+  actor_username?: string | null
+  action: string
+  target_type?: string | null
+  target_id?: string | null
+  metadata?: Record<string, unknown>
+  ip_address?: string | null
+  user_agent?: string | null
+  created: string
 }
 
 export interface AuthStatusResponse {
@@ -244,6 +265,11 @@ export interface DefaultPromptUpdate {
   transformation_instructions: string
 }
 
+export interface DeleteResponse {
+  success: boolean
+  message: string
+}
+
 export interface DiscoverModelsResponse {
   credential_id: string
   provider: string
@@ -457,6 +483,12 @@ export interface PodcastGenerationResponse {
   episode_name: string
 }
 
+export interface ProfileUpdateRequest {
+  display_name?: string | null
+  locale?: string | null
+  theme?: string | null
+}
+
 export interface ProviderAvailabilityResponse {
   available: string[]
   unavailable: string[]
@@ -552,6 +584,12 @@ export interface ResetPasswordResponse {
   message: string
 }
 
+export interface ResetUserPasswordResponse {
+  success: boolean
+  temporary_password: string
+  message: string
+}
+
 export interface SaveAsNoteRequest {
   notebook_id?: string | null
 }
@@ -562,6 +600,7 @@ export interface SearchRequest {
   limit?: number
   search_sources?: boolean
   search_notes?: boolean
+  team_id?: string | null
   minimum_score?: number
 }
 
@@ -612,6 +651,25 @@ export interface SettingsUpdate {
 export interface SetupRequest {
   username: string
   password: string
+}
+
+export interface ShareGrantCreateRequest {
+  resource_type: 'source' | 'notebook'
+  resource_id: string
+  target_type: 'user' | 'team'
+  target_id: string
+  permission?: 'read'
+}
+
+export interface ShareGrantResponse {
+  id: string
+  resource_type: 'source' | 'notebook'
+  resource_id: string
+  target_type: 'user' | 'team'
+  target_id: string
+  permission: string
+  created_by?: string | null
+  created: string
 }
 
 export interface SourceChatSessionResponse {
@@ -722,6 +780,105 @@ export interface SuccessResponse {
   message: string
 }
 
+export interface TeamAssignableUserListResponse {
+  items: TeamMemberUser[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface TeamCreateRequest {
+  name: string
+  owner_id: string
+  slug?: string | null
+}
+
+export interface TeamListResponse {
+  items: TeamResponse[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface TeamMemberResponse {
+  id: string
+  team: string
+  user: string
+  user_info?: TeamMemberUser | null
+  role: 'owner' | 'admin' | 'member' | 'viewer'
+  status: 'active' | 'invited' | 'disabled'
+  created: string
+  updated?: string | null
+}
+
+export interface TeamMemberUpsertRequest {
+  user_id: string
+  role?: 'owner' | 'admin' | 'member' | 'viewer'
+  status?: 'active' | 'disabled'
+}
+
+export interface TeamMemberUser {
+  id: string
+  username: string
+  display_name?: string | null
+  email?: string | null
+}
+
+export interface TeamModelAllowlistResponse {
+  team_id: string
+  model_ids: string[]
+  models: ModelResponse[]
+}
+
+export interface TeamModelAllowlistUpdateRequest {
+  model_ids?: string[]
+}
+
+export interface TeamModelDefaultsResponse {
+  default_chat_model?: string | null
+  default_transformation_model?: string | null
+  large_context_model?: string | null
+  default_embedding_model?: string | null
+  default_tools_model?: string | null
+  team_id: string
+}
+
+export interface TeamModelDefaultsUpdateRequest {
+  default_chat_model?: string | null
+  default_transformation_model?: string | null
+  large_context_model?: string | null
+  default_embedding_model?: string | null
+  default_tools_model?: string | null
+}
+
+export interface TeamResponse {
+  id: string
+  slug: string
+  name: string
+  type?: 'workspace' | 'system'
+  created_by?: string | null
+  created: string
+  updated: string
+  member_count?: number
+  share_count?: number
+  current_user_role?: 'owner' | 'admin' | 'member' | 'viewer' | null
+  can_manage?: boolean
+}
+
+export interface TeamTransformationAllowlistResponse {
+  team_id: string
+  transformation_ids: string[]
+  transformations: TransformationResponse[]
+}
+
+export interface TeamTransformationAllowlistUpdateRequest {
+  transformation_ids?: string[]
+}
+
+export interface TeamUpdateRequest {
+  name?: string | null
+}
+
 export interface TransformationCreate {
   name: string
   title: string
@@ -787,10 +944,68 @@ export interface UpdateSourceChatSessionRequest {
   model_override?: string | null
 }
 
-export interface UserResponse {
+export interface UserCreateRequest {
   username: string
+  email?: string | null
+  display_name?: string | null
+  role?: 'admin' | 'user'
+  password?: string | null
+}
+
+export interface UserCreateResponse {
+  id?: string | null
+  username: string
+  email?: string | null
+  display_name?: string | null
+  role?: 'admin' | 'user'
+  status?: 'active' | 'disabled'
+  locale?: string | null
+  theme?: string | null
   created: string
   updated: string
+  last_login_at?: string | null
+  temporary_password?: string | null
+}
+
+export interface UserListItem {
+  id: string
+  username: string
+  email?: string | null
+  display_name?: string | null
+  role: 'admin' | 'user'
+  status: 'active' | 'disabled'
+  created: string
+  updated: string
+  last_login_at?: string | null
+  source_count?: number
+  notebook_count?: number
+}
+
+export interface UserListResponse {
+  items: UserListItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface UserResponse {
+  id?: string | null
+  username: string
+  email?: string | null
+  display_name?: string | null
+  role?: 'admin' | 'user'
+  status?: 'active' | 'disabled'
+  locale?: string | null
+  theme?: string | null
+  created: string
+  updated: string
+  last_login_at?: string | null
+}
+
+export interface UserUpdateRequest {
+  display_name?: string | null
+  role?: 'admin' | 'user' | null
+  status?: 'active' | 'disabled' | null
 }
 
 export interface ValidationError {

@@ -258,24 +258,30 @@ async def check_api_password(
 
 async def get_current_user(request: Request) -> CurrentUser:
     """Return the authenticated database user from middleware state."""
-    user_id = getattr(request.state, "user_id", None)
-    username = getattr(request.state, "username", None)
-    if not user_id or not username:
+    user = current_user_from_request(request)
+    if not user:
         raise HTTPException(
             status_code=401,
             detail="Authentication required",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
-    status = getattr(request.state, "user_status", "active") or "active"
-    if status != "active":
+    if user.status != "active":
         raise HTTPException(status_code=403, detail="User is disabled")
+    return user
+
+
+def current_user_from_request(request: Request) -> Optional[CurrentUser]:
+    """Return the middleware user when present, without forcing authentication."""
+    user_id = getattr(request.state, "user_id", None)
+    username = getattr(request.state, "username", None)
+    if not user_id or not username:
+        return None
 
     return CurrentUser(
         id=str(user_id),
         username=str(username),
         role=getattr(request.state, "user_role", "user") or "user",
-        status=status,
+        status=getattr(request.state, "user_status", "active") or "active",
         display_name=getattr(request.state, "display_name", None),
         email=getattr(request.state, "email", None),
     )

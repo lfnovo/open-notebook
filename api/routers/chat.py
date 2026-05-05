@@ -2,15 +2,19 @@ import asyncio
 import traceback
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.auth import current_user_from_request
+from api.services.model_policy_service import ensure_model_selection_allowed
+from api.services.team_context_service import resolve_team_context
 from open_notebook.config import LANGGRAPH_CHAT_CHECKPOINT_FILE
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
 from open_notebook.exceptions import (
+    InvalidInputError,
     NotFoundError,
 )
 from open_notebook.graphs.chat import agent_state
@@ -18,6 +22,14 @@ from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
+
+
+async def _notebook_id_for_session(session_id: str) -> Optional[str]:
+    notebook_query = await repo_query(
+        "SELECT out FROM refers_to WHERE in = $session_id",
+        {"session_id": ensure_record_id(session_id)},
+    )
+    return str(notebook_query[0]["out"]) if notebook_query else None
 
 
 # Request/Response models
@@ -138,6 +150,8 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
         return results
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching chat sessions: {str(e)}")
         raise HTTPException(
@@ -146,13 +160,25 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
 
 
 @router.post("/chat/sessions", response_model=ChatSessionResponse)
-async def create_session(request: CreateSessionRequest):
+async def create_session(request: CreateSessionRequest, http_request: Request):
     """Create a new chat session."""
     try:
         # Verify notebook exists
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        actor = current_user_from_request(http_request)
+        team_id = await resolve_team_context(
+            actor=actor,
+            resource_type="notebook",
+            resource_id=request.notebook_id,
+        )
+        await ensure_model_selection_allowed(
+            actor=actor,
+            model_id=request.model_override,
+            default_type="chat",
+            team_id=team_id,
+        )
 
         # Create new session
         session = ChatSession(
@@ -267,13 +293,17 @@ async def get_session(session_id: str):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching session: {str(e)}")
 
 
 @router.put("/chat/sessions/{session_id}", response_model=ChatSessionResponse)
-async def update_session(session_id: str, request: UpdateSessionRequest):
+async def update_session(
+    session_id: str, request: UpdateSessionRequest, http_request: Request
+):
     """Update session title."""
     try:
         # Ensure session_id has proper table prefix
@@ -287,6 +317,22 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
             raise HTTPException(status_code=404, detail="Session not found")
 
         update_data = request.model_dump(exclude_unset=True)
+        notebook_id = await _notebook_id_for_session(full_session_id)
+        actor = current_user_from_request(http_request)
+        team_id = None
+        if notebook_id:
+            team_id = await resolve_team_context(
+                actor=actor,
+                resource_type="notebook",
+                resource_id=notebook_id,
+            )
+        if "model_override" in update_data:
+            await ensure_model_selection_allowed(
+                actor=actor,
+                model_id=update_data["model_override"],
+                default_type="chat",
+                team_id=team_id,
+            )
 
         if "title" in update_data:
             session.title = update_data["title"]
@@ -303,12 +349,6 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
             if session_id.startswith("chat_session:")
             else f"chat_session:{session_id}"
         )
-        notebook_query = await repo_query(
-            "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)},
-        )
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
-
         # Get message count from LangGraph state (use checkpoint file
         # so we read the same sqlite file the streaming endpoint writes to)
         msg_count = await get_session_message_count(
@@ -359,7 +399,12 @@ async def delete_session(session_id: str):
 
 
 async def stream_chat_response(
-    session_id: str, message: str, context: dict, model_override: Optional[str] = None, enable_web_search: bool = False
+    session_id: str,
+    message: str,
+    context: dict,
+    model_override: Optional[str] = None,
+    enable_web_search: bool = False,
+    team_id: Optional[str] = None,
 ):
     import json
 
@@ -393,7 +438,11 @@ async def stream_chat_response(
         yield f"data: {json.dumps(user_event)}\n\n"
 
         config = RunnableConfig(
-            configurable={"thread_id": session_id, "model_id": model_override}
+            configurable={
+                "thread_id": session_id,
+                "model_id": model_override,
+                "team_id": team_id,
+            }
         )
         
         yielded_ai_chunks = False
@@ -514,7 +563,7 @@ from fastapi.responses import StreamingResponse
 
 
 @router.post("/chat/execute")
-async def execute_chat(request: ExecuteChatRequest):
+async def execute_chat(request: ExecuteChatRequest, http_request: Request):
     """Execute a chat request and get AI response with SSE streaming."""
     try:
         # Verify session exists
@@ -534,6 +583,21 @@ async def execute_chat(request: ExecuteChatRequest):
             if request.model_override is not None
             else getattr(session, "model_override", None)
         )
+        notebook_id = await _notebook_id_for_session(full_session_id)
+        actor = current_user_from_request(http_request)
+        team_id = None
+        if notebook_id:
+            team_id = await resolve_team_context(
+                actor=actor,
+                resource_type="notebook",
+                resource_id=notebook_id,
+            )
+        await ensure_model_selection_allowed(
+            actor=actor,
+            model_id=model_override,
+            default_type="chat",
+            team_id=team_id,
+        )
 
         # Update session timestamp
         await session.save()
@@ -546,6 +610,7 @@ async def execute_chat(request: ExecuteChatRequest):
                 context=request.context,
                 model_override=model_override,
                 enable_web_search=request.enable_web_search or False,
+                team_id=team_id,
             ),
             media_type="text/event-stream",
             headers={
@@ -557,6 +622,8 @@ async def execute_chat(request: ExecuteChatRequest):
 
     except HTTPException:
         raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error sending message to chat: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")

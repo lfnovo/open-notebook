@@ -100,7 +100,7 @@ class _RateLimitRetryModel(BaseChatModel):
 
 
 async def provision_langchain_model(
-    content, model_id, default_type, **kwargs
+    content, model_id, default_type, team_id=None, **kwargs
 ) -> BaseChatModel:
     """
     Returns the best model to use based on the context size and on whether there is a specific model being requested in Config.
@@ -121,13 +121,17 @@ async def provision_langchain_model(
         logger.debug(
             f"Using large context model because the content has {tokens} tokens"
         )
-        model = await model_manager.get_default_model("large_context", **kwargs)
+        model = await model_manager.get_default_model(
+            "large_context", team_id=team_id, **kwargs
+        )
     elif model_id:
         selection_reason = f"explicit model_id={model_id}"
         model = await model_manager.get_model(model_id, **kwargs)
     else:
         selection_reason = f"default for type={default_type}"
-        model = await model_manager.get_default_model(default_type, **kwargs)
+        model = await model_manager.get_default_model(
+            default_type, team_id=team_id, **kwargs
+        )
 
     logger.debug(f"Using model: {model}")
 

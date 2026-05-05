@@ -13,6 +13,14 @@ from open_notebook.database.repository import (
 class TeamRepository:
     """Named team and team_member queries."""
 
+    MODEL_DEFAULT_FIELDS = (
+        "default_chat_model",
+        "default_embedding_model",
+        "default_transformation_model",
+        "default_tools_model",
+        "large_context_model",
+    )
+
     @staticmethod
     async def list_teams(
         *,
@@ -92,6 +100,37 @@ class TeamRepository:
     @staticmethod
     async def update_team(team_id: str, data: dict[str, Any]) -> list[dict[str, Any]]:
         return await repo_update("team", team_id, data)
+
+    @staticmethod
+    async def update_model_defaults(
+        team_id: str, data: dict[str, Any]
+    ) -> dict[str, Any]:
+        default_data = {
+            field: ensure_record_id(value) if value else None
+            for field, value in data.items()
+            if field in TeamRepository.MODEL_DEFAULT_FIELDS
+        }
+        rows = await repo_update("team", team_id, default_data)
+        return rows[0] if rows else default_data
+
+    @staticmethod
+    async def clear_invalid_model_defaults(
+        team_id: str, model_ids: list[str]
+    ) -> None:
+        await repo_query(
+            """
+            UPDATE $team_id SET
+                default_chat_model = IF default_chat_model IN $model_ids THEN default_chat_model ELSE NONE END,
+                default_embedding_model = IF default_embedding_model IN $model_ids THEN default_embedding_model ELSE NONE END,
+                default_transformation_model = IF default_transformation_model IN $model_ids THEN default_transformation_model ELSE NONE END,
+                default_tools_model = IF default_tools_model IN $model_ids THEN default_tools_model ELSE NONE END,
+                large_context_model = IF large_context_model IN $model_ids THEN large_context_model ELSE NONE END
+            """,
+            {
+                "team_id": ensure_record_id(team_id),
+                "model_ids": [ensure_record_id(model_id) for model_id in model_ids],
+            },
+        )
 
     @staticmethod
     async def delete_team(team_id: str) -> None:

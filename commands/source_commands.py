@@ -35,6 +35,7 @@ class SourceProcessingInput(CommandInput):
     notebook_ids: List[str]
     transformations: List[str]
     embed: bool
+    team_id: Optional[str] = None
 
 
 class SourceProcessingOutput(CommandOutput):
@@ -109,6 +110,7 @@ async def process_source_command(
                 "apply_transformations": transformations,
                 "embed": input_data.embed,
                 "source_id": input_data.source_id,  # Add the source_id to the state
+                "team_id": input_data.team_id,
             }
         )
 
@@ -166,6 +168,7 @@ class RunTransformationInput(CommandInput):
 
     source_id: str
     transformation_id: str
+    team_id: Optional[str] = None
 
 
 class RunTransformationOutput(CommandOutput):
@@ -231,7 +234,8 @@ async def run_transformation_command(
 
         # Run transformation graph (includes LLM call + insight creation)
         await transform_graph.ainvoke(
-            input=dict(source=source, transformation=transformation)
+            input=dict(source=source, transformation=transformation),
+            config={"configurable": {"team_id": input_data.team_id}},
         )
 
         processing_time = time.time() - start_time

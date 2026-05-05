@@ -14,6 +14,8 @@ from api.models import (
     TeamMemberUser,
     TeamModelAllowlistResponse,
     TeamModelAllowlistUpdateRequest,
+    TeamModelDefaultsResponse,
+    TeamModelDefaultsUpdateRequest,
     TeamResponse,
     TeamTransformationAllowlistResponse,
     TeamTransformationAllowlistUpdateRequest,
@@ -129,6 +131,30 @@ def _team_model_allowlist_response(
     )
 
 
+def _team_model_defaults_response(
+    team_id: str, row: dict | None
+) -> TeamModelDefaultsResponse:
+    row = row or {}
+    return TeamModelDefaultsResponse(
+        team_id=team_id,
+        default_chat_model=str(row.get("default_chat_model"))
+        if row.get("default_chat_model")
+        else None,
+        default_embedding_model=str(row.get("default_embedding_model"))
+        if row.get("default_embedding_model")
+        else None,
+        default_transformation_model=str(row.get("default_transformation_model"))
+        if row.get("default_transformation_model")
+        else None,
+        default_tools_model=str(row.get("default_tools_model"))
+        if row.get("default_tools_model")
+        else None,
+        large_context_model=str(row.get("large_context_model"))
+        if row.get("large_context_model")
+        else None,
+    )
+
+
 def _team_transformation_allowlist_response(
     team_id: str, rows: list[dict]
 ) -> TeamTransformationAllowlistResponse:
@@ -165,6 +191,55 @@ async def _ensure_workspace_team_for_allowlist(
         raise InvalidInputError("System teams cannot have managed allowlists")
     await _ensure_team_manager(team_id, actor)
     return team
+
+
+async def _ensure_workspace_team_for_admin_allowlist(
+    team_id: str, actor: CurrentUser
+) -> dict:
+    team = await TeamRepository.get_team(team_id)
+    if not team:
+        raise NotFoundError("Team not found")
+    if team.get("type") == "system":
+        raise InvalidInputError("System teams cannot have managed allowlists")
+    if actor.role != "admin":
+        raise PermissionError("Admin privileges required")
+    return team
+
+
+def _allowed_team_models(rows: list[dict]) -> dict[str, dict]:
+    return {
+        str(row["model"]["id"]): row["model"]
+        for row in rows
+        if isinstance(row.get("model"), dict) and row["model"].get("id")
+    }
+
+
+def _validate_team_model_defaults(
+    request: TeamModelDefaultsUpdateRequest,
+    allowed_models: dict[str, dict],
+) -> dict[str, Optional[str]]:
+    slot_types = {
+        "default_chat_model": "language",
+        "default_embedding_model": "embedding",
+        "default_transformation_model": "language",
+        "default_tools_model": "language",
+        "large_context_model": "language",
+    }
+    updates: dict[str, Optional[str]] = {}
+    for field, expected_type in slot_types.items():
+        if field not in request.model_fields_set:
+            continue
+        value = getattr(request, field)
+        updates[field] = value
+        if not value:
+            continue
+        model = allowed_models.get(value)
+        if not model:
+            raise InvalidInputError("Model must be allowed for this team")
+        if model.get("type") != expected_type:
+            model_label = "embedding model" if expected_type == "embedding" else "language model"
+            raise InvalidInputError(f"{field} must use a {model_label}")
+    return updates
 
 
 async def list_teams_use_case(
@@ -421,7 +496,7 @@ async def replace_team_models_use_case(
     *,
     actor: CurrentUser,
 ) -> TeamModelAllowlistResponse:
-    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    await _ensure_workspace_team_for_admin_allowlist(team_id, actor)
     for model_id in request.model_ids:
         if not await Model.get(model_id):
             raise NotFoundError("Model not found")
@@ -431,6 +506,7 @@ async def replace_team_models_use_case(
         request.model_ids,
         actor.id,
     )
+    await TeamRepository.clear_invalid_model_defaults(team_id, request.model_ids)
     await AuditLogRepository.create(
         action="team.models_updated",
         actor_id=actor.id,
@@ -440,6 +516,36 @@ async def replace_team_models_use_case(
         metadata={"model_ids": request.model_ids},
     )
     return _team_model_allowlist_response(team_id, rows)
+
+
+async def list_team_model_defaults_use_case(
+    team_id: str, *, actor: CurrentUser
+) -> TeamModelDefaultsResponse:
+    team = await _ensure_workspace_team_for_allowlist(team_id, actor)
+    return _team_model_defaults_response(team_id, team)
+
+
+async def update_team_model_defaults_use_case(
+    team_id: str,
+    request: TeamModelDefaultsUpdateRequest,
+    *,
+    actor: CurrentUser,
+) -> TeamModelDefaultsResponse:
+    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    allowed_models = _allowed_team_models(
+        await TeamAllowlistRepository.list_team_models(team_id)
+    )
+    updates = _validate_team_model_defaults(request, allowed_models)
+    row = await TeamRepository.update_model_defaults(team_id, updates)
+    await AuditLogRepository.create(
+        action="team.model_defaults_updated",
+        actor_id=actor.id,
+        actor_username=actor.username,
+        target_type="team",
+        target_id=team_id,
+        metadata=updates,
+    )
+    return _team_model_defaults_response(team_id, row)
 
 
 async def list_team_transformations_use_case(
@@ -456,7 +562,7 @@ async def replace_team_transformations_use_case(
     *,
     actor: CurrentUser,
 ) -> TeamTransformationAllowlistResponse:
-    await _ensure_workspace_team_for_allowlist(team_id, actor)
+    await _ensure_workspace_team_for_admin_allowlist(team_id, actor)
     for transformation_id in request.transformation_ids:
         if not await Transformation.get(transformation_id):
             raise NotFoundError("Transformation not found")

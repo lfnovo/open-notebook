@@ -33,6 +33,10 @@ export default function AuditLogPage() {
     offset,
   })
   const logs = data?.items ?? []
+  const total = data?.total ?? 0
+  const pageStart = total === 0 ? 0 : offset + 1
+  const pageEnd = Math.min(offset + limit, total)
+  const canGoNext = offset + limit < total
 
   const resetFilters = () => {
     setActorId('')
@@ -98,9 +102,12 @@ export default function AuditLogPage() {
             {t.auditLog.empty}
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left">
+          <div
+            data-testid="audit-log-scroll"
+            className="max-h-[calc(100vh-22rem)] overflow-auto rounded-md border"
+          >
+            <table className="w-full min-w-[960px] text-sm">
+              <thead className="sticky top-0 z-10 bg-muted/95 text-left backdrop-blur">
                 <tr>
                   <th className="px-4 py-3 font-medium">{t.auditLog.created}</th>
                   <th className="px-4 py-3 font-medium">{t.auditLog.action}</th>
@@ -145,11 +152,11 @@ export default function AuditLogPage() {
             {t.common.previous}
           </Button>
           <span className="text-sm text-muted-foreground">
-            {t.common.page} {Math.floor(offset / limit) + 1}
+            {pageStart}-{pageEnd} / {total}
           </span>
           <Button
             variant="outline"
-            disabled={logs.length < limit}
+            disabled={!canGoNext}
             onClick={() => setOffset((value) => value + limit)}
           >
             {t.common.next}

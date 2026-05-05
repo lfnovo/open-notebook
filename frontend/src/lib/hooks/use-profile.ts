@@ -7,9 +7,15 @@ import { getApiErrorKey } from '@/lib/utils/error-handler'
 
 export const PROFILE_QUERY_KEY = ['auth', 'me'] as const
 
+export function profileQueryKey(identity?: string | null) {
+  return [...PROFILE_QUERY_KEY, identity || 'anonymous'] as const
+}
+
 export function useProfile() {
+  const username = useAuthStore((state) => state.username)
+
   return useQuery({
-    queryKey: PROFILE_QUERY_KEY,
+    queryKey: profileQueryKey(username),
     queryFn: authApi.me,
   })
 }
@@ -18,11 +24,12 @@ export function useUpdateProfile() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const username = useAuthStore((state) => state.username)
 
   return useMutation({
     mutationFn: (data: ProfileUpdateRequest) => authApi.updateMe(data),
     onSuccess: (user) => {
-      queryClient.setQueryData(PROFILE_QUERY_KEY, user)
+      queryClient.setQueryData(profileQueryKey(user.username || username), user)
       useAuthStore.setState({
         username: user.username,
         role: user.role || null,

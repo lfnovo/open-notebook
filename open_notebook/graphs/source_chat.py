@@ -116,13 +116,17 @@ async def _call_model_with_source_context_inner(
     # Replace async run since we might be inside a stream
     # Actually, we don't stream here - we await graph.invoke/astream
     # Let's clean that up
+    model_id = config.get("configurable", {}).get("model_id") or state.get(
+        "model_override"
+    )
+    team_id = config.get("configurable", {}).get("team_id")
     try:
         # Get the model provisioned
         model = await provision_langchain_model(
             str(payload),
-            config.get("configurable", {}).get("model_id")
-            or state.get("model_override"),
+            model_id,
             "chat",
+            team_id=team_id,
             max_tokens=8192,
             streaming=True, # Enable streaming explicitly
         )
@@ -131,9 +135,9 @@ async def _call_model_with_source_context_inner(
         model = asyncio.run(
             provision_langchain_model(
                 str(payload),
-                config.get("configurable", {}).get("model_id")
-                or state.get("model_override"),
+                model_id,
                 "chat",
+                team_id=team_id,
                 max_tokens=8192,
                 streaming=True, # Enable streaming explicitly
             )

@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { Model } from '@/lib/types/models'
+import type { Model, ModelDefaults } from '@/lib/types/models'
 import type { Transformation } from '@/lib/types/transformations'
 
 export type TeamRole = 'owner' | 'admin' | 'member' | 'viewer'
@@ -73,6 +73,17 @@ export interface TeamModelAllowlistResponse {
   models: Model[]
 }
 
+export interface TeamModelDefaults extends Pick<
+  ModelDefaults,
+  | 'default_chat_model'
+  | 'default_transformation_model'
+  | 'large_context_model'
+  | 'default_embedding_model'
+  | 'default_tools_model'
+> {
+  team_id: string
+}
+
 export interface TeamTransformationAllowlistResponse {
   team_id: string
   transformation_ids: string[]
@@ -133,6 +144,16 @@ export const teamsApi = {
     const response = await apiClient.put<TeamModelAllowlistResponse>(`/teams/${teamId}/models`, {
       model_ids: modelIds,
     })
+    return response.data
+  },
+
+  listModelDefaults: async (teamId: string) => {
+    const response = await apiClient.get<TeamModelDefaults>(`/teams/${teamId}/model-defaults`)
+    return response.data
+  },
+
+  updateModelDefaults: async (teamId: string, data: Partial<TeamModelDefaults>) => {
+    const response = await apiClient.put<TeamModelDefaults>(`/teams/${teamId}/model-defaults`, data)
     return response.data
   },
 

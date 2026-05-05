@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import AsyncGenerator, List, Optional
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, HTTPException, Path, Request
 from fastapi.responses import StreamingResponse
 from langchain_core.messages import HumanMessage
 from langchain_core.runnables import RunnableConfig
@@ -10,10 +10,14 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.auth import current_user_from_request
+from api.services.model_policy_service import ensure_model_selection_allowed
+from api.services.team_context_service import resolve_team_context
 from open_notebook.config import LANGGRAPH_SOURCE_CHAT_CHECKPOINT_FILE
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Source
 from open_notebook.exceptions import (
+    InvalidInputError,
     NotFoundError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
@@ -95,6 +99,7 @@ class SuccessResponse(BaseModel):
 )
 async def create_source_chat_session(
     request: CreateSourceChatSessionRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
 ):
     """Create a new chat session for a source."""
@@ -106,6 +111,18 @@ async def create_source_chat_session(
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+        actor = current_user_from_request(http_request)
+        team_id = await resolve_team_context(
+            actor=actor,
+            resource_type="source",
+            resource_id=full_source_id,
+        )
+        await ensure_model_selection_allowed(
+            actor=actor,
+            model_id=request.model_override,
+            default_type="chat",
+            team_id=team_id,
+        )
 
         # Create new session with model_override support
         session = ChatSession(
@@ -128,6 +145,8 @@ async def create_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source not found")
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating source chat session: {str(e)}")
         raise HTTPException(
@@ -299,6 +318,8 @@ async def get_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error fetching source chat session: {str(e)}")
         raise HTTPException(
@@ -312,6 +333,7 @@ async def get_source_chat_session(
 )
 async def update_source_chat_session(
     request: UpdateSourceChatSessionRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
@@ -347,6 +369,19 @@ async def update_source_chat_session(
         if not relation_query:
             raise HTTPException(
                 status_code=404, detail="Session not found for this source"
+            )
+        actor = current_user_from_request(http_request)
+        team_id = await resolve_team_context(
+            actor=actor,
+            resource_type="source",
+            resource_id=full_source_id,
+        )
+        if request.model_override is not None:
+            await ensure_model_selection_allowed(
+                actor=actor,
+                model_id=request.model_override,
+                default_type="chat",
+                team_id=team_id,
             )
 
         # Update session fields
@@ -440,7 +475,12 @@ async def delete_source_chat_session(
 
 
 async def stream_source_chat_response(
-    session_id: str, source_id: str, message: str, model_override: Optional[str] = None, enable_web_search: bool = False
+    session_id: str,
+    source_id: str,
+    message: str,
+    model_override: Optional[str] = None,
+    enable_web_search: bool = False,
+    team_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the source chat response as Server-Sent Events."""
     try:
@@ -471,7 +511,11 @@ async def stream_source_chat_response(
 
         # Instead of invoke, use astream to yield chunks as they arrive from LangGraph
         config = RunnableConfig(
-            configurable={"thread_id": session_id, "model_id": model_override}
+            configurable={
+                "thread_id": session_id,
+                "model_id": model_override,
+                "team_id": team_id,
+            }
         )
         
         # Stream the complete AI response if chunks weren't captured properly
@@ -633,6 +677,7 @@ async def stream_source_chat_response(
 @router.post("/sources/{source_id}/chat/sessions/{session_id}/messages")
 async def send_message_to_source_chat(
     request: SendMessageRequest,
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
@@ -677,6 +722,18 @@ async def send_message_to_source_chat(
         model_override = request.model_override or getattr(
             session, "model_override", None
         )
+        actor = current_user_from_request(http_request)
+        team_id = await resolve_team_context(
+            actor=actor,
+            resource_type="source",
+            resource_id=full_source_id,
+        )
+        await ensure_model_selection_allowed(
+            actor=actor,
+            model_id=model_override,
+            default_type="chat",
+            team_id=team_id,
+        )
 
         # Update session timestamp
         await session.save()
@@ -689,6 +746,7 @@ async def send_message_to_source_chat(
                 message=request.message,
                 model_override=model_override,
                 enable_web_search=request.enable_web_search or False,
+                team_id=team_id,
             ),
             media_type="text/event-stream",
             headers={
@@ -700,6 +758,8 @@ async def send_message_to_source_chat(
 
     except HTTPException:
         raise
+    except InvalidInputError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error sending message to source chat: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error sending message: {str(e)}")

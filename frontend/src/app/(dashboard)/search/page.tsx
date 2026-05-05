@@ -18,6 +18,7 @@ import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
@@ -62,6 +63,8 @@ export default function SearchPage() {
   const { data: modelDefaults, isLoading: modelsLoading } = useModelDefaults()
   const { data: availableModels } = useModels()
   const { openModal } = useModalManager()
+  const role = useAuthStore((state) => state.role)
+  const canCustomizeModels = role === 'admin'
 
   const modelNameById = useMemo(() => {
     if (!availableModels) {
@@ -76,6 +79,7 @@ export default function SearchPage() {
   }
 
   const hasEmbeddingModel = !!modelDefaults?.default_embedding_model
+  const defaultAskModel = modelDefaults?.default_tools_model || modelDefaults?.default_chat_model || ''
 
   // Track if we've already auto-triggered from URL params
   const hasAutoTriggeredRef = useRef(false)
@@ -101,16 +105,16 @@ export default function SearchPage() {
   }
 
   const handleAsk = useCallback(() => {
-    if (!askQuestion.trim() || !modelDefaults?.default_chat_model) return
+    if (!askQuestion.trim() || !defaultAskModel) return
 
-    const models = customModels || {
-      strategy: modelDefaults.default_chat_model,
-      answer: modelDefaults.default_chat_model,
-      finalAnswer: modelDefaults.default_chat_model
+    const models = canCustomizeModels && customModels ? customModels : {
+      strategy: defaultAskModel,
+      answer: defaultAskModel,
+      finalAnswer: defaultAskModel
     }
 
     ask.sendAsk(askQuestion, models)
-  }, [askQuestion, modelDefaults, customModels, ask])
+  }, [askQuestion, defaultAskModel, canCustomizeModels, customModels, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -123,11 +127,11 @@ export default function SearchPage() {
     if (urlMode === 'search') {
       handleSearch()
       hasAutoTriggeredRef.current = true
-    } else if (urlMode === 'ask' && modelDefaults?.default_chat_model) {
+    } else if (urlMode === 'ask' && defaultAskModel) {
       handleAsk()
       hasAutoTriggeredRef.current = true
     }
-  }, [urlQuery, urlMode, modelsLoading, modelDefaults, handleSearch, handleAsk])
+  }, [urlQuery, urlMode, modelsLoading, defaultAskModel, handleSearch, handleAsk])
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {
@@ -217,28 +221,30 @@ export default function SearchPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs text-muted-foreground">
-                          {customModels ? t.searchPage.usingCustomModels : t.searchPage.usingDefaultModels}
+                          {canCustomizeModels && customModels ? t.searchPage.usingCustomModels : t.searchPage.usingDefaultModels}
                         </Label>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setShowAdvancedModels(true)}
-                          disabled={ask.isStreaming}
-                          className="h-auto py-1 px-2"
-                        >
-                          <Settings className="h-3 w-3 mr-1" />
-                          {t.searchPage.advanced}
-                        </Button>
+                        {canCustomizeModels && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowAdvancedModels(true)}
+                            disabled={ask.isStreaming}
+                            className="h-auto py-1 px-2"
+                          >
+                            <Settings className="h-3 w-3 mr-1" />
+                            {t.searchPage.advanced}
+                          </Button>
+                        )}
                       </div>
                       <div className="flex gap-2 text-xs flex-wrap">
                         <Badge variant="secondary">
-                          {t.searchPage.strategy}: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
+                          {t.searchPage.strategy}: {resolveModelName((canCustomizeModels ? customModels?.strategy : undefined) || defaultAskModel)}
                         </Badge>
                         <Badge variant="secondary">
-                          {t.searchPage.answer}: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
+                          {t.searchPage.answer}: {resolveModelName((canCustomizeModels ? customModels?.answer : undefined) || defaultAskModel)}
                         </Badge>
                         <Badge variant="secondary">
-                          {t.searchPage.final}: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
+                          {t.searchPage.final}: {resolveModelName((canCustomizeModels ? customModels?.finalAnswer : undefined) || defaultAskModel)}
                         </Badge>
                       </div>
                     </div>
@@ -282,16 +288,18 @@ export default function SearchPage() {
                 />
 
                 {/* Advanced Models Dialog */}
-                <AdvancedModelsDialog
-                  open={showAdvancedModels}
-                  onOpenChange={setShowAdvancedModels}
-                  defaultModels={{
-                    strategy: customModels?.strategy || modelDefaults?.default_chat_model || '',
-                    answer: customModels?.answer || modelDefaults?.default_chat_model || '',
-                    finalAnswer: customModels?.finalAnswer || modelDefaults?.default_chat_model || ''
-                  }}
-                  onSave={setCustomModels}
-                />
+                {canCustomizeModels && (
+                  <AdvancedModelsDialog
+                    open={showAdvancedModels}
+                    onOpenChange={setShowAdvancedModels}
+                    defaultModels={{
+                      strategy: customModels?.strategy || defaultAskModel,
+                      answer: customModels?.answer || defaultAskModel,
+                      finalAnswer: customModels?.finalAnswer || defaultAskModel
+                    }}
+                    onSave={setCustomModels}
+                  />
+                )}
 
                 {/* Save to Notebooks Dialog */}
                 {ask.finalAnswer && (

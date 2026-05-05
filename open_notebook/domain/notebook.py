@@ -363,7 +363,7 @@ class Source(ObjectModel):
             raise InvalidInputError("Notebook ID must be provided")
         return await self.relate("reference", notebook_id)
 
-    async def vectorize(self) -> str:
+    async def vectorize(self, team_id: Optional[str] = None) -> str:
         """
         Submit vectorization as a background job using the embed_source command.
 
@@ -391,7 +391,7 @@ class Source(ObjectModel):
             command_id = submit_command(
                 "open_notebook",
                 "embed_source",
-                {"source_id": str(self.id)},
+                {"source_id": str(self.id), "team_id": team_id},
             )
 
             command_id_str = str(command_id)

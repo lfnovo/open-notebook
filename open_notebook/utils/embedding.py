@@ -85,7 +85,9 @@ async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:
 
 
 async def generate_embeddings(
-    texts: List[str], command_id: Optional[str] = None
+    texts: List[str],
+    command_id: Optional[str] = None,
+    team_id: Optional[str] = None,
 ) -> List[List[float]]:
     """
     Generate embeddings for multiple texts with automatic batching and retry.
@@ -111,7 +113,7 @@ async def generate_embeddings(
     # Lazy import to avoid circular dependency
     from open_notebook.ai.models import model_manager
 
-    embedding_model = await model_manager.get_embedding_model()
+    embedding_model = await model_manager.get_embedding_model(team_id=team_id)
     if not embedding_model:
         raise ValueError(
             "No embedding model configured. Please configure one in the Models section."

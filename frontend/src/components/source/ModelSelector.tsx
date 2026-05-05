@@ -23,6 +23,7 @@ import { Settings2, Sparkles } from 'lucide-react'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 interface ModelSelectorProps {
   currentModel?: string
@@ -40,6 +41,8 @@ export function ModelSelector({
   const [selectedModel, setSelectedModel] = useState(currentModel || 'default')
   const { data: models, isLoading } = useModels()
   const { data: defaults } = useModelDefaults()
+  const role = useAuthStore((state) => state.role)
+  const canCustomizeModels = role === 'admin'
 
   useEffect(() => {
     setSelectedModel(currentModel || 'default')
@@ -87,7 +90,7 @@ export function ModelSelector({
         <Button 
           variant="outline" 
           size="sm"
-          disabled={disabled}
+          disabled={disabled || !canCustomizeModels}
           className="gap-2"
         >
           <Settings2 className="h-4 w-4" />

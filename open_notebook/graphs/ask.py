@@ -58,6 +58,7 @@ async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -
             system_prompt,
             config.get("configurable", {}).get("strategy_model"),
             "tools",
+            team_id=config.get("configurable", {}).get("team_id"),
             max_tokens=2000,
             streaming=True,
         )
@@ -125,6 +126,7 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
             system_prompt,
             config.get("configurable", {}).get("answer_model"),
             "tools",
+            team_id=config.get("configurable", {}).get("team_id"),
             max_tokens=2000,
         )
         ai_message = await model.ainvoke(system_prompt)
@@ -144,6 +146,7 @@ async def write_final_answer(state: ThreadState, config: RunnableConfig) -> dict
             system_prompt,
             config.get("configurable", {}).get("final_answer_model"),
             "tools",
+            team_id=config.get("configurable", {}).get("team_id"),
             max_tokens=2000,
         )
         ai_message = await model.ainvoke(system_prompt)

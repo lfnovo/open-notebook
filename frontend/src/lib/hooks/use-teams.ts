@@ -1,14 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { teamsApi, TeamCreateRequest, TeamMemberUpsertRequest, TeamUpdateRequest } from '@/lib/api/teams'
+import { teamsApi, TeamCreateRequest, TeamMemberUpsertRequest, TeamModelDefaults, TeamUpdateRequest } from '@/lib/api/teams'
 import { usersApi } from '@/lib/api/users'
 import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 
+export function teamsQueryKey(identity?: string | null, q?: string) {
+  return [...QUERY_KEYS.teams, identity || 'anonymous', q || ''] as const
+}
+
 export function useTeams(q?: string) {
+  const username = useAuthStore((state) => state.username)
+
   return useQuery({
-    queryKey: [...QUERY_KEYS.teams, q || ''],
+    queryKey: teamsQueryKey(username, q),
     queryFn: () => teamsApi.list({ q: q || undefined }),
   })
 }
@@ -53,6 +60,35 @@ export function useUpdateTeamModels(teamId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.teamModels(teamId) })
       toast({ title: t.common.success, description: t.teams.allowlistSaved })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: getApiErrorKey(error, t.common.error),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useTeamModelDefaults(teamId?: string) {
+  return useQuery({
+    queryKey: teamId ? QUERY_KEYS.teamModelDefaults(teamId) : ['teams', 'model-defaults', 'none'],
+    queryFn: () => teamsApi.listModelDefaults(teamId as string),
+    enabled: !!teamId,
+  })
+}
+
+export function useUpdateTeamModelDefaults(teamId: string) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (data: Partial<TeamModelDefaults>) => teamsApi.updateModelDefaults(teamId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.teamModelDefaults(teamId) })
+      toast({ title: t.common.success, description: t.teams.modelDefaultsSaved })
     },
     onError: (error: unknown) => {
       toast({

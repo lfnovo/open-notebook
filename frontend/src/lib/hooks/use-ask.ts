@@ -8,9 +8,9 @@ import { searchApi } from '@/lib/api/search'
 import { AskStreamEvent } from '@/lib/types/search'
 
 interface AskModels {
-  strategy: string
-  answer: string
-  finalAnswer: string
+  strategy?: string
+  answer?: string
+  finalAnswer?: string
 }
 
 interface StrategyData {
@@ -43,11 +43,6 @@ export function useAsk() {
       return
     }
 
-    if (!models.strategy || !models.answer || !models.finalAnswer) {
-      toast.error(t('apiErrors.pleaseConfigureModels'))
-      return
-    }
-
     // Reset state
     setState({
       isStreaming: true,
@@ -60,9 +55,9 @@ export function useAsk() {
     try {
       const response = await searchApi.askKnowledgeBase({
         question,
-        strategy_model: models.strategy,
-        answer_model: models.answer,
-        final_answer_model: models.finalAnswer
+        ...(models.strategy && { strategy_model: models.strategy }),
+        ...(models.answer && { answer_model: models.answer }),
+        ...(models.finalAnswer && { final_answer_model: models.finalAnswer })
       })
 
       if (!response) {

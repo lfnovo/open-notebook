@@ -8,6 +8,7 @@ from api.auth import CurrentUser
 from api.models import (
     TeamCreateRequest,
     TeamModelAllowlistUpdateRequest,
+    TeamModelDefaultsUpdateRequest,
     TeamTransformationAllowlistUpdateRequest,
 )
 from api.services import team_service
@@ -183,19 +184,18 @@ async def test_team_admin_can_list_active_users_for_member_assignment(
 
 @pytest.mark.asyncio
 @patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.clear_invalid_model_defaults", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamAllowlistRepository.replace_team_models", new_callable=AsyncMock)
 @patch("api.services.team_service.Model.get", new_callable=AsyncMock)
-@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
-async def test_team_owner_can_replace_model_allowlist(
+async def test_system_admin_can_replace_model_allowlist(
     mock_get_team,
-    mock_get_member,
     mock_get_model,
     mock_replace,
+    mock_clear_invalid_defaults,
     mock_audit,
 ):
     mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
-    mock_get_member.return_value = {"role": "owner", "status": "active"}
     mock_get_model.side_effect = [
         SimpleNamespace(id="model:chat"),
         SimpleNamespace(id="model:embed"),
@@ -228,7 +228,7 @@ async def test_team_owner_can_replace_model_allowlist(
     response = await team_service.replace_team_models_use_case(
         "team:research",
         TeamModelAllowlistUpdateRequest(model_ids=["model:chat", "model:embed"]),
-        actor=regular_actor("owner"),
+        actor=system_admin(),
     )
 
     assert response.team_id == "team:research"
@@ -237,7 +237,11 @@ async def test_team_owner_can_replace_model_allowlist(
     mock_replace.assert_awaited_once_with(
         "team:research",
         ["model:chat", "model:embed"],
-        "app_user:owner",
+        "app_user:admin",
+    )
+    mock_clear_invalid_defaults.assert_awaited_once_with(
+        "team:research",
+        ["model:chat", "model:embed"],
     )
 
 
@@ -248,17 +252,14 @@ async def test_team_owner_can_replace_model_allowlist(
     new_callable=AsyncMock,
 )
 @patch("api.services.team_service.Transformation.get", new_callable=AsyncMock)
-@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
-async def test_team_admin_can_replace_transformation_allowlist(
+async def test_system_admin_can_replace_transformation_allowlist(
     mock_get_team,
-    mock_get_member,
     mock_get_transformation,
     mock_replace,
     mock_audit,
 ):
     mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
-    mock_get_member.return_value = {"role": "admin", "status": "active"}
     mock_get_transformation.return_value = SimpleNamespace(id="transformation:summary")
     mock_replace.return_value = [
         {
@@ -280,7 +281,7 @@ async def test_team_admin_can_replace_transformation_allowlist(
         TeamTransformationAllowlistUpdateRequest(
             transformation_ids=["transformation:summary"]
         ),
-        actor=regular_actor("admin"),
+        actor=system_admin(),
     )
 
     assert response.team_id == "team:research"
@@ -313,6 +314,34 @@ async def test_team_member_cannot_replace_model_allowlist(
 
 @pytest.mark.asyncio
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_owner_cannot_replace_model_allowlist(mock_get_team):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+
+    with pytest.raises(PermissionError, match="Admin privileges required"):
+        await team_service.replace_team_models_use_case(
+            "team:research",
+            TeamModelAllowlistUpdateRequest(model_ids=["model:chat"]),
+            actor=regular_actor("owner"),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_admin_cannot_replace_transformation_allowlist(mock_get_team):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+
+    with pytest.raises(PermissionError, match="Admin privileges required"):
+        await team_service.replace_team_transformations_use_case(
+            "team:research",
+            TeamTransformationAllowlistUpdateRequest(
+                transformation_ids=["transformation:summary"]
+            ),
+            actor=regular_actor("admin"),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
 async def test_system_team_allowlist_cannot_be_managed(mock_get_team):
     mock_get_team.return_value = {"id": "team:public", "type": "system"}
 
@@ -326,23 +355,158 @@ async def test_system_team_allowlist_cannot_be_managed(mock_get_team):
 
 @pytest.mark.asyncio
 @patch("api.services.team_service.Model.get", new_callable=AsyncMock)
-@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
 async def test_unknown_model_id_rejected(
     mock_get_team,
-    mock_get_member,
     mock_get_model,
 ):
     mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
-    mock_get_member.return_value = {"role": "owner", "status": "active"}
     mock_get_model.return_value = None
 
     with pytest.raises(NotFoundError):
         await team_service.replace_team_models_use_case(
             "team:research",
             TeamModelAllowlistUpdateRequest(model_ids=["model:missing"]),
+            actor=system_admin(),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.update_model_defaults", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamAllowlistRepository.list_team_models", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_owner_can_update_default_models_from_team_allowlist(
+    mock_get_team,
+    mock_get_member,
+    mock_list_team_models,
+    mock_update_defaults,
+    mock_audit,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = {"role": "owner", "status": "active"}
+    mock_list_team_models.return_value = [
+        {"model": {"id": "model:chat", "type": "language"}},
+        {"model": {"id": "model:embed", "type": "embedding"}},
+        {"model": {"id": "model:tools", "type": "language"}},
+    ]
+    mock_update_defaults.return_value = {
+        "default_chat_model": "model:chat",
+        "default_embedding_model": "model:embed",
+        "default_transformation_model": "model:chat",
+        "default_tools_model": "model:tools",
+        "large_context_model": None,
+    }
+
+    response = await team_service.update_team_model_defaults_use_case(
+        "team:research",
+        TeamModelDefaultsUpdateRequest(
+            default_chat_model="model:chat",
+            default_embedding_model="model:embed",
+            default_transformation_model="model:chat",
+            default_tools_model="model:tools",
+            large_context_model=None,
+        ),
+        actor=regular_actor("owner"),
+    )
+
+    assert response.team_id == "team:research"
+    assert response.default_chat_model == "model:chat"
+    assert response.default_embedding_model == "model:embed"
+    assert response.default_tools_model == "model:tools"
+    mock_update_defaults.assert_awaited_once_with(
+        "team:research",
+        {
+            "default_chat_model": "model:chat",
+            "default_embedding_model": "model:embed",
+            "default_transformation_model": "model:chat",
+            "default_tools_model": "model:tools",
+            "large_context_model": None,
+        },
+    )
+    mock_audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamAllowlistRepository.list_team_models", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_default_model_must_be_allowed_for_team(
+    mock_get_team,
+    mock_get_member,
+    mock_list_team_models,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = {"role": "owner", "status": "active"}
+    mock_list_team_models.return_value = [
+        {"model": {"id": "model:chat", "type": "language"}},
+    ]
+
+    with pytest.raises(InvalidInputError, match="allowed for this team"):
+        await team_service.update_team_model_defaults_use_case(
+            "team:research",
+            TeamModelDefaultsUpdateRequest(default_embedding_model="model:embed"),
             actor=regular_actor("owner"),
         )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamAllowlistRepository.list_team_models", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_default_model_must_match_slot_type(
+    mock_get_team,
+    mock_get_member,
+    mock_list_team_models,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = {"role": "owner", "status": "active"}
+    mock_list_team_models.return_value = [
+        {"model": {"id": "model:embed", "type": "embedding"}},
+    ]
+
+    with pytest.raises(InvalidInputError, match="language model"):
+        await team_service.update_team_model_defaults_use_case(
+            "team:research",
+            TeamModelDefaultsUpdateRequest(default_chat_model="model:embed"),
+            actor=regular_actor("owner"),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.update_model_defaults", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamAllowlistRepository.list_team_models", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_default_model_partial_update_preserves_unspecified_slots(
+    mock_get_team,
+    mock_get_member,
+    mock_list_team_models,
+    mock_update_defaults,
+    mock_audit,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = {"role": "owner", "status": "active"}
+    mock_list_team_models.return_value = [
+        {"model": {"id": "model:chat", "type": "language"}},
+    ]
+    mock_update_defaults.return_value = {
+        "default_chat_model": "model:chat",
+        "default_embedding_model": "model:embed",
+    }
+
+    await team_service.update_team_model_defaults_use_case(
+        "team:research",
+        TeamModelDefaultsUpdateRequest(default_chat_model="model:chat"),
+        actor=regular_actor("owner"),
+    )
+
+    mock_update_defaults.assert_awaited_once_with(
+        "team:research",
+        {"default_chat_model": "model:chat"},
+    )
 
 
 @pytest.mark.asyncio

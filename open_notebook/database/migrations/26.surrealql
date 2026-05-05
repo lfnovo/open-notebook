@@ -1,0 +1,7 @@
+-- Migration 26: Team-scoped default model assignments
+
+DEFINE FIELD IF NOT EXISTS default_chat_model ON TABLE team TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS default_embedding_model ON TABLE team TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS default_transformation_model ON TABLE team TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS default_tools_model ON TABLE team TYPE option<record<model>>;
+DEFINE FIELD IF NOT EXISTS large_context_model ON TABLE team TYPE option<record<model>>;

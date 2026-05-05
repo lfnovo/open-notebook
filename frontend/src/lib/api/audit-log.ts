@@ -17,6 +17,7 @@ export interface AuditLogListResponse {
   items: AuditLogEntry[]
   limit: number
   offset: number
+  total: number
 }
 
 export const auditLogApi = {

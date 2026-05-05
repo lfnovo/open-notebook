@@ -72,7 +72,7 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t.notebooks.createNew}</DialogTitle>
           <DialogDescription>

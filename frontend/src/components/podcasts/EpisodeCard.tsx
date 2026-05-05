@@ -250,7 +250,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                   <InfoIcon className="mr-2 h-4 w-4" /> {t.podcasts.details}
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[min(90vw,720px)] max-h-[85vh] overflow-hidden">
+              <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden">
                 <DialogHeader>
                   <DialogTitle>{episode.name}</DialogTitle>
                   <DialogDescription>

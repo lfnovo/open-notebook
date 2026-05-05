@@ -57,7 +57,7 @@ export function AdvancedModelsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t.searchPage.advancedModelTitle}</DialogTitle>
           <DialogDescription>

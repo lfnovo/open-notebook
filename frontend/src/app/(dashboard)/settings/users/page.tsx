@@ -114,7 +114,7 @@ function UserDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <form onSubmit={handleSubmit} className="space-y-5">
           <DialogHeader>
             <DialogTitle>{isEditing ? t.users.editUser : t.users.createUser}</DialogTitle>
@@ -384,7 +384,7 @@ export default function UsersPage() {
         onTemporaryPassword={setTemporaryPassword}
       />
       <Dialog open={!!temporaryPassword} onOpenChange={(open) => !open && setTemporaryPassword(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t.users.temporaryPassword}</DialogTitle>
           </DialogHeader>

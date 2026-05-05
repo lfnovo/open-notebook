@@ -139,7 +139,7 @@ export function ShareDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Share2 className="h-5 w-5" />
@@ -287,7 +287,7 @@ export function ShareDialog({
       </Dialog>
 
       <Dialog open={confirmPublic} onOpenChange={setConfirmPublic}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t.sharing.publicConfirmTitle}</DialogTitle>
           </DialogHeader>
@@ -308,7 +308,7 @@ export function ShareDialog({
       </Dialog>
 
       <Dialog open={!!confirmRevokeGrant} onOpenChange={(open) => !open && setConfirmRevokeGrant(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>{t.sharing.revokeShare}</DialogTitle>
           </DialogHeader>

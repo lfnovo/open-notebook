@@ -5,6 +5,7 @@ import { AppSidebar } from './AppSidebar'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
+import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
 
 // Mock Tooltip components to avoid Radix UI async issues in tests
 vi.mock('@/components/ui/tooltip', () => ({
@@ -14,9 +15,43 @@ vi.mock('@/components/ui/tooltip', () => ({
   TooltipContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
+vi.mock('@/components/ui/dropdown-menu', () => ({
+  DropdownMenu: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => <div role="menu">{children}</div>,
+  DropdownMenuItem: ({
+    children,
+    onSelect,
+    className,
+  }: {
+    children: React.ReactNode
+    onSelect?: (event: { preventDefault: () => void }) => void
+    className?: string
+  }) => (
+    <button role="menuitem" className={className} onClick={() => onSelect?.({ preventDefault: () => undefined })}>
+      {children}
+    </button>
+  ),
+}))
+
 vi.mock('@/lib/hooks/use-teams', () => ({
   useCanManageTeams: vi.fn(() => false),
   useHasTeams: vi.fn(() => false),
+}))
+
+vi.mock('@/lib/hooks/use-workspaces', () => ({
+  useCurrentWorkspace: vi.fn(() => ({
+    data: {
+      items: [
+        { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+        { id: 'workspace:team', name: 'Research Team', type: 'team', can_manage: false },
+      ],
+    },
+    currentWorkspace: { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+    currentWorkspaceId: 'workspace:personal',
+    setCurrentWorkspaceId: vi.fn(),
+    isLoading: false,
+  })),
 }))
 // But setup.ts has some basic mocks, let's see.
 
@@ -29,6 +64,18 @@ describe('AppSidebar', () => {
     })
     vi.mocked(useCanManageTeams).mockReturnValue(false)
     vi.mocked(useHasTeams).mockReturnValue(false)
+    vi.mocked(useCurrentWorkspace).mockReturnValue({
+      data: {
+        items: [
+          { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+          { id: 'workspace:team', name: 'Research Team', type: 'team', can_manage: false },
+        ],
+      },
+      currentWorkspace: { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+      currentWorkspaceId: 'workspace:personal',
+      setCurrentWorkspaceId: vi.fn(),
+      isLoading: false,
+    } as any)
     vi.mocked(useSidebarStore).mockReturnValue({
       isCollapsed: false,
       toggleCollapse: vi.fn(),
@@ -44,6 +91,29 @@ describe('AppSidebar', () => {
     // Check for navigation items (using actual locale values)
     expect(screen.getByText(/Sources/i)).toBeDefined()
     expect(screen.getByText(/Notebooks/i)).toBeDefined()
+  })
+
+  it('shows a workspace switcher and changes the current workspace', () => {
+    const setCurrentWorkspaceId = vi.fn()
+    vi.mocked(useCurrentWorkspace).mockReturnValue({
+      data: {
+        items: [
+          { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+          { id: 'workspace:team', name: 'Research Team', type: 'team', can_manage: false },
+        ],
+      },
+      currentWorkspace: { id: 'workspace:personal', name: 'Personal', type: 'personal', can_manage: true },
+      currentWorkspaceId: 'workspace:personal',
+      setCurrentWorkspaceId,
+      isLoading: false,
+    } as any)
+
+    render(<AppSidebar />)
+
+    fireEvent.click(screen.getByRole('button', { name: /Workspace Personal/i }))
+    fireEvent.click(screen.getByRole('menuitem', { name: /Research Team/i }))
+
+    expect(setCurrentWorkspaceId).toHaveBeenCalledWith('workspace:team')
   })
 
   it('toggles collapse state when clicking handle', () => {

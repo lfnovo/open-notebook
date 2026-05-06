@@ -11,6 +11,7 @@ import { useAuthStore } from '@/lib/stores/auth-store'
 import { useSidebarStore } from '@/lib/stores/sidebar-store'
 import { useCreateDialogs } from '@/lib/hooks/use-create-dialogs'
 import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
+import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +44,9 @@ import {
   UserCog,
   UserCircle,
   ScrollText,
+  Building2,
+  Check,
+  ChevronsUpDown,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -125,10 +129,20 @@ export function AppSidebar() {
   const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams, hasTeams })
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
+  const {
+    data: workspacesData,
+    currentWorkspace,
+    currentWorkspaceId,
+    setCurrentWorkspaceId,
+    isLoading: isLoadingWorkspaces,
+  } = useCurrentWorkspace()
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
   const profileLabel = username || t.navigation.profile
+  const workspaces = workspacesData?.items ?? []
+  const workspaceLabel = currentWorkspace?.name ?? t.teams.workspace
+  const canSwitchWorkspace = workspaces.length > 0 && !isLoadingWorkspaces
 
   // Detect platform for keyboard shortcut display
   useEffect(() => {
@@ -267,6 +281,66 @@ export function AppSidebar() {
                    <Book className="h-4 w-4" />
                   {t.common.notebook}
                 </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          <div
+            className={cn(
+              'mb-4',
+              isCollapsed ? 'px-0' : 'px-3'
+            )}
+          >
+            <DropdownMenu>
+              {isCollapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={!canSwitchWorkspace}
+                        className="w-full justify-center px-2 text-sidebar-foreground hover:bg-sidebar-accent"
+                        aria-label={`${t.teams.workspace} ${workspaceLabel}`}
+                      >
+                        <Building2 className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{workspaceLabel}</TooltipContent>
+                </Tooltip>
+              ) : (
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={!canSwitchWorkspace}
+                    className="w-full justify-start gap-2 border border-sidebar-border bg-sidebar-accent/40 px-2.5 text-sidebar-foreground hover:bg-sidebar-accent"
+                    aria-label={`${t.teams.workspace} ${workspaceLabel}`}
+                  >
+                    <Building2 className="h-4 w-4 text-sidebar-foreground/70" />
+                    <span className="min-w-0 flex-1 truncate text-left">{workspaceLabel}</span>
+                    <ChevronsUpDown className="h-3.5 w-3.5 text-sidebar-foreground/50" />
+                  </Button>
+                </DropdownMenuTrigger>
+              )}
+
+              <DropdownMenuContent
+                align={isCollapsed ? 'end' : 'start'}
+                side={isCollapsed ? 'right' : 'bottom'}
+                className="w-56"
+              >
+                {workspaces.map((workspace) => (
+                  <DropdownMenuItem
+                    key={workspace.id}
+                    onSelect={() => setCurrentWorkspaceId(workspace.id)}
+                    className="gap-2"
+                  >
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate">{workspace.name}</span>
+                    {workspace.id === currentWorkspaceId && <Check className="h-4 w-4" />}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -52,6 +52,13 @@ export function useWorkspacePolicy(workspaceId?: string | null) {
   })
 }
 
+export function useWorkspaceSystemPolicy() {
+  return useQuery({
+    queryKey: QUERY_KEYS.workspaceSystemPolicy,
+    queryFn: () => workspacesApi.getSystemPolicy(),
+  })
+}
+
 export function useUpdateWorkspacePolicy(workspaceId?: string | null) {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -72,6 +79,31 @@ export function useUpdateWorkspacePolicy(workspaceId?: string | null) {
       toast({
         title: t.common.error,
         description: t(getApiErrorKey(error, t.teams.failedToUpdateWorkspacePolicy)),
+        variant: 'destructive',
+      })
+    },
+  })
+}
+
+export function useUpdateWorkspaceSystemPolicy() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (policy: WorkspacePermissionPolicy) => workspacesApi.updateSystemPolicy(policy),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaceSystemPolicy })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaces })
+      toast({
+        title: t.common.success,
+        description: t.settings.workspaceSystemPolicyUpdated,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.settings.failedToUpdateWorkspaceSystemPolicy)),
         variant: 'destructive',
       })
     },

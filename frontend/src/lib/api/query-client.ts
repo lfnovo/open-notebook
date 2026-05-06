@@ -22,6 +22,7 @@ export const QUERY_KEYS = {
   workspaces: ['workspaces'] as const,
   workspace: (id: string) => ['workspaces', id] as const,
   workspacePolicy: (id?: string | null) => ['workspaces', id || 'none', 'policy'] as const,
+  workspaceSystemPolicy: ['workspaces', 'system-policy'] as const,
   workspaceNotebooks: (workspaceId?: string | null, archived?: boolean) =>
     ['workspaces', workspaceId || 'none', 'notebooks', archived ?? 'all'] as const,
   workspaceSources: (workspaceId?: string | null, notebookId?: string) =>

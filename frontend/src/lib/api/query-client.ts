@@ -21,6 +21,7 @@ export const QUERY_KEYS = {
   publicSources: ['sources', 'public'] as const,
   workspaces: ['workspaces'] as const,
   workspace: (id: string) => ['workspaces', id] as const,
+  workspacePolicy: (id?: string | null) => ['workspaces', id || 'none', 'policy'] as const,
   workspaceNotebooks: (workspaceId?: string | null, archived?: boolean) =>
     ['workspaces', workspaceId || 'none', 'notebooks', archived ?? 'all'] as const,
   workspaceSources: (workspaceId?: string | null, notebookId?: string) =>

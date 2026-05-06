@@ -2,7 +2,11 @@ import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { QUERY_KEYS } from '@/lib/api/query-client'
-import { WorkspaceResourceMoveRequest, workspacesApi } from '@/lib/api/workspaces'
+import {
+  WorkspacePermissionPolicy,
+  WorkspaceResourceMoveRequest,
+  workspacesApi,
+} from '@/lib/api/workspaces'
 import { useWorkspaceStore } from '@/lib/stores/workspace-store'
 import { useToast } from './use-toast'
 import { useTranslation } from './use-translation'
@@ -38,6 +42,40 @@ export function useCurrentWorkspace() {
     currentWorkspaceId,
     setCurrentWorkspaceId,
   }
+}
+
+export function useWorkspacePolicy(workspaceId?: string | null) {
+  return useQuery({
+    queryKey: QUERY_KEYS.workspacePolicy(workspaceId),
+    queryFn: () => workspacesApi.getPolicy(workspaceId as string),
+    enabled: Boolean(workspaceId),
+  })
+}
+
+export function useUpdateWorkspacePolicy(workspaceId?: string | null) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (policy: WorkspacePermissionPolicy) =>
+      workspacesApi.updatePolicy(workspaceId as string, policy),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspacePolicy(workspaceId) })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaces })
+      toast({
+        title: t.common.success,
+        description: t.teams.workspacePolicyUpdated,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.teams.failedToUpdateWorkspacePolicy)),
+        variant: 'destructive',
+      })
+    },
+  })
 }
 
 export function useMoveWorkspaceResource() {

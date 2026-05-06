@@ -20,6 +20,11 @@ import {
 } from '@/lib/hooks/use-teams'
 import { useModels } from '@/lib/hooks/use-models'
 import { useTransformations } from '@/lib/hooks/use-transformations'
+import {
+  useUpdateWorkspacePolicy,
+  useWorkspacePolicy,
+  useWorkspaces,
+} from '@/lib/hooks/use-workspaces'
 import { enUS } from '@/lib/locales/en-US'
 import { zhCN } from '@/lib/locales/zh-CN'
 import { useAuthStore } from '@/lib/stores/auth-store'
@@ -47,6 +52,12 @@ vi.mock('@/lib/hooks/use-models', () => ({
 
 vi.mock('@/lib/hooks/use-transformations', () => ({
   useTransformations: vi.fn(),
+}))
+
+vi.mock('@/lib/hooks/use-workspaces', () => ({
+  useWorkspaces: vi.fn(),
+  useWorkspacePolicy: vi.fn(),
+  useUpdateWorkspacePolicy: vi.fn(),
 }))
 
 describe('TeamsPage', () => {
@@ -141,6 +152,58 @@ describe('TeamsPage', () => {
       isLoading: false,
     } as any)
     vi.mocked(useUpdateTeamTransformations).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
+    vi.mocked(useWorkspaces).mockReturnValue({
+      data: {
+        items: [
+          {
+            id: 'workspace:research',
+            name: 'Research',
+            type: 'team',
+            team_id: 'team:research',
+            owner_id: null,
+            created_by: 'app_user:admin',
+            created: '2026-05-05T00:00:00Z',
+            updated: '2026-05-05T00:00:00Z',
+            current_user_role: 'admin',
+            can_manage: true,
+          },
+        ],
+      },
+      isLoading: false,
+    } as any)
+    vi.mocked(useWorkspacePolicy).mockReturnValue({
+      data: {
+        workspace_id: 'workspace:research',
+        policy: {
+          member_can_read: true,
+          member_can_create_source: true,
+          member_can_update_own_source: true,
+          member_can_process_own_source: true,
+          member_can_delete_own_source: false,
+          member_can_remove_source: false,
+          member_can_create_note: true,
+          member_can_update_own_note: true,
+          member_can_delete_own_note: true,
+          member_can_delete_chat: false,
+          member_can_update_notebook: false,
+        },
+        effective_policy: {
+          member_can_read: true,
+          member_can_create_source: true,
+          member_can_update_own_source: true,
+          member_can_process_own_source: true,
+          member_can_delete_own_source: false,
+          member_can_remove_source: false,
+          member_can_create_note: true,
+          member_can_update_own_note: true,
+          member_can_delete_own_note: true,
+          member_can_delete_chat: false,
+          member_can_update_notebook: false,
+        },
+      },
+      isLoading: false,
+    } as any)
+    vi.mocked(useUpdateWorkspacePolicy).mockReturnValue({ mutate: vi.fn(), isPending: false } as any)
     vi.mocked(useModels).mockReturnValue({
       data: [
         {
@@ -220,6 +283,15 @@ describe('TeamsPage', () => {
     expect(screen.queryByText('Allowed models')).not.toBeInTheDocument()
     expect(screen.queryByText('Allowed transformations')).not.toBeInTheDocument()
     expect(useTeamModelDefaults).toHaveBeenCalledWith('team:research')
+  })
+
+  it('shows workspace permission policy for team managers', async () => {
+    render(<TeamsPage />)
+
+    expect(await screen.findByText('Workspace permissions')).toBeInTheDocument()
+    expect(screen.getByLabelText('Members can add sources')).toBeChecked()
+    expect(screen.getByLabelText('Members can remove sources')).not.toBeChecked()
+    expect(useWorkspacePolicy).toHaveBeenCalledWith('workspace:research')
   })
 
   it('has localized copy for the team slug label', () => {

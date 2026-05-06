@@ -21,6 +21,7 @@ import {
 } from '@/lib/hooks/use-teams'
 import { useModels } from '@/lib/hooks/use-models'
 import { useTransformations } from '@/lib/hooks/use-transformations'
+import { useUpdateWorkspacePolicy, useWorkspacePolicy, useWorkspaces } from '@/lib/hooks/use-workspaces'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
@@ -44,6 +45,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { WorkspacePermissionPolicy } from '@/lib/api/workspaces'
 
 const TEAM_ROLES: TeamRole[] = ['owner', 'admin', 'member', 'viewer']
 const MEMBER_STATUSES: TeamMemberStatus[] = ['active', 'disabled']
@@ -329,6 +331,129 @@ function TeamAllowlistPanel({ team }: { team: Team }) {
   return <TeamAdminAllowlistPanel team={team} />
 }
 
+type WorkspacePolicyKey = keyof WorkspacePermissionPolicy
+
+function WorkspacePolicyPanel({ team }: { team: Team }) {
+  const { t } = useTranslation()
+  const { data: workspacesData, isLoading: workspacesLoading } = useWorkspaces()
+  const workspace = workspacesData?.items.find((item) => item.team_id === team.id)
+  const { data, isLoading } = useWorkspacePolicy(workspace?.id)
+  const updatePolicy = useUpdateWorkspacePolicy(workspace?.id)
+  const policy = data?.policy
+  const effectivePolicy = data?.effective_policy
+
+  if (team.type !== 'workspace' || !team.can_manage) {
+    return null
+  }
+
+  const policyItems: Array<{
+    key: WorkspacePolicyKey
+    label: string
+    description: string
+  }> = [
+    {
+      key: 'member_can_create_source',
+      label: t.teams.policyCreateSource,
+      description: t.teams.policyCreateSourceDesc,
+    },
+    {
+      key: 'member_can_update_own_source',
+      label: t.teams.policyUpdateOwnSource,
+      description: t.teams.policyUpdateOwnSourceDesc,
+    },
+    {
+      key: 'member_can_process_own_source',
+      label: t.teams.policyProcessOwnSource,
+      description: t.teams.policyProcessOwnSourceDesc,
+    },
+    {
+      key: 'member_can_remove_source',
+      label: t.teams.policyRemoveSource,
+      description: t.teams.policyRemoveSourceDesc,
+    },
+    {
+      key: 'member_can_create_note',
+      label: t.teams.policyCreateNote,
+      description: t.teams.policyCreateNoteDesc,
+    },
+    {
+      key: 'member_can_update_own_note',
+      label: t.teams.policyUpdateOwnNote,
+      description: t.teams.policyUpdateOwnNoteDesc,
+    },
+    {
+      key: 'member_can_delete_own_note',
+      label: t.teams.policyDeleteOwnNote,
+      description: t.teams.policyDeleteOwnNoteDesc,
+    },
+    {
+      key: 'member_can_update_notebook',
+      label: t.teams.policyUpdateNotebook,
+      description: t.teams.policyUpdateNotebookDesc,
+    },
+  ]
+
+  const togglePolicy = (key: WorkspacePolicyKey, checked: boolean) => {
+    if (!policy) return
+    updatePolicy.mutate({
+      ...policy,
+      [key]: checked,
+    })
+  }
+
+  return (
+    <section className="space-y-4 border-b p-4">
+      <div className="flex items-start gap-2">
+        <SlidersHorizontal className="mt-0.5 h-4 w-4 text-muted-foreground" />
+        <div>
+          <h3 className="text-sm font-semibold tracking-normal">{t.teams.workspacePolicy}</h3>
+          <p className="text-xs text-muted-foreground">{t.teams.workspacePolicyDesc}</p>
+        </div>
+      </div>
+
+      {workspacesLoading || isLoading ? (
+        <div className="flex min-h-24 items-center justify-center rounded-md border">
+          <LoadingSpinner />
+        </div>
+      ) : !workspace || !policy || !effectivePolicy ? (
+        <div className="rounded-md border p-4 text-sm text-muted-foreground">
+          {t.teams.noWorkspacePolicy}
+        </div>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2">
+          {policyItems.map((item) => {
+            const inputId = `workspace-policy-${workspace.id}-${item.key}`
+            const isSystemLocked = policy[item.key] && !effectivePolicy[item.key]
+            return (
+              <div key={item.key} className="rounded-md border p-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id={inputId}
+                    checked={policy[item.key]}
+                    disabled={updatePolicy.isPending}
+                    onCheckedChange={(checked) => togglePolicy(item.key, Boolean(checked))}
+                  />
+                  <div className="min-w-0">
+                    <Label htmlFor={inputId} className="cursor-pointer text-sm font-medium">
+                      {item.label}
+                    </Label>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.description}</p>
+                    {isSystemLocked && (
+                      <p className="mt-2 text-xs text-amber-600">
+                        {t.teams.policyLockedBySystem}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
 function TeamDialog({
   open,
   team,
@@ -596,6 +721,7 @@ function MembersPanel({ team }: { team: Team }) {
       )}
 
       <TeamDefaultModelsPanel team={team} />
+      <WorkspacePolicyPanel team={team} />
       <TeamAllowlistPanel team={team} />
 
       {isLoading ? (

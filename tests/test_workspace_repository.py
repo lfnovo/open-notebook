@@ -88,6 +88,43 @@ async def test_ensure_team_workspace_creates_missing_workspace(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_get_workspace_for_resource_loads_resource_workspace(monkeypatch):
+    calls = []
+
+    async def fake_repo_query(query, vars=None):
+        calls.append((query, vars))
+        if "SELECT workspace_id FROM $resource_id" in query:
+            return [{"workspace_id": "workspace:team"}]
+        return [{"id": "workspace:team", "type": "team", "team_id": "team:research"}]
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    row = await WorkspaceRepository.get_workspace_for_resource(
+        resource_type="notebook",
+        resource_id="notebook:abc",
+    )
+
+    assert row["team_id"] == "team:research"
+    assert str(calls[0][1]["resource_id"]) == "notebook:abc"
+    assert str(calls[1][1]["workspace_id"]) == "workspace:team"
+
+
+@pytest.mark.asyncio
+async def test_get_workspace_for_resource_rejects_unknown_table(monkeypatch):
+    async def fake_repo_query(query, vars=None):
+        raise AssertionError("unknown resource types should not query")
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    row = await WorkspaceRepository.get_workspace_for_resource(
+        resource_type="unknown",
+        resource_id="unknown:abc",
+    )
+
+    assert row is None
+
+
+@pytest.mark.asyncio
 async def test_list_for_user_includes_personal_and_active_team_workspaces(monkeypatch):
     captured = {}
 

@@ -11,6 +11,49 @@ def user(role: str = "user") -> CurrentUser:
     return CurrentUser(id=f"app_user:{role}", username=role, role=role)
 
 
+@pytest.fixture(autouse=True)
+def no_resource_workspace(monkeypatch):
+    monkeypatch.setattr(
+        team_context_service.WorkspaceRepository,
+        "get_workspace_for_resource",
+        AsyncMock(return_value=None),
+    )
+
+
+@pytest.mark.asyncio
+async def test_resolves_resource_team_context_from_workspace(monkeypatch):
+    workspace_lookup = AsyncMock(
+        return_value={
+            "id": "workspace:team",
+            "type": "team",
+            "team_id": "team:research",
+        }
+    )
+    share_lookup = AsyncMock(return_value=[])
+    monkeypatch.setattr(
+        team_context_service.WorkspaceRepository,
+        "get_workspace_for_resource",
+        workspace_lookup,
+    )
+    monkeypatch.setattr(
+        team_context_service.ShareRepository,
+        "list_resource_grants",
+        share_lookup,
+    )
+
+    team_id = await team_context_service.resolve_resource_team_context(
+        resource_type="notebook",
+        resource_id="notebook:abc",
+    )
+
+    assert team_id == "team:research"
+    workspace_lookup.assert_awaited_once_with(
+        resource_type="notebook",
+        resource_id="notebook:abc",
+    )
+    share_lookup.assert_not_awaited()
+
+
 @pytest.mark.asyncio
 async def test_resolves_single_non_public_team_grant(monkeypatch):
     monkeypatch.setattr(

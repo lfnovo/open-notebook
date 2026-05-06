@@ -32,16 +32,21 @@ async def test_retry_marks_submitted_command_failed_when_source_update_fails():
                     return_value="command:retry",
                 ):
                     with patch(
-                        "api.services.source_service.mark_command_failed",
+                        "api.services.source_service.resolve_resource_team_context",
                         new_callable=AsyncMock,
-                    ) as mark_failed:
-                        with pytest.raises(
-                            RuntimeError, match="database update failed"
-                        ):
-                            await retry_source_processing_use_case(
-                                "source:retry",
-                                user_id="user:owner",
-                            )
+                        return_value=None,
+                    ):
+                        with patch(
+                            "api.services.source_service.mark_command_failed",
+                            new_callable=AsyncMock,
+                        ) as mark_failed:
+                            with pytest.raises(
+                                RuntimeError, match="database update failed"
+                            ):
+                                await retry_source_processing_use_case(
+                                    "source:retry",
+                                    user_id="user:owner",
+                                )
 
     mark_failed.assert_awaited_once()
     args = mark_failed.await_args.args

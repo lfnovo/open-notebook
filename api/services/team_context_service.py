@@ -8,8 +8,8 @@ from open_notebook.database.repositories.share_repository import (
     ShareRepository,
 )
 from open_notebook.database.repositories.team_repository import TeamRepository
+from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
 from open_notebook.exceptions import InvalidInputError
-
 
 READ_PERMISSIONS = {"read", "write", "owner"}
 
@@ -19,7 +19,18 @@ async def resolve_resource_team_context(
     resource_type: str,
     resource_id: str,
 ) -> Optional[str]:
-    """Infer a team context from a resource with exactly one non-public team grant."""
+    """Resolve team context from workspace ownership, with share-grant fallback."""
+    workspace = await WorkspaceRepository.get_workspace_for_resource(
+        resource_type=resource_type,
+        resource_id=resource_id,
+    )
+    if (
+        workspace
+        and workspace.get("type") == "team"
+        and workspace.get("team_id") is not None
+    ):
+        return str(workspace["team_id"])
+
     grants = await ShareRepository.list_resource_grants(
         resource_type=resource_type,
         resource_id=resource_id,

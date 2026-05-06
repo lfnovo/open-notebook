@@ -8,6 +8,8 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 class WorkspaceRepository:
     """Named workspace queries used by workspace services."""
 
+    RESOURCE_TABLES = {"notebook", "source", "note", "chat_session"}
+
     @staticmethod
     async def get_workspace(workspace_id: str) -> Optional[dict[str, Any]]:
         result = await repo_query(
@@ -15,6 +17,25 @@ class WorkspaceRepository:
             {"workspace_id": ensure_record_id(workspace_id)},
         )
         return result[0] if result else None
+
+    @staticmethod
+    async def get_workspace_for_resource(
+        *,
+        resource_type: str,
+        resource_id: str,
+    ) -> Optional[dict[str, Any]]:
+        if resource_type not in WorkspaceRepository.RESOURCE_TABLES:
+            return None
+        if not resource_id.startswith(f"{resource_type}:"):
+            return None
+
+        result = await repo_query(
+            "SELECT workspace_id FROM $resource_id LIMIT 1",
+            {"resource_id": ensure_record_id(resource_id)},
+        )
+        if not result or not result[0].get("workspace_id"):
+            return None
+        return await WorkspaceRepository.get_workspace(str(result[0]["workspace_id"]))
 
     @staticmethod
     async def get_personal_workspace(user_id: str) -> Optional[dict[str, Any]]:

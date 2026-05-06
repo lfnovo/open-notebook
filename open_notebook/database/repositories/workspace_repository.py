@@ -172,3 +172,30 @@ class WorkspaceRepository:
             },
         )
         return bool(result)
+
+    @staticmethod
+    async def current_user_role(
+        *,
+        workspace_id: str,
+        user_id: str,
+    ) -> Optional[dict[str, Any]]:
+        result = await repo_query(
+            """
+            SELECT
+                type,
+                owner_id,
+                team_id,
+                IF type = 'personal' AND owner_id = $user_id THEN 'owner'
+                ELSE (SELECT VALUE role FROM team_member
+                    WHERE team = $parent.team_id AND user = $user_id AND status = 'active'
+                    LIMIT 1)[0]
+                END AS current_user_role
+            FROM $workspace_id
+            LIMIT 1
+            """,
+            {
+                "workspace_id": ensure_record_id(workspace_id),
+                "user_id": ensure_record_id(user_id),
+            },
+        )
+        return result[0] if result else None

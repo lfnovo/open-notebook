@@ -1,6 +1,6 @@
 from typing import Any
 
-from api.models import AssetModel, SourceListResponse
+from api.models import AssetModel, ResourceCapabilities, SourceListResponse
 
 
 def command_fields_from_fetched_command(
@@ -32,7 +32,11 @@ def command_fields_from_fetched_command(
     return command_id, status, processing_info
 
 
-def source_list_response_from_row(row: dict[str, Any]) -> SourceListResponse:
+def source_list_response_from_row(
+    row: dict[str, Any],
+    *,
+    capabilities: ResourceCapabilities | None = None,
+) -> SourceListResponse:
     """Build a SourceListResponse from a source list query row."""
     command_id, status, processing_info = command_fields_from_fetched_command(
         row.get("command")
@@ -61,4 +65,5 @@ def source_list_response_from_row(row: dict[str, Any]) -> SourceListResponse:
         owner_id=row.get("owner_id"),
         workspace_id=str(row["workspace_id"]) if row.get("workspace_id") else None,
         visibility=row.get("visibility", "private"),
+        capabilities=capabilities or ResourceCapabilities(),
     )

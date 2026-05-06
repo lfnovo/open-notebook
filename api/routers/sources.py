@@ -13,6 +13,7 @@ from fastapi import (
 from fastapi.responses import FileResponse, Response
 from loguru import logger
 
+from api.auth import current_user_from_request
 from api.models import (
     BulkDeleteRequest,
     BulkDeleteResponse,
@@ -45,6 +46,7 @@ from api.services.source_service import (
     update_source_visibility_use_case,
 )
 from api.services.source_uploads import save_uploaded_file
+from api.services.workspace_capabilities import resolve_resource_capabilities
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repositories.source_repository import SourceRepository
 from open_notebook.database.repositories.team_repository import TeamRepository
@@ -58,6 +60,10 @@ SOURCE_PROCESSING_TIMEOUT_SECONDS = int(
 )
 _coerce_datetime = command_lifecycle.coerce_datetime
 _command_status_value = command_lifecycle.command_status_value
+
+
+def _allow_legacy_owner_fallback(resource_workspace_id: Any, request: Request) -> bool:
+    return current_user_from_request(request) is None or not resource_workspace_id
 
 
 def _is_command_timed_out(created_at: Any, *, now: Optional[datetime] = None) -> bool:
@@ -90,6 +96,7 @@ async def get_sources(
     Returns sources owned by the user (private + public) plus all public sources.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     team_ids = await TeamRepository.user_team_ids(user_id) if user_id else []
     try:
         # Validate sort parameters
@@ -120,7 +127,17 @@ async def get_sources(
             workspace_id=workspace_id,
         )
 
-        return [source_list_response_from_row(row) for row in result]
+        responses: list[SourceListResponse] = []
+        for row in result:
+            capabilities = await resolve_resource_capabilities(
+                actor=actor,
+                resource_type="source",
+                owner_id=str(row.get("owner_id")) if row.get("owner_id") else None,
+                workspace_id=str(row.get("workspace_id")) if row.get("workspace_id") else None,
+                visibility=row.get("visibility", "private"),
+            )
+            responses.append(source_list_response_from_row(row, capabilities=capabilities))
+        return responses
     except HTTPException:
         raise
     except Exception as e:
@@ -166,7 +183,19 @@ async def get_public_sources(
             public_only=True,
         )
 
-        return [source_list_response_from_row(row) for row in result]
+        return [
+            source_list_response_from_row(
+                row,
+                capabilities=await resolve_resource_capabilities(
+                    actor=None,
+                    resource_type="source",
+                    owner_id=str(row.get("owner_id")) if row.get("owner_id") else None,
+                    workspace_id=str(row.get("workspace_id")) if row.get("workspace_id") else None,
+                    visibility=row.get("visibility", "public"),
+                ),
+            )
+            for row in result
+        ]
     except HTTPException:
         raise
     except Exception as e:
@@ -185,6 +214,7 @@ async def create_source(
 ):
     """Create a new source and queue background processing."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     source_data, upload_file = form_data
     file_path: str | None = None
 
@@ -202,6 +232,7 @@ async def create_source(
             source_data,
             user_id=user_id,
             file_path=file_path,
+            actor=actor,
         )
 
     except HTTPException:
@@ -265,8 +296,9 @@ async def _resolve_source_file(source_id: str) -> tuple[str, str]:
 async def get_source(request: Request, source_id: str):
     """Get a specific source by ID. Requires ownership (private) or public."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
-        return await get_source_response(source_id, user_id=user_id)
+        return await get_source_response(source_id, user_id=user_id, actor=actor)
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
@@ -280,11 +312,19 @@ async def get_source(request: Request, source_id: str):
 async def check_source_file(request: Request, source_id: str):
     """Check if a source has a downloadable file. Requires access."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        if not await can_read_resource(
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="source",
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            workspace_id=str(source.workspace_id) if source.workspace_id else None,
+            visibility=source.visibility,
+        )
+        if not capabilities.can_read and not await can_read_resource(
             resource_type="source",
             resource_id=source.id or source_id,
             user_id=user_id,
@@ -308,11 +348,16 @@ async def update_source_visibility(request: Request, source_id: str):
     Requires ownership. Returns the updated source.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
     try:
-        return await update_source_visibility_use_case(source_id, user_id=user_id)
+        return await update_source_visibility_use_case(
+            source_id,
+            user_id=user_id,
+            actor=actor,
+        )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
@@ -330,11 +375,19 @@ async def update_source_visibility(request: Request, source_id: str):
 async def download_source_file(request: Request, source_id: str):
     """Download the original file associated with an uploaded source. Requires access."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
-        if not await can_read_resource(
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="source",
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            workspace_id=str(source.workspace_id) if source.workspace_id else None,
+            visibility=source.visibility,
+        )
+        if not capabilities.can_read and not await can_read_resource(
             resource_type="source",
             resource_id=source.id or source_id,
             user_id=user_id,
@@ -359,11 +412,13 @@ async def download_source_file(request: Request, source_id: str):
 async def get_source_status(request: Request, source_id: str):
     """Get processing status for a source. Requires access."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         return await get_source_status_response(
             source_id,
             user_id=user_id,
             timeout_seconds=SOURCE_PROCESSING_TIMEOUT_SECONDS,
+            actor=actor,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -380,11 +435,13 @@ async def get_source_status(request: Request, source_id: str):
 async def update_source(request: Request, source_id: str, source_update: SourceUpdate):
     """Update a source. Requires ownership."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         return await update_source_details(
             source_id,
             source_update,
             user_id=user_id,
+            actor=actor,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -401,8 +458,13 @@ async def update_source(request: Request, source_id: str, source_update: SourceU
 async def retry_source_processing(request: Request, source_id: str):
     """Retry processing for a failed or stuck source. Requires ownership."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
-        return await retry_source_processing_use_case(source_id, user_id=user_id)
+        return await retry_source_processing_use_case(
+            source_id,
+            user_id=user_id,
+            actor=actor,
+        )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
@@ -424,13 +486,23 @@ async def delete_source(request: Request, source_id: str):
     Remove the source from all notebooks first.
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
-        # Ownership check
-        if not _check_source_ownership(source.owner_id, user_id):
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="source",
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            workspace_id=str(source.workspace_id) if source.workspace_id else None,
+            visibility=source.visibility,
+        )
+        if not capabilities.can_delete and not (
+            _allow_legacy_owner_fallback(source.workspace_id, request)
+            and _check_source_ownership(source.owner_id, user_id)
+        ):
             raise HTTPException(status_code=403, detail="Access denied")
 
         await source.delete()
@@ -449,8 +521,13 @@ async def delete_source(request: Request, source_id: str):
 async def extract_knowledge_graph(request: Request, source_id: str):
     """Trigger knowledge graph extraction for a source. Requires ownership."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
-        return await queue_knowledge_graph_extraction(source_id, user_id=user_id)
+        return await queue_knowledge_graph_extraction(
+            source_id,
+            user_id=user_id,
+            actor=actor,
+        )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
@@ -474,6 +551,7 @@ async def bulk_delete_sources(request: Request, body: BulkDeleteRequest):
     Returns a per-source breakdown of which were deleted and which failed (with reasons).
     """
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
 
@@ -498,7 +576,17 @@ async def bulk_delete_sources(request: Request, body: BulkDeleteRequest):
 
             title = source.title or "(untitled)"
 
-            if not _check_source_ownership(source.owner_id, user_id):
+            capabilities = await resolve_resource_capabilities(
+                actor=actor,
+                resource_type="source",
+                owner_id=str(source.owner_id) if source.owner_id else None,
+                workspace_id=str(source.workspace_id) if source.workspace_id else None,
+                visibility=source.visibility,
+            )
+            if not capabilities.can_delete and not (
+                _allow_legacy_owner_fallback(source.workspace_id, request)
+                and _check_source_ownership(source.owner_id, user_id)
+            ):
                 results.append(
                     BulkDeleteResult(
                         source_id=source_id,
@@ -546,13 +634,20 @@ async def bulk_delete_sources(request: Request, body: BulkDeleteRequest):
 async def get_source_insights(request: Request, source_id: str):
     """Get all insights for a specific source. Requires access."""
     user_id: Optional[str] = getattr(request.state, "user_id", None)
+    actor = current_user_from_request(request)
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
-        # Access check
-        if not await can_read_resource(
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="source",
+            owner_id=str(source.owner_id) if source.owner_id else None,
+            workspace_id=str(source.workspace_id) if source.workspace_id else None,
+            visibility=source.visibility,
+        )
+        if not capabilities.can_read and not await can_read_resource(
             resource_type="source",
             resource_id=source.id or source_id,
             user_id=user_id,
@@ -592,11 +687,13 @@ async def create_source_insight(
 ):
     """Start insight generation for a source by running a transformation. Requires ownership."""
     user_id: Optional[str] = getattr(http_request.state, "user_id", None)
+    actor = current_user_from_request(http_request)
     try:
         return await create_source_insight_use_case(
             source_id,
             request,
             user_id=user_id,
+            actor=actor,
         )
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))

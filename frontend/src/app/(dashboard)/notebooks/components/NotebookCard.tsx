@@ -37,6 +37,8 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
   const { data: profile } = useProfile()
   const creatorLabel = notebook.creator_username || notebook.creator_name
   const canManage = canManageNotebook(notebook, profile?.id)
+  const canShare = notebook.capabilities?.can_share ?? canManage
+  const canDelete = notebook.capabilities?.can_delete ?? canManage
 
   const tVisibilityPrivate = t.visibility?.private ?? 'Private'
   const tVisibilityTeam = t.visibility?.team ?? 'Team'
@@ -58,7 +60,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (!canManage) return
+    if (!canShare) return
     setShowShareDialog(true)
   }
 
@@ -93,7 +95,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                   labels={visibilityLabels}
                   title={t.sharing?.title || 'Share'}
                   onClick={handleShare}
-                  disabled={!canManage}
+                  disabled={!canShare}
                 />
 
                 <DropdownMenu>
@@ -123,9 +125,9 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       )}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      disabled={!canManage}
+                      disabled={!canDelete}
                       onClick={(e) => {
-                        if (!canManage) return
+                        if (!canDelete) return
                         e.stopPropagation()
                         setShowDeleteDialog(true)
                       }}

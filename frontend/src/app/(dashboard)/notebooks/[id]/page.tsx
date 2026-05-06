@@ -191,6 +191,8 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
   }
 
   const canManageNotebook = canManageNotebookResource(notebook, profile?.id)
+  const canCreateSource = notebook.capabilities?.can_create_source ?? canManageNotebook
+  const canRemoveSource = notebook.capabilities?.can_remove_source ?? canManageNotebook
 
   return (
           <div className="flex flex-col flex-1 min-h-0">
@@ -233,6 +235,8 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                     contextSelections={contextSelections.sources}
                     onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
                     canManageNotebook={canManageNotebook}
+                    canCreateSource={canCreateSource}
+                    canRemoveSource={canRemoveSource}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
@@ -280,6 +284,8 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                 contextSelections={contextSelections.sources}
                 onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
                 canManageNotebook={canManageNotebook}
+                canCreateSource={canCreateSource}
+                canRemoveSource={canRemoveSource}
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}

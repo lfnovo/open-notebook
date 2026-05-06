@@ -5,6 +5,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 ResourceVisibility = Literal["private", "team", "public"]
 
 
+class ResourceCapabilities(BaseModel):
+    can_read: bool = False
+    can_update: bool = False
+    can_delete: bool = False
+    can_share: bool = False
+    can_manage: bool = False
+    can_create_source: bool = False
+    can_remove_source: bool = False
+    can_create_note: bool = False
+    can_process: bool = False
+
+
 # Notebook models
 class NotebookCreate(BaseModel):
     name: str = Field(..., description="Name of the notebook")
@@ -51,6 +63,7 @@ class NotebookResponse(BaseModel):
     owner_id: Optional[str] = None
     workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
     @field_validator("owner_id", mode="before")
     @classmethod
@@ -403,6 +416,7 @@ class SourceResponse(BaseModel):
     owner_id: Optional[str] = None
     workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
     @field_validator("owner_id", mode="before")
     @classmethod
@@ -433,6 +447,7 @@ class SourceListResponse(BaseModel):
     owner_id: Optional[str] = None
     workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
     @field_validator("owner_id", mode="before")
     @classmethod

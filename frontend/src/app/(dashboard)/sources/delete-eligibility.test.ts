@@ -27,6 +27,28 @@ describe('source delete eligibility', () => {
     expect(canDeleteSource(source(), 'app_user:member')).toBe(false)
   })
 
+  it('uses backend capabilities when present', () => {
+    expect(
+      canDeleteSource(
+        source({
+          owner_id: 'app_user:other',
+          capabilities: {
+            can_read: true,
+            can_update: false,
+            can_delete: true,
+            can_share: false,
+            can_manage: false,
+            can_create_source: false,
+            can_remove_source: false,
+            can_create_note: false,
+            can_process: false,
+          },
+        }),
+        'app_user:member'
+      )
+    ).toBe(true)
+  })
+
   it('blocks referenced public sources even for the owner', () => {
     expect(
       canDeleteSource(

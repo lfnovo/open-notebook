@@ -11,6 +11,7 @@ from typing import Any
 from loguru import logger
 from surreal_commands import get_command_status
 
+from api.auth import CurrentUser
 from api.command_service import CommandService
 from api.models import (
     AssetModel,
@@ -35,6 +36,7 @@ from api.services.source_processing import (
 )
 from api.services.source_responses import source_list_response_from_row
 from api.services.team_context_service import resolve_resource_team_context
+from api.services.workspace_capabilities import resolve_resource_capabilities
 from api.services.workspace_service import resolve_workspace_id_for_user
 from commands.source_commands import SourceProcessingInput
 from open_notebook.ai.model_resolution import resolve_default_model_id
@@ -183,6 +185,7 @@ def source_response_for_queued_processing(
     *,
     command_id: str,
     notebooks: list[str] | None = None,
+    actor: CurrentUser | None = None,
 ) -> SourceResponse:
     asset = (
         AssetModel(
@@ -237,6 +240,7 @@ async def source_response_from_source(
     status: str | None = None,
     processing_info: dict[str, Any] | None = None,
     include_file_available: bool = False,
+    actor: CurrentUser | None = None,
 ) -> SourceResponse:
     """Build a full source API response from a domain source."""
     embedded_chunks = await source.get_embedded_chunks()
@@ -248,6 +252,14 @@ async def source_response_from_source(
         )
         if source.asset
         else None
+    )
+
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
     )
 
     return SourceResponse(
@@ -275,6 +287,7 @@ async def source_response_from_source(
         owner_id=source.owner_id,
         workspace_id=str(source.workspace_id) if source.workspace_id else None,
         visibility=source.visibility,
+        capabilities=capabilities,
     )
 
 
@@ -306,6 +319,7 @@ async def create_source_and_queue_processing(
     *,
     user_id: str | None,
     file_path: str | None = None,
+    actor: CurrentUser | None = None,
 ) -> SourceResponse:
     """Create a source record and queue background processing."""
     content_state = build_source_content_state(source_data, file_path=file_path)
@@ -351,19 +365,40 @@ async def create_source_and_queue_processing(
 
     await assign_processing_command(source, command_id)
 
-    return source_response_for_queued_processing(
+    response = source_response_for_queued_processing(
         source,
         command_id=command_id,
         notebooks=source_data.notebooks,
+        actor=actor,
     )
+    response.capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    return response
 
 
-async def get_source_response(source_id: str, *, user_id: str | None) -> SourceResponse:
+async def get_source_response(
+    source_id: str,
+    *,
+    user_id: str | None,
+    actor: CurrentUser | None = None,
+) -> SourceResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not await can_read_resource(
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_read and not await can_read_resource(
         resource_type="source",
         resource_id=source.id or source_id,
         user_id=user_id,
@@ -389,6 +424,7 @@ async def get_source_response(source_id: str, *, user_id: str | None) -> SourceR
         status=status,
         processing_info=processing_info,
         include_file_available=True,
+        actor=actor,
     )
 
 
@@ -411,12 +447,20 @@ async def get_source_status_response(
     *,
     user_id: str | None,
     timeout_seconds: int,
+    actor: CurrentUser | None = None,
 ) -> SourceStatusResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not await can_read_resource(
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_read and not await can_read_resource(
         resource_type="source",
         resource_id=source.id or source_id,
         user_id=user_id,
@@ -493,12 +537,23 @@ async def update_source_details(
     source_update: SourceUpdate,
     *,
     user_id: str | None,
+    actor: CurrentUser | None = None,
 ) -> SourceResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_ownership(source.owner_id, user_id):
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_update and not (
+        (actor is None or not source.workspace_id)
+        and check_source_ownership(source.owner_id, user_id)
+    ):
         raise PermissionError("Access denied")
 
     if source_update.title is not None:
@@ -509,19 +564,30 @@ async def update_source_details(
         source.visibility = source_update.visibility
 
     await source.save()
-    return await source_response_from_source(source)
+    return await source_response_from_source(source, actor=actor)
 
 
 async def update_source_visibility_use_case(
     source_id: str,
     *,
     user_id: str | None,
+    actor: CurrentUser | None = None,
 ) -> SourceListResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_ownership(source.owner_id, user_id):
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_share and not (
+        (actor is None or not source.workspace_id)
+        and check_source_ownership(source.owner_id, user_id)
+    ):
         raise PermissionError("Access denied - you do not own this source")
 
     if source.visibility == "public":
@@ -536,7 +602,7 @@ async def update_source_visibility_use_case(
     if not row:
         raise NotFoundError("Source not found after update")
 
-    return source_list_response_from_row(row)
+    return source_list_response_from_row(row, capabilities=capabilities)
 
 
 def retry_content_state_for_source(source: Source) -> dict[str, Any]:
@@ -557,12 +623,23 @@ async def retry_source_processing_use_case(
     source_id: str,
     *,
     user_id: str | None,
+    actor: CurrentUser | None = None,
 ) -> SourceResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_ownership(source.owner_id, user_id):
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_process and not (
+        (actor is None or not source.workspace_id)
+        and check_source_ownership(source.owner_id, user_id)
+    ):
         raise PermissionError("Access denied")
 
     if source.command:
@@ -608,6 +685,7 @@ async def retry_source_processing_use_case(
         command_id=command_id,
         status="queued",
         processing_info={"retry": True, "queued": True},
+        actor=actor,
     )
 
 
@@ -615,12 +693,23 @@ async def queue_knowledge_graph_extraction(
     source_id: str,
     *,
     user_id: str | None,
+    actor: CurrentUser | None = None,
 ) -> dict[str, Any]:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_ownership(source.owner_id, user_id):
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_process and not (
+        (actor is None or not source.workspace_id)
+        and check_source_ownership(source.owner_id, user_id)
+    ):
         raise PermissionError("Access denied")
 
     if not source.full_text or not source.full_text.strip():
@@ -650,12 +739,23 @@ async def create_source_insight_use_case(
     request: CreateSourceInsightRequest,
     *,
     user_id: str | None,
+    actor: CurrentUser | None = None,
 ) -> InsightCreationResponse:
     source = await Source.get(source_id)
     if not source:
         raise NotFoundError("Source not found")
 
-    if not check_source_ownership(source.owner_id, user_id):
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+    if not capabilities.can_process and not (
+        (actor is None or not source.workspace_id)
+        and check_source_ownership(source.owner_id, user_id)
+    ):
         raise PermissionError("Access denied")
 
     transformation = await Transformation.get(request.transformation_id)

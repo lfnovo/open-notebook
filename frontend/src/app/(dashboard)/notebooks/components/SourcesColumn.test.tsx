@@ -109,7 +109,23 @@ describe('SourcesColumn', () => {
   it('disables source removal and deletion when the notebook cannot be managed', () => {
     render(
       <SourcesColumn
-        sources={[source({ id: 'source:owned', title: 'Owned' })]}
+        sources={[
+          source({
+            id: 'source:owned',
+            title: 'Owned',
+            capabilities: {
+              can_read: true,
+              can_update: false,
+              can_delete: false,
+              can_share: false,
+              can_manage: false,
+              can_create_source: false,
+              can_remove_source: false,
+              can_create_note: false,
+              can_process: false,
+            },
+          }),
+        ]}
         isLoading={false}
         notebookId="notebook:team-owned"
         canManageNotebook={false}
@@ -120,6 +136,25 @@ describe('SourcesColumn', () => {
       'data-delete-enabled',
       'false'
     )
+    expect(screen.getByTestId('source-card-source:owned')).toHaveAttribute(
+      'data-remove-enabled',
+      'false'
+    )
+  })
+
+  it('allows adding sources while keeping remove disabled when capabilities split those actions', () => {
+    render(
+      <SourcesColumn
+        sources={[source({ id: 'source:owned', title: 'Owned' })]}
+        isLoading={false}
+        notebookId="notebook:team"
+        canManageNotebook={false}
+        canCreateSource={true}
+        canRemoveSource={false}
+      />
+    )
+
+    expect(screen.getByRole('button', { name: /Add Source/i })).not.toBeDisabled()
     expect(screen.getByTestId('source-card-source:owned')).toHaveAttribute(
       'data-remove-enabled',
       'false'

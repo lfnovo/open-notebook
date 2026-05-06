@@ -40,6 +40,12 @@ class NotebookRepository:
                 "WHERE resource_type = 'notebook' AND permission IN ['read', 'write', 'owner'] "
                 f"AND ({' OR '.join(share_target_conditions)}))"
             )
+            access_conditions.append(
+                "workspace_id IN (SELECT VALUE id FROM workspace "
+                "WHERE owner_id = $user_id OR team_id IN ("
+                "SELECT VALUE team FROM team_member WHERE user = $user_id AND status = 'active'"
+                "))"
+            )
             visibility_filter = " OR ".join(access_conditions)
 
         workspace_filter = ""

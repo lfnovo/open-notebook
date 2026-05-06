@@ -4,6 +4,7 @@ export function canDeleteSource(
   source: SourceListResponse,
   currentUserId?: string | null
 ) {
+  if (source.capabilities) return source.capabilities.can_delete
   if (!currentUserId || source.owner_id !== currentUserId) return false
   if (source.visibility === 'public' && source.reference_count > 0) return false
   return true

@@ -1,5 +1,17 @@
 export type ResourceVisibility = 'private' | 'team' | 'public'
 
+export interface ResourceCapabilities {
+  can_read: boolean
+  can_update: boolean
+  can_delete: boolean
+  can_share: boolean
+  can_manage: boolean
+  can_create_source: boolean
+  can_remove_source: boolean
+  can_create_note: boolean
+  can_process: boolean
+}
+
 export interface NotebookResponse {
   id: string
   name: string
@@ -15,6 +27,7 @@ export interface NotebookResponse {
   owner_id?: string | null
   workspace_id?: string | null
   visibility: ResourceVisibility
+  capabilities?: ResourceCapabilities
 }
 
 export interface NoteResponse {
@@ -49,6 +62,7 @@ export interface SourceListResponse {
   owner_id?: string | null
   workspace_id?: string | null
   visibility: ResourceVisibility
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceDetailResponse extends SourceListResponse {

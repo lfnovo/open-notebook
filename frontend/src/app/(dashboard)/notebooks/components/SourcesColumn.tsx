@@ -39,6 +39,8 @@ interface SourcesColumnProps {
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
   fetchNextPage?: () => void
+  canCreateSource?: boolean
+  canRemoveSource?: boolean
 }
 
 export function SourcesColumn({
@@ -52,6 +54,8 @@ export function SourcesColumn({
   hasNextPage,
   isFetchingNextPage,
   fetchNextPage,
+  canCreateSource,
+  canRemoveSource,
 }: SourcesColumnProps) {
   const { t } = useTranslation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
@@ -67,6 +71,8 @@ export function SourcesColumn({
   const retrySource = useRetrySource()
   const removeFromNotebook = useRemoveSourceFromNotebook()
   const { data: profile } = useProfile()
+  const canAddSource = canCreateSource ?? canManageNotebook
+  const canRemoveNotebookSource = canRemoveSource ?? canManageNotebook
 
   // Collapsible column state
   const { sourcesCollapsed, toggleSources } = useNotebookColumnsStore()
@@ -100,7 +106,6 @@ export function SourcesColumn({
   }, [handleScroll])
   
   const handleDeleteClick = (sourceId: string) => {
-    if (!canManageNotebook) return
     const source = sources?.find((item) => item.id === sourceId)
     if (!source || !canDeleteSource(source, profile?.id)) return
 
@@ -110,11 +115,6 @@ export function SourcesColumn({
 
   const handleDeleteConfirm = async () => {
     if (!sourceToDelete) return
-    if (!canManageNotebook) {
-      setDeleteDialogOpen(false)
-      setSourceToDelete(null)
-      return
-    }
     const source = sources?.find((item) => item.id === sourceToDelete)
     if (!source || !canDeleteSource(source, profile?.id)) {
       setDeleteDialogOpen(false)
@@ -133,14 +133,14 @@ export function SourcesColumn({
   }
 
   const handleRemoveFromNotebook = (sourceId: string) => {
-    if (!canManageNotebook) return
+    if (!canRemoveNotebookSource) return
     setSourceToRemove(sourceId)
     setRemoveDialogOpen(true)
   }
 
   const handleRemoveConfirm = async () => {
     if (!sourceToRemove) return
-    if (!canManageNotebook) {
+    if (!canRemoveNotebookSource) {
       setRemoveDialogOpen(false)
       setSourceToRemove(null)
       return
@@ -186,10 +186,10 @@ export function SourcesColumn({
               <div className="flex items-center gap-2">
                 <DropdownMenu
                   open={dropdownOpen}
-                  onOpenChange={(open) => setDropdownOpen(canManageNotebook && open)}
+                  onOpenChange={(open) => setDropdownOpen(canAddSource && open)}
                 >
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" disabled={!canManageNotebook}>
+                    <Button size="sm" disabled={!canAddSource}>
                       <Plus className="h-4 w-4 mr-2" />
                       {t.sources.addSource}
                       <ChevronDown className="h-4 w-4 ml-2" />
@@ -197,14 +197,14 @@ export function SourcesColumn({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      disabled={!canManageNotebook}
+                      disabled={!canAddSource}
                       onClick={() => { setDropdownOpen(false); setAddDialogOpen(true); }}
                     >
                       <Plus className="h-4 w-4 mr-2" />
                       {t.sources.addSource}
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      disabled={!canManageNotebook}
+                      disabled={!canAddSource}
                       onClick={() => { setDropdownOpen(false); setAddExistingDialogOpen(true); }}
                     >
                       <Link2 className="h-4 w-4 mr-2" />
@@ -235,9 +235,9 @@ export function SourcesColumn({
                     key={source.id}
                     source={source}
                     onClick={handleSourceClick}
-                    onDelete={canManageNotebook && canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
-                    onRetry={canManageNotebook ? handleRetry : undefined}
-                    onRemoveFromNotebook={canManageNotebook ? handleRemoveFromNotebook : undefined}
+                    onDelete={canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
+                    onRetry={(source.capabilities?.can_process ?? canManageNotebook) ? handleRetry : undefined}
+                    onRemoveFromNotebook={canRemoveNotebookSource ? handleRemoveFromNotebook : undefined}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}
                     contextMode={contextSelections?.[source.id]}

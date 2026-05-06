@@ -1,6 +1,14 @@
 from open_notebook.database.async_migrate import AsyncMigrationManager
 
 
+def test_async_migration_manager_loads_latest_numbered_migrations():
+    manager = AsyncMigrationManager()
+
+    assert len(manager.up_migrations) == len(manager.down_migrations) == 30
+    assert "workspace_system_policy:global" in manager.up_migrations[-1].sql
+    assert "REMOVE TABLE IF EXISTS workspace_system_policy" in manager.down_migrations[-1].sql
+
+
 def test_async_migration_manager_includes_user_team_share_migration():
     manager = AsyncMigrationManager()
 

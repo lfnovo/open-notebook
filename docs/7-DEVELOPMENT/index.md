@@ -37,6 +37,8 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 
 **[Workspace Architecture Evolution](workspace-architecture.md)** covers the next-stage resource ownership and collaboration model, where Team manages members/capabilities and Workspace manages resources/permissions.
 
+**[Workspace Permission Model](workspace-permission-model.md)** defines the ownership, sharing, listing, and capability invariants for workspace-scoped resources.
+
 For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guidance.
 
 ---
@@ -63,6 +65,7 @@ For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guida
 | [Architecture](architecture.md) | Understanding system | System design, tech stack, workflows |
 | [Permission Design](permission-design.md) | Understanding access control | Role model, configuration boundaries, and runtime defaults |
 | [Workspace Architecture](workspace-architecture.md) | Next-stage collaboration | Workspace ownership, move semantics, and fine-grained team resource permissions |
+| [Workspace Permission Model](workspace-permission-model.md) | Permission closure | Workspace ownership, share/read semantics, list scopes, and capability invariants |
 | [Design Principles](design-principles.md) | All developers | What guides our decisions |
 | [API Reference](api-reference.md) | Building integrations | Complete REST API documentation |
 | [Security](security.md) | All developers | Security practices and vulnerability prevention |

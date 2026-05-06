@@ -24,6 +24,18 @@ export interface AssetModel {
   url?: string | null
 }
 
+export interface ResourceCapabilities {
+  can_read: boolean
+  can_update: boolean
+  can_delete: boolean
+  can_share: boolean
+  can_manage: boolean
+  can_create_source: boolean
+  can_remove_source: boolean
+  can_create_note: boolean
+  can_process: boolean
+}
+
 export interface AuditLogListResponse {
   items: AuditLogResponse[]
   limit: number
@@ -396,6 +408,9 @@ export interface NoteResponse {
   created: string
   updated: string
   command_id?: string | null
+  owner_id?: string | null
+  workspace_id?: string | null
+  capabilities?: ResourceCapabilities
 }
 
 export interface NoteUpdate {

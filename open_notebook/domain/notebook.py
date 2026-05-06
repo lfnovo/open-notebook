@@ -572,6 +572,8 @@ class Note(ObjectModel):
     title: Optional[str] = None
     note_type: Optional[Literal["human", "ai"]] = None
     content: Optional[str] = None
+    owner_id: Optional[Union[str, RecordID]] = None
+    workspace_id: Optional[Union[str, RecordID]] = None
 
     @field_validator("content")
     @classmethod
@@ -579,6 +581,20 @@ class Note(ObjectModel):
         if v is not None and not v.strip():
             raise InvalidInputError("Note content cannot be empty")
         return v
+
+    @field_validator("owner_id", mode="before")
+    @classmethod
+    def parse_owner_id(cls, value):
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def parse_workspace_id(cls, value):
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
 
     async def save(self) -> Optional[str]:
         """

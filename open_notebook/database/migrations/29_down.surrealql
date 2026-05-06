@@ -1,0 +1,6 @@
+-- Rollback migration 29: Workspace ownership for notes
+
+REMOVE INDEX IF EXISTS idx_note_owner ON TABLE note;
+REMOVE INDEX IF EXISTS idx_note_workspace ON TABLE note;
+REMOVE FIELD IF EXISTS owner_id ON TABLE note;
+REMOVE FIELD IF EXISTS workspace_id ON TABLE note;

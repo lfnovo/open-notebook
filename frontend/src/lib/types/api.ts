@@ -37,6 +37,10 @@ export interface NoteResponse {
   note_type: string | null
   created: string
   updated: string
+  command_id?: string | null
+  owner_id?: string | null
+  workspace_id?: string | null
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceListResponse {

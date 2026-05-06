@@ -1,0 +1,12 @@
+-- Migration 29: Workspace ownership for notes
+
+DEFINE FIELD IF NOT EXISTS owner_id ON TABLE note TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS workspace_id ON TABLE note TYPE option<record<workspace>>;
+
+DEFINE INDEX IF NOT EXISTS idx_note_owner ON TABLE note FIELDS owner_id;
+DEFINE INDEX IF NOT EXISTS idx_note_workspace ON TABLE note FIELDS workspace_id;
+
+UPDATE note SET
+    owner_id = (SELECT VALUE out.owner_id FROM artifact WHERE in = $parent.id LIMIT 1)[0],
+    workspace_id = (SELECT VALUE out.workspace_id FROM artifact WHERE in = $parent.id LIMIT 1)[0]
+WHERE owner_id IS NONE OR workspace_id IS NONE;

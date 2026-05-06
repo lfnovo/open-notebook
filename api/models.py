@@ -242,6 +242,9 @@ class NoteResponse(BaseModel):
     created: str
     updated: str
     command_id: Optional[str] = None
+    owner_id: Optional[str] = None
+    workspace_id: Optional[str] = None
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
 
 # Embedding API models

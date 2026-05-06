@@ -31,6 +31,7 @@ interface NotesColumnProps {
   isLoading: boolean
   notebookId: string
   canManageNotebook?: boolean
+  canCreateNote?: boolean
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (noteId: string, mode: ContextMode) => void
 }
@@ -40,6 +41,7 @@ export function NotesColumn({
   isLoading,
   notebookId,
   canManageNotebook = true,
+  canCreateNote,
   contextSelections,
   onContextModeChange
 }: NotesColumnProps) {
@@ -50,6 +52,13 @@ export function NotesColumn({
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null)
 
   const deleteNote = useDeleteNote()
+  const canAddNote = canCreateNote ?? canManageNotebook
+
+  const canUpdateNote = (note: NoteResponse) =>
+    note.capabilities?.can_update ?? canManageNotebook
+
+  const canDeleteNote = (note: NoteResponse) =>
+    note.capabilities?.can_delete ?? canManageNotebook
 
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
@@ -58,15 +67,16 @@ export function NotesColumn({
     [toggleNotes, t.common.notes]
   )
 
-  const handleDeleteClick = (noteId: string) => {
-    if (!canManageNotebook) return
-    setNoteToDelete(noteId)
+  const handleDeleteClick = (note: NoteResponse) => {
+    if (!canDeleteNote(note)) return
+    setNoteToDelete(note.id)
     setDeleteDialogOpen(true)
   }
 
   const handleDeleteConfirm = async () => {
     if (!noteToDelete) return
-    if (!canManageNotebook) {
+    const note = notes?.find((item) => item.id === noteToDelete)
+    if (!note || !canDeleteNote(note)) {
       setDeleteDialogOpen(false)
       setNoteToDelete(null)
       return
@@ -98,11 +108,11 @@ export function NotesColumn({
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (!canManageNotebook) return
+                    if (!canAddNote) return
                     setEditingNote(null)
                     setShowAddDialog(true)
                   }}
-                  disabled={!canManageNotebook}
+                  disabled={!canAddNote}
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   {t.common.writeNote}
@@ -125,15 +135,19 @@ export function NotesColumn({
               />
             ) : (
               <div className="space-y-3">
-                {notes.map((note) => (
+                {notes.map((note) => {
+                  const canUpdate = canUpdateNote(note)
+                  const canDelete = canDeleteNote(note)
+
+                  return (
                   <div
                     key={note.id}
                     className={cn(
                       'p-3 border rounded-lg card-hover group relative',
-                      canManageNotebook ? 'cursor-pointer' : 'cursor-default'
+                      canUpdate ? 'cursor-pointer' : 'cursor-default'
                     )}
                     onClick={() => {
-                      if (canManageNotebook) setEditingNote(note)
+                      if (canUpdate) setEditingNote(note)
                     }}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -175,7 +189,7 @@ export function NotesColumn({
                               size="sm"
                               className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => e.stopPropagation()}
-                              disabled={!canManageNotebook}
+                              disabled={!canDelete}
                               aria-label={t.common.actions}
                             >
                               <MoreVertical className="h-4 w-4" />
@@ -183,10 +197,10 @@ export function NotesColumn({
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuItem
-                              disabled={!canManageNotebook}
+                              disabled={!canDelete}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleDeleteClick(note.id)
+                                handleDeleteClick(note)
                               }}
                               className="text-red-600 focus:text-red-600"
                             >
@@ -208,7 +222,8 @@ export function NotesColumn({
                       </p>
                     )}
                   </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </CardContent>

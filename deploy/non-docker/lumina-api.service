@@ -1,0 +1,18 @@
+[Unit]
+Description=Lumina API
+After=network-online.target surrealdb.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lumina
+Group=lumina
+WorkingDirectory=/opt/lumina
+EnvironmentFile=/opt/lumina/.env
+Environment=PATH=/opt/lumina/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env uv run --env-file /opt/lumina/.env run_api.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

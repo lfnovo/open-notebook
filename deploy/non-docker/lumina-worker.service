@@ -1,0 +1,18 @@
+[Unit]
+Description=Lumina background worker
+After=network-online.target surrealdb.service lumina-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=lumina
+Group=lumina
+WorkingDirectory=/opt/lumina
+EnvironmentFile=/opt/lumina/.env
+Environment=PATH=/opt/lumina/.local/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/bin/env uv run --env-file /opt/lumina/.env python3 scripts/worker_with_timeout.py --import-modules commands --max-tasks ${SURREAL_COMMANDS_MAX_TASKS}
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

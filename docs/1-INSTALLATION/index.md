@@ -31,6 +31,15 @@ Choose your installation route based on your setup and use case.
 
 ---
 
+### 🌐 I want an online test site without Docker
+**→ [Non-Docker Online Dev/Test](non-docker-online-dev.md)** - Source deployment on a VPS
+- ✅ Uses systemd + Nginx + HTTPS
+- ✅ Keeps API, frontend, worker, and SurrealDB separate
+- ✅ Good for staging and online QA
+- ⚠️ Requires Linux server administration
+
+---
+
 
 ## System Requirements
 
@@ -79,6 +88,7 @@ Choose your installation route based on your setup and use case.
 - [Docker Compose](docker-compose.md) - **Most users**
 - [Single Container](single-container.md) - **Deprecated**
 - [From Source](from-source.md) - **Developers**
+- [Non-Docker Online Dev/Test](non-docker-online-dev.md) - **Online staging without Docker**
 
 > **Privacy-first?** Any installation method works with Ollama for 100% local AI. See [Local Quick Start](../0-START-HERE/quick-start-local.md).
 

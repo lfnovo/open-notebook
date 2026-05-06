@@ -24,18 +24,6 @@ export interface AssetModel {
   url?: string | null
 }
 
-export interface ResourceCapabilities {
-  can_read: boolean
-  can_update: boolean
-  can_delete: boolean
-  can_share: boolean
-  can_manage: boolean
-  can_create_source: boolean
-  can_remove_source: boolean
-  can_create_note: boolean
-  can_process: boolean
-}
-
 export interface AuditLogListResponse {
   items: AuditLogResponse[]
   limit: number
@@ -71,6 +59,7 @@ export interface AutoAssignResult {
 
 export interface Body_create_source_api_sources_post {
   type: string
+  workspace_id?: string | null
   notebook_id?: string | null
   notebooks?: string | null
   url?: string | null
@@ -424,6 +413,7 @@ export interface NotebookCreate {
   description?: string
   password?: string | null
   creator_name?: string | null
+  workspace_id?: string | null
   visibility?: 'private' | 'public'
 }
 
@@ -455,7 +445,9 @@ export interface NotebookResponse {
   creator_name?: string | null
   creator_username?: string | null
   owner_id?: string | null
+  workspace_id?: string | null
   visibility?: 'private' | 'team' | 'public'
+  capabilities?: ResourceCapabilities
 }
 
 export interface NotebookUpdate {
@@ -606,6 +598,18 @@ export interface ResetUserPasswordResponse {
   message: string
 }
 
+export interface ResourceCapabilities {
+  can_read?: boolean
+  can_update?: boolean
+  can_delete?: boolean
+  can_share?: boolean
+  can_manage?: boolean
+  can_create_source?: boolean
+  can_remove_source?: boolean
+  can_create_note?: boolean
+  can_process?: boolean
+}
+
 export interface SaveAsNoteRequest {
   notebook_id?: string | null
 }
@@ -736,7 +740,9 @@ export interface SourceListResponse {
   status?: string | null
   processing_info?: Record<string, unknown> | null
   owner_id?: string | null
+  workspace_id?: string | null
   visibility?: 'private' | 'team' | 'public'
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceResponse {
@@ -756,7 +762,9 @@ export interface SourceResponse {
   processing_info?: Record<string, unknown> | null
   notebooks?: string[] | null
   owner_id?: string | null
+  workspace_id?: string | null
   visibility?: 'private' | 'team' | 'public'
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceStatusResponse {
@@ -1030,6 +1038,63 @@ export interface ValidationError {
   type: string
   input?: unknown
   ctx?: Record<string, unknown>
+}
+
+export interface WorkspaceListResponse {
+  items: WorkspaceResponse[]
+  total: number
+}
+
+export interface WorkspacePermissionPolicy {
+  member_can_read?: boolean
+  member_can_create_source?: boolean
+  member_can_update_own_source?: boolean
+  member_can_process_own_source?: boolean
+  member_can_delete_own_source?: boolean
+  member_can_remove_source?: boolean
+  member_can_create_note?: boolean
+  member_can_update_own_note?: boolean
+  member_can_delete_own_note?: boolean
+  member_can_delete_chat?: boolean
+  member_can_update_notebook?: boolean
+}
+
+export interface WorkspacePolicyResponse {
+  workspace_id: string
+  policy: WorkspacePermissionPolicy
+  effective_policy: WorkspacePermissionPolicy
+}
+
+export interface WorkspaceResourceMoveRequest {
+  resource_type: 'notebook'
+  resource_id: string
+  mode?: 'move'
+}
+
+export interface WorkspaceResourceMoveResponse {
+  resource_type: string
+  resource_id: string
+  source_workspace_id?: string | null
+  target_workspace_id: string
+  mode?: 'move'
+  message: string
+}
+
+export interface WorkspaceResponse {
+  id: string
+  name: string
+  type?: 'personal' | 'team'
+  owner_id?: string | null
+  team_id?: string | null
+  created_by?: string | null
+  created: string
+  updated: string
+  current_user_role?: 'owner' | 'admin' | 'member' | 'viewer' | null
+  can_manage?: boolean
+}
+
+export interface WorkspaceSystemPolicyResponse {
+  policy: WorkspacePermissionPolicy
 }
 
 export interface api__models__DiscoveredModelResponse {

@@ -971,6 +971,24 @@ class TeamTransformationAllowlistResponse(BaseModel):
     transformations: List[TransformationResponse]
 
 
+class WorkspaceResponse(BaseModel):
+    id: str
+    name: str
+    type: Literal["personal", "team"] = "personal"
+    owner_id: Optional[str] = None
+    team_id: Optional[str] = None
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+    current_user_role: Optional[Literal["owner", "admin", "member", "viewer"]] = None
+    can_manage: bool = False
+
+
+class WorkspaceListResponse(BaseModel):
+    items: List[WorkspaceResponse]
+    total: int
+
+
 class ShareGrantCreateRequest(BaseModel):
     resource_type: Literal["source", "notebook"]
     resource_id: str

@@ -48,6 +48,7 @@ from api.routers import (
     teams,
     transformations,
     users,
+    workspaces,
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
@@ -298,6 +299,7 @@ async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
 # Include routers
 app.include_router(auth.router, prefix="/api", tags=["auth"])
 app.include_router(users.router, prefix="/api", tags=["users"])
+app.include_router(workspaces.router, prefix="/api", tags=["workspaces"])
 app.include_router(teams.router, prefix="/api", tags=["teams"])
 app.include_router(share_grants.router, prefix="/api", tags=["share-grants"])
 app.include_router(audit_log.router, prefix="/api", tags=["audit-log"])

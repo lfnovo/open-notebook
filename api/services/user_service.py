@@ -15,6 +15,7 @@ from api.models import (
     UserUpdateRequest,
 )
 from api.password_utils import hash_password
+from api.services.workspace_service import ensure_personal_workspace_for_user
 from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from open_notebook.database.repositories.user_repository import UserRepository
 from open_notebook.exceptions import InvalidInputError, NotFoundError
@@ -110,6 +111,11 @@ async def create_user_use_case(
     )
     if not row:
         raise InvalidInputError("Failed to create user")
+
+    await ensure_personal_workspace_for_user(
+        user_id=str(row.get("id", "")),
+        display_name=row.get("display_name") or row.get("username"),
+    )
 
     await AuditLogRepository.create(
         action="user.created",

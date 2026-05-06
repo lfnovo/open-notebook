@@ -6,8 +6,9 @@ from typing import Optional
 from api.auth import CurrentUser
 from api.models import (
     DeleteResponse,
-    TeamCreateRequest,
+    ModelResponse,
     TeamAssignableUserListResponse,
+    TeamCreateRequest,
     TeamListResponse,
     TeamMemberResponse,
     TeamMemberUpsertRequest,
@@ -20,14 +21,14 @@ from api.models import (
     TeamTransformationAllowlistResponse,
     TeamTransformationAllowlistUpdateRequest,
     TeamUpdateRequest,
-    ModelResponse,
     TransformationResponse,
 )
+from api.services.workspace_service import ensure_team_workspace_for_team
 from open_notebook.ai.models import Model
+from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from open_notebook.database.repositories.team_allowlist_repository import (
     TeamAllowlistRepository,
 )
-from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from open_notebook.database.repositories.team_repository import TeamRepository
 from open_notebook.database.repositories.user_repository import UserRepository
 from open_notebook.domain.transformation import Transformation
@@ -290,6 +291,11 @@ async def create_team_use_case(
         user_id=request.owner_id,
         role="owner",
         status="active",
+    )
+    await ensure_team_workspace_for_team(
+        team_id=str(row["id"]),
+        name=row.get("name", request.name),
+        created_by=actor.id,
     )
     await AuditLogRepository.create(
         action="team.created",

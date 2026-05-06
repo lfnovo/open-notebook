@@ -30,6 +30,7 @@ def test_team_create_request_requires_owner_id():
 
 @pytest.mark.asyncio
 @patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.team_service.ensure_team_workspace_for_team", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.create_member", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.create_team", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team_by_slug", new_callable=AsyncMock)
@@ -39,6 +40,7 @@ async def test_create_team_assigns_requested_owner(
     mock_get_team_by_slug,
     mock_create_team,
     mock_create_member,
+    mock_ensure_workspace,
     mock_audit,
 ):
     mock_get_user.return_value = {"id": "app_user:owner", "status": "active"}
@@ -65,6 +67,11 @@ async def test_create_team_assigns_requested_owner(
         user_id="app_user:owner",
         role="owner",
         status="active",
+    )
+    mock_ensure_workspace.assert_awaited_once_with(
+        team_id="team:research",
+        name="Research",
+        created_by="app_user:admin",
     )
     mock_audit.assert_awaited_once()
 
@@ -532,6 +539,7 @@ async def test_system_admin_can_delete_team_with_members_when_no_shares(
 
 
 @pytest.mark.asyncio
+@patch("api.services.team_service.AuditLogRepository.create", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.delete_team", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.dependency_counts", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
@@ -539,6 +547,7 @@ async def test_system_admin_can_delete_team_with_share_grants(
     mock_get_team,
     mock_dependency_counts,
     mock_delete_team,
+    mock_audit,
 ):
     mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
     mock_dependency_counts.return_value = {"active_members": 1, "share_grants": 1}
@@ -548,3 +557,4 @@ async def test_system_admin_can_delete_team_with_share_grants(
 
     assert response.success is True
     mock_delete_team.assert_awaited_once_with("team:research")
+    mock_audit.assert_awaited_once()

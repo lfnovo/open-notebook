@@ -1,0 +1,41 @@
+-- Migration 27: Workspace foundation
+
+DEFINE TABLE IF NOT EXISTS workspace SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE workspace TYPE string;
+DEFINE FIELD IF NOT EXISTS type ON TABLE workspace TYPE string;
+DEFINE FIELD IF NOT EXISTS owner_id ON TABLE workspace TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS team_id ON TABLE workspace TYPE option<record<team>>;
+DEFINE FIELD IF NOT EXISTS created_by ON TABLE workspace TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE workspace DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE workspace DEFAULT time::now() VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_workspace_owner_type ON TABLE workspace FIELDS owner_id, type;
+DEFINE INDEX IF NOT EXISTS idx_workspace_team_type ON TABLE workspace FIELDS team_id, type;
+
+-- Backfill personal workspaces for existing users.
+INSERT INTO workspace (
+    SELECT
+        display_name ?? username AS name,
+        'personal' AS type,
+        id AS owner_id,
+        NONE AS team_id,
+        id AS created_by,
+        time::now() AS created,
+        time::now() AS updated
+    FROM app_user
+);
+
+-- Backfill team workspaces for existing non-system teams.
+INSERT INTO workspace (
+    SELECT
+        name AS name,
+        'team' AS type,
+        NONE AS owner_id,
+        id AS team_id,
+        created_by AS created_by,
+        time::now() AS created,
+        time::now() AS updated
+    FROM team
+    WHERE type = 'workspace'
+);

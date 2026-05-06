@@ -33,6 +33,7 @@ async def test_delete_team_cleans_related_team_records(monkeypatch):
     assert "DELETE team_model WHERE team = $team_id" in captured["query_body"]
     assert "DELETE team_transformation WHERE team = $team_id" in captured["query_body"]
     assert "DELETE share_grant WHERE target_type = 'team'" in captured["query_body"]
+    assert "DELETE workspace WHERE team_id = $team_id" in captured["query_body"]
     assert "DELETE $team_id" in captured["query_body"]
     assert str(captured["vars"]["team_id"]) == "team:research"
 

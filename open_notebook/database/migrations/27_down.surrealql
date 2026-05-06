@@ -1,0 +1,5 @@
+-- Rollback migration 27: Workspace foundation
+
+REMOVE INDEX IF EXISTS idx_workspace_owner_type ON TABLE workspace;
+REMOVE INDEX IF EXISTS idx_workspace_team_type ON TABLE workspace;
+REMOVE TABLE IF EXISTS workspace;

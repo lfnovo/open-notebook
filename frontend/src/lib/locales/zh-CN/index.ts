@@ -556,6 +556,8 @@ export const zhCN = {
     failedToLoad: "加载来源失败",
     allSourcesDesc: "在此查看所有来源。您可以添加新来源或管理现有来源。",
     allSources: "所有来源",
+    workspaceSources: "团队来源",
+    publicSources: "公开来源",
     insights: "见解",
     yes: "是",
     no: "否",

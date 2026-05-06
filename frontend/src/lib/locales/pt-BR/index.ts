@@ -473,6 +473,8 @@ export const ptBR = {
     failedToLoad: "Falha ao carregar fontes",
     allSourcesDesc: "Veja todas as suas fontes aqui. Você pode adicionar novas fontes ou gerenciar as existentes.",
     allSources: "Todas as Fontes",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "Insights",
     yes: "Sim",
     no: "Não",

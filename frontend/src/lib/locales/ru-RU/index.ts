@@ -473,6 +473,8 @@ export const ruRU = {
     failedToLoad: "Не удалось загрузить источники",
     allSourcesDesc: "Просмотр всех источников. Вы можете добавлять новые или управлять существующими.",
     allSources: "Все источники",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "Инсайты",
     yes: "Да",
     no: "Нет",

@@ -473,6 +473,8 @@ export const zhTW = {
     failedToLoad: "載入來源失敗",
     allSourcesDesc: "在此檢視所有來源。您可以新增新來源或管理現有來源。",
     allSources: "所有來源",
+    workspaceSources: "團隊來源",
+    publicSources: "公開來源",
     insights: "見解",
     yes: "是",
     no: "否",

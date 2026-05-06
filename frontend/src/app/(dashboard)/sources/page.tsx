@@ -21,10 +21,12 @@ import { ShareDialog } from '@/components/share/ShareDialog'
 import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { canDeleteSource, deletableSourceIds } from '@/lib/utils/source-delete-eligibility'
+import { useWorkspaceStore } from '@/lib/stores/workspace-store'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
-  const [sources, setSources] = useState<SourceListResponse[]>([])
+  const [workspaceSources, setWorkspaceSources] = useState<SourceListResponse[]>([])
+  const [publicSources, setPublicSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -47,24 +49,48 @@ export default function SourcesPage() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const { data: profile } = useProfile()
   const currentUserId = profile?.id
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
   
   // Pagination state
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
   const PAGE_SIZE = 30
 
+  const sources = useMemo(
+    () => [...workspaceSources, ...publicSources],
+    [workspaceSources, publicSources]
+  )
+
+  const loadSourceGroups = useCallback(async () => {
+    const request = {
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+      sort_by: sortBy,
+      sort_order: sortOrder,
+    } as const
+    const [workspaceData, publicData] = await Promise.all([
+      sourcesApi.list({
+        ...request,
+        workspace_id: workspaceId || undefined,
+      }),
+      sourcesApi.listPublic(request),
+    ])
+    const workspaceSourceIds = new Set(workspaceData.map((source) => source.id))
+    const filteredPublicData = publicData.filter(
+      (source) =>
+        !workspaceSourceIds.has(source.id) &&
+        (!workspaceId || source.workspace_id !== workspaceId)
+    )
+
+    setWorkspaceSources(workspaceData)
+    setPublicSources(filteredPublicData)
+    setHasMore(workspaceData.length === PAGE_SIZE || publicData.length === PAGE_SIZE)
+  }, [page, sortBy, sortOrder, workspaceId])
+
   const fetchSources = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await sourcesApi.list({
-        limit: PAGE_SIZE,
-        offset: (page - 1) * PAGE_SIZE,
-        sort_by: sortBy,
-        sort_order: sortOrder,
-      })
-
-      setSources(data)
-      setHasMore(data.length === PAGE_SIZE)
+      await loadSourceGroups()
     } catch (err) {
       console.error('Failed to fetch sources:', err)
       setError(t.sources.failedToLoad)
@@ -72,7 +98,7 @@ export default function SourcesPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, sortBy, sortOrder, t.sources.failedToLoad])
+  }, [loadSourceGroups, t.sources.failedToLoad])
 
   // Initial load and when sort changes
   useEffect(() => {
@@ -95,15 +121,7 @@ export default function SourcesPage() {
       if (loading) return
 
       try {
-        const data = await sourcesApi.list({
-          limit: PAGE_SIZE,
-          offset: (page - 1) * PAGE_SIZE,
-          sort_by: sortBy,
-          sort_order: sortOrder,
-        })
-        
-        setSources(data)
-        setHasMore(data.length === PAGE_SIZE)
+        await loadSourceGroups()
       } catch (err) {
         console.error('Failed to poll sources:', err)
       }
@@ -111,7 +129,12 @@ export default function SourcesPage() {
 
     const interval = setInterval(pollSources, 5000)
     return () => clearInterval(interval)
-  }, [page, sortBy, sortOrder, loading])
+  }, [loadSourceGroups, loading])
+
+  useEffect(() => {
+    setSelectedIds(new Set())
+    setSelectedIndex(0)
+  }, [workspaceId])
 
   useEffect(() => {
     // Focus the table when component mounts or sources change
@@ -195,7 +218,7 @@ export default function SourcesPage() {
 
   // Selection handlers
   const toggleSelect = (sourceId: string) => {
-    const source = sources.find(s => s.id === sourceId)
+    const source = workspaceSources.find(s => s.id === sourceId)
     if (!source || !canDeleteSource(source, currentUserId)) return
 
     setSelectedIds(prev => {
@@ -210,7 +233,7 @@ export default function SourcesPage() {
   }
 
   const toggleSelectAll = () => {
-    const ids = deletableSourceIds(sources, currentUserId)
+    const ids = deletableSourceIds(workspaceSources, currentUserId)
     if (ids.length === 0) return
 
     if (ids.every(id => selectedIds.has(id))) {
@@ -221,8 +244,8 @@ export default function SourcesPage() {
   }
 
   const deletableIds = useMemo(
-    () => deletableSourceIds(sources, currentUserId),
-    [sources, currentUserId]
+    () => deletableSourceIds(workspaceSources, currentUserId),
+    [workspaceSources, currentUserId]
   )
   const selectedDeletableIds = useMemo(
     () => Array.from(selectedIds).filter(id => deletableIds.includes(id)),
@@ -235,7 +258,7 @@ export default function SourcesPage() {
       const next = new Set(Array.from(prev).filter(id => deletableIds.includes(id)))
       return next.size === prev.size ? prev : next
     })
-  }, [sources, currentUserId, deletableIds])
+  }, [workspaceSources, currentUserId, deletableIds])
 
   // Bulk delete handler
   const handleBulkDelete = async () => {
@@ -315,7 +338,8 @@ export default function SourcesPage() {
       if (result.success) {
         toast.success(tSourcesKgExtractQueued)
         // Optimistic update: flip kg_extracted to true
-        setSources(prev => prev.map(s => s.id === sourceId ? { ...s, kg_extracted: true } : s))
+        setWorkspaceSources(prev => prev.map(s => s.id === sourceId ? { ...s, kg_extracted: true } : s))
+        setPublicSources(prev => prev.map(s => s.id === sourceId ? { ...s, kg_extracted: true } : s))
       }
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } }, message?: string }
@@ -329,7 +353,8 @@ export default function SourcesPage() {
     try {
       await sourcesApi.delete(deleteDialog.source.id)
       toast.success(t.sources.deleteSuccess)
-      setSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
+      setWorkspaceSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
+      setPublicSources(prev => prev.filter(s => s.id !== deleteDialog.source?.id))
       setSelectedIds(prev => {
         const next = new Set(prev)
         next.delete(deleteDialog.source!.id)
@@ -368,6 +393,109 @@ export default function SourcesPage() {
         />
     )
   }
+
+  const renderGroupHeader = (label: string, count: number) => (
+    <tr className="border-b bg-muted/30">
+      <td colSpan={9} className="h-10 px-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {label}
+        <span className="ml-2 font-normal normal-case text-muted-foreground/80">
+          {count}
+        </span>
+      </td>
+    </tr>
+  )
+
+  const renderSourceRow = (
+    source: SourceListResponse,
+    index: number,
+    canSelect: boolean
+  ) => (
+    <tr
+      key={source.id}
+      onClick={() => handleRowClick(index, source.id)}
+      onMouseEnter={() => setSelectedIndex(index)}
+      className={cn(
+        "border-b transition-colors cursor-pointer",
+        selectedIndex === index
+          ? "bg-accent"
+          : "hover:bg-muted/50"
+      )}
+    >
+      <td className="h-12 px-2 text-center" onClick={(e) => e.stopPropagation()}>
+        <Checkbox
+          checked={selectedIds.has(source.id)}
+          onCheckedChange={() => toggleSelect(source.id)}
+          disabled={!canSelect || !canDeleteSource(source, currentUserId)}
+          aria-label={`Select ${source.title || tUntitledSource}`}
+        />
+      </td>
+      <td className="h-12 px-2">
+        <div className="flex items-center gap-1">
+          {getSourceIcon(source)}
+          <Badge variant="secondary" className="text-xs">
+            {getSourceType(source)}
+          </Badge>
+        </div>
+      </td>
+      <td className="h-12 px-2">
+        <div className="flex flex-col overflow-hidden">
+          <span className="font-medium truncate">
+            {source.title || tUntitledSource}
+          </span>
+          {source.asset?.url && (
+            <span className="text-xs text-muted-foreground truncate">
+              {source.asset.url}
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="h-12 px-2" onClick={(e) => e.stopPropagation()}>
+        <ResourceVisibilityBadge
+          visibility={source.visibility}
+          labels={visibilityLabels}
+          title={t.sharing?.title || 'Share'}
+          onClick={() => setShareDialog({ open: true, source })}
+        />
+      </td>
+      <td className="h-12 px-2 text-muted-foreground text-sm hidden sm:table-cell">
+        {formatDistanceToNow(new Date(source.created), {
+          addSuffix: true,
+          locale: getDateLocale(language)
+        })}
+      </td>
+      <td className="h-12 px-2 text-center hidden md:table-cell">
+        <span className="text-sm font-medium">{source.insights_count || 0}</span>
+      </td>
+      <td className="h-12 px-2 text-center hidden md:table-cell">
+        <Badge
+          variant={source.reference_count > 0 ? "secondary" : "outline"}
+          className="text-xs"
+        >
+          {source.reference_count || 0}
+        </Badge>
+      </td>
+      <td className="h-12 px-2 text-center hidden lg:table-cell">
+        <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
+          {source.embedded ? tYes : tNo}
+        </Badge>
+      </td>
+      <td className="h-12 px-2 text-center hidden xl:table-cell" onClick={(e) => e.stopPropagation()}>
+        {source.kg_extracted ? (
+          <Badge variant="default" className="text-xs">
+            {tYes}
+          </Badge>
+        ) : (
+          <button
+            onClick={(e) => handleExtractKg(e, source.id)}
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 cursor-pointer border-0"
+            title={t.sources?.kgExtractHint || "点击抽取知识图谱"}
+          >
+            {tNo}
+          </button>
+        )}
+      </td>
+    </tr>
+  )
 
   return (
     <>
@@ -476,93 +604,12 @@ export default function SourcesPage() {
               </tr>
             </thead>
             <tbody>
-              {sources.map((source, index) => (
-                <tr
-                  key={source.id}
-                  onClick={() => handleRowClick(index, source.id)}
-                  onMouseEnter={() => setSelectedIndex(index)}
-                  className={cn(
-                    "border-b transition-colors cursor-pointer",
-                    selectedIndex === index
-                      ? "bg-accent"
-                      : "hover:bg-muted/50"
-                  )}
-                >
-                  <td className="h-12 px-2 text-center" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedIds.has(source.id)}
-                      onCheckedChange={() => toggleSelect(source.id)}
-                      disabled={!canDeleteSource(source, currentUserId)}
-                      aria-label={`Select ${source.title || tUntitledSource}`}
-                    />
-                  </td>
-                  <td className="h-12 px-2">
-                    <div className="flex items-center gap-1">
-                      {getSourceIcon(source)}
-                      <Badge variant="secondary" className="text-xs">
-                        {getSourceType(source)}
-                      </Badge>
-                    </div>
-                  </td>
-                  <td className="h-12 px-2">
-                    <div className="flex flex-col overflow-hidden">
-                      <span className="font-medium truncate">
-                        {source.title || tUntitledSource}
-                      </span>
-                      {source.asset?.url && (
-                        <span className="text-xs text-muted-foreground truncate">
-                          {source.asset.url}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="h-12 px-2" onClick={(e) => e.stopPropagation()}>
-                    <ResourceVisibilityBadge
-                      visibility={source.visibility}
-                      labels={visibilityLabels}
-                      title={t.sharing?.title || 'Share'}
-                      onClick={() => setShareDialog({ open: true, source })}
-                    />
-                  </td>
-                  <td className="h-12 px-2 text-muted-foreground text-sm hidden sm:table-cell">
-                    {formatDistanceToNow(new Date(source.created), { 
-                      addSuffix: true,
-                      locale: getDateLocale(language)
-                    })}
-                  </td>
-                  <td className="h-12 px-2 text-center hidden md:table-cell">
-                    <span className="text-sm font-medium">{source.insights_count || 0}</span>
-                  </td>
-                  <td className="h-12 px-2 text-center hidden md:table-cell">
-                    <Badge
-                      variant={source.reference_count > 0 ? "secondary" : "outline"}
-                      className="text-xs"
-                    >
-                      {source.reference_count || 0}
-                    </Badge>
-                  </td>
-                  <td className="h-12 px-2 text-center hidden lg:table-cell">
-                    <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
-                      {source.embedded ? tYes : tNo}
-                    </Badge>
-                  </td>
-                  <td className="h-12 px-2 text-center hidden xl:table-cell" onClick={(e) => e.stopPropagation()}>
-                    {source.kg_extracted ? (
-                      <Badge variant="default" className="text-xs">
-                        {tYes}
-                      </Badge>
-                    ) : (
-                      <button
-                        onClick={(e) => handleExtractKg(e, source.id)}
-                        className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 cursor-pointer border-0"
-                        title={t.sources?.kgExtractHint || "点击抽取知识图谱"}
-                      >
-                        {tNo}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {workspaceSources.length > 0 && renderGroupHeader(t.sources.workspaceSources, workspaceSources.length)}
+              {workspaceSources.map((source, index) => renderSourceRow(source, index, true))}
+              {publicSources.length > 0 && renderGroupHeader(t.sources.publicSources, publicSources.length)}
+              {publicSources.map((source, index) =>
+                renderSourceRow(source, workspaceSources.length + index, false)
+              )}
             </tbody>
           </table>
         </div>
@@ -621,7 +668,8 @@ export default function SourcesPage() {
           onChanged={(visibility) => {
             const sourceId = shareDialog.source?.id
             if (!sourceId) return
-            setSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility } : s))
+            setWorkspaceSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility } : s))
+            setPublicSources(prev => prev.map(s => s.id === sourceId ? { ...s, visibility } : s))
             setShareDialog(prev =>
               prev.source?.id === sourceId
                 ? { ...prev, source: { ...prev.source, visibility } }

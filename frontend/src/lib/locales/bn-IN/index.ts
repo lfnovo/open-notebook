@@ -473,6 +473,8 @@ export const bnIN = {
     failedToLoad: "উৎস লোড করতে ব্যর্থ",
     allSourcesDesc: "এখানে আপনার সব উৎস দেখুন। আপনি নতুন উৎস যোগ করতে বা বিদ্যমান উৎস পরিচালনা করতে পারেন।",
     allSources: "সব উৎস",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "অন্তর্দৃষ্টি",
     yes: "হ্যাঁ",
     no: "না",

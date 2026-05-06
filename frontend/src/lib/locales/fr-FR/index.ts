@@ -473,6 +473,8 @@ export const frFR = {
     failedToLoad: "Échec du chargement des sources",
     allSourcesDesc: "Affichez toutes vos sources ici. Vous pouvez en ajouter de nouvelles ou gérer les existantes.",
     allSources: "Toutes les sources",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "Aperçus",
     yes: "Oui",
     no: "Non",

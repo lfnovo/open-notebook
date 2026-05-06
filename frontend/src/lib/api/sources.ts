@@ -97,7 +97,14 @@ export const sourcesApi = {
     return response.data
   },
 
-  listPublic: async (params?: { notebook_id?: string; order_by?: string; limit?: number; offset?: number }) => {
+  listPublic: async (params?: {
+    notebook_id?: string
+    order_by?: string
+    limit?: number
+    offset?: number
+    sort_by?: 'created' | 'updated'
+    sort_order?: 'asc' | 'desc'
+  }) => {
     const response = await apiClient.get<SourceResponse[]>('/sources/public', { params })
     return response.data
   },

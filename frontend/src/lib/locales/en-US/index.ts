@@ -556,6 +556,8 @@ export const enUS = {
     failedToLoad: "Failed to load sources",
     allSourcesDesc: "View all your sources here. You can add new sources or manage existing ones.",
     allSources: "All Sources",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "Insights",
     yes: "Yes",
     no: "No",

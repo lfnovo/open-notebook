@@ -473,6 +473,8 @@ export const itIT = {
     failedToLoad: "Impossibile caricare le fonti",
     allSourcesDesc: "Visualizza tutte le tue fonti qui. Puoi aggiungere nuove fonti o gestire quelle esistenti.",
     allSources: "Tutte le fonti",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "Approfondimenti",
     yes: "Sì",
     no: "No",

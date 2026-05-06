@@ -473,6 +473,8 @@ export const jaJP = {
     failedToLoad: "ソースの読み込みに失敗しました",
     allSourcesDesc: "すべてのソースを表示します。新しいソースの追加や既存ソースの管理ができます。",
     allSources: "すべてのソース",
+    workspaceSources: "Team workspace sources",
+    publicSources: "Public sources",
     insights: "インサイト",
     yes: "はい",
     no: "いいえ",

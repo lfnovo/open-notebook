@@ -1012,6 +1012,30 @@ class WorkspaceListResponse(BaseModel):
     total: int
 
 
+class WorkspacePermissionPolicy(BaseModel):
+    member_can_read: bool = True
+    member_can_create_source: bool = True
+    member_can_update_own_source: bool = True
+    member_can_process_own_source: bool = True
+    member_can_delete_own_source: bool = False
+    member_can_remove_source: bool = False
+    member_can_create_note: bool = True
+    member_can_update_own_note: bool = True
+    member_can_delete_own_note: bool = True
+    member_can_delete_chat: bool = False
+    member_can_update_notebook: bool = False
+
+
+class WorkspacePolicyResponse(BaseModel):
+    workspace_id: str
+    policy: WorkspacePermissionPolicy
+    effective_policy: WorkspacePermissionPolicy
+
+
+class WorkspaceSystemPolicyResponse(BaseModel):
+    policy: WorkspacePermissionPolicy
+
+
 class WorkspaceResourceMoveRequest(BaseModel):
     resource_type: Literal["notebook"]
     resource_id: str

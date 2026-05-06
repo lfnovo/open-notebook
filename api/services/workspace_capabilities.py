@@ -3,7 +3,10 @@ from __future__ import annotations
 from typing import Literal
 
 from api.auth import CurrentUser
-from api.models import ResourceCapabilities
+from api.models import ResourceCapabilities, WorkspacePermissionPolicy
+from open_notebook.database.repositories.workspace_policy_repository import (
+    WorkspacePolicyRepository,
+)
 from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
 
 ResourceType = Literal["notebook", "source", "note", "chat_session"]
@@ -14,6 +17,12 @@ MEMBER_ROLES = {"owner", "admin", "member", "viewer"}
 
 def _same_user(left: str | None, right: str | None) -> bool:
     return bool(left and right and str(left) == str(right))
+
+
+def _policy_flag(policy: WorkspacePermissionPolicy | dict, field: str) -> bool:
+    if isinstance(policy, WorkspacePermissionPolicy):
+        return bool(getattr(policy, field))
+    return bool(policy.get(field))
 
 
 async def resolve_resource_capabilities(
@@ -63,6 +72,9 @@ async def resolve_resource_capabilities(
     is_workspace_member = workspace_role in MEMBER_ROLES
     is_personal_workspace = workspace_type == "personal" or not workspace_id
     can_read = visibility == "public" or is_creator or is_workspace_member
+    policy: WorkspacePermissionPolicy | dict | None = None
+    if workspace_id and workspace_type == "team" and is_workspace_member:
+        policy = await WorkspacePolicyRepository.get_effective_policy(workspace_id)
 
     if resource_type == "notebook":
         if is_personal_workspace:
@@ -79,14 +91,31 @@ async def resolve_resource_capabilities(
             )
 
         return ResourceCapabilities(
-            can_read=can_read,
-            can_update=is_workspace_manager,
+            can_read=can_read and (
+                is_workspace_manager
+                or not policy
+                or _policy_flag(policy, "member_can_read")
+            ),
+            can_update=is_workspace_manager
+            or (
+                is_workspace_member
+                and bool(policy)
+                and _policy_flag(policy, "member_can_update_notebook")
+                and is_creator
+            ),
             can_delete=is_workspace_manager,
             can_share=is_workspace_manager,
             can_manage=is_workspace_manager,
-            can_create_source=is_workspace_member,
-            can_remove_source=is_workspace_manager,
-            can_create_note=is_workspace_member,
+            can_create_source=is_workspace_member
+            and (not policy or _policy_flag(policy, "member_can_create_source")),
+            can_remove_source=is_workspace_manager
+            or (
+                is_workspace_member
+                and bool(policy)
+                and _policy_flag(policy, "member_can_remove_source")
+            ),
+            can_create_note=is_workspace_member
+            and (not policy or _policy_flag(policy, "member_can_create_note")),
         )
 
     if resource_type == "source":
@@ -101,21 +130,60 @@ async def resolve_resource_capabilities(
                 can_process=can_manage,
             )
 
-        can_update = is_workspace_manager or (is_workspace_member and is_creator)
+        can_update = is_workspace_manager or (
+            is_workspace_member
+            and is_creator
+            and (not policy or _policy_flag(policy, "member_can_update_own_source"))
+        )
         return ResourceCapabilities(
-            can_read=can_read,
+            can_read=can_read and (
+                is_workspace_manager
+                or not policy
+                or _policy_flag(policy, "member_can_read")
+            ),
             can_update=can_update,
-            can_delete=is_workspace_manager,
+            can_delete=is_workspace_manager
+            or (
+                is_workspace_member
+                and is_creator
+                and bool(policy)
+                and _policy_flag(policy, "member_can_delete_own_source")
+            ),
             can_share=is_workspace_manager,
             can_manage=is_workspace_manager,
-            can_process=can_update,
+            can_process=is_workspace_manager
+            or (
+                is_workspace_member
+                and is_creator
+                and (not policy or _policy_flag(policy, "member_can_process_own_source"))
+            ),
         )
 
     can_manage = is_workspace_manager or (is_personal_workspace and is_creator)
+    can_update_own_note = (
+        is_workspace_member
+        and is_creator
+        and (not policy or _policy_flag(policy, "member_can_update_own_note"))
+    )
+    can_delete_own_note = (
+        is_workspace_member
+        and is_creator
+        and (not policy or _policy_flag(policy, "member_can_delete_own_note"))
+    )
+    if resource_type == "chat_session":
+        can_update_own_note = False
+        can_delete_own_note = (
+            is_workspace_member
+            and is_creator
+            and bool(policy)
+            and _policy_flag(policy, "member_can_delete_chat")
+        )
     return ResourceCapabilities(
-        can_read=can_read,
-        can_update=can_manage or (is_workspace_member and is_creator),
-        can_delete=can_manage or (is_workspace_member and is_creator),
+        can_read=can_read and (
+            can_manage or not policy or _policy_flag(policy, "member_can_read")
+        ),
+        can_update=can_manage or can_update_own_note,
+        can_delete=can_manage or can_delete_own_note,
         can_share=can_manage,
         can_manage=can_manage,
     )

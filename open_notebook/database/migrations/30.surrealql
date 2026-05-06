@@ -1,0 +1,47 @@
+-- Migration 30: Workspace permission policies
+
+DEFINE TABLE IF NOT EXISTS workspace_policy SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS workspace_id ON TABLE workspace_policy TYPE record<workspace>;
+DEFINE FIELD IF NOT EXISTS member_can_read ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_create_source ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_update_own_source ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_process_own_source ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_own_source ON TABLE workspace_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_remove_source ON TABLE workspace_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_create_note ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_update_own_note ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_own_note ON TABLE workspace_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_chat ON TABLE workspace_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_update_notebook ON TABLE workspace_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS created ON workspace_policy DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON workspace_policy DEFAULT time::now() VALUE time::now();
+DEFINE INDEX IF NOT EXISTS idx_workspace_policy_workspace ON TABLE workspace_policy FIELDS workspace_id UNIQUE;
+
+DEFINE TABLE IF NOT EXISTS workspace_system_policy SCHEMAFULL;
+DEFINE FIELD IF NOT EXISTS member_can_read ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_create_source ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_update_own_source ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_process_own_source ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_own_source ON TABLE workspace_system_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_remove_source ON TABLE workspace_system_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_create_note ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_update_own_note ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_own_note ON TABLE workspace_system_policy TYPE bool DEFAULT true;
+DEFINE FIELD IF NOT EXISTS member_can_delete_chat ON TABLE workspace_system_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS member_can_update_notebook ON TABLE workspace_system_policy TYPE bool DEFAULT false;
+DEFINE FIELD IF NOT EXISTS created ON workspace_system_policy DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON workspace_system_policy DEFAULT time::now() VALUE time::now();
+
+UPSERT workspace_system_policy:global SET
+    member_can_read = true,
+    member_can_create_source = true,
+    member_can_update_own_source = true,
+    member_can_process_own_source = true,
+    member_can_delete_own_source = false,
+    member_can_remove_source = false,
+    member_can_create_note = true,
+    member_can_update_own_note = true,
+    member_can_delete_own_note = true,
+    member_can_delete_chat = false,
+    member_can_update_notebook = false,
+    updated = time::now();

@@ -1,0 +1,4 @@
+-- Rollback migration 30: Workspace permission policies
+
+REMOVE TABLE IF EXISTS workspace_policy;
+REMOVE TABLE IF EXISTS workspace_system_policy;

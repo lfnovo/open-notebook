@@ -125,6 +125,31 @@ async def test_get_workspace_for_resource_rejects_unknown_table(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_move_notebook_to_workspace_updates_notebook_notes_and_chat_sessions(
+    monkeypatch,
+):
+    captured = {}
+
+    async def fake_repo_query(query, vars=None):
+        captured["query"] = query
+        captured["vars"] = vars
+        return []
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    await WorkspaceRepository.move_notebook_to_workspace(
+        notebook_id="notebook:abc",
+        workspace_id="workspace:team",
+    )
+
+    assert "UPDATE $notebook_id SET workspace_id = $workspace_id" in captured["query"]
+    assert "UPDATE note SET workspace_id = $workspace_id" in captured["query"]
+    assert "UPDATE chat_session SET workspace_id = $workspace_id" in captured["query"]
+    assert str(captured["vars"]["notebook_id"]) == "notebook:abc"
+    assert str(captured["vars"]["workspace_id"]) == "workspace:team"
+
+
+@pytest.mark.asyncio
 async def test_list_for_user_includes_personal_and_active_team_workspaces(monkeypatch):
     captured = {}
 

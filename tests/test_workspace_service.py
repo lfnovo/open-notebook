@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from api.auth import CurrentUser
+from api.models import ResourceCapabilities, WorkspaceResourceMoveRequest
 from api.services import workspace_service
 from open_notebook.exceptions import NotFoundError
 
@@ -63,5 +64,73 @@ async def test_get_workspace_raises_not_found(mock_get):
     with pytest.raises(NotFoundError):
         await workspace_service.get_workspace_use_case(
             "workspace:missing",
+            actor=actor("user"),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.workspace_service.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.services.workspace_service.WorkspaceRepository.move_notebook_to_workspace", new_callable=AsyncMock)
+@patch("api.services.workspace_service.resolve_resource_capabilities", new_callable=AsyncMock)
+@patch("api.services.workspace_service.Notebook")
+@patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+@patch("api.services.workspace_service.WorkspaceRepository.get_workspace", new_callable=AsyncMock)
+async def test_move_notebook_to_workspace_requires_target_manager_and_moves_children(
+    mock_get_workspace,
+    mock_current_role,
+    mock_notebook_cls,
+    mock_capabilities,
+    mock_move,
+    mock_audit,
+):
+    mock_get_workspace.return_value = {"id": "workspace:team", "type": "team"}
+    mock_current_role.return_value = {"current_user_role": "owner"}
+    mock_notebook = type(
+        "NotebookStub",
+        (),
+        {
+            "owner_id": "app_user:user",
+            "workspace_id": "workspace:personal",
+            "visibility": "private",
+        },
+    )()
+    mock_notebook_cls.get = AsyncMock(return_value=mock_notebook)
+    mock_capabilities.return_value = ResourceCapabilities(can_manage=True)
+
+    response = await workspace_service.move_resource_to_workspace_use_case(
+        "workspace:team",
+        WorkspaceResourceMoveRequest(
+            resource_type="notebook",
+            resource_id="notebook:abc",
+        ),
+        actor=actor("user"),
+    )
+
+    assert response.target_workspace_id == "workspace:team"
+    assert response.source_workspace_id == "workspace:personal"
+    mock_move.assert_awaited_once_with(
+        notebook_id="notebook:abc",
+        workspace_id="workspace:team",
+    )
+    mock_audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+@patch("api.services.workspace_service.WorkspaceRepository.get_workspace", new_callable=AsyncMock)
+async def test_move_notebook_to_workspace_requires_workspace_management(
+    mock_get_workspace,
+    mock_current_role,
+):
+    mock_get_workspace.return_value = {"id": "workspace:team", "type": "team"}
+    mock_current_role.return_value = {"current_user_role": "member"}
+
+    with pytest.raises(PermissionError, match="Workspace management permission"):
+        await workspace_service.move_resource_to_workspace_use_case(
+            "workspace:team",
+            WorkspaceResourceMoveRequest(
+                resource_type="notebook",
+                resource_id="notebook:abc",
+            ),
             actor=actor("user"),
         )

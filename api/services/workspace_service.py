@@ -3,8 +3,16 @@ from __future__ import annotations
 from typing import Optional
 
 from api.auth import CurrentUser
-from api.models import WorkspaceListResponse, WorkspaceResponse
+from api.models import (
+    WorkspaceListResponse,
+    WorkspaceResourceMoveRequest,
+    WorkspaceResourceMoveResponse,
+    WorkspaceResponse,
+)
+from api.services.workspace_capabilities import resolve_resource_capabilities
+from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
+from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 
@@ -102,3 +110,74 @@ async def get_workspace_use_case(
             or (row.get("owner_id") and str(row.get("owner_id")) == actor.id),
         }
     return _workspace_response(row)
+
+
+async def _actor_can_manage_workspace(
+    *,
+    workspace_id: str,
+    actor: CurrentUser,
+) -> bool:
+    if actor.role == "admin":
+        return True
+    role = await WorkspaceRepository.current_user_role(
+        workspace_id=workspace_id,
+        user_id=actor.id,
+    )
+    return bool(role and role.get("current_user_role") in {"owner", "admin"})
+
+
+async def move_resource_to_workspace_use_case(
+    workspace_id: str,
+    request: WorkspaceResourceMoveRequest,
+    *,
+    actor: CurrentUser,
+) -> WorkspaceResourceMoveResponse:
+    target_workspace = await WorkspaceRepository.get_workspace(workspace_id)
+    if not target_workspace:
+        raise NotFoundError("Workspace not found")
+    if not await _actor_can_manage_workspace(workspace_id=workspace_id, actor=actor):
+        raise PermissionError("Workspace management permission required")
+
+    if request.resource_type != "notebook" or request.mode != "move":
+        raise InvalidInputError("Only notebook move is supported")
+
+    notebook = await Notebook.get(request.resource_id)
+    if not notebook:
+        raise NotFoundError("Notebook not found")
+
+    source_workspace_id = str(notebook.workspace_id) if notebook.workspace_id else None
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="notebook",
+        owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+        workspace_id=source_workspace_id,
+        visibility=notebook.visibility,
+    )
+    if not capabilities.can_manage:
+        raise PermissionError("Notebook management permission required")
+
+    await WorkspaceRepository.move_notebook_to_workspace(
+        notebook_id=request.resource_id,
+        workspace_id=workspace_id,
+    )
+    await AuditLogRepository.create(
+        action="resource.moved_to_workspace",
+        actor_id=actor.id,
+        actor_username=actor.username,
+        target_type=request.resource_type,
+        target_id=request.resource_id,
+        metadata={
+            "source_workspace_id": source_workspace_id,
+            "target_workspace_id": workspace_id,
+            "mode": request.mode,
+        },
+    )
+
+    return WorkspaceResourceMoveResponse(
+        resource_type=request.resource_type,
+        resource_id=request.resource_id,
+        source_workspace_id=source_workspace_id,
+        target_workspace_id=workspace_id,
+        mode=request.mode,
+        message="Resource moved to workspace",
+    )

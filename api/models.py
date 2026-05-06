@@ -1012,6 +1012,21 @@ class WorkspaceListResponse(BaseModel):
     total: int
 
 
+class WorkspaceResourceMoveRequest(BaseModel):
+    resource_type: Literal["notebook"]
+    resource_id: str
+    mode: Literal["move"] = "move"
+
+
+class WorkspaceResourceMoveResponse(BaseModel):
+    resource_type: str
+    resource_id: str
+    source_workspace_id: Optional[str] = None
+    target_workspace_id: str
+    mode: Literal["move"] = "move"
+    message: str
+
+
 class ShareGrantCreateRequest(BaseModel):
     resource_type: Literal["source", "notebook"]
     resource_id: str

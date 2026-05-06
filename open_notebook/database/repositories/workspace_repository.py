@@ -220,3 +220,23 @@ class WorkspaceRepository:
             },
         )
         return result[0] if result else None
+
+    @staticmethod
+    async def move_notebook_to_workspace(
+        *,
+        notebook_id: str,
+        workspace_id: str,
+    ) -> None:
+        await repo_query(
+            """
+            UPDATE $notebook_id SET workspace_id = $workspace_id;
+            UPDATE note SET workspace_id = $workspace_id
+            WHERE id IN (SELECT VALUE in FROM artifact WHERE out = $notebook_id);
+            UPDATE chat_session SET workspace_id = $workspace_id
+            WHERE id IN (SELECT VALUE in FROM refers_to WHERE out = $notebook_id);
+            """,
+            {
+                "notebook_id": ensure_record_id(notebook_id),
+                "workspace_id": ensure_record_id(workspace_id),
+            },
+        )

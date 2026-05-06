@@ -303,3 +303,36 @@ Manual checks:
 7. Phase 6: Full regression and release hardening.
 
 The first implementation batch should stop after Phase 0 and Phase 1 tests are green. That gives the project a stable schema foundation before changing all write behaviors.
+
+## Implementation Closure Update
+
+> Updated: 2026-05-06
+> Branch: `codex/workspace`
+
+This branch has moved beyond the original first batch and closes the practical Workspace MVP slices that were required for the team-notebook permission redesign.
+
+Completed:
+
+- Phase 0: Notes API now uses workspace-aware capability checks for list, create, read, update, and delete paths.
+- Phase 1: Workspace schema, repository, service, router, default personal workspace creation, default team workspace creation, and workspace list/get APIs are implemented.
+- Phase 2: Backend resource capabilities now cover notebook, source, note, and chat actions, including creator-aware member rules and workspace policy limits.
+- Phase 3: Runtime team context resolution now prefers resource workspace ownership before share-grant fallback, so team model defaults follow team workspace resources.
+- Phase 4: Notebook move API and frontend move dialog are implemented for moving resources into a target workspace.
+- Phase 5: Frontend notebook/source/note/chat controls consume backend capabilities, and admin/team policy UIs are available for system limits and workspace manager settings.
+- Phase 6 gate: OpenAPI generated types were refreshed and checked.
+
+Verified:
+
+```bash
+uv run pytest tests/test_permission_model.py tests/test_team_context_service.py tests/test_model_resolution.py tests/test_model_policy_service.py tests/test_notes_api.py tests/test_sources_api.py tests/test_chat_permissions.py -q
+uv run python scripts/generate_openapi_types.py --check
+cd frontend && npm test -- 'src/app/(dashboard)/notebooks/components'
+cd frontend && npm test -- 'src/components/source'
+cd frontend && npm run lint
+cd frontend && npm run build
+```
+
+Notes:
+
+- `npm run lint` currently exits successfully with pre-existing warnings unrelated to the Workspace implementation.
+- Full deep-copy/export/import behavior remains future work. The current implementation keeps the confirmed MVP behavior as move-first and preserves API space for future copy/export/import evolution.

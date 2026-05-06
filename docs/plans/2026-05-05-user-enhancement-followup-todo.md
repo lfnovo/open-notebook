@@ -16,11 +16,14 @@
 
 ## P0: 权限与运行时收口
 
-- [ ] **为资源增加显式 owning team 字段**
+- [ ] **引入 Workspace 资源归属模型**
+  - 详细设计见 `docs/7-DEVELOPMENT/workspace-architecture.md`。
   - 当前 team context 主要从 `share_grant` 推断，多个 team grant 时会返回 `None`，行为安全但不够精确。
-  - 建议新增 `team_id` 或 `workspace_team_id` 到 `source` / `notebook`，创建时写入，运行时优先读取显式 team。
-  - 主要文件：`open_notebook/domain/notebook.py`、`api/models.py`、`api/services/source_service.py`、`api/routers/notebooks.py`、`api/routers/sources.py`、新 migration。
-  - 测试：新增资源属于单 team、多 team share、无 team 三类场景。
+  - 下一阶段不再把“显式 owning team 字段”作为长期方向，而是新增 `workspace_id`，通过 `resource.workspace_id -> workspace.team_id` 解析 team context。
+  - Workspace 作为资源归属和协作权限边界；Team 继续负责成员、订阅、可用模型/转换和团队默认模型。
+  - 先支持将个人资源移动到团队 workspace，保留后续 copy API 入口。
+  - 主要文件：新 migration、`open_notebook/database/repositories/` 下新增 workspace repository、`api/models.py`、新增 `api/routers/workspaces.py`、`api/services/workspace_service.py`、`open_notebook/domain/notebook.py`、`api/services/source_service.py`、前端 workspace selector/move dialog。
+  - 测试：个人 workspace、team workspace、资源移动、成员新增来源/笔记、成员不能删除团队资源、通过 workspace 解析 team 默认模型。
 
 - [ ] **运行时强制 Team transformation allowlist**
   - 当前 Team 可配置可用转换，但 source create / transformation execution 需要进一步校验 active team 是否允许该 transformation。
@@ -127,7 +130,7 @@
 
 ## 建议实施顺序
 
-1. P0: 显式 owning team 字段。
+1. P0: Workspace 资源归属模型。
 2. P0: Transformation allowlist runtime enforcement。
 3. P0: Effective model defaults API + 前端展示。
 4. P1: Team 非模型设置。

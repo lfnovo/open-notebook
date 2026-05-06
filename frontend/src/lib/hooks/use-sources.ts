@@ -5,6 +5,7 @@ import { QUERY_KEYS } from '@/lib/api/query-client'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
+import { useWorkspaceStore } from '@/lib/stores/workspace-store'
 import {
   CreateSourceRequest,
   UpdateSourceRequest,
@@ -28,9 +29,15 @@ function invalidateSourceCollectionQueries(queryClient: ReturnType<typeof useQue
 }
 
 export function useSources(notebookId?: string) {
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
+
   return useQuery({
-    queryKey: QUERY_KEYS.sources(notebookId),
-    queryFn: () => sourcesApi.list({ notebook_id: notebookId }),
+    queryKey: QUERY_KEYS.workspaceSources(workspaceId, notebookId),
+    queryFn: () =>
+      sourcesApi.list({
+        notebook_id: notebookId,
+        workspace_id: workspaceId || undefined,
+      }),
     enabled: !!notebookId,
     staleTime: 5 * 1000, // 5 seconds - more responsive for real-time source updates
     refetchOnWindowFocus: true, // Refetch when user comes back to the tab
@@ -43,12 +50,14 @@ export function useSources(notebookId?: string) {
  */
 export function useNotebookSources(notebookId: string) {
   const queryClient = useQueryClient()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   const query = useInfiniteQuery({
-    queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+    queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
     queryFn: async ({ pageParam = 0 }) => {
       const data = await sourcesApi.list({
         notebook_id: notebookId,
+        workspace_id: workspaceId || undefined,
         limit: NOTEBOOK_SOURCES_PAGE_SIZE,
         offset: pageParam,
         sort_by: 'updated',
@@ -74,8 +83,10 @@ export function useNotebookSources(notebookId: string) {
 
   // Refetch function that resets to first page
   const refetch = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sourcesInfinite(notebookId) })
-  }, [queryClient, notebookId])
+    queryClient.invalidateQueries({
+      queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
+    })
+  }, [queryClient, notebookId, workspaceId])
 
   return {
     sources,
@@ -102,36 +113,41 @@ export function useCreateSource() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   return useMutation({
-    mutationFn: (data: CreateSourceRequest) => sourcesApi.create(data),
+    mutationFn: (data: CreateSourceRequest) =>
+      sourcesApi.create({
+        ...data,
+        workspace_id: data.workspace_id || workspaceId || undefined,
+      }),
     onSuccess: (result: SourceResponse, variables) => {
       // Invalidate queries for all relevant notebooks with immediate refetch
       if (variables.notebooks) {
         variables.notebooks.forEach(notebookId => {
           queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.sources(notebookId),
+            queryKey: QUERY_KEYS.workspaceSources(workspaceId, notebookId),
             refetchType: 'active'
           })
           queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
             refetchType: 'active'
           })
         })
       } else if (variables.notebook_id) {
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.sources(variables.notebook_id),
+          queryKey: QUERY_KEYS.workspaceSources(workspaceId, variables.notebook_id),
           refetchType: 'active'
         })
         queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
+          queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, variables.notebook_id),
           refetchType: 'active'
         })
       }
 
       // Invalidate general sources query too with immediate refetch
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.sources(),
+        queryKey: QUERY_KEYS.workspaceSources(workspaceId),
         refetchType: 'active'
       })
 
@@ -230,16 +246,17 @@ export function useFileUpload() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   return useMutation({
     mutationFn: ({ file, notebookId }: { file: File; notebookId: string }) =>
-      sourcesApi.upload(file, notebookId),
+      sourcesApi.upload(file, notebookId, workspaceId || undefined),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.sources(variables.notebookId)
+        queryKey: QUERY_KEYS.workspaceSources(workspaceId, variables.notebookId)
       })
       queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.sourcesInfinite(variables.notebookId),
+        queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, variables.notebookId),
         refetchType: 'active'
       })
       toast({
@@ -319,6 +336,7 @@ export function useAddSourcesToNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   return useMutation({
     mutationFn: async ({ notebookId, sourceIds }: { notebookId: string; sourceIds: string[] }) => {
@@ -339,7 +357,7 @@ export function useAddSourcesToNotebook() {
       // Invalidate ALL sources queries to refresh all lists
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources(notebookId) })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaceSources(workspaceId, notebookId) })
       // Invalidate each affected source
       sourceIds.forEach(sourceId => {
         queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
@@ -381,6 +399,7 @@ export function useRemoveSourceFromNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   return useMutation({
     mutationFn: async ({ notebookId, sourceId }: { notebookId: string; sourceId: string }) => {
@@ -392,7 +411,7 @@ export function useRemoveSourceFromNotebook() {
       // Invalidate ALL sources queries to refresh all lists
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       // Specifically invalidate the notebook's sources
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.sources(notebookId) })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaceSources(workspaceId, notebookId) })
       // Also invalidate the specific source
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
 

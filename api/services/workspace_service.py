@@ -53,6 +53,19 @@ async def ensure_team_workspace_for_team(
     return row
 
 
+async def resolve_workspace_id_for_user(
+    *,
+    user_id: str | None,
+    requested_workspace_id: str | None,
+) -> str | None:
+    if requested_workspace_id:
+        return requested_workspace_id
+    if not user_id:
+        return None
+    row = await ensure_personal_workspace_for_user(user_id=user_id)
+    return str(row.get("id")) if row.get("id") else None
+
+
 async def list_workspaces_use_case(*, actor: CurrentUser) -> WorkspaceListResponse:
     rows = await WorkspaceRepository.list_for_user(
         user_id=actor.id,

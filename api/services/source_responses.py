@@ -59,5 +59,6 @@ def source_list_response_from_row(row: dict[str, Any]) -> SourceListResponse:
         status=status,
         processing_info=processing_info,
         owner_id=row.get("owner_id"),
+        workspace_id=str(row["workspace_id"]) if row.get("workspace_id") else None,
         visibility=row.get("visibility", "private"),
     )

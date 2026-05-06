@@ -19,6 +19,14 @@ export const QUERY_KEYS = {
   notebook: (id: string) => ['notebooks', id] as const,
   publicNotebooks: ['notebooks', 'public'] as const,
   publicSources: ['sources', 'public'] as const,
+  workspaces: ['workspaces'] as const,
+  workspace: (id: string) => ['workspaces', id] as const,
+  workspaceNotebooks: (workspaceId?: string | null, archived?: boolean) =>
+    ['workspaces', workspaceId || 'none', 'notebooks', archived ?? 'all'] as const,
+  workspaceSources: (workspaceId?: string | null, notebookId?: string) =>
+    ['workspaces', workspaceId || 'none', 'sources', notebookId || 'all'] as const,
+  workspaceSourcesInfinite: (workspaceId: string | null | undefined, notebookId: string) =>
+    ['workspaces', workspaceId || 'none', 'sources', 'infinite', notebookId] as const,
   notes: (notebookId?: string) => ['notes', notebookId] as const,
   note: (id: string) => ['notes', id] as const,
   sources: (notebookId?: string) => ['sources', notebookId] as const,

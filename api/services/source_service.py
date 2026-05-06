@@ -23,11 +23,11 @@ from api.models import (
     SourceUpdate,
 )
 from api.services import command_lifecycle
+from api.services.share_service import can_read_resource
 from api.services.source_permissions import (
     check_source_access,
     check_source_ownership,
 )
-from api.services.share_service import can_read_resource
 from api.services.source_processing import (
     SOURCE_PROCESSING_TIMEOUT_MESSAGE,
     mark_command_failed,
@@ -35,9 +35,10 @@ from api.services.source_processing import (
 )
 from api.services.source_responses import source_list_response_from_row
 from api.services.team_context_service import resolve_resource_team_context
+from api.services.workspace_service import resolve_workspace_id_for_user
 from commands.source_commands import SourceProcessingInput
-from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.ai.model_resolution import resolve_default_model_id
+from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repositories.source_repository import SourceRepository
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Asset, Notebook, Source
@@ -97,6 +98,27 @@ async def resolve_source_team_context(notebook_ids: list[str] | None) -> str | N
         if team_id
     }
     return next(iter(team_ids)) if len(team_ids) == 1 else None
+
+
+async def resolve_source_workspace_id(
+    source_data: SourceCreate,
+    *,
+    user_id: str | None,
+) -> str | None:
+    if source_data.workspace_id:
+        return source_data.workspace_id
+
+    workspace_ids = set()
+    for notebook_id in source_data.notebooks or []:
+        notebook = await Notebook.get(notebook_id)
+        workspace_id = getattr(notebook, "workspace_id", None)
+        workspace_id_str = str(workspace_id) if workspace_id else None
+        if workspace_id_str and workspace_id_str.startswith("workspace:"):
+            workspace_ids.add(workspace_id_str)
+    if len(workspace_ids) == 1:
+        return next(iter(workspace_ids))
+
+    return await resolve_workspace_id_for_user(user_id=user_id, requested_workspace_id=None)
 
 
 async def validate_source_create_request(
@@ -188,6 +210,7 @@ def source_response_for_queued_processing(
         notebooks=notebooks,
         owner_id=source.owner_id,
         visibility=source.visibility,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
     )
 
 
@@ -250,6 +273,7 @@ async def source_response_from_source(
         processing_info=processing_info,
         notebooks=notebooks,
         owner_id=source.owner_id,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
         visibility=source.visibility,
     )
 
@@ -296,6 +320,10 @@ async def create_source_and_queue_processing(
         topics=[],
         asset=build_source_asset(source_data, file_path=file_path),
         owner_id=user_id,
+        workspace_id=await resolve_source_workspace_id(
+            source_data,
+            user_id=user_id,
+        ),
         visibility=source_data.visibility,
     )
     await source.save()

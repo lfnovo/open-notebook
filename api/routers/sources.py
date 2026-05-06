@@ -27,13 +27,13 @@ from api.models import (
     SourceUpdate,
 )
 from api.services import command_lifecycle
+from api.services.share_service import can_read_resource
 from api.services.source_forms import parse_source_form_data
 from api.services.source_permissions import check_source_access as _check_source_access
 from api.services.source_permissions import (
     check_source_ownership as _check_source_ownership,
 )
 from api.services.source_responses import source_list_response_from_row
-from api.services.share_service import can_read_resource
 from api.services.source_service import (
     create_source_and_queue_processing,
     create_source_insight_use_case,
@@ -75,6 +75,7 @@ async def get_sources(
     title_contains: Optional[str] = Query(
         None, description="Filter sources by title substring"
     ),
+    workspace_id: Optional[str] = Query(None, description="Filter by workspace ID"),
     limit: int = Query(
         50, ge=1, le=100, description="Number of sources to return (1-100)"
     ),
@@ -116,6 +117,7 @@ async def get_sources(
             offset=offset,
             sort_by=sort_by,
             sort_order=sort_order,
+            workspace_id=workspace_id,
         )
 
         return [source_list_response_from_row(row) for row in result]

@@ -11,6 +11,7 @@ class NotebookCreate(BaseModel):
     description: str = Field(default="", description="Description of the notebook")
     password: Optional[str] = Field(None, description="Notebook access password")
     creator_name: Optional[str] = Field(None, description="Name of the notebook creator")
+    workspace_id: Optional[str] = Field(None, description="Workspace ID for this notebook")
     visibility: Literal["private", "public"] = Field(
         "private", description="Visibility: private or public"
     )
@@ -48,6 +49,7 @@ class NotebookResponse(BaseModel):
     creator_name: Optional[str] = None
     creator_username: Optional[str] = None
     owner_id: Optional[str] = None
+    workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")
@@ -322,6 +324,7 @@ class AssetModel(BaseModel):
 
 
 class SourceCreate(BaseModel):
+    workspace_id: Optional[str] = Field(None, description="Workspace ID for this source")
     # Backward compatibility: support old single notebook_id
     notebook_id: Optional[str] = Field(
         None, description="Notebook ID to add the source to (deprecated, use notebooks)"
@@ -398,6 +401,7 @@ class SourceResponse(BaseModel):
     # Notebook associations
     notebooks: Optional[List[str]] = None
     owner_id: Optional[str] = None
+    workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")
@@ -427,6 +431,7 @@ class SourceListResponse(BaseModel):
     status: Optional[str] = None
     processing_info: Optional[Dict[str, Any]] = None
     owner_id: Optional[str] = None
+    workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
 
     @field_validator("owner_id", mode="before")

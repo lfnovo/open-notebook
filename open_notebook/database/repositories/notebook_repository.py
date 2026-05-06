@@ -18,6 +18,7 @@ class NotebookRepository:
         order_by: str,
         public_only: bool = False,
         team_ids: Optional[list[str]] = None,
+        workspace_id: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         if public_only or not user_id:
             visibility_filter = "(visibility = 'public')"
@@ -41,13 +42,18 @@ class NotebookRepository:
             )
             visibility_filter = " OR ".join(access_conditions)
 
+        workspace_filter = ""
+        if workspace_id:
+            workspace_filter = " AND workspace_id = $workspace_id"
+            params["workspace_id"] = ensure_record_id(workspace_id)
+
         query = f"""
             SELECT *,
             (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] as creator_username,
             count(<-reference.in) as source_count,
             count(<-artifact.in) as note_count
             FROM notebook
-            WHERE {visibility_filter}
+            WHERE ({visibility_filter}){workspace_filter}
             ORDER BY {order_by}
         """
 

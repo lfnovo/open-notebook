@@ -26,6 +26,7 @@ class Notebook(ObjectModel):
     password: Optional[str] = None
     creator_name: Optional[str] = None
     owner_id: Optional[Union[str, RecordID]] = None
+    workspace_id: Optional[Union[str, RecordID]] = None
     visibility: ResourceVisibility = "private"
 
     @field_validator("name")
@@ -39,6 +40,13 @@ class Notebook(ObjectModel):
     @classmethod
     def parse_owner_id(cls, value):
         """Parse owner_id field to ensure RecordID format for SurrealDB record references."""
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def parse_workspace_id(cls, value):
         if isinstance(value, str) and value:
             return ensure_record_id(value)
         return value
@@ -248,6 +256,7 @@ class Source(ObjectModel):
         default=None, description="Link to surreal-commands processing job"
     )
     owner_id: Optional[Union[str, RecordID]] = None
+    workspace_id: Optional[Union[str, RecordID]] = None
     visibility: ResourceVisibility = "private"
 
     @field_validator("command", mode="before")
@@ -262,6 +271,13 @@ class Source(ObjectModel):
     @classmethod
     def parse_owner_id(cls, value):
         """Parse owner_id field to ensure RecordID format for SurrealDB record references."""
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def parse_workspace_id(cls, value):
         if isinstance(value, str) and value:
             return ensure_record_id(value)
         return value

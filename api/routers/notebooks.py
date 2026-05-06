@@ -12,8 +12,9 @@ from api.models import (
     NotebookVisibilityUpdate,
 )
 from api.services.share_service import can_read_resource
-from open_notebook.database.repositories.team_repository import TeamRepository
+from api.services.workspace_service import resolve_workspace_id_for_user
 from open_notebook.database.repositories.notebook_repository import NotebookRepository
+from open_notebook.database.repositories.team_repository import TeamRepository
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError
 
@@ -34,6 +35,7 @@ def _notebook_to_response(nb: dict) -> NotebookResponse:
         creator_name=nb.get("creator_name"),
         creator_username=nb.get("creator_username"),
         owner_id=nb.get("owner_id"),
+        workspace_id=str(nb.get("workspace_id")) if nb.get("workspace_id") else None,
         visibility=nb.get("visibility", "private"),
     )
 
@@ -89,6 +91,7 @@ async def get_notebooks(
     request: Request,
     archived: Optional[bool] = Query(None, description="Filter by archived status"),
     order_by: str = Query("updated desc", description="Order by field and direction"),
+    workspace_id: Optional[str] = Query(None, description="Filter by workspace ID"),
 ):
     """Get all notebooks with optional filtering and ordering.
 
@@ -104,6 +107,7 @@ async def get_notebooks(
             team_ids=team_ids,
             archived=archived,
             order_by=validated_order_by,
+            workspace_id=workspace_id,
         )
 
         return [_notebook_to_response(nb) for nb in result]
@@ -147,12 +151,17 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
     user_id: Optional[str] = getattr(request.state, "user_id", None)
     username: Optional[str] = getattr(request.state, "username", None)
     try:
+        workspace_id = await resolve_workspace_id_for_user(
+            user_id=user_id,
+            requested_workspace_id=notebook.workspace_id,
+        )
         new_notebook = Notebook(
             name=notebook.name,
             description=notebook.description,
             password=notebook.password,
             creator_name=notebook.creator_name,
             owner_id=user_id,
+            workspace_id=workspace_id,
             visibility=notebook.visibility,
         )
         await new_notebook.save()
@@ -170,6 +179,9 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
             creator_name=new_notebook.creator_name,
             creator_username=username,
             owner_id=new_notebook.owner_id,
+            workspace_id=str(new_notebook.workspace_id)
+            if new_notebook.workspace_id
+            else None,
             visibility=new_notebook.visibility,
         )
     except InvalidInputError as e:
@@ -300,6 +312,7 @@ async def update_notebook(
             creator_name=notebook.creator_name,
             creator_username=username,
             owner_id=notebook.owner_id,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
             visibility=notebook.visibility,
         )
     except HTTPException:
@@ -364,6 +377,7 @@ async def update_notebook_visibility(request: Request, notebook_id: str):
             creator_name=notebook.creator_name,
             creator_username=username,
             owner_id=notebook.owner_id,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
             visibility=notebook.visibility,
         )
     except HTTPException:

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { queryClient } from '@/lib/api/query-client'
 import { getApiUrl } from '@/lib/config'
+import { useWorkspaceStore } from '@/lib/stores/workspace-store'
 import { AuthStatus, CurrentUserResponse, LoginResponse } from '@/lib/types/auth'
 
 interface AuthState {
@@ -108,6 +109,7 @@ export const useAuthStore = create<AuthState>()(
             const errData = await response.json().catch(() => null)
             const message = errData?.detail || `Login failed (${response.status})`
             queryClient.clear()
+            useWorkspaceStore.getState().resetWorkspace()
             set({
               error: message,
               isLoading: false,
@@ -141,6 +143,7 @@ export const useAuthStore = create<AuthState>()(
             }
 
             queryClient.clear()
+            useWorkspaceStore.getState().resetWorkspace()
             set({
               isAuthenticated: true,
               token: data.token,
@@ -180,6 +183,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           queryClient.clear()
+          useWorkspaceStore.getState().resetWorkspace()
           set({
             error: errorMessage,
             isLoading: false,
@@ -196,6 +200,7 @@ export const useAuthStore = create<AuthState>()(
 
       logout: () => {
         queryClient.clear()
+        useWorkspaceStore.getState().resetWorkspace()
         set({
           isAuthenticated: false,
           token: null,
@@ -256,6 +261,7 @@ export const useAuthStore = create<AuthState>()(
             return true
           } else {
             queryClient.clear()
+            useWorkspaceStore.getState().resetWorkspace()
             set({
               isAuthenticated: false,
               token: null,
@@ -271,6 +277,7 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           console.error('checkAuth error:', error)
           queryClient.clear()
+          useWorkspaceStore.getState().resetWorkspace()
           set({
             isAuthenticated: false,
             token: null,

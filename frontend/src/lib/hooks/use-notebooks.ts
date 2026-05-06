@@ -5,11 +5,19 @@ import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
 import { CreateNotebookRequest, UpdateNotebookRequest } from '@/lib/types/api'
+import { useWorkspaceStore } from '@/lib/stores/workspace-store'
 
 export function useNotebooks(archived?: boolean) {
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
+
   return useQuery({
-    queryKey: [...QUERY_KEYS.notebooks, { archived }],
-    queryFn: () => notebooksApi.list({ archived, order_by: 'updated desc' }),
+    queryKey: QUERY_KEYS.workspaceNotebooks(workspaceId, archived),
+    queryFn: () =>
+      notebooksApi.list({
+        archived,
+        order_by: 'updated desc',
+        workspace_id: workspaceId || undefined,
+      }),
   })
 }
 
@@ -25,11 +33,17 @@ export function useCreateNotebook() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
   const { t } = useTranslation()
+  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   return useMutation({
-    mutationFn: (data: CreateNotebookRequest) => notebooksApi.create(data),
+    mutationFn: (data: CreateNotebookRequest) =>
+      notebooksApi.create({
+        ...data,
+        workspace_id: data.workspace_id || workspaceId || undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaces })
       toast({
         title: t.common.success,
         description: t.notebooks.createSuccess,
@@ -55,6 +69,7 @@ export function useUpdateNotebook() {
       notebooksApi.update(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebook(id) })
       toast({
         title: t.common.success,
@@ -94,6 +109,7 @@ export function useDeleteNotebook() {
     }) => notebooksApi.delete(id, deleteExclusiveSources),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] })
       // Also invalidate sources since some may have been deleted
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       toast({

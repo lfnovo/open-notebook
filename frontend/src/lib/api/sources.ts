@@ -15,6 +15,7 @@ import {
 export const sourcesApi = {
   list: async (params?: {
     notebook_id?: string
+    workspace_id?: string
     title_contains?: string
     limit?: number
     offset?: number
@@ -39,6 +40,9 @@ export const sourcesApi = {
     
     if (data.notebooks !== undefined) {
       formData.append('notebooks', JSON.stringify(data.notebooks))
+    }
+    if (data.workspace_id) {
+      formData.append('workspace_id', data.workspace_id)
     }
     if (data.notebook_id) {
       formData.append('notebook_id', data.notebook_id)
@@ -98,10 +102,13 @@ export const sourcesApi = {
     return response.data
   },
 
-  upload: async (file: File, notebook_id: string) => {
+  upload: async (file: File, notebook_id: string, workspace_id?: string) => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('notebook_id', notebook_id)
+    if (workspace_id) {
+      formData.append('workspace_id', workspace_id)
+    }
     formData.append('type', 'upload')
     formData.append('async_processing', 'true')
     

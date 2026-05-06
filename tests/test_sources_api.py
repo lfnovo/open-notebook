@@ -27,15 +27,19 @@ class TestAsyncSourceAssetPersistence:
     """
 
     @pytest.mark.asyncio
+    @patch("api.services.source_service.resolve_default_model_id", new_callable=AsyncMock)
+    @patch("api.services.source_service.resolve_resource_team_context", new_callable=AsyncMock)
     @patch("api.services.source_processing.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     async def test_async_link_source_persists_url_asset(
-        self, mock_nb_get, mock_add_nb, mock_submit, client
+        self, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_team, mock_resolve_model, client
     ):
         """POST /sources with type=link and async_processing=true persists Asset(url=...)."""
         mock_nb_get.return_value = MagicMock()
         mock_submit.return_value = "command:123"
+        mock_resolve_team.return_value = None
+        mock_resolve_model.return_value = "model:tools"
 
         saved_sources = []
 
@@ -64,17 +68,21 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset.file_path is None
 
     @pytest.mark.asyncio
+    @patch("api.services.source_service.resolve_default_model_id", new_callable=AsyncMock)
+    @patch("api.services.source_service.resolve_resource_team_context", new_callable=AsyncMock)
     @patch("api.services.source_processing.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     @patch("api.routers.sources.save_uploaded_file", new_callable=AsyncMock)
     async def test_async_upload_source_persists_file_asset(
-        self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, client
+        self, mock_upload, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_team, mock_resolve_model, client
     ):
         """POST /sources with type=upload and async_processing=true persists Asset(file_path=...)."""
         mock_nb_get.return_value = MagicMock()
         mock_upload.return_value = os.path.join(os.path.abspath(UPLOADS_FOLDER), "video.mp4")
         mock_submit.return_value = "command:123"
+        mock_resolve_team.return_value = None
+        mock_resolve_model.return_value = "model:tools"
 
         saved_sources = []
 
@@ -103,15 +111,19 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset.url is None
 
     @pytest.mark.asyncio
+    @patch("api.services.source_service.resolve_default_model_id", new_callable=AsyncMock)
+    @patch("api.services.source_service.resolve_resource_team_context", new_callable=AsyncMock)
     @patch("api.services.source_processing.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     async def test_async_text_source_has_no_asset(
-        self, mock_nb_get, mock_add_nb, mock_submit, client
+        self, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_team, mock_resolve_model, client
     ):
         """POST /sources with type=text and async_processing=true has asset=None."""
         mock_nb_get.return_value = MagicMock()
         mock_submit.return_value = "command:123"
+        mock_resolve_team.return_value = None
+        mock_resolve_model.return_value = "model:tools"
 
         saved_sources = []
 
@@ -136,6 +148,40 @@ class TestAsyncSourceAssetPersistence:
 
         source = saved_sources[0]
         assert source.asset is None
+
+    @pytest.mark.asyncio
+    @patch("api.services.source_service.resolve_default_model_id", new_callable=AsyncMock)
+    @patch("api.services.source_processing.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
+    @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
+    async def test_async_text_source_persists_workspace_id(
+        self, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_model, client
+    ):
+        mock_nb_get.return_value = MagicMock()
+        mock_submit.return_value = "command:123"
+        mock_resolve_model.return_value = "model:tools"
+
+        saved_sources = []
+
+        async def capture_save(self_source):
+            saved_sources.append(self_source)
+            self_source.id = "source:fake"
+            self_source.command = None
+
+        with patch.object(Source, "save", autospec=True, side_effect=capture_save):
+            response = client.post(
+                "/api/sources",
+                data={
+                    "type": "text",
+                    "content": "Some text content",
+                    "workspace_id": "workspace:team",
+                    "async_processing": "true",
+                },
+            )
+
+        assert response.status_code == 200
+        assert len(saved_sources) >= 1
+        assert str(saved_sources[0].workspace_id) == "workspace:team"
 
 
 if __name__ == "__main__":

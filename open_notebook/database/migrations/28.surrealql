@@ -1,0 +1,15 @@
+-- Migration 28: Workspace ownership for notebooks and sources
+
+DEFINE FIELD IF NOT EXISTS workspace_id ON TABLE notebook TYPE option<record<workspace>>;
+DEFINE FIELD IF NOT EXISTS workspace_id ON TABLE source TYPE option<record<workspace>>;
+
+DEFINE INDEX IF NOT EXISTS idx_notebook_workspace ON TABLE notebook FIELDS workspace_id;
+DEFINE INDEX IF NOT EXISTS idx_source_workspace ON TABLE source FIELDS workspace_id;
+
+UPDATE notebook SET
+    workspace_id = (SELECT VALUE id FROM workspace WHERE type = 'personal' AND owner_id = $parent.owner_id LIMIT 1)[0]
+WHERE workspace_id IS NONE AND owner_id IS NOT NONE;
+
+UPDATE source SET
+    workspace_id = (SELECT VALUE id FROM workspace WHERE type = 'personal' AND owner_id = $parent.owner_id LIMIT 1)[0]
+WHERE workspace_id IS NONE AND owner_id IS NOT NONE;

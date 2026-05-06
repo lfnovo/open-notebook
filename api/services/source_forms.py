@@ -13,6 +13,7 @@ def str_to_bool(value: str) -> bool:
 
 def parse_source_form_data(
     type: str = Form(...),
+    workspace_id: Optional[str] = Form(None),
     notebook_id: Optional[str] = Form(None),
     notebooks: Optional[str] = Form(None),
     url: Optional[str] = Form(None),
@@ -53,6 +54,7 @@ def parse_source_form_data(
     try:
         source_data = SourceCreate(
             type=type,
+            workspace_id=workspace_id,
             notebook_id=notebook_id,
             notebooks=notebooks_list,
             url=url,

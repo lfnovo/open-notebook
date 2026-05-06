@@ -13,6 +13,7 @@ export interface NotebookResponse {
   creator_name?: string | null
   creator_username?: string | null
   owner_id?: string | null
+  workspace_id?: string | null
   visibility: ResourceVisibility
 }
 
@@ -46,6 +47,7 @@ export interface SourceListResponse {
   status?: string
   processing_info?: Record<string, unknown>
   owner_id?: string | null
+  workspace_id?: string | null
   visibility: ResourceVisibility
 }
 
@@ -94,6 +96,7 @@ export interface SettingsResponse {
 export interface CreateNotebookRequest {
   name: string
   description?: string
+  workspace_id?: string
   visibility?: 'private' | 'public'
 }
 
@@ -129,6 +132,7 @@ export interface CreateNoteRequest {
 }
 
 export interface CreateSourceRequest {
+  workspace_id?: string
   // Backward compatibility: support old single notebook_id
   notebook_id?: string
   // New multi-notebook support

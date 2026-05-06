@@ -1,0 +1,6 @@
+-- Rollback migration 28: Workspace ownership for notebooks and sources
+
+REMOVE INDEX IF EXISTS idx_notebook_workspace ON TABLE notebook;
+REMOVE INDEX IF EXISTS idx_source_workspace ON TABLE source;
+REMOVE FIELD IF EXISTS workspace_id ON TABLE notebook;
+REMOVE FIELD IF EXISTS workspace_id ON TABLE source;

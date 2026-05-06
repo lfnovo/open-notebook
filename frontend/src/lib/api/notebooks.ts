@@ -8,7 +8,7 @@ import {
 } from '@/lib/types/api'
 
 export const notebooksApi = {
-  list: async (params?: { archived?: boolean; order_by?: string }) => {
+  list: async (params?: { archived?: boolean; order_by?: string; workspace_id?: string }) => {
     const response = await apiClient.get<NotebookResponse[]>('/notebooks', { params })
     return response.data
   },
@@ -57,7 +57,8 @@ export const notebooksApi = {
     return response.data
   },
 
-  updateVisibility: async (id: string, _visibility?: 'private' | 'public') => {
+  updateVisibility: async (id: string, visibility?: 'private' | 'public') => {
+    void visibility
     const response = await apiClient.patch<NotebookResponse>(`/notebooks/${id}/visibility`)
     return response.data
   },

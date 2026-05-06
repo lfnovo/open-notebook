@@ -22,6 +22,7 @@ class SourceRepository:
         sort_order: str,
         public_only: bool = False,
         team_ids: Optional[list[str]] = None,
+        workspace_id: Optional[str] = None,
     ) -> list[dict[str, Any]]:
         order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
         conditions = []
@@ -62,6 +63,10 @@ class SourceRepository:
                 "id IN (SELECT VALUE in FROM reference WHERE out = $notebook_id)"
             )
             params["notebook_id"] = ensure_record_id(notebook_id)
+
+        if workspace_id:
+            conditions.append("workspace_id = $workspace_id")
+            params["workspace_id"] = ensure_record_id(workspace_id)
 
         where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
         return await SourceRepository._list_query(where_clause, order_clause, params)
@@ -162,6 +167,7 @@ class SourceRepository:
         pagination_clause = "LIMIT $limit START $offset" if include_pagination else ""
         query = f"""
             SELECT id, asset, created, title, updated, topics, command, owner_id, visibility,
+            workspace_id,
             (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0] OR 0 AS insights_count,
             (SELECT VALUE count() FROM reference WHERE in = $parent.id GROUP ALL)[0] OR 0 AS reference_count,
             (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded,

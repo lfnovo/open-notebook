@@ -21,6 +21,21 @@ export interface WorkspaceListResponse {
   total: number
 }
 
+export interface WorkspaceResourceMoveRequest {
+  resource_type: 'notebook'
+  resource_id: string
+  mode?: 'move'
+}
+
+export interface WorkspaceResourceMoveResponse {
+  resource_type: string
+  resource_id: string
+  source_workspace_id?: string | null
+  target_workspace_id: string
+  mode: 'move'
+  message: string
+}
+
 export const workspacesApi = {
   list: async () => {
     const response = await apiClient.get<WorkspaceListResponse>('/workspaces')
@@ -29,6 +44,14 @@ export const workspacesApi = {
 
   get: async (workspaceId: string) => {
     const response = await apiClient.get<Workspace>(`/workspaces/${workspaceId}`)
+    return response.data
+  },
+
+  moveResource: async (workspaceId: string, data: WorkspaceResourceMoveRequest) => {
+    const response = await apiClient.post<WorkspaceResourceMoveResponse>(
+      `/workspaces/${workspaceId}/resources/move`,
+      data
+    )
     return response.data
   },
 }

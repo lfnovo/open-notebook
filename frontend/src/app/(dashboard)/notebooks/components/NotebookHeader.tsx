@@ -4,9 +4,10 @@ import { useState } from 'react'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, MoveRight, Trash2 } from 'lucide-react'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
+import { NotebookMoveDialog } from './NotebookMoveDialog'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
@@ -21,6 +22,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
   const { t, language } = useTranslation()
   const dfLocale = getDateLocale(language)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showMoveDialog, setShowMoveDialog] = useState(false)
   
   const updateNotebook = useUpdateNotebook()
 
@@ -73,6 +75,15 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
               )}
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMoveDialog(true)}
+                disabled={!canManageNotebook}
+              >
+                <MoveRight className="h-4 w-4 mr-2" />
+                {t.notebooks.moveNotebook}
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -130,6 +141,11 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
         notebookId={notebook.id}
         notebookName={notebook.name}
         redirectAfterDelete
+      />
+      <NotebookMoveDialog
+        open={showMoveDialog}
+        onOpenChange={setShowMoveDialog}
+        notebook={notebook}
       />
     </>
   )

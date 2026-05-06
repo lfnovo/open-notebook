@@ -1,9 +1,12 @@
 import { useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { QUERY_KEYS } from '@/lib/api/query-client'
-import { workspacesApi } from '@/lib/api/workspaces'
+import { WorkspaceResourceMoveRequest, workspacesApi } from '@/lib/api/workspaces'
 import { useWorkspaceStore } from '@/lib/stores/workspace-store'
+import { useToast } from './use-toast'
+import { useTranslation } from './use-translation'
+import { getApiErrorKey } from '../utils/error-handler'
 
 export function useWorkspaces() {
   return useQuery({
@@ -35,4 +38,38 @@ export function useCurrentWorkspace() {
     currentWorkspaceId,
     setCurrentWorkspaceId,
   }
+}
+
+export function useMoveWorkspaceResource() {
+  const queryClient = useQueryClient()
+  const setCurrentWorkspaceId = useWorkspaceStore((state) => state.setCurrentWorkspaceId)
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      data,
+    }: {
+      workspaceId: string
+      data: WorkspaceResourceMoveRequest
+    }) => workspacesApi.moveResource(workspaceId, data),
+    onSuccess: (response) => {
+      setCurrentWorkspaceId(response.target_workspace_id)
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.workspaces })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebook(response.resource_id) })
+      toast({
+        title: t.common.success,
+        description: t.notebooks.moveNotebookSuccess,
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t.common.error,
+        description: t(getApiErrorKey(error, t.notebooks.failedToMoveNotebook)),
+        variant: 'destructive',
+      })
+    },
+  })
 }

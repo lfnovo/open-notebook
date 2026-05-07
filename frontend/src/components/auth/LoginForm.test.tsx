@@ -56,11 +56,15 @@ describe('LoginForm', () => {
     const form = screen.getByRole('form', { name: 'Login form' })
     const submitButton = screen.getByRole('button', { name: 'Sign In' })
     expect(form.className).toContain('space-y-5')
-    expect(submitButton.className).toContain('h-14')
+    expect(form.className).not.toContain('font-fangsong')
+    expect(submitButton.className).toContain('h-11')
+    expect(submitButton.className).toContain('text-base')
     expect(submitButton.className).toContain('rounded-none')
 
     const usernameWrapper = usernameInput.parentElement as HTMLElement
     const passwordWrapper = passwordInput.parentElement as HTMLElement
+    expect(usernameInput.className).toContain('text-base')
+    expect(passwordInput.className).toContain('text-base')
     expect(usernameWrapper.className).toContain('rounded-none')
     expect(passwordWrapper.className).toContain('rounded-none')
     expect(usernameWrapper.className).toContain('border')

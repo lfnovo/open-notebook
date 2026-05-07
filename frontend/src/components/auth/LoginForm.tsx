@@ -134,10 +134,10 @@ export function LoginForm() {
   return (
     <div className="w-full max-w-[560px] text-stone-700">
         <div className="px-7 py-7 sm:px-8 sm:py-8">
-          <form onSubmit={handleSubmit} className="space-y-5 text-left font-fangsong" aria-label="Login form">
+          <form onSubmit={handleSubmit} className="space-y-5 text-left" aria-label="Login form">
               <label className="sr-only" htmlFor="login-username">{t.auth.usernamePlaceholder}</label>
-              <div className="flex h-16 items-center rounded-none border-2 border-black/35 bg-[#fffaf4]/92 px-5 shadow-[0_6px_18px_rgba(84,64,43,0.03)] transition focus-within:border-black/50 focus-within:bg-[#fffaf4] focus-within:shadow-[0_0_0_2px_rgba(60,60,60,0.10)]">
-                <User className="mr-4 h-[22px] w-[22px] flex-shrink-0 text-stone-500" />
+              <div className="flex h-12 items-center rounded-none border-2 border-black/35 bg-[#fffaf4]/92 px-4 shadow-[0_6px_18px_rgba(84,64,43,0.03)] transition focus-within:border-black/50 focus-within:bg-[#fffaf4] focus-within:shadow-[0_0_0_2px_rgba(60,60,60,0.10)]">
+                <User className="mr-3 h-5 w-5 flex-shrink-0 text-stone-500" />
                 <Input
                   id="login-username"
                   type="text"
@@ -146,13 +146,13 @@ export function LoginForm() {
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
                   autoComplete="username"
-                  className="h-auto border-0 bg-transparent px-0 py-0 !text-[22px] !placeholder:text-[22px] text-stone-700 shadow-none placeholder:text-stone-400 focus-visible:ring-0"
+                  className="h-auto border-0 bg-transparent px-0 py-0 text-base text-stone-700 shadow-none placeholder:text-base placeholder:text-stone-400 focus-visible:ring-0"
                 />
               </div>
 
               <label className="sr-only" htmlFor="login-password">{t.auth.passwordPlaceholder}</label>
-              <div className="flex h-16 items-center rounded-none border-2 border-black/35 bg-[#fffaf4]/92 px-5 shadow-[0_6px_18px_rgba(84,64,43,0.03)] transition focus-within:border-black/50 focus-within:bg-[#fffaf4] focus-within:shadow-[0_0_0_2px_rgba(60,60,60,0.10)]">
-                <Lock className="mr-4 h-[22px] w-[22px] flex-shrink-0 text-stone-500" />
+              <div className="flex h-12 items-center rounded-none border-2 border-black/35 bg-[#fffaf4]/92 px-4 shadow-[0_6px_18px_rgba(84,64,43,0.03)] transition focus-within:border-black/50 focus-within:bg-[#fffaf4] focus-within:shadow-[0_0_0_2px_rgba(60,60,60,0.10)]">
+                <Lock className="mr-3 h-5 w-5 flex-shrink-0 text-stone-500" />
                 <Input
                   id="login-password"
                   type={showPassword ? 'text' : 'password'}
@@ -161,24 +161,24 @@ export function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   autoComplete="current-password"
-                  className="h-auto border-0 bg-transparent px-0 py-0 !text-[22px] !placeholder:text-[22px] text-stone-700 shadow-none placeholder:text-stone-400 focus-visible:ring-0"
+                  className="h-auto border-0 bg-transparent px-0 py-0 text-base text-stone-700 shadow-none placeholder:text-base placeholder:text-stone-400 focus-visible:ring-0"
                 />
                 <button
                   type="button"
                   aria-label={showPassword ? t.auth.hidePassword : t.auth.showPassword}
-                  className="ml-3 inline-flex h-11 w-11 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200/40 hover:text-stone-700"
+                  className="ml-2 inline-flex h-9 w-9 items-center justify-center rounded-full text-stone-500 transition hover:bg-stone-200/40 hover:text-stone-700"
                   onClick={() => setShowPassword((value) => !value)}
                 >
-                  {showPassword ? <EyeOff className="h-[22px] w-[22px]" /> : <Eye className="h-[22px] w-[22px]" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
 
-              <div className="flex items-center justify-between gap-4 pt-1 text-[22px] text-stone-600">
-                <label className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-4 pt-1 text-sm text-stone-600">
+                <label className="flex items-center gap-2">
                   <Checkbox
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked === true)}
-                    className="size-[22px] border-stone-400/70 bg-[#fffaf4]/85 data-[state=checked]:border-[#74685a] data-[state=checked]:bg-[#74685a]"
+                    className="size-4 border-stone-400/70 bg-[#fffaf4]/85 data-[state=checked]:border-[#74685a] data-[state=checked]:bg-[#74685a]"
                   />
                   <span>{t.auth.rememberMe}</span>
                 </label>
@@ -192,28 +192,28 @@ export function LoginForm() {
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/75 px-4 py-3 text-[18px] text-red-700">
-                  <AlertCircle className="h-[18px] w-[18px] flex-shrink-0" />
+                <div className="flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/75 px-4 py-3 text-sm text-red-700">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
                   {error}
                 </div>
               )}
 
               <Button
                 type="submit"
-                className="h-14 w-full rounded-none bg-[#6f6559] text-[22.1px] font-semibold tracking-[0.18em] text-white shadow-[0_16px_36px_rgba(111,101,89,0.28)] hover:bg-[#645a4e]"
+                className="h-11 w-full rounded-none bg-[#6f6559] text-base font-medium tracking-normal text-white shadow-[0_16px_36px_rgba(111,101,89,0.20)] hover:bg-[#645a4e]"
                 disabled={isLoading || !username.trim() || !password.trim()}
               >
                 {isLoading ? t.auth.signingIn : t.auth.signIn}
               </Button>
 
-              <div className="pt-1 text-center text-[22px] text-stone-500">
+              <div className="pt-1 text-center text-sm text-stone-500">
                 {t.auth.loginDivider}
               </div>
 
               <div className="text-center">
                 <button
                   type="button"
-                  className="text-[22px] text-stone-600 transition hover:text-stone-800"
+                  className="text-sm text-stone-600 transition hover:text-stone-800"
                   onClick={() => router.push('/register')}
                 >
                   {t.auth.registerNewAccount}

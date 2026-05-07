@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from api.auth import current_user_from_request
+from api.models import ResourceCapabilities
 from api.routers.notebooks import _check_notebook_access
 from api.services.model_policy_service import ensure_model_selection_allowed
 from api.services.team_context_service import resolve_team_context
@@ -148,6 +149,7 @@ class ChatSessionResponse(BaseModel):
     model_override: Optional[str] = Field(
         None, description="Model override for this session"
     )
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
 
 class ChatSessionWithMessagesResponse(ChatSessionResponse):
@@ -245,6 +247,7 @@ async def get_sessions(
                     updated=str(session.updated),
                     message_count=msg_count,
                     model_override=getattr(session, "model_override", None),
+                    capabilities=session_capabilities,
                 )
             )
 
@@ -302,6 +305,11 @@ async def create_session(request: CreateSessionRequest, http_request: Request):
 
         # Relate session to notebook
         await session.relate_to_notebook(request.notebook_id)
+        session_capabilities = await _chat_session_capabilities(
+            session=session,
+            actor=actor,
+            notebook=notebook,
+        )
 
         return ChatSessionResponse(
             id=session.id or "",
@@ -311,6 +319,7 @@ async def create_session(request: CreateSessionRequest, http_request: Request):
             updated=str(session.updated),
             message_count=0,
             model_override=session.model_override,
+            capabilities=session_capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
@@ -398,6 +407,7 @@ async def get_session(session_id: str, http_request: Request):
             message_count=len(messages),
             messages=messages,
             model_override=getattr(session, "model_override", None),
+            capabilities=capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -489,6 +499,7 @@ async def update_session(
             updated=str(session.updated),
             message_count=msg_count,
             model_override=session.model_override,
+            capabilities=capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")

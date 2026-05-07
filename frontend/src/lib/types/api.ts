@@ -197,6 +197,7 @@ export interface BaseChatSession {
   updated: string
   message_count?: number
   model_override?: string | null
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceChatSession extends BaseChatSession {

@@ -191,6 +191,9 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
   }
 
   const canManageNotebook = canManageNotebookResource(notebook, profile?.id)
+  const canUpdateNotebook = notebook.capabilities?.can_update ?? canManageNotebook
+  const canDeleteNotebook = notebook.capabilities?.can_delete ?? canManageNotebook
+  const canMoveNotebook = notebook.capabilities?.can_manage ?? canManageNotebook
   const canCreateSource = notebook.capabilities?.can_create_source ?? canManageNotebook
   const canRemoveSource = notebook.capabilities?.can_remove_source ?? canManageNotebook
   const canCreateNote = notebook.capabilities?.can_create_note ?? canManageNotebook
@@ -198,7 +201,12 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
   return (
           <div className="flex flex-col flex-1 min-h-0">
         <div className="flex-shrink-0 p-6 pb-0">
-          <NotebookHeader notebook={notebook} canManageNotebook={canManageNotebook} />
+          <NotebookHeader
+            notebook={notebook}
+            canUpdateNotebook={canUpdateNotebook}
+            canDeleteNotebook={canDeleteNotebook}
+            canMoveNotebook={canMoveNotebook}
+          />
         </div>
 
         <div className="flex-1 p-6 pt-6 overflow-x-auto flex flex-col">
@@ -260,7 +268,6 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                     contextSelections={contextSelections}
                     sources={sources}
                     sourcesLoading={sourcesLoading}
-                    canManageNotebook={canManageNotebook}
                   />
                 )}
               </div>
@@ -301,7 +308,6 @@ export default function NotebookPage({ params }: { params: Promise<{ id: string 
                 contextSelections={contextSelections}
                 sources={sources}
                 sourcesLoading={sourcesLoading}
-                canManageNotebook={canManageNotebook}
               />
             </div>
 

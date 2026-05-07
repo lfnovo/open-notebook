@@ -11,6 +11,7 @@ from loguru import logger
 from pydantic import BaseModel, Field
 
 from api.auth import current_user_from_request
+from api.models import ResourceCapabilities
 from api.services.model_policy_service import ensure_model_selection_allowed
 from api.services.team_context_service import resolve_team_context
 from api.services.workspace_capabilities import resolve_resource_capabilities
@@ -72,6 +73,7 @@ class SourceChatSessionResponse(BaseModel):
     message_count: Optional[int] = Field(
         None, description="Number of messages in session"
     )
+    capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)
 
 class SourceChatSessionWithMessagesResponse(SourceChatSessionResponse):
     messages: List[ChatMessage] = Field(
@@ -192,6 +194,7 @@ async def create_source_chat_session(
 
         # Relate session to source using "refers_to" relation
         await session.relate("refers_to", full_source_id)
+        session_capabilities = await _source_chat_capabilities(session, source, actor)
 
         return SourceChatSessionResponse(
             id=session.id or "",
@@ -201,6 +204,7 @@ async def create_source_chat_session(
             created=str(session.created),
             updated=str(session.updated),
             message_count=0,
+            capabilities=session_capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source not found")
@@ -282,6 +286,7 @@ async def get_source_chat_sessions(
                             created=str(session_data.get("created")),
                             updated=str(session_data.get("updated")),
                             message_count=msg_count,
+                            capabilities=session_capabilities,
                         )
                     )
 
@@ -384,6 +389,7 @@ async def get_source_chat_session(
             message_count=len(messages),
             messages=messages,
             context_indicators=context_indicators,
+            capabilities=session_capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
@@ -467,6 +473,7 @@ async def update_source_chat_session(
             created=str(session.created),
             updated=str(session.updated),
             message_count=msg_count,
+            capabilities=session_capabilities,
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")

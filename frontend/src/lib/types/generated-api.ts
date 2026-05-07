@@ -128,6 +128,7 @@ export interface ChatSessionResponse {
   updated: string
   message_count?: number | null
   model_override?: string | null
+  capabilities?: ResourceCapabilities
 }
 
 export interface ChatSessionWithMessagesResponse {
@@ -138,6 +139,7 @@ export interface ChatSessionWithMessagesResponse {
   updated: string
   message_count?: number | null
   model_override?: string | null
+  capabilities?: ResourceCapabilities
   messages?: ChatMessage[]
 }
 
@@ -700,6 +702,7 @@ export interface SourceChatSessionResponse {
   created: string
   updated: string
   message_count?: number | null
+  capabilities?: ResourceCapabilities
 }
 
 export interface SourceChatSessionWithMessagesResponse {
@@ -710,6 +713,7 @@ export interface SourceChatSessionWithMessagesResponse {
   created: string
   updated: string
   message_count?: number | null
+  capabilities?: ResourceCapabilities
   messages?: ChatMessage[]
   context_indicators?: ContextIndicator | null
 }

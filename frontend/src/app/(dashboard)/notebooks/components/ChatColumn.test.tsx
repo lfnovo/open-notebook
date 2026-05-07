@@ -66,18 +66,18 @@ describe('ChatColumn', () => {
     expect(screen.getByTestId('chat-panel')).toBeInTheDocument()
   })
 
-  it('does not expose session deletion when the notebook cannot be managed', () => {
+  it('passes session deletion to the panel for per-session capability gating', () => {
     vi.mocked(useNotes).mockReturnValue(createNotesMock({ isLoading: false }))
     vi.mocked(useNotebookChat).mockReturnValue({
       ...createChatMock(),
       deleteSession: vi.fn(),
     })
 
-    render(<ChatColumn {...baseProps} sourcesLoading={false} canManageNotebook={false} />)
+    render(<ChatColumn {...baseProps} sourcesLoading={false} />)
 
     expect(screen.getByTestId('chat-panel')).toHaveAttribute(
       'data-delete-session-enabled',
-      'false'
+      'true'
     )
   })
 })

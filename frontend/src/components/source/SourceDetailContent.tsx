@@ -157,7 +157,7 @@ export function SourceDetailContent({
   }, [fetchInsights, fetchSource, fetchTransformations, sourceId])
 
   const createInsight = async () => {
-    if (!canManageSource) return
+    if (!canProcessSource) return
     if (!selectedTransformation) {
       toast.error(t.sources.selectTransformation)
       return
@@ -206,7 +206,7 @@ export function SourceDetailContent({
   const handleDeleteInsight = async (e?: React.MouseEvent) => {
     e?.preventDefault()
     if (!insightToDelete) return
-    if (!canManageSource) return
+    if (!canProcessSource) return
 
     try {
       setDeletingInsight(true)
@@ -224,7 +224,7 @@ export function SourceDetailContent({
 
   const handleUpdateTitle = async (title: string) => {
     if (!source || title === source.title) return
-    if (!canManageSource) return
+    if (!canUpdateSource) return
 
     try {
       await sourcesApi.update(sourceId, { title })
@@ -239,7 +239,7 @@ export function SourceDetailContent({
 
   const handleEmbedContent = async () => {
     if (!source) return
-    if (!canManageSource) return
+    if (!canProcessSource) return
 
     try {
       setIsEmbedding(true)
@@ -365,10 +365,22 @@ export function SourceDetailContent({
     if (!source?.asset?.url) return null
     return getYouTubeVideoId(source.asset.url)
   }, [source?.asset?.url])
-  const canManageSource = Boolean(
+  const legacyCanManageSource = Boolean(
     source && (!source.owner_id || source.owner_id === profile?.id)
   )
+  const canUpdateSource = Boolean(
+    source && (source.capabilities?.can_update ?? legacyCanManageSource)
+  )
+  const canProcessSource = Boolean(
+    source && (source.capabilities?.can_process ?? legacyCanManageSource)
+  )
   const canDeleteCurrentSource = Boolean(source && canDeleteSource(source, profile?.id))
+  const hasSourceActions = Boolean(
+    canUpdateSource ||
+    canProcessSource ||
+    canDeleteCurrentSource ||
+    source?.asset?.file_path
+  )
 
   const handleDelete = async () => {
     if (!source) return
@@ -408,14 +420,14 @@ export function SourceDetailContent({
       <div className="pb-4 px-2">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <InlineEdit
+              <InlineEdit
               value={source.title || ''}
               onSave={handleUpdateTitle}
               className="text-2xl font-bold"
               inputClassName="text-2xl font-bold"
               placeholder={t.sources.titlePlaceholder}
               emptyText={t.sources.untitledSource}
-              disabled={!canManageSource}
+              disabled={!canUpdateSource}
             />
             <p className="mt-1 text-sm text-muted-foreground">
               {t.sources.id}: {source.id}
@@ -438,7 +450,7 @@ export function SourceDetailContent({
             {showActions && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" disabled={!canManageSource}>
+                  <Button variant="ghost" size="icon" disabled={!hasSourceActions}>
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -447,7 +459,7 @@ export function SourceDetailContent({
                     <>
                       <DropdownMenuItem
                         onClick={handleDownloadFile}
-                        disabled={!canManageSource || isDownloadingFile || fileAvailable === false}
+                        disabled={isDownloadingFile || fileAvailable === false}
                       >
                         <Download className="mr-2 h-4 w-4" />
                         {fileAvailable === false
@@ -461,7 +473,7 @@ export function SourceDetailContent({
                   )}
                   <DropdownMenuItem
                     onClick={handleEmbedContent}
-                    disabled={!canManageSource || isEmbedding || source.embedded}
+                    disabled={!canProcessSource || isEmbedding || source.embedded}
                   >
                     <Database className="mr-2 h-4 w-4" />
                     {isEmbedding ? t.sources.embedding : source.embedded ? t.sources.alreadyEmbedded : t.sources.embedContent}
@@ -601,7 +613,7 @@ export function SourceDetailContent({
                       name="transformation"
                       value={selectedTransformation}
                       onValueChange={setSelectedTransformation}
-                      disabled={!canManageSource || creatingInsight}
+                      disabled={!canProcessSource || creatingInsight}
                     >
                       <SelectTrigger id="transformation-select" className="flex-1">
                         <SelectValue placeholder={t.sources.selectTransformation} />
@@ -617,7 +629,7 @@ export function SourceDetailContent({
                     <Button
                       size="sm"
                       onClick={createInsight}
-                      disabled={!canManageSource || !selectedTransformation || creatingInsight}
+                      disabled={!canProcessSource || !selectedTransformation || creatingInsight}
                     >
                       {creatingInsight ? (
                         <>
@@ -668,7 +680,7 @@ export function SourceDetailContent({
                             variant="outline"
                             onClick={() => setInsightToDelete(insight.id)}
                             className="text-destructive hover:text-destructive"
-                            disabled={!canManageSource}
+                            disabled={!canProcessSource}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -699,7 +711,7 @@ export function SourceDetailContent({
                       <div className="mt-3">
                         <Button
                           onClick={handleEmbedContent}
-                          disabled={!canManageSource || isEmbedding}
+                          disabled={!canProcessSource || isEmbedding}
                           size="sm"
                         >
                           <Database className="mr-2 h-4 w-4" />
@@ -844,7 +856,7 @@ export function SourceDetailContent({
         }}
         insight={selectedInsight ?? undefined}
         onDelete={async (insightId) => {
-          if (!canManageSource) return
+          if (!canProcessSource) return
           try {
             await insightsApi.delete(insightId)
             toast.success(t.common.success)

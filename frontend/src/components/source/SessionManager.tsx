@@ -76,13 +76,22 @@ export function SessionManager({
     }
   }
 
+  const canUpdateSession = (session: BaseChatSession) =>
+    session.capabilities?.can_update ?? true
+
+  const canDeleteSession = (session: BaseChatSession) =>
+    Boolean(onDeleteSession && (session.capabilities?.can_delete ?? true))
+
   const handleStartEdit = (session: BaseChatSession) => {
+    if (!canUpdateSession(session)) return
     setEditingId(session.id)
     setEditTitle(session.title)
   }
 
   const handleSaveEdit = () => {
     if (editingId && editTitle.trim()) {
+      const session = sessions.find((item) => item.id === editingId)
+      if (!session || !canUpdateSession(session)) return
       onUpdateSession(editingId, editTitle.trim())
       setEditingId(null)
       setEditTitle('')
@@ -95,8 +104,9 @@ export function SessionManager({
   }
 
   const handleDeleteConfirm = () => {
-    if (deleteConfirmId && onDeleteSession) {
-      onDeleteSession(deleteConfirmId)
+    const session = sessions.find((item) => item.id === deleteConfirmId)
+    if (deleteConfirmId && session && canDeleteSession(session)) {
+      onDeleteSession?.(deleteConfirmId)
       setDeleteConfirmId(null)
     }
   }
@@ -208,7 +218,9 @@ export function SessionManager({
                               size="sm"
                               variant="ghost"
                               className="h-6 w-6 p-0"
+                              aria-label={t.common.edit}
                               onClick={() => handleStartEdit(session)}
+                              disabled={!canUpdateSession(session)}
                             >
                               <Edit2 className="h-3 w-3" />
                             </Button>
@@ -216,8 +228,9 @@ export function SessionManager({
                               size="sm"
                               variant="ghost"
                               className="h-6 w-6 p-0"
+                              aria-label={t.common.delete}
                               onClick={() => setDeleteConfirmId(session.id)}
-                              disabled={!onDeleteSession}
+                              disabled={!canDeleteSession(session)}
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>

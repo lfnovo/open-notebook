@@ -15,10 +15,17 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 
 interface NotebookHeaderProps {
   notebook: NotebookResponse
-  canManageNotebook?: boolean
+  canUpdateNotebook?: boolean
+  canDeleteNotebook?: boolean
+  canMoveNotebook?: boolean
 }
 
-export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookHeaderProps) {
+export function NotebookHeader({
+  notebook,
+  canUpdateNotebook = true,
+  canDeleteNotebook = true,
+  canMoveNotebook = true,
+}: NotebookHeaderProps) {
   const { t, language } = useTranslation()
   const dfLocale = getDateLocale(language)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -27,7 +34,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
   const updateNotebook = useUpdateNotebook()
 
   const handleUpdateName = async (name: string) => {
-    if (!canManageNotebook) return
+    if (!canUpdateNotebook) return
     if (!name || name === notebook.name) return
     
     await updateNotebook.mutateAsync({
@@ -37,7 +44,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
   }
 
   const handleUpdateDescription = async (description: string) => {
-    if (!canManageNotebook) return
+    if (!canUpdateNotebook) return
     if (description === notebook.description) return
     
     await updateNotebook.mutateAsync({
@@ -47,7 +54,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
   }
 
   const handleArchiveToggle = () => {
-    if (!canManageNotebook) return
+    if (!canUpdateNotebook) return
     updateNotebook.mutate({
       id: notebook.id,
       data: { archived: !notebook.archived }
@@ -68,7 +75,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
                 className="text-2xl font-bold"
                 inputClassName="text-2xl font-bold"
                 placeholder={t.notebooks.namePlaceholder}
-                disabled={!canManageNotebook}
+                disabled={!canUpdateNotebook}
               />
               {notebook.archived && (
                 <Badge variant="secondary">{t.notebooks.archived}</Badge>
@@ -79,7 +86,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
                 variant="outline"
                 size="sm"
                 onClick={() => setShowMoveDialog(true)}
-                disabled={!canManageNotebook}
+                disabled={!canMoveNotebook}
               >
                 <MoveRight className="h-4 w-4 mr-2" />
                 {t.notebooks.moveNotebook}
@@ -88,7 +95,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
                 variant="outline"
                 size="sm"
                 onClick={handleArchiveToggle}
-                disabled={!canManageNotebook}
+                disabled={!canUpdateNotebook}
               >
                 {notebook.archived ? (
                   <>
@@ -107,7 +114,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
                 className="text-red-600 hover:text-red-700"
-                disabled={!canManageNotebook}
+                disabled={!canDeleteNotebook}
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t.common.delete}
@@ -125,7 +132,7 @@ export function NotebookHeader({ notebook, canManageNotebook = true }: NotebookH
             placeholder={t.notebooks.addDescription}
             multiline
             emptyText={t.notebooks.addDescription}
-            disabled={!canManageNotebook}
+            disabled={!canUpdateNotebook}
           />
           
           <div className="text-sm text-muted-foreground">

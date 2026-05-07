@@ -144,4 +144,6 @@ specs/
 **/*.local.md
 .harness/
 
+.hermes/
+
 .mcp.json

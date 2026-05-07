@@ -1,0 +1,12 @@
+-- Migration 31: Workspace ownership for chat sessions
+
+DEFINE FIELD IF NOT EXISTS owner_id ON TABLE chat_session TYPE option<record<app_user>>;
+DEFINE FIELD IF NOT EXISTS workspace_id ON TABLE chat_session TYPE option<record<workspace>>;
+
+DEFINE INDEX IF NOT EXISTS idx_chat_session_owner ON TABLE chat_session FIELDS owner_id;
+DEFINE INDEX IF NOT EXISTS idx_chat_session_workspace ON TABLE chat_session FIELDS workspace_id;
+
+UPDATE chat_session SET
+    owner_id = (SELECT VALUE out.owner_id FROM refers_to WHERE in = $parent.id LIMIT 1)[0],
+    workspace_id = (SELECT VALUE out.workspace_id FROM refers_to WHERE in = $parent.id LIMIT 1)[0]
+WHERE owner_id IS NONE OR workspace_id IS NONE;

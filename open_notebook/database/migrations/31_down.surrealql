@@ -1,0 +1,6 @@
+-- Migration 31 rollback: remove chat session workspace ownership
+
+REMOVE INDEX IF EXISTS idx_chat_session_owner ON TABLE chat_session;
+REMOVE INDEX IF EXISTS idx_chat_session_workspace ON TABLE chat_session;
+REMOVE FIELD IF EXISTS owner_id ON TABLE chat_session;
+REMOVE FIELD IF EXISTS workspace_id ON TABLE chat_session;

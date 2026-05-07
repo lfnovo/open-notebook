@@ -433,7 +433,7 @@ export const zhCN = {
     publicShareWarning: "任何人都可以查看该资源。其他用户或团队可以把它作为只读资源引用到自己的笔记本。之后即使撤回公开，已有只读引用仍会继续可用。",
     publicRevokeWarning: "资源会从公开浏览和匿名访问中移除。已经引用该资源的用户或团队会保留只读访问，避免已有笔记本断链。",
     revokeTeamWarning: "该团队将失去此资源的只读访问权限。",
-    manageDenied: "只有资源所有者或管理员可以管理分享。",
+    manageDenied: "只有资源所有者可以管理分享。",
     shareSaved: "分享已保存。",
     shareRevoked: "分享已撤回。",
     guideTitle: "安全分享流程",

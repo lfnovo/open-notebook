@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, List
+from typing import Annotated, Any, List
 
 from ai_prompter import Prompter
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
@@ -10,7 +10,8 @@ from pydantic import BaseModel, Field
 from typing_extensions import TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
-from open_notebook.domain.notebook import graph_search, vector_search
+from open_notebook.database.repositories.share_repository import ShareRepository
+from open_notebook.domain.notebook import Note, Source, graph_search, vector_search
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
@@ -46,6 +47,92 @@ class ThreadState(TypedDict):
     strategy: Strategy
     answers: Annotated[list, operator.add]
     final_answer: str
+
+
+def _search_scope(config: RunnableConfig) -> dict[str, Any]:
+    scope = config.get("configurable", {}).get("search_scope") or {}
+    return scope if isinstance(scope, dict) else {}
+
+
+def _result_resource_ref(result: dict[str, Any]) -> tuple[str, str] | None:
+    for key in ("source_id", "parent_id", "id"):
+        value = result.get(key)
+        if value is None:
+            continue
+        value_str = str(value)
+        if value_str.startswith("source:"):
+            return "source", value_str
+        if value_str.startswith("note:"):
+            return "note", value_str
+    return None
+
+
+async def _resource_access_metadata(
+    resource_type: str,
+    resource_id: str,
+) -> tuple[str | None, str | None, str]:
+    if resource_type == "source":
+        source = await Source.get(resource_id)
+        if not source:
+            return None, None, "private"
+        return (
+            str(source.owner_id) if source.owner_id else None,
+            str(source.workspace_id) if source.workspace_id else None,
+            source.visibility,
+        )
+
+    note = await Note.get(resource_id)
+    if not note:
+        return None, None, "private"
+    return (
+        str(note.owner_id) if note.owner_id else None,
+        str(note.workspace_id) if note.workspace_id else None,
+        "private",
+    )
+
+
+async def _result_visible_in_scope(
+    result: dict[str, Any],
+    scope: dict[str, Any],
+) -> bool:
+    resource_ref = _result_resource_ref(result)
+    if not resource_ref:
+        return False
+
+    resource_type, resource_id = resource_ref
+    owner_id, workspace_id, visibility = await _resource_access_metadata(
+        resource_type,
+        resource_id,
+    )
+    actor_id = scope.get("actor_id")
+    team_ids = [str(team_id) for team_id in scope.get("team_ids", [])]
+    workspace_ids = [str(workspace_id) for workspace_id in scope.get("workspace_ids", [])]
+
+    if scope.get("actor_role") == "admin":
+        return True
+    if visibility == "public":
+        return True
+    if actor_id and owner_id == actor_id:
+        return True
+    if workspace_id and workspace_id in workspace_ids:
+        return True
+    return await ShareRepository.has_read_grant(
+        resource_type=resource_type,
+        resource_id=resource_id,
+        user_id=actor_id,
+        team_ids=team_ids,
+    )
+
+
+async def _filter_results_for_scope(
+    results: list[dict[str, Any]],
+    scope: dict[str, Any],
+) -> list[dict[str, Any]]:
+    filtered = []
+    for result in results:
+        if await _result_visible_in_scope(result, scope):
+            filtered.append(result)
+    return filtered
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -110,7 +197,10 @@ async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
         if enable_kg:
             graph_results = await graph_search(state["term"], 3)
             
-        results = vector_results + graph_results
+        results = await _filter_results_for_scope(
+            vector_results + graph_results,
+            _search_scope(config),
+        )
 
         if len(results) == 0:
             return {"answers": []}

@@ -133,11 +133,20 @@ class WorkspaceRepository:
             return await repo_query(
                 """
                 SELECT *,
-                    IF type = 'personal' THEN 'owner' ELSE NONE END AS current_user_role,
-                    true AS can_manage
+                    IF type = 'personal' AND owner_id = $user_id THEN 'owner'
+                    ELSE (SELECT VALUE role FROM team_member
+                        WHERE team = $parent.team_id AND user = $user_id AND status = 'active'
+                        LIMIT 1)[0]
+                    END AS current_user_role,
+                    IF type = 'personal' AND owner_id = $user_id THEN true
+                    ELSE (SELECT VALUE role FROM team_member
+                        WHERE team = $parent.team_id AND user = $user_id AND status = 'active'
+                        LIMIT 1)[0] IN ['owner', 'admin']
+                    END AS can_manage
                 FROM workspace
                 ORDER BY type ASC, name ASC
-                """
+                """,
+                {"user_id": ensure_record_id(user_id)},
             )
 
         return await repo_query(

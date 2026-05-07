@@ -28,6 +28,8 @@ def parse_source_form_data(
     file: Optional[UploadFile] = File(None),
 ) -> tuple[SourceCreate, Optional[UploadFile]]:
     """Parse source form data into a SourceCreate model plus upload file."""
+    if not isinstance(workspace_id, str):
+        workspace_id = None
     if not isinstance(file_path, str):
         file_path = None
 

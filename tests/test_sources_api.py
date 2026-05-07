@@ -150,16 +150,18 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset is None
 
     @pytest.mark.asyncio
+    @patch("api.services.source_service.resolve_workspace_id_for_user", new_callable=AsyncMock)
     @patch("api.services.source_service.resolve_default_model_id", new_callable=AsyncMock)
     @patch("api.services.source_processing.CommandService.submit_command_job", new_callable=AsyncMock)
     @patch("api.routers.sources.Source.add_to_notebook", new_callable=AsyncMock)
     @patch("api.routers.sources.Notebook.get", new_callable=AsyncMock)
     async def test_async_text_source_persists_workspace_id(
-        self, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_model, client
+        self, mock_nb_get, mock_add_nb, mock_submit, mock_resolve_model, mock_workspace_id, client
     ):
         mock_nb_get.return_value = MagicMock()
         mock_submit.return_value = "command:123"
         mock_resolve_model.return_value = "model:tools"
+        mock_workspace_id.return_value = "workspace:team"
 
         saved_sources = []
 

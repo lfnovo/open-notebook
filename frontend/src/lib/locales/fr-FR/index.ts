@@ -381,7 +381,7 @@ export const frFR = {
     publicShareWarning: "Anyone can view this resource. Other users or teams may add it as a read-only reference to their notebooks. If you revoke public access later, existing read-only references will remain available.",
     publicRevokeWarning: "This resource will be removed from public browsing and anonymous access. Users or teams that already referenced it will keep read-only access so existing notebooks do not break.",
     revokeTeamWarning: "This team will lose read-only access to the resource.",
-    manageDenied: "Only the resource owner or an admin can manage sharing.",
+    manageDenied: "Only the resource owner can manage sharing.",
     shareSaved: "Share saved.",
     shareRevoked: "Share revoked.",
     guideTitle: "Share safely",

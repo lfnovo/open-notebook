@@ -7,6 +7,7 @@ from api.models import ShareGrantCreateRequest
 from api.services.share_service import (
     create_share_grant_use_case,
     delete_share_grant_use_case,
+    list_resource_grants_use_case,
 )
 
 
@@ -58,6 +59,46 @@ async def test_team_share_sets_resource_visibility_to_team(
         "source", "source:abc", {"visibility": "team"}
     )
     mock_audit.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@patch("api.services.share_service.ShareRepository.list_resource_grants", new_callable=AsyncMock)
+@patch("api.services.share_service._resource_owner", new_callable=AsyncMock)
+async def test_system_admin_can_view_grants_for_observed_resource(
+    mock_owner,
+    mock_list_grants,
+):
+    mock_owner.return_value = "app_user:owner"
+    mock_list_grants.return_value = []
+
+    response = await list_resource_grants_use_case(
+        resource_type="source",
+        resource_id="source:abc",
+        actor=CurrentUser(id="app_user:admin", username="admin", role="admin"),
+    )
+
+    assert response == []
+    mock_list_grants.assert_awaited_once_with(
+        resource_type="source",
+        resource_id="source:abc",
+    )
+
+
+@pytest.mark.asyncio
+@patch("api.services.share_service._resource_owner", new_callable=AsyncMock)
+async def test_system_admin_cannot_create_grant_for_observed_resource(mock_owner):
+    mock_owner.return_value = "app_user:owner"
+
+    with pytest.raises(PermissionError, match="Only the resource owner"):
+        await create_share_grant_use_case(
+            ShareGrantCreateRequest(
+                resource_type="source",
+                resource_id="source:abc",
+                target_type="team",
+                target_id="team:public",
+            ),
+            actor=CurrentUser(id="app_user:admin", username="admin", role="admin"),
+        )
 
 
 @pytest.mark.asyncio

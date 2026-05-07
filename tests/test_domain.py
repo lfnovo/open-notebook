@@ -277,7 +277,9 @@ class TestSourceDomain:
         ) as mock_submit:
             result = await source.vectorize()
             mock_submit.assert_any_call(
-                "open_notebook", "embed_source", {"source_id": "source:test_valid"}
+                "open_notebook",
+                "embed_source",
+                {"source_id": "source:test_valid", "team_id": None},
             )
             mock_submit.assert_any_call(
                 "open_notebook",

@@ -11,9 +11,10 @@ from api.auth import current_user_from_request
 from api.routers.notebooks import _check_notebook_access
 from api.services.model_policy_service import ensure_model_selection_allowed
 from api.services.team_context_service import resolve_team_context
+from api.services.workspace_capabilities import resolve_resource_capabilities
 from open_notebook.config import LANGGRAPH_CHAT_CHECKPOINT_FILE
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import ChatSession, Note, Notebook, Source
+from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.exceptions import (
     InvalidInputError,
     NotFoundError,
@@ -25,6 +26,44 @@ from open_notebook.utils.graph_utils import get_session_message_count
 router = APIRouter()
 
 
+def _record_id(table: str, record_id: str) -> str:
+    return record_id if record_id.startswith(f"{table}:") else f"{table}:{record_id}"
+
+
+def _can_use_resource(actor, capabilities) -> bool:
+    if not capabilities.can_read:
+        return False
+    return not (actor is not None and actor.role == "admin" and not capabilities.can_manage)
+
+
+async def _chat_session_capabilities(
+    *,
+    session: ChatSession,
+    actor,
+    notebook: Notebook | None = None,
+):
+    owner_id = str(session.owner_id) if getattr(session, "owner_id", None) else None
+    workspace_id = (
+        str(session.workspace_id) if getattr(session, "workspace_id", None) else None
+    )
+    if notebook:
+        owner_id = owner_id or (
+            str(notebook.owner_id) if getattr(notebook, "owner_id", None) else None
+        )
+        workspace_id = workspace_id or (
+            str(notebook.workspace_id)
+            if getattr(notebook, "workspace_id", None)
+            else None
+        )
+    return await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="chat_session",
+        owner_id=owner_id,
+        workspace_id=workspace_id,
+        visibility="private",
+    )
+
+
 async def _notebook_id_for_session(session_id: str) -> Optional[str]:
     notebook_query = await repo_query(
         "SELECT out FROM refers_to WHERE in = $session_id",
@@ -34,15 +73,35 @@ async def _notebook_id_for_session(session_id: str) -> Optional[str]:
 
 
 async def _ensure_session_notebook_owner(
-    session_id: str, user_id: Optional[str]
+    session_id: str,
+    user_id: Optional[str],
+    actor=None,
+    session: Optional[ChatSession] = None,
 ) -> Optional[str]:
     notebook_id = await _notebook_id_for_session(session_id)
     if not notebook_id:
+        if session is not None:
+            capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+            )
+            if not capabilities.can_delete:
+                raise HTTPException(status_code=403, detail="Access denied")
         return None
 
     notebook = await Notebook.get(notebook_id)
     if not notebook:
         raise HTTPException(status_code=404, detail="Notebook not found")
+
+    if actor is not None:
+        capabilities = await _chat_session_capabilities(
+            session=session or ChatSession(owner_id=user_id),
+            actor=actor,
+            notebook=notebook,
+        )
+        if not capabilities.can_delete:
+            raise HTTPException(status_code=403, detail="Access denied")
+        return notebook_id
 
     if not _check_notebook_access(
         {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
@@ -133,19 +192,39 @@ class SuccessResponse(BaseModel):
 
 
 @router.get("/chat/sessions", response_model=List[ChatSessionResponse])
-async def get_sessions(notebook_id: str = Query(..., description="Notebook ID")):
+async def get_sessions(
+    request: Request,
+    notebook_id: str = Query(..., description="Notebook ID"),
+):
     """Get all chat sessions for a notebook."""
     try:
         # Get notebook to verify it exists
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        actor = current_user_from_request(request)
+        notebook_capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="notebook",
+            owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+            visibility=notebook.visibility,
+        )
+        if not notebook_capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         # Get sessions for this notebook
         sessions_list = await notebook.get_chat_sessions()
 
         results = []
         for session in sessions_list:
+            session_capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+                notebook=notebook,
+            )
+            if not session_capabilities.can_read:
+                continue
             session_id = str(session.id)
 
             # Get message count from LangGraph state (use checkpoint file
@@ -190,6 +269,15 @@ async def create_session(request: CreateSessionRequest, http_request: Request):
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
         actor = current_user_from_request(http_request)
+        notebook_capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="notebook",
+            owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+            visibility=notebook.visibility,
+        )
+        if not _can_use_resource(actor, notebook_capabilities):
+            raise HTTPException(status_code=403, detail="Access denied")
         team_id = await resolve_team_context(
             actor=actor,
             resource_type="notebook",
@@ -207,6 +295,8 @@ async def create_session(request: CreateSessionRequest, http_request: Request):
             title=request.title
             or f"Chat Session {asyncio.get_event_loop().time():.0f}",
             model_override=request.model_override,
+            owner_id=actor.id if actor else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
         )
         await session.save()
 
@@ -234,7 +324,7 @@ async def create_session(request: CreateSessionRequest, http_request: Request):
 @router.get(
     "/chat/sessions/{session_id}", response_model=ChatSessionWithMessagesResponse
 )
-async def get_session(session_id: str):
+async def get_session(session_id: str, http_request: Request):
     """Get a specific session with its messages."""
     try:
         # Get session
@@ -247,6 +337,17 @@ async def get_session(session_id: str):
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
+
+        notebook_id = await _notebook_id_for_session(full_session_id)
+        notebook = await Notebook.get(str(notebook_id)) if notebook_id else None
+        actor = current_user_from_request(http_request)
+        capabilities = await _chat_session_capabilities(
+            session=session,
+            actor=actor,
+            notebook=notebook,
+        )
+        if not capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         # Get session state from LangGraph using SqliteSaver (NOT the module-level
         # MemorySaver graph) so we read from the same checkpoint file that the
@@ -281,21 +382,6 @@ async def get_session(session_id: str):
                         timestamp=None,  # LangChain messages don't have timestamps by default
                     )
                 )
-
-        # Find notebook_id (we need to query the relationship)
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-
-        notebook_query = await repo_query(
-            "SELECT out FROM refers_to WHERE in = $session_id",
-            {"session_id": ensure_record_id(full_session_id)},
-        )
-
-        notebook_id = notebook_query[0]["out"] if notebook_query else None
 
         if not notebook_id:
             # This might be an old session created before API migration
@@ -343,11 +429,26 @@ async def update_session(
         actor = current_user_from_request(http_request)
         team_id = None
         if notebook_id:
+            notebook = await Notebook.get(notebook_id)
+            capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+                notebook=notebook,
+            )
+            if not capabilities.can_update:
+                raise HTTPException(status_code=403, detail="Access denied")
             team_id = await resolve_team_context(
                 actor=actor,
                 resource_type="notebook",
                 resource_id=notebook_id,
             )
+        else:
+            capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+            )
+            if not capabilities.can_update:
+                raise HTTPException(status_code=403, detail="Access denied")
         if "model_override" in update_data:
             await ensure_model_selection_allowed(
                 actor=actor,
@@ -412,7 +513,10 @@ async def delete_session(session_id: str, http_request: Request):
 
         actor = current_user_from_request(http_request)
         await _ensure_session_notebook_owner(
-            full_session_id, actor.id if actor else None
+            full_session_id,
+            actor.id if actor else None,
+            actor=actor,
+            session=session,
         )
 
         await session.delete()
@@ -614,11 +718,26 @@ async def execute_chat(request: ExecuteChatRequest, http_request: Request):
         actor = current_user_from_request(http_request)
         team_id = None
         if notebook_id:
+            notebook = await Notebook.get(notebook_id)
+            capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+                notebook=notebook,
+            )
+            if not _can_use_resource(actor, capabilities):
+                raise HTTPException(status_code=403, detail="Access denied")
             team_id = await resolve_team_context(
                 actor=actor,
                 resource_type="notebook",
                 resource_id=notebook_id,
             )
+        else:
+            capabilities = await _chat_session_capabilities(
+                session=session,
+                actor=actor,
+            )
+            if not _can_use_resource(actor, capabilities):
+                raise HTTPException(status_code=403, detail="Access denied")
         await ensure_model_selection_allowed(
             actor=actor,
             model_id=model_override,
@@ -657,16 +776,34 @@ async def execute_chat(request: ExecuteChatRequest, http_request: Request):
 
 
 @router.post("/chat/context", response_model=BuildContextResponse)
-async def build_context(request: BuildContextRequest):
+async def build_context(request: BuildContextRequest, http_request: Request):
     """Build context for a notebook based on context configuration."""
     try:
         # Verify notebook exists
         notebook = await Notebook.get(request.notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        actor = current_user_from_request(http_request)
+        notebook_capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="notebook",
+            owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+            visibility=notebook.visibility,
+        )
+        if not notebook_capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         context_data: dict[str, list[dict[str, str]]] = {"sources": [], "notes": []}
         total_content = ""
+        notebook_sources = await notebook.get_sources()
+        notebook_notes = await notebook.get_notes()
+        sources_by_id = {
+            str(source.id): source for source in notebook_sources if getattr(source, "id", None)
+        }
+        notes_by_id = {
+            str(note.id): note for note in notebook_notes if getattr(note, "id", None)
+        }
 
         # Process context configuration if provided
         if request.context_config:
@@ -677,15 +814,9 @@ async def build_context(request: BuildContextRequest):
 
                 try:
                     # Add table prefix if not present
-                    full_source_id = (
-                        source_id
-                        if source_id.startswith("source:")
-                        else f"source:{source_id}"
-                    )
-
-                    try:
-                        source = await Source.get(full_source_id)
-                    except Exception:
+                    full_source_id = _record_id("source", source_id)
+                    source = sources_by_id.get(full_source_id)
+                    if not source:
                         continue
 
                     if "insights" in status:
@@ -707,10 +838,8 @@ async def build_context(request: BuildContextRequest):
 
                 try:
                     # Add table prefix if not present
-                    full_note_id = (
-                        note_id if note_id.startswith("note:") else f"note:{note_id}"
-                    )
-                    note = await Note.get(full_note_id)
+                    full_note_id = _record_id("note", note_id)
+                    note = notes_by_id.get(full_note_id)
                     if not note:
                         continue
 
@@ -723,8 +852,7 @@ async def build_context(request: BuildContextRequest):
                     continue
         else:
             # Default behavior - include all sources and notes with short context
-            sources = await notebook.get_sources()
-            for source in sources:
+            for source in notebook_sources:
                 try:
                     source_context = await source.get_context(context_size="short")
                     context_data["sources"].append(source_context)
@@ -733,8 +861,7 @@ async def build_context(request: BuildContextRequest):
                     logger.warning(f"Error processing source {source.id}: {str(e)}")
                     continue
 
-            notes = await notebook.get_notes()
-            for note in notes:
+            for note in notebook_notes:
                 try:
                     note_context = note.get_context(context_size="long")
                     context_data["notes"].append(note_context)

@@ -14,7 +14,9 @@ def client():
 
 
 @pytest.mark.asyncio
-async def test_create_notebook_persists_workspace_id(client):
+@patch("api.routers.notebooks.resolve_workspace_id_for_user", new_callable=AsyncMock)
+async def test_create_notebook_persists_workspace_id(mock_workspace_id, client):
+    mock_workspace_id.return_value = "workspace:team"
     saved_notebooks = []
 
     async def capture_save(self_notebook):

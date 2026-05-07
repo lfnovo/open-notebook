@@ -20,7 +20,13 @@ def default_workspace_policy(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_system_admin_can_manage_any_workspace_resource():
+@patch("api.services.workspace_capabilities.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+async def test_system_admin_can_observe_but_not_manage_other_users_resource(mock_role):
+    mock_role.return_value = {
+        "type": "team",
+        "current_user_role": None,
+    }
+
     caps = await resolve_resource_capabilities(
         actor=actor("app_user:admin", "admin"),
         resource_type="notebook",
@@ -30,10 +36,37 @@ async def test_system_admin_can_manage_any_workspace_resource():
     )
 
     assert caps.can_read is True
+    assert caps.can_update is False
+    assert caps.can_delete is False
+    assert caps.can_share is False
+    assert caps.can_manage is False
+    assert caps.can_create_source is False
+    assert caps.can_remove_source is False
+    assert caps.can_create_note is False
+
+
+@pytest.mark.asyncio
+@patch("api.services.workspace_capabilities.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+async def test_system_admin_can_manage_own_personal_resource(mock_role):
+    mock_role.return_value = {
+        "type": "personal",
+        "current_user_role": "owner",
+    }
+
+    caps = await resolve_resource_capabilities(
+        actor=actor("app_user:admin", "admin"),
+        resource_type="source",
+        owner_id="app_user:admin",
+        workspace_id="workspace:admin",
+        visibility="private",
+    )
+
+    assert caps.can_read is True
     assert caps.can_update is True
     assert caps.can_delete is True
     assert caps.can_share is True
     assert caps.can_manage is True
+    assert caps.can_process is True
 
 
 @pytest.mark.asyncio

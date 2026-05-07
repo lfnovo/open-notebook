@@ -172,3 +172,28 @@ async def test_list_for_user_includes_personal_and_active_team_workspaces(monkey
     assert "owner_id = $user_id" in captured["query"]
     assert "team_member" in captured["query"]
     assert str(captured["vars"]["user_id"]) == "app_user:alice"
+
+
+@pytest.mark.asyncio
+async def test_list_for_admin_observes_all_workspaces_without_global_manage(monkeypatch):
+    captured = {}
+
+    async def fake_repo_query(query, vars=None):
+        captured["query"] = query
+        captured["vars"] = vars
+        return [
+            {"id": "workspace:personal", "type": "personal", "can_manage": False},
+            {"id": "workspace:team", "type": "team", "can_manage": False},
+        ]
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    rows = await WorkspaceRepository.list_for_user(
+        user_id="app_user:admin",
+        include_all_for_admin=True,
+    )
+
+    assert [row["id"] for row in rows] == ["workspace:personal", "workspace:team"]
+    assert "FROM workspace" in captured["query"]
+    assert "true AS can_manage" not in captured["query"]
+    assert str(captured["vars"]["user_id"]) == "app_user:admin"

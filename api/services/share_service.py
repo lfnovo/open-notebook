@@ -101,7 +101,7 @@ async def can_read_resource(
     )
 
 
-async def _ensure_share_manager(
+async def _ensure_share_reader(
     resource_type: str, resource_id: str, actor: CurrentUser
 ) -> None:
     owner_id = await _resource_owner(resource_type, resource_id)
@@ -109,7 +109,16 @@ async def _ensure_share_manager(
         return
     if owner_id and owner_id == actor.id:
         return
-    raise PermissionError("Only the resource owner or an admin can manage sharing")
+    raise PermissionError("Only the resource owner or an admin can view sharing")
+
+
+async def _ensure_share_manager(
+    resource_type: str, resource_id: str, actor: CurrentUser
+) -> None:
+    owner_id = await _resource_owner(resource_type, resource_id)
+    if owner_id and owner_id == actor.id:
+        return
+    raise PermissionError("Only the resource owner can manage sharing")
 
 
 async def list_resource_grants_use_case(
@@ -118,7 +127,7 @@ async def list_resource_grants_use_case(
     resource_id: str,
     actor: CurrentUser,
 ) -> list[ShareGrantResponse]:
-    await _ensure_share_manager(resource_type, resource_id, actor)
+    await _ensure_share_reader(resource_type, resource_id, actor)
     rows = await ShareRepository.list_resource_grants(
         resource_type=resource_type, resource_id=resource_id
     )

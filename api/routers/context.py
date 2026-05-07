@@ -1,25 +1,53 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from loguru import logger
 
+from api.auth import current_user_from_request
 from api.models import ContextRequest, ContextResponse
-from open_notebook.domain.notebook import Note, Notebook, Source
+from api.services.workspace_capabilities import resolve_resource_capabilities
+from open_notebook.domain.notebook import Notebook
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.utils import token_count
 
 router = APIRouter()
 
 
+def _record_id(table: str, record_id: str) -> str:
+    return record_id if record_id.startswith(f"{table}:") else f"{table}:{record_id}"
+
+
 @router.post("/notebooks/{notebook_id}/context", response_model=ContextResponse)
-async def get_notebook_context(notebook_id: str, context_request: ContextRequest):
+async def get_notebook_context(
+    notebook_id: str,
+    context_request: ContextRequest,
+    http_request: Request,
+):
     """Get context for a notebook based on configuration."""
     try:
         # Verify notebook exists
         notebook = await Notebook.get(notebook_id)
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
+        actor = current_user_from_request(http_request)
+        notebook_capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="notebook",
+            owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+            visibility=notebook.visibility,
+        )
+        if not notebook_capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         context_data: dict[str, list[dict[str, str]]] = {"note": [], "source": []}
         total_content = ""
+        notebook_sources = await notebook.get_sources()
+        notebook_notes = await notebook.get_notes()
+        sources_by_id = {
+            str(source.id): source for source in notebook_sources if getattr(source, "id", None)
+        }
+        notes_by_id = {
+            str(note.id): note for note in notebook_notes if getattr(note, "id", None)
+        }
 
         # Process context configuration if provided
         if context_request.context_config:
@@ -30,15 +58,9 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
 
                 try:
                     # Add table prefix if not present
-                    full_source_id = (
-                        source_id
-                        if source_id.startswith("source:")
-                        else f"source:{source_id}"
-                    )
-
-                    try:
-                        source = await Source.get(full_source_id)
-                    except Exception:
+                    full_source_id = _record_id("source", source_id)
+                    source = sources_by_id.get(full_source_id)
+                    if not source:
                         continue
 
                     if "insights" in status:
@@ -60,10 +82,8 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
 
                 try:
                     # Add table prefix if not present
-                    full_note_id = (
-                        note_id if note_id.startswith("note:") else f"note:{note_id}"
-                    )
-                    note = await Note.get(full_note_id)
+                    full_note_id = _record_id("note", note_id)
+                    note = notes_by_id.get(full_note_id)
                     if not note:
                         continue
 
@@ -76,8 +96,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
                     continue
         else:
             # Default behavior - include all sources and notes with short context
-            sources = await notebook.get_sources()
-            for source in sources:
+            for source in notebook_sources:
                 try:
                     source_context = await source.get_context(context_size="short")
                     context_data["source"].append(source_context)
@@ -86,8 +105,7 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
                     logger.warning(f"Error processing source {source.id}: {str(e)}")
                     continue
 
-            notes = await notebook.get_notes()
-            for note in notes:
+            for note in notebook_notes:
                 try:
                     note_context = note.get_context(context_size="short")
                     context_data["note"].append(note_context)

@@ -47,6 +47,7 @@ export default function SourcesPage() {
   const router = useRouter()
   const tableRef = useRef<HTMLTableElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const sourceRequestSeqRef = useRef(0)
   const { data: profile } = useProfile()
   const currentUserId = profile?.id
   const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
@@ -61,7 +62,7 @@ export default function SourcesPage() {
     [workspaceSources, publicSources]
   )
 
-  const loadSourceGroups = useCallback(async () => {
+  const loadSourceGroups = useCallback(async (requestSeq?: number) => {
     const request = {
       limit: PAGE_SIZE,
       offset: (page - 1) * PAGE_SIZE,
@@ -82,21 +83,31 @@ export default function SourcesPage() {
         (!workspaceId || source.workspace_id !== workspaceId)
     )
 
+    if (requestSeq && requestSeq !== sourceRequestSeqRef.current) {
+      return false
+    }
+
     setWorkspaceSources(workspaceData)
     setPublicSources(filteredPublicData)
     setHasMore(workspaceData.length === PAGE_SIZE || publicData.length === PAGE_SIZE)
+    return true
   }, [page, sortBy, sortOrder, workspaceId])
 
   const fetchSources = useCallback(async () => {
+    const requestSeq = sourceRequestSeqRef.current + 1
+    sourceRequestSeqRef.current = requestSeq
     try {
       setLoading(true)
-      await loadSourceGroups()
+      await loadSourceGroups(requestSeq)
     } catch (err) {
+      if (requestSeq !== sourceRequestSeqRef.current) return
       console.error('Failed to fetch sources:', err)
       setError(t.sources.failedToLoad)
       toast.error(t.sources.failedToLoad)
     } finally {
-      setLoading(false)
+      if (requestSeq === sourceRequestSeqRef.current) {
+        setLoading(false)
+      }
     }
   }, [loadSourceGroups, t.sources.failedToLoad])
 
@@ -121,7 +132,9 @@ export default function SourcesPage() {
       if (loading) return
 
       try {
-        await loadSourceGroups()
+        const requestSeq = sourceRequestSeqRef.current + 1
+        sourceRequestSeqRef.current = requestSeq
+        await loadSourceGroups(requestSeq)
       } catch (err) {
         console.error('Failed to poll sources:', err)
       }

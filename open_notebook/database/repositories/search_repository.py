@@ -52,10 +52,10 @@ class SearchRepository:
     ) -> list[dict[str, Any]]:
         return await repo_query(
             """
-            SELECT id, name, type, description, math::max([search::score(1), search::score(2)]) AS relevance
+            SELECT id, name, type, description, source_id, math::max([search::score(1), search::score(2)]) AS relevance
             FROM kg_entity
             WHERE name @1@ $keyword OR description @2@ $keyword
-            GROUP BY id, name, type, description
+            GROUP BY id, name, type, description, source_id
             ORDER BY relevance DESC
             LIMIT $limit
             """,
@@ -71,6 +71,7 @@ class SearchRepository:
                 name,
                 type,
                 description,
+                source_id,
                 ->kg_relation->kg_entity.{id, name, type, description} AS outbound_nodes,
                 ->kg_relation.{type, description} AS outbound_edges,
                 <-kg_relation<-kg_entity.{id, name, type, description} AS inbound_nodes,

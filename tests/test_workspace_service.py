@@ -69,6 +69,41 @@ async def test_get_workspace_raises_not_found(mock_get):
 
 
 @pytest.mark.asyncio
+@patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+async def test_resolve_workspace_id_rejects_requested_workspace_without_membership(
+    mock_current_role,
+):
+    mock_current_role.return_value = {
+        "type": "team",
+        "current_user_role": None,
+    }
+
+    with pytest.raises(PermissionError, match="Workspace access denied"):
+        await workspace_service.resolve_workspace_id_for_user(
+            user_id="app_user:admin",
+            requested_workspace_id="workspace:observed",
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+async def test_resolve_workspace_id_allows_requested_workspace_for_active_member(
+    mock_current_role,
+):
+    mock_current_role.return_value = {
+        "type": "team",
+        "current_user_role": "member",
+    }
+
+    workspace_id = await workspace_service.resolve_workspace_id_for_user(
+        user_id="app_user:member",
+        requested_workspace_id="workspace:team",
+    )
+
+    assert workspace_id == "workspace:team"
+
+
+@pytest.mark.asyncio
 @patch("api.services.workspace_service.AuditLogRepository.create", new_callable=AsyncMock)
 @patch("api.services.workspace_service.WorkspaceRepository.move_notebook_to_workspace", new_callable=AsyncMock)
 @patch("api.services.workspace_service.resolve_resource_capabilities", new_callable=AsyncMock)
@@ -133,4 +168,25 @@ async def test_move_notebook_to_workspace_requires_workspace_management(
                 resource_id="notebook:abc",
             ),
             actor=actor("user"),
+        )
+
+
+@pytest.mark.asyncio
+@patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)
+@patch("api.services.workspace_service.WorkspaceRepository.get_workspace", new_callable=AsyncMock)
+async def test_system_admin_cannot_move_resources_into_observed_workspace(
+    mock_get_workspace,
+    mock_current_role,
+):
+    mock_get_workspace.return_value = {"id": "workspace:team", "type": "team"}
+    mock_current_role.return_value = {"current_user_role": None}
+
+    with pytest.raises(PermissionError, match="Workspace management permission"):
+        await workspace_service.move_resource_to_workspace_use_case(
+            "workspace:team",
+            WorkspaceResourceMoveRequest(
+                resource_type="notebook",
+                resource_id="notebook:abc",
+            ),
+            actor=actor("admin"),
         )

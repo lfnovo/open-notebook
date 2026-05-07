@@ -23,6 +23,7 @@ class SourceRepository:
         public_only: bool = False,
         team_ids: Optional[list[str]] = None,
         workspace_id: Optional[str] = None,
+        include_all_for_admin: bool = False,
     ) -> list[dict[str, Any]]:
         order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
         conditions = []
@@ -33,6 +34,20 @@ class SourceRepository:
 
         if public_only:
             conditions.append("visibility = 'public'")
+        elif workspace_id and not notebook_id:
+            conditions.append("workspace_id = $workspace_id")
+            params["workspace_id"] = ensure_record_id(workspace_id)
+            if not include_all_for_admin:
+                if not user_id:
+                    conditions.append("visibility = 'public'")
+                else:
+                    params["user_id"] = ensure_record_id(user_id)
+                    conditions.append(
+                        "workspace_id IN (SELECT VALUE id FROM workspace "
+                        "WHERE owner_id = $user_id OR team_id IN ("
+                        "SELECT VALUE team FROM team_member WHERE user = $user_id AND status = 'active'"
+                        "))"
+                    )
         elif user_id:
             access_conditions = ["(owner_id = $user_id)", "(visibility = 'public')"]
             params["user_id"] = ensure_record_id(user_id)
@@ -70,7 +85,7 @@ class SourceRepository:
             )
             params["notebook_id"] = ensure_record_id(notebook_id)
 
-        if workspace_id:
+        if workspace_id and not (workspace_id and not notebook_id):
             conditions.append("workspace_id = $workspace_id")
             params["workspace_id"] = ensure_record_id(workspace_id)
 

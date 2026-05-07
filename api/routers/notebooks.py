@@ -16,7 +16,12 @@ from api.services.share_service import can_read_resource
 from api.services.workspace_capabilities import resolve_resource_capabilities
 from api.services.workspace_service import resolve_workspace_id_for_user
 from open_notebook.database.repositories.notebook_repository import NotebookRepository
+from open_notebook.database.repositories.share_repository import (
+    PUBLIC_TEAM_ID,
+    ShareRepository,
+)
 from open_notebook.database.repositories.team_repository import TeamRepository
+from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError
 
@@ -76,17 +81,82 @@ async def _notebook_capabilities_from_domain(
     notebook: Notebook,
     request: Request,
 ):
+    workspace_id = _notebook_workspace_id(notebook)
+    owner_id = _notebook_owner_id(notebook)
     return await resolve_resource_capabilities(
         actor=current_user_from_request(request),
         resource_type="notebook",
-        owner_id=str(notebook.owner_id) if notebook.owner_id else None,
-        workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
-        visibility=notebook.visibility,
+        owner_id=str(owner_id) if owner_id else None,
+        workspace_id=str(workspace_id) if workspace_id else None,
+        visibility=_notebook_visibility(notebook),
     )
+
+
+def _notebook_workspace_id(notebook: Notebook) -> object | None:
+    return getattr(notebook, "workspace_id", None)
+
+
+def _notebook_owner_id(notebook: Notebook) -> object | None:
+    return getattr(notebook, "owner_id", None)
+
+
+def _notebook_visibility(notebook: Notebook) -> str:
+    return getattr(notebook, "visibility", "private")
 
 
 def _allow_legacy_owner_fallback(resource_workspace_id, request: Request) -> bool:
     return current_user_from_request(request) is None or not resource_workspace_id
+
+
+def _visibility_for_workspace(requested_visibility: str, workspace_role: dict | None) -> str:
+    if workspace_role and workspace_role.get("type") == "team":
+        return "public" if requested_visibility == "public" else "team"
+    return requested_visibility
+
+
+async def _initial_notebook_workspace_role(
+    *,
+    actor_id: str | None,
+    workspace_id: str | None,
+) -> dict | None:
+    if not actor_id or not workspace_id:
+        return None
+    return await WorkspaceRepository.current_user_role(
+        workspace_id=workspace_id,
+        user_id=actor_id,
+    )
+
+
+async def _create_initial_notebook_grants(
+    *,
+    notebook_id: str,
+    visibility: str,
+    workspace_role: dict | None,
+    actor_id: str | None,
+) -> None:
+    team_id = (
+        str(workspace_role.get("team_id"))
+        if workspace_role and workspace_role.get("team_id")
+        else None
+    )
+    if team_id:
+        await ShareRepository.create_grant(
+            resource_type="notebook",
+            resource_id=notebook_id,
+            target_type="team",
+            target_id=team_id,
+            permission="read",
+            created_by=actor_id,
+        )
+    if visibility == "public":
+        await ShareRepository.create_grant(
+            resource_type="notebook",
+            resource_id=notebook_id,
+            target_type="team",
+            target_id=PUBLIC_TEAM_ID,
+            permission="read",
+            created_by=actor_id,
+        )
 
 
 def _validate_notebook_order_by(order_by: str) -> str:
@@ -184,6 +254,11 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
             user_id=user_id,
             requested_workspace_id=notebook.workspace_id,
         )
+        workspace_role = await _initial_notebook_workspace_role(
+            actor_id=actor.id if actor else None,
+            workspace_id=workspace_id,
+        )
+        visibility = _visibility_for_workspace(notebook.visibility, workspace_role)
         new_notebook = Notebook(
             name=notebook.name,
             description=notebook.description,
@@ -191,9 +266,15 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
             creator_name=notebook.creator_name,
             owner_id=user_id,
             workspace_id=workspace_id,
-            visibility=notebook.visibility,
+            visibility=visibility,
         )
         await new_notebook.save()
+        await _create_initial_notebook_grants(
+            notebook_id=str(new_notebook.id),
+            visibility=new_notebook.visibility,
+            workspace_role=workspace_role,
+            actor_id=actor.id if actor else None,
+        )
         capabilities = await resolve_resource_capabilities(
             actor=actor,
             resource_type="notebook",
@@ -225,6 +306,8 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating notebook: {str(e)}")
         raise HTTPException(
@@ -245,11 +328,14 @@ async def get_notebook_delete_preview(request: Request, notebook_id: str):
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_delete and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -322,11 +408,14 @@ async def update_notebook(
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_update and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -405,11 +494,14 @@ async def update_notebook_visibility(request: Request, notebook_id: str):
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_share and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(
@@ -475,11 +567,14 @@ async def add_source_to_notebook(request: Request, notebook_id: str, source_id: 
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_create_source and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -532,11 +627,14 @@ async def remove_source_from_notebook(
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_remove_source and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(status_code=403, detail="Access denied")
@@ -573,11 +671,14 @@ async def delete_notebook(
 
         capabilities = await _notebook_capabilities_from_domain(notebook, request)
         if not capabilities.can_delete and not (
-            _allow_legacy_owner_fallback(notebook.workspace_id, request)
+            _allow_legacy_owner_fallback(_notebook_workspace_id(notebook), request)
             and _check_notebook_access(
-            {"owner_id": notebook.owner_id, "visibility": notebook.visibility},
-            user_id,
-            require_owner=True,
+                {
+                    "owner_id": _notebook_owner_id(notebook),
+                    "visibility": _notebook_visibility(notebook),
+                },
+                user_id,
+                require_owner=True,
             )
         ):
             raise HTTPException(status_code=403, detail="Access denied")

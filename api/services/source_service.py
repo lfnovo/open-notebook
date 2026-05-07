@@ -22,6 +22,7 @@ from api.models import (
     SourceResponse,
     SourceStatusResponse,
     SourceUpdate,
+    WorkspacePermissionPolicy,
 )
 from api.services import command_lifecycle
 from api.services.share_service import can_read_resource
@@ -41,11 +42,22 @@ from api.services.workspace_service import resolve_workspace_id_for_user
 from commands.source_commands import SourceProcessingInput
 from open_notebook.ai.model_resolution import resolve_default_model_id
 from open_notebook.config import UPLOADS_FOLDER
+from open_notebook.database.repositories.share_repository import (
+    PUBLIC_TEAM_ID,
+    ShareRepository,
+)
 from open_notebook.database.repositories.source_repository import SourceRepository
+from open_notebook.database.repositories.workspace_policy_repository import (
+    WorkspacePolicyRepository,
+)
+from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
 from open_notebook.database.repository import ensure_record_id
 from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError, NotFoundError
+
+CREATE_ROLES = {"owner", "admin", "member"}
+MANAGER_ROLES = {"owner", "admin"}
 
 
 def build_source_content_state(
@@ -108,7 +120,10 @@ async def resolve_source_workspace_id(
     user_id: str | None,
 ) -> str | None:
     if source_data.workspace_id:
-        return source_data.workspace_id
+        return await resolve_workspace_id_for_user(
+            user_id=user_id,
+            requested_workspace_id=source_data.workspace_id,
+        )
 
     workspace_ids = set()
     for notebook_id in source_data.notebooks or []:
@@ -121,6 +136,102 @@ async def resolve_source_workspace_id(
         return next(iter(workspace_ids))
 
     return await resolve_workspace_id_for_user(user_id=user_id, requested_workspace_id=None)
+
+
+def _policy_flag(policy: WorkspacePermissionPolicy | dict, field: str) -> bool:
+    if isinstance(policy, WorkspacePermissionPolicy):
+        return bool(getattr(policy, field))
+    return bool(policy.get(field))
+
+
+async def _ensure_source_create_allowed(
+    *,
+    actor: CurrentUser | None,
+    workspace_id: str | None,
+) -> dict[str, Any] | None:
+    if actor is None or not workspace_id:
+        return None
+
+    role = await WorkspaceRepository.current_user_role(
+        workspace_id=workspace_id,
+        user_id=actor.id,
+    )
+    current_role = role.get("current_user_role") if role else None
+    if not role or current_role not in CREATE_ROLES:
+        raise PermissionError("Source creation permission required")
+
+    if role.get("type") == "team" and current_role not in MANAGER_ROLES:
+        policy = await WorkspacePolicyRepository.get_effective_policy(workspace_id)
+        if not _policy_flag(policy, "member_can_create_source"):
+            raise PermissionError("Source creation permission required")
+
+    return role
+
+
+async def _ensure_source_notebook_targets_allowed(
+    *,
+    notebook_ids: list[str],
+    actor: CurrentUser | None,
+) -> None:
+    if actor is None:
+        return
+    for notebook_id in notebook_ids:
+        notebook = await Notebook.get(notebook_id)
+        if not notebook:
+            raise NotFoundError(f"Notebook {notebook_id} not found")
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type="notebook",
+            owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+            workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+            visibility=notebook.visibility,
+        )
+        if not capabilities.can_read or not capabilities.can_create_source:
+            raise PermissionError("Source creation permission required")
+
+
+def _source_visibility_for_workspace(
+    requested_visibility: str,
+    workspace_role: dict[str, Any] | None,
+) -> str:
+    if workspace_role and workspace_role.get("type") == "team":
+        return "public" if requested_visibility == "public" else "team"
+    return requested_visibility
+
+
+async def _create_initial_source_grants(
+    *,
+    source_id: str,
+    visibility: str,
+    workspace_role: dict[str, Any] | None,
+    actor: CurrentUser | None,
+) -> None:
+    created_by = actor.id if actor else None
+    team_id = (
+        str(workspace_role.get("team_id"))
+        if workspace_role and workspace_role.get("team_id")
+        else None
+    )
+
+    if team_id:
+        await ShareRepository.create_grant(
+            resource_type="source",
+            resource_id=source_id,
+            target_type="team",
+            target_id=team_id,
+            permission="read",
+            created_by=created_by,
+        )
+
+    if visibility == "public":
+        await ShareRepository.create_grant(
+            resource_type="source",
+            resource_id=source_id,
+            target_type="team",
+            target_id=PUBLIC_TEAM_ID,
+            permission="read",
+            created_by=created_by,
+        )
 
 
 async def validate_source_create_request(
@@ -323,7 +434,30 @@ async def create_source_and_queue_processing(
 ) -> SourceResponse:
     """Create a source record and queue background processing."""
     content_state = build_source_content_state(source_data, file_path=file_path)
-    team_id = await resolve_source_team_context(source_data.notebooks)
+    team_id: str | None = None
+    workspace_id = await resolve_source_workspace_id(
+        source_data,
+        user_id=user_id,
+    )
+    await _ensure_source_notebook_targets_allowed(
+        notebook_ids=source_data.notebooks or [],
+        actor=actor,
+    )
+    workspace_role = await _ensure_source_create_allowed(
+        actor=actor,
+        workspace_id=workspace_id,
+    )
+    if workspace_role and workspace_role.get("type") == "team":
+        team_id = (
+            str(workspace_role.get("team_id"))
+            if workspace_role.get("team_id")
+            else team_id
+        )
+    visibility = _source_visibility_for_workspace(
+        source_data.visibility,
+        workspace_role,
+    )
+    team_id = team_id or await resolve_source_team_context(source_data.notebooks)
     transformation_ids = await validate_source_create_request(
         source_data,
         team_id=team_id,
@@ -334,13 +468,16 @@ async def create_source_and_queue_processing(
         topics=[],
         asset=build_source_asset(source_data, file_path=file_path),
         owner_id=user_id,
-        workspace_id=await resolve_source_workspace_id(
-            source_data,
-            user_id=user_id,
-        ),
-        visibility=source_data.visibility,
+        workspace_id=workspace_id,
+        visibility=visibility,
     )
     await source.save()
+    await _create_initial_source_grants(
+        source_id=str(source.id),
+        visibility=source.visibility,
+        workspace_role=workspace_role,
+        actor=actor,
+    )
 
     for notebook_id in source_data.notebooks or []:
         await source.add_to_notebook(notebook_id)

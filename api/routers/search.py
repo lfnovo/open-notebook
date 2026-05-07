@@ -1,21 +1,123 @@
 import json
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
-from api.auth import current_user_from_request
+from api.auth import CurrentUser, current_user_from_request
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from api.services.model_policy_service import ensure_model_selections_allowed
 from api.services.team_context_service import resolve_explicit_team_context
+from api.services.workspace_capabilities import resolve_resource_capabilities
 from open_notebook.ai.model_resolution import resolve_default_model_id
 from open_notebook.ai.models import Model, model_manager
-from open_notebook.domain.notebook import text_search, vector_search
+from open_notebook.database.repositories.team_repository import TeamRepository
+from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
+from open_notebook.domain.notebook import Note, Source, text_search, vector_search
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 from open_notebook.graphs.ask import graph as ask_graph
 
 router = APIRouter()
+
+
+def _search_result_resource_id(row: dict[str, Any]) -> str | None:
+    for key in ("parent_id", "source_id", "note_id", "id"):
+        value = row.get(key)
+        if value is None:
+            continue
+        value_str = str(value)
+        if value_str.startswith(("source:", "note:")):
+            return value_str
+    return None
+
+
+def _search_result_resource_type(resource_id: str) -> str | None:
+    if resource_id.startswith("source:"):
+        return "source"
+    if resource_id.startswith("note:"):
+        return "note"
+    return None
+
+
+async def _search_result_access_metadata(
+    row: dict[str, Any],
+    *,
+    resource_id: str,
+    resource_type: str,
+) -> tuple[str | None, str | None, str]:
+    owner_id = str(row["owner_id"]) if row.get("owner_id") else None
+    workspace_id = str(row["workspace_id"]) if row.get("workspace_id") else None
+    visibility = str(row.get("visibility") or "private")
+    if owner_id and workspace_id:
+        return owner_id, workspace_id, visibility
+
+    resource = None
+    if resource_type == "source":
+        resource = await Source.get(resource_id)
+    elif resource_type == "note":
+        resource = await Note.get(resource_id)
+
+    if resource:
+        if not owner_id and getattr(resource, "owner_id", None):
+            owner_id = str(resource.owner_id)
+        if not workspace_id and getattr(resource, "workspace_id", None):
+            workspace_id = str(resource.workspace_id)
+        visibility = str(getattr(resource, "visibility", visibility) or visibility)
+
+    return owner_id, workspace_id, visibility
+
+
+async def _filter_search_results_for_actor(
+    results: list[dict[str, Any]],
+    actor: CurrentUser | None,
+) -> list[dict[str, Any]]:
+    filtered: list[dict[str, Any]] = []
+    for row in results:
+        resource_id = _search_result_resource_id(row)
+        if not resource_id:
+            continue
+        resource_type = _search_result_resource_type(resource_id)
+        if not resource_type:
+            continue
+
+        owner_id, workspace_id, visibility = await _search_result_access_metadata(
+            row,
+            resource_id=resource_id,
+            resource_type=resource_type,
+        )
+        capabilities = await resolve_resource_capabilities(
+            actor=actor,
+            resource_type=resource_type,  # type: ignore[arg-type]
+            owner_id=owner_id,
+            workspace_id=workspace_id,
+            visibility=visibility,
+        )
+        if capabilities.can_read:
+            filtered.append(row)
+
+    return filtered
+
+
+async def _build_search_scope(actor: CurrentUser | None) -> dict[str, Any]:
+    if actor is None:
+        return {
+            "actor_id": None,
+            "actor_role": None,
+            "team_ids": [],
+            "workspace_ids": [],
+        }
+
+    workspaces = await WorkspaceRepository.list_for_user(
+        user_id=actor.id,
+        include_all_for_admin=actor.role == "admin",
+    )
+    return {
+        "actor_id": actor.id,
+        "actor_role": actor.role,
+        "team_ids": await TeamRepository.user_team_ids(actor.id),
+        "workspace_ids": [str(workspace["id"]) for workspace in workspaces],
+    }
 
 
 @router.post("/search", response_model=SearchResponse)
@@ -50,10 +152,11 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
                 source=search_request.search_sources,
                 note=search_request.search_notes,
             )
+        filtered_results = await _filter_search_results_for_actor(results or [], actor)
 
         return SearchResponse(
-            results=results or [],
-            total_count=len(results) if results else 0,
+            results=filtered_results,
+            total_count=len(filtered_results),
             search_type=search_request.type,
         )
 
@@ -73,6 +176,7 @@ async def stream_ask_response(
     answer_model: Model,
     final_answer_model: Model,
     team_id: str | None = None,
+    search_scope: dict[str, Any] | None = None,
 ) -> AsyncGenerator[str, None]:
     """Stream the ask response as Server-Sent Events."""
     import asyncio
@@ -87,6 +191,7 @@ async def stream_ask_response(
                     answer_model=answer_model.id,
                     final_answer_model=final_answer_model.id,
                     team_id=team_id,
+                    search_scope=search_scope or {},
                 )
             ),
             version="v2",
@@ -140,7 +245,7 @@ async def stream_ask_response(
 async def _resolve_ask_models(
     ask_request: AskRequest,
     request: Request,
-) -> tuple[Model, Model, Model, str | None]:
+) -> tuple[Model, Model, Model, str | None, dict[str, Any]]:
     actor = current_user_from_request(request)
     team_id = await resolve_explicit_team_context(
         actor=actor,
@@ -190,14 +295,15 @@ async def _resolve_ask_models(
             detail="Ask feature requires an embedding model. Please configure one in the Models section.",
         )
 
-    return strategy_model, answer_model, final_answer_model, team_id
+    search_scope = await _build_search_scope(actor)
+    return strategy_model, answer_model, final_answer_model, team_id, search_scope
 
 
 @router.post("/search/ask")
 async def ask_knowledge_base(ask_request: AskRequest, request: Request):
     """Ask the knowledge base a question using AI models."""
     try:
-        strategy_model, answer_model, final_answer_model, team_id = (
+        strategy_model, answer_model, final_answer_model, team_id, search_scope = (
             await _resolve_ask_models(ask_request, request)
         )
 
@@ -209,6 +315,7 @@ async def ask_knowledge_base(ask_request: AskRequest, request: Request):
                 answer_model,
                 final_answer_model,
                 team_id,
+                search_scope,
             ),
             media_type="text/event-stream",
             headers={
@@ -231,7 +338,7 @@ async def ask_knowledge_base(ask_request: AskRequest, request: Request):
 async def ask_knowledge_base_simple(ask_request: AskRequest, request: Request):
     """Ask the knowledge base a question and return a simple response (non-streaming)."""
     try:
-        strategy_model, answer_model, final_answer_model, team_id = (
+        strategy_model, answer_model, final_answer_model, team_id, search_scope = (
             await _resolve_ask_models(ask_request, request)
         )
 
@@ -245,6 +352,7 @@ async def ask_knowledge_base_simple(ask_request: AskRequest, request: Request):
                     answer_model=answer_model.id,
                     final_answer_model=final_answer_model.id,
                     team_id=team_id,
+                    search_scope=search_scope,
                 )
             ),
             stream_mode="updates",

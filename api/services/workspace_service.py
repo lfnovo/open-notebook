@@ -67,6 +67,19 @@ async def resolve_workspace_id_for_user(
     requested_workspace_id: str | None,
 ) -> str | None:
     if requested_workspace_id:
+        if not user_id:
+            raise PermissionError("Workspace access denied")
+        role = await WorkspaceRepository.current_user_role(
+            workspace_id=requested_workspace_id,
+            user_id=user_id,
+        )
+        if not role or role.get("current_user_role") not in {
+            "owner",
+            "admin",
+            "member",
+            "viewer",
+        }:
+            raise PermissionError("Workspace access denied")
         return requested_workspace_id
     if not user_id:
         return None
@@ -103,11 +116,15 @@ async def get_workspace_use_case(
         raise PermissionError("Workspace access denied")
 
     if "current_user_role" not in row:
+        role = await WorkspaceRepository.current_user_role(
+            workspace_id=workspace_id,
+            user_id=actor.id,
+        )
+        current_user_role = role.get("current_user_role") if role else None
         row = {
             **row,
-            "current_user_role": "owner" if row.get("owner_id") and str(row.get("owner_id")) == actor.id else None,
-            "can_manage": actor.role == "admin"
-            or (row.get("owner_id") and str(row.get("owner_id")) == actor.id),
+            "current_user_role": current_user_role,
+            "can_manage": current_user_role in {"owner", "admin"},
         }
     return _workspace_response(row)
 
@@ -117,8 +134,6 @@ async def _actor_can_manage_workspace(
     workspace_id: str,
     actor: CurrentUser,
 ) -> bool:
-    if actor.role == "admin":
-        return True
     role = await WorkspaceRepository.current_user_role(
         workspace_id=workspace_id,
         user_id=actor.id,

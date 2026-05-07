@@ -66,6 +66,32 @@ def _allow_legacy_owner_fallback(resource_workspace_id: Any, request: Request) -
     return current_user_from_request(request) is None or not resource_workspace_id
 
 
+def _allow_legacy_workspace_less_read(
+    resource_workspace_id: Any,
+    request: Request,
+) -> bool:
+    return current_user_from_request(request) is None and not resource_workspace_id
+
+
+async def _ensure_notebook_read_allowed(
+    notebook: Notebook,
+    request: Request,
+) -> None:
+    actor = current_user_from_request(request)
+    capabilities = await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="notebook",
+        owner_id=str(notebook.owner_id) if notebook.owner_id else None,
+        workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
+        visibility=notebook.visibility,
+    )
+    if not capabilities.can_read and not _allow_legacy_workspace_less_read(
+        notebook.workspace_id,
+        request,
+    ):
+        raise HTTPException(status_code=403, detail="Access denied")
+
+
 def _is_command_timed_out(created_at: Any, *, now: Optional[datetime] = None) -> bool:
     return command_lifecycle.is_command_timed_out(
         created_at,
@@ -114,6 +140,7 @@ async def get_sources(
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
+            await _ensure_notebook_read_allowed(notebook, request)
 
         result = await SourceRepository.list_sources(
             user_id=user_id,
@@ -125,6 +152,7 @@ async def get_sources(
             sort_by=sort_by,
             sort_order=sort_order,
             workspace_id=workspace_id,
+            include_all_for_admin=bool(actor and actor.role == "admin"),
         )
 
         responses: list[SourceListResponse] = []
@@ -147,6 +175,7 @@ async def get_sources(
 
 @router.get("/sources/public", response_model=List[SourceListResponse])
 async def get_public_sources(
+    request: Request,
     notebook_id: Optional[str] = Query(None, description="Filter by notebook ID"),
     title_contains: Optional[str] = Query(
         None, description="Filter sources by title substring"
@@ -171,6 +200,7 @@ async def get_public_sources(
             notebook = await Notebook.get(notebook_id)
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
+            await _ensure_notebook_read_allowed(notebook, request)
 
         result = await SourceRepository.list_sources(
             user_id=None,
@@ -256,6 +286,13 @@ async def create_source(
             except Exception:
                 pass
         raise HTTPException(status_code=400, detail=str(e))
+    except PermissionError as e:
+        if file_path and upload_file:
+            try:
+                os.unlink(file_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         logger.error(f"Error creating source: {str(e)}")
         # Clean up uploaded file on unexpected errors if we created it

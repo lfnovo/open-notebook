@@ -106,6 +106,14 @@ def _allow_legacy_note_fallback(note: Note, actor: CurrentUser | None) -> bool:
     return actor is None and not _string_attr(note, "workspace_id")
 
 
+def _allow_legacy_notebook_fallback(
+    notebook: Notebook | dict[str, Any],
+    actor: CurrentUser | None,
+) -> bool:
+    workspace_id = _notebook_value(notebook, "workspace_id")
+    return actor is None and not workspace_id
+
+
 async def _note_to_response(
     note: Note,
     *,
@@ -143,7 +151,10 @@ async def get_notes(
                 raise HTTPException(status_code=404, detail="Notebook not found")
 
             capabilities = await _notebook_capabilities(notebook, actor)
-            if not capabilities.can_read and actor is not None:
+            if not capabilities.can_read and not _allow_legacy_notebook_fallback(
+                notebook,
+                actor,
+            ):
                 raise HTTPException(status_code=403, detail="Access denied")
             notes = await notebook.get_notes()
         else:
@@ -180,7 +191,10 @@ async def create_note(request: Request, note_data: NoteCreate):
                 raise HTTPException(status_code=404, detail="Notebook not found")
 
             capabilities = await _notebook_capabilities(notebook, actor)
-            if not capabilities.can_create_note and actor is not None:
+            if not capabilities.can_create_note and not _allow_legacy_notebook_fallback(
+                notebook,
+                actor,
+            ):
                 raise HTTPException(status_code=403, detail="Access denied")
 
             workspace_id = str(notebook.workspace_id) if notebook.workspace_id else None

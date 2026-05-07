@@ -36,25 +36,15 @@ async def resolve_resource_capabilities(
     """Resolve effective resource actions for the current actor.
 
     This is the first workspace-aware permission boundary. It intentionally uses
-    conservative defaults for team workspaces: members can contribute, but
-    destructive lifecycle operations stay with workspace managers and system admins.
+    conservative defaults for team workspaces: members can contribute, while
+    destructive lifecycle operations stay with resource owners and workspace
+    managers. System admins can observe all resources, but do not receive
+    content write privileges unless they are also the owner or workspace manager.
     """
     if actor is None:
         return ResourceCapabilities(can_read=visibility == "public")
 
-    if actor.role == "admin":
-        return ResourceCapabilities(
-            can_read=True,
-            can_update=True,
-            can_delete=True,
-            can_share=True,
-            can_manage=True,
-            can_create_source=True,
-            can_remove_source=True,
-            can_create_note=True,
-            can_process=True,
-        )
-
+    is_system_admin = actor.role == "admin"
     is_creator = _same_user(owner_id, actor.id)
     workspace_type: str | None = None
     workspace_role: str | None = None
@@ -71,7 +61,7 @@ async def resolve_resource_capabilities(
     is_workspace_manager = workspace_role in MANAGER_ROLES
     is_workspace_member = workspace_role in MEMBER_ROLES
     is_personal_workspace = workspace_type == "personal" or not workspace_id
-    can_read = visibility == "public" or is_creator or is_workspace_member
+    can_read = is_system_admin or visibility == "public" or is_creator or is_workspace_member
     policy: WorkspacePermissionPolicy | dict | None = None
     if workspace_id and workspace_type == "team" and is_workspace_member:
         policy = await WorkspacePolicyRepository.get_effective_policy(workspace_id)

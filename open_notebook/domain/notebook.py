@@ -142,7 +142,17 @@ class Notebook(ObjectModel):
                 for src in source_counts:
                     source_id = src.get("id")
                     if source_id and src.get("assigned_others", 0) == 0:
-                        exclusive_source_ids.append(str(source_id))
+                        source = await Source.get(str(source_id))
+                        source_workspace_id = (
+                            str(source.workspace_id) if source.workspace_id else None
+                        )
+                        notebook_workspace_id = (
+                            str(self.workspace_id) if self.workspace_id else None
+                        )
+                        if source_workspace_id == notebook_workspace_id:
+                            exclusive_source_ids.append(str(source_id))
+                        else:
+                            unlinked_sources += 1
                     else:
                         unlinked_sources += 1
 
@@ -644,6 +654,22 @@ class ChatSession(ObjectModel):
     nullable_fields: ClassVar[set[str]] = {"model_override"}
     title: Optional[str] = None
     model_override: Optional[str] = None
+    owner_id: Optional[Union[str, RecordID]] = None
+    workspace_id: Optional[Union[str, RecordID]] = None
+
+    @field_validator("owner_id", mode="before")
+    @classmethod
+    def parse_owner_id(cls, value):
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
+
+    @field_validator("workspace_id", mode="before")
+    @classmethod
+    def parse_workspace_id(cls, value):
+        if isinstance(value, str) and value:
+            return ensure_record_id(value)
+        return value
 
     async def relate_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
@@ -739,6 +765,7 @@ async def graph_search(keyword: str, results: int = 5):
             formatted_results.append(
                 {
                     "id": sg["id"],
+                    "source_id": sg.get("source_id"),
                     "title": f"Knowledge Graph Context for: {sg.get('name', '')}",
                     "content": context,
                     "type": "kg_subgraph",

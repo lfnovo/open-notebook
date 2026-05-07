@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 from api.auth import current_user_from_request
 from api.services.model_policy_service import ensure_model_selection_allowed
 from api.services.team_context_service import resolve_team_context
+from api.services.workspace_capabilities import resolve_resource_capabilities
 from open_notebook.config import LANGGRAPH_SOURCE_CHAT_CHECKPOINT_FILE
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession, Source
@@ -94,6 +95,61 @@ class SuccessResponse(BaseModel):
     message: str = Field(..., description="Success message")
 
 
+def _record_id(table: str, record_id: str) -> str:
+    return record_id if record_id.startswith(f"{table}:") else f"{table}:{record_id}"
+
+
+def _can_use_resource(actor, capabilities) -> bool:
+    if not capabilities.can_read:
+        return False
+    return not (actor is not None and actor.role == "admin" and not capabilities.can_manage)
+
+
+async def _source_read_capabilities(source: Source, actor):
+    return await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="source",
+        owner_id=str(source.owner_id) if source.owner_id else None,
+        workspace_id=str(source.workspace_id) if source.workspace_id else None,
+        visibility=source.visibility,
+    )
+
+
+async def _source_chat_capabilities(session: ChatSession, source: Source, actor):
+    return await resolve_resource_capabilities(
+        actor=actor,
+        resource_type="chat_session",
+        owner_id=str(session.owner_id)
+        if getattr(session, "owner_id", None)
+        else str(source.owner_id)
+        if source.owner_id
+        else None,
+        workspace_id=str(session.workspace_id)
+        if getattr(session, "workspace_id", None)
+        else str(source.workspace_id)
+        if source.workspace_id
+        else None,
+        visibility="private",
+    )
+
+
+async def _ensure_session_relates_to_source(
+    *,
+    session_id: str,
+    source_id: str,
+) -> None:
+    relation_query = await repo_query(
+        "SELECT * FROM refers_to WHERE in = $session_id AND out = $source_id",
+        {
+            "session_id": ensure_record_id(session_id),
+            "source_id": ensure_record_id(source_id),
+        },
+    )
+
+    if not relation_query:
+        raise HTTPException(status_code=404, detail="Session not found for this source")
+
+
 @router.post(
     "/sources/{source_id}/chat/sessions", response_model=SourceChatSessionResponse
 )
@@ -105,13 +161,14 @@ async def create_source_chat_session(
     """Create a new chat session for a source."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         actor = current_user_from_request(http_request)
+        source_capabilities = await _source_read_capabilities(source, actor)
+        if not _can_use_resource(actor, source_capabilities):
+            raise HTTPException(status_code=403, detail="Access denied")
         team_id = await resolve_team_context(
             actor=actor,
             resource_type="source",
@@ -128,6 +185,8 @@ async def create_source_chat_session(
         session = ChatSession(
             title=request.title or f"Source Chat {asyncio.get_event_loop().time():.0f}",
             model_override=request.model_override,
+            owner_id=actor.id if actor else None,
+            workspace_id=str(source.workspace_id) if source.workspace_id else None,
         )
         await session.save()
 
@@ -157,16 +216,21 @@ async def create_source_chat_session(
 @router.get(
     "/sources/{source_id}/chat/sessions", response_model=List[SourceChatSessionResponse]
 )
-async def get_source_chat_sessions(source_id: str = Path(..., description="Source ID")):
+async def get_source_chat_sessions(
+    http_request: Request,
+    source_id: str = Path(..., description="Source ID"),
+):
     """Get all chat sessions for a source."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+        actor = current_user_from_request(http_request)
+        source_capabilities = await _source_read_capabilities(source, actor)
+        if not source_capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         # Get sessions that refer to this source - first get relations, then sessions
         relations = await repo_query(
@@ -185,6 +249,20 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
                 )
                 if session_result and len(session_result) > 0:
                     session_data = session_result[0]
+                    session = ChatSession(
+                        id=str(session_data.get("id")),
+                        title=session_data.get("title"),
+                        model_override=session_data.get("model_override"),
+                        owner_id=session_data.get("owner_id"),
+                        workspace_id=session_data.get("workspace_id"),
+                    )
+                    session_capabilities = await _source_chat_capabilities(
+                        session,
+                        source,
+                        actor,
+                    )
+                    if not session_capabilities.can_read:
+                        continue
 
                     # Get message count from LangGraph state (use checkpoint file
                     # so we read the same sqlite file the streaming endpoint writes to)
@@ -224,42 +302,33 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
     response_model=SourceChatSessionWithMessagesResponse,
 )
 async def get_source_chat_session(
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Get a specific source chat session with its messages."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
         # Get session
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
+        full_session_id = _record_id("chat_session", session_id)
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Verify session is related to this source
-        relation_query = await repo_query(
-            "SELECT * FROM refers_to WHERE in = $session_id AND out = $source_id",
-            {
-                "session_id": ensure_record_id(full_session_id),
-                "source_id": ensure_record_id(full_source_id),
-            },
+        await _ensure_session_relates_to_source(
+            session_id=full_session_id,
+            source_id=full_source_id,
         )
-
-        if not relation_query:
-            raise HTTPException(
-                status_code=404, detail="Session not found for this source"
-            )
+        actor = current_user_from_request(http_request)
+        session_capabilities = await _source_chat_capabilities(session, source, actor)
+        if not session_capabilities.can_read:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         # Get session state from LangGraph using SqliteSaver (NOT the module-level
         # MemorySaver graph) so we read from the same checkpoint file that the
@@ -340,37 +409,26 @@ async def update_source_chat_session(
     """Update source chat session title and/or model override."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
         # Get session
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
+        full_session_id = _record_id("chat_session", session_id)
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Verify session is related to this source
-        relation_query = await repo_query(
-            "SELECT * FROM refers_to WHERE in = $session_id AND out = $source_id",
-            {
-                "session_id": ensure_record_id(full_session_id),
-                "source_id": ensure_record_id(full_source_id),
-            },
+        await _ensure_session_relates_to_source(
+            session_id=full_session_id,
+            source_id=full_source_id,
         )
-
-        if not relation_query:
-            raise HTTPException(
-                status_code=404, detail="Session not found for this source"
-            )
         actor = current_user_from_request(http_request)
+        session_capabilities = await _source_chat_capabilities(session, source, actor)
+        if not session_capabilities.can_update:
+            raise HTTPException(status_code=403, detail="Access denied")
         team_id = await resolve_team_context(
             actor=actor,
             resource_type="source",
@@ -423,42 +481,33 @@ async def update_source_chat_session(
     "/sources/{source_id}/chat/sessions/{session_id}", response_model=SuccessResponse
 )
 async def delete_source_chat_session(
+    http_request: Request,
     source_id: str = Path(..., description="Source ID"),
     session_id: str = Path(..., description="Session ID"),
 ):
     """Delete a source chat session."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
         # Get session
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
+        full_session_id = _record_id("chat_session", session_id)
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Verify session is related to this source
-        relation_query = await repo_query(
-            "SELECT * FROM refers_to WHERE in = $session_id AND out = $source_id",
-            {
-                "session_id": ensure_record_id(full_session_id),
-                "source_id": ensure_record_id(full_source_id),
-            },
+        await _ensure_session_relates_to_source(
+            session_id=full_session_id,
+            source_id=full_source_id,
         )
-
-        if not relation_query:
-            raise HTTPException(
-                status_code=404, detail="Session not found for this source"
-            )
+        actor = current_user_from_request(http_request)
+        session_capabilities = await _source_chat_capabilities(session, source, actor)
+        if not session_capabilities.can_delete:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         await session.delete()
 
@@ -684,36 +733,22 @@ async def send_message_to_source_chat(
     """Send a message to source chat session with SSE streaming response."""
     try:
         # Verify source exists
-        full_source_id = (
-            source_id if source_id.startswith("source:") else f"source:{source_id}"
-        )
+        full_source_id = _record_id("source", source_id)
         source = await Source.get(full_source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
         # Verify session exists and is related to source
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
+        full_session_id = _record_id("chat_session", session_id)
         session = await ChatSession.get(full_session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
         # Verify session is related to this source
-        relation_query = await repo_query(
-            "SELECT * FROM refers_to WHERE in = $session_id AND out = $source_id",
-            {
-                "session_id": ensure_record_id(full_session_id),
-                "source_id": ensure_record_id(full_source_id),
-            },
+        await _ensure_session_relates_to_source(
+            session_id=full_session_id,
+            source_id=full_source_id,
         )
-
-        if not relation_query:
-            raise HTTPException(
-                status_code=404, detail="Session not found for this source"
-            )
 
         if not request.message:
             raise HTTPException(status_code=400, detail="Message content is required")
@@ -723,6 +758,9 @@ async def send_message_to_source_chat(
             session, "model_override", None
         )
         actor = current_user_from_request(http_request)
+        session_capabilities = await _source_chat_capabilities(session, source, actor)
+        if not _can_use_resource(actor, session_capabilities):
+            raise HTTPException(status_code=403, detail="Access denied")
         team_id = await resolve_team_context(
             actor=actor,
             resource_type="source",

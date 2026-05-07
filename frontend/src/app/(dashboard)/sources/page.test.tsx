@@ -4,6 +4,8 @@ import SourcesPage from './page'
 import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
 
+let currentWorkspaceId = 'workspace:team'
+
 vi.mock('@/lib/api/sources', () => ({
   sourcesApi: {
     list: vi.fn(),
@@ -16,8 +18,18 @@ vi.mock('@/lib/api/sources', () => ({
 
 vi.mock('@/lib/stores/workspace-store', () => ({
   useWorkspaceStore: vi.fn((selector: (state: { currentWorkspaceId: string }) => unknown) =>
-    selector({ currentWorkspaceId: 'workspace:team' })
+    selector({ currentWorkspaceId })
   ),
+}))
+
+vi.mock('@/lib/hooks/use-workspaces', () => ({
+  useCurrentWorkspace: vi.fn(() => ({
+    currentWorkspaceId,
+    currentWorkspace:
+      currentWorkspaceId === 'workspace:personal'
+        ? { id: 'workspace:personal', name: 'Personal', type: 'personal' }
+        : { id: 'workspace:team', name: 'Research Team', type: 'team' },
+  })),
 }))
 
 vi.mock('@/lib/hooks/use-profile', () => ({
@@ -62,6 +74,7 @@ const source = (overrides: Partial<SourceListResponse>): SourceListResponse => (
 describe('SourcesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    currentWorkspaceId = 'workspace:team'
     vi.mocked(sourcesApi.list).mockResolvedValue([
       source({ id: 'source:team', title: 'Team source', workspace_id: 'workspace:team' }),
     ])
@@ -98,5 +111,22 @@ describe('SourcesPage', () => {
     expect(screen.getByText('Public sources')).toBeInTheDocument()
     expect(screen.getByText('Public source')).toBeInTheDocument()
     expect(screen.queryByText('Team public source')).not.toBeInTheDocument()
+  })
+
+  it('labels personal workspace sources separately from team workspace sources', async () => {
+    currentWorkspaceId = 'workspace:personal'
+    vi.mocked(sourcesApi.list).mockResolvedValue([
+      source({
+        id: 'source:personal',
+        title: 'Personal source',
+        workspace_id: 'workspace:personal',
+      }),
+    ])
+
+    render(<SourcesPage />)
+
+    expect(await screen.findByText('Personal workspace sources')).toBeInTheDocument()
+    expect(screen.queryByText('Team workspace sources')).not.toBeInTheDocument()
+    expect(screen.getByText('Personal source')).toBeInTheDocument()
   })
 })

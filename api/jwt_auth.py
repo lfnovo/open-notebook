@@ -95,19 +95,34 @@ def decode_jwt_token(token: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def _first_user_from_query_result(result: Any) -> Optional[Dict[str, Any]]:
+    if isinstance(result, list):
+        users = result[0] if result and isinstance(result[0], list) else result
+        return users[0] if users else None
+    return None
+
+
 async def find_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     try:
+        identifier = username.strip()
         async with db_connection() as conn:
             result = parse_record_ids(
                 await conn.query(
                     "SELECT * FROM app_user WHERE username = $username LIMIT 1",
-                    {"username": username},
+                    {"username": identifier},
                 )
             )
-            if isinstance(result, list):
-                users = result[0] if result and isinstance(result[0], list) else result
-                return users[0] if users else None
-            return None
+            user = _first_user_from_query_result(result)
+            if user:
+                return user
+
+            result = parse_record_ids(
+                await conn.query(
+                    "SELECT * FROM app_user WHERE email = $email LIMIT 1",
+                    {"email": identifier},
+                )
+            )
+            return _first_user_from_query_result(result)
     except Exception as e:
         logger.debug(f"Failed to find user for JWT validation: {e}")
         return None

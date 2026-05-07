@@ -26,9 +26,10 @@ interface NoteEditorDialogProps {
   onOpenChange: (open: boolean) => void
   notebookId: string
   note?: { id: string; title: string | null; content: string | null }
+  readOnly?: boolean
 }
 
-export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteEditorDialogProps) {
+export function NoteEditorDialog({ open, onOpenChange, notebookId, note, readOnly = false }: NoteEditorDialogProps) {
   const { t } = useTranslation()
   const createNote = useCreateNote()
   const updateNote = useUpdateNote()
@@ -82,6 +83,11 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   }, [open])
 
   const onSubmit = async (data: CreateNoteFormData) => {
+    if (readOnly) {
+      handleClose()
+      return
+    }
+
     if (note) {
       await updateNote.mutateAsync({
         id: noteIdWithPrefix,
@@ -143,6 +149,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                   emptyText={t.sources.untitledNote}
                   className="text-xl font-semibold"
                   inputClassName="text-xl font-semibold"
+                  disabled={readOnly}
                 />
               </div>
 
@@ -158,8 +165,10 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
                       key={note?.id ?? 'new'}
                       textareaId="note-content"
                       value={field.value}
-                      onChange={field.onChange}
+                      onChange={readOnly ? undefined : field.onChange}
                       height={420}
+                      preview={readOnly ? 'preview' : 'live'}
+                      hideToolbar={readOnly}
                       placeholder={t.sources.writeNotePlaceholder}
                       className={cn(
                           "w-full h-full min-h-[420px] max-h-[500px] overflow-hidden [&_.w-md-editor]:!static [&_.w-md-editor]:!w-full [&_.w-md-editor]:!h-full [&_.w-md-editor-content]:overflow-y-auto",
@@ -177,18 +186,20 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
 
           <div className="border-t px-6 py-4 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleClose}>
-              {t.common.cancel}
+              {readOnly ? t.common.close : t.common.cancel}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSaving || (isEditing && noteLoading)}
-            >
-              {isSaving
-                ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
-                : isEditing
-                  ? t.sources.saveNote
-                  : t.sources.createNoteBtn}
-            </Button>
+            {!readOnly && (
+              <Button
+                type="submit"
+                disabled={isSaving || (isEditing && noteLoading)}
+              >
+                {isSaving
+                  ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                  : isEditing
+                    ? t.sources.saveNote
+                    : t.sources.createNoteBtn}
+              </Button>
+            )}
           </div>
         </form>
       </DialogContent>

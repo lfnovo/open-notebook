@@ -1,0 +1,6 @@
+-- Migration 32 rollback: remove public resource view counters
+
+REMOVE INDEX IF EXISTS idx_source_public_view_count ON TABLE source;
+REMOVE INDEX IF EXISTS idx_notebook_public_view_count ON TABLE notebook;
+REMOVE FIELD IF EXISTS view_count ON TABLE source;
+REMOVE FIELD IF EXISTS view_count ON TABLE notebook;

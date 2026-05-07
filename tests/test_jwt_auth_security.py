@@ -1,9 +1,10 @@
 from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from api.jwt_auth import create_jwt_token, get_jwt_secret, validate_jwt_token
+from api.jwt_auth import create_jwt_token, find_user_by_username, get_jwt_secret, validate_jwt_token
 from api.verification import hash_verification_code, send_code, verify_code
 
 
@@ -68,6 +69,39 @@ async def test_validate_jwt_token_accepts_current_user_version(
     payload = await validate_jwt_token(token)
     assert payload is not None
     assert payload["username"] == "admin"
+
+
+@pytest.mark.asyncio
+async def test_find_user_by_username_can_resolve_email(monkeypatch):
+    user = {
+        "id": "app_user:wangz",
+        "username": "wangz",
+        "email": "wangz@yinhour.com",
+    }
+    queries = []
+
+    class FakeConnection:
+        async def query(self, query, vars):
+            queries.append((query, vars))
+            if "WHERE username = $username" in query:
+                return [[]]
+            if "WHERE email = $email" in query:
+                return [[user]]
+            return [[]]
+
+    @asynccontextmanager
+    async def fake_db_connection():
+        yield FakeConnection()
+
+    monkeypatch.setattr("api.jwt_auth.db_connection", fake_db_connection)
+
+    result = await find_user_by_username("wangz@yinhour.com")
+
+    assert result == user
+    assert [vars for _, vars in queries] == [
+        {"username": "wangz@yinhour.com"},
+        {"email": "wangz@yinhour.com"},
+    ]
 
 
 @pytest.mark.asyncio

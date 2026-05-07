@@ -103,6 +103,18 @@ class SourceRepository:
         return result[0] if result else None
 
     @staticmethod
+    async def increment_view_count(source_id: str) -> Optional[dict[str, Any]]:
+        result = await repo_query(
+            """
+            UPDATE $source_id
+            SET view_count = (view_count OR 0) + 1
+            RETURN AFTER
+            """,
+            {"source_id": ensure_record_id(source_id)},
+        )
+        return result[0] if result else None
+
+    @staticmethod
     async def source_for_child_record(record_id: str) -> Optional[dict[str, Any]]:
         result = await repo_query(
             """
@@ -189,6 +201,8 @@ class SourceRepository:
         query = f"""
             SELECT id, asset, created, title, updated, topics, command, owner_id, visibility,
             workspace_id,
+            (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] AS creator_username,
+            view_count OR 0 AS view_count,
             (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0] OR 0 AS insights_count,
             (SELECT VALUE count() FROM reference WHERE in = $parent.id GROUP ALL)[0] OR 0 AS reference_count,
             (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded,

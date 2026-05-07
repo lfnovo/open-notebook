@@ -113,6 +113,13 @@
   - 主要文件：`docs/3-USER-GUIDE/user-management-and-sharing.md`、`docs/index.md`。
   - 验收：新管理员可以按文档完成完整配置闭环。
 
+- [ ] **搜索匹配项图片显示**
+  - 当前搜索匹配项已经支持 Markdown/GFM 渲染，但相对路径图片（如 `images/*.jpg`）暂不展示。
+  - 后续需要为来源提取产物建立受权限控制的 asset 存储与访问链路：提取阶段保留图片文件，新增 `GET /api/sources/{source_id}/assets/{asset_path}`，复用 source `can_read` 权限，并防止路径穿越。
+  - 第一阶段优先支持 source 匹配项图片；note/artifact 中引用图片可在 artifact 抽象落地后扩展。
+  - 主要文件：`open_notebook/content_extractors/`、`open_notebook/graphs/source.py`、`api/routers/sources.py`、`open_notebook/database/repositories/search_repository.py`、`frontend/src/app/(dashboard)/search/page.tsx`。
+  - 验收：搜索 `BSD` 展开 PDF 来源匹配项时，Markdown 图片能通过权限校验接口正常显示；无权限用户不能直接访问图片资源。
+
 ## P2: 测试与发布质量
 
 - [ ] **补端到端权限用例**

@@ -5,7 +5,11 @@ import pytest
 
 from api.auth import CurrentUser
 from api.models import ResourceCapabilities, SearchRequest
-from api.routers.search import search_knowledge_base
+from api.routers.search import (
+    _dedupe_search_results,
+    _search_result_resource_id,
+    search_knowledge_base,
+)
 from open_notebook.domain.notebook import Source
 from open_notebook.graphs.ask import _filter_results_for_scope
 
@@ -19,6 +23,26 @@ def request_for_actor(actor: CurrentUser):
             user_status=actor.status,
         )
     )
+
+
+def test_search_result_resource_id_accepts_record_objects():
+    record_id = SimpleNamespace(tb="source", id="bsd_source")
+
+    assert _search_result_resource_id({"parent_id": record_id}) == "source:bsd_source"
+    assert _search_result_resource_id({"parent_id": [record_id]}) == "source:bsd_source"
+
+
+def test_search_results_are_deduped_by_resource_score():
+    results = _dedupe_search_results(
+        [
+            {"id": "source:item", "parent_id": "source:item", "relevance": 0.2},
+            {"id": "source:item", "parent_id": "source:item", "relevance": 0.8},
+            {"id": "note:item", "parent_id": "note:item", "relevance": 0.5},
+        ]
+    )
+
+    assert [item["parent_id"] for item in results] == ["source:item", "note:item"]
+    assert [item["relevance"] for item in results] == [0.8, 0.5]
 
 
 @pytest.mark.asyncio
@@ -41,11 +65,12 @@ async def test_search_filters_results_by_resource_capability(
             "title": "Private source",
         },
         {
-            "id": "source:team",
+            "id": SimpleNamespace(tb="source", id="team"),
+            "parent_id": [SimpleNamespace(tb="source", id="team")],
             "owner_id": "app_user:owner",
             "workspace_id": "workspace:team",
             "visibility": "team",
-            "title": "Team source",
+            "title": ["Team source"],
         },
     ]
     mock_capabilities.side_effect = [
@@ -59,6 +84,9 @@ async def test_search_filters_results_by_resource_capability(
     )
 
     assert [item["id"] for item in response.results] == ["source:team"]
+    assert [item["parent_id"] for item in response.results] == ["source:team"]
+    assert [item["title"] for item in response.results] == ["Team source"]
+
 
 
 @pytest.mark.asyncio

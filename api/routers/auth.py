@@ -267,7 +267,8 @@ async def login(request: LoginRequest):
         )
 
     user_id = _get_user_id(user)
-    token = create_jwt_token(request.username, user_id, user)
+    canonical_username = user.get("username") or request.username
+    token = create_jwt_token(canonical_username, user_id, user)
     try:
         await repo_update(
             "app_user",
@@ -280,7 +281,7 @@ async def login(request: LoginRequest):
         await AuditLogRepository.create(
             action="auth.login.success",
             actor_id=user_id,
-            actor_username=request.username,
+            actor_username=canonical_username,
             target_type="app_user",
             target_id=user_id,
         )
@@ -290,7 +291,7 @@ async def login(request: LoginRequest):
     return LoginResponse(
         success=True,
         token=token,
-        username=request.username,
+        username=canonical_username,
         message="Login successful",
     )
 

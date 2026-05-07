@@ -316,6 +316,7 @@ def source_response_for_queued_processing(
         embedded=False,
         embedded_chunks=0,
         kg_extracted=False,
+        view_count=source.view_count,
         created=str(source.created),
         updated=str(source.updated),
         command_id=command_id,
@@ -385,6 +386,7 @@ async def source_response_from_source(
         file_available=is_source_file_available(source)
         if include_file_available
         else None,
+        view_count=source.view_count,
         created=str(source.created),
         updated=str(source.updated),
         command_id=command_id
@@ -543,6 +545,11 @@ async def get_source_response(
         visibility=source.visibility,
     ):
         raise PermissionError("Access denied")
+
+    if source.visibility == "public":
+        updated_source = await SourceRepository.increment_view_count(source.id or source_id)
+        if updated_source and updated_source.get("view_count") is not None:
+            source.view_count = updated_source["view_count"]
 
     status = None
     processing_info = None

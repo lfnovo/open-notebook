@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query'
 import { authApi, ChangePasswordRequest } from '@/lib/api/auth'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 export function useChangePassword() {
   const { toast } = useToast()
@@ -19,7 +19,7 @@ export function useChangePassword() {
     onError: (error: unknown) => {
       toast({
         title: t.common.error,
-        description: getApiErrorKey(error, t.auth.changePasswordError),
+        description: getApiErrorMessage(error, t, 'auth.changePasswordError'),
         variant: 'destructive',
       })
     },

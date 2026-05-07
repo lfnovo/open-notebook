@@ -32,10 +32,11 @@ export function StreamingResponse({
   answers,
   finalAnswer
 }: StreamingResponseProps) {
-  const [strategyOpen, setStrategyOpen] = useState(true)
-  const [answersOpen, setAnswersOpen] = useState(true)
+  const [strategyOpen, setStrategyOpen] = useState(false)
+  const [answersOpen, setAnswersOpen] = useState(false)
   const { openModal } = useModalManager()
   const { t } = useTranslation()
+  const searchCopy = t.searchPage
 
   const handleReferenceClick = (type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
@@ -57,12 +58,38 @@ export function StreamingResponse({
 
   return (
     <div
-      className="space-y-4 mt-6 max-h-[60vh] overflow-y-auto pr-2"
+      className="space-y-4 mt-6"
       role="region"
       aria-label={t.common.accessibility.askResponse}
       aria-live="polite"
       aria-busy={isStreaming}
     >
+      {/* Final Answer Section - Primary result */}
+      {finalAnswer && (
+        <Card className="border-primary/60 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-primary" />
+              {t.common.finalAnswer}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FinalAnswerContent
+              content={finalAnswer}
+              onReferenceClick={handleReferenceClick}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading Indicator */}
+      {isStreaming && !finalAnswer && (
+        <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+          <LoadingSpinner size="sm" />
+          <span>{searchCopy.processingQuestion}</span>
+        </div>
+      )}
+
       {/* Strategy Section - Collapsible */}
       {strategy && (
         <Collapsible open={strategyOpen} onOpenChange={setStrategyOpen}>
@@ -128,32 +155,6 @@ export function StreamingResponse({
             </CollapsibleContent>
           </Card>
         </Collapsible>
-      )}
-
-      {/* Final Answer Section - Always Open */}
-      {finalAnswer && (
-        <Card className="border-primary">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-primary" />
-              {t.common.finalAnswer}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <FinalAnswerContent
-              content={finalAnswer}
-              onReferenceClick={handleReferenceClick}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Loading Indicator */}
-      {isStreaming && !finalAnswer && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <LoadingSpinner size="sm" />
-          <span>{t.searchPage.processingQuestion}</span>
-        </div>
       )}
     </div>
   )

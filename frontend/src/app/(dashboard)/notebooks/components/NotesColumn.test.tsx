@@ -16,8 +16,20 @@ vi.mock('@/components/notebooks/CollapsibleColumn', () => ({
 }))
 
 vi.mock('./NoteEditorDialog', () => ({
-  NoteEditorDialog: ({ open, note }: { open: boolean; note?: NoteResponse }) =>
-    open ? <div data-testid="note-editor">{note?.id ?? 'new'}</div> : null,
+  NoteEditorDialog: ({
+    open,
+    note,
+    readOnly,
+  }: {
+    open: boolean
+    note?: NoteResponse
+    readOnly?: boolean
+  }) =>
+    open ? (
+      <div data-testid="note-editor" data-read-only={readOnly ? 'true' : 'false'}>
+        {note?.id ?? 'new'}
+      </div>
+    ) : null,
 }))
 
 vi.mock('@/components/common/ConfirmDialog', () => ({
@@ -76,7 +88,7 @@ describe('NotesColumn', () => {
     expect(screen.getByRole('button', { name: /Actions/i })).toBeDisabled()
   })
 
-  it('does not open the editor for readonly notes', () => {
+  it('opens readonly notes in read-only mode', () => {
     render(
       <NotesColumn
         notes={[note({ id: 'note:readonly' })]}
@@ -88,6 +100,7 @@ describe('NotesColumn', () => {
 
     fireEvent.click(screen.getByText('Readonly note'))
 
-    expect(screen.queryByTestId('note-editor')).not.toBeInTheDocument()
+    expect(screen.getByTestId('note-editor')).toHaveTextContent('note:readonly')
+    expect(screen.getByTestId('note-editor')).toHaveAttribute('data-read-only', 'true')
   })
 })

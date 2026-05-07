@@ -46,6 +46,8 @@ async def _notebook_to_response(nb: dict, request: Request | None = None) -> Not
         updated=str(nb.get("updated", "")),
         source_count=nb.get("source_count", 0),
         note_count=nb.get("note_count", 0),
+        view_count=nb.get("view_count", 0) or 0,
+        reference_count=nb.get("reference_count", 0) or 0,
         password=nb.get("password"),
         creator_name=nb.get("creator_name"),
         creator_username=nb.get("creator_username"),
@@ -160,7 +162,7 @@ async def _create_initial_notebook_grants(
 
 
 def _validate_notebook_order_by(order_by: str) -> str:
-    allowed_fields = {"name", "created", "updated"}
+    allowed_fields = {"name", "created", "updated", "view_count", "reference_count"}
     allowed_directions = {"asc", "desc"}
 
     parts = order_by.strip().lower().split()
@@ -222,6 +224,8 @@ async def get_notebooks(
 async def get_public_notebooks(
     archived: Optional[bool] = Query(None, description="Filter by archived status"),
     order_by: str = Query("updated desc", description="Order by field and direction"),
+    limit: int = Query(20, ge=1, le=100, description="Number of notebooks to return"),
+    offset: int = Query(0, ge=0, description="Number of notebooks to skip"),
 ):
     """Browse public notebooks without authentication."""
     try:
@@ -231,6 +235,8 @@ async def get_public_notebooks(
             archived=archived,
             order_by=validated_order_by,
             public_only=True,
+            limit=limit,
+            offset=offset,
         )
 
         return [await _notebook_to_response(nb) for nb in result]
@@ -383,6 +389,11 @@ async def get_notebook(request: Request, notebook_id: str):
             visibility=nb.get("visibility", "private"),
         ):
             raise HTTPException(status_code=403, detail="Access denied")
+
+        if nb.get("visibility") == "public":
+            updated_nb = await NotebookRepository.increment_view_count(notebook_id)
+            if updated_nb and updated_nb.get("view_count") is not None:
+                nb["view_count"] = updated_nb["view_count"]
 
         return await _notebook_to_response(nb, request)
     except HTTPException:

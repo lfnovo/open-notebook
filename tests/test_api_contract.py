@@ -27,6 +27,16 @@ def test_sources_list_response_includes_reference_count():
     schema = app.openapi()["components"]["schemas"]["SourceListResponse"]
 
     assert "reference_count" in schema["properties"]
+    assert "creator_username" in schema["properties"]
+
+
+def test_public_resource_responses_include_ranking_metrics():
+    schemas = app.openapi()["components"]["schemas"]
+
+    assert "view_count" in schemas["SourceListResponse"]["properties"]
+    assert "view_count" in schemas["SourceResponse"]["properties"]
+    assert "view_count" in schemas["NotebookResponse"]["properties"]
+    assert "reference_count" in schemas["NotebookResponse"]["properties"]
 
 
 def test_source_detail_response_contract():

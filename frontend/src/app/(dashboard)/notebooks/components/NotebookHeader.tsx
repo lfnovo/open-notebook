@@ -32,6 +32,7 @@ export function NotebookHeader({
   const [showMoveDialog, setShowMoveDialog] = useState(false)
   
   const updateNotebook = useUpdateNotebook()
+  const showLifecycleActions = canMoveNotebook || canUpdateNotebook || canDeleteNotebook
 
   const handleUpdateName = async (name: string) => {
     if (!canUpdateNotebook) return
@@ -81,45 +82,50 @@ export function NotebookHeader({
                 <Badge variant="secondary">{t.notebooks.archived}</Badge>
               )}
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMoveDialog(true)}
-                disabled={!canMoveNotebook}
-              >
-                <MoveRight className="h-4 w-4 mr-2" />
-                {t.notebooks.moveNotebook}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleArchiveToggle}
-                disabled={!canUpdateNotebook}
-              >
-                {notebook.archived ? (
-                  <>
-                    <ArchiveRestore className="h-4 w-4 mr-2" />
-                    {t.notebooks.unarchive}
-                  </>
-                ) : (
-                  <>
-                    <Archive className="h-4 w-4 mr-2" />
-                    {t.notebooks.archive}
-                  </>
+            {showLifecycleActions && (
+              <div className="flex gap-2">
+                {canMoveNotebook && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowMoveDialog(true)}
+                  >
+                    <MoveRight className="h-4 w-4 mr-2" />
+                    {t.notebooks.moveNotebook}
+                  </Button>
                 )}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowDeleteDialog(true)}
-                className="text-red-600 hover:text-red-700"
-                disabled={!canDeleteNotebook}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                {t.common.delete}
-              </Button>
-            </div>
+                {canUpdateNotebook && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleArchiveToggle}
+                  >
+                    {notebook.archived ? (
+                      <>
+                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                        {t.notebooks.unarchive}
+                      </>
+                    ) : (
+                      <>
+                        <Archive className="h-4 w-4 mr-2" />
+                        {t.notebooks.archive}
+                      </>
+                    )}
+                  </Button>
+                )}
+                {canDeleteNotebook && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    {t.common.delete}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           
           <InlineEdit
@@ -142,18 +148,22 @@ export function NotebookHeader({
         </div>
       </div>
 
-      <NotebookDeleteDialog
-        open={showDeleteDialog}
-        onOpenChange={setShowDeleteDialog}
-        notebookId={notebook.id}
-        notebookName={notebook.name}
-        redirectAfterDelete
-      />
-      <NotebookMoveDialog
-        open={showMoveDialog}
-        onOpenChange={setShowMoveDialog}
-        notebook={notebook}
-      />
+      {canDeleteNotebook && (
+        <NotebookDeleteDialog
+          open={showDeleteDialog}
+          onOpenChange={setShowDeleteDialog}
+          notebookId={notebook.id}
+          notebookName={notebook.name}
+          redirectAfterDelete
+        />
+      )}
+      {canMoveNotebook && (
+        <NotebookMoveDialog
+          open={showMoveDialog}
+          onOpenChange={setShowMoveDialog}
+          notebook={notebook}
+        />
+      )}
     </>
   )
 }

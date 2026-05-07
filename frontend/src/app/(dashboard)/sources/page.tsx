@@ -21,7 +21,7 @@ import { ShareDialog } from '@/components/share/ShareDialog'
 import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBadge'
 import { useProfile } from '@/lib/hooks/use-profile'
 import { canDeleteSource, deletableSourceIds } from '@/lib/utils/source-delete-eligibility'
-import { useWorkspaceStore } from '@/lib/stores/workspace-store'
+import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -50,7 +50,7 @@ export default function SourcesPage() {
   const sourceRequestSeqRef = useRef(0)
   const { data: profile } = useProfile()
   const currentUserId = profile?.id
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
+  const { currentWorkspace, currentWorkspaceId: workspaceId } = useCurrentWorkspace()
   
   // Pagination state
   const [page, setPage] = useState(1)
@@ -326,6 +326,11 @@ export default function SourcesPage() {
   }
   const tSourcesKgExtracted = t.sources?.kgExtracted ?? 'KG Extracted'
   const tSourcesKgExtractQueued = t.sources?.kgExtractQueued ?? 'KG extraction queued'
+  const tPersonalWorkspaceSources = t.sources?.personalWorkspaceSources ?? 'Personal workspace sources'
+  const workspaceSourcesLabel =
+    currentWorkspace?.type === 'personal'
+      ? tPersonalWorkspaceSources
+      : t.sources.workspaceSources
 
   const getSourceIcon = (source: SourceListResponse) => {
     if (source.asset?.url) return <LinkIcon className="h-4 w-4" />
@@ -617,7 +622,7 @@ export default function SourcesPage() {
               </tr>
             </thead>
             <tbody>
-              {workspaceSources.length > 0 && renderGroupHeader(t.sources.workspaceSources, workspaceSources.length)}
+              {workspaceSources.length > 0 && renderGroupHeader(workspaceSourcesLabel, workspaceSources.length)}
               {workspaceSources.map((source, index) => renderSourceRow(source, index, true))}
               {publicSources.length > 0 && renderGroupHeader(t.sources.publicSources, publicSources.length)}
               {publicSources.map((source, index) =>

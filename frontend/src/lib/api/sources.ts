@@ -19,7 +19,7 @@ export const sourcesApi = {
     title_contains?: string
     limit?: number
     offset?: number
-    sort_by?: 'created' | 'updated'
+    sort_by?: 'created' | 'updated' | 'view_count' | 'reference_count'
     sort_order?: 'asc' | 'desc'
   }) => {
     const response = await apiClient.get<SourceListResponse[]>('/sources', { params })
@@ -99,13 +99,12 @@ export const sourcesApi = {
 
   listPublic: async (params?: {
     notebook_id?: string
-    order_by?: string
     limit?: number
     offset?: number
-    sort_by?: 'created' | 'updated'
+    sort_by?: 'created' | 'updated' | 'view_count' | 'reference_count'
     sort_order?: 'asc' | 'desc'
   }) => {
-    const response = await apiClient.get<SourceResponse[]>('/sources/public', { params })
+    const response = await apiClient.get<SourceListResponse[]>('/sources/public', { params })
     return response.data
   },
 

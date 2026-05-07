@@ -1,6 +1,23 @@
-import { render, screen, within } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PublicClient } from './public-client'
+
+const { authState, replace } = vi.hoisted(() => ({
+  authState: {
+    hasHydrated: true,
+    isAuthenticated: false,
+    token: null as string | null,
+  },
+  replace: vi.fn(),
+}))
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace }),
+}))
+
+vi.mock('@/lib/stores/auth-store', () => ({
+  useAuthStore: () => authState,
+}))
 
 vi.mock('@/lib/hooks/use-translation', () => ({
   useTranslation: () => ({
@@ -18,14 +35,25 @@ vi.mock('@/lib/hooks/use-translation', () => ({
 }))
 
 vi.mock('@/components/public/PublicNotebooks', () => ({
-  PublicNotebooks: () => <div>公开笔记本列表</div>,
+  PublicNotebooks: ({ rankingMode }: { rankingMode: string }) => (
+    <div>公开笔记本列表:{rankingMode}</div>
+  ),
 }))
 
 vi.mock('@/components/public/PublicSources', () => ({
-  PublicSources: () => <div>公开来源列表</div>,
+  PublicSources: ({ rankingMode }: { rankingMode: string }) => (
+    <div>公开来源列表:{rankingMode}</div>
+  ),
 }))
 
 describe('PublicClient', () => {
+  beforeEach(() => {
+    authState.hasHydrated = true
+    authState.isAuthenticated = false
+    authState.token = null
+    replace.mockClear()
+  })
+
   it('provides clear guest guidance with back, login, and registration actions', () => {
     render(<PublicClient />)
 
@@ -38,5 +66,25 @@ describe('PublicClient', () => {
     expect(within(accountNav).getByRole('link', { name: '注册' })).toHaveAttribute('href', '/register')
     expect(accountNav.className).toContain('border-l')
     expect(screen.getByRole('heading', { name: '公开内容' })).toBeInTheDocument()
+  })
+
+  it('redirects authenticated users to the dashboard discover page', () => {
+    authState.isAuthenticated = true
+    authState.token = 'token'
+
+    render(<PublicClient />)
+
+    expect(replace).toHaveBeenCalledWith('/discover')
+    expect(screen.queryByRole('heading', { name: '公开内容' })).not.toBeInTheDocument()
+  })
+
+  it('lets guests switch public ranking modes', async () => {
+    render(<PublicClient />)
+
+    expect(screen.getByText('公开笔记本列表:most_visited')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '引用最多' }))
+    expect(screen.getByText('公开笔记本列表:most_referenced')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '最热访问' }))
+    expect(screen.getByText('公开笔记本列表:most_visited')).toBeInTheDocument()
   })
 })

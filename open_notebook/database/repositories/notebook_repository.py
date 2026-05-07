@@ -19,6 +19,8 @@ class NotebookRepository:
         public_only: bool = False,
         team_ids: Optional[list[str]] = None,
         workspace_id: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: int = 0,
     ) -> list[dict[str, Any]]:
         if public_only or not user_id:
             visibility_filter = "(visibility = 'public')"
@@ -53,14 +55,28 @@ class NotebookRepository:
             workspace_filter = " AND workspace_id = $workspace_id"
             params["workspace_id"] = ensure_record_id(workspace_id)
 
+        pagination_clause = ""
+        if limit is not None:
+            pagination_clause = "LIMIT $limit START $offset"
+            params["limit"] = limit
+            params["offset"] = offset
+
         query = f"""
             SELECT *,
             (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] as creator_username,
             count(<-reference.in) as source_count,
-            count(<-artifact.in) as note_count
+            count(<-artifact.in) as note_count,
+            view_count OR 0 AS view_count,
+            (SELECT VALUE count() FROM share_grant
+             WHERE resource_type = 'notebook'
+             AND resource_id = type::string($parent.id)
+             AND target_id != 'team:public'
+             AND permission IN ['read', 'write', 'owner']
+             GROUP ALL)[0] OR 0 AS reference_count
             FROM notebook
             WHERE ({visibility_filter}){workspace_filter}
             ORDER BY {order_by}
+            {pagination_clause}
         """
 
         result = await repo_query(query, params)
@@ -74,10 +90,29 @@ class NotebookRepository:
             SELECT *,
             (SELECT VALUE username FROM app_user WHERE id = $parent.owner_id LIMIT 1)[0] as creator_username,
             count(<-reference.in) as source_count,
-            count(<-artifact.in) as note_count
+            count(<-artifact.in) as note_count,
+            view_count OR 0 AS view_count,
+            (SELECT VALUE count() FROM share_grant
+             WHERE resource_type = 'notebook'
+             AND resource_id = type::string($parent.id)
+             AND target_id != 'team:public'
+             AND permission IN ['read', 'write', 'owner']
+             GROUP ALL)[0] OR 0 AS reference_count
             FROM $notebook_id
         """
         result = await repo_query(query, {"notebook_id": ensure_record_id(notebook_id)})
+        return result[0] if result else None
+
+    @staticmethod
+    async def increment_view_count(notebook_id: str) -> Optional[dict[str, Any]]:
+        result = await repo_query(
+            """
+            UPDATE $notebook_id
+            SET view_count = (view_count OR 0) + 1
+            RETURN AFTER
+            """,
+            {"notebook_id": ensure_record_id(notebook_id)},
+        )
         return result[0] if result else None
 
     @staticmethod

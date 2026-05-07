@@ -20,6 +20,39 @@ async def test_legacy_login_returns_shared_password_token(mock_get_secret):
 
 
 @pytest.mark.asyncio
+@patch("api.routers.auth.AuditLogRepository.create", new_callable=AsyncMock)
+@patch("api.routers.auth.repo_update", new_callable=AsyncMock)
+@patch("api.routers.auth.create_jwt_token", return_value="jwt-token")
+@patch("api.routers.auth.verify_password", return_value=True)
+@patch("api.routers.auth.find_user_by_username", new_callable=AsyncMock)
+@patch("api.routers.auth.get_secret_from_env", return_value=None)
+async def test_database_login_with_email_returns_canonical_username(
+    mock_get_secret,
+    mock_find_user,
+    mock_verify_password,
+    mock_create_jwt_token,
+    mock_repo_update,
+    mock_audit_log,
+):
+    user = {
+        "id": "app_user:wangz",
+        "username": "wangz",
+        "email": "wangz@yinhour.com",
+        "hashed_password": "hashed",
+        "status": "active",
+    }
+    mock_find_user.return_value = user
+
+    response = await login(LoginRequest(username="wangz@yinhour.com", password="Welcome1"))
+
+    assert response.success is True
+    assert response.token == "jwt-token"
+    assert response.username == "wangz"
+    mock_find_user.assert_awaited_once_with("wangz@yinhour.com")
+    mock_create_jwt_token.assert_called_once_with("wangz", "app_user:wangz", user)
+
+
+@pytest.mark.asyncio
 @patch("api.routers.auth.ALLOW_PUBLIC_REGISTRATION", False)
 async def test_register_rejects_when_public_registration_disabled():
     request = RegisterRequest(

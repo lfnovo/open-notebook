@@ -23,13 +23,84 @@ router = APIRouter()
 
 def _search_result_resource_id(row: dict[str, Any]) -> str | None:
     for key in ("parent_id", "source_id", "note_id", "id"):
-        value = row.get(key)
-        if value is None:
+        value_str = _coerce_record_ref(row.get(key))
+        if value_str is None:
             continue
-        value_str = str(value)
         if value_str.startswith(("source:", "note:")):
             return value_str
     return None
+
+
+def _coerce_record_ref(value: Any) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, list):
+        for item in value:
+            item_ref = _coerce_record_ref(item)
+            if item_ref:
+                return item_ref
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        table = value.get("tb") or value.get("table")
+        record_id = _coerce_record_ref(value.get("id"))
+        if table and record_id:
+            return record_id if record_id.startswith(f"{table}:") else f"{table}:{record_id}"
+        return record_id
+
+    table = getattr(value, "tb", None) or getattr(value, "table", None)
+    record_id = _coerce_record_ref(getattr(value, "id", None))
+    if table and record_id:
+        return record_id if record_id.startswith(f"{table}:") else f"{table}:{record_id}"
+
+    return str(value)
+
+
+def _coerce_search_scalar(value: Any) -> Any:
+    if isinstance(value, list):
+        return next((item for item in value if item is not None), None)
+    return value
+
+
+def _serialize_search_result_row(row: dict[str, Any]) -> dict[str, Any]:
+    serialized = dict(row)
+    for key in ("id", "parent_id", "source_id", "note_id", "owner_id", "workspace_id"):
+        if key in serialized:
+            serialized[key] = _coerce_record_ref(serialized[key])
+    for key in ("title", "type", "source_type", "created", "updated"):
+        if key in serialized:
+            serialized[key] = _coerce_search_scalar(serialized[key])
+    return serialized
+
+
+def _search_result_score(row: dict[str, Any]) -> float:
+    for key in ("final_score", "relevance", "similarity", "score"):
+        value = row.get(key)
+        if isinstance(value, (int, float)):
+            return float(value)
+    return 0.0
+
+
+def _dedupe_search_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    best_by_resource: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+
+    for row in results:
+        resource_id = _search_result_resource_id(row)
+        if not resource_id:
+            continue
+        existing = best_by_resource.get(resource_id)
+        if existing is None:
+            best_by_resource[resource_id] = row
+            order.append(resource_id)
+            continue
+        if _search_result_score(row) > _search_result_score(existing):
+            best_by_resource[resource_id] = row
+
+    deduped = [best_by_resource[resource_id] for resource_id in order]
+    deduped.sort(key=_search_result_score, reverse=True)
+    return deduped
 
 
 def _search_result_resource_type(resource_id: str) -> str | None:
@@ -94,7 +165,7 @@ async def _filter_search_results_for_actor(
             visibility=visibility,
         )
         if capabilities.can_read:
-            filtered.append(row)
+            filtered.append(_serialize_search_result_row(row))
 
     return filtered
 
@@ -152,7 +223,9 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
                 source=search_request.search_sources,
                 note=search_request.search_notes,
             )
-        filtered_results = await _filter_search_results_for_actor(results or [], actor)
+        filtered_results = _dedupe_search_results(
+            await _filter_search_results_for_actor(results or [], actor)
+        )
 
         return SearchResponse(
             results=filtered_results,

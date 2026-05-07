@@ -1,0 +1,10 @@
+-- Migration 32: Public resource view counters
+
+DEFINE FIELD IF NOT EXISTS view_count ON TABLE source TYPE int DEFAULT 0;
+DEFINE FIELD IF NOT EXISTS view_count ON TABLE notebook TYPE int DEFAULT 0;
+
+DEFINE INDEX IF NOT EXISTS idx_source_public_view_count ON TABLE source FIELDS visibility, view_count;
+DEFINE INDEX IF NOT EXISTS idx_notebook_public_view_count ON TABLE notebook FIELDS visibility, view_count;
+
+UPDATE source SET view_count = 0 WHERE view_count IS NONE;
+UPDATE notebook SET view_count = 0 WHERE view_count IS NONE;

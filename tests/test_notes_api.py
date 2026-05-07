@@ -182,6 +182,45 @@ class TestNoteWorkspacePermissions:
     @patch("api.routers.notes.current_user_from_request")
     @patch("api.routers.notes.resolve_resource_capabilities", new_callable=AsyncMock)
     @patch("api.routers.notes.Note")
+    @patch("api.routers.notes.NoteRepository.notebook_for_note", new_callable=AsyncMock)
+    def test_get_note_allows_read_through_public_notebook(
+        self, mock_notebook_for_note, mock_note_cls, mock_caps, mock_current_user, client
+    ):
+        mock_current_user.return_value = self.actor()
+        mock_note = AsyncMock()
+        mock_note.id = "note:public"
+        mock_note.title = "Public Note"
+        mock_note.content = "Readable content"
+        mock_note.note_type = "human"
+        mock_note.owner_id = "app_user:other"
+        mock_note.workspace_id = "workspace:other-personal"
+        mock_note.created = "2026-01-01T00:00:00Z"
+        mock_note.updated = "2026-01-01T00:00:00Z"
+        mock_note_cls.get = AsyncMock(return_value=mock_note)
+        mock_notebook_for_note.return_value = {
+            "id": "notebook:public",
+            "owner_id": "app_user:other",
+            "workspace_id": "workspace:other-personal",
+            "visibility": "public",
+        }
+        mock_caps.side_effect = [
+            ResourceCapabilities(can_read=False),
+            ResourceCapabilities(can_read=True),
+        ]
+
+        response = client.get("/api/notes/note:public")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["id"] == "note:public"
+        assert data["content"] == "Readable content"
+        assert data["capabilities"]["can_read"] is True
+        assert data["capabilities"]["can_update"] is False
+        assert data["capabilities"]["can_delete"] is False
+
+    @patch("api.routers.notes.current_user_from_request")
+    @patch("api.routers.notes.resolve_resource_capabilities", new_callable=AsyncMock)
+    @patch("api.routers.notes.Note")
     def test_update_note_requires_note_update_capability(
         self, mock_note_cls, mock_caps, mock_current_user, client
     ):

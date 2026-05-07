@@ -21,6 +21,17 @@ export function useNotebooks(archived?: boolean) {
   })
 }
 
+export function usePublicNotebooks(archived?: boolean) {
+  return useQuery({
+    queryKey: [...QUERY_KEYS.publicNotebooks, archived ?? 'all'],
+    queryFn: () =>
+      notebooksApi.listPublic({
+        archived,
+        order_by: 'updated desc',
+      }),
+  })
+}
+
 export function useNotebook(id: string) {
   return useQuery({
     queryKey: QUERY_KEYS.notebook(id),

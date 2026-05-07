@@ -18,6 +18,7 @@ export const ERROR_MAP: Record<string, string> = {
   "File not found on server": "apiErrors.fileNotFoundOnServer",
   "Missing authorization": "apiErrors.unauthorized",
   "Invalid password": "apiErrors.invalidPassword",
+  "Current password is incorrect": "auth.currentPasswordIncorrect",
   "Invalid authorization header format": "apiErrors.unauthorized",
   "Missing authorization header": "apiErrors.unauthorized",
   "Vector search requires an embedding model": "apiErrors.embeddingModelRequired",
@@ -63,18 +64,36 @@ export function getApiErrorMessage(
   fallbackKey?: string
 ): string {
   const message = formatApiError(errorOrMessage);
-  if (!message) return fallbackKey ? t(fallbackKey) : t("apiErrors.genericError");
+  if (!message) return translateKey(t, fallbackKey || "apiErrors.genericError");
 
   // Try exact match
-  if (ERROR_MAP[message]) return t(ERROR_MAP[message]);
+  if (ERROR_MAP[message]) return translateKey(t, ERROR_MAP[message]);
 
   // Try partial match for dynamic messages (e.g., "Strategy model ...")
   for (const [key, value] of Object.entries(ERROR_MAP)) {
-    if (message.startsWith(key)) return t(value);
+    if (message.startsWith(key)) return translateKey(t, value);
   }
 
   // No mapping: return backend message directly (backend is responsible for making it user-friendly)
   return message;
+}
+
+function translateKey(t: (key: string) => string, key: string): string {
+  const translated = t(key);
+  if (translated !== key) return translated;
+
+  const pathValue = key.split(".").reduce<unknown>((value, part) => {
+    if (
+      value &&
+      (typeof value === "object" || typeof value === "function") &&
+      part in value
+    ) {
+      return (value as Record<string, unknown>)[part];
+    }
+    return undefined;
+  }, t as unknown);
+
+  return typeof pathValue === "string" ? pathValue : translated;
 }
 
 /**

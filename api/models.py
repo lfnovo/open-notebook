@@ -57,6 +57,8 @@ class NotebookResponse(BaseModel):
     updated: str
     source_count: int
     note_count: int
+    view_count: int = Field(0, description="Number of public detail page visits")
+    reference_count: int = Field(0, description="Number of public read references")
     password: Optional[str] = None
     creator_name: Optional[str] = None
     creator_username: Optional[str] = None
@@ -408,6 +410,7 @@ class SourceResponse(BaseModel):
     embedded_chunks: int
     kg_extracted: bool = False
     file_available: Optional[bool] = None
+    view_count: int = Field(0, description="Number of public detail page visits")
     created: str
     updated: str
     # New fields for async processing
@@ -440,6 +443,7 @@ class SourceListResponse(BaseModel):
     kg_extracted: bool = False # Boolean flag indicating if source has knowledge graph extracted
     insights_count: int
     reference_count: int = Field(..., description="Number of notebooks referencing this source")
+    view_count: int = Field(0, description="Number of public detail page visits")
     created: str
     updated: str
     file_available: Optional[bool] = None
@@ -448,6 +452,7 @@ class SourceListResponse(BaseModel):
     status: Optional[str] = None
     processing_info: Optional[Dict[str, Any]] = None
     owner_id: Optional[str] = None
+    creator_username: Optional[str] = None
     workspace_id: Optional[str] = None
     visibility: ResourceVisibility = "private"
     capabilities: ResourceCapabilities = Field(default_factory=ResourceCapabilities)

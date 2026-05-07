@@ -126,9 +126,10 @@ async def get_sources(
     team_ids = await TeamRepository.user_team_ids(user_id) if user_id else []
     try:
         # Validate sort parameters
-        if sort_by not in ["created", "updated"]:
+        if sort_by not in ["created", "updated", "view_count", "reference_count"]:
             raise HTTPException(
-                status_code=400, detail="sort_by must be 'created' or 'updated'"
+                status_code=400,
+                detail="sort_by must be 'created', 'updated', 'view_count', or 'reference_count'",
             )
         if sort_order.lower() not in ["asc", "desc"]:
             raise HTTPException(
@@ -187,9 +188,10 @@ async def get_public_sources(
 ):
     """Browse public sources without authentication."""
     try:
-        if sort_by not in ["created", "updated"]:
+        if sort_by not in ["created", "updated", "view_count", "reference_count"]:
             raise HTTPException(
-                status_code=400, detail="sort_by must be 'created' or 'updated'"
+                status_code=400,
+                detail="sort_by must be 'created', 'updated', 'view_count', or 'reference_count'",
             )
         if sort_order.lower() not in ["asc", "desc"]:
             raise HTTPException(

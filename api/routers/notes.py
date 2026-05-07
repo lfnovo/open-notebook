@@ -80,25 +80,51 @@ async def _note_capabilities(
     ):
         notebook = await _note_notebook_fallback(note)
 
-    return await resolve_resource_capabilities(
+    direct_capabilities = await resolve_resource_capabilities(
         actor=actor,
         resource_type="note",
         owner_id=_owner_from_note_or_notebook(note, notebook),
         workspace_id=_workspace_from_note_or_notebook(note, notebook),
         visibility="private",
     )
+    if direct_capabilities.can_read or notebook is None:
+        return direct_capabilities
+
+    notebook_capabilities = await _notebook_capabilities(notebook, actor)
+    if not notebook_capabilities.can_read:
+        return direct_capabilities
+
+    return ResourceCapabilities(
+        can_read=True,
+        can_update=direct_capabilities.can_update,
+        can_delete=direct_capabilities.can_delete,
+        can_share=direct_capabilities.can_share,
+        can_manage=direct_capabilities.can_manage,
+        can_create_source=direct_capabilities.can_create_source,
+        can_remove_source=direct_capabilities.can_remove_source,
+        can_create_note=direct_capabilities.can_create_note,
+        can_process=direct_capabilities.can_process,
+    )
 
 
 async def _notebook_capabilities(
-    notebook: Notebook,
+    notebook: Notebook | dict[str, Any],
     actor: CurrentUser | None,
 ) -> ResourceCapabilities:
     return await resolve_resource_capabilities(
         actor=actor,
         resource_type="notebook",
-        owner_id=str(notebook.owner_id) if notebook.owner_id else None,
-        workspace_id=str(notebook.workspace_id) if notebook.workspace_id else None,
-        visibility=notebook.visibility,
+        owner_id=(
+            str(_notebook_value(notebook, "owner_id"))
+            if _notebook_value(notebook, "owner_id")
+            else None
+        ),
+        workspace_id=(
+            str(_notebook_value(notebook, "workspace_id"))
+            if _notebook_value(notebook, "workspace_id")
+            else None
+        ),
+        visibility=_notebook_value(notebook, "visibility") or "private",
     )
 
 
@@ -119,9 +145,14 @@ async def _note_to_response(
     *,
     actor: CurrentUser | None,
     notebook: Notebook | dict[str, Any] | None = None,
+    capabilities: ResourceCapabilities | None = None,
     command_id: Any = None,
 ) -> NoteResponse:
-    capabilities = await _note_capabilities(note=note, actor=actor, notebook=notebook)
+    capabilities = capabilities or await _note_capabilities(
+        note=note,
+        actor=actor,
+        notebook=notebook,
+    )
     return NoteResponse(
         id=_string_attr(note, "id") or "",
         title=note.title,
@@ -263,11 +294,17 @@ async def get_note(request: Request, note_id: str):
         if not note:
             raise HTTPException(status_code=404, detail="Note not found")
 
-        capabilities = await _note_capabilities(note=note, actor=actor)
+        notebook = await _note_notebook_fallback(note)
+        capabilities = await _note_capabilities(note=note, actor=actor, notebook=notebook)
         if not capabilities.can_read and not _allow_legacy_note_fallback(note, actor):
             raise HTTPException(status_code=403, detail="Access denied")
 
-        return await _note_to_response(note, actor=actor)
+        return await _note_to_response(
+            note,
+            actor=actor,
+            notebook=notebook,
+            capabilities=capabilities,
+        )
     except HTTPException:
         raise
     except Exception as e:

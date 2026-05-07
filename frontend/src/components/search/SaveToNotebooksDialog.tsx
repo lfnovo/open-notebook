@@ -31,6 +31,7 @@ export function SaveToNotebooksDialog({
   answer
 }: SaveToNotebooksDialogProps) {
   const { t } = useTranslation()
+  const searchCopy = t.searchPage
   const [selectedNotebooks, setSelectedNotebooks] = useState<string[]>([])
   const { data: notebooks, isLoading } = useNotebooks(false) // false = not archived
   const createNote = useCreateNote()
@@ -45,7 +46,7 @@ export function SaveToNotebooksDialog({
 
   const handleSave = async () => {
     if (selectedNotebooks.length === 0) {
-      toast.error(t.searchPage.selectNotebook)
+      toast.error(searchCopy.selectNotebook)
       return
     }
 
@@ -60,27 +61,29 @@ export function SaveToNotebooksDialog({
         })
       }
 
-      toast.success(t.searchPage.saveSuccess)
+      toast.success(searchCopy.saveSuccess)
       setSelectedNotebooks([])
       onOpenChange(false)
     } catch {
-      toast.error(t.searchPage.saveError)
+      toast.error(searchCopy.saveError)
     }
   }
 
-  const notebookItems = notebooks?.map(nb => ({
-    id: nb.id,
-    title: nb.name,
-    description: nb.description || undefined
-  })) || []
+  const notebookItems = notebooks
+    ?.filter((nb) => nb.capabilities?.can_create_note ?? true)
+    .map(nb => ({
+      id: nb.id,
+      title: nb.name,
+      description: nb.description || undefined
+    })) || []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t.searchPage.saveToNotebooks}</DialogTitle>
+          <DialogTitle>{searchCopy.saveToNotebooks}</DialogTitle>
           <DialogDescription>
-            {t.searchPage.selectNotebook}
+            {searchCopy.selectNotebook}
           </DialogDescription>
         </DialogHeader>
 
@@ -110,10 +113,10 @@ export function SaveToNotebooksDialog({
             {createNote.isPending ? (
               <>
                 <LoadingSpinner size="sm" className="mr-2" />
-                {t.searchPage.saving}
+                {searchCopy.saving}
               </>
             ) : (
-              t.searchPage.saveToNotebook
+              searchCopy.saveToNotebook
             )}
           </Button>
         </DialogFooter>

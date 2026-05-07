@@ -400,6 +400,7 @@ export interface NoteResponse {
   updated: string
   command_id?: string | null
   owner_id?: string | null
+  creator_username?: string | null
   workspace_id?: string | null
   capabilities?: ResourceCapabilities
 }
@@ -443,6 +444,8 @@ export interface NotebookResponse {
   updated: string
   source_count: number
   note_count: number
+  view_count?: number
+  reference_count?: number
   password?: string | null
   creator_name?: string | null
   creator_username?: string | null
@@ -737,6 +740,7 @@ export interface SourceListResponse {
   kg_extracted?: boolean
   insights_count: number
   reference_count: number
+  view_count?: number
   created: string
   updated: string
   file_available?: boolean | null
@@ -759,6 +763,7 @@ export interface SourceResponse {
   embedded_chunks: number
   kg_extracted?: boolean
   file_available?: boolean | null
+  view_count?: number
   created: string
   updated: string
   command_id?: string | null

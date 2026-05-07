@@ -50,14 +50,12 @@ export function useSources(notebookId?: string) {
  */
 export function useNotebookSources(notebookId: string) {
   const queryClient = useQueryClient()
-  const workspaceId = useWorkspaceStore((state) => state.currentWorkspaceId)
 
   const query = useInfiniteQuery({
-    queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
+    queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
     queryFn: async ({ pageParam = 0 }) => {
       const data = await sourcesApi.list({
         notebook_id: notebookId,
-        workspace_id: workspaceId || undefined,
         limit: NOTEBOOK_SOURCES_PAGE_SIZE,
         offset: pageParam,
         sort_by: 'updated',
@@ -84,9 +82,9 @@ export function useNotebookSources(notebookId: string) {
   // Refetch function that resets to first page
   const refetch = useCallback(() => {
     queryClient.invalidateQueries({
-      queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
+      queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
     })
-  }, [queryClient, notebookId, workspaceId])
+  }, [queryClient, notebookId])
 
   return {
     sources,
@@ -133,6 +131,10 @@ export function useCreateSource() {
             queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, notebookId),
             refetchType: 'active'
           })
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            refetchType: 'active'
+          })
         })
       } else if (variables.notebook_id) {
         queryClient.invalidateQueries({
@@ -141,6 +143,10 @@ export function useCreateSource() {
         })
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, variables.notebook_id),
+          refetchType: 'active'
+        })
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
           refetchType: 'active'
         })
       }
@@ -257,6 +263,10 @@ export function useFileUpload() {
       })
       queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.workspaceSourcesInfinite(workspaceId, variables.notebookId),
+        refetchType: 'active'
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sourcesInfinite(variables.notebookId),
         refetchType: 'active'
       })
       toast({

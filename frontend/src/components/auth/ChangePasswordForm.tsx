@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useChangePassword } from '@/lib/hooks/use-change-password'
+import { getApiErrorMessage } from '@/lib/utils/error-handler'
 
 export function ChangePasswordForm() {
   const { t } = useTranslation()
@@ -36,10 +37,16 @@ export function ChangePasswordForm() {
       return
     }
 
-    const result = await changePassword.mutateAsync({
-      old_password: currentPassword,
-      new_password: newPassword,
-    })
+    let result
+    try {
+      result = await changePassword.mutateAsync({
+        old_password: currentPassword,
+        new_password: newPassword,
+      })
+    } catch (error) {
+      setLocalError(getApiErrorMessage(error, t, 'auth.changePasswordError'))
+      return
+    }
 
     if (result?.success) {
       setCurrentPassword('')

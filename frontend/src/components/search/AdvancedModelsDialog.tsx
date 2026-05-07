@@ -35,6 +35,7 @@ export function AdvancedModelsDialog({
   onSave
 }: AdvancedModelsDialogProps) {
   const { t } = useTranslation()
+  const searchCopy = t.searchPage
   const [strategyModel, setStrategyModel] = useState(defaultModels.strategy)
   const [answerModel, setAnswerModel] = useState(defaultModels.answer)
   const [finalAnswerModel, setFinalAnswerModel] = useState(defaultModels.finalAnswer)
@@ -59,35 +60,35 @@ export function AdvancedModelsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t.searchPage.advancedModelTitle}</DialogTitle>
+          <DialogTitle>{searchCopy.advancedModelTitle}</DialogTitle>
           <DialogDescription>
-            {t.searchPage.advancedModelDesc}
+            {searchCopy.advancedModelDesc}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <ModelSelector
-            label={t.searchPage.strategyModel}
+            label={searchCopy.strategyModel}
             modelType="language"
             value={strategyModel}
             onChange={setStrategyModel}
-            placeholder={t.searchPage.selectStrategyPlaceholder}
+            placeholder={searchCopy.selectStrategyPlaceholder}
           />
 
           <ModelSelector
-            label={t.searchPage.answerModel}
+            label={searchCopy.answerModel}
             modelType="language"
             value={answerModel}
             onChange={setAnswerModel}
-            placeholder={t.searchPage.selectAnswerPlaceholder}
+            placeholder={searchCopy.selectAnswerPlaceholder}
           />
 
           <ModelSelector
-            label={t.searchPage.finalAnswerModel}
+            label={searchCopy.finalAnswerModel}
             modelType="language"
             value={finalAnswerModel}
             onChange={setFinalAnswerModel}
-            placeholder={t.searchPage.selectFinalPlaceholder}
+            placeholder={searchCopy.selectFinalPlaceholder}
           />
         </div>
 
@@ -96,7 +97,7 @@ export function AdvancedModelsDialog({
             {t.common.cancel}
           </Button>
           <Button onClick={handleSave}>
-            {t.searchPage.saveChanges}
+            {searchCopy.saveChanges}
           </Button>
         </DialogFooter>
       </DialogContent>

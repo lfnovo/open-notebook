@@ -60,6 +60,9 @@ export function NotesColumn({
   const canDeleteNote = (note: NoteResponse) =>
     note.capabilities?.can_delete ?? canManageNotebook
 
+  const canReadNote = (note: NoteResponse) =>
+    note.capabilities?.can_read ?? true
+
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
   const collapseButton = useMemo(
@@ -136,7 +139,7 @@ export function NotesColumn({
             ) : (
               <div className="space-y-3">
                 {notes.map((note) => {
-                  const canUpdate = canUpdateNote(note)
+                  const canRead = canReadNote(note)
                   const canDelete = canDeleteNote(note)
 
                   return (
@@ -144,10 +147,10 @@ export function NotesColumn({
                     key={note.id}
                     className={cn(
                       'p-3 border rounded-lg card-hover group relative',
-                      canUpdate ? 'cursor-pointer' : 'cursor-default'
+                      canRead ? 'cursor-pointer' : 'cursor-default'
                     )}
                     onClick={() => {
-                      if (canUpdate) setEditingNote(note)
+                      if (canRead) setEditingNote(note)
                     }}
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -242,6 +245,7 @@ export function NotesColumn({
         }}
         notebookId={notebookId}
         note={editingNote ?? undefined}
+        readOnly={Boolean(editingNote && !canUpdateNote(editingNote))}
       />
 
       <ConfirmDialog

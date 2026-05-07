@@ -21,10 +21,13 @@ export interface NotebookResponse {
   updated: string
   source_count: number
   note_count: number
+  view_count?: number
+  reference_count?: number
   password?: string | null
   creator_name?: string | null
   creator_username?: string | null
   owner_id?: string | null
+  creator_username?: string | null
   workspace_id?: string | null
   visibility: ResourceVisibility
   capabilities?: ResourceCapabilities
@@ -56,6 +59,7 @@ export interface SourceListResponse {
   kg_extracted: boolean              // ADD: From Python API
   insights_count: number
   reference_count: number
+  view_count?: number
   created: string
   updated: string
   file_available?: boolean

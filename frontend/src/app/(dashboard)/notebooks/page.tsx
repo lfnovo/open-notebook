@@ -5,46 +5,77 @@ import { useMemo, useState } from 'react'
 import { NotebookList } from './components/NotebookList'
 import { Button } from '@/components/ui/button'
 import { Plus, RefreshCw } from 'lucide-react'
-import { useNotebooks } from '@/lib/hooks/use-notebooks'
+import { useNotebooks, usePublicNotebooks } from '@/lib/hooks/use-notebooks'
 import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialog'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
+import type { NotebookResponse } from '@/lib/types/api'
+
+const filterNotebooks = (notebooks: NotebookResponse[] | undefined, query: string) => {
+  if (!notebooks) {
+    return undefined
+  }
+  if (!query) {
+    return notebooks
+  }
+  return notebooks.filter((notebook) =>
+    `${notebook.name} ${notebook.description || ''}`.toLowerCase().includes(query)
+  )
+}
 
 export default function NotebooksPage() {
   const { t } = useTranslation()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const { data: notebooks, isLoading, refetch } = useNotebooks(false)
-  const { data: archivedNotebooks } = useNotebooks(true)
+  const {
+    data: workspaceNotebooks,
+    isLoading: workspaceLoading,
+    refetch: refetchWorkspaceNotebooks,
+  } = useNotebooks(false)
+  const { data: archivedNotebooks, refetch: refetchArchivedNotebooks } = useNotebooks(true)
+  const {
+    data: publicNotebooks,
+    isLoading: publicLoading,
+    refetch: refetchPublicNotebooks,
+  } = usePublicNotebooks(false)
+  const { currentWorkspace, currentWorkspaceId } = useCurrentWorkspace()
 
   const normalizedQuery = searchTerm.trim().toLowerCase()
+  const currentWorkspaceTitle =
+    currentWorkspace?.type === 'personal'
+      ? t.notebooks.personalNotebooks
+      : t.notebooks.teamNotebooks
 
   const filteredActive = useMemo(() => {
-    if (!notebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return notebooks
-    }
-    return notebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
+    return filterNotebooks(workspaceNotebooks, normalizedQuery)
+  }, [workspaceNotebooks, normalizedQuery])
+
+  const filteredPublic = useMemo(() => {
+    const workspaceNotebookIds = new Set((workspaceNotebooks || []).map((notebook) => notebook.id))
+    const scopedPublicNotebooks = publicNotebooks?.filter(
+      (notebook) =>
+        !workspaceNotebookIds.has(notebook.id) &&
+        (!currentWorkspaceId || notebook.workspace_id !== currentWorkspaceId)
     )
-  }, [notebooks, normalizedQuery])
+    return filterNotebooks(scopedPublicNotebooks, normalizedQuery)
+  }, [currentWorkspaceId, publicNotebooks, workspaceNotebooks, normalizedQuery])
 
   const filteredArchived = useMemo(() => {
-    if (!archivedNotebooks) {
-      return undefined
-    }
-    if (!normalizedQuery) {
-      return archivedNotebooks
-    }
-    return archivedNotebooks.filter((notebook) =>
-      notebook.name.toLowerCase().includes(normalizedQuery)
-    )
+    return filterNotebooks(archivedNotebooks, normalizedQuery)
   }, [archivedNotebooks, normalizedQuery])
 
   const hasArchived = (archivedNotebooks?.length ?? 0) > 0
   const isSearching = normalizedQuery.length > 0
+  const isLoading = workspaceLoading || publicLoading
+  const hasWorkspaceNotebooks = (filteredActive?.length ?? 0) > 0
+  const hasPublicNotebooks = (filteredPublic?.length ?? 0) > 0
+  const hasActiveGroups = hasWorkspaceNotebooks || hasPublicNotebooks
+  const refreshNotebooks = () => {
+    void refetchWorkspaceNotebooks()
+    void refetchArchivedNotebooks()
+    void refetchPublicNotebooks()
+  }
 
   return (
     <>
@@ -53,7 +84,7 @@ export default function NotebooksPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">{t.notebooks.title}</h1>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
+            <Button variant="outline" size="sm" onClick={refreshNotebooks}>
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
@@ -76,15 +107,41 @@ export default function NotebooksPage() {
         </div>
         
         <div className="space-y-8">
-          <NotebookList 
-            notebooks={filteredActive} 
-            isLoading={isLoading}
-            title={t.notebooks.activeNotebooks}
-            emptyTitle={isSearching ? t.common.noMatches : undefined}
-            emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
-            onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
-            actionLabel={!isSearching ? t.notebooks.newNotebook : undefined}
-          />
+          {isLoading ? (
+            <NotebookList
+              notebooks={undefined}
+              isLoading
+              title={currentWorkspaceTitle}
+            />
+          ) : hasActiveGroups ? (
+            <>
+              {hasWorkspaceNotebooks && (
+                <NotebookList
+                  notebooks={filteredActive}
+                  isLoading={false}
+                  title={currentWorkspaceTitle}
+                />
+              )}
+
+              {hasPublicNotebooks && (
+                <NotebookList
+                  notebooks={filteredPublic}
+                  isLoading={false}
+                  title={t.notebooks.publicNotebooks}
+                />
+              )}
+            </>
+          ) : (
+            <NotebookList
+              notebooks={[]}
+              isLoading={false}
+              title={currentWorkspaceTitle}
+              emptyTitle={isSearching ? t.common.noMatches : undefined}
+              emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
+              onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
+              actionLabel={!isSearching ? t.notebooks.newNotebook : undefined}
+            />
+          )}
           
           {hasArchived && (
             <NotebookList 

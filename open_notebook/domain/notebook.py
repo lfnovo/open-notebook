@@ -28,6 +28,7 @@ class Notebook(ObjectModel):
     owner_id: Optional[Union[str, RecordID]] = None
     workspace_id: Optional[Union[str, RecordID]] = None
     visibility: ResourceVisibility = "private"
+    view_count: int = 0
 
     @field_validator("name")
     @classmethod
@@ -268,6 +269,7 @@ class Source(ObjectModel):
     owner_id: Optional[Union[str, RecordID]] = None
     workspace_id: Optional[Union[str, RecordID]] = None
     visibility: ResourceVisibility = "private"
+    view_count: int = 0
 
     @field_validator("command", mode="before")
     @classmethod
@@ -731,8 +733,8 @@ async def graph_search(keyword: str, results: int = 5):
             context += "\nRelationships:\n"
 
             # Outbound
-            out_edges = sg.get("outbound_edges", [])
-            out_nodes = sg.get("outbound_nodes", [])
+            out_edges = sg.get("outbound_edges") or []
+            out_nodes = sg.get("outbound_nodes") or []
             for edge, node in zip(out_edges, out_nodes):
                 edge_desc = (
                     f" ({edge.get('description')})"
@@ -747,8 +749,8 @@ async def graph_search(keyword: str, results: int = 5):
                 )
 
             # Inbound
-            in_edges = sg.get("inbound_edges", [])
-            in_nodes = sg.get("inbound_nodes", [])
+            in_edges = sg.get("inbound_edges") or []
+            in_nodes = sg.get("inbound_nodes") or []
             for edge, node in zip(in_edges, in_nodes):
                 edge_desc = (
                     f" ({edge.get('description')})"

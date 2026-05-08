@@ -696,6 +696,8 @@ export const zhTW = {
     selectFinalPlaceholder: "選擇最終回答模型",
     saveChanges: "儲存更改",
     processingQuestion: "正在處理您的問題...",
+    adminRestrictedTitle: "知識探索不可用",
+    adminRestrictedDesc: "系統管理員負責平台設定並可觀察工作區，但不能使用知識探索。",
   },
   podcasts: {
     generateEpisode: "生成播客單集",
@@ -985,6 +987,9 @@ export const zhTW = {
     unknown: "未知",
     viewOnGithub: "在 GitHub 上查看",
     updateCheckFailed: "無法檢查更新。GitHub 可能無法存取。",
+    teamOwnerOnlyTitle: "團隊管理工具",
+    teamOwnerOnlyDesc: "進階工具僅開放給團隊 owner，用於管理團隊工作區。",
+    teamOwnerAdvancedDesc: "Global maintenance tools are disabled here. Manage team models and workspace policy from the Teams page.",
     rebuild: {
       mode: "重建模式",
       existing: "僅現有項",

@@ -133,18 +133,11 @@ class WorkspaceRepository:
             return await repo_query(
                 """
                 SELECT *,
-                    IF type = 'personal' AND owner_id = $user_id THEN 'owner'
-                    ELSE (SELECT VALUE role FROM team_member
-                        WHERE team = $parent.team_id AND user = $user_id AND status = 'active'
-                        LIMIT 1)[0]
-                    END AS current_user_role,
-                    IF type = 'personal' AND owner_id = $user_id THEN true
-                    ELSE (SELECT VALUE role FROM team_member
-                        WHERE team = $parent.team_id AND user = $user_id AND status = 'active'
-                        LIMIT 1)[0] IN ['owner', 'admin']
-                    END AS can_manage
+                    'viewer' AS current_user_role,
+                    false AS can_manage
                 FROM workspace
-                ORDER BY type ASC, name ASC
+                WHERE type = 'team'
+                ORDER BY name ASC
                 """,
                 {"user_id": ensure_record_id(user_id)},
             )
@@ -181,7 +174,19 @@ class WorkspaceRepository:
         include_all_for_admin: bool,
     ) -> bool:
         if include_all_for_admin:
-            return True
+            result = await repo_query(
+                """
+                SELECT id
+                FROM workspace
+                WHERE id = $workspace_id AND type = 'team'
+                LIMIT 1
+                """,
+                {
+                    "workspace_id": ensure_record_id(workspace_id),
+                    "user_id": ensure_record_id(user_id),
+                },
+            )
+            return bool(result)
         result = await repo_query(
             """
             SELECT id

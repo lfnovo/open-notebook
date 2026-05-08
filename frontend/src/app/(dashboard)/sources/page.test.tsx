@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import SourcesPage from './page'
 import { sourcesApi } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 let currentWorkspaceId = 'workspace:team'
 
@@ -74,6 +75,7 @@ const source = (overrides: Partial<SourceListResponse>): SourceListResponse => (
 describe('SourcesPage', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useAuthStore.setState({ role: 'user' })
     currentWorkspaceId = 'workspace:team'
     vi.mocked(sourcesApi.list).mockResolvedValue([
       source({ id: 'source:team', title: 'Team source', workspace_id: 'workspace:team' }),
@@ -128,5 +130,15 @@ describe('SourcesPage', () => {
     expect(await screen.findByText('Personal workspace sources')).toBeInTheDocument()
     expect(screen.queryByText('Team workspace sources')).not.toBeInTheDocument()
     expect(screen.getByText('Personal source')).toBeInTheDocument()
+  })
+
+  it('uses read-only copy and disables visibility actions for system admins', async () => {
+    useAuthStore.setState({ role: 'admin' })
+
+    render(<SourcesPage />)
+
+    expect(await screen.findByText('View all your sources here.')).toBeInTheDocument()
+    expect(screen.queryByText(/add new sources/i)).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Private' })).toBeDisabled()
   })
 })

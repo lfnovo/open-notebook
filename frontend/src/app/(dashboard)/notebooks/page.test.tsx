@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NotebookResponse } from '@/lib/types/api'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import NotebooksPage from './page'
 
 let currentWorkspaceType: 'personal' | 'team' = 'personal'
@@ -81,6 +82,7 @@ const notebook = (overrides: Partial<NotebookResponse>): NotebookResponse => ({
 
 describe('NotebooksPage', () => {
   beforeEach(() => {
+    useAuthStore.setState({ role: 'user' })
     currentWorkspaceType = 'personal'
     activeNotebooks = [
       notebook({ id: 'notebook:personal', name: 'Personal notebook' }),
@@ -122,5 +124,13 @@ describe('NotebooksPage', () => {
     const teamGroup = screen.getByRole('region', { name: 'Team notebooks' })
     expect(within(teamGroup).getByText('Team notebook')).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Public notebooks' })).toBeInTheDocument()
+  })
+
+  it('hides notebook creation controls for system admins', () => {
+    useAuthStore.setState({ role: 'admin' })
+
+    render(<NotebooksPage />)
+
+    expect(screen.queryByRole('button', { name: 'New Notebook' })).not.toBeInTheDocument()
   })
 })

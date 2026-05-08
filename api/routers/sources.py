@@ -50,6 +50,7 @@ from api.services.workspace_capabilities import resolve_resource_capabilities
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repositories.source_repository import SourceRepository
 from open_notebook.database.repositories.team_repository import TeamRepository
+from open_notebook.database.repositories.workspace_repository import WorkspaceRepository
 from open_notebook.domain.notebook import Notebook, Source
 from open_notebook.exceptions import InvalidInputError, NotFoundError
 
@@ -142,6 +143,15 @@ async def get_sources(
             if not notebook:
                 raise HTTPException(status_code=404, detail="Notebook not found")
             await _ensure_notebook_read_allowed(notebook, request)
+
+        if workspace_id and actor:
+            workspace_allowed = await WorkspaceRepository.user_can_access(
+                workspace_id=workspace_id,
+                user_id=actor.id,
+                include_all_for_admin=actor.role == "admin",
+            )
+            if not workspace_allowed:
+                raise HTTPException(status_code=403, detail="Workspace access denied")
 
         result = await SourceRepository.list_sources(
             user_id=user_id,

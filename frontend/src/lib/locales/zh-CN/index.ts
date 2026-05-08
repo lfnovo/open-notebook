@@ -796,6 +796,8 @@ export const zhCN = {
     selectFinalPlaceholder: "选择最终回答模型",
     saveChanges: "保存更改",
     processingQuestion: "正在处理您的问题...",
+    adminRestrictedTitle: "知识探索不可用",
+    adminRestrictedDesc: "系统管理员负责平台设置并可观察工作区，但不能使用知识探索。",
   },
   podcasts: {
     generateEpisode: "生成播客单集",
@@ -1085,6 +1087,9 @@ export const zhCN = {
     unknown: "未知",
     viewOnGithub: "在 GitHub 上查看",
     updateCheckFailed: "无法检查更新。GitHub 可能无法访问。",
+    teamOwnerOnlyTitle: "团队管理工具",
+    teamOwnerOnlyDesc: "高级工具仅开放给团队 owner，用于管理团队工作区。",
+    teamOwnerAdvancedDesc: "这里不开放全局维护工具。请在团队页面管理团队模型和 workspace policy。",
     rebuild: {
       mode: "重建模式",
       existing: "仅现有项",

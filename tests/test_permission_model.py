@@ -61,6 +61,7 @@ async def test_require_admin_allows_system_admin():
         ("PUT", "/api/transformations/{transformation_id}"),
         ("DELETE", "/api/transformations/{transformation_id}"),
         ("PUT", "/api/settings"),
+        ("POST", "/api/embeddings/rebuild"),
     ],
 )
 def test_system_management_write_routes_require_admin(method: str, path: str):

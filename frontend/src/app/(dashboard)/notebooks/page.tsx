@@ -10,6 +10,7 @@ import { CreateNotebookDialog } from '@/components/notebooks/CreateNotebookDialo
 import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
+import { useAuthStore } from '@/lib/stores/auth-store'
 import type { NotebookResponse } from '@/lib/types/api'
 
 const filterNotebooks = (notebooks: NotebookResponse[] | undefined, query: string) => {
@@ -40,6 +41,7 @@ export default function NotebooksPage() {
     refetch: refetchPublicNotebooks,
   } = usePublicNotebooks(false)
   const { currentWorkspace, currentWorkspaceId } = useCurrentWorkspace()
+  const isSystemAdmin = useAuthStore((state) => state.role === 'admin')
 
   const normalizedQuery = searchTerm.trim().toLowerCase()
   const currentWorkspaceTitle =
@@ -99,10 +101,12 @@ export default function NotebooksPage() {
               aria-label={t.common.accessibility?.searchNotebooks || "Search notebooks"}
               className="w-full sm:w-64"
             />
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t.notebooks.newNotebook}
-            </Button>
+            {!isSystemAdmin && (
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t.notebooks.newNotebook}
+              </Button>
+            )}
           </div>
         </div>
         
@@ -138,8 +142,8 @@ export default function NotebooksPage() {
               title={currentWorkspaceTitle}
               emptyTitle={isSearching ? t.common.noMatches : undefined}
               emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
-              onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
-              actionLabel={!isSearching ? t.notebooks.newNotebook : undefined}
+              onAction={!isSearching && !isSystemAdmin ? () => setCreateDialogOpen(true) : undefined}
+              actionLabel={!isSearching && !isSystemAdmin ? t.notebooks.newNotebook : undefined}
             />
           )}
           
@@ -157,10 +161,12 @@ export default function NotebooksPage() {
         </div>
       </div>
 
-      <CreateNotebookDialog
-        open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
-      />
+      {!isSystemAdmin && (
+        <CreateNotebookDialog
+          open={createDialogOpen}
+          onOpenChange={setCreateDialogOpen}
+        />
+      )}
     </>
   )
 }

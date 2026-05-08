@@ -17,25 +17,34 @@ vi.mock('@/lib/hooks/use-models', () => ({
 }))
 
 vi.mock('@/lib/hooks/use-teams', () => ({
-  useTeams: vi.fn(() => ({
-    data: {
-      items: [
-        {
-          id: 'team:research',
-          type: 'workspace',
-          current_user_role: 'member',
-          can_manage: false,
-        },
-      ],
-    },
-  })),
   useTeamModelDefaults: vi.fn(() => ({
     data: { default_chat_model: 'model:team-chat' },
   })),
 }))
 
+let currentWorkspace: {
+  id: string
+  type: 'personal' | 'team'
+  team_id?: string | null
+} | null = {
+  id: 'workspace:team',
+  type: 'team',
+  team_id: 'team:research',
+}
+
+vi.mock('@/lib/hooks/use-workspaces', () => ({
+  useCurrentWorkspace: () => ({
+    currentWorkspace,
+  }),
+}))
+
 afterEach(() => {
   vi.clearAllMocks()
+  currentWorkspace = {
+    id: 'workspace:team',
+    type: 'team',
+    team_id: 'team:research',
+  }
   act(() => {
     useAuthStore.setState({ role: null, username: null })
   })
@@ -50,6 +59,21 @@ describe('source ModelSelector', () => {
     render(<ModelSelector onModelChange={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: /Team Chat/i })).toBeDisabled()
+  })
+
+  it('shows the system default chat model in a personal workspace', () => {
+    currentWorkspace = {
+      id: 'workspace:personal',
+      type: 'personal',
+      team_id: null,
+    }
+    act(() => {
+      useAuthStore.setState({ role: 'user', username: 'member' })
+    })
+
+    render(<ModelSelector onModelChange={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /System Chat/i })).toBeDisabled()
   })
 
   it('shows the system default chat model for admins', () => {

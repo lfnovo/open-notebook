@@ -695,6 +695,8 @@ export const itIT = {
     selectFinalPlaceholder: "Seleziona modello risposta finale",
     saveChanges: "Salva modifiche",
     processingQuestion: "Elaborazione della tua domanda...",
+    adminRestrictedTitle: "Knowledge Explorer is unavailable",
+    adminRestrictedDesc: "System admins manage platform settings and can observe workspaces, but cannot use knowledge exploration.",
   },
   podcasts: {
     generateEpisode: "Genera episodio podcast",
@@ -984,6 +986,9 @@ export const itIT = {
     unknown: "Sconosciuto",
     viewOnGithub: "Visualizza su GitHub",
     updateCheckFailed: "Impossibile verificare aggiornamenti. GitHub potrebbe non essere raggiungibile.",
+    teamOwnerOnlyTitle: "Team owner tools",
+    teamOwnerOnlyDesc: "Advanced tools are available to team owners for managing team workspaces.",
+    teamOwnerAdvancedDesc: "Global maintenance tools are disabled here. Manage team models and workspace policy from the Teams page.",
     rebuild: {
       mode: "Modalità ricostruzione",
       existing: "Esistenti",

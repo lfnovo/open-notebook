@@ -33,14 +33,16 @@ import { TranslationKeys } from '@/lib/locales'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { useCanManageTeams, useHasTeams } from '@/lib/hooks/use-teams'
 
-const getNavigationItems = (
+export const getCommandNavigationItems = (
   t: TranslationKeys,
   { isAdmin, canManageTeams, hasTeams }: { isAdmin: boolean; canManageTeams: boolean; hasTeams: boolean }
 ) => {
   const items = [
     { name: t.navigation.sources, href: '/sources', icon: FileText, keywords: ['files', 'documents', 'upload'] },
     { name: t.navigation.notebooks, href: '/notebooks', icon: Book, keywords: ['notes', 'research', 'projects'] },
-    { name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] },
+    ...(!isAdmin
+      ? [{ name: t.navigation.askAndSearch, href: '/search', icon: Search, keywords: ['find', 'query'] }]
+      : []),
   ]
 
   if (isAdmin) {
@@ -48,19 +50,26 @@ const getNavigationItems = (
       { name: t.navigation.models, href: '/settings/api-keys', icon: Bot, keywords: ['ai', 'llm', 'providers', 'openai', 'anthropic'] },
       { name: t.navigation.transformations, href: '/transformations', icon: Shuffle, keywords: ['prompts', 'templates', 'actions'] },
       { name: t.navigation.settings, href: '/settings', icon: Settings, keywords: ['preferences', 'config', 'options'] },
-      { name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['debug', 'system', 'tools'] },
     )
   } else if (canManageTeams || hasTeams) {
     items.push({ name: t.navigation.teams, href: '/settings/teams', icon: Settings, keywords: ['team', 'members'] })
+    if (canManageTeams) {
+      items.push({ name: t.navigation.advanced, href: '/advanced', icon: Wrench, keywords: ['team', 'workspace', 'policy'] })
+    }
   }
 
   return items
 }
 
-const getCreateItems = (t: TranslationKeys) => [
-  { name: t.common.newSource, action: 'source', icon: FileText },
-  { name: t.common.newNotebook, action: 'notebook', icon: Book },
-]
+export const getCommandCreateItems = (
+  t: TranslationKeys,
+  { isAdmin }: { isAdmin: boolean }
+) => isAdmin
+  ? []
+  : [
+      { name: t.common.newSource, action: 'source', icon: FileText },
+      { name: t.common.newNotebook, action: 'notebook', icon: Book },
+    ]
 
 const getThemeItems = (t: TranslationKeys) => [
   { name: t.common.light, value: 'light' as const, icon: Sun, keywords: ['bright', 'day'] },
@@ -72,13 +81,15 @@ export function CommandPalette() {
   const { t } = useTranslation()
   const commandInputId = useId()
   const role = useAuthStore((state) => state.role)
+  const isAdmin = role === 'admin'
+  const canUseKnowledgeExploration = !isAdmin
   const canManageTeams = useCanManageTeams()
   const hasTeams = useHasTeams()
   const navigationItems = useMemo(
-    () => getNavigationItems(t, { isAdmin: role === 'admin', canManageTeams, hasTeams }),
-    [t, role, canManageTeams, hasTeams]
+    () => getCommandNavigationItems(t, { isAdmin, canManageTeams, hasTeams }),
+    [t, isAdmin, canManageTeams, hasTeams]
   )
-  const createItems = useMemo(() => getCreateItems(t), [t])
+  const createItems = useMemo(() => getCommandCreateItems(t, { isAdmin }), [t, isAdmin])
   const themeItems = useMemo(() => getThemeItems(t), [t])
   
   const [open, setOpen] = useState(false)
@@ -132,14 +143,16 @@ export function CommandPalette() {
   }, [handleSelect, router])
 
   const handleSearch = useCallback(() => {
+    if (!canUseKnowledgeExploration) return
     if (!query.trim()) return
     handleSelect(() => router.push(`/search?q=${encodeURIComponent(query)}&mode=search`))
-  }, [handleSelect, router, query])
+  }, [canUseKnowledgeExploration, handleSelect, router, query])
 
   const handleAsk = useCallback(() => {
+    if (!canUseKnowledgeExploration) return
     if (!query.trim()) return
     handleSelect(() => router.push(`/search?q=${encodeURIComponent(query)}&mode=ask`))
-  }, [handleSelect, router, query])
+  }, [canUseKnowledgeExploration, handleSelect, router, query])
 
   const handleCreate = useCallback((action: string) => {
     handleSelect(() => {
@@ -176,7 +189,7 @@ export function CommandPalette() {
   }, [queryLower, notebooks, navigationItems, createItems, themeItems])
 
   // Determine if we should show the Search/Ask section at the top
-  const showSearchFirst = query.trim() && !hasCommandMatch
+  const showSearchFirst = canUseKnowledgeExploration && query.trim() && !hasCommandMatch
 
   return (
     <CommandDialog
@@ -254,18 +267,20 @@ export function CommandPalette() {
         </CommandGroup>
 
         {/* Create */}
-        <CommandGroup heading={t.navigation.create}>
-          {createItems.map((item) => (
-            <CommandItem
-              key={item.action}
-              value={`create ${item.name}`}
-              onSelect={() => handleCreate(item.action)}
-            >
-              <Plus className="h-4 w-4" />
-              <span>{item.name}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
+        {createItems.length > 0 && (
+          <CommandGroup heading={t.navigation.create}>
+            {createItems.map((item) => (
+              <CommandItem
+                key={item.action}
+                value={`create ${item.name}`}
+                onSelect={() => handleCreate(item.action)}
+              >
+                <Plus className="h-4 w-4" />
+                <span>{item.name}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
 
         {/* Theme */}
         <CommandGroup heading={t.navigation.theme}>
@@ -282,7 +297,7 @@ export function CommandPalette() {
         </CommandGroup>
 
         {/* Search/Ask - show at bottom when there IS a command match */}
-        {query.trim() && hasCommandMatch && (
+        {canUseKnowledgeExploration && query.trim() && hasCommandMatch && (
           <>
             <CommandSeparator />
             <CommandGroup heading={t.searchPage.orSearchKb} forceMount>

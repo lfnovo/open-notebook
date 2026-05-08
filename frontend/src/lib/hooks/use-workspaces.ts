@@ -30,10 +30,16 @@ export function useCurrentWorkspace() {
   )
 
   useEffect(() => {
-    if (currentWorkspaceId || !query.data?.items.length) {
+    const workspaces = query.data?.items ?? []
+    if (!workspaces.length) {
       return
     }
-    setCurrentWorkspaceId(query.data.items[0].id)
+    const currentWorkspaceIsVisible = workspaces.some(
+      (workspace) => workspace.id === currentWorkspaceId
+    )
+    if (!currentWorkspaceId || !currentWorkspaceIsVisible) {
+      setCurrentWorkspaceId(workspaces[0].id)
+    }
   }, [currentWorkspaceId, query.data?.items, setCurrentWorkspaceId])
 
   return {

@@ -256,6 +256,9 @@ async def create_notebook(request: Request, notebook: NotebookCreate):
     username: Optional[str] = getattr(request.state, "username", None)
     actor = current_user_from_request(request)
     try:
+        if actor and actor.role == "admin":
+            raise PermissionError("System admins cannot create workspace resources")
+
         workspace_id = await resolve_workspace_id_for_user(
             user_id=user_id,
             requested_workspace_id=notebook.workspace_id,

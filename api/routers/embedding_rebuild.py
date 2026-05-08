@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from surreal_commands import get_command_status
 
+from api.auth import CurrentUser, require_admin
 from api.command_service import CommandService
 from api.models import (
     RebuildProgress,
@@ -16,7 +17,10 @@ router = APIRouter()
 
 
 @router.post("/rebuild", response_model=RebuildResponse)
-async def start_rebuild(request: RebuildRequest):
+async def start_rebuild(
+    request: RebuildRequest,
+    _: CurrentUser = Depends(require_admin),
+):
     """
     Start a background job to rebuild embeddings.
 

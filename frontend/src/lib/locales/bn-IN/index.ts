@@ -695,6 +695,8 @@ export const bnIN = {
     selectFinalPlaceholder: "চূড়ান্ত উত্তর মডেল নির্বাচন করুন",
     saveChanges: "পরিবর্তন সংরক্ষণ করুন",
     processingQuestion: "আপনার প্রশ্ন প্রক্রিয়া করা হচ্ছে...",
+    adminRestrictedTitle: "Knowledge Explorer is unavailable",
+    adminRestrictedDesc: "System admins manage platform settings and can observe workspaces, but cannot use knowledge exploration.",
   },
   podcasts: {
     generateEpisode: "পডকাস্ট এপিসোড তৈরি করুন",
@@ -985,6 +987,9 @@ export const bnIN = {
     unknown: "অজানা",
     viewOnGithub: "GitHub এ দেখুন",
     updateCheckFailed: "আপডেট চেক করতে অক্ষম। GitHub অপৌঁছানীয় হতে পারে।",
+    teamOwnerOnlyTitle: "Team owner tools",
+    teamOwnerOnlyDesc: "Advanced tools are available to team owners for managing team workspaces.",
+    teamOwnerAdvancedDesc: "Global maintenance tools are disabled here. Manage team models and workspace policy from the Teams page.",
     rebuild: {
       mode: "পুনর্নির্মাণ মোড",
       existing: "বিদ্যমান",

@@ -175,15 +175,19 @@ async def test_list_for_user_includes_personal_and_active_team_workspaces(monkey
 
 
 @pytest.mark.asyncio
-async def test_list_for_admin_observes_all_workspaces_without_global_manage(monkeypatch):
+async def test_list_for_admin_observes_team_workspaces_without_global_manage(monkeypatch):
     captured = {}
 
     async def fake_repo_query(query, vars=None):
         captured["query"] = query
         captured["vars"] = vars
         return [
-            {"id": "workspace:personal", "type": "personal", "can_manage": False},
-            {"id": "workspace:team", "type": "team", "can_manage": False},
+            {
+                "id": "workspace:team",
+                "type": "team",
+                "current_user_role": "viewer",
+                "can_manage": False,
+            },
         ]
 
     monkeypatch.setattr(module, "repo_query", fake_repo_query)
@@ -193,7 +197,49 @@ async def test_list_for_admin_observes_all_workspaces_without_global_manage(monk
         include_all_for_admin=True,
     )
 
-    assert [row["id"] for row in rows] == ["workspace:personal", "workspace:team"]
+    assert [row["id"] for row in rows] == ["workspace:team"]
     assert "FROM workspace" in captured["query"]
+    assert "WHERE type = 'team'" in captured["query"]
+    assert "'viewer' AS current_user_role" in captured["query"]
+    assert "owner_id = $user_id" not in captured["query"]
     assert "true AS can_manage" not in captured["query"]
     assert str(captured["vars"]["user_id"]) == "app_user:admin"
+
+
+@pytest.mark.asyncio
+async def test_admin_access_check_is_limited_to_team_workspaces(monkeypatch):
+    captured = {}
+
+    async def fake_repo_query(query, vars=None):
+        captured["query"] = query
+        captured["vars"] = vars
+        return [{"id": "workspace:team"}]
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    can_access = await WorkspaceRepository.user_can_access(
+        workspace_id="workspace:team",
+        user_id="app_user:admin",
+        include_all_for_admin=True,
+    )
+
+    assert can_access is True
+    assert "WHERE id = $workspace_id" in captured["query"]
+    assert "type = 'team'" in captured["query"]
+    assert str(captured["vars"]["workspace_id"]) == "workspace:team"
+
+
+@pytest.mark.asyncio
+async def test_admin_access_check_rejects_personal_workspaces(monkeypatch):
+    async def fake_repo_query(query, vars=None):
+        return []
+
+    monkeypatch.setattr(module, "repo_query", fake_repo_query)
+
+    can_access = await WorkspaceRepository.user_can_access(
+        workspace_id="workspace:personal",
+        user_id="app_user:admin",
+        include_all_for_admin=True,
+    )
+
+    assert can_access is False

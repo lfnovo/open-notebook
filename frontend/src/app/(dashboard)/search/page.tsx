@@ -153,6 +153,7 @@ export default function SearchPage() {
   const { data: availableModels } = useModels()
   const { openModal } = useModalManager()
   const role = useAuthStore((state) => state.role)
+  const isSystemAdmin = role === 'admin'
   const canCustomizeModels = role === 'admin'
 
   const modelNameById = useMemo(() => {
@@ -175,6 +176,7 @@ export default function SearchPage() {
   const lastUrlParamsRef = useRef({ q: '', mode: '' })
 
   const handleSearch = useCallback(() => {
+    if (isSystemAdmin) return
     if (!searchQuery.trim()) return
 
     searchMutation.mutate({
@@ -185,7 +187,7 @@ export default function SearchPage() {
       search_notes: searchNotes,
       minimum_score: 0.2
     })
-  }, [searchQuery, searchType, searchSources, searchNotes, searchMutation])
+  }, [isSystemAdmin, searchQuery, searchType, searchSources, searchNotes, searchMutation])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -194,6 +196,7 @@ export default function SearchPage() {
   }
 
   const handleAsk = useCallback(() => {
+    if (isSystemAdmin) return
     if (!askQuestion.trim() || !defaultAskModel) return
 
     const models = canCustomizeModels && customModels ? customModels : {
@@ -203,12 +206,12 @@ export default function SearchPage() {
     }
 
     ask.sendAsk(askQuestion, models)
-  }, [askQuestion, defaultAskModel, canCustomizeModels, customModels, ask])
+  }, [isSystemAdmin, askQuestion, defaultAskModel, canCustomizeModels, customModels, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
     // Skip if already triggered or no query
-    if (hasAutoTriggeredRef.current || !urlQuery) return
+    if (isSystemAdmin || hasAutoTriggeredRef.current || !urlQuery) return
 
     // Wait for models to load before triggering ask
     if (urlMode === 'ask' && modelsLoading) return
@@ -220,7 +223,7 @@ export default function SearchPage() {
       handleAsk()
       hasAutoTriggeredRef.current = true
     }
-  }, [urlQuery, urlMode, modelsLoading, defaultAskModel, handleSearch, handleAsk])
+  }, [isSystemAdmin, urlQuery, urlMode, modelsLoading, defaultAskModel, handleSearch, handleAsk])
 
   // Handle URL param changes while on page (e.g., from command palette again)
   useEffect(() => {
@@ -232,7 +235,7 @@ export default function SearchPage() {
     if (currentQ !== lastUrlParamsRef.current.q || currentMode !== lastUrlParamsRef.current.mode) {
       lastUrlParamsRef.current = { q: currentQ, mode: currentMode }
 
-      if (currentQ) {
+      if (currentQ && !isSystemAdmin) {
         // Update state based on mode
         if (currentMode === 'search') {
           setSearchQuery(currentQ)
@@ -246,7 +249,24 @@ export default function SearchPage() {
         }
       }
     }
-  }, [searchParams])
+  }, [isSystemAdmin, searchParams])
+
+  if (isSystemAdmin) {
+    return (
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">{searchCopy.adminRestrictedTitle}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              {searchCopy.adminRestrictedDesc}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6">

@@ -63,6 +63,10 @@ const getNavigation = (
   t: TranslationKeys,
   { isAdmin, canManageTeams, hasTeams }: { isAdmin: boolean; canManageTeams: boolean; hasTeams: boolean }
 ): NavigationSection[] => {
+  const processItems = [
+    { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
+    ...(!isAdmin ? [{ name: t.navigation.askAndSearch, href: '/search', icon: Search }] : []),
+  ]
   const navigation: NavigationSection[] = [
     {
       title: t.navigation.collect,
@@ -72,10 +76,7 @@ const getNavigation = (
     },
     {
       title: t.navigation.process,
-      items: [
-        { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
-        { name: t.navigation.askAndSearch, href: '/search', icon: Search },
-      ],
+      items: processItems,
     },
     {
       title: t.navigation.discover,
@@ -93,7 +94,6 @@ const getNavigation = (
           { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
           { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
           { name: t.navigation.settings, href: '/settings', icon: Settings },
-          { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
         ],
       },
       {
@@ -106,11 +106,15 @@ const getNavigation = (
       }
     )
   } else if (canManageTeams || hasTeams) {
+    const teamItems = [
+      { name: t.navigation.teams, href: '/settings/teams', icon: Users },
+      ...(canManageTeams
+        ? [{ name: t.navigation.advanced, href: '/advanced', icon: Wrench }]
+        : []),
+    ]
     navigation.push({
       title: t.navigation.teams,
-      items: [
-        { name: t.navigation.teams, href: '/settings/teams', icon: Users },
-      ],
+      items: teamItems,
     })
   }
 
@@ -127,6 +131,7 @@ export function AppSidebar() {
   const canManageTeams = useCanManageTeams()
   const hasTeams = useHasTeams()
   const visibleNavigation = getNavigation(t, { isAdmin, canManageTeams, hasTeams })
+  const canCreateResources = !isAdmin
   const { isCollapsed, toggleCollapse } = useSidebarStore()
   const { openSourceDialog, openNotebookDialog } = useCreateDialogs()
   const {
@@ -218,13 +223,14 @@ export function AppSidebar() {
             isCollapsed ? 'px-2' : 'px-3'
           )}
         >
-          <div
-            className={cn(
-              'mb-4',
-              isCollapsed ? 'px-0' : 'px-3'
-            )}
-          >
-            <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
+          {canCreateResources && (
+            <div
+              className={cn(
+                'mb-4',
+                isCollapsed ? 'px-0' : 'px-3'
+              )}
+            >
+              <DropdownMenu open={createMenuOpen} onOpenChange={setCreateMenuOpen}>
               {isCollapsed ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -282,8 +288,9 @@ export function AppSidebar() {
                   {t.common.notebook}
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+              </DropdownMenu>
+            </div>
+          )}
 
           <div
             className={cn(

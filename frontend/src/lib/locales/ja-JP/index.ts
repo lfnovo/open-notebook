@@ -695,6 +695,8 @@ export const jaJP = {
     selectFinalPlaceholder: "最終回答モデルを選択",
     saveChanges: "変更を保存",
     processingQuestion: "質問を処理中...",
+    adminRestrictedTitle: "Knowledge Explorer is unavailable",
+    adminRestrictedDesc: "System admins manage platform settings and can observe workspaces, but cannot use knowledge exploration.",
   },
   podcasts: {
     generateEpisode: "ポッドキャストエピソードを生成",
@@ -984,6 +986,9 @@ export const jaJP = {
     unknown: "不明",
     viewOnGithub: "GitHubで表示",
     updateCheckFailed: "更新を確認できません。GitHubに接続できない可能性があります。",
+    teamOwnerOnlyTitle: "Team owner tools",
+    teamOwnerOnlyDesc: "Advanced tools are available to team owners for managing team workspaces.",
+    teamOwnerAdvancedDesc: "Global maintenance tools are disabled here. Manage team models and workspace policy from the Teams page.",
     rebuild: {
       mode: "再構築モード",
       existing: "既存のみ",

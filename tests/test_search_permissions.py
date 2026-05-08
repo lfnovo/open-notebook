@@ -7,6 +7,7 @@ from api.auth import CurrentUser
 from api.models import ResourceCapabilities, SearchRequest
 from api.routers.search import (
     _dedupe_search_results,
+    _resolve_ask_models,
     _search_result_resource_id,
     search_knowledge_base,
 )
@@ -43,6 +44,34 @@ def test_search_results_are_deduped_by_resource_score():
 
     assert [item["parent_id"] for item in results] == ["source:item", "note:item"]
     assert [item["relevance"] for item in results] == [0.8, 0.5]
+
+
+@pytest.mark.asyncio
+@patch("api.routers.search.text_search", new_callable=AsyncMock)
+async def test_system_admin_cannot_use_search(mock_text_search):
+    actor = CurrentUser(id="app_user:admin", username="admin", role="admin")
+
+    with pytest.raises(Exception) as exc_info:
+        await search_knowledge_base(
+            SearchRequest(query="source", type="text"),
+            request_for_actor(actor),
+        )
+
+    assert getattr(exc_info.value, "status_code", None) == 403
+    mock_text_search.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_system_admin_cannot_use_ask():
+    actor = CurrentUser(id="app_user:admin", username="admin", role="admin")
+
+    with pytest.raises(Exception) as exc_info:
+        await _resolve_ask_models(
+            SimpleNamespace(question="BSD") ,
+            request_for_actor(actor),
+        )
+
+    assert getattr(exc_info.value, "status_code", None) == 403
 
 
 @pytest.mark.asyncio

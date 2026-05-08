@@ -436,6 +436,48 @@ async def test_team_owner_can_update_default_models_from_team_allowlist(
 
 
 @pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_team_member_can_read_default_models(
+    mock_get_team,
+    mock_get_member,
+):
+    mock_get_team.return_value = {
+        "id": "team:research",
+        "type": "workspace",
+        "default_chat_model": "model:team-chat",
+        "default_embedding_model": "model:team-embed",
+    }
+    mock_get_member.return_value = {"role": "member", "status": "active"}
+
+    response = await team_service.list_team_model_defaults_use_case(
+        "team:research",
+        actor=regular_actor("member"),
+    )
+
+    assert response.team_id == "team:research"
+    assert response.default_chat_model == "model:team-chat"
+    assert response.default_embedding_model == "model:team-embed"
+
+
+@pytest.mark.asyncio
+@patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
+@patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)
+async def test_non_member_cannot_read_default_models(
+    mock_get_team,
+    mock_get_member,
+):
+    mock_get_team.return_value = {"id": "team:research", "type": "workspace"}
+    mock_get_member.return_value = None
+
+    with pytest.raises(PermissionError, match="Team membership required"):
+        await team_service.list_team_model_defaults_use_case(
+            "team:research",
+            actor=regular_actor("outsider"),
+        )
+
+
+@pytest.mark.asyncio
 @patch("api.services.team_service.TeamAllowlistRepository.list_team_models", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_member", new_callable=AsyncMock)
 @patch("api.services.team_service.TeamRepository.get_team", new_callable=AsyncMock)

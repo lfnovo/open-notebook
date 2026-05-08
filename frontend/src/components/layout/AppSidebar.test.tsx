@@ -204,16 +204,18 @@ describe('AppSidebar', () => {
 
     render(<AppSidebar />)
 
+    expect(screen.queryByRole('button', { name: 'New' })).not.toBeInTheDocument()
     expect(screen.getByText('Models')).toBeInTheDocument()
     expect(screen.getByText('Transformations')).toBeInTheDocument()
     expect(screen.getByText('Settings')).toBeInTheDocument()
-    expect(screen.getByText('Advanced')).toBeInTheDocument()
+    expect(screen.queryByText('Knowledge Explorer')).not.toBeInTheDocument()
+    expect(screen.queryByText('Advanced')).not.toBeInTheDocument()
     expect(screen.getByText('Users')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
     expect(screen.getByText('Audit Log')).toBeInTheDocument()
   })
 
-  it('shows only team management for team managers', () => {
+  it('shows team management and advanced tools for team managers', () => {
     useAuthStore.setState({ role: 'user' })
     vi.mocked(useCanManageTeams).mockReturnValue(true)
     vi.mocked(useHasTeams).mockReturnValue(true)
@@ -221,10 +223,10 @@ describe('AppSidebar', () => {
     render(<AppSidebar />)
 
     expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
+    expect(screen.getByRole('link', { name: 'Advanced' })).toHaveAttribute('href', '/advanced')
     expect(screen.queryByText('Models')).not.toBeInTheDocument()
     expect(screen.queryByText('Transformations')).not.toBeInTheDocument()
     expect(screen.queryByText('Settings')).not.toBeInTheDocument()
-    expect(screen.queryByText('Advanced')).not.toBeInTheDocument()
     expect(screen.queryByText('Users')).not.toBeInTheDocument()
     expect(screen.queryByText('Audit Log')).not.toBeInTheDocument()
   })

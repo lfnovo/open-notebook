@@ -695,6 +695,8 @@ export const ruRU = {
     selectFinalPlaceholder: "Выберите модель итогового ответа",
     saveChanges: "Сохранить изменения",
     processingQuestion: "Обработка вашего вопроса...",
+    adminRestrictedTitle: "Knowledge Explorer is unavailable",
+    adminRestrictedDesc: "System admins manage platform settings and can observe workspaces, but cannot use knowledge exploration.",
   },
   podcasts: {
     generateEpisode: "Сгенерировать эпизод подкаста",
@@ -984,6 +986,9 @@ export const ruRU = {
     unknown: "Неизвестно",
     viewOnGithub: "Посмотреть на GitHub",
     updateCheckFailed: "Не удалось проверить обновления. GitHub может быть недоступен.",
+    teamOwnerOnlyTitle: "Team owner tools",
+    teamOwnerOnlyDesc: "Advanced tools are available to team owners for managing team workspaces.",
+    teamOwnerAdvancedDesc: "Global maintenance tools are disabled here. Manage team models and workspace policy from the Teams page.",
     rebuild: {
       mode: "Режим пересоздания",
       existing: "Существующие",

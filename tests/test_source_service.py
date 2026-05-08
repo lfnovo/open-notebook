@@ -82,6 +82,19 @@ def actor() -> CurrentUser:
 
 
 @pytest.mark.asyncio
+@patch("api.services.source_service.resolve_source_workspace_id", new_callable=AsyncMock)
+async def test_system_admin_cannot_create_sources(mock_workspace_id):
+    with pytest.raises(PermissionError, match="System admins cannot create workspace resources"):
+        await create_source_and_queue_processing(
+            SourceCreate(type="text", content="Admin source"),
+            user_id="app_user:admin",
+            actor=CurrentUser(id="app_user:admin", username="admin", role="admin"),
+        )
+
+    mock_workspace_id.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 @patch("api.services.source_service.ShareRepository.create_grant", new_callable=AsyncMock)
 @patch("api.services.source_service.WorkspacePolicyRepository.get_effective_policy", new_callable=AsyncMock)
 @patch("api.services.workspace_service.WorkspaceRepository.current_user_role", new_callable=AsyncMock)

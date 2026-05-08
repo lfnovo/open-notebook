@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/dialog'
 import { Settings2, Sparkles } from 'lucide-react'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
-import { useTeamModelDefaults, useTeams } from '@/lib/hooks/use-teams'
+import { useTeamModelDefaults } from '@/lib/hooks/use-teams'
+import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { useAuthStore } from '@/lib/stores/auth-store'
@@ -44,17 +45,13 @@ export function ModelSelector({
   const { data: defaults } = useModelDefaults()
   const role = useAuthStore((state) => state.role)
   const canCustomizeModels = role === 'admin'
-  const { data: teamsData } = useTeams()
-  const singleWorkspaceTeamId = useMemo(() => {
-    if (canCustomizeModels) return undefined
-    const workspaceTeams =
-      teamsData?.items.filter(
-        (team) => team.type === 'workspace' && Boolean(team.current_user_role)
-      ) || []
-    return workspaceTeams.length === 1 ? workspaceTeams[0].id : undefined
-  }, [canCustomizeModels, teamsData?.items])
-  const { data: teamDefaults } = useTeamModelDefaults(singleWorkspaceTeamId)
-  const effectiveDefaults = singleWorkspaceTeamId ? teamDefaults || defaults : defaults
+  const { currentWorkspace } = useCurrentWorkspace()
+  const currentTeamId =
+    !canCustomizeModels && currentWorkspace?.type === 'team'
+      ? currentWorkspace.team_id || undefined
+      : undefined
+  const { data: teamDefaults } = useTeamModelDefaults(currentTeamId)
+  const effectiveDefaults = currentTeamId ? teamDefaults || defaults : defaults
 
   useEffect(() => {
     setSelectedModel(currentModel || 'default')

@@ -1,11 +1,14 @@
 """Tests for the sources API endpoint."""
 
 import os
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from api.routers.sources import get_sources
 from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.domain.notebook import Source
 
@@ -184,6 +187,47 @@ class TestAsyncSourceAssetPersistence:
         assert response.status_code == 200
         assert len(saved_sources) >= 1
         assert str(saved_sources[0].workspace_id) == "workspace:team"
+
+
+@pytest.mark.asyncio
+@patch("api.routers.sources.SourceRepository.list_sources", new_callable=AsyncMock)
+@patch("api.routers.sources.WorkspaceRepository.user_can_access", new_callable=AsyncMock)
+@patch("api.routers.sources.TeamRepository.user_team_ids", new_callable=AsyncMock)
+async def test_admin_cannot_list_personal_workspace_sources_by_id(
+    mock_team_ids,
+    mock_workspace_access,
+    mock_list_sources,
+):
+    mock_team_ids.return_value = []
+    mock_workspace_access.return_value = False
+    request = SimpleNamespace(
+        state=SimpleNamespace(
+            user_id="app_user:admin",
+            username="admin",
+            user_role="admin",
+            user_status="active",
+        )
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await get_sources(
+            request,
+            notebook_id=None,
+            title_contains=None,
+            workspace_id="workspace:personal",
+            limit=30,
+            offset=0,
+            sort_by="updated",
+            sort_order="desc",
+        )
+
+    assert exc.value.status_code == 403
+    mock_workspace_access.assert_awaited_once_with(
+        workspace_id="workspace:personal",
+        user_id="app_user:admin",
+        include_all_for_admin=True,
+    )
+    mock_list_sources.assert_not_awaited()
 
 
 if __name__ == "__main__":

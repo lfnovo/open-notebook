@@ -21,6 +21,14 @@ from open_notebook.graphs.ask import graph as ask_graph
 router = APIRouter()
 
 
+def _ensure_knowledge_exploration_allowed(actor: CurrentUser | None) -> None:
+    if actor and actor.role == "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="System admins cannot use knowledge exploration",
+        )
+
+
 def _search_result_resource_id(row: dict[str, Any]) -> str | None:
     for key in ("parent_id", "source_id", "note_id", "id"):
         value_str = _coerce_record_ref(row.get(key))
@@ -196,6 +204,7 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
     """Search the knowledge base using text or vector search."""
     try:
         actor = current_user_from_request(request)
+        _ensure_knowledge_exploration_allowed(actor)
         team_id = await resolve_explicit_team_context(
             actor=actor,
             team_id=search_request.team_id,
@@ -233,6 +242,8 @@ async def search_knowledge_base(search_request: SearchRequest, request: Request)
             search_type=search_request.type,
         )
 
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except DatabaseOperationError as e:
@@ -320,6 +331,7 @@ async def _resolve_ask_models(
     request: Request,
 ) -> tuple[Model, Model, Model, str | None, dict[str, Any]]:
     actor = current_user_from_request(request)
+    _ensure_knowledge_exploration_allowed(actor)
     team_id = await resolve_explicit_team_context(
         actor=actor,
         team_id=ask_request.team_id,

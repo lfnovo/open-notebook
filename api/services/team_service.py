@@ -182,6 +182,14 @@ async def _ensure_team_manager(team_id: str, actor: CurrentUser) -> None:
         raise PermissionError("Team owner or admin privileges required")
 
 
+async def _ensure_team_member(team_id: str, actor: CurrentUser) -> None:
+    if actor.role == "admin":
+        return
+    member = await TeamRepository.get_member(team_id, actor.id)
+    if not member or member.get("status") != "active":
+        raise PermissionError("Team membership required")
+
+
 async def _ensure_workspace_team_for_allowlist(
     team_id: str, actor: CurrentUser
 ) -> dict:
@@ -191,6 +199,18 @@ async def _ensure_workspace_team_for_allowlist(
     if team.get("type") == "system":
         raise InvalidInputError("System teams cannot have managed allowlists")
     await _ensure_team_manager(team_id, actor)
+    return team
+
+
+async def _ensure_workspace_team_for_defaults_read(
+    team_id: str, actor: CurrentUser
+) -> dict:
+    team = await TeamRepository.get_team(team_id)
+    if not team:
+        raise NotFoundError("Team not found")
+    if team.get("type") == "system":
+        raise InvalidInputError("System teams cannot have managed defaults")
+    await _ensure_team_member(team_id, actor)
     return team
 
 
@@ -527,7 +547,7 @@ async def replace_team_models_use_case(
 async def list_team_model_defaults_use_case(
     team_id: str, *, actor: CurrentUser
 ) -> TeamModelDefaultsResponse:
-    team = await _ensure_workspace_team_for_allowlist(team_id, actor)
+    team = await _ensure_workspace_team_for_defaults_read(team_id, actor)
     return _team_model_defaults_response(team_id, team)
 
 

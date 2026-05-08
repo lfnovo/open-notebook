@@ -435,6 +435,9 @@ async def create_source_and_queue_processing(
     actor: CurrentUser | None = None,
 ) -> SourceResponse:
     """Create a source record and queue background processing."""
+    if actor and actor.role == "admin":
+        raise PermissionError("System admins cannot create workspace resources")
+
     content_state = build_source_content_state(source_data, file_path=file_path)
     team_id: str | None = None
     workspace_id = await resolve_source_workspace_id(

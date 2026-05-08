@@ -22,6 +22,7 @@ import { ResourceVisibilityBadge } from '@/components/share/ResourceVisibilityBa
 import { useProfile } from '@/lib/hooks/use-profile'
 import { canDeleteSource, deletableSourceIds } from '@/lib/utils/source-delete-eligibility'
 import { useCurrentWorkspace } from '@/lib/hooks/use-workspaces'
+import { useAuthStore } from '@/lib/stores/auth-store'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
@@ -51,6 +52,7 @@ export default function SourcesPage() {
   const { data: profile } = useProfile()
   const currentUserId = profile?.id
   const { currentWorkspace, currentWorkspaceId: workspaceId } = useCurrentWorkspace()
+  const isSystemAdmin = useAuthStore((state) => state.role === 'admin')
   
   // Pagination state
   const [page, setPage] = useState(1)
@@ -473,6 +475,7 @@ export default function SourcesPage() {
           labels={visibilityLabels}
           title={t.sharing?.title || 'Share'}
           onClick={() => setShareDialog({ open: true, source })}
+          disabled={!source.capabilities?.can_share}
         />
       </td>
       <td className="h-12 px-2 text-muted-foreground text-sm hidden sm:table-cell">
@@ -503,13 +506,19 @@ export default function SourcesPage() {
             {tYes}
           </Badge>
         ) : (
-          <button
-            onClick={(e) => handleExtractKg(e, source.id)}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 cursor-pointer border-0"
-            title={t.sources?.kgExtractHint || "点击抽取知识图谱"}
-          >
-            {tNo}
-          </button>
+          source.capabilities?.can_process ? (
+            <button
+              onClick={(e) => handleExtractKg(e, source.id)}
+              className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:hover:bg-amber-900/50 cursor-pointer border-0"
+              title={t.sources?.kgExtractHint || "点击抽取知识图谱"}
+            >
+              {tNo}
+            </button>
+          ) : (
+            <Badge variant="secondary" className="text-xs opacity-60">
+              {tNo}
+            </Badge>
+          )
         )}
       </td>
     </tr>
@@ -521,7 +530,7 @@ export default function SourcesPage() {
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">{t.sources.allSources}</h1>
           <p className="mt-2 text-muted-foreground">
-            {t.sources.allSourcesDesc}
+            {isSystemAdmin ? t.sources.allSourcesDescShort : t.sources.allSourcesDesc}
           </p>
         </div>
 

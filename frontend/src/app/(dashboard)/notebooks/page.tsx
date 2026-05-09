@@ -53,7 +53,7 @@ export default function NotebooksPage() {
         <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">{t.notebooks.title}</h1>
+            <h1 className="text-2xl font-bold">{t('notebooks.title')}</h1>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="h-4 w-4" />
             </Button>
@@ -64,14 +64,14 @@ export default function NotebooksPage() {
               name="notebook-search"
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
-              placeholder={t.notebooks.searchPlaceholder}
+              placeholder={t('notebooks.searchPlaceholder')}
               autoComplete="off"
-              aria-label={t.common.accessibility?.searchNotebooks || "Search notebooks"}
+              aria-label={t('common.accessibility.searchNotebooks') || "Search notebooks"}
               className="w-full sm:w-64"
             />
             <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              {t.notebooks.newNotebook}
+              {t('notebooks.newNotebook')}
             </Button>
           </div>
         </div>
@@ -80,21 +80,21 @@ export default function NotebooksPage() {
           <NotebookList 
             notebooks={filteredActive} 
             isLoading={isLoading}
-            title={t.notebooks.activeNotebooks}
-            emptyTitle={isSearching ? t.common.noMatches : undefined}
-            emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
+            title={t('notebooks.activeNotebooks')}
+            emptyTitle={isSearching ? t('common.noMatches') : undefined}
+            emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
             onAction={!isSearching ? () => setCreateDialogOpen(true) : undefined}
-            actionLabel={!isSearching ? t.notebooks.newNotebook : undefined}
+            actionLabel={!isSearching ? t('notebooks.newNotebook') : undefined}
           />
           
           {hasArchived && (
             <NotebookList 
               notebooks={filteredArchived} 
               isLoading={false}
-              title={t.notebooks.archivedNotebooks}
+              title={t('notebooks.archivedNotebooks')}
               collapsible
-              emptyTitle={isSearching ? t.common.noMatches : undefined}
-              emptyDescription={isSearching ? t.common.tryDifferentSearch : undefined}
+              emptyTitle={isSearching ? t('common.noMatches') : undefined}
+              emptyDescription={isSearching ? t('common.tryDifferentSearch') : undefined}
             />
           )}
         </div>

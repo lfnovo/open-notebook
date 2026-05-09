@@ -26,6 +26,7 @@ export const ptBR = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "Fonte",
     notebook: "Caderno",
     podcast: "Podcast",
@@ -915,6 +916,8 @@ export const ptBR = {
     configUpdateSuccess: "Configuração atualizada com sucesso",
     configDeleteSuccess: "Configuração excluída com sucesso",
     apiKeyEditHint: "Deixe em branco para manter a chave de API existente",
+    decryptionError: "Erro de Descriptografia",
+    decryptionErrorDescription: "A chave de API desta credencial não pôde ser descriptografada. A chave de criptografia pode ter sido alterada. Exclua esta credencial e recrie-a com a chave correta.",
   },
   setupBanner: {
     encryptionRequired: "Chave de criptografia não configurada",

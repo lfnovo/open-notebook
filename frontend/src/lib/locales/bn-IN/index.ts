@@ -26,6 +26,7 @@ export const bnIN = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "উৎস",
     notebook: "নোটবুক",
     podcast: "পডকাস্ট",
@@ -916,6 +917,8 @@ export const bnIN = {
     configUpdateSuccess: "কনফিগারেশন সফলভাবে আপডেট",
     configDeleteSuccess: "কনফিগারেশন সফলভাবে মুছে ফেলা",
     apiKeyEditHint: "বিদ্যমান API কী রাখতে খালি রাখুন",
+    decryptionError: "ডিক্রিপশন ত্রুটি",
+    decryptionErrorDescription: "এই শংসাপত্রের API কী ডিক্রিপ্ট করা যায়নি। এনক্রিপশন কী পরিবর্তন হয়ে থাকতে পারে। এই শংসাপত্রটি মুছে সঠিক কী দিয়ে পুনরায় তৈরি করুন।",
   },
   setupBanner: {
     encryptionRequired: "এনক্রিপশন কী কনফিগার করা হয়নি",

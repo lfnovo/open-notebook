@@ -38,7 +38,7 @@ export function ModelSelector({
       {label && <Label htmlFor={selectId}>{label}</Label>}
       <Select name={name} value={value} onValueChange={onChange} disabled={disabled || isLoading}>
         <SelectTrigger id={selectId}>
-          <SelectValue placeholder={placeholder || t.settings.embeddingOptionPlaceholder} />
+          <SelectValue placeholder={placeholder || t('settings.embeddingOptionPlaceholder')} />
         </SelectTrigger>
         <SelectContent>
           {isLoading ? (
@@ -47,7 +47,7 @@ export function ModelSelector({
             </div>
           ) : filteredModels.length === 0 ? (
             <div className="text-sm text-muted-foreground py-2 px-2">
-              {t.common.noResults}
+              {t('common.noResults')}
             </div>
           ) : (
             filteredModels.map((model) => (

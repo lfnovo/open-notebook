@@ -67,19 +67,19 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{t.notebooks.createNew}</DialogTitle>
+          <DialogTitle>{t('notebooks.createNew')}</DialogTitle>
           <DialogDescription>
-            {t.notebooks.createNewDesc}
+            {t('notebooks.createNewDesc')}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="notebook-name">{t.common.name} *</Label>
+            <Label htmlFor="notebook-name">{t('common.name')} *</Label>
             <Input
               id="notebook-name"
               {...register('name')}
-              placeholder={t.notebooks.namePlaceholder}
+              placeholder={t('notebooks.namePlaceholder')}
               autoComplete="off"
             />
             {errors.name && (
@@ -88,21 +88,21 @@ export function CreateNotebookDialog({ open, onOpenChange }: CreateNotebookDialo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notebook-description">{t.common.description}</Label>
+            <Label htmlFor="notebook-description">{t('common.description')}</Label>
             <Textarea
               id="notebook-description"
               {...register('description')}
-              placeholder={t.notebooks.descPlaceholder}
+              placeholder={t('notebooks.descPlaceholder')}
               rows={4}
             />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
             <Button type="button" variant="outline" onClick={closeDialog}>
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={!isValid || createNotebook.isPending}>
-              {createNotebook.isPending ? t.common.creating : t.notebooks.createNew}
+              {createNotebook.isPending ? t('common.creating') : t('notebooks.createNew')}
             </Button>
           </DialogFooter>
         </form>

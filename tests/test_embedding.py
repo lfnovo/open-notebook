@@ -6,11 +6,21 @@ Tests embedding generation and mean pooling functionality.
 
 import pytest
 
+from open_notebook.utils.chunking import CHUNK_SIZE
 from open_notebook.utils.embedding import (
     generate_embedding,
     generate_embeddings,
     mean_pool_embeddings,
 )
+from open_notebook.utils.token_utils import token_count
+
+
+def _build_text_exceeding_tokens(fragment: str, threshold_tokens: int) -> str:
+    """Build text that exceeds a token threshold."""
+    text = fragment
+    while token_count(text) <= threshold_tokens:
+        text += fragment
+    return text
 
 # ============================================================================
 # TEST SUITE 1: Mean Pooling
@@ -184,8 +194,7 @@ class TestGenerateEmbedding:
         """Test that long text is chunked and mean pooled."""
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        # Create text longer than chunk size
-        long_text = "This is a sentence. " * 200  # ~4000 chars
+        long_text = _build_text_exceeding_tokens("This is a sentence. ", CHUNK_SIZE)
 
         mock_model = MagicMock()
         # Return multiple embeddings (one per chunk)

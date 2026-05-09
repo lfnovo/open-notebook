@@ -110,10 +110,10 @@ export function NotebookAssociations({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            {t.sources.manageNotebooks}
+            {t('sources.manageNotebooks')}
           </CardTitle>
           <CardDescription>
-            {t.sources.manageNotebooksDesc}
+            {t('sources.manageNotebooksDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,14 +131,14 @@ export function NotebookAssociations({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            {t.sources.manageNotebooks}
+            {t('sources.manageNotebooks')}
           </CardTitle>
           <CardDescription>
-            {t.sources.manageNotebooksDesc}
+            {t('sources.manageNotebooksDesc')}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">{t.sources.noNotebooksAvailable}</p>
+          <p className="text-sm text-muted-foreground">{t('sources.noNotebooksAvailable')}</p>
         </CardContent>
       </Card>
     )
@@ -149,10 +149,10 @@ export function NotebookAssociations({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="h-5 w-5" />
-          {t.sources.manageNotebooks}
+          {t('sources.manageNotebooks')}
         </CardTitle>
         <CardDescription>
-          {t.sources.manageNotebooksDesc}
+          {t('sources.manageNotebooksDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -205,7 +205,7 @@ export function NotebookAssociations({
               onClick={handleCancel}
               disabled={isSaving}
             >
-              {t.common.cancel}
+              {t('common.cancel')}
             </Button>
             <Button
               size="sm"
@@ -215,10 +215,10 @@ export function NotebookAssociations({
               {isSaving ? (
                 <>
                   <LoaderIcon className="mr-2 h-4 w-4 animate-spin" />
-                  {t.common.saving}...
+                  {t('common.saving')}...
                 </>
               ) : (
-                t.common.saveChanges
+                t('common.saveChanges')
               )}
             </Button>
           </div>

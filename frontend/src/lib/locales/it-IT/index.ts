@@ -26,6 +26,7 @@ export const itIT = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",
@@ -915,6 +916,8 @@ export const itIT = {
     configUpdateSuccess: "Configurazione aggiornata con successo",
     configDeleteSuccess: "Configurazione eliminata con successo",
     apiKeyEditHint: "Lascia vuoto per mantenere la chiave API esistente",
+    decryptionError: "Errore di decrittazione",
+    decryptionErrorDescription: "La chiave API di questa credenziale non può essere decrittata. La chiave di crittografia potrebbe essere cambiata. Elimina questa credenziale e ricreala con la chiave corretta.",
   },
   setupBanner: {
     encryptionRequired: "Chiave di crittografia non configurata",

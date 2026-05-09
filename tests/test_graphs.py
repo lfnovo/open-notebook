@@ -6,8 +6,11 @@ without heavy mocking of the actual processing logic.
 """
 
 from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
+from open_notebook.domain.notebook import Source
 
 from open_notebook.graphs.prompt import PatternChainState, graph
 from open_notebook.graphs.tools import get_current_timestamp
@@ -149,6 +152,131 @@ class TestTransformationGraph:
         assert transformation_graph is not None
         assert hasattr(transformation_graph, "invoke")
         assert hasattr(transformation_graph, "ainvoke")
+
+
+# ============================================================================
+# TEST SUITE 4: Source Graph - Title Preservation
+# ============================================================================
+
+
+class TestSaveSourceTitlePreservation:
+    """Test save_source node preserves user-set titles (#670)."""
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.Source.get")
+    async def test_custom_title_preserved(self, mock_get):
+        """User-set title is NOT overwritten by content_state.title."""
+        from open_notebook.graphs.source import save_source
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.title = "My Custom Research Title"
+        mock_source.save = AsyncMock()
+        mock_get.return_value = mock_source
+
+        content_state = MagicMock()
+        content_state.title = "video.mp4"
+        content_state.url = "https://example.com"
+        content_state.file_path = None
+        content_state.content = "Some content"
+
+        state = {
+            "source_id": "source:123",
+            "content_state": content_state,
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await save_source(state)
+
+        assert mock_source.title == "My Custom Research Title"
+        mock_source.save.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.Source.get")
+    async def test_placeholder_title_replaced(self, mock_get):
+        """Placeholder 'Processing...' title IS replaced by extracted title."""
+        from open_notebook.graphs.source import save_source
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.title = "Processing..."
+        mock_source.save = AsyncMock()
+        mock_get.return_value = mock_source
+
+        content_state = MagicMock()
+        content_state.title = "Extracted Article Title"
+        content_state.url = "https://example.com"
+        content_state.file_path = None
+        content_state.content = "Some content"
+
+        state = {
+            "source_id": "source:123",
+            "content_state": content_state,
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await save_source(state)
+
+        assert mock_source.title == "Extracted Article Title"
+        mock_source.save.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.Source.get")
+    async def test_none_title_replaced(self, mock_get):
+        """None title IS replaced by extracted title."""
+        from open_notebook.graphs.source import save_source
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.title = None
+        mock_source.save = AsyncMock()
+        mock_get.return_value = mock_source
+
+        content_state = MagicMock()
+        content_state.title = "Extracted Title"
+        content_state.url = None
+        content_state.file_path = "/tmp/file.pdf"
+        content_state.content = "Content"
+
+        state = {
+            "source_id": "source:123",
+            "content_state": content_state,
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await save_source(state)
+
+        assert mock_source.title == "Extracted Title"
+        mock_source.save.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.Source.get")
+    async def test_empty_title_replaced(self, mock_get):
+        """Empty string title IS replaced by extracted title."""
+        from open_notebook.graphs.source import save_source
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.title = ""
+        mock_source.save = AsyncMock()
+        mock_get.return_value = mock_source
+
+        content_state = MagicMock()
+        content_state.title = "Extracted Title"
+        content_state.url = None
+        content_state.file_path = None
+        content_state.content = "Content"
+
+        state = {
+            "source_id": "source:123",
+            "content_state": content_state,
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await save_source(state)
+
+        assert mock_source.title == "Extracted Title"
+        mock_source.save.assert_awaited_once()
 
 
 if __name__ == "__main__":

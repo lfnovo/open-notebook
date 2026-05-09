@@ -64,8 +64,8 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 #### `lib/locales/` — Internationalization (i18n)
 - **Locale files** (`en-US/`, `pt-BR/`, `zh-CN/`, `zh-TW/`, `ja-JP/`): Translation strings organized by feature
 - **`i18n.ts`**: i18next configuration with language detection
-- **`use-translation.ts`**: Custom hook with Proxy-based `t.section.key` access pattern
-- **Pattern**: Components call `useTranslation()` hook; access strings via `t.common.save`, `t.notebooks.title`
+- **`use-translation.ts`**: Thin wrapper around react-i18next's `useTranslation` with language change events
+- **Pattern**: Components call `useTranslation()` hook; access strings via `t('common.save')`, `t('notebooks.title')`
 
 ## Data & Control Flow Walkthrough
 

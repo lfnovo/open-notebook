@@ -26,6 +26,7 @@ export const frFR = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "Source",
     notebook: "Carnet",
     podcast: "Podcast",
@@ -915,6 +916,8 @@ export const frFR = {
     configUpdateSuccess: "Configuration mise à jour avec succès",
     configDeleteSuccess: "Configuration supprimée avec succès",
     apiKeyEditHint: "Laissez vide pour conserver la clé API existante",
+    decryptionError: "Erreur de déchiffrement",
+    decryptionErrorDescription: "La clé API de cette configuration n'a pas pu être déchiffrée. La clé de chiffrement a peut-être changé. Supprimez cette configuration et recréez-la avec la bonne clé.",
   },
   setupBanner: {
     encryptionRequired: "Clé de chiffrement non configurée",

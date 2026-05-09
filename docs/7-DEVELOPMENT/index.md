@@ -14,6 +14,15 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 
 **First time?** Check out our [Contributing Guide](contributing.md) for the issue-first workflow.
 
+### 🔒 I Want to Understand Security Practices
+
+**[Security Guidelines](security.md)** covers:
+- Database query safety (preventing SurrealQL injection)
+- Template rendering safety (preventing SSTI)
+- File handling safety (preventing path traversal and LFI)
+- Secrets management and CORS configuration
+- Code review security checklist
+
 ---
 
 ### 🏗️ I Want to Understand the Architecture
@@ -50,6 +59,7 @@ For deeper dives, check `/open_notebook/` CLAUDE.md for component-specific guida
 | [Architecture](architecture.md) | Understanding system | System design, tech stack, workflows |
 | [Design Principles](design-principles.md) | All developers | What guides our decisions |
 | [API Reference](api-reference.md) | Building integrations | Complete REST API documentation |
+| [Security](security.md) | All developers | Security practices and vulnerability prevention |
 | [Maintainer Guide](maintainer-guide.md) | Maintainers | Managing issues, PRs, releases |
 
 ---

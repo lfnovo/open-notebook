@@ -99,12 +99,20 @@ export function useCreateSource() {
         variables.notebooks.forEach(notebookId => {
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.sources(notebookId),
-            refetchType: 'active' // Refetch active queries immediately
+            refetchType: 'active'
+          })
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.sourcesInfinite(notebookId),
+            refetchType: 'active'
           })
         })
       } else if (variables.notebook_id) {
         queryClient.invalidateQueries({
           queryKey: QUERY_KEYS.sources(variables.notebook_id),
+          refetchType: 'active'
+        })
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.sourcesInfinite(variables.notebook_id),
           refetchType: 'active'
         })
       }
@@ -118,20 +126,20 @@ export function useCreateSource() {
       // Show different messages based on processing mode
       if (variables.async_processing) {
         toast({
-          title: t.sources.sourceQueued,
-          description: t.sources.sourceQueuedDesc,
+          title: t('sources.sourceQueued'),
+          description: t('sources.sourceQueuedDesc'),
         })
       } else {
         toast({
-          title: t.common.success,
-          description: t.sources.sourceAddedSuccess,
+          title: t('common.success'),
+          description: t('sources.sourceAddedSuccess'),
         })
       }
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToAddSource),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToAddSource')),
         variant: 'destructive',
       })
     },
@@ -151,14 +159,14 @@ export function useUpdateSource() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(id) })
       toast({
-        title: t.common.success,
-        description: t.sources.sourceUpdatedSuccess,
+        title: t('common.success'),
+        description: t('sources.sourceUpdatedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToUpdateSource),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToUpdateSource')),
         variant: 'destructive',
       })
     },
@@ -178,14 +186,14 @@ export function useDeleteSource() {
       // Also invalidate the specific source
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(id) })
       toast({
-        title: t.common.success,
-        description: t.sources.sourceDeletedSuccess,
+        title: t('common.success'),
+        description: t('sources.sourceDeletedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToDeleteSource),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToDeleteSource')),
         variant: 'destructive',
       })
     },
@@ -201,18 +209,22 @@ export function useFileUpload() {
     mutationFn: ({ file, notebookId }: { file: File; notebookId: string }) =>
       sourcesApi.upload(file, notebookId),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.sources(variables.notebookId) 
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sources(variables.notebookId)
+      })
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.sourcesInfinite(variables.notebookId),
+        refetchType: 'active'
       })
       toast({
-        title: t.common.success,
-        description: t.sources.fileUploadedSuccess,
+        title: t('common.success'),
+        description: t('sources.fileUploadedSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToUploadFile),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToUploadFile')),
         variant: 'destructive',
       })
     },
@@ -263,14 +275,14 @@ export function useRetrySource() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
 
       toast({
-        title: t.sources.sourceRequeued,
-        description: t.sources.sourceRequeuedDesc,
+        title: t('sources.sourceRequeued'),
+        description: t('sources.sourceRequeuedDesc'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToRetry),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToRetry')),
         variant: 'destructive',
       })
     },
@@ -310,19 +322,19 @@ export function useAddSourcesToNotebook() {
       // Show appropriate toast based on results
       if (result.failures === 0) {
         toast({
-          title: t.common.success,
-          description: t.sources.sourcesAddedToNotebook.replace('{count}', result.successes.toString()),
+          title: t('common.success'),
+          description: t('sources.sourcesAddedToNotebook').replace('{count}', result.successes.toString()),
         })
       } else if (result.successes === 0) {
         toast({
-          title: t.common.error,
-          description: t.sources.failedToAddSourcesToNotebook,
+          title: t('common.error'),
+          description: t('sources.failedToAddSourcesToNotebook'),
           variant: 'destructive',
         })
       } else {
         toast({
-          title: t.common.success,
-          description: t.sources.partialAddSuccess
+          title: t('common.success'),
+          description: t('sources.partialAddSuccess')
             .replace('{success}', result.successes.toString())
             .replace('{failed}', result.failures.toString()),
           variant: 'default',
@@ -331,8 +343,8 @@ export function useAddSourcesToNotebook() {
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToAddSourcesToNotebook),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToAddSourcesToNotebook')),
         variant: 'destructive',
       })
     },
@@ -359,14 +371,14 @@ export function useRemoveSourceFromNotebook() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.source(sourceId) })
 
       toast({
-        title: t.common.success,
-        description: t.sources.sourceRemovedFromNotebook,
+        title: t('common.success'),
+        description: t('sources.sourceRemovedFromNotebook'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: getApiErrorMessage(error, (key) => t(key), t.sources.failedToRemoveSourceFromNotebook),
+        title: t('common.error'),
+        description: getApiErrorMessage(error, (key) => t(key), t('sources.failedToRemoveSourceFromNotebook')),
         variant: 'destructive',
       })
     },

@@ -107,7 +107,7 @@ Navigation: Settings → API Keys
 
 | Provider | Required Fields | Optional Fields |
 |----------|-----------------|-----------------|
-| Azure OpenAI | API Key, Endpoint, API Version | Service-specific endpoints (LLM, Embedding, STT, TTS) |
+| Azure OpenAI | API Key, URL Base (Azure endpoint) | Service-specific endpoints (LLM, Embedding, STT, TTS) |
 | OpenAI-Compatible | Base URL | API Key, Service-specific configs |
 | Vertex AI | Project ID, Location, Credentials Path | — |
 
@@ -208,17 +208,13 @@ Ollama allows localhost and private IPs since it runs locally.
 
 ### Azure OpenAI
 
-Azure requires multiple fields:
+1. Add credential with provider **Azure OpenAI**
+2. Enter your API key
+3. Enter your Azure endpoint in the **URL Base** field (e.g., `https://myresource.openai.azure.com`)
+4. Test connection
+5. Discover and register models
 
-| Field | Example | Required |
-|-------|---------|----------|
-| API Key | `abc123...` | Yes |
-| Endpoint | `https://myresource.openai.azure.com` | Yes |
-| API Version | `2024-02-15-preview` | Yes |
-| LLM Endpoint | `https://myresource-llm.openai.azure.com` | No |
-| Embedding Endpoint | `https://myresource-embed.openai.azure.com` | No |
-
-Service-specific endpoints override the main endpoint for that service type.
+The URL Base field is automatically mapped to the Azure endpoint. The API version defaults to `2024-10-21` if not set via environment variable.
 
 ### OpenAI-Compatible
 
@@ -377,8 +373,8 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 - Ensure Ollama server is running
 
 ### Azure OpenAI
-- Endpoint format: `https://{resource-name}.openai.azure.com`
-- API version format: `YYYY-MM-DD` or `YYYY-MM-DD-preview`
+- Enter your Azure endpoint in the **URL Base** field (format: `https://{resource-name}.openai.azure.com`)
+- API version defaults to `2024-10-21`; override via `AZURE_OPENAI_API_VERSION` environment variable if needed
 - Deployment names configured separately when registering models via the credential's Discover Models dialog
 
 ---

@@ -197,6 +197,7 @@ Configure Ollama in the Settings UI:
 | `SURREAL_NAMESPACE` | Database namespace | `open_notebook` |
 | `SURREAL_DATABASE` | Database name | `open_notebook` |
 | `API_URL` | API external URL | `http://localhost:5055` |
+| `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | Override embedding batch size for stricter/local providers (recommended: `8` for CPU-only local setups) | `50` |
 
 See [Environment Reference](../5-CONFIGURATION/environment-reference.md) for complete list.
 
@@ -327,7 +328,7 @@ docker compose up -d
 Looking for different configurations? Check out our [examples/](../../examples/) folder:
 
 - **[Ollama Setup](../../examples/docker-compose-ollama.yml)** - Run local AI models (free, private)
-- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, not recommended)
+- **[Single Container](../../examples/docker-compose-single.yml)** - All-in-one container (deprecated, will be removed in v2)
 - **[Development](../../examples/docker-compose-dev.yml)** - For contributors and developers
 
 Each example includes detailed comments and usage instructions.

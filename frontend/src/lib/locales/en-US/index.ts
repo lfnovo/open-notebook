@@ -26,6 +26,7 @@ export const enUS = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",
@@ -916,6 +917,8 @@ export const enUS = {
     configUpdateSuccess: "Configuration updated successfully",
     configDeleteSuccess: "Configuration deleted successfully",
     apiKeyEditHint: "Leave blank to keep the existing API key",
+    decryptionError: "Decryption Error",
+    decryptionErrorDescription: "This credential's API key could not be decrypted. The encryption key may have changed. Delete this credential and re-create it with the correct key.",
   },
   setupBanner: {
     encryptionRequired: "Encryption key not configured",

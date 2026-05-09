@@ -26,6 +26,7 @@ export const zhTW = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",
@@ -915,6 +916,8 @@ export const zhTW = {
     configUpdateSuccess: "設定更新成功",
     configDeleteSuccess: "設定刪除成功",
     apiKeyEditHint: "留空以保留現有 API 金鑰",
+    decryptionError: "解密錯誤",
+    decryptionErrorDescription: "此憑證的 API 金鑰無法解密。加密金鑰可能已變更。請刪除此憑證並使用正確的金鑰重新建立。",
   },
   setupBanner: {
     encryptionRequired: "未設定加密金鑰",

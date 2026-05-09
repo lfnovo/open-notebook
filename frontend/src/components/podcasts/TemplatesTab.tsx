@@ -30,9 +30,9 @@ export function TemplatesTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold">{t.podcasts.templatesWorkspaceTitle}</h2>
+        <h2 className="text-xl font-semibold">{t('podcasts.templatesWorkspaceTitle')}</h2>
         <p className="text-sm text-muted-foreground">
-          {t.podcasts.templatesWorkspaceDesc}
+          {t('podcasts.templatesWorkspaceDesc')}
         </p>
       </div>
 
@@ -44,42 +44,42 @@ export function TemplatesTab() {
           <AccordionTrigger className="gap-2 py-4 text-left text-sm font-semibold">
             <div className="flex items-center gap-2">
               <Lightbulb className="h-4 w-4 text-primary" />
-              {t.podcasts.howTemplatesPowerTitle}
+              {t('podcasts.howTemplatesPowerTitle')}
             </div>
           </AccordionTrigger>
           <AccordionContent className="text-sm text-muted-foreground">
             <div className="space-y-4">
               <p className="text-muted-foreground/90">
-                {t.podcasts.howTemplatesPowerDesc}
+                {t('podcasts.howTemplatesPowerDesc')}
               </p>
 
               <div className="space-y-2">
-                <h4 className="font-medium text-foreground">{t.podcasts.episodeProfilesSetFormat}</h4>
+                <h4 className="font-medium text-foreground">{t('podcasts.episodeProfilesSetFormat')}</h4>
                 <ul className="list-disc space-y-1 pl-5">
-                  <li>{t.podcasts.episodeProfilesList1}</li>
-                  <li>{t.podcasts.episodeProfilesList2}</li>
-                  <li>{t.podcasts.episodeProfilesList3}</li>
+                  <li>{t('podcasts.episodeProfilesList1')}</li>
+                  <li>{t('podcasts.episodeProfilesList2')}</li>
+                  <li>{t('podcasts.episodeProfilesList3')}</li>
                 </ul>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium text-foreground">{t.podcasts.speakerProfilesBringVoices}</h4>
+                <h4 className="font-medium text-foreground">{t('podcasts.speakerProfilesBringVoices')}</h4>
                 <ul className="list-disc space-y-1 pl-5">
-                  <li>{t.podcasts.speakerProfilesList1}</li>
-                  <li>{t.podcasts.speakerProfilesList2}</li>
-                  <li>{t.podcasts.speakerProfilesList3}</li>
+                  <li>{t('podcasts.speakerProfilesList1')}</li>
+                  <li>{t('podcasts.speakerProfilesList2')}</li>
+                  <li>{t('podcasts.speakerProfilesList3')}</li>
                 </ul>
               </div>
 
               <div className="space-y-2">
-                <h4 className="font-medium text-foreground">{t.podcasts.recommendedWorkflow}</h4>
+                <h4 className="font-medium text-foreground">{t('podcasts.recommendedWorkflow')}</h4>
                 <ol className="list-decimal space-y-1 pl-5">
-                  <li>{t.podcasts.workflowStep1}</li>
-                  <li>{t.podcasts.workflowStep2}</li>
-                  <li>{t.podcasts.workflowStep3}</li>
+                  <li>{t('podcasts.workflowStep1')}</li>
+                  <li>{t('podcasts.workflowStep2')}</li>
+                  <li>{t('podcasts.workflowStep3')}</li>
                 </ol>
                 <p className="text-xs text-muted-foreground/80">
-                  {t.podcasts.workflowHint}
+                  {t('podcasts.workflowHint')}
                 </p>
               </div>
             </div>
@@ -90,9 +90,9 @@ export function TemplatesTab() {
       {hasError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>{t.podcasts.failedToLoadTemplates}</AlertTitle>
+          <AlertTitle>{t('podcasts.failedToLoadTemplates')}</AlertTitle>
           <AlertDescription>
-            {t.podcasts.failedToLoadTemplatesDesc}
+            {t('podcasts.failedToLoadTemplatesDesc')}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -100,7 +100,7 @@ export function TemplatesTab() {
       {isLoading ? (
         <div className="flex items-center gap-3 rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {t.podcasts.loadingTemplates}
+          {t('podcasts.loadingTemplates')}
         </div>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">

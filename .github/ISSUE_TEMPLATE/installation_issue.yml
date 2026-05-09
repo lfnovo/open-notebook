@@ -30,8 +30,8 @@ body:
       label: Installation Method
       description: How are you trying to install Open Notebook?
       options:
-        - Docker (single container - v1-latest-single)
-        - Docker (multi-container - docker-compose)
+        - Docker (docker-compose - recommended)
+        - Docker (single container - v1-latest-single, deprecated)
         - Local development (make start-all)
         - Other (please specify below)
     validations:

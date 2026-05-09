@@ -20,7 +20,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
 
   const handleSaveToNote = () => {
     if (!notebookId) {
-      toast.error(t.sources.cannotSaveNoteNoNotebook)
+      toast.error(t('sources.cannotSaveNoteNoNotebook'))
       return
     }
 
@@ -37,7 +37,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
       // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(content)
-        toast.success(t.common.copyToClipboard)
+        toast.success(t('common.copyToClipboard'))
         setCopySuccess(true)
         setTimeout(() => setCopySuccess(false), 2000)
       } else {
@@ -53,18 +53,18 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
 
         try {
           document.execCommand('copy')
-          toast.success(t.common.copyToClipboard)
+          toast.success(t('common.copyToClipboard'))
           setCopySuccess(true)
           setTimeout(() => setCopySuccess(false), 2000)
         } catch {
-          toast.error(t.common.error)
+          toast.error(t('common.error'))
         }
 
         document.body.removeChild(textArea)
       }
     } catch (err) {
       console.error('Failed to copy to clipboard:', err)
-      toast.error(t.common.error)
+      toast.error(t('common.error'))
     }
   }
 
@@ -89,7 +89,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{t.common.saveToNote}</p>
+              <p>{t('common.saveToNote')}</p>
             </TooltipContent>
           </Tooltip>
         )}
@@ -110,7 +110,7 @@ export function MessageActions({ content, notebookId }: MessageActionsProps) {
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{t.common.copyToClipboard}</p>
+            <p>{t('common.copyToClipboard')}</p>
           </TooltipContent>
         </Tooltip>
       </div>

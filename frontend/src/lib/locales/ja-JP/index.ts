@@ -26,6 +26,7 @@ export const jaJP = {
     french: "Français",
     russian: "Русский",
     bengali: "বাংলা",
+    spanish: "Español",
     source: "ソース",
     notebook: "ノートブック",
     podcast: "ポッドキャスト",
@@ -915,6 +916,8 @@ export const jaJP = {
     configUpdateSuccess: "設定が正常に変更されました",
     configDeleteSuccess: "設定が正常に削除されました",
     apiKeyEditHint: "既存のAPIキーを維持するには空白のままにしてください",
+    decryptionError: "復号エラー",
+    decryptionErrorDescription: "この認証情報のAPIキーを復号できませんでした。暗号化キーが変更された可能性があります。この認証情報を削除し、正しいキーで再作成してください。",
   },
   setupBanner: {
     encryptionRequired: "暗号化キーが設定されていません",

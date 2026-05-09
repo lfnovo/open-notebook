@@ -46,7 +46,7 @@ export function StreamingResponse({
       // This try-catch is here for future enhancements or unexpected errors.
     } catch {
       const typeLabel = type === 'source_insight' ? 'insight' : type
-      toast.error(t.common.itemNotFound.replace('{type}', typeLabel))
+      toast.error(t('common.itemNotFound').replace('{type}', typeLabel))
     }
   }
 
@@ -58,7 +58,7 @@ export function StreamingResponse({
     <div
       className="space-y-4 mt-6 max-h-[60vh] overflow-y-auto pr-2"
       role="region"
-      aria-label={t.common.accessibility.askResponse}
+      aria-label={t('common.accessibility.askResponse')}
       aria-live="polite"
       aria-busy={isStreaming}
     >
@@ -70,7 +70,7 @@ export function StreamingResponse({
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-primary" />
-                  {t.common.strategy}
+                  {t('common.strategy')}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${strategyOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
@@ -78,12 +78,12 @@ export function StreamingResponse({
             <CollapsibleContent>
               <CardContent className="space-y-3 pt-0">
                 <div>
-                  <p className="text-sm text-muted-foreground mb-2">{t.common.reasoning}:</p>
+                  <p className="text-sm text-muted-foreground mb-2">{t('common.reasoning')}:</p>
                   <p className="text-sm">{strategy.reasoning}</p>
                 </div>
                 {strategy.searches.length > 0 && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">{t.common.searchTerms}:</p>
+                    <p className="text-sm text-muted-foreground mb-2">{t('common.searchTerms')}:</p>
                     <div className="space-y-2">
                       {strategy.searches.map((search, i) => (
                         <div key={i} className="flex items-start gap-2">
@@ -111,7 +111,7 @@ export function StreamingResponse({
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-primary" />
-                  {t.common.individualAnswers.replace('{count}', answers.length.toString())}
+                  {t('common.individualAnswers').replace('{count}', answers.length.toString())}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${answersOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
@@ -135,7 +135,7 @@ export function StreamingResponse({
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-primary" />
-              {t.common.finalAnswer}
+              {t('common.finalAnswer')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -151,7 +151,7 @@ export function StreamingResponse({
       {isStreaming && !finalAnswer && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <LoadingSpinner size="sm" />
-          <span>{t.searchPage.processingQuestion}</span>
+          <span>{t('searchPage.processingQuestion')}</span>
         </div>
       )}
     </div>

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
-import { TranslationKeys } from '@/lib/locales'
+import type { TFunction } from 'i18next'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -43,33 +43,33 @@ import {
   Command,
 } from 'lucide-react'
 
-const getNavigation = (t: TranslationKeys) => [
+const getNavigation = (t: TFunction) => [
   {
-    title: t.navigation.collect,
+    title: t('navigation.collect'),
     items: [
-      { name: t.navigation.sources, href: '/sources', icon: FileText },
+      { name: t('navigation.sources'), href: '/sources', icon: FileText },
     ],
   },
   {
-    title: t.navigation.process,
+    title: t('navigation.process'),
     items: [
-      { name: t.navigation.notebooks, href: '/notebooks', icon: Book },
-      { name: t.navigation.askAndSearch, href: '/search', icon: Search },
+      { name: t('navigation.notebooks'), href: '/notebooks', icon: Book },
+      { name: t('navigation.askAndSearch'), href: '/search', icon: Search },
     ],
   },
   {
-    title: t.navigation.create,
+    title: t('navigation.create'),
     items: [
-      { name: t.navigation.podcasts, href: '/podcasts', icon: Mic },
+      { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic },
     ],
   },
   {
-    title: t.navigation.manage,
+    title: t('navigation.manage'),
     items: [
-      { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
-      { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
-      { name: t.navigation.settings, href: '/settings', icon: Settings },
-      { name: t.navigation.advanced, href: '/advanced', icon: Wrench },
+      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot },
+      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle },
+      { name: t('navigation.settings'), href: '/settings', icon: Settings },
+      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench },
     ],
   },
 ] as const
@@ -139,9 +139,9 @@ export function AppSidebar() {
           ) : (
             <>
               <div className="flex items-center gap-2">
-                <Image src="/logo.svg" alt={t.common.appName} width={32} height={32} />
+                <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} />
                 <span className="text-base font-medium text-sidebar-foreground">
-                  {t.common.appName}
+                  {t('common.appName')}
                 </span>
               </div>
               <Button
@@ -179,13 +179,13 @@ export function AppSidebar() {
                         variant="default"
                         size="sm"
                         className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
-                        aria-label={t.common.create}
+                        aria-label={t('common.create')}
                       >
                         <Plus className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                   <TooltipContent side="right">{t.common.create}</TooltipContent>
+                   <TooltipContent side="right">{t('common.create')}</TooltipContent>
                 </Tooltip>
               ) : (
                 <DropdownMenuTrigger asChild>
@@ -196,7 +196,7 @@ export function AppSidebar() {
                     className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
                    >
                     <Plus className="h-4 w-4 mr-2" />
-                    {t.common.create}
+                    {t('common.create')}
                   </Button>
                 </DropdownMenuTrigger>
               )}
@@ -214,7 +214,7 @@ export function AppSidebar() {
                   className="gap-2"
                 >
                    <FileText className="h-4 w-4" />
-                  {t.common.source}
+                  {t('common.source')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -224,7 +224,7 @@ export function AppSidebar() {
                   className="gap-2"
                 >
                    <Book className="h-4 w-4" />
-                  {t.common.notebook}
+                  {t('common.notebook')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onSelect={(event) => {
@@ -234,7 +234,7 @@ export function AppSidebar() {
                   className="gap-2"
                 >
                    <Mic className="h-4 w-4" />
-                  {t.common.podcast}
+                  {t('common.podcast')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -304,14 +304,14 @@ export function AppSidebar() {
               <div className="flex items-center justify-between">
                  <span className="flex items-center gap-1.5">
                   <Command className="h-3 w-3" />
-                  {t.common.quickActions}
+                  {t('common.quickActions')}
                 </span>
                 <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   {isMac ? <span className="text-xs">⌘</span> : <span>Ctrl+</span>}K
                 </kbd>
               </div>
                <p className="mt-1 text-[10px] text-sidebar-foreground/40">
-                {t.common.quickActionsDesc}
+                {t('common.quickActionsDesc')}
               </p>
             </div>
           )}
@@ -330,7 +330,7 @@ export function AppSidebar() {
                       <ThemeToggle iconOnly />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{t.common.theme}</TooltipContent>
+                  <TooltipContent side="right">{t('common.theme')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -338,7 +338,7 @@ export function AppSidebar() {
                       <LanguageToggle iconOnly />
                     </div>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{t.common.language}</TooltipContent>
+                  <TooltipContent side="right">{t('common.language')}</TooltipContent>
                 </Tooltip>
               </>
             ) : (
@@ -356,22 +356,22 @@ export function AppSidebar() {
                   variant="outline"
                   className="w-full justify-center sidebar-menu-item"
                   onClick={logout}
-                  aria-label={t.common.signOut}
+                  aria-label={t('common.signOut')}
                 >
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-               <TooltipContent side="right">{t.common.signOut}</TooltipContent>
+               <TooltipContent side="right">{t('common.signOut')}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
               variant="outline"
               className="w-full justify-start gap-3 sidebar-menu-item"
               onClick={logout}
-              aria-label={t.common.signOut}
+              aria-label={t('common.signOut')}
              >
               <LogOut className="h-4 w-4" />
-              {t.common.signOut}
+              {t('common.signOut')}
             </Button>
           )}
         </div>

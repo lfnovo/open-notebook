@@ -1102,6 +1102,7 @@ function DefaultModelSelectors({
     { key: 'default_embedding_model', label: t('models.embeddingModelLabel'), description: t('models.embeddingModelDesc'), modelType: 'embedding', required: true, id: `${generatedId}-embed` },
     { key: 'default_text_to_speech_model', label: t('models.ttsModelLabel'), description: t('models.ttsModelDesc'), modelType: 'text_to_speech', id: `${generatedId}-tts` },
     { key: 'default_speech_to_text_model', label: t('models.sttModelLabel'), description: t('models.sttModelDesc'), modelType: 'speech_to_text', id: `${generatedId}-stt` },
+    { key: 'default_vision_model', label: t('models.visionModelLabel'), description: t('models.visionModelDesc'), modelType: 'language', id: `${generatedId}-vision` },
   ]
 
   const advancedConfigs: DefaultConfig[] = [
@@ -1168,14 +1169,14 @@ function DefaultModelSelectors({
         )}
 
         {/* Primary models: Chat, Embedding, TTS, STT */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {primaryConfigs.map(config => {
             const available = getModelsForType(config.modelType)
             const currentValue = watch(config.key) || undefined
             const isValid = currentValue && available.some(m => m.id === currentValue)
 
             return (
-              <div key={config.key} className="space-y-1">
+              <div key={config.key} className="space-y-1 min-w-0">
                 <Label htmlFor={config.id} className="text-xs">
                   {config.label}
                   {config.required && <span className="text-destructive ml-0.5">*</span>}
@@ -1187,7 +1188,7 @@ function DefaultModelSelectors({
                   >
                     <SelectTrigger
                       id={config.id}
-                      className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+                      className={`h-8 text-xs truncate ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
                     >
                       <SelectValue placeholder={
                         config.required && !isValid && available.length > 0
@@ -1227,7 +1228,7 @@ function DefaultModelSelectors({
                 const isValid = currentValue && available.some(m => m.id === currentValue)
 
                 return (
-                  <div key={config.key} className="space-y-1">
+                  <div key={config.key} className="space-y-1 min-w-0">
                     <Label htmlFor={config.id} className="text-xs">
                       {config.label}
                       {config.required && <span className="text-destructive ml-0.5">*</span>}
@@ -1239,7 +1240,7 @@ function DefaultModelSelectors({
                       >
                         <SelectTrigger
                           id={config.id}
-                          className={`h-8 text-xs ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
+                          className={`h-8 text-xs truncate ${config.required && !isValid && available.length > 0 ? 'border-destructive' : ''}`}
                         >
                           <SelectValue placeholder={
                             config.required && !isValid && available.length > 0

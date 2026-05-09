@@ -71,10 +71,17 @@ Sources are the raw materials of your research. This guide covers how to add dif
 
 **Just paste the URL** in "Web Link" section.
 
+### Images (with Vision Model configured)
+- **Images** (.jpg, .png, .webp, etc.) — Described directly by a multimodal LLM
+- **Scanned / image-heavy PDFs** — Pages rendered and analyzed page-by-page (replaces standard OCR)
+- **Videos** — Visual frames analyzed alongside the audio transcript
+
+Requires setting a default **Vision Model** in Settings → API Keys → Default Models. See the [Vision Models guide](../5-CONFIGURATION/vision-models.md) for setup, supported models, and cost guidance. Without a Vision Model configured, image-only files remain unsupported and PDFs/videos fall back to the standard text/audio pipeline.
+
 ### What Doesn't Work
 - Paywalled content (WSJ, FT, etc.) — Can't extract
 - Password-protected PDFs — Can't open
-- Pure image files (.jpg, .png) — Except scanned PDFs which have OCR
+- Pure image files (.jpg, .png) — Unsupported unless a [Vision Model](../5-CONFIGURATION/vision-models.md) is configured
 - Very large files (>100MB) — Timeout
 
 ---

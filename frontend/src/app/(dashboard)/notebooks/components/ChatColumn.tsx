@@ -83,8 +83,8 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <AlertCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm">{t.chat.unableToLoadChat}</p>
-            <p className="text-xs mt-2">{t.common.refreshPage || 'Please try refreshing the page'}</p>
+            <p className="text-sm">{t('chat.unableToLoadChat')}</p>
+            <p className="text-xs mt-2">{t('common.refreshPage') || 'Please try refreshing the page'}</p>
           </div>
         </CardContent>
       </Card>
@@ -93,7 +93,7 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
 
   return (
     <ChatPanel
-      title={t.chat.chatWithNotebook}
+      title={t('chat.chatWithNotebook')}
       contextType="notebook"
       messages={chat.messages}
       isStreaming={chat.isSending}

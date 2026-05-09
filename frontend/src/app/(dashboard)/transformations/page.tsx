@@ -29,7 +29,7 @@ export default function TransformationsPage() {
         <div className="p-6 space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold">{t.transformations.title}</h1>
+              <h1 className="text-2xl font-bold">{t('transformations.title')}</h1>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
                 <RefreshCw className="h-4 w-4" />
             </Button>
@@ -38,21 +38,21 @@ export default function TransformationsPage() {
 
         <div className="max-w-5xl">
           <p className="text-muted-foreground">
-            {t.transformations.desc}
+            {t('transformations.desc')}
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.transformations.workspace}</p>
-            <TabsList aria-label={t.common.accessibility.transformationViews} className="w-full max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('transformations.workspace')}</p>
+            <TabsList aria-label={t('common.accessibility.transformationViews')} className="w-full max-w-xl">
               <TabsTrigger value="transformations" className="flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />
-                {t.transformations.title}
+                {t('transformations.title')}
               </TabsTrigger>
               <TabsTrigger value="playground" className="flex items-center gap-2">
                 <Play className="h-4 w-4" />
-                {t.transformations.playground}
+                {t('transformations.playground')}
               </TabsTrigger>
             </TabsList>
           </div>

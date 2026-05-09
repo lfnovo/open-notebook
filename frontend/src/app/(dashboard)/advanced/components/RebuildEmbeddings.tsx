@@ -123,10 +123,10 @@ export function RebuildEmbeddings() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          {t.advanced.rebuildEmbeddings}
+          {t('advanced.rebuildEmbeddings')}
         </CardTitle>
         <CardDescription>
-          {t.advanced.rebuildEmbeddingsDesc}
+          {t('advanced.rebuildEmbeddingsDesc')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -134,25 +134,25 @@ export function RebuildEmbeddings() {
         {!isRebuildActive && (
           <div className="space-y-6">
             <div className="space-y-3">
-              <Label htmlFor="mode">{t.advanced.rebuild.mode}</Label>
+              <Label htmlFor="mode">{t('advanced.rebuild.mode')}</Label>
               <Select value={mode} onValueChange={(value) => setMode(value as 'existing' | 'all')}>
                 <SelectTrigger id="mode">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="existing">{t.advanced.rebuild.existing}</SelectItem>
-                  <SelectItem value="all">{t.advanced.rebuild.all}</SelectItem>
+                  <SelectItem value="existing">{t('advanced.rebuild.existing')}</SelectItem>
+                  <SelectItem value="all">{t('advanced.rebuild.all')}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-sm text-muted-foreground">
                 {mode === 'existing'
-                  ? t.advanced.rebuild.existingDesc
-                  : t.advanced.rebuild.allDesc}
+                  ? t('advanced.rebuild.existingDesc')
+                  : t('advanced.rebuild.allDesc')}
               </p>
             </div>
 
             <div className="space-y-3" role="group" aria-labelledby="include-label">
-              <span id="include-label" className="text-sm font-medium leading-none">{t.advanced.rebuild.include}</span>
+              <span id="include-label" className="text-sm font-medium leading-none">{t('advanced.rebuild.include')}</span>
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -161,7 +161,7 @@ export function RebuildEmbeddings() {
                     onCheckedChange={(checked) => setIncludeSources(checked === true)}
                   />
                   <Label htmlFor="sources" className="font-normal cursor-pointer">
-                    {t.navigation.sources}
+                    {t('navigation.sources')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -171,7 +171,7 @@ export function RebuildEmbeddings() {
                     onCheckedChange={(checked) => setIncludeNotes(checked === true)}
                   />
                   <Label htmlFor="notes" className="font-normal cursor-pointer">
-                    {t.common.notes}
+                    {t('common.notes')}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -181,7 +181,7 @@ export function RebuildEmbeddings() {
                     onCheckedChange={(checked) => setIncludeInsights(checked === true)}
                   />
                   <Label htmlFor="insights" className="font-normal cursor-pointer">
-                    {t.common.insights}
+                    {t('common.insights')}
                   </Label>
                 </div>
               </div>
@@ -189,7 +189,7 @@ export function RebuildEmbeddings() {
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    {t.advanced.rebuild.selectOneError}
+                    {t('advanced.rebuild.selectOneError')}
                   </AlertDescription>
                 </Alert>
               )}
@@ -203,10 +203,10 @@ export function RebuildEmbeddings() {
               {rebuildMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  {t.advanced.rebuild.starting}
+                  {t('advanced.rebuild.starting')}
                 </>
               ) : (
-                t.advanced.rebuild.startBtn
+                t('advanced.rebuild.startBtn')
               )}
             </Button>
 
@@ -214,7 +214,7 @@ export function RebuildEmbeddings() {
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  {t.advanced.rebuild.failed}: {(rebuildMutation.error as Error)?.message || t.common.error}
+                  {t('advanced.rebuild.failed')}: {(rebuildMutation.error as Error)?.message || t('common.error')}
                 </AlertDescription>
               </Alert>
             )}
@@ -232,21 +232,21 @@ export function RebuildEmbeddings() {
                 {status.status === 'failed' && <XCircle className="h-5 w-5 text-red-500" />}
                 <div className="flex flex-col">
                   <span className="font-medium">
-                    {status.status === 'queued' && t.advanced.rebuild.queued}
-                    {status.status === 'running' && t.advanced.rebuild.running}
-                    {status.status === 'completed' && t.advanced.rebuild.completed}
-                    {status.status === 'failed' && t.advanced.rebuild.failed}
+                    {status.status === 'queued' && t('advanced.rebuild.queued')}
+                    {status.status === 'running' && t('advanced.rebuild.running')}
+                    {status.status === 'completed' && t('advanced.rebuild.completed')}
+                    {status.status === 'failed' && t('advanced.rebuild.failed')}
                   </span>
                   {status.status === 'running' && (
                     <span className="text-sm text-muted-foreground">
-                      {t.advanced.rebuild.leavePageHint}
+                      {t('advanced.rebuild.leavePageHint')}
                     </span>
                   )}
                 </div>
               </div>
               {(status.status === 'completed' || status.status === 'failed') && (
                 <Button variant="outline" size="sm" onClick={handleReset}>
-                  {t.advanced.rebuild.startNew}
+                  {t('advanced.rebuild.startNew')}
                 </Button>
               )}
             </div>
@@ -254,9 +254,9 @@ export function RebuildEmbeddings() {
             {progressData && (
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>{t.common.progress}</span>
+                  <span>{t('common.progress')}</span>
                   <span className="font-medium">
-                    {t.advanced.rebuild.itemsProcessed
+                    {t('advanced.rebuild.itemsProcessed')
                       .replace('{processed}', processedItems.toString())
                       .replace('{total}', totalItems.toString())
                       .replace('{percent}', progressPercent.toFixed(1))}
@@ -265,7 +265,7 @@ export function RebuildEmbeddings() {
                 <Progress value={progressPercent} className="h-2" />
                 {failedItems > 0 && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ {t.advanced.rebuild.failedItems.replace('{count}', failedItems.toString())}
+                    ⚠️ {t('advanced.rebuild.failedItems').replace('{count}', failedItems.toString())}
                   </p>
                 )}
               </div>
@@ -274,19 +274,19 @@ export function RebuildEmbeddings() {
              {stats && (
               <div className="grid grid-cols-4 gap-4">
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">{t.navigation.sources}</p>
+                  <p className="text-sm text-muted-foreground">{t('navigation.sources')}</p>
                   <p className="text-2xl font-bold">{sourcesProcessed}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">{t.common.notes}</p>
+                  <p className="text-sm text-muted-foreground">{t('common.notes')}</p>
                   <p className="text-2xl font-bold">{notesProcessed}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">{t.common.insights}</p>
+                  <p className="text-sm text-muted-foreground">{t('common.insights')}</p>
                   <p className="text-2xl font-bold">{insightsProcessed}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">{t.advanced.rebuild.time}</p>
+                  <p className="text-sm text-muted-foreground">{t('advanced.rebuild.time')}</p>
                   <p className="text-2xl font-bold">
                     {processingTimeSeconds !== undefined ? `${processingTimeSeconds.toFixed(1)}s` : '—'}
                   </p>
@@ -303,9 +303,9 @@ export function RebuildEmbeddings() {
 
             {status.started_at && (
               <div className="text-sm text-muted-foreground space-y-1">
-                <p>{t.common.created.replace('{time}', new Date(status.started_at).toLocaleString())}</p>
+                <p>{t('common.created').replace('{time}', new Date(status.started_at).toLocaleString())}</p>
                 {status.completed_at && (
-                  <p>{t.notebooks.updated}: {new Date(status.completed_at).toLocaleString()}</p>
+                  <p>{t('notebooks.updated')}: {new Date(status.completed_at).toLocaleString()}</p>
                 )}
               </div>
             )}
@@ -315,23 +315,23 @@ export function RebuildEmbeddings() {
         {/* Help Section */}
          <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="when">
-            <AccordionTrigger>{t.advanced.rebuild.whenToRebuild}</AccordionTrigger>
+            <AccordionTrigger>{t('advanced.rebuild.whenToRebuild')}</AccordionTrigger>
             <AccordionContent className="space-y-2 text-sm">
-              <p>{t.advanced.rebuild.whenToRebuildAns}</p>
+              <p>{t('advanced.rebuild.whenToRebuildAns')}</p>
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="time">
-            <AccordionTrigger>{t.advanced.rebuild.howLong}</AccordionTrigger>
+            <AccordionTrigger>{t('advanced.rebuild.howLong')}</AccordionTrigger>
             <AccordionContent className="space-y-2 text-sm">
-              <p>{t.advanced.rebuild.howLongAns}</p>
+              <p>{t('advanced.rebuild.howLongAns')}</p>
             </AccordionContent>
           </AccordionItem>
 
           <AccordionItem value="safe">
-            <AccordionTrigger>{t.advanced.rebuild.isSafe}</AccordionTrigger>
+            <AccordionTrigger>{t('advanced.rebuild.isSafe')}</AccordionTrigger>
             <AccordionContent className="space-y-2 text-sm">
-              <p>{t.advanced.rebuild.isSafeAns}</p>
+              <p>{t('advanced.rebuild.isSafeAns')}</p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

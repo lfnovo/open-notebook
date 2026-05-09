@@ -34,6 +34,8 @@ TEST_MODELS = {
     "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
     "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
     "openai_compatible": (None, "language"),  # Dynamic - will use first available model
+    "dashscope": ("qwen-plus", "language"),
+    "minimax": ("MiniMax-M2.5", "language"),
 }
 
 
@@ -50,7 +52,7 @@ async def _test_azure_connection(
     """
     test_endpoint = endpoint or os.environ.get("AZURE_OPENAI_ENDPOINT")
     test_api_key = api_key or os.environ.get("AZURE_OPENAI_API_KEY")
-    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-06-01")
+    test_api_version = api_version or os.environ.get("AZURE_OPENAI_API_VERSION", "2024-10-21")
 
     if not test_endpoint:
         return False, "No Azure endpoint configured"
@@ -221,7 +223,9 @@ async def test_provider_connection(
             return await _test_openai_compatible_connection(test_base_url, test_api_key)
 
         if normalized_provider == "azure":
-            return await _test_azure_connection(endpoint, api_key, api_version)
+            # For Azure, base_url from the UI form maps to endpoint
+            azure_endpoint = endpoint or base_url
+            return await _test_azure_connection(azure_endpoint, api_key, api_version)
 
         # Get test model for provider
         if normalized_provider not in TEST_MODELS:

@@ -24,20 +24,20 @@ Each utility is stateless and can be imported independently.
 
 The chunking behavior can be configured via environment variables:
 
-- **OPEN_NOTEBOOK_CHUNK_SIZE**: Maximum chunk size in characters (default: 1200)
-  - Minimum: 100 characters
-  - Warnings: Values > 8192 characters or invalid values
-  - Use case: Smaller models (e.g., mxbai-embed-large with limited context window)
+- **OPEN_NOTEBOOK_CHUNK_SIZE**: Maximum chunk size in tokens (default: 400)
+  - Minimum: 100 tokens
+  - Warnings: Values > 8192 tokens or invalid values
+  - Use case: Conservative baseline that leaves headroom below 512-token embedders (e.g. mxbai-embed-large). Buffer accounts for tokenizer mismatch between our `o200k_base` measurement and the embedder's own tokenizer, plus occasional splitter overshoot and special tokens.
 
-- **OPEN_NOTEBOOK_CHUNK_OVERLAP**: Overlap between chunks in characters (default: 15% of CHUNK_SIZE)
+- **OPEN_NOTEBOOK_CHUNK_OVERLAP**: Overlap between chunks in tokens (default: 15% of CHUNK_SIZE)
   - Must be: >= 0 and < CHUNK_SIZE
   - Warnings: Invalid values or values >= CHUNK_SIZE
   - Use case: Control how much context is shared between adjacent chunks
 
-Example for models with small context windows:
+Example for embedders with larger context windows (e.g. OpenAI text-embedding-3 family, 8191 tokens):
 ```bash
-export OPEN_NOTEBOOK_CHUNK_SIZE=512
-export OPEN_NOTEBOOK_CHUNK_OVERLAP=50
+export OPEN_NOTEBOOK_CHUNK_SIZE=1500
+export OPEN_NOTEBOOK_CHUNK_OVERLAP=150
 ```
 
 Note: Changes require restart of the application.
@@ -63,7 +63,7 @@ Note: Changes require restart of the application.
 
 ### chunking.py
 - **ContentType**: Enum (HTML, MARKDOWN, PLAIN)
-- **CHUNK_SIZE**: Configurable via `OPEN_NOTEBOOK_CHUNK_SIZE` env var (default: 1200)
+- **CHUNK_SIZE**: Configurable via `OPEN_NOTEBOOK_CHUNK_SIZE` env var (default: 400)
 - **CHUNK_OVERLAP**: Configurable via `OPEN_NOTEBOOK_CHUNK_OVERLAP` env var (default: 15% of CHUNK_SIZE)
 - **detect_content_type_from_extension(file_path)**: Detect type from file extension
 - **detect_content_type_from_heuristics(text)**: Detect type from content patterns (returns type + confidence)
@@ -74,7 +74,7 @@ Note: Changes require restart of the application.
 - Uses LangChain splitters: HTMLHeaderTextSplitter, MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 - Extension-based detection is primary; heuristics can override PLAIN extensions with 0.8+ confidence
 - Secondary chunking applied when HTML/Markdown splitters produce oversized chunks
-- Returns list of strings, each ≤ CHUNK_SIZE characters
+- Returns list of strings, each approximately ≤ CHUNK_SIZE tokens
 
 ### embedding.py
 - **mean_pool_embeddings(embeddings)**: Combine multiple embeddings via normalized mean pooling
@@ -83,7 +83,7 @@ Note: Changes require restart of the application.
 
 **Key behavior**:
 - Uses model_manager.get_model("embedding") for embedding model
-- Short text (≤ CHUNK_SIZE): direct embedding
+- Short text (≤ CHUNK_SIZE tokens): direct embedding
 - Long text: chunk → embed each → mean pool results
 - Mean pooling: normalize each → mean → normalize result (using numpy)
 - Raises ValueError for empty/whitespace-only text
@@ -103,7 +103,7 @@ Note: Changes require restart of the application.
 - **token_count(text)**: Returns estimated token count for string (via tiktoken)
 - **token_cost(text, model)**: Calculate cost estimate for text with given model
 
-**Key behavior**: Uses cl100k_base encoding; may differ slightly from actual model tokenization
+**Key behavior**: Uses `o200k_base` encoding; may differ slightly from actual model tokenization. If `tiktoken` is unavailable, `token_count()` falls back to a coarse estimate; this refactor keeps that existing contract.
 
 ### version_utils.py
 - **compare_versions(v1, v2)**: Returns -1 (v1 < v2), 0 (equal), 1 (v1 > v2)
@@ -135,8 +135,9 @@ Note: Changes require restart of the application.
 
 ## Important Quirks & Gotchas
 
-- **Token count estimation**: Uses cl100k_base encoding; may differ 5-10% from actual model tokens
-- **Chunk size for Ollama**: 1500 chars chosen to fit within Ollama embedding model context limits
+- **Token count estimation**: Uses `o200k_base` encoding; may differ slightly from actual model tokens
+- **Chunk size semantics changed**: `OPEN_NOTEBOOK_CHUNK_SIZE` and `OPEN_NOTEBOOK_CHUNK_OVERLAP` are token-based, not character-based
+- **Default chunk size**: The token-based default is 400 — leaves ~20% margin below the 512-token ceiling of BERT-family embedders (e.g. mxbai-embed-large) to absorb tokenizer mismatch (we measure with `o200k_base`, they tokenize with WordPiece), splitter overshoot, and special tokens
 - **Content type detection order**: Extension checked first, then heuristics; high-confidence heuristics (≥0.8) can override PLAIN extensions
 - **Mean pooling normalization**: Each embedding normalized before mean, result normalized after
 - **Priority weights default**: If not specified, ContextConfig uses default weights (source=1, note=0.8, insight=1.2)

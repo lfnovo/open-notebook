@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` environment variable to override the embedding batch size; default remains `50`. Helps with CPU-only local embedding and stricter OpenAI-compatible endpoints (#735)
+- `CORS_ORIGINS` environment variable to configure the API's allowed origins (comma-separated). Default remains `*` for backward compatibility; the API now logs a startup warning prompting users to set it for production deployments. Exception responses honor the configured origins when explicitly set (#585, #597, #730)
+
+## [1.8.5] - 2026-04-14
+
+### Changed
+- Embedding chunking is now token-based instead of character-based, improving chunk sizing consistency for CJK and mixed-language content (#542, #749)
+- `OPEN_NOTEBOOK_CHUNK_SIZE` and `OPEN_NOTEBOOK_CHUNK_OVERLAP` semantics changed from characters to tokens; default reduced from 1200 characters to 400 tokens to stay safely below the 512-token ceiling of BERT-family embedders (e.g. mxbai-embed-large) after accounting for tokenizer mismatch and splitter overshoot. Existing stored embeddings are unaffected; only new ingestions use the new chunking.
+
+### Fixed
+- Credentials endpoint no longer crashes (500) when encryption key doesn't match stored credentials (#740)
+- Broken credentials are now shown with a decryption warning and can still be deleted
+- DELETE endpoint for broken credentials supports model migration (`migrate_to` parameter)
+
+## [1.8.4] - 2026-04-09
+
+### Security
+- Fix Remote Code Execution (RCE) via Jinja2 Server-Side Template Injection in transformations (CVSS 9.2 Critical)
+- Fix arbitrary file write via path traversal in file upload (CVSS 7.0 High)
+- Fix arbitrary file read via Local File Inclusion in source creation (CVSS 8.2 High)
+
+### Dependencies
+- Bump ai-prompter to >=0.4.0 (uses Jinja2 SandboxedEnvironment to prevent SSTI)
+
+## [1.8.3] - 2026-04-07
+
+### Security
+- Fix SurrealDB injection via unsanitized `order_by` query parameter in `GET /api/notebooks` (CVSS 8.7 High)
+- Add allowlist validation for sorting parameters in notebooks endpoint
+- Replace f-string query interpolation with parameterized `$variable` binding in source chat and migration queries
+- Add defensive validation in `get_all()` base method to prevent injection via `order_by` parameter
+
+## [1.8.2] - 2026-04-06
+
+### Added
+- DashScope (Qwen) and MiniMax provider support via Esperanto v2.20.0 (#725)
+- Source list auto-refresh after adding a new source via URL, file upload, or text (#721)
+
+### Fixed
+- Source asset persistence — failed sources now persist their asset (URL/file path), making them identifiable and retryable (#722)
+- Source title preservation — user-set custom titles are no longer overwritten after background processing (#722)
+- Credential cascade delete — deleting a credential now removes linked models instead of returning a 409 error (#722)
+- Podcast directory names — uses UUID for episode directories, fixing filesystem errors with special characters (#666)
+- Tiktoken offline handling — API no longer crashes in air-gapped environments (#622)
+- SurrealDB healthcheck — removed incompatible healthcheck from Docker Compose (#656)
+- Esperanto embedding fixes — base_url/api_key config issues across multiple embedding providers (#664, #665)
+
+### Docs
+- Deprecated single-container Docker image in favor of Docker Compose (#723)
+
+### Dependencies
+- Bump esperanto to >=2.20.0
+
+## [1.8.1] - 2026-03-10
+
+### Added
+- i18n support for Bengali (bn-IN) (#643)
+- Podcast language support via podcast-creator 0.12.0 (#645)
+- Upgrade default Azure API version for model testing and fetching (#638)
+
+### Fixed
+- Tiktoken network errors in offline/air-gapped Docker deployments — pre-downloads encoding at build time (#264, #622)
+- SurrealDB getting stuck (#656)
+
+### Dependencies
+- Bump esperanto to 2.19.5 (#657)
+- Bump langgraph from 1.0.6 to 1.0.10rc1 (#658)
+- Bump authlib from 1.6.6 to 1.6.7 (#649)
+- Bump lxml-html-clean from 0.4.3 to 0.4.4 (#646)
+- Bump rollup from 4.55.1 to 4.59.0 (#635)
+- Bump minimatch in frontend (#634)
+- Bump tar from 7.5.9 to 7.5.11 (#650, #659)
+
 ## [1.7.4] - 2026-02-18
 
 ### Fixed

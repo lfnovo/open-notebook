@@ -47,21 +47,21 @@ export function ProcessingStep({
   return (
     <div className="space-y-8">
       <FormSection
-        title={`${t.navigation.transformations} (${t.common.optional})`}
-        description={t.sources.processDescription}
+        title={`${t('navigation.transformations')} (${t('common.optional')})`}
+        description={t('sources.processDescription')}
       >
         <CheckboxList
           items={transformationItems}
           selectedIds={selectedTransformations}
           onToggle={onToggleTransformation}
           loading={loading}
-          emptyMessage={t.common.noMatches}
+          emptyMessage={t('common.noMatches')}
         />
       </FormSection>
 
       <FormSection
-        title={t.navigation.settings}
-        description={t.sources.processDescription}
+        title={t('navigation.settings')}
+        description={t('sources.processDescription')}
       >
         <div className="space-y-4">
           {settings?.default_embedding_option === 'ask' && (
@@ -80,9 +80,9 @@ export function ProcessingStep({
                     className="mt-0.5"
                   />
                   <div className="flex-1">
-                    <span className="text-sm font-medium block">{t.sources.enableEmbedding}</span>
+                    <span className="text-sm font-medium block">{t('sources.enableEmbedding')}</span>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {t.sources.embeddingDesc}
+                      {t('sources.embeddingDesc')}
                     </p>
                   </div>
                 </label>
@@ -95,10 +95,10 @@ export function ProcessingStep({
               <div className="flex items-start gap-3">
                 <div className="w-4 h-4 bg-primary rounded-full mt-0.5 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium block text-primary">{t.sources.embeddingAlways}</span>
+                  <span className="text-sm font-medium block text-primary">{t('sources.embeddingAlways')}</span>
                   <p className="text-xs text-primary mt-1">
-                    {t.sources.embeddingAlwaysDesc}
-                    {t.sources.changeInSettings} <span className="font-medium">{t.navigation.settings}</span>.
+                    {t('sources.embeddingAlwaysDesc')}
+                    {t('sources.changeInSettings')} <span className="font-medium">{t('navigation.settings')}</span>.
                   </p>
                 </div>
               </div>
@@ -110,10 +110,10 @@ export function ProcessingStep({
               <div className="flex items-start gap-3">
                 <div className="w-4 h-4 bg-muted-foreground rounded-full mt-0.5 flex-shrink-0"></div>
                 <div className="flex-1">
-                  <span className="text-sm font-medium block text-foreground">{t.sources.embeddingNever}</span>
+                  <span className="text-sm font-medium block text-foreground">{t('sources.embeddingNever')}</span>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t.sources.embeddingNeverDesc}
-                    {t.sources.changeInSettings} <span className="font-medium">{t.navigation.settings}</span>.
+                    {t('sources.embeddingNeverDesc')}
+                    {t('sources.changeInSettings')} <span className="font-medium">{t('navigation.settings')}</span>.
                   </p>
                 </div>
               </div>

@@ -13,11 +13,11 @@ export function useToast() {
   return {
     toast: ({ title, description, variant = 'default' }: ToastProps) => {
       if (variant === 'destructive') {
-        sonnerToast.error(title || t.common.error, {
+        sonnerToast.error(title || t('common.error'), {
           description,
         })
       } else {
-        sonnerToast.success(title || t.common.success, {
+        sonnerToast.success(title || t('common.success'), {
           description,
         })
       }

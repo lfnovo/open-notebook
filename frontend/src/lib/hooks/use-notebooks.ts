@@ -31,14 +31,14 @@ export function useCreateNotebook() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
       toast({
-        title: t.common.success,
-        description: t.notebooks.createSuccess,
+        title: t('common.success'),
+        description: t('notebooks.createSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: t(getApiErrorKey(error, t.common.error)),
+        title: t('common.error'),
+        description: t(getApiErrorKey(error, t('common.error'))),
         variant: 'destructive',
       })
     },
@@ -57,14 +57,14 @@ export function useUpdateNotebook() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebooks })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.notebook(id) })
       toast({
-        title: t.common.success,
-        description: t.notebooks.updateSuccess,
+        title: t('common.success'),
+        description: t('notebooks.updateSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: t(getApiErrorKey(error, t.common.error)),
+        title: t('common.error'),
+        description: t(getApiErrorKey(error, t('common.error'))),
         variant: 'destructive',
       })
     },
@@ -97,14 +97,14 @@ export function useDeleteNotebook() {
       // Also invalidate sources since some may have been deleted
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       toast({
-        title: t.common.success,
-        description: t.notebooks.deleteSuccess,
+        title: t('common.success'),
+        description: t('notebooks.deleteSuccess'),
       })
     },
     onError: (error: unknown) => {
       toast({
-        title: t.common.error,
-        description: t(getApiErrorKey(error, t.common.error)),
+        title: t('common.error'),
+        description: t(getApiErrorKey(error, t('common.error'))),
         variant: 'destructive',
       })
     },

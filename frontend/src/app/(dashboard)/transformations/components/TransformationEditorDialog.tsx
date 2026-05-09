@@ -118,22 +118,22 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-4xl w-full max-h-[90vh] overflow-hidden p-0">
         <DialogTitle className="sr-only">
-          {isEditing ? t.common.edit : t.transformations.createNew}
+          {isEditing ? t('common.edit') : t('transformations.createNew')}
         </DialogTitle>
         <DialogDescription className="sr-only">
-           {isEditing ? t.common.editTransformation : t.transformations.createNew}
+           {isEditing ? t('common.editTransformation') : t('transformations.createNew')}
         </DialogDescription>
         <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col">
           {isEditing && isLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
-              <span className="text-sm text-muted-foreground">{t.common.loading}</span>
+              <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
             </div>
           ) : (
             <>
               <div className="border-b px-6 py-4 space-y-4">
                 <div>
                   <Label htmlFor={nameId} className="text-sm font-medium">
-                    {t.transformations.name}
+                    {t('transformations.name')}
                   </Label>
                   <Controller
                     control={control}
@@ -142,7 +142,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                         <Input
                         id={nameId}
                         {...field}
-                        placeholder={t.transformations.namePlaceholder}
+                        placeholder={t('transformations.namePlaceholder')}
                         autoComplete="off"
                       />
                     )}
@@ -155,7 +155,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor={titleId} className="text-sm font-medium">
-                      {t.common.title}
+                      {t('common.title')}
                     </Label>
                     <Controller
                       control={control}
@@ -164,7 +164,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                         <Input
                            id={titleId}
                            {...field}
-                           placeholder={t.transformations.titlePlaceholder}
+                           placeholder={t('transformations.titlePlaceholder')}
                            autoComplete="off"
                          />
                       )}
@@ -183,14 +183,14 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       )}
                     />
                      <Label htmlFor={defaultId} className="text-sm">
-                       {t.transformations.suggestDefault}
+                       {t('transformations.suggestDefault')}
                      </Label>
                   </div>
                 </div>
 
                 <div>
                    <Label htmlFor={descriptionId} className="text-sm font-medium">
-                     {t.notebooks.addDescription.replace('...', '')}
+                     {t('notebooks.addDescription').replace('...', '')}
                    </Label>
                   <Controller
                     control={control}
@@ -199,7 +199,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       <Textarea
                          id={descriptionId}
                          {...field}
-                         placeholder={t.transformations.descriptionPlaceholder}
+                         placeholder={t('transformations.descriptionPlaceholder')}
                          rows={2}
                          autoComplete="off"
                       />
@@ -209,7 +209,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
               </div>
 
               <div className="flex-1 overflow-y-auto px-6 py-4">
-                <Label htmlFor={promptId} className="text-sm font-medium">{t.transformations.systemPrompt}</Label>
+                <Label htmlFor={promptId} className="text-sm font-medium">{t('transformations.systemPrompt')}</Label>
                 <Controller
                   control={control}
                   name="prompt"
@@ -219,7 +219,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       value={field.value}
                       onChange={field.onChange}
                       height={420}
-                      placeholder={t.transformations.promptPlaceholder}
+                      placeholder={t('transformations.promptPlaceholder')}
                       className="rounded-md border"
                       textareaId={promptId}
                       name={field.name}
@@ -230,7 +230,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                   <p className="text-sm text-red-600 mt-1">{errors.prompt.message}</p>
                 )}
                  <p className="text-xs text-muted-foreground mt-3">
-                   {t.transformations.promptHint}
+                   {t('transformations.promptHint')}
                  </p>
               </div>
             </>
@@ -238,14 +238,14 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
 
           <div className="border-t px-6 py-4 flex justify-end gap-2">
              <Button type="button" variant="outline" onClick={handleClose}>
-               {t.common.cancel}
+               {t('common.cancel')}
              </Button>
               <Button type="submit" disabled={isSaving || (isEditing && isLoading)}>
                 {isSaving
-                  ? isEditing ? `${t.common.saving}...` : `${t.common.creating}...`
+                  ? isEditing ? `${t('common.saving')}...` : `${t('common.creating')}...`
                   : isEditing
-                    ? t.common.editTransformation
-                    : t.transformations.createNew}
+                    ? t('common.editTransformation')
+                    : t('transformations.createNew')}
               </Button>
           </div>
         </form>

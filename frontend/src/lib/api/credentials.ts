@@ -20,6 +20,7 @@ export interface Credential {
   created: string
   updated: string
   model_count: number
+  decryption_error?: string | null
 }
 
 export interface CreateCredentialRequest {

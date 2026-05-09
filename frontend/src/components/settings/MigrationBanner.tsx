@@ -22,11 +22,11 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
     <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
       <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
       <AlertTitle className="text-amber-800 dark:text-amber-200">
-        {t.apiKeys.migrationAvailable}
+        {t('apiKeys.migrationAvailable')}
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-amber-700 dark:text-amber-300">
-          {t.apiKeys.migrationDescription.replace('{count}', providersToMigrate.length.toString())}
+          {t('apiKeys.migrationDescription').replace('{count}', providersToMigrate.length.toString())}
         </span>
         <Button
           variant="outline"
@@ -38,11 +38,11 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
           {migrate.isPending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t.apiKeys.migrating}
+              {t('apiKeys.migrating')}
             </>
           ) : (
             <>
-              {t.apiKeys.migrateToDatabase}
+              {t('apiKeys.migrateToDatabase')}
               <ArrowRight className="ml-2 h-4 w-4" />
             </>
           )}

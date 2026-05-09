@@ -61,6 +61,33 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Embeddings
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | No | 50 | Number of texts sent per embedding batch. Lower this for CPU-only or stricter OpenAI-compatible embedding providers. |
+
+---
+
+## API / CORS
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `CORS_ORIGINS` | No | `*` | Comma-separated list of origins allowed to call the API (e.g. `https://app.example.com,https://www.example.com`). Default `*` accepts any origin; **for production, set this explicitly to your frontend origin(s)**. Changes require an API restart. The API logs a warning on startup when unset. |
+
+**When to change this**:
+- You access the UI at a custom domain (reverse proxy, HTTPS, public deployment).
+- The frontend runs on a different port than `3000`.
+- You serve the frontend from a different host than the API (e.g. CDN).
+
+Example for a production deployment behind a reverse proxy:
+
+```bash
+CORS_ORIGINS=https://notebook.example.com
+```
+
+---
+
 ## Text-to-Speech (TTS)
 
 | Variable | Required? | Default | Description |
@@ -263,6 +290,8 @@ If you have these variables configured from a previous installation, click the *
 | `OPENAI_COMPATIBLE_API_KEY_STT` | OpenAI-Compatible | Configure per-service key in credential |
 | `OPENAI_COMPATIBLE_BASE_URL_TTS` | OpenAI-Compatible | Configure per-service URL in credential |
 | `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
+| `DASHSCOPE_API_KEY` | DashScope (Qwen) | Settings → API Keys → Add DashScope Credential |
+| `MINIMAX_API_KEY` | MiniMax | Settings → API Keys → Add MiniMax Credential |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → API Keys → Add Azure OpenAI Credential |
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI | Configure in Azure OpenAI credential |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI | Configure in Azure OpenAI credential |

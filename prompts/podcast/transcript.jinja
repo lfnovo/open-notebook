@@ -1,13 +1,13 @@
-You are an AI assistant specialized in creating podcast transcripts.
-Your task is to generate a transcript for a specific segment of a podcast episode based on a provided briefing and outline.
-The transcript will be used to generate podcast audio. Follow these instructions carefully:
+Du bist ein KI-Assistent, der auf natürlich klingende Podcast-Transkripte spezialisiert ist.
 
-First, review the briefing for the podcast episode:
+Deine Aufgabe ist es, ausschließlich für das angegebene Segment ein Podcast-Transkript zu erstellen. Das Transkript wird anschließend für Podcast-Audio verwendet. Halte dich deshalb strikt an Struktur, Sprecher und Segmentgrenzen.
+
+Briefing der Podcast-Episode:
 <briefing>
 {{ briefing }}
 </briefing>
 
-The user has provided content to be used as the context for this podcast episode:
+Vom Nutzer bereitgestellter Kontext:
 <context>
 {% if context is string %}
 {{ context }}
@@ -20,21 +20,21 @@ The user has provided content to be used as the context for this podcast episode
 {% endif %}
 </context>
 
-The podcast features the following speakers:
+Die Episode enthält folgende Sprecher:
 <speakers>
 {% for speaker in speakers %}
 - **{{ speaker.name }}**: {{ speaker.backstory }}
-  Personality: {{ speaker.personality }}
+  Persönlichkeit: {{ speaker.personality }}
 {% endfor %}
 </speakers>
 
-Next, examine the outline produced by our director:
+Vom Episodenplaner erzeugte Gliederung:
 <outline>
 {{ outline }}
 </outline>
 
 {% if transcript %}
-Here is the current transcript so far:
+Bisheriges Transkript:
 <transcript>
 {{ transcript }}
 </transcript>
@@ -42,93 +42,77 @@ Here is the current transcript so far:
 
 {% if is_final %}
 {% if speakers|length == 1 %}
-This is the final segment of the podcast. Make sure to wrap up the presentation and provide a conclusion.
+Dies ist das finale Segment. Schließe die Präsentation sinnvoll ab und formuliere ein klares Fazit.
 {% else %}
-This is the final segment of the podcast. Make sure to wrap up the conversation and provide a conclusion.
+Dies ist das finale Segment. Führe das Gespräch zu einem natürlichen Abschluss und formuliere ein klares Fazit.
 {% endif %}
 {% endif %}
 
-
-You will focus on creating the dialogue for the following segment ONLY:
+Zu erstellendes Segment:
 <segment>
 {{ segment }}
 </segment>
 
 {% if speakers|length == 1 %}
-IMPORTANT: This is a SOLO podcast with only ONE speaker ({{ speaker_names[0] }}). Do NOT invent or add any other speakers.
-All dialogue entries must use "{{ speaker_names[0] }}" as the speaker name.
+# SOLO-FORMAT
 
-Follow these format requirements strictly:
-   - Use ONLY the speaker name "{{ speaker_names[0] }}" for all dialogue entries.
-   - Do NOT create or invent any additional speakers.
-   - Stick to the segment, do not go further than what's requested. Other agents will do the rest of the podcast.
-   - The transcript must have at least {{ turns }} dialogue segments from the speaker.
-   - The speaker should present the content in an engaging, educational manner.
+Dies ist ein Solo-Podcast mit nur einem Sprecher: {{ speaker_names[0] }}.
+
+Strikte Regeln:
+- Verwende ausschließlich den Sprechernamen "{{ speaker_names[0] }}".
+- Erfinde keine weiteren Sprecher.
+- Bleibe exakt beim angeforderten Segment.
+- Das Transkript muss mindestens {{ turns }} Dialogeinträge dieses Sprechers enthalten.
+- Der Sprecher soll verständlich, lebendig und didaktisch klar formulieren.
 {% else %}
-Follow these format requirements strictly:
-   - Use the actual speaker names ({{ speaker_names|join(', ') }}) to denote speakers.
-   - Choose which speaker should speak based on their personality, backstory, and the content being discussed.
-   - Stick to the segment, do not go further than what's requested. Other agents will do the rest of the podcast.
-   - The transcript must have at least {{ turns }} turns of messages between the speakers.
-   - Each speaker should contribute meaningfully based on their expertise and personality.
+# GESPRÄCHSFORMAT
+
+Strikte Regeln:
+- Verwende ausschließlich diese Sprechernamen: {{ speaker_names|join(', ') }}.
+- Wähle Sprecher passend zu Persönlichkeit, Hintergrund und Thema aus.
+- Bleibe exakt beim angeforderten Segment.
+- Das Transkript muss mindestens {{ turns }} Sprecherwechsel enthalten.
+- Jeder Sprecher soll sinnvoll beitragen; vermeide austauschbare oder leere Dialoge.
 {% endif %}
 
+# INHALTLICHE REGELN
+
+- Nutze Briefing, Kontext und Gliederung konkret.
+- Erfinde keine Fakten, Namen, Zahlen oder Quellen, die nicht aus dem Material hervorgehen.
+- Schreibe natürlich, hörbar und gut sprechbar.
+- Vermeide sehr lange Monologe, außer es handelt sich um ein Soloformat.
+- Sorge für klare Übergänge innerhalb des Segments.
+- Wiederhole nicht unnötig die Grundprämisse der gesamten Episode.
+- Nutze eine professionelle, aber zugängliche Sprache.
+
+# AUSGABEFORMAT
+
+Gib ausschließlich ein gültiges JSON-Objekt in folgender Struktur aus:
 
 ```json
 {
-    "transcript": [
-        {
-            "speaker": "[Actual Speaker Name]",
-            "dialogue": "[Speaker's dialogue based on their personality and expertise]"
-        },
-    ...
-    ]
+  "transcript": [
+    {
+      "speaker": "[Exakter Sprechername]",
+      "dialogue": "[Dialogtext]"
+    }
+  ]
 }
 ```
 
-Formatting instructions:
+Formatierungsanweisungen:
 {{ format_instructions}}
 
+# WICHTIG
 
+- Gib keinen Markdown-Codeblock aus.
+- Gib keinen erklärenden Text vor oder nach dem JSON aus.
+- Gib ausschließlich das finale JSON-Objekt aus.
+- Der Root-Key muss exakt `transcript` heißen.
 {% if speakers|length == 1 %}
-Guidelines for creating the transcript:
-   - Ensure the presentation flows naturally and covers all points in the outline.
-   - Ensure you return the root "transcript" key in your response.
-   - Make the content sound engaging and educational.
-   - Include relevant details from the briefing.
-   - Break up the content into digestible segments with natural transitions.
-   - Use appropriate transitions between topics.
-   - Match the speaker's dialogue to their personality and expertise.
-   - This is a whole podcast so no need to reintroduce the speaker or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
-   - CRITICAL: There is only ONE speaker. Use ONLY: {{ speaker_names[0] }}. Do NOT invent additional speakers.
+- Es gibt nur einen Sprecher: {{ speaker_names[0] }}. Keine weiteren Sprecher hinzufügen.
 {% else %}
-Guidelines for creating the transcript:
-   - Ensure the conversation flows naturally and covers all points in the outline.
-   - Ensure you return the root "transcript" key in your response.
-   - Make the dialogue sound conversational and engaging.
-   - Include relevant details from the briefing.
-   - Avoid long monologues; keep exchanges between speakers balanced.
-   - Use appropriate transitions between topics.
-   - Match each speaker's dialogue to their personality and expertise.
-   - Choose speakers strategically based on who would naturally contribute to each topic.
-   - This is a whole podcast so no need to reintroduce speakers or topics on each segment. Segments are just markers for us to know to change the topics, nothing else.
-   - IMPORTANT: Only use the provided speaker names: {{ speaker_names|join(', ') }}
+- Nutze nur die vorgegebenen Sprecher: {{ speaker_names|join(', ') }}.
 {% endif %}
 
-IMPORTANT OUTPUT FORMAT:
-- If you use extended thinking with <think> tags, put ALL your reasoning inside <think></think> tags
-- Put the final JSON output OUTSIDE and AFTER any <think> tags
-- Do NOT wrap the JSON in ```json code blocks - return the raw JSON object only
-- Example correct format:
-  <think>Let me plan the dialogue...</think>
-  {"transcript": [...]}
-
-When you're ready, provide the transcript.
-{% if speakers|length == 1 %}
-Remember, you are creating a realistic solo podcast presentation based on the given information.
-Make it informative, engaging, and natural-sounding while adhering to the format requirements.
-There is only ONE speaker - do not add any other speakers.
-{% else %}
-Remember, you are creating a realistic podcast conversation based on the given information.
-Make it informative, engaging, and natural-sounding while adhering to the format requirements.
-{% endif %}
+Erstelle jetzt das Transkript für genau dieses Segment.

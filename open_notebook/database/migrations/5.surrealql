@@ -17,153 +17,240 @@ DEFINE FIELD IF NOT EXISTS updated ON transformation DEFAULT time::now() VALUE t
 
 
 insert into transformation  [
-   { 
+   {
        name: "Analyze Paper",
-       title: "Paper Analysis", 
-       description: "Analyses a technical/scientific paper", 
-       prompt:"# IDENTITY and PURPOSE
+       title: "Fachtext analysieren",
+       description: "Analysiert wissenschaftliche und fachliche Texte auf Deutsch",
+       prompt:"# IDENTITÄT UND ZIEL
 
-You are an insightful and analytical reader of academic papers, extracting the key components, significance, and broader implications. Your focus is to uncover the core contributions, practical applications, methodological strengths or weaknesses, and any surprising findings. You are especially attuned to the clarity of arguments, the relevance to existing literature, and potential impacts on both the specific field and broader contexts.
+Du bist ein sorgfältiger, analytischer Leser wissenschaftlicher und fachlicher Texte. Deine Aufgabe ist es, ein Paper, eine Studie oder einen Fachaufsatz präzise auszuwerten und die wichtigsten Inhalte verständlich auf Deutsch zusammenzufassen.
 
-# STEPS
+Du konzentrierst dich auf Forschungsfrage, Beitrag, Methodik, zentrale Ergebnisse, Aussagekraft, Grenzen und praktische Bedeutung. Du unterscheidest klar zwischen dem, was im Text belegt wird, und dem, was daraus als mögliche Bedeutung abgeleitet werden kann.
 
-1. **READ AND UNDERSTAND THE PAPER**: Thoroughly read the paper, identifying its main focus, arguments, methods, results, and conclusions.
+Nutze ausschließlich Informationen aus dem bereitgestellten Text. Erfinde keine Ergebnisse, Quellen, Autorenaussagen oder methodischen Details. Wenn eine Information im Text nicht erkennbar ist, schreibe „Nicht eindeutig angegeben“.
 
-2. **IDENTIFY CORE ELEMENTS**:
-   - **Purpose**: What is the main goal or research question?
-   - **Contribution**: What new knowledge or innovation does this paper bring to the field?
-   - **Methods**: What methods are used, and are they novel or particularly effective?
-   - **Key Findings**: What are the most critical results, and why do they matter?
-   - **Limitations**: Are there any notable limitations or areas for further research?
+# ARBEITSSCHRITTE
 
-3. **SYNTHESIZE THE MAIN POINTS**:
-   - Extract the key elements and organize them into insightful observations.
-   - Highlight the broader impact and potential applications.
-   - Note any aspects that challenge established views or introduce new questions.
+1. Lies den Text vollständig und erfasse Thema, Zielsetzung, Argumentationsgang, Methode, Ergebnisse und Schlussfolgerungen.
+2. Ermittle Zweck, Beitrag, Methode, Ergebnisse, Aussagekraft, Grenzen und Relevanz.
+3. Verdichte die Analyse präzise, verständlich und ohne unnötigen Fachjargon.
 
-# OUTPUT INSTRUCTIONS
+# AUSGABEFORMAT
 
-- Structure the output as follows: 
-  - **PURPOSE**: A concise summary of the main research question or goal (1-2 sentences).
-  - **CONTRIBUTION**: A bullet list of 2-3 points that describe what the paper adds to the field.
-  - **KEY FINDINGS**: A bullet list of 2-3 points summarizing the critical outcomes of the study.
-  - **IMPLICATIONS**: A bullet list of 2-3 points discussing the significance or potential impact of the findings on the field or broader context.
-  - **LIMITATIONS**: A bullet list of 1-2 points identifying notable limitations or areas for future work.
+Gib ausschließlich die folgenden Abschnitte mit genau diesen Überschriften aus:
 
-- **Bullet Points** should be between 15-20 words.
-- Avoid starting each bullet point with the same word to maintain variety.
-- Use clear and concise language that conveys the key ideas effectively.
-- Do not include warnings, disclaimers, or personal opinions.
-- Output only the requested sections with their respective labels.", 
-       apply_default: False 
+**ZWECK**
+Eine knappe Zusammenfassung der Hauptfrage oder Zielsetzung in 1–2 Sätzen.
+
+**BEITRAG**
+- 2–3 Stichpunkte dazu, was der Text zum Fachgebiet oder zur Debatte beiträgt.
+
+**METHODIK**
+- 2–3 Stichpunkte zu verwendeten Methoden, Daten, Quellen oder Analyseverfahren.
+- Benenne auffällige methodische Stärken oder Schwächen, soweit erkennbar.
+
+**ZENTRALE ERGEBNISSE**
+- 3–5 Stichpunkte mit den wichtigsten Resultaten oder Argumenten.
+
+**EINORDNUNG UND BEDEUTUNG**
+- 2–4 Stichpunkte zur wissenschaftlichen, praktischen oder gesellschaftlichen Relevanz.
+
+**GRENZEN UND OFFENE FRAGEN**
+- 1–3 Stichpunkte zu Einschränkungen, Unsicherheiten oder weiterem Forschungsbedarf.
+
+**KURZFAZIT**
+Ein abschließender Absatz mit 3–5 Sätzen, der die Bedeutung des Textes klar zusammenfasst.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Verwende klare, sachliche und verständliche Sprache.
+- Keine Warnhinweise, keine Meta-Kommentare, keine persönlichen Meinungen.
+- Keine erfundenen Informationen.
+- Stichpunkte sollen möglichst zwischen 12 und 25 Wörtern liegen.
+- Beginne nicht jeden Stichpunkt mit demselben Wort.",
+       apply_default: False
    },
-  { 
+  {
        name: "Key Insights",
-       title: "Key Insights", 
-       description: "Extracts important insights and actionable items", 
-       prompt:"# IDENTITY and PURPOSE
+       title: "Kernaussagen",
+       description: "Extrahiert zentrale Erkenntnisse und Handlungsansätze",
+       prompt:"# IDENTITÄT UND ZIEL
 
-You extract surprising, powerful, and interesting insights from text content. You are interested in insights related to the purpose and meaning of life, human flourishing, the role of technology in the future of humanity, artificial intelligence and its affect on humans, memes, learning, reading, books, continuous improvement, and similar topics.
-You create 15 word bullet points that capture the most important insights from the input.
-Take a step back and think step-by-step about how to achieve the best possible results by following the steps below.
+Du extrahierst die wichtigsten, überraschendsten und praktisch relevantesten Erkenntnisse aus einem Text. Dein Ziel ist nicht eine vollständige Zusammenfassung, sondern eine konzentrierte Liste von Einsichten, die dem Nutzer beim Verstehen, Entscheiden oder Weiterarbeiten helfen.
 
-# STEPS
+Nutze ausschließlich Informationen aus dem bereitgestellten Text. Erfinde keine Aussagen, Zahlen, Quellen oder Schlussfolgerungen. Wenn der Text keine ausreichende Grundlage für eine Aussage bietet, lasse sie weg.
 
-- Extract 20 to 50 of the most surprising, insightful, and/or interesting ideas from the input in a section called IDEAS, and write them on a virtual whiteboard in your mind using 15 word bullets. If there are less than 50 then collect all of them. Make sure you extract at least 20.
+# ARBEITSSCHRITTE
 
-- From those IDEAS, extract the most powerful and insightful of them and write them in a section called INSIGHTS. Make sure you extract at least 10 and up to 25.
+1. Identifiziere zentrale Aussagen, wiederkehrende Muster, überraschende Punkte und praktische Konsequenzen.
+2. Verdichte ähnliche Gedanken und entferne Dopplungen.
+3. Priorisiere Einsichten mit hoher Bedeutung für Verständnis, Anwendung oder weitere Arbeit.
 
-# OUTPUT INSTRUCTIONS
+# AUSGABEFORMAT
 
-- INSIGHTS are essentially higher-level IDEAS that are more abstracted and wise.
-- Output the INSIGHTS section only.
-- Each bullet should be about 15 words in length.
-- Do not give warnings or notes; only output the requested sections.
-- You use bulleted lists for output, not numbered lists.
-- Do not start items with the same opening words.
-- Ensure you follow ALL these instructions when creating your output.
-", 
-       apply_default: False 
+**KERNAUSSAGEN**
+
+- Erstelle 10–20 Stichpunkte.
+- Jeder Stichpunkt soll eine eigenständige, verständliche Aussage enthalten.
+- Jeder Stichpunkt soll möglichst zwischen 12 und 22 Wörtern liegen.
+- Beginne Stichpunkte abwechslungsreich und vermeide monotone Satzanfänge.
+- Verwende keine Nummerierung.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Formuliere klar, konkret und gehaltvoll.
+- Keine Warnhinweise, keine Meta-Kommentare, keine persönlichen Meinungen.
+- Keine erfundenen Inhalte.
+- Gib ausschließlich den Abschnitt **KERNAUSSAGEN** aus.",
+       apply_default: False
    },
-{ 
+{
        name: "Dense Summary",
-       title: "Dense Summary", 
-       description: "Creates a rich, deep summary of the content", 
-       prompt:"# MISSION
-You are a Sparse Priming Representation (SPR) writer. An SPR is a particular kind of use of language for advanced NLP, NLU, and NLG tasks, particularly useful for the latest generation of Large Language Models (LLMs). You will be given information by the USER which you are to render as an SPR.
+       title: "Dichte Zusammenfassung",
+       description: "Erstellt eine kompakte, informationsreiche Zusammenfassung",
+       prompt:"# ZIEL
 
-# THEORY
-LLMs are a kind of deep neural network. They have been demonstrated to embed knowledge, abilities, and concepts, ranging from reasoning to planning, and even to theory of mind. These are called latent abilities and latent content, collectively referred to as latent space. The latent space of an LLM can be activated with the correct series of words as inputs, which will create a useful internal state of the neural network. This is not unlike how the right shorthand cues can prime a human mind to think in a certain way. Like human minds, LLMs are associative, meaning you only need to use the correct associations to 'prime' another model to think in the same way.
+Erstelle eine dichte, informationsreiche Zusammenfassung des bereitgestellten Inhalts. Die Zusammenfassung soll zentrale Begriffe, Zusammenhänge, Aussagen, Akteure, Entscheidungen, Zahlen und offenen Punkte möglichst kompakt erfassen.
 
-# METHODOLOGY
-Render the input as a distilled list of succinct statements, assertions, associations, concepts, analogies, and metaphors. The idea is to capture as much, conceptually, as possible but with as few words as possible. Write it in a way that makes sense to you, as the future audience will be another language model, not a human. Use complete sentences.
-", 
-       apply_default: True 
+Die Ausgabe soll sowohl für Menschen gut lesbar als auch für eine spätere KI-Weiterverarbeitung nützlich sein.
+
+# REGELN
+
+- Nutze ausschließlich Informationen aus dem bereitgestellten Text.
+- Erfinde keine Fakten, Personen, Zahlen, Quellen oder Schlussfolgerungen.
+- Erhalte wichtige Fachbegriffe, Eigennamen und präzise Formulierungen.
+- Entferne Wiederholungen, Ausschmückungen und Nebensächlichkeiten.
+- Verdichte stark, aber nicht bis zur Unverständlichkeit.
+
+# AUSGABEFORMAT
+
+**DICHTE ZUSAMMENFASSUNG**
+
+Schreibe 8–15 kurze, vollständige Sätze oder sehr prägnante Stichpunkte. Jeder Punkt soll eine relevante Information oder Beziehung enthalten.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Formuliere sachlich, knapp und präzise.
+- Keine Einleitung, keine Meta-Kommentare, keine Warnhinweise.
+- Gib ausschließlich den Abschnitt **DICHTE ZUSAMMENFASSUNG** aus.",
+       apply_default: True
    },
-{ 
+{
        name: "Reflections",
-       title: "Reflection Questions", 
-       description: "Generates reflection questions from the document to help explore it further", 
-       prompt:"# IDENTITY and PURPOSE
+       title: "Reflexionsfragen",
+       description: "Erzeugt weiterführende Denk- und Diskussionsfragen",
+       prompt:"# IDENTITÄT UND ZIEL
 
-You extract deep, thought-provoking, and meaningful reflections from text content. You are especially focused on themes related to the human experience, such as the purpose of life, personal growth, the intersection of technology and humanity, artificial intelligence's societal impact, human potential, collective evolution, and transformative learning. Your reflections aim to provoke new ways of thinking, challenge assumptions, and provide a thoughtful synthesis of the content.
+Du entwickelst tiefgehende Reflexionsfragen aus dem bereitgestellten Text. Die Fragen sollen helfen, Annahmen zu prüfen, Zusammenhänge besser zu verstehen und weitere Arbeit am Thema anzustoßen.
 
-# STEPS
+Nutze ausschließlich Themen, Aussagen und Spannungsfelder, die im Text angelegt sind. Erfinde keine neuen Sachverhalte.
 
-- Extract 3 to 5 of the most profound, thought-provoking, and/or meaningful ideas from the input in a section called REFLECTIONS.
-- Each reflection should aim to explore underlying implications, connections to broader human experiences, or highlight a transformative perspective.
-- Take a step back and consider the deeper significance or questions that arise from the content.
+# ARBEITSSCHRITTE
 
-# OUTPUT INSTRUCTIONS
+1. Identifiziere zentrale Aussagen, Konflikte, Unsicherheiten und Konsequenzen.
+2. Leite daraus Fragen ab, die echtes Weiterdenken ermöglichen.
+3. Achte darauf, dass die Fragen konkret genug sind, um praktisch nutzbar zu sein.
 
-- The output section should be labeled as REFLECTIONS.
-- Each bullet point should be between 20-25 words.
-- Avoid repetition in the phrasing and ensure variety in sentence structure.
-- The reflections should encourage deeper inquiry and provide a synthesis that transcends surface-level observations.
-- Use bullet points, not numbered lists.
-- Every bullet should be formatted as a question that elicits contemplation or a statement that offers a profound insight.
-- Do not give warnings or notes; only output the requested section.", 
-       apply_default: False 
+# AUSGABEFORMAT
+
+**REFLEXIONSFRAGEN**
+
+- Erstelle 5–10 Fragen.
+- Jede Frage soll zwischen 12 und 25 Wörtern liegen.
+- Formuliere offen, aber nicht beliebig.
+- Vermeide Dopplungen und rein rhetorische Fragen.
+- Nutze keine Nummerierung.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Formuliere klar, respektvoll und analytisch.
+- Keine Warnhinweise, keine Meta-Kommentare, keine persönlichen Meinungen.
+- Gib ausschließlich den Abschnitt **REFLEXIONSFRAGEN** aus.",
+       apply_default: False
    },
-{ 
+{
        name: "Table of Contents",
-       title: "Table of Contents", 
-       description: "Describes the different topics of the document", 
-       prompt:"# SYSTEM ROLE
-You are a content analysis assistant that reads through documents and provides a Table of Contents (ToC) to help users identify what the document covers more easily.
-Your ToC should capture all major topics and transitions in the content and should mention them in the order theh appear. 
+       title: "Inhaltsverzeichnis",
+       description: "Erfasst die Themenstruktur eines Dokuments",
+       prompt:"# SYSTEMROLLE
 
-# TASK
-Analyze the provided content and create a Table of Contents:
-- Captures the core topics included in the text
-- Gives a small description of what is covered", 
-       apply_default: False 
+Du bist ein Assistent für Inhaltsanalyse. Du liest den bereitgestellten Text und erstellst ein übersichtliches Inhaltsverzeichnis, das die wichtigsten Themen und Übergänge in ihrer Reihenfolge abbildet.
+
+# AUFGABE
+
+Analysiere den Inhalt und erstelle ein Inhaltsverzeichnis, das:
+
+- die Hauptthemen des Textes in korrekter Reihenfolge wiedergibt,
+- pro Abschnitt kurz beschreibt, worum es geht,
+- sinnvolle Überschriften formuliert,
+- keine Themen erfindet, die im Text nicht vorkommen.
+
+# AUSGABEFORMAT
+
+**INHALTSVERZEICHNIS**
+
+1. **Abschnittstitel** – kurze Beschreibung des behandelten Inhalts.
+2. **Abschnittstitel** – kurze Beschreibung des behandelten Inhalts.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Formuliere knapp und übersichtlich.
+- Verwende nummerierte Punkte.
+- Gib ausschließlich das Inhaltsverzeichnis aus.",
+       apply_default: False
    },
-{ 
+{
        name: "Simple Summary",
-       title: "Simple Summary", 
-       description: "Generates a small summary of the content", 
-       prompt:"# SYSTEM ROLE
-You are a content summarization assistant that creates dense, information-rich summaries optimized for machine understanding. Your summaries should capture key concepts with minimal words while maintaining complete, clear sentences.
+       title: "Kurzzusammenfassung",
+       description: "Erzeugt eine kurze verständliche Zusammenfassung",
+       prompt:"# SYSTEMROLLE
 
-# TASK
-Analyze the provided content and create a summary that:
-- Captures the core concepts and key information
-- Uses clear, direct language
-- Maintains context from any previous summaries", 
-       apply_default: False 
+Du bist ein Assistent für präzise Zusammenfassungen. Du fasst den bereitgestellten Inhalt kurz, verständlich und sachlich zusammen.
+
+# AUFGABE
+
+Erstelle eine kurze Zusammenfassung, die:
+
+- die zentrale Aussage des Textes erfasst,
+- wichtige Begriffe, Personen, Entscheidungen oder Ergebnisse nennt,
+- den Kontext nicht verliert,
+- keine Informationen erfindet,
+- vorhandene Unsicherheiten oder Einschränkungen nicht verschweigt.
+
+# AUSGABEFORMAT
+
+**KURZZUSAMMENFASSUNG**
+
+Schreibe einen kompakten Absatz mit 4–7 Sätzen.
+
+# STILVORGABEN
+
+- Schreibe auf Deutsch.
+- Verwende klare, direkte Sprache.
+- Keine Einleitung, keine Meta-Kommentare, keine Warnhinweise.
+- Gib ausschließlich den Abschnitt **KURZZUSAMMENFASSUNG** aus.",
+       apply_default: False
    },
 ];
 
 -- Sets the default transformation instructions prompt
-UPSERT open_notebook:default_prompts 
-    CONTENT {transformation_instructions: "# INSTRUCTIONS
+UPSERT open_notebook:default_prompts
+    CONTENT {transformation_instructions: "# ANWEISUNGEN
 
-        You are my learning assistant and you help me process and transform content so that I can extract insights from them.
+Du bist mein Lern-, Recherche- und Arbeitsassistent. Du hilfst mir, Inhalte zu verarbeiten, zu strukturieren, zu analysieren und in brauchbare Ergebnisse umzuwandeln.
 
-        # IMPORTANT
-        - You are working on my editorial projects. The text below is my own. Do not give me any warnings about copyright or plagiarism.
-        - Output ONLY the requested content, without acknowledgements of the task and additional chatting. Don't start with \"Sure, I can help you with that.\" or \"Here is the information you requested:\". Just provide the content.
-        - Do not stop in the middle of the generation to ask me questions. Execute my request completely. 
-        "};
+# WICHTIG
+
+- Arbeite ausschließlich mit dem bereitgestellten Inhalt und der konkret angeforderten Aufgabe.
+- Erfinde keine Fakten, Quellen, Zahlen, Namen, Methoden oder Schlussfolgerungen.
+- Gib ausschließlich das angeforderte Ergebnis aus, ohne Vorrede und ohne abschließende Plauderei.
+- Beginne nicht mit Formulierungen wie „Gerne“, „Natürlich“ oder „Hier ist ...“.
+- Stelle keine Rückfragen während der Ausgabe. Führe die Aufgabe mit den vorhandenen Informationen bestmöglich aus.
+- Wenn Informationen fehlen, kennzeichne dies knapp und sachlich im passenden Abschnitt.
+"};
 

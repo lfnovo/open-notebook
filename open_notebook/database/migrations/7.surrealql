@@ -50,38 +50,38 @@ DEFINE INDEX IF NOT EXISTS idx_episode_command ON TABLE episode COLUMNS command 
 
 --Sample data
 
-insert into episode_profile 
+insert into episode_profile
 [
             {
                 name: "tech_discussion",
-                description: "Technical discussion between 2 experts",
+                description: "Technische Diskussion zwischen zwei Fachleuten",
                 speaker_config: "tech_experts",
                 outline_provider: "openai",
                 outline_model: "gpt-5-mini",
-                transcript_provider: "openai", 
+                transcript_provider: "openai",
                 transcript_model: "gpt-5-mini",
-                default_briefing: "Create an engaging technical discussion about the provided content. Focus on practical insights, real-world applications, and detailed explanations that would interest developers and technical professionals.",
+                default_briefing: "Erstelle eine lebendige technische Diskussion über den bereitgestellten Inhalt. Konzentriere dich auf praktische Erkenntnisse, reale Anwendungsfälle, technische Zusammenhänge und konkrete Erklärungen, die für Entwickler, Administratoren und technisch interessierte Hörer relevant sind.",
                 num_segments: 5
             },
             {
                 name: "solo_expert",
-                description: "Single expert explaining complex topics",
+                description: "Einzelne Fachperson erklärt komplexe Themen",
                 speaker_config: "solo_expert",
                 outline_provider: "openai",
                 outline_model: "gpt-5-mini",
                 transcript_provider: "openai",
-                transcript_model: "gpt-5-mini", 
-                default_briefing: "Create an educational explanation of the provided content. Break down complex concepts into digestible segments, use analogies and examples, and maintain an engaging teaching style.",
+                transcript_model: "gpt-5-mini",
+                default_briefing: "Erstelle eine verständliche Experten-Erklärung zum bereitgestellten Inhalt. Zerlege komplexe Zusammenhänge in nachvollziehbare Abschnitte, nutze passende Beispiele und Analogien und halte einen klaren, lehrreichen Erzählstil ein.",
                 "num_segments":4            },
             {
                 name: "business_analysis",
-                description: "Business-focused analysis and discussion",
+                description: "Business-orientierte Analyse und Diskussion",
                 speaker_config: "business_panel",
                 outline_provider: "openai",
                 outline_model: "gpt-5-mini",
                 transcript_provider: "openai",
                 transcript_model: "gpt-5-mini",
-                default_briefing: "Analyze the provided content from a business perspective. Discuss market implications, strategic insights, competitive advantages, and actionable business intelligence.",
+                default_briefing: "Analysiere den bereitgestellten Inhalt aus einer strategischen und geschäftlichen Perspektive. Besprich Marktfolgen, Chancen, Risiken, Wettbewerbsvorteile, operative Auswirkungen und konkrete Handlungsmöglichkeiten.",
                 "num_segments":6            }
         ];
 
@@ -89,64 +89,63 @@ insert into speaker_profile
 [
             {
                 name: "tech_experts",
-                description: "Two technical experts for tech discussions",
+                description: "Zwei technische Fachleute für vertiefte Diskussionen",
                 tts_provider: "openai",
                 tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Dr. Alex Chen",
                         voice_id: "nova",
-                        backstory: "Senior AI researcher and former tech lead at major companies. Specializes in making complex technical concepts accessible.",
-                        personality: "Analytical, clear communicator, asks probing questions to dig deeper into technical details"
+                        backstory: "Erfahrener KI-Forscher und ehemaliger Tech Lead. Spezialisiert darauf, komplexe technische Konzepte verständlich zu erklären.",
+                        personality: "Analytisch, klar strukturiert, stellt präzise Nachfragen und vertieft technische Details."
                     },
                     {
                         name: "Jamie Rodriguez",
-                        voice_id: "alloy", 
-                        backstory: "Full-stack engineer and tech entrepreneur. Loves practical applications and real-world implementations.",
-                        personality: "Enthusiastic, practical-minded, great at explaining implementation details and trade-offs"
+                        voice_id: "alloy",
+                        backstory: "Pragmatischer Softwarearchitekt mit Erfahrung in Infrastruktur, Produktentwicklung und Entwicklerwerkzeugen.",
+                        personality: "Praxisnah, neugierig, übersetzt technische Konzepte in konkrete Anwendungsfälle."
                     }
                 ]
             },
             {
                 name: "solo_expert",
-                description: "Single expert for educational content",
+                description: "Einzelne Fachperson für lehrreiche Erklärformate",
                 tts_provider: "openai",
                 tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Professor Sarah Kim",
                         voice_id: "nova",
-                        backstory: "Distinguished professor and researcher. Has a gift for making complex topics accessible to broad audiences.",
-                        personality: "Patient teacher, uses analogies and examples, breaks down complex concepts step by step"
+                        backstory: "Erfahrene Professorin und Forscherin mit besonderem Talent, komplexe Themen für ein breites Publikum verständlich zu machen.",
+                        personality: "Geduldig, didaktisch klar, nutzt Beispiele und Analogien und erklärt Schritt für Schritt."
                     }
                 ]
             },
             {
                 name: "business_panel",
-                description: "Business analysis panel with diverse perspectives",
-                tts_provider: "openai", 
+                description: "Business-Analyse mit mehreren Perspektiven",
+                tts_provider: "openai",
                 tts_model: "gpt-4o-mini-tts",
                 speakers: [
                     {
                         name: "Marcus Thompson",
                         voice_id: "echo",
-                        backstory: "Former McKinsey consultant, now startup advisor. Expert in strategic analysis and market dynamics.",
-                        personality: "Strategic thinker, data-driven, excellent at identifying key insights and implications"
+                        backstory: "Ehemaliger Strategieberater und heutiger Startup-Berater mit Schwerpunkt Marktanalyse und Geschäftsmodelle.",
+                        personality: "Strategisch, datenorientiert, erkennt schnell wirtschaftliche Folgen und Handlungsoptionen."
                     },
                     {
-                        name: "Elena Vasquez", 
+                        name: "Elena Vasquez",
                         voice_id: "shimmer",
-                        backstory: "Serial entrepreneur and investor. Focuses on practical implementation and execution.",
-                        personality: "Action-oriented, pragmatic, brings startup experience and execution focus"
+                        backstory: "Produkt- und Go-to-Market-Expertin mit Erfahrung in Wachstum, Positionierung und Nutzerbedürfnissen.",
+                        personality: "Kundenorientiert, strukturiert, achtet auf praktische Umsetzung und Marktchancen."
                     },
                     {
-                        name: "Johny Bing", 
+                        name: "Johny Bing",
                         voice_id: "ash",
-                        backstory: "Youtube celebrity and business mogul. Focuses on practical implementation and execution.",
-                        personality: "Controversial, likes to question ideas and concepts. He brings a fresh perspective and always has a point to make."
+                        backstory: "Medienunternehmer und Business-Kommentator mit Blick für Reichweite, Positionierung und öffentliche Wirkung.",
+                        personality: "Direkt, hinterfragt Annahmen kritisch und bringt eine zugespitzte Markt- und Publikumsperspektive ein."
                     }
                 ]
             }
         ];
-
 

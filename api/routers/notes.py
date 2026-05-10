@@ -55,7 +55,10 @@ async def create_note(note_data: NoteCreate):
         if not title and note_data.note_type == "ai" and note_data.content:
             from open_notebook.graphs.prompt import graph as prompt_graph
 
-            prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
+            prompt = (
+                "Erstelle auf Grundlage der folgenden Notiz einen prägnanten "
+                "deutschen Titel mit maximal 15 Wörtern."
+            )
             result = await prompt_graph.ainvoke(
                 {  # type: ignore[arg-type]
                     "input_text": note_data.content,

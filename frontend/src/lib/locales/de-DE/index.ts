@@ -715,6 +715,7 @@ export const deDE = {
     perSpeakerTtsOverride: "TTS-Überschreibung pro Sprecher (optional)",
     useProfileDefault: "Profilstandard verwenden",
     setupRequired: "Einrichtung erforderlich",
+    setupRequiredDesc: "Für einige Profile sind noch keine Modelle konfiguriert. Bearbeite sie und wähle Modelle aus, bevor du Podcasts erzeugst.",
     notConfigured: "Nicht konfiguriert",
   },
   settings: {

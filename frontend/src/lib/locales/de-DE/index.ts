@@ -879,7 +879,7 @@ export const deDE = {
     testModelSuccess: "Modelltest bestanden",
     testModelFailed: "Modelltest fehlgeschlagen",
     searchOrAddModel: "Modell suchen oder Modellnamen eingeben...",
-    addCustomModel: ""{name}" hinzufügen",
+    addCustomModel: "\"{name}\" hinzufügen",
   },
   apiKeys: {
     title: "KI mit eigenen API-Schlüsseln konfigurieren",

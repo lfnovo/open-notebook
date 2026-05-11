@@ -336,3 +336,119 @@ Notes:
 
 - `npm run lint` currently exits successfully with pre-existing warnings unrelated to the Workspace implementation.
 - Full deep-copy/export/import behavior remains future work. The current implementation keeps the confirmed MVP behavior as move-first and preserves API space for future copy/export/import evolution.
+
+## Next Evolution Addendum: Scoped Vector and KG Maintenance
+
+> Added: 2026-05-08
+> Reason: Current resources are workspace-aware, but embeddings and KG are still stored in global structures and then permission-filtered at query time.
+
+### Design Decision
+
+The next phase should move embeddings and KG from “global index plus resource filtering” to explicit scope ownership:
+
+- Team workspace embeddings are created and rebuilt per team workspace.
+- Team KG is created per team workspace, and teams do not share KG entity identity or relation expansion.
+- System KG is separate from team KG and is partitioned by industry tags to prevent one large global knowledge graph from degrading quality, privacy boundaries, and rebuild cost.
+- Team owner/admin can run only scoped maintenance for their own team workspace.
+- System admin can run system and industry KG maintenance, but team maintenance remains scope-aware and audited.
+
+### Phase 7: Add vector/KG scope model
+
+Goal: Make derived search structures follow the same workspace boundary as resources.
+
+Files to modify:
+
+- Add migration under `open_notebook/database/migrations/`.
+- Update `commands/embedding_commands.py`.
+- Update `open_notebook/graphs/knowledge_graph.py`.
+- Update `open_notebook/database/repositories/search_repository.py`.
+- Update `open_notebook/domain/notebook.py`.
+- Add/modify tests in `tests/test_search_repository.py`, `tests/test_kg.py`, and new maintenance tests.
+
+Schema changes:
+
+- Add `workspace_id` and `team_id` to `source_embedding`.
+- Add `workspace_id` and `team_id` to `source_insight`, or introduce a separate insight embedding table if the current record shape becomes too overloaded.
+- Ensure `note.workspace_id` is used when embedding notes; if note embeddings remain inline, search queries must filter by `note.workspace_id`.
+- Add `workspace_id`, `team_id`, `scope_type`, and optional `industry_tag_id` to `kg_entity`.
+- Add the same scope fields to `kg_relation`.
+- Stop using only global slug ids for KG entities. Use scoped ids or generated ids with a unique constraint on `(scope_type, workspace_id, team_id, industry_tag_id, normalized_name, type)`.
+
+Acceptance:
+
+- Two teams extracting entity “Insulin” produce separate KG entities.
+- Team A KG search cannot return or traverse Team B KG nodes.
+- Team A vector rebuild does not delete or rewrite Team B embeddings.
+- Team query embeddings use Team A effective embedding model.
+- Personal workspace search continues to use system defaults.
+
+### Phase 8: Split maintenance APIs
+
+Goal: Replace global-only advanced maintenance with scoped APIs that can be safely exposed to team owner/admin.
+
+Backend endpoints:
+
+```http
+POST /workspaces/{workspace_id}/maintenance/embeddings/rebuild
+POST /workspaces/{workspace_id}/maintenance/kg/rebuild
+GET /workspaces/{workspace_id}/maintenance/jobs/{command_id}
+POST /system/maintenance/embeddings/rebuild
+POST /system/maintenance/kg/rebuild
+POST /system/kg/industry-tags/{tag_id}/rebuild
+```
+
+Files to add or modify:
+
+- Add `api/routers/workspace_maintenance.py`.
+- Keep `api/routers/embedding_rebuild.py` admin-only or deprecate it after the scoped API is available.
+- Add service layer for scoped rebuild submission, for example `api/services/workspace_maintenance_service.py`.
+- Add scoped command inputs in `commands/embedding_commands.py`.
+- Add KG rebuild command input in the KG command module.
+- Add frontend team advanced panel under `frontend/src/app/(dashboard)/advanced/page.tsx`.
+
+Permission rules:
+
+- Team owner/admin can rebuild embeddings/KG only for a team workspace they manage.
+- Team members cannot run maintenance.
+- System admin can run system/industry maintenance.
+- System admin observation must not silently mutate personal workspaces.
+
+Acceptance:
+
+- Team owner sees actionable “团队向量重建” and “团队 KG 重建” controls instead of a disabled global advanced page.
+- Calling a scoped rebuild with another team workspace id returns 403.
+- Rebuild job payload contains `workspace_id`, `team_id`, and selected model ids.
+- Audit log records scope, actor, job id, resource counts, and result.
+
+### Phase 9: System KG industry tags
+
+Goal: Keep platform knowledge manageable and queryable by industry instead of a single unbounded global graph.
+
+Files to add or modify:
+
+- Add migration for `industry_tag` and system KG scope metadata.
+- Add repository/service/router support for industry tag management.
+- Add admin UI for industry tags and system KG rebuild.
+- Update KG extraction/import flows so system KG writes require at least one industry tag.
+
+Suggested tags for current product direction:
+
+- `biopharma`
+- `life-science`
+- `materials`
+- `ai-research`
+- `enterprise-knowledge`
+
+Acceptance:
+
+- System KG rebuild can target one industry tag.
+- System KG search requires explicit industry tags or a configured default tag set.
+- Team KG can optionally read selected system industry KG as read-only background, but cannot merge private team nodes into system KG.
+
+## Updated Recommended Execution Order
+
+1. Finish manual validation of the current Workspace MVP.
+2. Phase 7: Add vector/KG scope model and migration.
+3. Phase 8: Split maintenance APIs and enable team scoped advanced tools.
+4. Phase 9: Add system KG industry tags.
+5. Return to export/import, artifact abstraction, and copy evolution once derived indexes have clear scope boundaries.

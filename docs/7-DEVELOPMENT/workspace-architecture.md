@@ -346,7 +346,121 @@ resource.workspace_id -> workspace.team_id -> team defaults/allowlist
 
 ---
 
-## 7. 权限矩阵草案
+## 7. 向量与 KG 边界
+
+Workspace 不只约束资源 CRUD，也应约束资源派生索引。当前系统的 source/note/insight embeddings 和 KG 存储仍偏全局，查询后再按资源权限过滤。下一阶段要把向量与 KG 维护纳入 workspace 架构，避免团队资源在底层知识结构中互相混合。
+
+### 7.1 团队向量索引
+
+团队 workspace 的向量索引按团队创建和维护。
+
+原则：
+
+- `source_embedding`、`source_insight`、`note.embedding` 或其后续独立 embedding 表必须能追溯到 `workspace_id`。
+- 团队 workspace 的 embedding 生成使用该团队的有效 embedding model。
+- 团队 workspace 的 query embedding 也必须使用同一团队上下文，不能只用系统默认 embedding model。
+- 团队之间不共享向量索引；一个团队 workspace 的向量重建不能影响其它团队或个人 workspace。
+- 个人 workspace 继续使用系统默认 embedding model，除非后续设计个人订阅模型。
+
+建议模型：
+
+```text
+embedding_scope
+  scope_type: personal | team | system
+  workspace_id: option<workspace>
+  team_id: option<team>
+  industry_tag_id: option<industry_tag>
+```
+
+MVP 可以不新建 `embedding_scope` 表，而是先在 embedding 记录上冗余写入：
+
+```text
+source_embedding.workspace_id
+source_embedding.team_id
+source_insight.workspace_id
+source_insight.team_id
+note.workspace_id
+```
+
+长期方向是让所有检索入口都显式传入 `workspace_id` 或 `team_id`，并在 repository 层先按 scope 过滤，再做相似度排序。
+
+### 7.2 团队 KG
+
+团队 KG 按团队创建，团队之间不关联。
+
+原则：
+
+- 团队 workspace 内抽取的 KG entity/relation 必须带 `workspace_id` 和 `team_id`。
+- KG entity 的唯一性不能只用全局 slug，例如 `kg_entity:insulin`，否则不同团队会合并同名实体。
+- 团队 KG entity id 应包含 scope，例如 `kg_entity:{team_slug}:{entity_slug}`，或使用系统生成 id 并增加唯一索引 `(scope, normalized_name, type)`。
+- 团队 KG 查询只在当前团队 KG scope 内扩展关系，不跨团队做 1-hop 或多跳关联。
+- 删除或重建团队 KG 只影响当前团队 workspace。
+
+这条原则比“查询后过滤”更严格：KG 的图结构本身不能跨团队连边，否则即使最终结果过滤，关系扩展阶段也可能受到其它团队知识影响。
+
+### 7.3 系统 KG 与行业标签
+
+系统 KG 用于公共、行业级或平台级知识，不应无限增长成一个全局混杂知识库。系统 KG 应按行业标签划分。
+
+建议新增概念：
+
+```text
+industry_tag
+  id
+  slug
+  name
+  parent_id: option<industry_tag>
+  status: active | archived
+```
+
+系统 KG scope：
+
+```text
+system_kg_scope
+  id
+  industry_tag_id
+  name
+  status
+```
+
+系统 KG 原则：
+
+- 系统 KG 只能由系统管理员维护。
+- 系统 KG 资源必须绑定一个或多个行业标签，例如 `biopharma`、`life-science`、`materials`。
+- 检索系统 KG 时必须指定行业标签或使用用户/团队配置的默认行业标签集合。
+- 团队 KG 可以选择引用系统行业 KG 作为只读背景，但不能写入系统 KG，也不能把团队私有实体合并进系统 KG。
+- 行业标签是控制 KG 规模和召回范围的第一层边界，避免系统 KG 过大后影响查询质量和成本。
+
+### 7.4 维护接口
+
+旧的全局 embedding rebuild 不应直接开放给团队 owner。下一阶段需要拆成 scoped maintenance API。
+
+建议接口：
+
+```http
+POST /workspaces/{workspace_id}/maintenance/embeddings/rebuild
+POST /workspaces/{workspace_id}/maintenance/kg/rebuild
+GET /workspaces/{workspace_id}/maintenance/jobs/{command_id}
+```
+
+系统级接口：
+
+```http
+POST /system/maintenance/embeddings/rebuild
+POST /system/maintenance/kg/rebuild
+POST /system/kg/industry-tags/{tag_id}/rebuild
+```
+
+权限：
+
+- Team owner/admin 只能维护自己管理的 team workspace。
+- 普通成员不能执行维护任务。
+- 系统 admin 可以维护系统 KG、行业 KG、公共索引，并可观察团队维护状态；默认不对个人 workspace 执行资源级写操作。
+- 维护任务必须写审计事件，并记录 scope、资源数量、模型版本、发起人和结果。
+
+---
+
+## 8. 权限矩阵草案
 
 | 对象 | Workspace member | Resource creator | Workspace manager | System admin |
 | --- | --- | --- | --- | --- |
@@ -363,7 +477,7 @@ resource.workspace_id -> workspace.team_id -> team defaults/allowlist
 
 ---
 
-## 8. 迁移策略
+## 9. 迁移策略
 
 建议分阶段演进，避免一次性重写权限系统。
 
@@ -409,9 +523,17 @@ resource.workspace_id -> workspace.team_id -> team defaults/allowlist
 - 支持复制 notebook 到另一个 workspace，保留个人副本。
 - 复制策略应明确 source、note、chat、file、embedding、insight 的复制或复用规则。
 
+### Phase 7: 向量与 KG scope 化
+
+- 为 source_embedding、source_insight、note embedding、kg_entity、kg_relation 增加 workspace/team/system scope。
+- 迁移现有 KG entity id，避免继续使用全局 name slug 合并团队实体。
+- 搜索和 Graph RAG 查询先限定 scope，再执行相似度/BM25/图扩展。
+- 拆分 maintenance API：team workspace rebuild、system rebuild、industry-tag rebuild。
+- 团队“高级”页面只接入 team workspace scoped maintenance，不接入全局维护。
+
 ---
 
-## 9. API 草案
+## 10. API 草案
 
 ```http
 GET /workspaces
@@ -431,6 +553,15 @@ POST /workspaces/{workspace_id}/resources/move
 POST /workspaces/{workspace_id}/resources/copy
 ```
 
+维护接口预留：
+
+```http
+POST /workspaces/{workspace_id}/maintenance/embeddings/rebuild
+POST /workspaces/{workspace_id}/maintenance/kg/rebuild
+GET /workspaces/{workspace_id}/maintenance/jobs/{command_id}
+POST /system/kg/industry-tags/{tag_id}/rebuild
+```
+
 资源 API 应逐步支持：
 
 ```http
@@ -441,13 +572,14 @@ GET /notes?workspace_id=...
 
 ---
 
-## 10. 前端体验
+## 11. 前端体验
 
 需要新增或调整：
 
 - Workspace selector：个人工作区 / 团队工作区。
 - Resource move dialog：移动前提示权限变化。
 - Workspace settings：权限策略配置。
+- Workspace advanced：仅展示当前 workspace 可执行的 scoped maintenance，例如重建当前团队向量和 KG。
 - Team settings：继续负责成员、订阅、模型/转换范围、默认模型。
 - Resource details：展示 workspace、creator、权限状态。
 - Action menus：从 capability 结果决定显示/禁用，而不是前端复制权限判断。
@@ -458,7 +590,7 @@ GET /notes?workspace_id=...
 
 ---
 
-## 11. 审计要求
+## 12. 审计要求
 
 以下事件必须审计：
 
@@ -472,6 +604,9 @@ GET /notes?workspace_id=...
 - `resource.deleted`
 - `resource.public_published`
 - `resource.public_revoked`
+- `workspace.embeddings.rebuild_requested`
+- `workspace.kg.rebuild_requested`
+- `system.kg.industry_rebuild_requested`
 
 审计元数据应包含：
 
@@ -482,10 +617,12 @@ GET /notes?workspace_id=...
 - resource id
 - previous policy/effective policy where relevant
 - operation mode: move/copy
+- maintenance scope and model ids where relevant
+- industry tag ids where relevant
 
 ---
 
-## 12. 非目标
+## 13. 非目标
 
 下一阶段不做：
 
@@ -494,12 +631,14 @@ GET /notes?workspace_id=...
 - 多层组织/企业目录同步。
 - 完整资源复制深拷贝实现。
 - Public 作为 workspace。
+- 团队 KG 跨团队自动合并。
+- 无行业标签的无限全局系统 KG。
 
 这些能力可以后续扩展，但当前阶段应先完成 workspace 作为资源归属和协作边界的基础模型。
 
 ---
 
-## 13. 验收标准
+## 14. 验收标准
 
 下一阶段 workspace 架构落地后，应满足：
 
@@ -512,3 +651,6 @@ GET /notes?workspace_id=...
 - 资源从个人 workspace 移动到团队 workspace 后，权限立即按团队 workspace 生效。
 - 运行时模型解析可以通过 workspace 找到 team context。
 - 旧数据在迁移期有安全 fallback，不会突然扩大权限。
+- 团队向量重建只影响当前团队 workspace。
+- 团队 KG 查询和关系扩展不跨团队。
+- 系统 KG 可以按行业标签重建和查询，避免单一全局 KG 失控。

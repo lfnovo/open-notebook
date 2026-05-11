@@ -16,6 +16,29 @@
 
 ## P0: 权限与运行时收口
 
+- [ ] **向量与 KG 按 workspace/team scope 重构**
+  - 当前状态：资源已经 workspace-aware，但 `source_embedding`、`source_insight`、`note.embedding`、`kg_entity`、`kg_relation` 仍偏全局，搜索后再按资源权限过滤。
+  - 目标状态：团队 workspace 的向量和 KG 按团队创建、维护和查询，团队之间不共享底层向量索引或 KG entity/relation。
+  - 团队 KG entity 不能再只用全局名称 slug 合并，应使用 scoped id 或 `(scope, normalized_name, type)` 唯一约束。
+  - 团队查询 embedding 必须使用团队有效 embedding model，避免写入时 team-aware、查询时 system-default 的模型不一致。
+  - 主要文件：新 migration、`commands/embedding_commands.py`、`open_notebook/graphs/knowledge_graph.py`、`open_notebook/database/repositories/search_repository.py`、`open_notebook/domain/notebook.py`、`api/routers/search.py`。
+  - 验收：两个团队抽取同名实体不会合并；团队 A 搜索/KG 扩展不返回团队 B 的节点；团队 A 向量重建不影响团队 B 或个人 workspace。
+
+- [ ] **拆分 scoped 向量/KG维护接口**
+  - 当前全局 `/api/embeddings/rebuild` 只能保留为系统级维护，不能直接开放给 Team owner。
+  - 新增 workspace scoped maintenance：`POST /workspaces/{workspace_id}/maintenance/embeddings/rebuild`、`POST /workspaces/{workspace_id}/maintenance/kg/rebuild`。
+  - Team owner/admin 只能维护自己管理的 team workspace；普通成员不能维护；系统 admin 负责系统级/行业级维护。
+  - 前端“高级”页面对团队 owner 显示团队 scoped 工具，不显示全库维护工具。
+  - 主要文件：新增 `api/routers/workspace_maintenance.py`、`api/services/workspace_maintenance_service.py`、命令 payload、`frontend/src/app/(dashboard)/advanced/page.tsx`。
+  - 验收：团队 owner 可重建当前团队向量/KG；传入其它团队 workspace 返回 403；审计日志记录 scope、actor、job id、资源数量和结果。
+
+- [ ] **系统 KG 按行业标签划分**
+  - 系统 KG 不是团队 KG，也不应是无限增长的单一全局 KG。
+  - 新增 `industry_tag` 概念，系统 KG 资源和 rebuild/search 必须绑定行业标签，例如 `biopharma`、`life-science`、`materials`。
+  - 团队 KG 可只读引用系统行业 KG 作为背景知识，但不能把团队私有实体写入或合并到系统 KG。
+  - 主要文件：新 migration、系统 KG repository/service/router、admin UI、KG extraction/import flow。
+  - 验收：系统 KG 可按行业标签重建和查询；无行业标签的系统 KG 写入被拒绝；团队 KG 与系统 KG 私有写入隔离。
+
 - [ ] **引入 Workspace 资源归属模型**
   - 详细设计见 `docs/7-DEVELOPMENT/workspace-architecture.md`。
   - 当前 team context 主要从 `share_grant` 推断，多个 team grant 时会返回 `None`，行为安全但不够精确。
@@ -137,13 +160,16 @@
 
 ## 建议实施顺序
 
-1. P0: Workspace 资源归属模型。
-2. P0: Transformation allowlist runtime enforcement。
-3. P0: Effective model defaults API + 前端展示。
-4. P1: Team 非模型设置。
-5. P1: 审计事件补齐。
-6. P1: Public 撤回策略 UI 与引用可视化。
-7. P2: 统一 navigation policy 与用户文档。
+1. 完成当前 Workspace MVP 人工验证，不再扩大旧 owner/share 逻辑。
+2. P0: 向量与 KG 按 workspace/team scope 重构。
+3. P0: scoped 向量/KG维护接口，恢复团队 owner 可用的团队“高级”工具。
+4. P0: 系统 KG 按行业标签划分。
+5. P0: Transformation allowlist runtime enforcement。
+6. P0: Effective model defaults API + 前端展示。
+7. P1: Team 非模型设置。
+8. P1: 审计事件补齐。
+9. P1: Public 撤回策略 UI 与引用可视化。
+10. P2: 统一 navigation policy 与用户文档。
 
 ## 验证基线
 

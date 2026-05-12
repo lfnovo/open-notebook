@@ -83,6 +83,7 @@ async def test_handle_wechat_callback_logs_in_existing_bound_user(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_handle_wechat_callback_creates_user_for_new_wechat_identity(monkeypatch):
+    monkeypatch.setenv("ALLOW_PUBLIC_REGISTRATION", "true")
     created_user = {
         "id": "app_user:wx_openid_2",
         "username": "wx_openid_2",
@@ -138,3 +139,48 @@ async def test_handle_wechat_callback_creates_user_for_new_wechat_identity(monke
     assert create_payload["display_name"] == "New WeChat User"
     assert create_payload["wechat_openid"] == "openid-2"
     assert create_payload["avatar_url"] == "https://example.com/new-avatar.jpg"
+
+
+@pytest.mark.asyncio
+async def test_handle_wechat_callback_blocks_new_user_when_public_registration_disabled(monkeypatch):
+    monkeypatch.setenv("ALLOW_PUBLIC_REGISTRATION", "false")
+    monkeypatch.setattr(
+        wechat_auth_service,
+        "_exchange_code_for_tokens",
+        AsyncMock(
+            return_value=WeChatOAuthTokens(
+                access_token="wx-token",
+                openid="openid-3",
+                unionid=None,
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        wechat_auth_service,
+        "_fetch_user_info",
+        AsyncMock(
+            return_value=WeChatUserInfo(
+                openid="openid-3",
+                unionid=None,
+                nickname="Blocked WeChat User",
+                headimgurl=None,
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        wechat_auth_service.UserRepository,
+        "get_user_by_wechat_identity",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(
+        wechat_auth_service.UserRepository,
+        "create_wechat_user",
+        AsyncMock(),
+    )
+
+    with pytest.raises(wechat_auth_service.HTTPException) as exc_info:
+        await handle_wechat_callback(WeChatCallbackRequest(code="auth-code", state=None))
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail == "Public registration is disabled"
+    wechat_auth_service.UserRepository.create_wechat_user.assert_not_awaited()

@@ -88,6 +88,16 @@ openssl rand -base64 32
 
 Keep `OPEN_NOTEBOOK_AUTH_MODE=jwt` for any Internet-facing site. Keep `ALLOW_PUBLIC_REGISTRATION=false` unless you intentionally want public signups.
 
+Optional WeChat QR-code login uses a WeChat Open Platform website application:
+
+```bash
+WECHAT_OPEN_APP_ID=...
+WECHAT_OPEN_APP_SECRET=...
+WECHAT_OPEN_REDIRECT_URI=https://lumina.yinhour.com/login/wechat/callback
+```
+
+Register the same redirect URI in WeChat Open Platform. With `ALLOW_PUBLIC_REGISTRATION=false`, WeChat sign-in is limited to existing bound users; set it to `true` only if first-time WeChat users should be able to create accounts.
+
 ## 6. Install App Dependencies and Build Frontend
 
 ```bash

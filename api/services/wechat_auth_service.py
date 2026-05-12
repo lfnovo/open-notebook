@@ -52,6 +52,15 @@ def _wechat_redirect_uri() -> Optional[str]:
     return os.getenv("WECHAT_OPEN_REDIRECT_URI") or os.getenv("WECHAT_REDIRECT_URI")
 
 
+def _allow_wechat_user_creation() -> bool:
+    return os.getenv("ALLOW_PUBLIC_REGISTRATION", "false").lower() in {
+        "true",
+        "1",
+        "yes",
+        "on",
+    }
+
+
 async def build_wechat_authorize_url(state: str) -> WeChatAuthorizeUrlResponse:
     app_id = _wechat_app_id()
     redirect_uri = _wechat_redirect_uri()
@@ -167,6 +176,9 @@ async def handle_wechat_callback(request: WeChatCallbackRequest) -> LoginRespons
         updated = await UserRepository.update_user(user_id, updates)
         user = updated[0] if updated else {**user, **updates}
     else:
+        if not _allow_wechat_user_creation():
+            raise HTTPException(status_code=403, detail="Public registration is disabled")
+
         user = await UserRepository.create_wechat_user(
             {
                 "username": _username_from_wechat(user_info),

@@ -22,6 +22,20 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## WeChat Web Login
+
+WeChat web login uses a WeChat Open Platform website application and the frontend callback page at `/login/wechat/callback`.
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `WECHAT_OPEN_APP_ID` | Required for WeChat login | None | WeChat Open Platform website application AppID. Legacy alias: `WECHAT_APP_ID` |
+| `WECHAT_OPEN_APP_SECRET` | Required for callback token exchange | None | WeChat Open Platform website application AppSecret. Supports `_FILE` secret loading via `WECHAT_OPEN_APP_SECRET_FILE`; legacy alias: `WECHAT_APP_SECRET` |
+| `WECHAT_OPEN_REDIRECT_URI` | Required for WeChat login | None | Full frontend callback URL registered in WeChat, for example `https://lumina.yinhour.com/login/wechat/callback`. Legacy alias: `WECHAT_REDIRECT_URI` |
+
+If `ALLOW_PUBLIC_REGISTRATION=false`, WeChat can sign in existing bound users but will not auto-create accounts for new WeChat identities.
+
+---
+
 ## Email Verification
 
 Open Notebook uses email verification for public registration and password reset.

@@ -14,22 +14,24 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
-import { VisibilitySelector } from '@/components/notebooks/VisibilitySelector'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
 import { useTransformations } from '@/lib/hooks/use-transformations'
 import { useCreateSource } from '@/lib/hooks/use-sources'
 import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { ExternalSourcesPanel } from '@/components/sources/ExternalSourcesPanel'
 
 const MAX_BATCH_SIZE = 50
 
 const createSourceSchema = z.object({
-  type: z.enum(['link', 'upload', 'text']),
+  type: z.enum(['link', 'upload', 'text', 'external']),
   title: z.string().optional(),
   url: z.string().optional(),
   content: z.string().optional(),
@@ -52,6 +54,9 @@ const createSourceSchema = z.object({
     }
     return !!data.file
   }
+  if (data.type === 'external') {
+    return true
+  }
   return true
 }, {
   message: 'Please provide the required content for the selected source type',
@@ -73,6 +78,8 @@ interface AddSourceDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   defaultNotebookId?: string
+  canCreateSource?: boolean
+  onSuccess?: () => void
 }
 
 interface ProcessingState {
@@ -90,14 +97,16 @@ interface BatchProgress {
 export function AddSourceDialog({ 
   open, 
   onOpenChange, 
-  defaultNotebookId 
+  defaultNotebookId,
+  canCreateSource = true,
+  onSuccess,
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
   const WIZARD_STEPS: readonly WizardStep[] = [
-    { number: 1, title: t.sources.addSource, description: t.sources.processDescription },
-    { number: 2, title: t.navigation.notebooks, description: t.notebooks.searchPlaceholder },
-    { number: 3, title: t.navigation.process, description: t.sources.processDescription },
+    { number: 1, title: t.sources.addSource },
+    { number: 2, title: t.navigation.notebooks },
+    { number: 3, title: t.navigation.process },
   ]
 
   // Simplified state management
@@ -179,6 +188,15 @@ export function AddSourceDialog({
   const watchedContent = watch('content')
   const watchedFile = watch('file')
   const watchedTitle = watch('title')
+  const externalNotebookId = defaultNotebookId || selectedNotebooks[0] || ''
+  const externalNotebook = notebooks.find((notebook) => notebook.id === externalNotebookId)
+  const canCreateExternalSource = defaultNotebookId
+    ? canCreateSource
+    : Boolean(externalNotebook && (externalNotebook.capabilities?.can_create_source ?? true))
+  const externalTargetNotebooks = useMemo(
+    () => notebooks.filter((notebook) => notebook.capabilities?.can_create_source ?? true),
+    [notebooks]
+  )
 
   // Batch mode detection
   const { isBatchMode, itemCount, parsedUrls, parsedFiles } = useMemo(() => {
@@ -215,6 +233,7 @@ export function AddSourceDialog({
     switch (step) {
       case 1:
         if (!selectedType) return false
+        if (selectedType === 'external') return true
         // Check batch size limit
         if (isOverLimit) return false
         // Check for URL validation errors
@@ -302,6 +321,8 @@ export function AddSourceDialog({
 
   // Single source submission
   const submitSingleSource = async (data: CreateSourceFormData): Promise<void> => {
+    if (data.type === 'external') return
+
     const createRequest: CreateSourceRequest = {
       type: data.type,
       notebooks: selectedNotebooks,
@@ -326,6 +347,10 @@ export function AddSourceDialog({
 
   // Batch submission
   const submitBatch = async (data: CreateSourceFormData): Promise<{ success: number; failed: number }> => {
+    if (data.type === 'external') {
+      return { success: 0, failed: 0 }
+    }
+
     const results = { success: 0, failed: 0 }
     const items: { type: 'url' | 'file'; value: string | File }[] = []
 
@@ -390,6 +415,10 @@ export function AddSourceDialog({
 
   // Form submission
   const onSubmit = async (data: CreateSourceFormData) => {
+    if (data.type === 'external') {
+      return
+    }
+
     try {
       setProcessing(true)
 
@@ -537,15 +566,13 @@ export function AddSourceDialog({
   }
 
   const currentStepValid = isStepValid(currentStep)
+  const isExternalSourceMode = currentStep === 1 && selectedType === 'external'
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-2xl p-0">
         <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle>{t.sources.addNew}</DialogTitle>
-          <DialogDescription>
-            {t.sources.processDescription}
-          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="min-w-0">
@@ -553,19 +580,62 @@ export function AddSourceDialog({
             currentStep={currentStep}
             steps={WIZARD_STEPS}
             onStepClick={handleStepClick}
+            showStepIndicator={false}
             className="border-0"
           >
             {currentStep === 1 && (
-              <SourceTypeStep
-                // @ts-expect-error - Type inference issue with zod schema
-                control={control}
-                register={register}
-                setValue={setValue}
-                // @ts-expect-error - Type inference issue with zod schema
-                errors={errors}
-                urlValidationErrors={urlValidationErrors}
-                onClearUrlErrors={handleClearUrlErrors}
-              />
+              <div className="space-y-4">
+                <SourceTypeStep
+                  // @ts-expect-error - Type inference issue with zod schema
+                  control={control}
+                  register={register}
+                  setValue={setValue}
+                  // @ts-expect-error - Type inference issue with zod schema
+                  errors={errors}
+                  urlValidationErrors={urlValidationErrors}
+                  onClearUrlErrors={handleClearUrlErrors}
+                  externalSourceContent={
+                    <div className="space-y-3">
+                      {!defaultNotebookId && (
+                        <div className="flex flex-col gap-2">
+                          <Label>{t.externalApi.targetNotebook}</Label>
+                          <Select
+                            value={externalNotebookId}
+                            onValueChange={(notebookId) => setSelectedNotebooks([notebookId])}
+                            disabled={notebooksLoading}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t.externalApi.selectTargetNotebook} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {externalTargetNotebooks.map((notebook) => (
+                                <SelectItem key={notebook.id} value={notebook.id}>
+                                  {notebook.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+
+                      {externalNotebookId ? (
+                        <ExternalSourcesPanel
+                          notebookId={externalNotebookId}
+                          canCreateSource={canCreateExternalSource}
+                          onSnapshot={() => {
+                            onSuccess?.()
+                            handleClose()
+                          }}
+                        />
+                      ) : (
+                        <p className="rounded-md border bg-background p-3 text-xs text-muted-foreground">
+                          {t.externalApi.selectTargetNotebookFirst}
+                        </p>
+                      )}
+                    </div>
+                  }
+                />
+              </div>
             )}
             
             {currentStep === 2 && (
@@ -601,7 +671,7 @@ export function AddSourceDialog({
             </Button>
 
             <div className="flex gap-2">
-              {currentStep > 1 && (
+              {!isExternalSourceMode && currentStep > 1 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -612,7 +682,7 @@ export function AddSourceDialog({
               )}
 
               {/* Show Next button on steps 1 and 2, styled as outline/secondary */}
-              {currentStep < 3 && (
+              {!isExternalSourceMode && currentStep < 3 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -624,13 +694,15 @@ export function AddSourceDialog({
               )}
 
               {/* Show Done button on all steps, styled as primary */}
-              <Button
-                type="submit"
-                disabled={!currentStepValid || createSource.isPending}
-                className="min-w-[120px]"
-              >
-                {createSource.isPending ? t.common.adding : t.common.done}
-              </Button>
+              {!isExternalSourceMode && (
+                <Button
+                  type="submit"
+                  disabled={!currentStepValid || createSource.isPending}
+                  className="min-w-[120px]"
+                >
+                  {createSource.isPending ? t.common.adding : t.common.done}
+                </Button>
+              )}
             </div>
           </div>
         </form>

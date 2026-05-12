@@ -132,6 +132,27 @@ describe('SourcesPage', () => {
     expect(screen.getByText('Personal source')).toBeInTheDocument()
   })
 
+  it('uses the third-party API name as the source type label for imported external sources', async () => {
+    vi.mocked(sourcesApi.list).mockResolvedValue([
+      source({
+        id: 'source:external',
+        title: 'Graph Retrieval for Research Agents',
+        asset: {
+          external_source_name: 'Paper Search',
+        },
+      }),
+    ])
+    vi.mocked(sourcesApi.listPublic).mockResolvedValue([])
+
+    const { container } = render(<SourcesPage />)
+
+    expect(await screen.findByText('Graph Retrieval for Research Agents')).toBeInTheDocument()
+    expect(screen.getByText('Paper Search')).toBeInTheDocument()
+    expect(screen.queryByText('Text')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Paper Search source type icon')).toHaveClass('h-5', 'w-5')
+    expect(container.querySelector('colgroup col:nth-child(2)')).toHaveClass('w-[160px]')
+  })
+
   it('uses read-only copy and disables visibility actions for system admins', async () => {
     useAuthStore.setState({ role: 'admin' })
 

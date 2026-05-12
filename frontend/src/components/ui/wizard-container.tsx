@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 interface WizardStep {
   number: number
   title: string
-  description: string
+  description?: string
 }
 
 interface WizardContainerProps {
@@ -15,6 +15,7 @@ interface WizardContainerProps {
   steps: readonly WizardStep[]
   onStepClick?: (step: number) => void
   className?: string
+  showStepIndicator?: boolean
 }
 
 function StepIndicator({ currentStep, steps, onStepClick }: {
@@ -54,12 +55,14 @@ function StepIndicator({ currentStep, steps, onStepClick }: {
                 )}>
                   {step.title}
                 </p>
-                <p className={cn(
-                  'text-xs',
-                  isCurrent ? 'text-muted-foreground' : 'text-muted-foreground/80'
-                )}>
-                  {step.description}
-                </p>
+                {step.description && (
+                  <p className={cn(
+                    'text-xs',
+                    isCurrent ? 'text-muted-foreground' : 'text-muted-foreground/80'
+                  )}>
+                    {step.description}
+                  </p>
+                )}
               </div>
             </div>
             {index < steps.length - 1 && (
@@ -82,15 +85,18 @@ export function WizardContainer({
   currentStep,
   steps,
   onStepClick,
-  className
+  className,
+  showStepIndicator = true,
 }: WizardContainerProps) {
   return (
     <div className={cn('flex flex-col h-[500px] min-w-0 overflow-hidden bg-card rounded-lg border border-border', className)}>
-      <StepIndicator
-        currentStep={currentStep}
-        steps={steps}
-        onStepClick={onStepClick}
-      />
+      {showStepIndicator && (
+        <StepIndicator
+          currentStep={currentStep}
+          steps={steps}
+          onStepClick={onStepClick}
+        />
+      )}
 
       <div className="flex-1 min-w-0 overflow-hidden">
         <div className="h-full min-w-0 overflow-y-auto px-6 py-4">

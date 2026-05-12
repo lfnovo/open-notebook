@@ -49,6 +49,7 @@ def source_list_response_from_row(
         asset=AssetModel(
             file_path=row["asset"].get("file_path") if row.get("asset") else None,
             url=row["asset"].get("url") if row.get("asset") else None,
+            external_source_name=row["asset"].get("external_source_name") if row.get("asset") else None,
         )
         if row.get("asset")
         else None,

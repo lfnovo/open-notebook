@@ -33,6 +33,7 @@ from api.routers import (
     embedding,
     embedding_rebuild,
     episode_profiles,
+    external_api,
     insights,
     languages,
     models,
@@ -321,6 +322,7 @@ app.include_router(commands_router.router, prefix="/api", tags=["commands"])
 app.include_router(podcasts.router, prefix="/api", tags=["podcasts"])
 app.include_router(episode_profiles.router, prefix="/api", tags=["episode-profiles"])
 app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profiles"])
+app.include_router(external_api.router, prefix="/api", tags=["external-api"])
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])

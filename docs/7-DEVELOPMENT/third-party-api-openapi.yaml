@@ -1,0 +1,354 @@
+openapi: 3.1.0
+info:
+  title: Lumina Third-Party API Contract
+  version: 1.0.0
+  description: HTTP plugin contract implemented by third-party source and output providers.
+servers:
+  - url: https://provider.example.com
+security:
+  - bearerAuth: []
+paths:
+  /.well-known/lumina-plugin.json:
+    get:
+      security: []
+      summary: Plugin manifest
+      responses:
+        "200":
+          description: Manifest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Manifest"
+  /lumina/v1/health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, degraded]
+  /lumina/v1/sources/search:
+    post:
+      summary: Search external source
+      parameters:
+        - $ref: "#/components/parameters/LuminaRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchRequest"
+      responses:
+        "200":
+          description: Completed or accepted search
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SearchCompleted"
+                  - $ref: "#/components/schemas/AcceptedJob"
+        default:
+          $ref: "#/components/responses/Error"
+  /lumina/v1/sources/fetch:
+    post:
+      summary: Fetch an external source item
+      parameters:
+        - $ref: "#/components/parameters/LuminaRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FetchRequest"
+      responses:
+        "200":
+          description: Completed or accepted fetch
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FetchCompleted"
+                  - $ref: "#/components/schemas/AcceptedJob"
+        default:
+          $ref: "#/components/responses/Error"
+  /lumina/v1/outputs/generate:
+    post:
+      summary: Generate output artifact
+      parameters:
+        - $ref: "#/components/parameters/LuminaRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OutputGenerateRequest"
+      responses:
+        "200":
+          description: Completed or accepted output generation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/OutputCompleted"
+                  - $ref: "#/components/schemas/AcceptedJob"
+        default:
+          $ref: "#/components/responses/Error"
+  /lumina/v1/jobs/{external_job_id}:
+    get:
+      summary: Poll external job
+      parameters:
+        - name: external_job_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/LuminaRequestId"
+      responses:
+        "200":
+          description: Job status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AcceptedJob"
+                  - $ref: "#/components/schemas/SearchCompleted"
+                  - $ref: "#/components/schemas/FetchCompleted"
+                  - $ref: "#/components/schemas/OutputCompleted"
+                  - $ref: "#/components/schemas/FailedJob"
+        default:
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    LuminaRequestId:
+      name: X-Lumina-Request-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    Manifest:
+      type: object
+      required: [schema_version, name, provider, version, capabilities, sources]
+      properties:
+        schema_version:
+          type: string
+          const: lumina-plugin-v1
+        name:
+          type: string
+        provider:
+          type: string
+        version:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Capability"
+        sources:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManifestSource"
+    ManifestSource:
+      type: object
+      required: [key, name, capabilities]
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        capabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/Capability"
+    Capability:
+      type: string
+      enum: [search, fetch, output]
+    SearchRequest:
+      type: object
+      required: [source_key, query]
+      properties:
+        source_key:
+          type: string
+        query:
+          type: string
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        filters:
+          type: object
+          additionalProperties: true
+    FetchRequest:
+      type: object
+      required: [source_key, external_id]
+      properties:
+        source_key:
+          type: string
+        external_id:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    OutputGenerateRequest:
+      type: object
+      required: [source_key, prompt, output_kind]
+      properties:
+        source_key:
+          type: string
+        prompt:
+          type: string
+        input_text:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ExternalItem"
+        output_kind:
+          type: string
+          enum: [markdown, json, file, url]
+        options:
+          type: object
+          additionalProperties: true
+    AcceptedJob:
+      type: object
+      required: [status, external_job_id]
+      properties:
+        status:
+          type: string
+          const: accepted
+        external_job_id:
+          type: string
+        next_poll_after_seconds:
+          type: number
+          minimum: 0
+    FailedJob:
+      type: object
+      required: [status, error]
+      properties:
+        status:
+          type: string
+          const: failed
+        external_job_id:
+          type: string
+        error:
+          $ref: "#/components/schemas/ErrorBody"
+    SearchCompleted:
+      type: object
+      required: [status, data]
+      properties:
+        status:
+          type: string
+          const: completed
+        external_job_id:
+          type: string
+        data:
+          type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ExternalItem"
+    FetchCompleted:
+      type: object
+      required: [status, data]
+      properties:
+        status:
+          type: string
+          const: completed
+        external_job_id:
+          type: string
+        data:
+          $ref: "#/components/schemas/ExternalItem"
+    OutputCompleted:
+      type: object
+      required: [status, data]
+      properties:
+        status:
+          type: string
+          const: completed
+        external_job_id:
+          type: string
+        data:
+          $ref: "#/components/schemas/OutputArtifact"
+    ExternalItem:
+      type: object
+      required: [external_id, title]
+      properties:
+        external_id:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        content_markdown:
+          type: string
+        url:
+          type: string
+          format: uri
+        authors:
+          type: array
+          items:
+            type: string
+        published_at:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+    OutputArtifact:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [markdown, json, file, url]
+        title:
+          type: string
+        content:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        file_url:
+          type: string
+          format: uri
+        metadata:
+          type: object
+          additionalProperties: true
+    ErrorBody:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        retryable:
+          type: boolean
+          default: false
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorBody"

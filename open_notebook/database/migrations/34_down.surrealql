@@ -1,0 +1,3 @@
+-- Migration 34 rollback
+
+REMOVE FIELD IF EXISTS asset.external_source_name ON TABLE source;

@@ -218,43 +218,45 @@ export function SourcesColumn({
           </CardHeader>
 
           <CardContent ref={scrollContainerRef} className="flex-1 overflow-y-auto min-h-0">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <LoadingSpinner />
-              </div>
-            ) : !sources || sources.length === 0 ? (
-              <EmptyState
-                icon={FileText}
-                title={t.sources.noSourcesYet}
-                description={t.sources.createFirstSource}
-              />
-            ) : (
-              <div className="space-y-3">
-                {sources.map((source) => (
-                  <SourceCard
-                    key={source.id}
-                    source={source}
-                    onClick={handleSourceClick}
-                    onDelete={canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
-                    onRetry={(source.capabilities?.can_process ?? canManageNotebook) ? handleRetry : undefined}
-                    onRemoveFromNotebook={canRemoveNotebookSource ? handleRemoveFromNotebook : undefined}
-                    onRefresh={onRefresh}
-                    showRemoveFromNotebook={true}
-                    contextMode={contextSelections?.[source.id]}
-                    onContextModeChange={onContextModeChange
-                      ? (mode) => onContextModeChange(source.id, mode)
-                      : undefined
-                    }
-                  />
-                ))}
-                {/* Loading indicator for infinite scroll */}
-                {isFetchingNextPage && (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-            )}
+            <div className="flex flex-col gap-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              ) : !sources || sources.length === 0 ? (
+                <EmptyState
+                  icon={FileText}
+                  title={t.sources.noSourcesYet}
+                  description={t.sources.createFirstSource}
+                />
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {sources.map((source) => (
+                    <SourceCard
+                      key={source.id}
+                      source={source}
+                      onClick={handleSourceClick}
+                      onDelete={canDeleteSource(source, profile?.id) ? handleDeleteClick : undefined}
+                      onRetry={(source.capabilities?.can_process ?? canManageNotebook) ? handleRetry : undefined}
+                      onRemoveFromNotebook={canRemoveNotebookSource ? handleRemoveFromNotebook : undefined}
+                      onRefresh={onRefresh}
+                      showRemoveFromNotebook={true}
+                      contextMode={contextSelections?.[source.id]}
+                      onContextModeChange={onContextModeChange
+                        ? (mode) => onContextModeChange(source.id, mode)
+                        : undefined
+                      }
+                    />
+                  ))}
+                  {/* Loading indicator for infinite scroll */}
+                  {isFetchingNextPage && (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </CollapsibleColumn>
@@ -263,6 +265,8 @@ export function SourcesColumn({
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         defaultNotebookId={notebookId}
+        canCreateSource={canAddSource}
+        onSuccess={onRefresh}
       />
 
       <AddExistingSourceDialog

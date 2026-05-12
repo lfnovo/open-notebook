@@ -171,6 +171,8 @@ export function SourceCard({
   const StatusIcon = statusConfig.icon
   const sourceType = getSourceType(source)
   const SourceTypeIcon = SOURCE_TYPE_ICONS[sourceType]
+  const sourceTypeLabel = source.asset?.external_source_name
+    || (sourceType === 'link' ? t.sources.addUrl : sourceType === 'upload' ? t.sources.uploadFile : t.sources.enterText)
   
    const title = source.title || t.sources.untitledSource
 
@@ -264,7 +266,7 @@ export function SourceCard({
               {/* Source type badge */}
               <Badge variant="secondary" className="text-xs flex items-center gap-1">
                 <SourceTypeIcon className="h-3 w-3" />
-                {sourceType === 'link' ? t.sources.addUrl : sourceType === 'upload' ? t.sources.uploadFile : t.sources.enterText}
+                {sourceTypeLabel}
               </Badge>
 
               {isCompleted && source.insights_count > 0 && (

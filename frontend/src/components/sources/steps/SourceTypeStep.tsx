@@ -1,8 +1,9 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import type { ReactNode } from "react"
 import { Control, FieldErrors, UseFormRegister, UseFormSetValue, useWatch } from "react-hook-form"
-import { FileIcon, LinkIcon, FileTextIcon } from "lucide-react"
+import { FileIcon, LinkIcon, FileTextIcon, PlugIcon } from "lucide-react"
 import { useTranslation } from "@/lib/hooks/use-translation"
 import { FormSection } from "@/components/ui/form-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Controller } from "react-hook-form"
 
 interface CreateSourceFormData {
-  type: 'link' | 'upload' | 'text'
+  type: 'link' | 'upload' | 'text' | 'external'
   title?: string
   url?: string
   content?: string
@@ -66,25 +67,31 @@ export function parseAndValidateUrls(text: string): {
 
 import { TranslationKeys } from '@/lib/locales'
 
-const getSourceTypes = (t: TranslationKeys) => [
+const getSourceTypes = (t: TranslationKeys, includeExternalSource: boolean) => [
   {
     value: 'link' as const,
     label: t.sources.addUrl,
     icon: LinkIcon,
-    description: t.sources.processDescription,
   },
   {
     value: 'upload' as const,
     label: t.sources.uploadFile,
     icon: FileIcon,
-    description: t.sources.processDescription,
   },
   {
     value: 'text' as const,
     label: t.sources.enterText,
     icon: FileTextIcon,
-    description: t.sources.processDescription,
   },
+  ...(includeExternalSource
+    ? [
+        {
+          value: 'external' as const,
+          label: t.externalApi.connectedSource,
+          icon: PlugIcon,
+        },
+      ]
+    : []),
 ]
 
 interface SourceTypeStepProps {
@@ -94,11 +101,20 @@ interface SourceTypeStepProps {
   errors: FieldErrors<CreateSourceFormData>
   urlValidationErrors?: { url: string; line: number }[]
   onClearUrlErrors?: () => void
+  externalSourceContent?: ReactNode
 }
 
 const MAX_BATCH_SIZE = 50
 
-export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
+export function SourceTypeStep({
+  control,
+  register,
+  setValue,
+  errors,
+  urlValidationErrors,
+  onClearUrlErrors,
+  externalSourceContent,
+}: SourceTypeStepProps) {
   const { t } = useTranslation()
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
@@ -154,23 +170,23 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
 
   // Check for batch size limit
   const isOverLimit = itemCount > MAX_BATCH_SIZE
+  const sourceTypes = getSourceTypes(t, Boolean(externalSourceContent))
+
   return (
     <div className="space-y-6">
-      <FormSection
-        title={t.sources.title}
-        description={t.sources.processDescription}
-      >
+      <div className="mb-6 last:mb-0">
+        <div className="space-y-3">
         <Controller
           control={control}
           name="type"
           render={({ field }) => (
             <Tabs 
               value={field.value || ''} 
-              onValueChange={(value) => field.onChange(value as 'link' | 'upload' | 'text')}
+              onValueChange={(value) => field.onChange(value as CreateSourceFormData['type'])}
               className="w-full"
             >
-              <TabsList className="grid w-full grid-cols-3">
-                {getSourceTypes(t).map((type) => {
+              <TabsList className={`grid w-full ${externalSourceContent ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+                {sourceTypes.map((type) => {
                   const Icon = type.icon
                   return (
                     <TabsTrigger key={type.value} value={type.value} className="gap-2">
@@ -181,9 +197,9 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                 })}
               </TabsList>
               
-              {getSourceTypes(t).map((type) => (
+              {sourceTypes.map((type) => (
                 <TabsContent key={type.value} value={type.value} className="mt-4">
-                  <p className="text-sm text-muted-foreground mb-4">{type.description}</p>
+                  {type.value === 'external' && externalSourceContent}
                   
                   {/* Type-specific fields */}
                   {type.value === 'link' && (
@@ -313,17 +329,14 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
         {errors.type && (
           <p className="text-sm text-destructive mt-1">{errors.type.message}</p>
         )}
-      </FormSection>
+        </div>
+      </div>
 
       {/* Hide title field in batch mode - titles will be auto-generated */}
-      {!isBatchMode && (
+      {!isBatchMode && selectedType !== 'external' && (
         <FormSection
           htmlFor="source-title"
           title={selectedType === 'text' ? `${t.common.title} *` : `${t.common.title} (${t.common.optional})`}
-          description={selectedType === 'text'
-            ? t.sources.titleRequired
-            : t.sources.titleGenerated
-          }
         >
           <Input
             id="source-title"
@@ -338,7 +351,7 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
       )}
 
       {/* Batch mode indicator */}
-      {isBatchMode && (
+      {isBatchMode && selectedType !== 'external' && (
         <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <Badge variant="default">{t.common.batchMode}</Badge>

@@ -1,0 +1,3 @@
+-- Migration 34: Store third-party source display names on imported source assets
+
+DEFINE FIELD IF NOT EXISTS asset.external_source_name ON TABLE source TYPE option<string>;

@@ -69,4 +69,20 @@ describe('SourceCard', () => {
     )
     expect(screen.getByLabelText('Actions')).toBeDisabled()
   })
+
+  it('shows the third-party API name for imported external sources', () => {
+    render(
+      <SourceCard
+        source={{
+          ...baseSource,
+          asset: {
+            external_source_name: 'Paper Search',
+          },
+        }}
+      />
+    )
+
+    expect(screen.getByText('Paper Search')).toBeInTheDocument()
+    expect(screen.queryByText('Enter Text')).not.toBeInTheDocument()
+  })
 })

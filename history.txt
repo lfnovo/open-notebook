@@ -1,0 +1,9 @@
+#V2
+SELECT operation, status, command_id, created FROM external_api_usage WHERE grant = external_source_team_grant:fay0rtcrkqv1pu5tta3y AND month = "2026-05" ORDER BY created DESC LIMIT 5;
+SELECT count() AS count FROM external_api_usage WHERE grant = external_source_team_grant:fay0rtcrkqv1pu5tta3y AND month = "2026-05" AND operation != "search" GROUP ALL; SELECT operation, count() AS count FROM external_api_usage WHERE grant = external_source_team_grant:fay0rtcrkqv1pu5tta3y AND month = "2026-05" GROUP BY operation;
+DEFINE FIELD IF NOT EXISTS asset.external_source_name ON TABLE source TYPE option<string>;
+SELECT id, title, asset.external_source_name AS external_source_name, created FROM source WHERE title = "Graph Retrieval for Research Agents" ORDER BY created DESC LIMIT 20; SELECT count() AS count FROM source WHERE title = "Graph Retrieval for Research Agents" GROUP ALL;
+INFO FOR DB;
+LET $ids = (SELECT VALUE id FROM source WHERE title = "Graph Retrieval for Research Agents"); DELETE source_embedding WHERE source IN $ids; DELETE source_insight WHERE source IN $ids; DELETE kg_entity WHERE source_id IN array::map($ids, |$id| <string>$id); DELETE reference WHERE in IN $ids; DELETE source WHERE id IN $ids; RETURN array::len($ids);
+SELECT count() AS count FROM source WHERE title = "Graph Retrieval for Research Agents" GROUP ALL; SELECT count() AS count FROM external_api_usage WHERE grant = external_source_team_grant:fay0rtcrkqv1pu5tta3y AND month = "2026-05" AND operation != "search" GROUP ALL;
+SELECT count() AS count FROM source WHERE title = "Graph Retrieval for Research Agents" GROUP ALL; SELECT title, asset.external_source_name AS external_source_name FROM source WHERE title = "Graph Retrieval for Research Agents" LIMIT 3;

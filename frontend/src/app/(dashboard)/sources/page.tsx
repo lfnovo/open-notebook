@@ -7,7 +7,7 @@ import { SourceListResponse, BulkDeleteResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } from 'lucide-react'
+import { FileText, Link2, FileUp, Type, Trash2, ArrowUpDown, Search } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -335,12 +335,23 @@ export default function SourcesPage() {
       : t.sources.workspaceSources
 
   const getSourceIcon = (source: SourceListResponse) => {
-    if (source.asset?.url) return <LinkIcon className="h-4 w-4" />
-    if (source.asset?.file_path) return <Upload className="h-4 w-4" />
-    return <AlignLeft className="h-4 w-4" />
+    const iconClassName = "h-5 w-5 shrink-0 text-muted-foreground"
+    const typeLabel = getSourceType(source)
+
+    if (source.asset?.external_source_name) {
+      return <Search aria-label={`${typeLabel} source type icon`} className={iconClassName} />
+    }
+    if (source.asset?.url) {
+      return <Link2 aria-label={`${typeLabel} source type icon`} className={iconClassName} />
+    }
+    if (source.asset?.file_path) {
+      return <FileUp aria-label={`${typeLabel} source type icon`} className={iconClassName} />
+    }
+    return <Type aria-label={`${typeLabel} source type icon`} className={iconClassName} />
   }
 
   const getSourceType = (source: SourceListResponse) => {
+    if (source.asset?.external_source_name) return source.asset.external_source_name
     if (source.asset?.url) return tSourcesTypeLink
     if (source.asset?.file_path) return tSourcesTypeFile
     return tSourcesTypeText
@@ -450,7 +461,7 @@ export default function SourcesPage() {
         />
       </td>
       <td className="h-12 px-2">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           {getSourceIcon(source)}
           <Badge variant="secondary" className="text-xs">
             {getSourceType(source)}
@@ -570,7 +581,7 @@ export default function SourcesPage() {
           >
             <colgroup>
               <col className="w-[40px]" />
-              <col className="w-[120px]" />
+              <col className="w-[160px]" />
               <col className="w-auto" />
               <col className="w-[90px]" />
               <col className="w-[140px]" />

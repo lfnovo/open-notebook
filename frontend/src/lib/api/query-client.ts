@@ -51,4 +51,12 @@ export const QUERY_KEYS = {
   teamTransformations: (teamId: string) => ['teams', teamId, 'transformations'] as const,
   users: ['users'] as const,
   shareGrants: (resourceType: string, resourceId: string) => ['share-grants', resourceType, resourceId] as const,
+  externalApiConnections: ['external-api', 'connections'] as const,
+  externalApiSources: ['external-api', 'sources'] as const,
+  externalApiAvailableSources: (teamId?: string | null) =>
+    ['external-api', 'available-sources', teamId || 'none'] as const,
+  externalApiCommand: (commandId?: string | null) =>
+    ['external-api', 'commands', commandId || 'none'] as const,
+  externalApiUsage: (teamId?: string | null, month?: string | null) =>
+    ['external-api', 'usage', teamId || 'none', month || 'current'] as const,
 }

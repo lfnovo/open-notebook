@@ -288,6 +288,8 @@ def build_source_asset(
         return Asset(url=source_data.url)
     if source_data.type == "upload":
         return Asset(file_path=file_path or source_data.file_path)
+    if source_data.external_source_name:
+        return Asset(external_source_name=source_data.external_source_name)
     return None
 
 
@@ -302,6 +304,7 @@ def source_response_for_queued_processing(
         AssetModel(
             file_path=source.asset.file_path if source.asset else None,
             url=source.asset.url if source.asset else None,
+            external_source_name=source.asset.external_source_name if source.asset else None,
         )
         if source.asset
         else None
@@ -361,6 +364,7 @@ async def source_response_from_source(
         AssetModel(
             file_path=source.asset.file_path if source.asset else None,
             url=source.asset.url if source.asset else None,
+            external_source_name=source.asset.external_source_name if source.asset else None,
         )
         if source.asset
         else None

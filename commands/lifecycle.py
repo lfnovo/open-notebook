@@ -7,6 +7,7 @@ from surreal_commands import get_command_status, submit_command
 COMMAND_MODULES = (
     "commands.embedding_commands",
     "commands.example_commands",
+    "commands.external_api_commands",
     "commands.kg_commands",
     "commands.podcast_commands",
     "commands.source_commands",

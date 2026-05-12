@@ -1,0 +1,9 @@
+-- Migration 33 rollback: remove third-party API integrations
+
+REMOVE TABLE IF EXISTS output_artifact;
+REMOVE TABLE IF EXISTS notebook_external_item;
+REMOVE TABLE IF EXISTS external_source_item;
+REMOVE TABLE IF EXISTS external_api_usage;
+REMOVE TABLE IF EXISTS external_source_team_grant;
+REMOVE TABLE IF EXISTS external_source;
+REMOVE TABLE IF EXISTS external_api_connection;

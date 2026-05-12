@@ -339,6 +339,7 @@ class SettingsUpdate(BaseModel):
 class AssetModel(BaseModel):
     file_path: Optional[str] = None
     url: Optional[str] = None
+    external_source_name: Optional[str] = None
 
 
 class SourceCreate(BaseModel):
@@ -357,6 +358,9 @@ class SourceCreate(BaseModel):
     file_path: Optional[str] = Field(None, description="File path for upload type")
     content: Optional[str] = Field(None, description="Text content for text type")
     title: Optional[str] = Field(None, description="Source title")
+    external_source_name: Optional[str] = Field(
+        None, description="Third-party API source name for imported external sources"
+    )
     transformations: Optional[List[str]] = Field(
         default_factory=list, description="Transformation IDs to apply"
     )
@@ -1171,3 +1175,214 @@ class ResetPasswordRequest(BaseModel):
 class ResetPasswordResponse(BaseModel):
     success: bool = Field(..., description="Whether reset succeeded")
     message: str = Field(..., description="Result message")
+
+
+# External API integration models
+ExternalApiConnectionTarget = Literal["source", "output"]
+
+ExternalApiCapability = Literal["search", "fetch", "output"]
+ExternalApiOperation = Literal["search", "fetch", "generate"]
+ExternalOutputKind = Literal["markdown", "json", "file", "url"]
+
+
+class ExternalApiConnectionCreate(BaseModel):
+    name: str = Field(..., min_length=1, description="Connection display name")
+    target_type: ExternalApiConnectionTarget = Field(
+        "source", description="Whether this API connection provides sources or output artifacts"
+    )
+    base_url: str = Field(..., min_length=1, description="Third-party API base URL")
+    api_key: str = Field(..., min_length=1, description="Third-party API key")
+    manifest: Optional[Dict[str, Any]] = Field(
+        None, description="Optional cached plugin manifest"
+    )
+    enabled: bool = True
+    timeout_seconds: int = Field(30, ge=1, le=300)
+
+    @field_validator("base_url")
+    @classmethod
+    def normalize_base_url(cls, value: str) -> str:
+        return value.rstrip("/")
+
+
+class ExternalApiConnectionResponse(BaseModel):
+    id: str
+    name: str
+    target_type: ExternalApiConnectionTarget = "source"
+    base_url: str
+    manifest: Optional[Dict[str, Any]] = None
+    enabled: bool
+    timeout_seconds: int
+    api_key_configured: bool
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+
+
+class ExternalApiConnectionListResponse(BaseModel):
+    items: List[ExternalApiConnectionResponse]
+
+
+class ExternalApiConnectionTestResponse(BaseModel):
+    ok: bool
+    status: str
+    manifest: Optional[Dict[str, Any]] = None
+    health: Optional[Dict[str, Any]] = None
+    message: Optional[str] = None
+
+
+class ExternalSourceCreate(BaseModel):
+    connection_id: str = Field(..., description="external_api_connection record id")
+    name: str = Field(..., min_length=1)
+    key: str = Field(..., min_length=1, description="Stable source key")
+    description: Optional[str] = None
+    capabilities: List[ExternalApiCapability] = Field(default_factory=list)
+    config: Dict[str, Any] = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class ExternalSourceResponse(BaseModel):
+    id: str
+    connection_id: str
+    connection_name: Optional[str] = None
+    name: str
+    key: str
+    description: Optional[str] = None
+    capabilities: List[ExternalApiCapability] = Field(default_factory=list)
+    config: Dict[str, Any] = Field(default_factory=dict)
+    enabled: bool
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+
+
+class ExternalSourceListResponse(BaseModel):
+    items: List[ExternalSourceResponse]
+
+
+class ExternalSourceTeamGrantCreate(BaseModel):
+    team_id: str
+    monthly_request_quota: int = Field(..., ge=0)
+    enabled: bool = True
+
+
+class ExternalSourceTeamGrantUpdate(BaseModel):
+    monthly_request_quota: Optional[int] = Field(None, ge=0)
+    enabled: Optional[bool] = None
+
+
+class ExternalSourceTeamGrantResponse(BaseModel):
+    id: str
+    source_id: str
+    source_name: Optional[str] = None
+    team_id: str
+    team_name: Optional[str] = None
+    monthly_request_quota: int
+    enabled: bool
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+
+
+class ExternalAvailableSourceResponse(ExternalSourceResponse):
+    grant_id: str
+    team_id: str
+    monthly_request_quota: int
+    current_month_usage: int = 0
+
+
+class ExternalAvailableSourceListResponse(BaseModel):
+    items: List[ExternalAvailableSourceResponse]
+
+
+class ExternalApiCommandResponse(BaseModel):
+    command_id: str
+    status: str = "submitted"
+    message: str
+
+
+class ExternalApiSearchRequest(BaseModel):
+    team_id: str
+    query: str = Field(..., min_length=1)
+    limit: int = Field(10, ge=1, le=100)
+    notebook_id: Optional[str] = None
+    filters: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ExternalApiFetchRequest(BaseModel):
+    team_id: str
+
+
+class ExternalItemNotebookReferenceRequest(BaseModel):
+    notebook_id: str
+
+
+class ExternalItemSnapshotRequest(BaseModel):
+    notebook_id: str
+    embed: bool = True
+
+
+class ExternalOutputGenerateRequest(BaseModel):
+    team_id: str
+    source_id: str
+    prompt: str = Field(..., min_length=1)
+    input_text: Optional[str] = None
+    item_ids: List[str] = Field(default_factory=list)
+    output_kind: ExternalOutputKind = "markdown"
+    options: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ExternalSourceItemResponse(BaseModel):
+    id: str
+    source_id: str
+    team_id: str
+    external_id: str
+    title: str
+    summary: Optional[str] = None
+    content_markdown: Optional[str] = None
+    url: Optional[str] = None
+    authors: List[str] = Field(default_factory=list)
+    published_at: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    fetched_at: Optional[str] = None
+    created: str
+    updated: str
+
+
+class ExternalItemSnapshotResponse(BaseModel):
+    item_id: str
+    source_id: str
+    notebook_id: str
+    lumina_source: SourceResponse
+
+
+class OutputArtifactResponse(BaseModel):
+    id: str
+    workspace_id: Optional[str] = None
+    team_id: Optional[str] = None
+    source_id: Optional[str] = None
+    title: Optional[str] = None
+    kind: ExternalOutputKind
+    content: Optional[str] = None
+    data: Dict[str, Any] = Field(default_factory=dict)
+    file_url: Optional[str] = None
+    status: str
+    command_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    created_by: Optional[str] = None
+    created: str
+    updated: str
+
+
+class ExternalApiUsageItem(BaseModel):
+    source_id: str
+    source_name: Optional[str] = None
+    operation: ExternalApiOperation
+    month: str
+    requests: int
+    quota: int
+
+
+class ExternalApiUsageResponse(BaseModel):
+    team_id: str
+    month: str
+    items: List[ExternalApiUsageItem]

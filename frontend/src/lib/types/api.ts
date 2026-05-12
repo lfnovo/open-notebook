@@ -27,7 +27,6 @@ export interface NotebookResponse {
   creator_name?: string | null
   creator_username?: string | null
   owner_id?: string | null
-  creator_username?: string | null
   workspace_id?: string | null
   visibility: ResourceVisibility
   capabilities?: ResourceCapabilities
@@ -53,6 +52,7 @@ export interface SourceListResponse {
   asset: {
     file_path?: string
     url?: string
+    external_source_name?: string | null
   } | null
   embedded: boolean
   embedded_chunks: number            // ADD: From Python API
@@ -68,6 +68,7 @@ export interface SourceListResponse {
   status?: string
   processing_info?: Record<string, unknown>
   owner_id?: string | null
+  creator_username?: string | null
   workspace_id?: string | null
   visibility: ResourceVisibility
   capabilities?: ResourceCapabilities

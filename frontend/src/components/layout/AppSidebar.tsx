@@ -47,6 +47,7 @@ import {
   Building2,
   Check,
   ChevronsUpDown,
+  Plug,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -92,6 +93,7 @@ const getNavigation = (
         title: t.navigation.manage,
         items: [
           { name: t.navigation.models, href: '/settings/api-keys', icon: Bot },
+          { name: t.navigation.externalApi, href: '/settings/external-api', icon: Plug },
           { name: t.navigation.transformations, href: '/transformations', icon: Shuffle },
           { name: t.navigation.settings, href: '/settings', icon: Settings },
         ],

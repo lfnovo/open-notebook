@@ -22,6 +22,7 @@ export interface AskResponse {
 export interface AssetModel {
   file_path?: string | null
   url?: string | null
+  external_source_name?: string | null
 }
 
 export interface AuditLogListResponse {
@@ -332,6 +333,194 @@ export interface ExecuteChatRequest {
   enable_web_search?: boolean | null
 }
 
+export interface ExternalApiCommandResponse {
+  command_id: string
+  status?: string
+  message: string
+}
+
+export interface ExternalApiConnectionCreate {
+  name: string
+  target_type?: 'source' | 'output'
+  base_url: string
+  api_key: string
+  manifest?: Record<string, unknown> | null
+  enabled?: boolean
+  timeout_seconds?: number
+}
+
+export interface ExternalApiConnectionListResponse {
+  items: ExternalApiConnectionResponse[]
+}
+
+export interface ExternalApiConnectionResponse {
+  id: string
+  name: string
+  target_type?: 'source' | 'output'
+  base_url: string
+  manifest?: Record<string, unknown> | null
+  enabled: boolean
+  timeout_seconds: number
+  api_key_configured: boolean
+  created_by?: string | null
+  created: string
+  updated: string
+}
+
+export interface ExternalApiConnectionTestResponse {
+  ok: boolean
+  status: string
+  manifest?: Record<string, unknown> | null
+  health?: Record<string, unknown> | null
+  message?: string | null
+}
+
+export interface ExternalApiFetchRequest {
+  team_id: string
+}
+
+export interface ExternalApiSearchRequest {
+  team_id: string
+  query: string
+  limit?: number
+  notebook_id?: string | null
+  filters?: Record<string, unknown>
+}
+
+export interface ExternalApiUsageItem {
+  source_id: string
+  source_name?: string | null
+  operation: 'search' | 'fetch' | 'generate'
+  month: string
+  requests: number
+  quota: number
+}
+
+export interface ExternalApiUsageResponse {
+  team_id: string
+  month: string
+  items: ExternalApiUsageItem[]
+}
+
+export interface ExternalAvailableSourceListResponse {
+  items: ExternalAvailableSourceResponse[]
+}
+
+export interface ExternalAvailableSourceResponse {
+  id: string
+  connection_id: string
+  connection_name?: string | null
+  name: string
+  key: string
+  description?: string | null
+  capabilities?: 'search' | 'fetch' | 'output'[]
+  config?: Record<string, unknown>
+  enabled: boolean
+  created_by?: string | null
+  created: string
+  updated: string
+  grant_id: string
+  team_id: string
+  monthly_request_quota: number
+  current_month_usage?: number
+}
+
+export interface ExternalItemNotebookReferenceRequest {
+  notebook_id: string
+}
+
+export interface ExternalItemSnapshotRequest {
+  notebook_id: string
+  embed?: boolean
+}
+
+export interface ExternalItemSnapshotResponse {
+  item_id: string
+  source_id: string
+  notebook_id: string
+  lumina_source: SourceResponse
+}
+
+export interface ExternalOutputGenerateRequest {
+  team_id: string
+  source_id: string
+  prompt: string
+  input_text?: string | null
+  item_ids?: string[]
+  output_kind?: 'markdown' | 'json' | 'file' | 'url'
+  options?: Record<string, unknown>
+}
+
+export interface ExternalSourceCreate {
+  connection_id: string
+  name: string
+  key: string
+  description?: string | null
+  capabilities?: 'search' | 'fetch' | 'output'[]
+  config?: Record<string, unknown>
+  enabled?: boolean
+}
+
+export interface ExternalSourceItemResponse {
+  id: string
+  source_id: string
+  team_id: string
+  external_id: string
+  title: string
+  summary?: string | null
+  content_markdown?: string | null
+  url?: string | null
+  authors?: string[]
+  published_at?: string | null
+  metadata?: Record<string, unknown>
+  fetched_at?: string | null
+  created: string
+  updated: string
+}
+
+export interface ExternalSourceListResponse {
+  items: ExternalSourceResponse[]
+}
+
+export interface ExternalSourceResponse {
+  id: string
+  connection_id: string
+  connection_name?: string | null
+  name: string
+  key: string
+  description?: string | null
+  capabilities?: 'search' | 'fetch' | 'output'[]
+  config?: Record<string, unknown>
+  enabled: boolean
+  created_by?: string | null
+  created: string
+  updated: string
+}
+
+export interface ExternalSourceTeamGrantCreate {
+  team_id: string
+  monthly_request_quota: number
+  enabled?: boolean
+}
+
+export interface ExternalSourceTeamGrantResponse {
+  id: string
+  source_id: string
+  source_name?: string | null
+  team_id: string
+  team_name?: string | null
+  monthly_request_quota: number
+  enabled: boolean
+  created_by?: string | null
+  created: string
+  updated: string
+}
+
+export interface ExternalSourceTeamGrantUpdate {
+  monthly_request_quota?: number | null
+  enabled?: boolean | null
+}
+
 export interface HTTPValidationError {
   detail?: ValidationError[]
 }
@@ -400,7 +589,6 @@ export interface NoteResponse {
   updated: string
   command_id?: string | null
   owner_id?: string | null
-  creator_username?: string | null
   workspace_id?: string | null
   capabilities?: ResourceCapabilities
 }
@@ -748,6 +936,7 @@ export interface SourceListResponse {
   status?: string | null
   processing_info?: Record<string, unknown> | null
   owner_id?: string | null
+  creator_username?: string | null
   workspace_id?: string | null
   visibility?: 'private' | 'team' | 'public'
   capabilities?: ResourceCapabilities

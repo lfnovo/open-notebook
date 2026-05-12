@@ -67,6 +67,17 @@
 
 ## P1: Team 设置与订阅用户能力
 
+- [ ] **接入资料型 MCP 作为第三方来源二期**
+  - 目标：把 MCP 作为 Lumina 第三方来源的一种后端 adapter 类型，而不是让前端或团队用户直接连接 MCP server。
+  - 管理模型：系统管理员统一配置 MCP server endpoint/transport、工具映射和凭据，并授权给团队使用；团队仍通过“深度检索/加入来源”使用已授权来源。
+  - 第一批优先来源：`arxiv-mcp-server`（论文检索/下载/全文 Markdown）、`pubmed-mcp-server`（PubMed/PMC/Unpaywall 全文）、`fetch` 或 `firecrawl` MCP（通用 URL 内容获取 fallback）。
+  - 第二批候选：Semantic Scholar/OpenAlex 用作论文发现与元数据层；Zotero MCP 用作团队或个人私有文献库来源。
+  - 内部抽象：新增 `external_api_connection.kind = http | mcp` 或等价字段；MCP source 配置需声明 `search`、`prepare/download`、`fetch/read` 工具名和参数映射。
+  - Quota 语义保持不变：MCP search 不消耗额度；用户点击“加入”并触发 fetch/read 导入本地 Source 时消耗“团队 + 来源 + 自然月”额度。
+  - 安全边界：MCP 返回的论文/网页全文必须按外部不可信内容处理，不能作为可执行指令；服务端需要配置 allowlist、timeout、最大内容长度、SSRF/internal network 防护和工具白名单。
+  - 主要文件：`api/services/external_api_service.py`、新增 `api/services/mcp_source_adapter.py`、`open_notebook/database/repositories/external_api_repository.py`、外部来源 migration、`frontend/src/app/(dashboard)/settings/external-api/page.tsx`、Notebook/新增来源深度检索面板。
+  - 验收：系统管理员可配置一个 HTTP transport 的 arXiv MCP 来源并授权团队；团队用户可搜索论文、点击加入、导入为普通 Source；无授权团队 403；fetch 才扣 quota；MCP 工具超时/失败能更新 command 状态并返回可读错误。
+
 - [ ] **实现 Team 非模型设置**
   - 系统管理员继续配置全局上限和默认值；团队管理员只能在系统允许范围内选择团队设置。
   - 第一批设置建议包括：默认 embedding 行为、是否允许 web search、Tavily include domains 的团队级收窄配置、默认内容处理引擎。
@@ -166,10 +177,11 @@
 4. P0: 系统 KG 按行业标签划分。
 5. P0: Transformation allowlist runtime enforcement。
 6. P0: Effective model defaults API + 前端展示。
-7. P1: Team 非模型设置。
-8. P1: 审计事件补齐。
-9. P1: Public 撤回策略 UI 与引用可视化。
-10. P2: 统一 navigation policy 与用户文档。
+7. P1: 第三方来源二期，接入资料型 MCP adapter。
+8. P1: Team 非模型设置。
+9. P1: 审计事件补齐。
+10. P1: Public 撤回策略 UI 与引用可视化。
+11. P2: 统一 navigation policy 与用户文档。
 
 ## 验证基线
 

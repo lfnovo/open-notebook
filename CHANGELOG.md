@@ -8,10 +8,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Add WeChat Open Platform QR-code authentication for web login and registration, including OAuth callback handling, user binding/creation, i18n error messaging, and environment variable configuration.
+- Add the multi-user administration foundation: user list/creation/update flows, profile editing, role/status handling, password reset/change support, and audit-log review surfaces.
+- Add team management with owner/admin/member/viewer roles, team member administration, team model and transformation allowlists, and team-aware default model resolution.
+- Add resource sharing for private, team-shared, and public content, including share dialogs, public browse pages, public/team grants, resource visibility badges, and audit events for access changes.
+- Add workspace architecture groundwork with personal/team workspace models, workspace switching, notebook/source workspace scoping, workspace policies, resource capabilities, and notebook move APIs/UI.
+- Add third-party external API integration for provider-backed source search/fetch and output generation, including admin configuration UI, command execution, team grants, quota tracking, OpenAPI/docs, and a paper-search example plugin.
+- Add WeChat Open Platform QR-code authentication for web login and registration, including OAuth callback handling, i18n error messaging, optional user binding/creation, and deployment environment configuration.
+- Add a source-based non-Docker online development/test deployment path for `lumina.yinhour.com`, with systemd service templates, Nginx configuration, environment template, and setup/update runbook.
 
 ### Changed
+- Replace username-based admin assumptions with backend role and permission checks across administration, settings, model selection, source/notebook actions, and command palette visibility.
+- Route notebooks, sources, notes, search, chat, transformations, and source processing through owner/team/share/workspace-aware permission and capability checks.
+- Use team-aware runtime model policy for chat, source chat, Ask/search, transformations, tools, embeddings, and large-context model defaults.
+- Improve guest/public and auth page structure with a shared guest shell, standalone public layout, embedded login/register panels, and consistent guest navigation.
+- Expand i18n coverage across the new management, sharing, workspace, external API, auth, and permission surfaces.
 - Respect `ALLOW_PUBLIC_REGISTRATION` when auto-creating first-time WeChat users.
+
+### Fixed
+- Close permission gaps around notes APIs, chat-session deletion, source deletion, notebook-source removal, visibility changes, and source detail actions.
+- Preserve notebook source grants and existing read-only references when public access is revoked, avoiding broken saved references.
+- Fix source list grouping, creator display, insight/reference counts, and read-only UI affordances for shared/public resources.
+- Fix team creation/deletion edge cases, team member visibility, assignable-user lookup, and profile/team state refresh after switching users.
+- Fix auth and profile polish including legacy profile saves, language/theme persistence, password-change placement, and WeChat login loading/disabled visual states.
+- Load all numbered database migrations so newly added schema migrations are applied consistently.
+
+### Docs
+- Document user/team/sharing operating flows, permission model closure, workspace architecture evolution, scoped vector/KG follow-up work, third-party API contracts, and non-Docker online deployment.
+- Add deployment guidance for WeChat web login variables and the interaction between WeChat first-time user creation and `ALLOW_PUBLIC_REGISTRATION`.
+- Remove obsolete local planning artifacts and move active plans into the project documentation tree.
 
 ## [1.8.4] - 2026-04-09
 

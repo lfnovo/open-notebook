@@ -24,6 +24,7 @@ from api.models import (
     ExternalSourceListResponse,
     ExternalSourceResponse,
     ExternalSourceTeamGrantCreate,
+    ExternalSourceTeamGrantListResponse,
     ExternalSourceTeamGrantResponse,
     ExternalSourceTeamGrantUpdate,
 )
@@ -114,6 +115,20 @@ async def create_team_grant(
             request,
             actor=actor,
         )
+    except Exception as exc:
+        _raise_http(exc)
+
+
+@router.get(
+    "/sources/{source_id}/team-grants",
+    response_model=ExternalSourceTeamGrantListResponse,
+)
+async def list_team_grants(
+    source_id: str,
+    actor: CurrentUser = Depends(require_admin),
+):
+    try:
+        return await external_api_service.list_team_grants_use_case(source_id)
     except Exception as exc:
         _raise_http(exc)
 

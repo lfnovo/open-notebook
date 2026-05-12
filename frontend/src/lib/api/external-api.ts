@@ -28,6 +28,14 @@ export interface ExternalApiConnectionCreate {
   timeout_seconds?: number
 }
 
+export interface ExternalApiConnectionTestResult {
+  ok: boolean
+  status: string
+  manifest?: Record<string, unknown> | null
+  health?: Record<string, unknown> | null
+  message?: string | null
+}
+
 export interface ExternalApiSource {
   id: string
   connection_id: string
@@ -57,6 +65,19 @@ export interface ExternalApiTeamGrantCreate {
   team_id: string
   monthly_request_quota: number
   enabled?: boolean
+}
+
+export interface ExternalApiTeamGrant {
+  id: string
+  source_id: string
+  source_name?: string | null
+  team_id: string
+  team_name?: string | null
+  monthly_request_quota: number
+  enabled: boolean
+  created_by?: string | null
+  created: string
+  updated: string
 }
 
 export interface ExternalAvailableSource extends ExternalApiSource {
@@ -158,8 +179,10 @@ export const externalApi = {
   },
 
   testConnection: async (connectionId: string) => {
-    const response = await apiClient.post('/external-api/connections/' + encodeURIComponent(connectionId) + '/test')
-    return response.data as { ok: boolean; status: string; message?: string; manifest?: Record<string, unknown> }
+    const response = await apiClient.post<ExternalApiConnectionTestResult>(
+      '/external-api/connections/' + encodeURIComponent(connectionId) + '/test'
+    )
+    return response.data
   },
 
   listSources: async () => {
@@ -173,7 +196,14 @@ export const externalApi = {
   },
 
   createTeamGrant: async (sourceId: string, data: ExternalApiTeamGrantCreate) => {
-    const response = await apiClient.post('/external-api/sources/' + encodeURIComponent(sourceId) + '/team-grants', data)
+    const response = await apiClient.post<ExternalApiTeamGrant>('/external-api/sources/' + encodeURIComponent(sourceId) + '/team-grants', data)
+    return response.data
+  },
+
+  listTeamGrants: async (sourceId: string) => {
+    const response = await apiClient.get<{ items: ExternalApiTeamGrant[] }>(
+      '/external-api/sources/' + encodeURIComponent(sourceId) + '/team-grants'
+    )
     return response.data
   },
 

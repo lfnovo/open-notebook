@@ -53,6 +53,8 @@ export const QUERY_KEYS = {
   shareGrants: (resourceType: string, resourceId: string) => ['share-grants', resourceType, resourceId] as const,
   externalApiConnections: ['external-api', 'connections'] as const,
   externalApiSources: ['external-api', 'sources'] as const,
+  externalApiTeamGrants: (sourceId?: string | null) =>
+    ['external-api', 'sources', sourceId || 'none', 'team-grants'] as const,
   externalApiAvailableSources: (teamId?: string | null) =>
     ['external-api', 'available-sources', teamId || 'none'] as const,
   externalApiCommand: (commandId?: string | null) =>

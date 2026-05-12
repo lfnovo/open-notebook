@@ -23,6 +23,7 @@ from api.models import (
     ExternalOutputGenerateRequest,
     ExternalSourceCreate,
     ExternalSourceItemResponse,
+    ExternalSourceTeamGrantListResponse,
     ExternalSourceListResponse,
     ExternalSourceResponse,
     ExternalSourceTeamGrantCreate,
@@ -324,6 +325,14 @@ async def create_team_grant_use_case(
     row["source"] = source
     row["team"] = team
     return _grant_response(row)
+
+
+async def list_team_grants_use_case(source_id: str) -> ExternalSourceTeamGrantListResponse:
+    source = await ExternalApiRepository.get_source(source_id)
+    if not source:
+        raise NotFoundError("External source not found")
+    rows = await ExternalApiRepository.list_team_grants_for_source(source_id)
+    return ExternalSourceTeamGrantListResponse(items=[_grant_response(row) for row in rows])
 
 
 async def update_team_grant_use_case(

@@ -168,6 +168,19 @@ class ExternalApiRepository:
         return result[0] if result else None
 
     @staticmethod
+    async def list_team_grants_for_source(source_id: str) -> list[dict[str, Any]]:
+        return await repo_query(
+            """
+            SELECT *
+            FROM external_source_team_grant
+            WHERE source = $source_id
+            ORDER BY created DESC
+            FETCH source, team
+            """,
+            {"source_id": ensure_record_id(source_id)},
+        )
+
+    @staticmethod
     async def get_active_team_grant(
         *,
         team_id: str,

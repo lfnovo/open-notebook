@@ -1283,6 +1283,10 @@ class ExternalSourceTeamGrantResponse(BaseModel):
     updated: str
 
 
+class ExternalSourceTeamGrantListResponse(BaseModel):
+    items: List[ExternalSourceTeamGrantResponse]
+
+
 class ExternalAvailableSourceResponse(ExternalSourceResponse):
     grant_id: str
     team_id: str

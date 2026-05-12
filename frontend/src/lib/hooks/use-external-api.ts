@@ -52,6 +52,14 @@ export function useExternalApiSources() {
   })
 }
 
+export function useExternalApiTeamGrants(sourceId?: string | null, enabled = true) {
+  return useQuery({
+    queryKey: QUERY_KEYS.externalApiTeamGrants(sourceId),
+    queryFn: () => externalApi.listTeamGrants(sourceId as string),
+    enabled: Boolean(sourceId) && enabled,
+  })
+}
+
 export function useCreateExternalApiSource() {
   const queryClient = useQueryClient()
   const { toast } = useToast()
@@ -79,6 +87,7 @@ export function useCreateExternalApiTeamGrant() {
       externalApi.createTeamGrant(sourceId, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.externalApiSources })
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.externalApiTeamGrants(variables.sourceId) })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.externalApiAvailableSources(variables.data.team_id) })
       toast({ title: t.common.success, description: t.common.saveSuccess })
     },

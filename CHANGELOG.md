@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Add WeChat Open Platform QR-code authentication for web login and registration, including OAuth callback handling, user binding/creation, i18n error messaging, and environment variable configuration.
+
 ## [1.8.4] - 2026-04-09
 
 ### Security

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertCircle, Eye, EyeOff, Lock, User } from 'lucide-react'
+import { AlertCircle, Eye, EyeOff, Lock, MessageCircle, User } from 'lucide-react'
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useAuthStore } from '@/lib/stores/auth-store'
 import { getConfig } from '@/lib/config'
@@ -19,11 +19,15 @@ export function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
-  const { login, isLoading, error } = useAuth()
+  const { login, loginWithWeChat, isPasswordLoading, isWeChatLoading, error } = useAuth()
   const { authRequired, checkAuthRequired, hasHydrated, isAuthenticated } = useAuthStore()
   const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const [configInfo, setConfigInfo] = useState<{ apiUrl: string; version: string; buildTime: string } | null>(null)
   const router = useRouter()
+  const displayedError =
+    error === 'WeChat web login is not configured'
+      ? t.auth.weChatNotConfigured
+      : error
 
   useEffect(() => {
     getConfig().then(cfg => {
@@ -89,7 +93,7 @@ export function LoginForm() {
             <div className="flex items-start gap-2 text-red-700 text-sm">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                {error || t.auth.connectErrorHint}
+                {displayedError || t.auth.connectErrorHint}
               </div>
             </div>
 
@@ -144,7 +148,7 @@ export function LoginForm() {
                   placeholder={t.auth.loginIdentifierPlaceholder}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isPasswordLoading}
                   autoComplete="username"
                   className="h-auto border-0 bg-transparent px-0 py-0 text-base text-stone-700 shadow-none placeholder:text-base placeholder:text-stone-400 focus-visible:ring-0"
                 />
@@ -159,7 +163,7 @@ export function LoginForm() {
                   placeholder={t.auth.passwordPlaceholder}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
+                  disabled={isPasswordLoading}
                   autoComplete="current-password"
                   className="h-auto border-0 bg-transparent px-0 py-0 text-base text-stone-700 shadow-none placeholder:text-base placeholder:text-stone-400 focus-visible:ring-0"
                 />
@@ -191,24 +195,34 @@ export function LoginForm() {
                 </button>
               </div>
 
-              {error && (
+              {displayedError && (
                 <div className="flex items-center gap-2 rounded-xl border border-red-200/80 bg-red-50/75 px-4 py-3 text-sm text-red-700">
                   <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  {error}
+                  {displayedError}
                 </div>
               )}
 
               <Button
                 type="submit"
                 className="h-11 w-full rounded-none bg-[#6f6559] text-base font-medium tracking-normal text-white shadow-[0_16px_36px_rgba(111,101,89,0.20)] hover:bg-[#645a4e]"
-                disabled={isLoading || !username.trim() || !password.trim()}
+                disabled={isPasswordLoading || !username.trim() || !password.trim()}
               >
-                {isLoading ? t.auth.signingIn : t.auth.signIn}
+                {isPasswordLoading ? t.auth.signingIn : t.auth.signIn}
               </Button>
 
               <div className="pt-1 text-center text-sm text-stone-500">
                 {t.auth.loginDivider}
               </div>
+
+              <Button
+                type="button"
+                className="h-11 w-full rounded-none border-2 border-black/30 bg-[#fffaf4] text-base font-medium tracking-normal text-stone-700 shadow-[0_10px_24px_rgba(84,64,43,0.08)] hover:border-black/45 hover:bg-[#efe6d8] hover:text-stone-800 disabled:bg-[#fffaf4] disabled:text-stone-500 disabled:opacity-100"
+                disabled={isWeChatLoading}
+                onClick={() => void loginWithWeChat()}
+              >
+                <MessageCircle className="h-5 w-5 text-[#1AAD19]" />
+                {t.auth.signInWithWeChat}
+              </Button>
 
               <div className="text-center">
                 <button

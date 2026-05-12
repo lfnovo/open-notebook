@@ -104,6 +104,25 @@ class UserRepository:
         return result[0] if result else None
 
     @staticmethod
+    async def get_user_by_wechat_identity(
+        *, unionid: Optional[str], openid: str
+    ) -> Optional[dict[str, Any]]:
+        conditions = ["wechat_openid = $openid"]
+        params: dict[str, Any] = {"openid": openid}
+        if unionid:
+            conditions.insert(0, "wechat_unionid = $unionid")
+            params["unionid"] = unionid
+        result = await repo_query(
+            f"""
+            SELECT * FROM app_user
+            WHERE {" OR ".join(conditions)}
+            LIMIT 1
+            """,
+            params,
+        )
+        return result[0] if result else None
+
+    @staticmethod
     async def create_user(data: dict[str, Any]) -> Optional[dict[str, Any]]:
         result = await repo_query(
             """
@@ -126,6 +145,32 @@ class UserRepository:
                 if data.get("created_by")
                 else None,
             },
+        )
+        return result[0] if result else None
+
+    @staticmethod
+    async def create_wechat_user(data: dict[str, Any]) -> Optional[dict[str, Any]]:
+        result = await repo_query(
+            """
+            CREATE app_user SET
+                username = $username,
+                email = NONE,
+                display_name = $display_name,
+                avatar_url = $avatar_url,
+                login_provider = 'wechat',
+                wechat_openid = $wechat_openid,
+                wechat_unionid = $wechat_unionid,
+                role = 'user',
+                status = 'active',
+                hashed_password = NONE,
+                password_changed_at = time::now(),
+                last_login_at = time::now(),
+                created_by = NONE,
+                created = time::now(),
+                updated = time::now()
+            RETURN AFTER
+            """,
+            data,
         )
         return result[0] if result else None
 

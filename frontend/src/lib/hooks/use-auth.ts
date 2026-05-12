@@ -3,7 +3,19 @@ import { useAuthStore } from '@/lib/stores/auth-store'
 import { useRouter } from 'next/navigation'
 
 export function useAuth() {
-  const { login: storeLogin, logout: storeLogout, isLoading, error, isAuthenticated, username } = useAuthStore()
+  const {
+    login: storeLogin,
+    startWeChatLogin,
+    completeWeChatLogin,
+    logout: storeLogout,
+    isLoading,
+    loadingAction,
+    error,
+    isAuthenticated,
+    username,
+  } = useAuthStore()
+  const isPasswordLoading = isLoading && loadingAction === 'password'
+  const isWeChatLoading = isLoading && loadingAction === 'wechat'
   const router = useRouter()
 
   const login = useCallback(
@@ -17,10 +29,36 @@ export function useAuth() {
     [storeLogin, router]
   )
 
+  const loginWithWeChat = useCallback(async () => {
+    return await startWeChatLogin()
+  }, [startWeChatLogin])
+
+  const finishWeChatLogin = useCallback(
+    async (code: string, state: string | null) => {
+      const success = await completeWeChatLogin(code, state)
+      if (success) {
+        router.push('/notebooks')
+      }
+      return success
+    },
+    [completeWeChatLogin, router]
+  )
+
   const logout = useCallback(() => {
     storeLogout()
     router.push('/')
   }, [storeLogout, router])
 
-  return { login, logout, isLoading, error, isAuthenticated, username }
+  return {
+    login,
+    loginWithWeChat,
+    finishWeChatLogin,
+    logout,
+    isLoading,
+    isPasswordLoading,
+    isWeChatLoading,
+    error,
+    isAuthenticated,
+    username,
+  }
 }

@@ -29,8 +29,14 @@ from api.models import (
     SendCodeResponse,
     SetupRequest,
     UserResponse,
+    WeChatAuthorizeUrlResponse,
+    WeChatCallbackRequest,
 )
 from api.password_utils import hash_password, verify_password
+from api.services.wechat_auth_service import (
+    build_wechat_authorize_url,
+    handle_wechat_callback,
+)
 from api.verification import (
     ALLOW_PUBLIC_REGISTRATION,
     CODE_TTL_SECONDS,
@@ -296,6 +302,16 @@ async def login(request: LoginRequest):
     )
 
 
+@router.get("/wechat/authorize-url", response_model=WeChatAuthorizeUrlResponse)
+async def wechat_authorize_url(state: str):
+    return await build_wechat_authorize_url(state)
+
+
+@router.post("/wechat/callback", response_model=LoginResponse)
+async def wechat_callback(request: WeChatCallbackRequest):
+    return await handle_wechat_callback(request)
+
+
 @router.post("/change-password", response_model=ChangePasswordResponse)
 async def change_password(request: ChangePasswordRequest, http_request: Request):
     """
@@ -446,6 +462,8 @@ async def get_current_user(http_request: Request):
         username=user.get("username", username),
         email=user.get("email"),
         display_name=user.get("display_name"),
+        avatar_url=user.get("avatar_url"),
+        login_provider=user.get("login_provider"),
         role=_default_user_role(user),
         status=_default_user_status(user),
         locale=user.get("locale"),
@@ -485,6 +503,8 @@ async def update_current_user(request: ProfileUpdateRequest, http_request: Reque
         username=user.get("username", username),
         email=user.get("email"),
         display_name=user.get("display_name"),
+        avatar_url=user.get("avatar_url"),
+        login_provider=user.get("login_provider"),
         role=_default_user_role(user),
         status=_default_user_status(user),
         locale=user.get("locale"),

@@ -1,0 +1,9 @@
+-- Migration 35: WeChat web login identity fields
+
+DEFINE FIELD IF NOT EXISTS avatar_url ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS login_provider ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS wechat_openid ON TABLE app_user TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS wechat_unionid ON TABLE app_user TYPE option<string>;
+
+DEFINE INDEX IF NOT EXISTS idx_app_user_wechat_openid ON TABLE app_user FIELDS wechat_openid;
+DEFINE INDEX IF NOT EXISTS idx_app_user_wechat_unionid ON TABLE app_user FIELDS wechat_unionid;

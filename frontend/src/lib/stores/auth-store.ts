@@ -3,7 +3,9 @@ import { persist } from 'zustand/middleware'
 import { queryClient } from '@/lib/api/query-client'
 import { getApiUrl } from '@/lib/config'
 import { useWorkspaceStore } from '@/lib/stores/workspace-store'
-import { AuthStatus, CurrentUserResponse, LoginResponse } from '@/lib/types/auth'
+import { AuthStatus, CurrentUserResponse, LoginResponse, WeChatAuthorizeUrlResponse } from '@/lib/types/auth'
+
+type LoadingAction = 'password' | 'wechat' | null
 
 interface AuthState {
   isAuthenticated: boolean
@@ -13,6 +15,7 @@ interface AuthState {
   displayName: string | null
   status: 'active' | 'disabled' | null
   isLoading: boolean
+  loadingAction: LoadingAction
   error: string | null
   lastAuthCheck: number | null
   isCheckingAuth: boolean
@@ -22,8 +25,50 @@ interface AuthState {
   setHasHydrated: (state: boolean) => void
   checkAuthRequired: () => Promise<boolean>
   login: (username: string, password: string) => Promise<boolean>
+  startWeChatLogin: () => Promise<boolean>
+  completeWeChatLogin: (code: string, state: string | null) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
+}
+
+function createOAuthState() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+async function fetchCurrentUser(apiUrl: string, token: string) {
+  const meResponse = await fetch(`${apiUrl}/api/auth/me`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
+  return meResponse.ok ? ((await meResponse.json()) as CurrentUserResponse) : null
+}
+
+function setAuthenticatedUser(
+  set: (state: Partial<AuthState>) => void,
+  token: string,
+  fallbackUsername: string,
+  currentUser: CurrentUserResponse | null,
+) {
+  queryClient.clear()
+  useWorkspaceStore.getState().resetWorkspace()
+  set({
+    isAuthenticated: true,
+    token,
+    username: currentUser?.username || fallbackUsername,
+    role: currentUser?.role || null,
+    displayName: currentUser?.display_name || currentUser?.username || fallbackUsername,
+    status: currentUser?.status || 'active',
+    isLoading: false,
+    loadingAction: null,
+    lastAuthCheck: Date.now(),
+    error: null,
+  })
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,6 +81,7 @@ export const useAuthStore = create<AuthState>()(
       displayName: null,
       status: null,
       isLoading: false,
+      loadingAction: null,
       error: null,
       lastAuthCheck: null,
       isCheckingAuth: false,
@@ -95,7 +141,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       login: async (username: string, password: string) => {
-        set({ isLoading: true, error: null })
+        set({ isLoading: true, loadingAction: 'password', error: null })
         try {
           const apiUrl = await getApiUrl()
 
@@ -113,6 +159,7 @@ export const useAuthStore = create<AuthState>()(
             set({
               error: message,
               isLoading: false,
+              loadingAction: null,
               isAuthenticated: false,
               token: null,
               username: null,
@@ -128,39 +175,19 @@ export const useAuthStore = create<AuthState>()(
           if (data.success && data.token) {
             let currentUser: CurrentUserResponse | null = null
             try {
-              const meResponse = await fetch(`${apiUrl}/api/auth/me`, {
-                method: 'GET',
-                headers: {
-                  'Authorization': `Bearer ${data.token}`,
-                  'Content-Type': 'application/json',
-                },
-              })
-              if (meResponse.ok) {
-                currentUser = await meResponse.json()
-              }
+              currentUser = await fetchCurrentUser(apiUrl, data.token)
             } catch (profileError) {
               console.warn('Unable to load current user after login:', profileError)
             }
 
-            queryClient.clear()
-            useWorkspaceStore.getState().resetWorkspace()
-            set({
-              isAuthenticated: true,
-              token: data.token,
-              username: currentUser?.username || data.username || username,
-              role: currentUser?.role || null,
-              displayName: currentUser?.display_name || currentUser?.username || data.username || username,
-              status: currentUser?.status || 'active',
-              isLoading: false,
-              lastAuthCheck: Date.now(),
-              error: null,
-            })
+            setAuthenticatedUser(set, data.token, data.username || username, currentUser)
             return true
           } else {
             queryClient.clear()
             set({
               error: data.message || 'Login failed',
               isLoading: false,
+              loadingAction: null,
               isAuthenticated: false,
               token: null,
               username: null,
@@ -187,6 +214,98 @@ export const useAuthStore = create<AuthState>()(
           set({
             error: errorMessage,
             isLoading: false,
+            loadingAction: null,
+            isAuthenticated: false,
+            token: null,
+            username: null,
+            role: null,
+            displayName: null,
+            status: null,
+          })
+          return false
+        }
+      },
+
+      startWeChatLogin: async () => {
+        set({ isLoading: true, loadingAction: 'wechat', error: null })
+        try {
+          const apiUrl = await getApiUrl()
+          const state = createOAuthState()
+          if (typeof window !== 'undefined') {
+            window.sessionStorage.setItem('wechat-oauth-state', state)
+          }
+          const response = await fetch(
+            `${apiUrl}/api/auth/wechat/authorize-url?state=${encodeURIComponent(state)}`,
+            { cache: 'no-store' },
+          )
+          if (!response.ok) {
+            throw new Error(`WeChat login failed (${response.status})`)
+          }
+          const data: WeChatAuthorizeUrlResponse = await response.json()
+          if (!data.enabled || !data.authorize_url) {
+            set({
+              isLoading: false,
+              loadingAction: null,
+              error: data.message || 'WeChat login is not configured',
+            })
+            return false
+          }
+          set({ isLoading: false, loadingAction: null, error: null })
+          window.location.assign(data.authorize_url)
+          return true
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'WeChat login failed'
+          set({ isLoading: false, loadingAction: null, error: message })
+          return false
+        }
+      },
+
+      completeWeChatLogin: async (code: string, state: string | null) => {
+        set({ isLoading: true, loadingAction: 'wechat', error: null })
+        try {
+          if (typeof window !== 'undefined') {
+            const expectedState = window.sessionStorage.getItem('wechat-oauth-state')
+            if (expectedState && expectedState !== state) {
+              set({ isLoading: false, loadingAction: null, error: 'Invalid WeChat login state' })
+              return false
+            }
+            window.sessionStorage.removeItem('wechat-oauth-state')
+          }
+
+          const apiUrl = await getApiUrl()
+          const response = await fetch(`${apiUrl}/api/auth/wechat/callback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, state }),
+          })
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => null)
+            throw new Error(errData?.detail || `WeChat login failed (${response.status})`)
+          }
+
+          const data: LoginResponse = await response.json()
+          if (!data.success || !data.token) {
+            set({ isLoading: false, loadingAction: null, error: data.message || 'WeChat login failed' })
+            return false
+          }
+
+          let currentUser: CurrentUserResponse | null = null
+          try {
+            currentUser = await fetchCurrentUser(apiUrl, data.token)
+          } catch (profileError) {
+            console.warn('Unable to load current user after WeChat login:', profileError)
+          }
+          setAuthenticatedUser(set, data.token, data.username || 'wechat', currentUser)
+          return true
+        } catch (error) {
+          const message = error instanceof Error ? error.message : 'WeChat login failed'
+          queryClient.clear()
+          useWorkspaceStore.getState().resetWorkspace()
+          set({
+            error: message,
+            isLoading: false,
+            loadingAction: null,
             isAuthenticated: false,
             token: null,
             username: null,

@@ -1,0 +1,9 @@
+-- Migration 35 rollback
+
+REMOVE INDEX IF EXISTS idx_app_user_wechat_openid ON TABLE app_user;
+REMOVE INDEX IF EXISTS idx_app_user_wechat_unionid ON TABLE app_user;
+
+REMOVE FIELD IF EXISTS avatar_url ON TABLE app_user;
+REMOVE FIELD IF EXISTS login_provider ON TABLE app_user;
+REMOVE FIELD IF EXISTS wechat_openid ON TABLE app_user;
+REMOVE FIELD IF EXISTS wechat_unionid ON TABLE app_user;

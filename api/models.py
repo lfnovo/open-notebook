@@ -827,6 +827,18 @@ class LoginResponse(BaseModel):
     message: Optional[str] = Field(None, description="Error message on failure")
 
 
+class WeChatAuthorizeUrlResponse(BaseModel):
+    enabled: bool = Field(..., description="Whether WeChat web login is configured")
+    authorize_url: Optional[str] = Field(None, description="WeChat QR authorization URL")
+    state: Optional[str] = Field(None, description="OAuth state value to verify on callback")
+    message: Optional[str] = Field(None, description="Configuration status message")
+
+
+class WeChatCallbackRequest(BaseModel):
+    code: str = Field(..., description="Authorization code returned by WeChat")
+    state: Optional[str] = Field(None, description="OAuth state returned by WeChat")
+
+
 class ChangePasswordRequest(BaseModel):
     old_password: str = Field(..., description="Current password")
     new_password: str = Field(..., description="New password (min 4 characters)")
@@ -847,6 +859,8 @@ class UserResponse(BaseModel):
     username: str
     email: Optional[str] = None
     display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    login_provider: Optional[str] = None
     role: Literal["admin", "user"] = "user"
     status: Literal["active", "disabled"] = "active"
     locale: Optional[str] = None

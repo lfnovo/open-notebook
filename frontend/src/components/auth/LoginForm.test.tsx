@@ -1,6 +1,14 @@
 import { render, screen } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { LoginForm } from './LoginForm'
+
+const mockLoginWithWeChat = vi.fn()
+let mockAuthState = {
+  isLoading: false,
+  isPasswordLoading: false,
+  isWeChatLoading: false,
+  error: null as string | null,
+}
 
 vi.mock('@/lib/config', () => ({
   getConfig: vi.fn().mockResolvedValue({
@@ -13,8 +21,11 @@ vi.mock('@/lib/config', () => ({
 vi.mock('@/lib/hooks/use-auth', () => ({
   useAuth: () => ({
     login: vi.fn(),
-    isLoading: false,
-    error: null,
+    loginWithWeChat: mockLoginWithWeChat,
+    isLoading: mockAuthState.isLoading,
+    isPasswordLoading: mockAuthState.isPasswordLoading,
+    isWeChatLoading: mockAuthState.isWeChatLoading,
+    error: mockAuthState.error,
   }),
 }))
 
@@ -28,6 +39,16 @@ vi.mock('@/lib/stores/auth-store', () => ({
 }))
 
 describe('LoginForm', () => {
+  beforeEach(() => {
+    mockLoginWithWeChat.mockReset()
+    mockAuthState = {
+      isLoading: false,
+      isPasswordLoading: false,
+      isWeChatLoading: false,
+      error: null,
+    }
+  })
+
   it('renders as an embedded auth panel instead of owning a standalone full-screen page', async () => {
     const { container } = render(<LoginForm />)
 
@@ -73,5 +94,53 @@ describe('LoginForm', () => {
     expect(passwordWrapper.className).toContain('border-2')
     expect(usernameWrapper.className).toContain('border-black/35')
     expect(passwordWrapper.className).toContain('border-black/35')
+  })
+
+  it('offers WeChat scan login as the first-stage platform entry', async () => {
+    render(<LoginForm />)
+
+    expect(await screen.findByRole('button', { name: 'Sign in with WeChat' })).toBeInTheDocument()
+  })
+
+  it('keeps the WeChat scan login button opaque across hover and disabled states', async () => {
+    render(<LoginForm />)
+
+    const wechatButton = await screen.findByRole('button', { name: 'Sign in with WeChat' })
+
+    expect(wechatButton.className).not.toContain('bg-[#fffaf4]/75')
+    expect(wechatButton.className).toContain('bg-[#fffaf4]')
+    expect(wechatButton.className).toContain('hover:bg-[#efe6d8]')
+    expect(wechatButton.className).toContain('hover:text-stone-800')
+    expect(wechatButton.className).toContain('hover:border-black/45')
+    expect(wechatButton.className).toContain('disabled:opacity-100')
+    expect(wechatButton.className).toContain('disabled:bg-[#fffaf4]')
+    expect(wechatButton.className).toContain('disabled:text-stone-500')
+  })
+
+  it('does not show password login loading copy while WeChat login is pending', async () => {
+    mockAuthState = {
+      isLoading: true,
+      isPasswordLoading: false,
+      isWeChatLoading: true,
+      error: null,
+    }
+    render(<LoginForm />)
+
+    expect(await screen.findByRole('button', { name: 'Sign In' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Signing in...' })).not.toBeInTheDocument()
+  })
+
+  it('localizes the WeChat login not configured error from the backend', async () => {
+    mockAuthState = {
+      isLoading: false,
+      isPasswordLoading: false,
+      isWeChatLoading: false,
+      error: 'WeChat web login is not configured',
+    }
+
+    render(<LoginForm />)
+
+    expect(await screen.findByText('WeChat login is not configured. Please contact the administrator.')).toBeInTheDocument()
+    expect(screen.queryByText('WeChat web login is not configured')).not.toBeInTheDocument()
   })
 })

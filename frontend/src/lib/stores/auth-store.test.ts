@@ -18,6 +18,7 @@ describe('auth-store', () => {
       displayName: null,
       status: null,
       isLoading: false,
+      loadingAction: null,
       error: null,
       lastAuthCheck: null,
       isCheckingAuth: false,
@@ -109,5 +110,51 @@ describe('auth-store', () => {
 
     expect(queryClient.getQueryData(['teams', 'old-user', ''])).toBeUndefined()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
+  })
+
+  it('releases WeChat loading state when web login is not configured', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            enabled: false,
+            authorize_url: null,
+            state: 'state',
+            message: 'WeChat web login is not configured',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    )
+
+    const ok = await useAuthStore.getState().startWeChatLogin()
+
+    expect(ok).toBe(false)
+    expect(useAuthStore.getState().isLoading).toBe(false)
+    expect(useAuthStore.getState().loadingAction).toBe(null)
+    expect(useAuthStore.getState().error).toBe('WeChat web login is not configured')
+  })
+
+  it('releases WeChat loading state after handing off to the redirect URL', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            enabled: true,
+            authorize_url: '#wechat_redirect',
+            state: 'state',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      )
+    )
+    const ok = await useAuthStore.getState().startWeChatLogin()
+
+    expect(ok).toBe(true)
+    expect(useAuthStore.getState().isLoading).toBe(false)
+    expect(useAuthStore.getState().loadingAction).toBe(null)
+    expect(useAuthStore.getState().error).toBe(null)
   })
 })

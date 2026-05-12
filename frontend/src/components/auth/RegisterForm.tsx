@@ -2,12 +2,15 @@
 
 import { useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { MessageCircle } from 'lucide-react'
+import { useAuth } from '@/lib/hooks/use-auth'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiUrl } from '@/lib/config'
 
 export function RegisterForm() {
   const { t } = useTranslation()
   const router = useRouter()
+  const { loginWithWeChat, isWeChatLoading, error: authError } = useAuth()
 
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
@@ -18,6 +21,11 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [countdown, setCountdown] = useState(0)
+  const displayedAuthError =
+    authError === 'WeChat web login is not configured'
+      ? t.auth.weChatNotConfigured
+      : authError
+  const displayedError = error || displayedAuthError
 
   const sendCode = useCallback(async () => {
     if (!email) return
@@ -106,9 +114,9 @@ export function RegisterForm() {
           <p className="text-stone-500">{t.auth.registerDesc}</p>
         </div>
 
-        {error && (
+        {displayedError && (
           <div className="mb-4 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
-            {error}
+            {displayedError}
           </div>
         )}
 
@@ -181,6 +189,22 @@ export function RegisterForm() {
             {isLoading ? t.auth.registering : t.auth.registerButton}
           </button>
         </form>
+
+        <div className="my-6 flex items-center gap-3">
+          <div className="h-px flex-1 bg-stone-200" />
+          <span className="text-xs text-stone-400">{t.auth.loginDivider}</span>
+          <div className="h-px flex-1 bg-stone-200" />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void loginWithWeChat()}
+          disabled={isWeChatLoading}
+          className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-300 bg-[#fffaf4] py-3 font-medium text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-[#efe6d8] hover:text-stone-800 disabled:bg-[#fffaf4] disabled:text-stone-500 disabled:opacity-100"
+        >
+          <MessageCircle className="h-4 w-4" aria-hidden="true" />
+          {t.auth.registerWithWeChat}
+        </button>
 
         <div className="mt-6 text-center">
           <button

@@ -28,11 +28,20 @@ export interface LoginResponse {
   message: string
 }
 
+export interface WeChatAuthorizeUrlResponse {
+  enabled: boolean
+  authorize_url?: string | null
+  state?: string | null
+  message?: string | null
+}
+
 export interface CurrentUserResponse {
   id?: string
   username: string
   email?: string | null
   display_name?: string | null
+  avatar_url?: string | null
+  login_provider?: string | null
   role?: 'admin' | 'user'
   status?: 'active' | 'disabled'
   locale?: string | null

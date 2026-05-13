@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { BookOpen, FileText, Brain, ArrowRight, Shield, Sparkles } from 'lucide-react'
+import { BookOpen, FileText, Brain, ArrowRight, Shield } from 'lucide-react'
 import { GuestHeader } from '@/components/common/GuestHeader'
+import { HomeComplianceFooter } from './HomeComplianceFooter'
 
 export function HomePageContent() {
   return (
@@ -112,24 +113,7 @@ export function HomePageContent() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t border-stone-200/60">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-primary/20 flex items-center justify-center">
-              <Sparkles className="w-3 h-3 text-primary" />
-            </div>
-            <span className="text-sm text-stone-400">Lumina by Yinshi AI</span>
-          </div>
-          <div className="flex items-center gap-6 text-sm text-stone-400">
-            <Link href="/login" className="hover:text-stone-600 transition-colors">
-              登录
-            </Link>
-            <Link href="/register" className="hover:text-stone-600 transition-colors">
-              注册
-            </Link>
-          </div>
-        </div>
-      </footer>
+      <HomeComplianceFooter />
     </div>
   )
 }

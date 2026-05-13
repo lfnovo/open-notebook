@@ -381,7 +381,7 @@ PY
 }
 
 build_app() {
-  run sudo -u lumina env HOME="$APP_ROOT" uv -C "$REPO_DIR" sync --frozen
+  run sudo -u lumina env HOME="$APP_ROOT" bash -lc "cd '$REPO_DIR' && uv sync --frozen"
   run sudo -u lumina env HOME="$APP_ROOT" npm --prefix "${REPO_DIR}/frontend" ci
   run sudo -u lumina env HOME="$APP_ROOT" npm --prefix "${REPO_DIR}/frontend" run build
 }
@@ -408,7 +408,7 @@ start_services() {
   run sudo systemctl enable --now lumina-api
   wait_for_api
   if [ "$env_created" = "1" ]; then
-    run sudo -u lumina env HOME="$APP_ROOT" uv -C "$REPO_DIR" run --env-file "$ENV_FILE" python3 scripts/init-admin.py --force
+    run sudo -u lumina env HOME="$APP_ROOT" bash -lc "cd '$REPO_DIR' && uv run --env-file '$ENV_FILE' python3 scripts/init-admin.py --force"
   else
     log "Existing environment detected; admin password will not be reset."
   fi

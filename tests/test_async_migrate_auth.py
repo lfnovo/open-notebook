@@ -4,11 +4,9 @@ from open_notebook.database.async_migrate import AsyncMigrationManager
 def test_async_migration_manager_loads_latest_numbered_migrations():
     manager = AsyncMigrationManager()
 
-    assert len(manager.up_migrations) == len(manager.down_migrations) == 31
-    assert "workspace_system_policy:global" in manager.up_migrations[-2].sql
-    assert "REMOVE TABLE IF EXISTS workspace_system_policy" in manager.down_migrations[-2].sql
-    assert "owner_id ON TABLE chat_session" in manager.up_migrations[-1].sql
-    assert "REMOVE FIELD IF EXISTS workspace_id ON TABLE chat_session" in manager.down_migrations[-1].sql
+    assert len(manager.up_migrations) == len(manager.down_migrations) == 36
+    assert "DEFINE TABLE IF NOT EXISTS command SCHEMALESS" in manager.up_migrations[-1].sql
+    assert "REMOVE TABLE IF EXISTS command" in manager.down_migrations[-1].sql
 
 
 def test_async_migration_manager_includes_user_team_share_migration():

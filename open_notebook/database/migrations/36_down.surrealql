@@ -1,0 +1,3 @@
+-- Migration 36 rollback: remove Surreal Commands queue table
+
+REMOVE TABLE IF EXISTS command;

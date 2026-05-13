@@ -1,0 +1,13 @@
+-- Migration 36: Surreal Commands queue table
+
+DEFINE TABLE IF NOT EXISTS command SCHEMALESS;
+
+DEFINE FIELD IF NOT EXISTS app ON TABLE command TYPE string;
+DEFINE FIELD IF NOT EXISTS name ON TABLE command TYPE string;
+DEFINE FIELD IF NOT EXISTS status ON TABLE command TYPE string DEFAULT 'new';
+DEFINE FIELD IF NOT EXISTS created ON TABLE command TYPE datetime DEFAULT time::now();
+DEFINE FIELD IF NOT EXISTS updated ON TABLE command TYPE datetime VALUE time::now();
+
+DEFINE INDEX IF NOT EXISTS idx_command_status ON TABLE command FIELDS status;
+DEFINE INDEX IF NOT EXISTS idx_command_created ON TABLE command FIELDS created;
+DEFINE INDEX IF NOT EXISTS idx_command_app_name ON TABLE command FIELDS app, name;

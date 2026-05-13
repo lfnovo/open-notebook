@@ -260,7 +260,7 @@ install_uv() {
 }
 
 sync_repo() {
-  if [ ! -d "$REPO_DIR/.git" ]; then
+  if ! sudo -u lumina test -d "$REPO_DIR/.git"; then
     run sudo -u lumina git clone --branch "$BRANCH" "$REPO_URL" "$REPO_DIR"
   else
     run sudo -u lumina git -C "$REPO_DIR" fetch origin "$BRANCH"

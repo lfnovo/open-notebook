@@ -440,7 +440,11 @@ except Exception:
     print("")
 PY
 )"
-  public_ip="$(curl -4fsS https://ifconfig.me 2>/dev/null || curl -4fsS https://ipinfo.io/ip 2>/dev/null || true)"
+  public_ip="$(
+    curl --max-time 10 -4fsS https://ifconfig.me 2>/dev/null ||
+      curl --max-time 10 -4fsS https://ipinfo.io/ip 2>/dev/null ||
+      true
+  )"
 
   if [ -z "$dns_ip" ] || [ -z "$public_ip" ] || [ "$dns_ip" != "$public_ip" ]; then
     log "Skipping Certbot: ${DOMAIN} resolves to '${dns_ip:-unknown}', server public IP is '${public_ip:-unknown}'."

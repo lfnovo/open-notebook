@@ -405,15 +405,18 @@ wait_for_api() {
 start_services() {
   local env_created="$1"
   start_surrealdb
-  run sudo systemctl enable --now lumina-api
+  run sudo systemctl enable lumina-api
+  run sudo systemctl restart lumina-api
   wait_for_api
   if [ "$env_created" = "1" ]; then
     run sudo -u lumina env HOME="$APP_ROOT" bash -lc "cd '$REPO_DIR' && uv run --env-file '$ENV_FILE' python3 scripts/init-admin.py --force"
   else
     log "Existing environment detected; admin password will not be reset."
   fi
-  run sudo systemctl enable --now lumina-worker
-  run sudo systemctl enable --now lumina-frontend
+  run sudo systemctl enable lumina-worker
+  run sudo systemctl restart lumina-worker
+  run sudo systemctl enable lumina-frontend
+  run sudo systemctl restart lumina-frontend
 }
 
 configure_nginx_and_tls() {

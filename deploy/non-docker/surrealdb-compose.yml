@@ -1,0 +1,19 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v3.0.5
+    container_name: lumina-surrealdb
+    user: root
+    command: >
+      start
+      --log info
+      --user ${SURREAL_USER:-root}
+      --pass ${SURREAL_PASSWORD:?SURREAL_PASSWORD is required}
+      --bind 0.0.0.0:8000
+      rocksdb:/mydata/mydatabase.db
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - /var/lib/lumina/surrealdb:/mydata
+    environment:
+      SURREAL_EXPERIMENTAL_GRAPHQL: "true"
+    restart: unless-stopped

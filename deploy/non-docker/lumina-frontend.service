@@ -7,8 +7,8 @@ Wants=network-online.target
 Type=simple
 User=lumina
 Group=lumina
-WorkingDirectory=/opt/lumina/frontend
-EnvironmentFile=/opt/lumina/.env
+WorkingDirectory=/opt/lumina/repo/frontend
+EnvironmentFile=/opt/lumina/shared/.env
 Environment=PATH=/opt/lumina/.local/bin:/usr/local/bin:/usr/bin:/bin
 ExecStart=/usr/bin/env npm run start
 Restart=always

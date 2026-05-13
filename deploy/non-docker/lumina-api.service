@@ -1,16 +1,17 @@
 [Unit]
 Description=Lumina API
-After=network-online.target surrealdb.service
-Wants=network-online.target
+After=network-online.target docker.service
+Wants=network-online.target docker.service
 
 [Service]
 Type=simple
 User=lumina
 Group=lumina
-WorkingDirectory=/opt/lumina
-EnvironmentFile=/opt/lumina/.env
+WorkingDirectory=/opt/lumina/repo
+EnvironmentFile=/opt/lumina/shared/.env
 Environment=PATH=/opt/lumina/.local/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/usr/bin/env uv run --env-file /opt/lumina/.env run_api.py
+ExecStartPre=/bin/bash -lc 'for i in {1..60}; do python3 -c "import socket; socket.create_connection((\"127.0.0.1\", 8000), timeout=1).close()" >/dev/null 2>&1 && exit 0; sleep 2; done; exit 1'
+ExecStart=/usr/bin/env uv run --env-file /opt/lumina/shared/.env run_api.py
 Restart=always
 RestartSec=5
 

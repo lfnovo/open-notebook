@@ -457,7 +457,7 @@ verify_deploy() {
   run curl -fsSI http://127.0.0.1:8502
   run sudo docker ps --filter name=lumina-surrealdb --format '{{.Names}} {{.Status}}'
   if ! ((DRY_RUN)); then
-    log "Deployed commit: $(git -C "$REPO_DIR" rev-parse --short HEAD)"
+    log "Deployed commit: $(sudo -u lumina git -C "$REPO_DIR" rev-parse --short HEAD)"
     log "Open https://${DOMAIN}/login or /register for testing."
   fi
 }

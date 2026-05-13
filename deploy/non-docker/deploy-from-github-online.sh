@@ -273,7 +273,7 @@ sync_repo() {
 configure_env() {
   run sudo mkdir -p "$SHARED_DIR"
   local created=0
-  if [ ! -f "$ENV_FILE" ]; then
+  if ! sudo -u lumina test -f "$ENV_FILE"; then
     created=1
     run sudo cp "${REPO_DIR}/deploy/non-docker/env.online-dev.example" "$ENV_FILE"
   fi
@@ -465,7 +465,7 @@ verify_deploy() {
 server_main() {
   require_sudo
   local env_created=0
-  [ ! -f "$ENV_FILE" ] && env_created=1
+  sudo -u lumina test -f "$ENV_FILE" || env_created=1
   ensure_lumina_user_and_dirs
   install_base_packages
   install_docker

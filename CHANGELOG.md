@@ -14,7 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add workspace architecture groundwork with personal/team workspace models, workspace switching, notebook/source workspace scoping, workspace policies, resource capabilities, and notebook move APIs/UI.
 - Add third-party external API integration for provider-backed source search/fetch and output generation, including admin configuration UI, command execution, team grants, quota tracking, OpenAPI/docs, and a paper-search example plugin.
 - Add WeChat Open Platform QR-code authentication for web login and registration, including OAuth callback handling, i18n error messaging, optional user binding/creation, and deployment environment configuration.
-- Add a source-based non-Docker online development/test deployment path for `lumina.yinhour.com`, with systemd service templates, Nginx configuration, environment template, and setup/update runbook.
+- Add a GitHub-origin online deployment path for `lumina.yinhour.com`, with a one-command Aliyun deploy script, systemd app services, Nginx/Certbot configuration, a persistent environment template, and SurrealDB managed by Docker Compose.
+- Add a homepage compliance footer for the Lumina online test site with company copyright, privacy policy, legal notice, ICP filing, and public-security filing links.
 
 ### Changed
 - Replace username-based admin assumptions with backend role and permission checks across administration, settings, model selection, source/notebook actions, and command palette visibility.
@@ -23,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improve guest/public and auth page structure with a shared guest shell, standalone public layout, embedded login/register panels, and consistent guest navigation.
 - Expand i18n coverage across the new management, sharing, workspace, external API, auth, and permission surfaces.
 - Respect `ALLOW_PUBLIC_REGISTRATION` when auto-creating first-time WeChat users.
+- Harden the Aliyun deployment flow so updates deploy only from synchronized `origin/online`, preserve `/opt/lumina/shared/.env`, restart app services during redeploy, and report the deployed commit as the `lumina` service user.
 
 ### Fixed
 - Close permission gaps around notes APIs, chat-session deletion, source deletion, notebook-source removal, visibility changes, and source detail actions.
@@ -31,10 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix team creation/deletion edge cases, team member visibility, assignable-user lookup, and profile/team state refresh after switching users.
 - Fix auth and profile polish including legacy profile saves, language/theme persistence, password-change placement, and WeChat login loading/disabled visual states.
 - Load all numbered database migrations so newly added schema migrations are applied consistently.
+- Fix online deployment compatibility and runtime issues found during the first Aliyun rollout: older `uv` command behavior, server checkout ownership checks, SurrealDB readiness waits, bounded public-IP checks, command queue schema migration, and missing Next.js standalone static assets.
 
 ### Docs
 - Document user/team/sharing operating flows, permission model closure, workspace architecture evolution, scoped vector/KG follow-up work, third-party API contracts, and non-Docker online deployment.
 - Add deployment guidance for WeChat web login variables and the interaction between WeChat first-time user creation and `ALLOW_PUBLIC_REGISTRATION`.
+- Document the 2026-05-13 Aliyun online rollout, including GitHub `online` synchronization, server verification commands, SurrealDB Docker Compose operations, dependency timeout/proxy handling, static asset troubleshooting, and secret-handling rules.
 - Remove obsolete local planning artifacts and move active plans into the project documentation tree.
 
 ## [1.8.4] - 2026-04-09

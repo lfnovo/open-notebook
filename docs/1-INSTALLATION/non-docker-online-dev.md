@@ -1,6 +1,10 @@
 # Non-Docker Online Development/Test Deployment
 
-This guide deploys Lumina from source on a public VPS without Docker. It is meant for an online development or test website: easy to update, protected by login, and close to production behavior.
+This guide deploys Lumina from source on a public VPS without Docker for the
+application services. SurrealDB is intentionally managed by Docker Compose so
+database upgrades are controlled by an image tag change. The setup is meant for
+an online development or test website: easy to update, protected by login, and
+close to production behavior.
 
 ## Target Topology
 
@@ -22,8 +26,53 @@ Only Nginx should be reachable from the Internet. SurrealDB, the API, and the fr
 - Docker and Docker Compose for SurrealDB, pinned image: `surrealdb/surrealdb:v3.0.5`
 - Nginx and Certbot
 - Domain: `lumina.yinhour.com`
+- Public security group/firewall: allow SSH plus HTTP/HTTPS only. Keep
+  SurrealDB `8000`, FastAPI `5055`, and Next.js `8502` private on loopback.
 
-## 2. Create User and Directories
+## 2. Preferred One-Command Deployment
+
+For the Aliyun online test site, the preferred path is the repository deploy
+script. It deploys only from GitHub `origin/online`; it does not copy local
+source files directly to the server.
+
+Local release checklist:
+
+```bash
+git checkout online
+git status --short
+git diff --check
+bash -n deploy/non-docker/deploy-from-github-online.sh
+git add <files>
+git commit -m "<message>"
+git status --short
+git push origin online
+git rev-parse HEAD
+git ls-remote origin refs/heads/online
+deploy/non-docker/deploy-from-github-online.sh --dry-run
+deploy/non-docker/deploy-from-github-online.sh
+```
+
+The default SSH target is the `lumina` alias. Override it only when testing a
+different host:
+
+```bash
+SSH_TARGET=lumina deploy/non-docker/deploy-from-github-online.sh
+```
+
+If external dependency downloads time out, keep using upstream sources and run
+the deployment through the temporary proxy on the server:
+
+```bash
+ssh lumina 'HTTP_PROXY=http://127.0.0.1:8080 HTTPS_PROXY=http://127.0.0.1:8080 ALL_PROXY=socks5://127.0.0.1:1080 NO_PROXY=127.0.0.1,localhost,::1 bash -s -- --server' \
+  < deploy/non-docker/deploy-from-github-online.sh
+```
+
+The script preserves `/opt/lumina/shared/.env`, generates required local
+secrets only on first deploy or `CHANGE_ME` placeholders, starts SurrealDB with
+Docker Compose, builds the app, restarts the systemd services, reloads Nginx,
+and prints the deployed commit.
+
+## 3. Manual Setup: Create User and Directories
 
 ```bash
 sudo adduser --system --group --home /opt/lumina lumina
@@ -31,7 +80,7 @@ sudo mkdir -p /opt/lumina/repo /opt/lumina/shared /var/lib/lumina/surrealdb
 sudo chown -R lumina:lumina /opt/lumina /var/lib/lumina
 ```
 
-## 3. Install System Dependencies
+## 4. Manual Setup: Install System Dependencies
 
 ```bash
 sudo apt update
@@ -54,7 +103,7 @@ sudo systemctl enable --now docker
 sudo docker compose version
 ```
 
-## 4. Clone the Project
+## 5. Manual Setup: Clone the Project
 
 ```bash
 sudo -u lumina git clone --branch online https://github.com/YinHour/lumina.git /opt/lumina/repo
@@ -63,7 +112,7 @@ cd /opt/lumina/repo
 
 If you are deploying a private fork, replace the Git URL with your repository URL.
 
-## 5. Configure Environment
+## 6. Manual Setup: Configure Environment
 
 ```bash
 sudo -u lumina cp deploy/non-docker/env.online-dev.example /opt/lumina/shared/.env
@@ -99,7 +148,12 @@ WECHAT_OPEN_REDIRECT_URI=https://lumina.yinhour.com/login/wechat/callback
 
 Register the same redirect URI in WeChat Open Platform. With `ALLOW_PUBLIC_REGISTRATION=false`, WeChat sign-in is limited to existing bound users; set it to `true` only if first-time WeChat users should be able to create accounts.
 
-## 6. Install App Dependencies and Build Frontend
+Do not write SMTP passwords, WeChat secrets, AI provider keys, Aliyun
+AccessKeys, admin passwords, SurrealDB passwords, or encryption keys into Git.
+Keep those values only in `/opt/lumina/shared/.env` after direct operator
+confirmation.
+
+## 7. Manual Setup: Install App Dependencies and Build Frontend
 
 ```bash
 cd /opt/lumina/repo
@@ -110,7 +164,7 @@ sudo -u lumina npm ci
 sudo -u lumina npm run build
 ```
 
-## 7. Install systemd Services
+## 8. Manual Setup: Install systemd Services
 
 ```bash
 sudo cp /opt/lumina/repo/deploy/non-docker/lumina-api.service /etc/systemd/system/lumina-api.service
@@ -145,7 +199,7 @@ curl http://127.0.0.1:5055/health
 curl -I http://127.0.0.1:8502
 ```
 
-## 8. Configure Nginx and HTTPS
+## 9. Manual Setup: Configure Nginx and HTTPS
 
 ```bash
 sudo cp /opt/lumina/repo/deploy/non-docker/nginx-lumina.conf /etc/nginx/sites-available/lumina
@@ -163,21 +217,39 @@ https://lumina.yinhour.com/login
 
 Use `LUMINA_ADMIN_USERNAME` and `LUMINA_ADMIN_PASSWORD` from `/opt/lumina/shared/.env`.
 
-## 9. Update the Test Site
+## 10. Update the Test Site
+
+Preferred update path:
+
+```bash
+git checkout online
+git status --short
+git diff --check
+git add <files>
+git commit -m "<message>"
+git status --short
+git push origin online
+deploy/non-docker/deploy-from-github-online.sh
+```
+
+Manual update path on the server:
 
 ```bash
 cd /opt/lumina/repo
-sudo -u lumina git pull
+sudo -u lumina git fetch origin online
+sudo -u lumina git checkout -B online origin/online
+sudo -u lumina git reset --hard origin/online
 sudo -u lumina uv sync --frozen
 
 cd /opt/lumina/repo/frontend
 sudo -u lumina npm ci
 sudo -u lumina npm run build
 
+sudo docker compose --env-file /opt/lumina/shared/.env -f /opt/lumina/repo/deploy/non-docker/surrealdb-compose.yml up -d
 sudo systemctl restart lumina-api lumina-worker lumina-frontend
 ```
 
-## 10. Logs
+## 11. Logs
 
 ```bash
 sudo docker logs -f lumina-surrealdb
@@ -185,6 +257,27 @@ journalctl -u lumina-api -f
 journalctl -u lumina-worker -f
 journalctl -u lumina-frontend -f
 ```
+
+## 12. First Rollout Lessons
+
+These issues were encountered and fixed during the 2026-05-13 Aliyun rollout:
+
+- The server checkout should always be reset as the `lumina` user so ownership
+  stays compatible with systemd services.
+- Redeploys must preserve `/opt/lumina/shared/.env`; otherwise generated
+  passwords and future third-party credentials can be lost.
+- API/worker/frontend should be restarted during every deployment, while
+  SurrealDB remains durable through `/var/lib/lumina/surrealdb`.
+- SurrealDB readiness should be checked before API startup, and API health
+  should be checked before worker/frontend restart.
+- External public-IP lookups can hang; deployment checks should use timeouts and
+  skip Certbot rather than failing the whole application deployment.
+- If the browser console reports `_next/static/... 404`, verify that the
+  frontend was rebuilt and `frontend/start-server.js` exposed `.next/static`
+  and `public` inside `.next/standalone`.
+- The public homepage is client-rendered. Logged-in users are redirected to the
+  app, so verify the compliance footer in a logged-out or private browser
+  session.
 
 ## Notes
 

@@ -35,26 +35,36 @@ Public traffic goes to Nginx on `80/443`. Internal services bind to loopback:
 ## Local release flow
 
 1. Work locally on the `online` branch.
-2. Verify the deployment files:
+2. Verify the intended changes before committing:
 
    ```bash
+   git status --short
    git diff --check
    bash -n deploy/non-docker/deploy-from-github-online.sh
-   deploy/non-docker/deploy-from-github-online.sh --dry-run
    ```
 
-3. Commit locally.
-4. Push the branch:
+3. Run the targeted tests or build for the changed area. For frontend changes,
+   include at least the affected test file and `npm --prefix frontend run build`
+   when the change can affect production rendering.
+4. Commit locally.
+5. Push the branch:
 
    ```bash
    git push origin online
    ```
 
-5. Confirm local and remote commits match:
+6. Confirm local and remote commits match:
 
    ```bash
    git rev-parse HEAD
    git ls-remote origin refs/heads/online
+   ```
+
+7. Run the deployment dry-run after the working tree is clean and `origin/online`
+   matches the local commit:
+
+   ```bash
+   deploy/non-docker/deploy-from-github-online.sh --dry-run
    ```
 
 ## One-command deploy
@@ -79,6 +89,17 @@ The script streams itself over SSH to `lumina`, then the server:
 6. Runs `uv sync --frozen`, `npm ci`, and `npm run build`.
 7. Installs and starts API, worker, and frontend systemd services plus Nginx.
 8. Requests a Let's Encrypt certificate when DNS points at the server.
+
+If upstream downloads are slow or time out, do not switch to a mirror by
+default. Use the temporary proxy already running on the server for that deploy
+session:
+
+```bash
+ssh lumina 'HTTP_PROXY=http://127.0.0.1:8080 HTTPS_PROXY=http://127.0.0.1:8080 ALL_PROXY=socks5://127.0.0.1:1080 NO_PROXY=127.0.0.1,localhost,::1 bash -s -- --server' \
+  < deploy/non-docker/deploy-from-github-online.sh
+```
+
+This keeps proxy settings out of Git and out of systemd unit files.
 
 Dry run:
 
@@ -132,9 +153,72 @@ After the initial deploy, every update follows the same path:
 ```bash
 git checkout online
 git status --short
+git diff --check
+git add <files>
+git commit -m "<message>"
+git status --short
 git push origin online
 deploy/non-docker/deploy-from-github-online.sh
 ```
 
 If SMTP, WeChat login, or AI provider keys are needed, stop and request direct
 confirmation before editing `/opt/lumina/shared/.env`.
+
+## 2026-05-13 rollout closeout
+
+The initial Aliyun online test deployment was completed and verified on
+2026-05-13. The final deployed commit for that rollout was `fca4b81`.
+
+Completed work:
+
+- Created the GitHub-origin deployment workflow and one-command deploy script.
+- Switched the database layer to SurrealDB Docker Compose while keeping the API,
+  worker, and frontend as host systemd services.
+- Opened only the public ingress needed for the site: `80/443` for Nginx and
+  SSH for administration. App ports remain bound to loopback.
+- Enabled temporary public registration for testing with
+  `ALLOW_PUBLIC_REGISTRATION=true`.
+- Preserved `/opt/lumina/shared/.env` across redeploys so generated passwords
+  and future SMTP/WeChat/AI secrets are not overwritten.
+- Added the command queue database migration required by the deployed worker.
+- Fixed frontend standalone startup so `.next/static` and `public` assets are
+  available to the Next.js standalone server, resolving `_next/static` chunk
+  `404` errors.
+- Added the homepage compliance footer copied from the YinHour site footer:
+  copyright, privacy policy, legal notice, ICP filing, and public-security
+  filing links.
+
+Verification used during closeout:
+
+```bash
+git rev-parse HEAD
+git ls-remote origin refs/heads/online
+ssh lumina 'sudo -u lumina git -C /opt/lumina/repo rev-parse --short HEAD'
+ssh lumina 'systemctl is-active lumina-api lumina-worker lumina-frontend nginx docker'
+ssh lumina 'sudo docker ps --filter name=lumina-surrealdb'
+ssh lumina 'curl -fsS http://127.0.0.1:5055/health'
+curl -I https://lumina.yinhour.com/login
+```
+
+## Operational notes
+
+- The deployment source of truth is GitHub `origin/online`; do not patch server
+  source files directly except for emergency diagnosis that will be copied back
+  into Git immediately.
+- The script uses `git reset --hard origin/online` inside `/opt/lumina/repo`.
+  Keep persistent state in `/opt/lumina/shared/.env` and
+  `/var/lib/lumina/surrealdb`, not in the checkout.
+- The first deployment creates secrets only when `/opt/lumina/shared/.env` is
+  missing or contains `CHANGE_ME` placeholders. Later deploys must not reset the
+  admin password automatically.
+- If Certbot is skipped, compare DNS and public IP first, then verify Aliyun
+  security group rules before rerunning
+  `sudo certbot --nginx -d lumina.yinhour.com`.
+- If the page shell loads but browser console shows `_next/static/... 404`,
+  rebuild the frontend and restart `lumina-frontend`; the standalone server
+  must see `.next/standalone/.next/static` and `.next/standalone/public`.
+- If API startup fails after a schema change, check `journalctl -u lumina-api`
+  for migration errors before restarting worker jobs.
+- Keep `EMAIL_PROVIDER=debug` until SMTP or Resend is directly confirmed.
+  Verification codes for test registration can be read from
+  `journalctl -u lumina-api`.

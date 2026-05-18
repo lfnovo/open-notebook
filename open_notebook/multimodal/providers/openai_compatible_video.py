@@ -1,4 +1,4 @@
-import os
+import json
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -62,6 +62,33 @@ class OpenAICompatibleVideoProvider(VideoUnderstandingProvider):
             body = response.json()
 
         return self._normalize_response(body, transcript_used=bool(input_data.transcript_markdown))
+
+    async def test_connection(self) -> tuple[bool, str]:
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+
+        try:
+            async with httpx.AsyncClient(timeout=min(self.timeout, 10.0)) as client:
+                response = await client.get(f"{self.base_url}/models", headers=headers)
+
+            if response.status_code == 200:
+                data = response.json()
+                models = data.get("data", [])
+                if models:
+                    return True, f"Connected. {len(models)} models available."
+                return True, "Connected successfully (no models listed)"
+            if response.status_code == 401:
+                return False, "Invalid API key"
+            if response.status_code == 403:
+                return False, "API key lacks required permissions"
+            return False, f"Server returned status {response.status_code}"
+        except httpx.ConnectError:
+            return False, "Cannot connect to server. Check the URL is correct."
+        except httpx.TimeoutException:
+            return False, "Connection timed out. Check if server is accessible."
+        except Exception as e:
+            return False, f"Connection error: {str(e)[:100]}"
 
     def _build_payload(self, input_data: VideoUnderstandingInput) -> Dict[str, Any]:
         transcript = input_data.transcript_markdown or ""
@@ -189,8 +216,6 @@ class OpenAICompatibleVideoProvider(VideoUnderstandingProvider):
                 if content.get("type") == "output_text":
                     text = content.get("text")
                     if isinstance(text, str):
-                        import json
-
                         return json.loads(text)
         raise ValueError("Provider response did not contain structured output_text")
 

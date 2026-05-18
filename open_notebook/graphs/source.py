@@ -19,6 +19,7 @@ from open_notebook.multimodal.registry import get_video_understanding_provider
 from open_notebook.multimodal.renderers.video_markdown import (
     render_video_understanding_markdown,
 )
+from open_notebook.multimodal.types import VideoUnderstandingInput
 
 
 class SourceState(TypedDict):
@@ -178,6 +179,18 @@ async def save_source(state: SourceState) -> dict:
     return {"source": source}
 
 
+def dict_to_video_input(
+    processed_state: ProcessSourceState, source_id: str
+) -> VideoUnderstandingInput:
+    return VideoUnderstandingInput(
+        source_id=source_id,
+        title=processed_state.title,
+        url=processed_state.url,
+        file_path=processed_state.file_path,
+        transcript_markdown=processed_state.content,
+    )
+
+
 def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[Send]:
     if len(state["apply_transformations"]) == 0:
         return []
@@ -236,15 +249,3 @@ workflow.add_edge("transform_content", END)
 
 # Compile the graph
 source_graph = workflow.compile()
-
-
-def dict_to_video_input(processed_state: ProcessSourceState, source_id: str):
-    from open_notebook.multimodal.types import VideoUnderstandingInput
-
-    return VideoUnderstandingInput(
-        source_id=source_id,
-        title=processed_state.title,
-        url=processed_state.url,
-        file_path=processed_state.file_path,
-        transcript_markdown=processed_state.content,
-    )

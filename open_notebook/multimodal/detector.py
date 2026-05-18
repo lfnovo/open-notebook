@@ -19,4 +19,8 @@ def is_video_source(url: Optional[str] = None, file_path: Optional[str] = None) 
     if not url:
         return False
     hostname = (urlparse(url).hostname or "").lower()
-    return any(hint in hostname for hint in VIDEO_HOST_HINTS)
+    return any(_hostname_matches_hint(hostname, hint) for hint in VIDEO_HOST_HINTS)
+
+
+def _hostname_matches_hint(hostname: str, hint: str) -> bool:
+    return hostname == hint or hostname.endswith(f".{hint}")

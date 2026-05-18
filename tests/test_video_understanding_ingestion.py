@@ -10,12 +10,17 @@ from open_notebook.multimodal.types import VideoUnderstandingResult
 @pytest.mark.asyncio
 @patch("open_notebook.graphs.source.get_video_understanding_provider", new_callable=AsyncMock)
 @patch("open_notebook.graphs.source.ModelManager.get_video_understanding_model_config", new_callable=AsyncMock)
+@patch("open_notebook.graphs.source.ModelManager.get_defaults", new_callable=AsyncMock)
 @patch("open_notebook.graphs.source.extract_content", new_callable=AsyncMock)
 async def test_content_process_merges_video_understanding_markdown(
     mock_extract_content,
+    mock_get_defaults,
     mock_get_video_model,
     mock_get_provider,
 ):
+    mock_get_defaults.return_value = SimpleNamespace(
+        default_speech_to_text_model=None
+    )
     mock_extract_content.return_value = SimpleNamespace(
         content="Transcript body",
         url="https://cdn.example.com/video.mp4",

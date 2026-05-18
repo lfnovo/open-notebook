@@ -79,3 +79,24 @@ async def test_openai_compatible_video_provider_requires_url():
 
     with pytest.raises(ValueError, match="directly accessible video URL"):
         await provider.analyze(VideoUnderstandingInput(file_path="/tmp/local.mp4"))
+
+
+@pytest.mark.asyncio
+@patch("open_notebook.multimodal.providers.openai_compatible_video.httpx.AsyncClient")
+async def test_openai_compatible_video_provider_test_connection(mock_client_cls):
+    mock_response = MagicMock(status_code=200)
+    mock_response.json.return_value = {"data": [{"id": "video-model"}]}
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client_cls.return_value.__aenter__.return_value = mock_client
+
+    provider = OpenAICompatibleVideoProvider(
+        model_name="video-model",
+        base_url="https://example.com/v1",
+        api_key="secret",
+    )
+    success, message = await provider.test_connection()
+
+    assert success is True
+    assert "Connected." in message

@@ -8,8 +8,12 @@ def test_detects_video_by_extension():
 
 def test_detects_video_by_known_host():
     assert is_video_source(url="https://www.youtube.com/watch?v=abc123")
+    assert is_video_source(url="https://m.youtube.com/watch?v=abc123")
 
 
 def test_ignores_non_video_sources():
     assert not is_video_source(url="https://example.com/doc.pdf")
     assert not is_video_source(file_path="/tmp/notes.txt")
+    assert not is_video_source(url="https://notyoutube.com/watch?v=abc123")
+    assert not is_video_source(url="https://youtube.com.evil.org/watch?v=abc123")
+    assert not is_video_source(url="https://vimeo.com.cn/clip")

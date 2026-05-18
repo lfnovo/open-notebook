@@ -876,6 +876,22 @@ class ProfileUpdateRequest(BaseModel):
     theme: Optional[str] = None
 
 
+class CompleteProfileRequest(BaseModel):
+    email: str = Field(..., description="Verified email address to add or bind")
+    verification_code: str = Field(..., description="Email verification code")
+
+
+class CompleteProfileResponse(BaseModel):
+    success: bool = Field(..., description="Whether profile completion succeeded")
+    token: str = Field(..., description="Fresh JWT token for the completed account")
+    user: UserResponse = Field(..., description="Completed or bound user profile")
+    message: str = Field(..., description="Result message")
+    bound_existing_user: bool = Field(
+        False,
+        description="Whether the WeChat identity was bound to an existing email account",
+    )
+
+
 class UserListItem(BaseModel):
     id: str
     username: str
@@ -1132,8 +1148,9 @@ class AuthStatusResponse(BaseModel):
 # Email verification models
 class SendCodeRequest(BaseModel):
     email: str = Field(..., description="Email address to send verification code to")
-    purpose: Literal["register", "reset_password"] = Field(
-        ..., description="Purpose of the code: 'register' or 'reset_password'"
+    purpose: Literal["register", "reset_password", "profile_email"] = Field(
+        ...,
+        description="Purpose of the code: 'register', 'reset_password', or 'profile_email'",
     )
     language: Literal["en", "zh-CN"] = Field(
         "en", description="Language for the email: 'en' or 'zh-CN'"

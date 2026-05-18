@@ -1,5 +1,5 @@
 import apiClient from './client'
-import { CurrentUserResponse } from '@/lib/types/auth'
+import { CompleteProfileResponse, CurrentUserResponse } from '@/lib/types/auth'
 
 export interface ChangePasswordRequest {
   old_password: string
@@ -17,6 +17,11 @@ export interface ProfileUpdateRequest {
   theme?: string | null
 }
 
+export interface CompleteProfileRequest {
+  email: string
+  verification_code: string
+}
+
 export const authApi = {
   me: async () => {
     const response = await apiClient.get<CurrentUserResponse>('/auth/me')
@@ -30,6 +35,11 @@ export const authApi = {
 
   changePassword: async (data: ChangePasswordRequest) => {
     const response = await apiClient.post<ChangePasswordResponse>('/auth/change-password', data)
+    return response.data
+  },
+
+  completeProfile: async (data: CompleteProfileRequest) => {
+    const response = await apiClient.post<CompleteProfileResponse>('/auth/complete-profile', data)
     return response.data
   },
 }

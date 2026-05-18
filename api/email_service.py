@@ -42,31 +42,41 @@ def build_verification_email(code: str, purpose: str, language: str = "en") -> t
     Returns:
         (subject, html_body)
     """
-    if purpose == "register":
+    if purpose in {"register", "profile_email"}:
         if language == "zh-CN":
-            subject = f"{APP_NAME} — 注册验证码"
+            subject = (
+                f"{APP_NAME} — 邮箱验证码"
+                if purpose == "profile_email"
+                else f"{APP_NAME} — 注册验证码"
+            )
+            action_text = "验证您的邮箱" if purpose == "profile_email" else f"注册 {APP_NAME}"
             html = f"""
             <html>
             <body style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #6f6559;">{APP_NAME}</h2>
                 <p>您好，</p>
-                <p>感谢您注册 {APP_NAME}！您的验证码是：</p>
+                <p>请使用以下验证码{action_text}：</p>
                 <div style="background: #f5f0e8; border-radius: 8px; padding: 16px 24px; margin: 24px 0; text-align: center;">
                     <span style="font-size: 28px; font-weight: bold; letter-spacing: 8px; color: #6f6559;">{code}</span>
                 </div>
                 <p style="color: #888; font-size: 14px;">验证码将在 <strong>10 分钟</strong>后过期，请尽快使用。</p>
-                <p style="color: #888; font-size: 14px;">如果您没有发起注册，请忽略此邮件。</p>
+                <p style="color: #888; font-size: 14px;">如果您没有发起此操作，请忽略此邮件。</p>
             </body>
             </html>
             """
         else:
             subject = f"{APP_NAME} — Email Verification Code"
+            action_text = (
+                "verify your email address"
+                if purpose == "profile_email"
+                else f"sign up for {APP_NAME}"
+            )
             html = f"""
             <html>
             <body style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 24px;">
                 <h2 style="color: #6f6559;">{APP_NAME}</h2>
                 <p>Hello,</p>
-                <p>Thank you for signing up for {APP_NAME}! Your verification code is:</p>
+                <p>Use this code to {action_text}:</p>
                 <div style="background: #f5f0e8; border-radius: 8px; padding: 16px 24px; margin: 24px 0; text-align: center;">
                     <span style="font-size: 28px; font-weight: bold; letter-spacing: 8px; color: #6f6559;">{code}</span>
                 </div>
@@ -198,7 +208,7 @@ def send_verification_email(
     Args:
         to: Recipient email address
         code: 6-digit verification code
-        purpose: 'register' or 'reset_password'
+        purpose: 'register', 'profile_email', or 'reset_password'
         language: 'en' or 'zh-CN'
 
     Returns:

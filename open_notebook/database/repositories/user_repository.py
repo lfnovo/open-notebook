@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from open_notebook.database.repository import ensure_record_id, repo_query, repo_update
+from open_notebook.database.repository import (
+    ensure_record_id,
+    repo_delete,
+    repo_query,
+    repo_update,
+)
 
 
 class UserRepository:
@@ -104,6 +109,14 @@ class UserRepository:
         return result[0] if result else None
 
     @staticmethod
+    async def get_user_by_email(email: str) -> Optional[dict[str, Any]]:
+        result = await repo_query(
+            "SELECT * FROM app_user WHERE email = $email OR username = $email LIMIT 1",
+            {"email": email},
+        )
+        return result[0] if result else None
+
+    @staticmethod
     async def get_user_by_wechat_identity(
         *, unionid: Optional[str], openid: str
     ) -> Optional[dict[str, Any]]:
@@ -177,6 +190,10 @@ class UserRepository:
     @staticmethod
     async def update_user(user_id: str, data: dict[str, Any]) -> list[dict[str, Any]]:
         return await repo_update("app_user", user_id, data)
+
+    @staticmethod
+    async def delete_user(user_id: str) -> None:
+        await repo_delete(user_id)
 
     @staticmethod
     async def count_active_admins(self_excluding_user_id: Optional[str] = None) -> int:

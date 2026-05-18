@@ -3,11 +3,12 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePage from './page'
 import { useAuth } from '@/lib/hooks/use-auth'
-import { useProfile, useUpdateProfile } from '@/lib/hooks/use-profile'
+import { useCompleteProfile, useProfile, useUpdateProfile } from '@/lib/hooks/use-profile'
 
 vi.mock('@/lib/hooks/use-profile', () => ({
   useProfile: vi.fn(),
   useUpdateProfile: vi.fn(),
+  useCompleteProfile: vi.fn(),
 }))
 
 vi.mock('@/components/auth/ChangePasswordForm', () => ({
@@ -17,10 +18,12 @@ vi.mock('@/components/auth/ChangePasswordForm', () => ({
 describe('ProfilePage', () => {
   const logout = vi.fn()
   const updateProfile = vi.fn()
+  const completeProfile = vi.fn()
 
   beforeEach(() => {
     logout.mockClear()
     updateProfile.mockClear()
+    completeProfile.mockClear()
     vi.mocked(useAuth).mockReturnValue({
       login: vi.fn(),
       logout,
@@ -46,6 +49,10 @@ describe('ProfilePage', () => {
     } as any)
     vi.mocked(useUpdateProfile).mockReturnValue({
       mutate: updateProfile,
+      isPending: false,
+    } as any)
+    vi.mocked(useCompleteProfile).mockReturnValue({
+      mutate: completeProfile,
       isPending: false,
     } as any)
   })
@@ -110,5 +117,43 @@ describe('ProfilePage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sign Out' }))
 
     expect(logout).toHaveBeenCalledOnce()
+  })
+
+  it('completes a WeChat profile with verified email instead of updating profile fields', () => {
+    vi.mocked(useProfile).mockReturnValue({
+      data: {
+        id: 'app_user:wx_openid',
+        username: 'wx_openid',
+        display_name: 'WeChat User',
+        email: null,
+        login_provider: 'wechat',
+        role: 'user',
+        status: 'active',
+        last_login_at: '2026-05-05T00:00:00Z',
+        locale: null,
+        theme: null,
+      },
+      isLoading: false,
+      error: null,
+    } as any)
+
+    render(<ProfilePage />)
+
+    fireEvent.change(screen.getByLabelText('Email'), {
+      target: { value: 'user@example.com' },
+    })
+    fireEvent.change(screen.getByLabelText('Verification code'), {
+      target: { value: '123456' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+
+    expect(completeProfile).toHaveBeenCalledWith(
+      {
+        email: 'user@example.com',
+        verification_code: '123456',
+      },
+      expect.any(Object),
+    )
+    expect(updateProfile).not.toHaveBeenCalled()
   })
 })

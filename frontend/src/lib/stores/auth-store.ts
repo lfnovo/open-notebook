@@ -14,6 +14,7 @@ interface AuthState {
   role: 'admin' | 'user' | null
   displayName: string | null
   status: 'active' | 'disabled' | null
+  requiresProfileCompletion: boolean
   isLoading: boolean
   loadingAction: LoadingAction
   error: string | null
@@ -29,6 +30,10 @@ interface AuthState {
   completeWeChatLogin: (code: string, state: string | null) => Promise<boolean>
   logout: () => void
   checkAuth: () => Promise<boolean>
+}
+
+function needsProfileCompletion(currentUser: CurrentUserResponse | null) {
+  return currentUser?.login_provider === 'wechat' && !currentUser.email
 }
 
 function createOAuthState() {
@@ -64,6 +69,7 @@ function setAuthenticatedUser(
     role: currentUser?.role || null,
     displayName: currentUser?.display_name || currentUser?.username || fallbackUsername,
     status: currentUser?.status || 'active',
+    requiresProfileCompletion: needsProfileCompletion(currentUser),
     isLoading: false,
     loadingAction: null,
     lastAuthCheck: Date.now(),
@@ -80,6 +86,7 @@ export const useAuthStore = create<AuthState>()(
       role: null,
       displayName: null,
       status: null,
+      requiresProfileCompletion: false,
       isLoading: false,
       loadingAction: null,
       error: null,
@@ -120,6 +127,7 @@ export const useAuthStore = create<AuthState>()(
               role: null,
               displayName: 'Guest',
               status: 'active',
+              requiresProfileCompletion: false,
             })
           }
 
@@ -166,6 +174,7 @@ export const useAuthStore = create<AuthState>()(
               role: null,
               displayName: null,
               status: null,
+              requiresProfileCompletion: false,
             })
             return false
           }
@@ -194,6 +203,7 @@ export const useAuthStore = create<AuthState>()(
               role: null,
               displayName: null,
               status: null,
+              requiresProfileCompletion: false,
             })
             return false
           }
@@ -221,6 +231,7 @@ export const useAuthStore = create<AuthState>()(
             role: null,
             displayName: null,
             status: null,
+            requiresProfileCompletion: false,
           })
           return false
         }
@@ -286,7 +297,12 @@ export const useAuthStore = create<AuthState>()(
 
           const data: LoginResponse = await response.json()
           if (!data.success || !data.token) {
-            set({ isLoading: false, loadingAction: null, error: data.message || 'WeChat login failed' })
+            set({
+              isLoading: false,
+              loadingAction: null,
+              error: data.message || 'WeChat login failed',
+              requiresProfileCompletion: false,
+            })
             return false
           }
 
@@ -312,6 +328,7 @@ export const useAuthStore = create<AuthState>()(
             role: null,
             displayName: null,
             status: null,
+            requiresProfileCompletion: false,
           })
           return false
         }
@@ -327,6 +344,7 @@ export const useAuthStore = create<AuthState>()(
           role: null,
           displayName: null,
           status: null,
+          requiresProfileCompletion: false,
           error: null,
         })
       },
@@ -374,6 +392,7 @@ export const useAuthStore = create<AuthState>()(
               role: user.role || null,
               displayName: user.display_name || user.username || state.username,
               status: user.status || null,
+              requiresProfileCompletion: needsProfileCompletion(user),
               lastAuthCheck: now,
               isCheckingAuth: false,
             })
@@ -388,6 +407,7 @@ export const useAuthStore = create<AuthState>()(
               role: null,
               displayName: null,
               status: null,
+              requiresProfileCompletion: false,
               lastAuthCheck: null,
               isCheckingAuth: false,
             })
@@ -404,6 +424,7 @@ export const useAuthStore = create<AuthState>()(
             role: null,
             displayName: null,
             status: null,
+            requiresProfileCompletion: false,
             lastAuthCheck: null,
             isCheckingAuth: false,
           })
@@ -420,6 +441,7 @@ export const useAuthStore = create<AuthState>()(
         role: state.role,
         displayName: state.displayName,
         status: state.status,
+        requiresProfileCompletion: state.requiresProfileCompletion,
       }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true)

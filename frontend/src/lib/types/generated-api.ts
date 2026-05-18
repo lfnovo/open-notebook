@@ -690,6 +690,19 @@ export interface ProfileUpdateRequest {
   theme?: string | null
 }
 
+export interface CompleteProfileRequest {
+  email: string
+  verification_code: string
+}
+
+export interface CompleteProfileResponse {
+  success: boolean
+  token: string
+  user: UserResponse
+  message: string
+  bound_existing_user?: boolean
+}
+
 export interface ProviderAvailabilityResponse {
   available: string[]
   unavailable: string[]
@@ -825,7 +838,7 @@ export interface SearchResponse {
 
 export interface SendCodeRequest {
   email: string
-  purpose: 'register' | 'reset_password'
+  purpose: 'register' | 'reset_password' | 'profile_email'
   language?: 'en' | 'zh-CN'
 }
 
@@ -1215,6 +1228,8 @@ export interface UserResponse {
   username: string
   email?: string | null
   display_name?: string | null
+  avatar_url?: string | null
+  login_provider?: string | null
   role?: 'admin' | 'user'
   status?: 'active' | 'disabled'
   locale?: string | null

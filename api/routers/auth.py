@@ -13,11 +13,12 @@ from loguru import logger
 
 from api.auth import invalidate_has_users_cache
 from api.jwt_auth import create_jwt_token, find_user_by_username, validate_jwt_token
-from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
 from api.models import (
     AuthStatusResponse,
     ChangePasswordRequest,
     ChangePasswordResponse,
+    CompleteProfileRequest,
+    CompleteProfileResponse,
     LoginRequest,
     LoginResponse,
     ProfileUpdateRequest,
@@ -44,6 +45,8 @@ from api.verification import (
     send_code,
     verify_code,
 )
+from open_notebook.database.repositories.audit_log_repository import AuditLogRepository
+from open_notebook.database.repositories.user_repository import UserRepository
 from open_notebook.database.repository import (
     db_connection,
     parse_record_ids,
@@ -106,6 +109,37 @@ def _optional_profile_value(value: Optional[str]) -> Optional[str]:
         return None
     value = value.strip()
     return value or None
+
+
+def _normalize_email(value: str) -> str:
+    email = value.strip().lower()
+    if not email or "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise HTTPException(status_code=400, detail="Invalid email address")
+    return email
+
+
+def _user_response(user: Dict[str, Any], fallback_username: str = "") -> UserResponse:
+    return UserResponse(
+        id=str(user.get("id", "")),
+        username=user.get("username", fallback_username),
+        email=user.get("email"),
+        display_name=user.get("display_name"),
+        avatar_url=user.get("avatar_url"),
+        login_provider=user.get("login_provider"),
+        role=_default_user_role(user),
+        status=_default_user_status(user),
+        locale=user.get("locale"),
+        theme=user.get("theme"),
+        created=str(user.get("created", "")),
+        updated=str(user.get("updated", "")),
+        last_login_at=str(user.get("last_login_at", ""))
+        if user.get("last_login_at")
+        else None,
+    )
+
+
+def _is_same_user(left: Dict[str, Any], right: Dict[str, Any]) -> bool:
+    return str(left.get("id", "")) == str(right.get("id", ""))
 
 
 @router.get("/status", response_model=AuthStatusResponse)
@@ -514,6 +548,150 @@ async def update_current_user(request: ProfileUpdateRequest, http_request: Reque
         last_login_at=str(user.get("last_login_at", ""))
         if user.get("last_login_at")
         else None,
+    )
+
+
+@router.post("/complete-profile", response_model=CompleteProfileResponse)
+async def complete_current_user_profile(
+    request: CompleteProfileRequest,
+    http_request: Request,
+):
+    auth_header = http_request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Missing authorization")
+
+    payload = await validate_jwt_token(auth_header[7:])
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    username = payload.get("username", "")
+    current_user = await find_user_by_username(username)
+    if not current_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if current_user.get("email"):
+        raise HTTPException(status_code=400, detail="Profile is already complete")
+    if (
+        current_user.get("login_provider") != "wechat"
+        or not current_user.get("wechat_openid")
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail="Only WeChat users can complete this profile",
+        )
+
+    email = _normalize_email(request.email)
+    verification_code = request.verification_code.strip()
+    if not verification_code:
+        raise HTTPException(status_code=400, detail="Verification code is required")
+
+    ok, msg = await verify_code(email, verification_code, "profile_email")
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+
+    current_user_id = _get_user_id(current_user)
+    existing_user = await UserRepository.get_user_by_email(email)
+    if existing_user and not _is_same_user(existing_user, current_user):
+        if _default_user_status(existing_user) != "active":
+            raise HTTPException(status_code=403, detail="Account is disabled")
+
+        existing_openid = existing_user.get("wechat_openid")
+        existing_unionid = existing_user.get("wechat_unionid")
+        current_openid = current_user.get("wechat_openid")
+        current_unionid = current_user.get("wechat_unionid")
+        if existing_openid and existing_openid != current_openid:
+            raise HTTPException(
+                status_code=409,
+                detail="Email account is already bound to another WeChat account",
+            )
+        if existing_unionid and current_unionid and existing_unionid != current_unionid:
+            raise HTTPException(
+                status_code=409,
+                detail="Email account is already bound to another WeChat account",
+            )
+
+        bind_updates: Dict[str, Any] = {
+            "login_provider": "wechat",
+            "wechat_openid": current_openid,
+            "wechat_unionid": current_unionid,
+            "last_login_at": datetime.now(timezone.utc),
+        }
+        if current_user.get("avatar_url") and not existing_user.get("avatar_url"):
+            bind_updates["avatar_url"] = current_user.get("avatar_url")
+        if current_user.get("display_name") and not existing_user.get("display_name"):
+            bind_updates["display_name"] = current_user.get("display_name")
+
+        existing_user_id = _get_user_id(existing_user)
+        updated = await UserRepository.update_user(existing_user_id, bind_updates)
+        bound_user = updated[0] if updated else {**existing_user, **bind_updates}
+        try:
+            await UserRepository.delete_user(current_user_id)
+        except Exception as delete_error:
+            logger.warning(
+                f"Failed to remove temporary WeChat user after binding: {delete_error}"
+            )
+            try:
+                await UserRepository.update_user(
+                    current_user_id,
+                    {
+                        "status": "disabled",
+                        "wechat_openid": None,
+                        "wechat_unionid": None,
+                    },
+                )
+            except Exception as disable_error:
+                logger.warning(
+                    "Failed to disable temporary WeChat user after binding: "
+                    f"{disable_error}"
+                )
+
+        canonical_username = bound_user.get("username") or email
+        token = create_jwt_token(canonical_username, _get_user_id(bound_user), bound_user)
+        try:
+            await AuditLogRepository.create(
+                action="auth.wechat.email.bound",
+                actor_id=_get_user_id(bound_user),
+                actor_username=canonical_username,
+                target_type="app_user",
+                target_id=_get_user_id(bound_user),
+                metadata={"bound_existing_user": True},
+            )
+        except Exception as audit_error:
+            logger.warning(f"Failed to write WeChat email bind audit log: {audit_error}")
+
+        return CompleteProfileResponse(
+            success=True,
+            token=token,
+            user=_user_response(bound_user, canonical_username),
+            message="Profile completed",
+            bound_existing_user=True,
+        )
+
+    updated = await UserRepository.update_user(current_user_id, {"email": email})
+    completed_user = updated[0] if updated else {**current_user, "email": email}
+    canonical_username = completed_user.get("username") or username
+    token = create_jwt_token(
+        canonical_username,
+        _get_user_id(completed_user),
+        completed_user,
+    )
+    try:
+        await AuditLogRepository.create(
+            action="auth.wechat.profile.completed",
+            actor_id=_get_user_id(completed_user),
+            actor_username=canonical_username,
+            target_type="app_user",
+            target_id=_get_user_id(completed_user),
+            metadata={"bound_existing_user": False},
+        )
+    except Exception as audit_error:
+        logger.warning(f"Failed to write WeChat profile completion audit log: {audit_error}")
+
+    return CompleteProfileResponse(
+        success=True,
+        token=token,
+        user=_user_response(completed_user, canonical_username),
+        message="Profile completed",
+        bound_existing_user=False,
     )
 
 

@@ -13,6 +13,7 @@ export function useAuth() {
     error,
     isAuthenticated,
     username,
+    requiresProfileCompletion,
   } = useAuthStore()
   const isPasswordLoading = isLoading && loadingAction === 'password'
   const isWeChatLoading = isLoading && loadingAction === 'wechat'
@@ -37,7 +38,10 @@ export function useAuth() {
     async (code: string, state: string | null) => {
       const success = await completeWeChatLogin(code, state)
       if (success) {
-        router.push('/notebooks')
+        const nextPath = useAuthStore.getState().requiresProfileCompletion
+          ? '/settings/profile?complete=1'
+          : '/notebooks'
+        router.push(nextPath)
       }
       return success
     },
@@ -60,5 +64,6 @@ export function useAuth() {
     error,
     isAuthenticated,
     username,
+    requiresProfileCompletion,
   }
 }

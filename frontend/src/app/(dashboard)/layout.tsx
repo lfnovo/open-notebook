@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/lib/hooks/use-auth'
 import { useVersionCheck } from '@/lib/hooks/use-version-check'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { ErrorBoundary } from '@/components/common/ErrorBoundary'
@@ -16,8 +16,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, requiresProfileCompletion } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
 
   // Check for version updates once per session
@@ -34,9 +35,11 @@ export default function DashboardLayout({
         const currentPath = window.location.pathname + window.location.search
         sessionStorage.setItem('redirectAfterLogin', currentPath)
         router.push('/login')
+      } else if (requiresProfileCompletion && pathname !== '/settings/profile') {
+        router.replace('/settings/profile?complete=1')
       }
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, pathname, requiresProfileCompletion, router])
 
   // Show loading spinner during initial auth check or while loading
   if (isLoading || !hasCheckedAuth) {
@@ -50,6 +53,14 @@ export default function DashboardLayout({
   // Don't render anything if not authenticated (during redirect)
   if (!isAuthenticated) {
     return null
+  }
+
+  if (requiresProfileCompletion && pathname !== '/settings/profile') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
   }
 
   return (

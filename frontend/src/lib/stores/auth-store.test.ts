@@ -9,6 +9,7 @@ vi.mock('@/lib/config', () => ({
 describe('auth-store', () => {
   beforeEach(() => {
     localStorage.clear()
+    sessionStorage.clear()
     queryClient.clear()
     useAuthStore.setState({
       isAuthenticated: false,
@@ -25,6 +26,7 @@ describe('auth-store', () => {
       hasHydrated: true,
       authRequired: null,
       authMethod: null,
+      requiresProfileCompletion: false,
     })
     vi.restoreAllMocks()
   })
@@ -156,5 +158,39 @@ describe('auth-store', () => {
     expect(useAuthStore.getState().isLoading).toBe(false)
     expect(useAuthStore.getState().loadingAction).toBe(null)
     expect(useAuthStore.getState().error).toBe(null)
+  })
+
+  it('marks profile completion required after WeChat login without email', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/auth/wechat/callback') {
+        return new Response(
+          JSON.stringify({ success: true, token: 'wechat-token', username: 'wx_openid', message: 'ok' }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      if (url === '/api/auth/me') {
+        return new Response(
+          JSON.stringify({
+            id: 'app_user:wx_openid',
+            username: 'wx_openid',
+            email: null,
+            display_name: 'WeChat User',
+            login_provider: 'wechat',
+            role: 'user',
+            status: 'active',
+            created: '',
+            updated: '',
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        )
+      }
+      return new Response('{}', { status: 404 })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const ok = await useAuthStore.getState().completeWeChatLogin('auth-code', null)
+
+    expect(ok).toBe(true)
+    expect(useAuthStore.getState().requiresProfileCompletion).toBe(true)
   })
 })

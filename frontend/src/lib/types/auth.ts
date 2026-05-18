@@ -5,6 +5,7 @@ export interface AuthState {
   role: 'admin' | 'user' | null
   displayName: string | null
   status: 'active' | 'disabled' | null
+  requiresProfileCompletion: boolean
   isLoading: boolean
   error: string | null
 }
@@ -49,4 +50,12 @@ export interface CurrentUserResponse {
   created: string
   updated: string
   last_login_at?: string | null
+}
+
+export interface CompleteProfileResponse {
+  success: boolean
+  token: string
+  user: CurrentUserResponse
+  message: string
+  bound_existing_user: boolean
 }

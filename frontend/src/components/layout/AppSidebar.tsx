@@ -128,7 +128,7 @@ type CreateTarget = 'source' | 'notebook'
 export function AppSidebar() {
   const { t } = useTranslation()
   const pathname = usePathname()
-  const { role, username } = useAuthStore()
+  const { role, username, displayName } = useAuthStore()
   const isAdmin = role === 'admin'
   const canManageTeams = useCanManageTeams()
   const hasTeams = useHasTeams()
@@ -146,7 +146,7 @@ export function AppSidebar() {
 
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
-  const profileLabel = username || t.navigation.profile
+  const profileLabel = displayName?.trim() || username || t.navigation.profile
   const workspaces = workspacesData?.items ?? []
   const workspaceLabel = currentWorkspace?.name ?? t.teams.workspace
   const canSwitchWorkspace = workspaces.length > 0 && !isLoadingWorkspaces

@@ -149,22 +149,22 @@ describe('AppSidebar', () => {
     expect(screen.queryByText(/Lumina™ | Yinshi AI/i)).toBeNull()
   })
 
-  it('shows username profile link for all users and team management for admins', () => {
+  it('shows display name profile link for all users and team management for admins', () => {
     useAuthStore.setState({ role: 'admin' })
 
     render(<AppSidebar />)
 
-    expect(screen.getByRole('link', { name: 'testuser' })).toHaveAttribute('href', '/settings/profile')
+    expect(screen.getByRole('link', { name: 'Test User' })).toHaveAttribute('href', '/settings/profile')
     expect(screen.queryByText('Profile')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Teams' })).toHaveAttribute('href', '/settings/teams')
   })
 
-  it('shows the username profile link as a blue button for non-admin users', () => {
+  it('shows the display name profile link as a blue button for non-admin users', () => {
     useAuthStore.setState({ role: 'user' })
 
     render(<AppSidebar />)
 
-    const profileLink = screen.getByRole('link', { name: 'testuser' })
+    const profileLink = screen.getByRole('link', { name: 'Test User' })
     expect(profileLink).toHaveClass('bg-blue-600')
     expect(profileLink).toHaveClass('text-white')
     expect(screen.queryByText('Teams')).not.toBeInTheDocument()

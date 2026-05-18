@@ -162,7 +162,7 @@ class UserRepository:
                 wechat_unionid = $wechat_unionid,
                 role = 'user',
                 status = 'active',
-                hashed_password = NONE,
+                hashed_password = $hashed_password,
                 password_changed_at = time::now(),
                 last_login_at = time::now(),
                 created_by = NONE,
@@ -170,7 +170,7 @@ class UserRepository:
                 updated = time::now()
             RETURN AFTER
             """,
-            data,
+            {**data, "hashed_password": data.get("hashed_password", "")},
         )
         return result[0] if result else None
 

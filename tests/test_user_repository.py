@@ -40,3 +40,29 @@ async def test_count_users_treats_missing_status_as_active(monkeypatch):
     total = await UserRepository.count_users(status="active")
 
     assert total == 2
+
+
+@pytest.mark.asyncio
+async def test_create_wechat_user_sets_schema_compatible_password(monkeypatch):
+    captured = {}
+
+    async def fake_repo_query(query, params):
+        captured["query"] = query
+        captured["params"] = params
+        return [{"id": "app_user:wx_openid", "username": params["username"]}]
+
+    monkeypatch.setattr(user_repository, "repo_query", fake_repo_query)
+
+    row = await UserRepository.create_wechat_user(
+        {
+            "username": "wx_openid",
+            "display_name": "WeChat User",
+            "avatar_url": None,
+            "wechat_openid": "openid",
+            "wechat_unionid": None,
+        }
+    )
+
+    assert row["username"] == "wx_openid"
+    assert "hashed_password = $hashed_password" in captured["query"]
+    assert captured["params"]["hashed_password"] == ""

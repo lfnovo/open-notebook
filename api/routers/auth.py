@@ -58,6 +58,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 # JWT configuration shared in api.jwt_auth
 JWT_EXPIRY_SECONDS = 86400  # 24 hours
+MIN_PROFILE_PASSWORD_LENGTH = 6
 
 
 async def _get_db_users() -> List[Dict[str, Any]]:
@@ -666,8 +667,20 @@ async def complete_current_user_profile(
             bound_existing_user=True,
         )
 
-    updated = await UserRepository.update_user(current_user_id, {"email": email})
-    completed_user = updated[0] if updated else {**current_user, "email": email}
+    password = request.password or ""
+    if len(password) < MIN_PROFILE_PASSWORD_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 6 characters long",
+        )
+
+    completion_updates = {
+        "email": email,
+        "hashed_password": hash_password(password),
+        "password_changed_at": datetime.now(timezone.utc),
+    }
+    updated = await UserRepository.update_user(current_user_id, completion_updates)
+    completed_user = updated[0] if updated else {**current_user, **completion_updates}
     canonical_username = completed_user.get("username") or username
     token = create_jwt_token(
         canonical_username,

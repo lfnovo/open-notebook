@@ -20,6 +20,7 @@ export interface ProfileUpdateRequest {
 export interface CompleteProfileRequest {
   email: string
   verification_code: string
+  password?: string
 }
 
 export const authApi = {

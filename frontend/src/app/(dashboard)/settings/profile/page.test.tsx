@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePage from './page'
 import { useAuth } from '@/lib/hooks/use-auth'
@@ -139,18 +139,31 @@ describe('ProfilePage', () => {
 
     render(<ProfilePage />)
 
-    fireEvent.change(screen.getByLabelText('Email'), {
+    const registrationDialog = screen.getByRole('dialog', {
+      name: 'Verify email to continue',
+    })
+
+    fireEvent.change(within(registrationDialog).getByLabelText('Email'), {
       target: { value: 'user@example.com' },
     })
-    fireEvent.change(screen.getByLabelText('Verification code'), {
+    fireEvent.change(within(registrationDialog).getByLabelText('Verification code'), {
       target: { value: '123456' },
     })
-    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    fireEvent.change(within(registrationDialog).getByLabelText('Password'), {
+      target: { value: 'new-password' },
+    })
+    fireEvent.change(within(registrationDialog).getByLabelText('Confirm password'), {
+      target: { value: 'new-password' },
+    })
+    fireEvent.click(
+      within(registrationDialog).getByRole('button', { name: 'Complete registration' }),
+    )
 
     expect(completeProfile).toHaveBeenCalledWith(
       {
         email: 'user@example.com',
         verification_code: '123456',
+        password: 'new-password',
       },
       expect.any(Object),
     )

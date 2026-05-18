@@ -879,6 +879,10 @@ class ProfileUpdateRequest(BaseModel):
 class CompleteProfileRequest(BaseModel):
     email: str = Field(..., description="Verified email address to add or bind")
     verification_code: str = Field(..., description="Email verification code")
+    password: Optional[str] = Field(
+        None,
+        description="Password to set when completing a new WeChat-only account",
+    )
 
 
 class CompleteProfileResponse(BaseModel):

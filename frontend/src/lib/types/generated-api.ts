@@ -693,6 +693,7 @@ export interface ProfileUpdateRequest {
 export interface CompleteProfileRequest {
   email: string
   verification_code: string
+  password?: string | null
 }
 
 export interface CompleteProfileResponse {

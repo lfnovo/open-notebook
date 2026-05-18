@@ -7,6 +7,14 @@ import { ChangePasswordForm } from '@/components/auth/ChangePasswordForm'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -34,10 +42,13 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [verificationCode, setVerificationCode] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [locale, setLocale] = useState<string | null>(null)
   const [theme, setTheme] = useState<string | null>(null)
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [codeError, setCodeError] = useState<string | null>(null)
+  const [completionError, setCompletionError] = useState<string | null>(null)
   const needsEmailCompletion = profile?.login_provider === 'wechat' && !profile.email
 
   useEffect(() => {
@@ -78,20 +89,6 @@ export default function ProfilePage() {
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
     if (!profile || updateProfile.isPending || completeProfile.isPending) return
-
-    if (needsEmailCompletion) {
-      completeProfile.mutate(
-        {
-          email: email.trim(),
-          verification_code: verificationCode.trim(),
-        },
-        {
-          onSuccess: () => router.push('/notebooks'),
-        },
-      )
-      return
-    }
-
     const selectedLocale = locale ?? profile.locale ?? 'system'
     const selectedTheme = theme ?? profile.theme ?? 'system'
 
@@ -100,6 +97,30 @@ export default function ProfilePage() {
       locale: selectedLocale === 'system' ? null : selectedLocale,
       theme: selectedTheme === 'system' ? null : selectedTheme,
     })
+  }
+
+  const handleCompleteProfileSubmit = (event: FormEvent) => {
+    event.preventDefault()
+    if (!profile || completeProfile.isPending) return
+    setCompletionError(null)
+    if (password.length < 6) {
+      setCompletionError(t.profile.passwordTooShort)
+      return
+    }
+    if (password !== confirmPassword) {
+      setCompletionError(t.profile.passwordMismatch)
+      return
+    }
+    completeProfile.mutate(
+      {
+        email: email.trim(),
+        verification_code: verificationCode.trim(),
+        password,
+      },
+      {
+        onSuccess: () => router.push('/notebooks'),
+      },
+    )
   }
 
   return (
@@ -123,24 +144,18 @@ export default function ProfilePage() {
             </div>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="rounded-md border p-5">
-                {needsEmailCompletion && (
-                  <div className="mb-5 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    <p className="font-medium">{t.profile.completeTitle}</p>
-                    <p className="mt-1 text-amber-800">{t.profile.completeDescription}</p>
-                  </div>
-                )}
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-username">{t.profile.username}</Label>
-                    <Input id="profile-username" value={profile.username} disabled />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="profile-email">{t.profile.email}</Label>
-                    {needsEmailCompletion ? (
+              <Dialog open={Boolean(needsEmailCompletion)}>
+                <DialogContent showCloseButton={false} className="sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>{t.profile.completeTitle}</DialogTitle>
+                    <DialogDescription>{t.profile.completeDescription}</DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleCompleteProfileSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="registration-email">{t.profile.email}</Label>
                       <div className="flex gap-2">
                         <Input
-                          id="profile-email"
+                          id="registration-email"
                           type="email"
                           value={email}
                           onChange={(event) => setEmail(event.target.value)}
@@ -155,25 +170,85 @@ export default function ProfilePage() {
                           {isSendingCode ? t.profile.sendingCode : t.profile.sendCode}
                         </Button>
                       </div>
-                    ) : (
-                      <Input id="profile-email" value={profile.email || t.common.unknown} disabled />
-                    )}
-                    {codeError && <p className="text-xs text-destructive">{codeError}</p>}
-                  </div>
-                  {needsEmailCompletion && (
+                      {codeError && <p className="text-xs text-destructive">{codeError}</p>}
+                    </div>
                     <div className="space-y-2">
-                      <Label htmlFor="profile-verification-code">
+                      <Label htmlFor="registration-verification-code">
                         {t.profile.verificationCode}
                       </Label>
                       <Input
-                        id="profile-verification-code"
+                        id="registration-verification-code"
                         value={verificationCode}
                         onChange={(event) => setVerificationCode(event.target.value)}
                         inputMode="numeric"
                         autoComplete="one-time-code"
                       />
                     </div>
-                  )}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="registration-password">{t.profile.password}</Label>
+                        <Input
+                          id="registration-password"
+                          type="password"
+                          value={password}
+                          onChange={(event) => setPassword(event.target.value)}
+                          autoComplete="new-password"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="registration-confirm-password">
+                          {t.profile.confirmPassword}
+                        </Label>
+                        <Input
+                          id="registration-confirm-password"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(event) => setConfirmPassword(event.target.value)}
+                          autoComplete="new-password"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t.profile.passwordBindingHint}</p>
+                    {completionError && (
+                      <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                        {completionError}
+                      </div>
+                    )}
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={logout}>
+                        <LogOut className="h-4 w-4" />
+                        {t.common.signOut}
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={
+                          completeProfile.isPending
+                          || !email.trim()
+                          || !verificationCode.trim()
+                          || !password
+                          || !confirmPassword
+                        }
+                      >
+                        {completeProfile.isPending && (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        )}
+                        {t.profile.completeRegistration}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+
+              <form onSubmit={handleSubmit} className="rounded-md border p-5">
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-username">{t.profile.username}</Label>
+                    <Input id="profile-username" value={profile.username} disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-email">{t.profile.email}</Label>
+                    <Input id="profile-email" value={profile.email || t.common.unknown} disabled />
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="display-name">{t.profile.displayName}</Label>
                     <Input
@@ -241,15 +316,9 @@ export default function ProfilePage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={
-                      updateProfile.isPending
-                      || completeProfile.isPending
-                      || (needsEmailCompletion && (!email.trim() || !verificationCode.trim()))
-                    }
+                    disabled={updateProfile.isPending || needsEmailCompletion}
                   >
-                    {(updateProfile.isPending || completeProfile.isPending) && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )}
+                    {updateProfile.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                     {t.common.save}
                   </Button>
                 </div>

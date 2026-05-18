@@ -156,6 +156,7 @@ async def test_complete_profile_binds_wechat_identity_to_existing_email_user(
     request = CompleteProfileRequest(
         email="USER@example.com",
         verification_code="123456",
+        password="ignored-password",
     )
     http_request = SimpleNamespace(headers={"Authorization": "Bearer test-token"})
 
@@ -173,8 +174,11 @@ async def test_complete_profile_binds_wechat_identity_to_existing_email_user(
     )
     mock_update_user.assert_awaited_once()
     assert mock_update_user.await_args.args[0] == "app_user:email_user"
-    assert mock_update_user.await_args.args[1]["wechat_openid"] == "openid-1"
-    assert mock_update_user.await_args.args[1]["wechat_unionid"] == "unionid-1"
+    bind_updates = mock_update_user.await_args.args[1]
+    assert bind_updates["wechat_openid"] == "openid-1"
+    assert bind_updates["wechat_unionid"] == "unionid-1"
+    assert "hashed_password" not in bind_updates
+    assert "password_changed_at" not in bind_updates
     mock_delete_user.assert_awaited_once_with("app_user:wx_openid")
     mock_create_token.assert_called_once_with(
         "user@example.com",
@@ -185,6 +189,7 @@ async def test_complete_profile_binds_wechat_identity_to_existing_email_user(
 
 @pytest.mark.asyncio
 @patch("api.routers.auth.create_jwt_token")
+@patch("api.routers.auth.hash_password")
 @patch("api.routers.auth.verify_code", new_callable=AsyncMock)
 @patch("api.routers.auth.UserRepository.update_user", new_callable=AsyncMock)
 @patch("api.routers.auth.UserRepository.get_user_by_email", new_callable=AsyncMock)
@@ -196,6 +201,7 @@ async def test_complete_profile_sets_email_for_new_wechat_user(
     mock_get_by_email,
     mock_update_user,
     mock_verify_code,
+    mock_hash_password,
     mock_create_token,
 ):
     current_user = {
@@ -220,11 +226,13 @@ async def test_complete_profile_sets_email_for_new_wechat_user(
     mock_verify_code.return_value = (True, "Code verified")
     mock_get_by_email.return_value = None
     mock_update_user.return_value = [completed_user]
+    mock_hash_password.return_value = "hashed-new-password"
     mock_create_token.return_value = "wechat-user-token"
 
     request = CompleteProfileRequest(
         email="new@example.com",
         verification_code="654321",
+        password="new-password",
     )
     http_request = SimpleNamespace(headers={"Authorization": "Bearer test-token"})
 
@@ -235,7 +243,55 @@ async def test_complete_profile_sets_email_for_new_wechat_user(
     assert response.token == "wechat-user-token"
     assert response.user.username == "wx_openid"
     assert response.user.email == "new@example.com"
-    mock_update_user.assert_awaited_once_with(
-        "app_user:wx_openid",
-        {"email": "new@example.com"},
+    mock_hash_password.assert_called_once_with("new-password")
+    mock_update_user.assert_awaited_once()
+    args = mock_update_user.await_args.args
+    assert args[0] == "app_user:wx_openid"
+    assert args[1]["email"] == "new@example.com"
+    assert args[1]["hashed_password"] == "hashed-new-password"
+    assert args[1]["password_changed_at"]
+
+
+@pytest.mark.asyncio
+@patch("api.routers.auth.verify_code", new_callable=AsyncMock)
+@patch("api.routers.auth.UserRepository.update_user", new_callable=AsyncMock)
+@patch("api.routers.auth.UserRepository.get_user_by_email", new_callable=AsyncMock)
+@patch("api.routers.auth.find_user_by_username", new_callable=AsyncMock)
+@patch("api.routers.auth.validate_jwt_token", new_callable=AsyncMock)
+async def test_complete_profile_requires_password_for_new_wechat_user(
+    mock_validate_token,
+    mock_find_user,
+    mock_get_by_email,
+    mock_update_user,
+    mock_verify_code,
+):
+    current_user = {
+        "id": "app_user:wx_openid",
+        "username": "wx_openid",
+        "email": None,
+        "display_name": "WeChat User",
+        "login_provider": "wechat",
+        "wechat_openid": "openid-1",
+        "wechat_unionid": None,
+        "role": "user",
+        "status": "active",
+        "created": "2026-05-05T00:00:00Z",
+        "updated": "2026-05-05T00:00:00Z",
+    }
+    mock_validate_token.return_value = {"username": "wx_openid"}
+    mock_find_user.return_value = current_user
+    mock_verify_code.return_value = (True, "Code verified")
+    mock_get_by_email.return_value = None
+
+    request = CompleteProfileRequest(
+        email="new@example.com",
+        verification_code="654321",
     )
+    http_request = SimpleNamespace(headers={"Authorization": "Bearer test-token"})
+
+    with pytest.raises(Exception) as exc_info:
+        await complete_current_user_profile(request, http_request)
+
+    assert getattr(exc_info.value, "status_code", None) == 400
+    assert getattr(exc_info.value, "detail", None) == "Password must be at least 6 characters long"
+    mock_update_user.assert_not_awaited()

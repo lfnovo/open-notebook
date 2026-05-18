@@ -218,6 +218,11 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ### [OpenAI-Compatible Providers](openai-compatible.md)
 - LM Studio, vLLM, Text Generation WebUI
 - Connection configuration
+
+### [Video Understanding](video-understanding.md)
+- Configure the `video_understanding` model slot
+- Understand current provider scope and fallbacks
+- Enable visual-semantic enrichment for video sources
 - Docker networking
 - Troubleshooting
 

@@ -14,6 +14,11 @@ from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
+from open_notebook.multimodal.detector import is_video_source
+from open_notebook.multimodal.registry import get_video_understanding_provider
+from open_notebook.multimodal.renderers.video_markdown import (
+    render_video_understanding_markdown,
+)
 
 
 class SourceState(TypedDict):
@@ -24,6 +29,7 @@ class SourceState(TypedDict):
     source: Source
     transformation: Annotated[list, operator.add]
     embed: bool
+    video_understanding: Optional[dict]
 
 
 class TransformationState(TypedDict):
@@ -59,6 +65,8 @@ async def content_process(state: SourceState) -> dict:
     )
     content_state["output_format"] = "markdown"
 
+    video_model: Optional[Model] = None
+
     # Add speech-to-text model configuration from Default Models
     try:
         model_manager = ModelManager()
@@ -71,6 +79,7 @@ async def content_process(state: SourceState) -> dict:
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
+        video_model = await model_manager.get_video_understanding_model_config()
     except Exception as e:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)
@@ -91,7 +100,36 @@ async def content_process(state: SourceState) -> dict:
             "The content may be empty, inaccessible, or in an unsupported format."
         )
 
-    return {"content_state": processed_state}
+    response: dict[str, Any] = {"content_state": processed_state}
+
+    if video_model and is_video_source(
+        url=processed_state.url, file_path=processed_state.file_path
+    ):
+        try:
+            provider = await get_video_understanding_provider(video_model)
+            result = await provider.analyze(
+                dict_to_video_input(processed_state, source_id=state["source_id"])
+            )
+            markdown = render_video_understanding_markdown(result)
+            merged_content = processed_state.content.rstrip()
+            if merged_content:
+                merged_content = f"{merged_content}\n\n{markdown}"
+            else:
+                merged_content = markdown
+            processed_state.content = merged_content
+            response["video_understanding"] = {
+                "normalized": result.model_dump(exclude={"raw_response"}),
+                "raw_output": result.raw_response,
+                "rendered_markdown": markdown,
+            }
+        except ValueError as e:
+            logger.info(f"Video understanding skipped for source {state['source_id']}: {e}")
+        except Exception as e:
+            logger.warning(
+                f"Video understanding failed for source {state['source_id']}: {e}"
+            )
+
+    return response
 
 
 async def save_source(state: SourceState) -> dict:
@@ -111,6 +149,19 @@ async def save_source(state: SourceState) -> dict:
         source.title = content_state.title
 
     await source.save()
+
+    analysis_data = state.get("video_understanding")
+    if analysis_data:
+        normalized_output = analysis_data.get("normalized", {})
+        await source.save_analysis(
+            capability="video_understanding",
+            provider=normalized_output.get("provider", "unknown"),
+            model=normalized_output.get("model", "unknown"),
+            status="completed",
+            normalized_output=normalized_output,
+            raw_output=analysis_data.get("raw_output"),
+            rendered_markdown=analysis_data.get("rendered_markdown"),
+        )
 
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness
     # No need to create them here to avoid duplicate edges
@@ -185,3 +236,15 @@ workflow.add_edge("transform_content", END)
 
 # Compile the graph
 source_graph = workflow.compile()
+
+
+def dict_to_video_input(processed_state: ProcessSourceState, source_id: str):
+    from open_notebook.multimodal.types import VideoUnderstandingInput
+
+    return VideoUnderstandingInput(
+        source_id=source_id,
+        title=processed_state.title,
+        url=processed_state.url,
+        file_path=processed_state.file_path,
+        transcript_markdown=processed_state.content,
+    )

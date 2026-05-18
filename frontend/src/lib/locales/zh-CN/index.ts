@@ -855,6 +855,8 @@ export const zhCN = {
     ttsModelDesc: "用于生成播客",
     sttModelLabel: "语音转文字模型",
     sttModelDesc: "用于音频转录",
+    videoModelLabel: "视频理解模型",
+    videoModelDesc: "用于为视频来源增加视觉语义分析",
     embeddingChangeTitle: "嵌入模型变更",
     embeddingChangeConfirm: "您即将将嵌入模型从 {from} 更改为 {to}。",
     rebuildRequired: "重要提示：需要重建索引",

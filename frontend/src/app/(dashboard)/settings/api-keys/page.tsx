@@ -19,7 +19,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
-  RefreshCw,
   Key,
   ShieldAlert,
   AlertTriangle,
@@ -37,6 +36,7 @@ import {
   Mic,
   Volume2,
   Bot,
+  Film,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useModels, useDeleteModel, useModelDefaults, useUpdateModelDefaults, useAutoAssignDefaults, useTestModel } from '@/lib/hooks/use-models'
@@ -51,14 +51,13 @@ import {
   useTestCredential,
   useDiscoverModels,
   useRegisterModels,
-  useMigrateFromEnv,
 } from '@/lib/hooks/use-credentials'
 import { Credential, CreateCredentialRequest, UpdateCredentialRequest, DiscoveredModel } from '@/lib/api/credentials'
 import { Model, ModelDefaults } from '@/lib/types/models'
 import { MigrationBanner, ModelTestResultDialog } from '@/components/settings'
 import { EmbeddingModelChangeDialog } from '@/components/settings/EmbeddingModelChangeDialog'
 
-type ModelType = 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+type ModelType = 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text' | 'video_understanding'
 
 // Provider display names
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -102,7 +101,7 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   ollama: ['language', 'embedding'],
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
-  openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text', 'video_understanding'],
   dashscope: ['language'],
   minimax: ['language'],
 }
@@ -131,6 +130,7 @@ const TYPE_ICONS: Record<ModelType, React.ReactNode> = {
   embedding: <Code className="h-3 w-3" />,
   text_to_speech: <Volume2 className="h-3 w-3" />,
   speech_to_text: <Mic className="h-3 w-3" />,
+  video_understanding: <Film className="h-3 w-3" />,
 }
 
 const TYPE_COLORS: Record<ModelType, string> = {
@@ -138,6 +138,7 @@ const TYPE_COLORS: Record<ModelType, string> = {
   embedding: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
   text_to_speech: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   speech_to_text: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  video_understanding: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
 const TYPE_COLOR_INACTIVE = 'bg-muted text-muted-foreground opacity-50'
@@ -147,6 +148,7 @@ const TYPE_LABELS: Record<ModelType, string> = {
   embedding: 'Embedding',
   text_to_speech: 'TTS',
   speech_to_text: 'STT',
+  video_understanding: 'Video',
 }
 
 // =============================================================================
@@ -783,6 +785,7 @@ function CredentialItem({
       'Embedding': defaults.default_embedding_model,
       'TTS': defaults.default_text_to_speech_model,
       'STT': defaults.default_speech_to_text_model,
+      'Video': defaults.default_video_understanding_model,
     }
     for (const [slot, modelId] of Object.entries(slotMap)) {
       if (modelId) defaultSlots[modelId] = slot
@@ -866,7 +869,7 @@ function CredentialItem({
         {/* Linked models grouped by type */}
         {linkedModels.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            {(['language', 'embedding', 'text_to_speech', 'speech_to_text'] as ModelType[])
+            {(['language', 'embedding', 'text_to_speech', 'speech_to_text', 'video_understanding'] as ModelType[])
               .filter(type => linkedModels.some(m => m.type === type))
               .map(type => (
                 <div key={type} className="flex items-start gap-1.5">
@@ -1102,6 +1105,7 @@ function DefaultModelSelectors({
     { key: 'default_embedding_model', label: t('models.embeddingModelLabel'), description: t('models.embeddingModelDesc'), modelType: 'embedding', required: true, id: `${generatedId}-embed` },
     { key: 'default_text_to_speech_model', label: t('models.ttsModelLabel'), description: t('models.ttsModelDesc'), modelType: 'text_to_speech', id: `${generatedId}-tts` },
     { key: 'default_speech_to_text_model', label: t('models.sttModelLabel'), description: t('models.sttModelDesc'), modelType: 'speech_to_text', id: `${generatedId}-stt` },
+    { key: 'default_video_understanding_model', label: t('models.videoModelLabel'), description: t('models.videoModelDesc'), modelType: 'video_understanding', id: `${generatedId}-video` },
   ]
 
   const advancedConfigs: DefaultConfig[] = [

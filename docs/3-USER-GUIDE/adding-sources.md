@@ -63,6 +63,8 @@ Sources are the raw materials of your research. This guide covers how to add dif
 
 **Automatic transcription**: Audio/video is transcribed to text automatically. This requires enabling speech-to-text in settings.
 
+**Optional video understanding**: If you configure a default `video_understanding` model, supported video URLs can also be enriched with visual-semantic analysis during ingestion.
+
 ### Web Content
 - **Articles**: Blog posts, news articles, Medium
 - **YouTube**: Full videos or playlists
@@ -89,15 +91,19 @@ The system automatically does four things:
    (PDFs get OCR if scanned)
    (Videos get transcribed if enabled)
 
-2. BREAK INTO CHUNKS
+2. OPTIONAL VIDEO ANALYSIS
+   Supported video URLs → Structured visual analysis
+   (Only when a default video-understanding model is configured)
+
+3. BREAK INTO CHUNKS
    Long text → ~500-word pieces
    (So search finds specific parts, not whole document)
 
-3. CREATE EMBEDDINGS
+4. CREATE EMBEDDINGS
    Each chunk → Vector representation
    (Enables semantic/concept search)
 
-4. INDEX & STORE
+5. INDEX & STORE
    Everything → Database
    (Ready to search and retrieve)
 ```

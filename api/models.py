@@ -66,7 +66,7 @@ class ModelCreate(BaseModel):
     )
     type: str = Field(
         ...,
-        description="Model type (language, embedding, text_to_speech, speech_to_text)",
+        description="Model type (language, embedding, text_to_speech, speech_to_text, video_understanding)",
     )
     credential: Optional[str] = Field(
         None, description="Credential ID to link this model to"
@@ -89,6 +89,7 @@ class DefaultModelsResponse(BaseModel):
     large_context_model: Optional[str] = None
     default_text_to_speech_model: Optional[str] = None
     default_speech_to_text_model: Optional[str] = None
+    default_video_understanding_model: Optional[str] = None
     default_embedding_model: Optional[str] = None
     default_tools_model: Optional[str] = None
 

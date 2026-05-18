@@ -855,6 +855,8 @@ export const itIT = {
     ttsModelDesc: "Usato per la generazione podcast",
     sttModelLabel: "Modello Speech-to-Text",
     sttModelDesc: "Usato per la trascrizione audio",
+    videoModelLabel: "Modello di comprensione video",
+    videoModelDesc: "Usato per arricchire le fonti video con analisi visiva e semantica",
     embeddingChangeTitle: "Cambio modello di embedding",
     embeddingChangeConfirm: "Stai per cambiare il modello di embedding da {from} a {to}.",
     rebuildRequired: "Importante: ricostruzione richiesta",

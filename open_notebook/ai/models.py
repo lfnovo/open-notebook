@@ -66,6 +66,7 @@ class DefaultModels(RecordModel):
     large_context_model: Optional[str] = None
     default_text_to_speech_model: Optional[str] = None
     default_speech_to_text_model: Optional[str] = None
+    default_video_understanding_model: Optional[str] = None
     # default_vision_model: Optional[str]
     default_embedding_model: Optional[str] = None
     default_tools_model: Optional[str] = None
@@ -217,6 +218,18 @@ class ModelManager:
             f"Expected EmbeddingModel but got {type(model)}"
         )
         return model
+
+    async def get_video_understanding_model_config(self) -> Optional[Model]:
+        """Get the configured default video understanding model record."""
+        defaults = await self.get_defaults()
+        model_id = defaults.default_video_understanding_model
+        if not model_id:
+            return None
+        try:
+            return await Model.get(model_id)
+        except Exception as e:
+            logger.error(f"Failed to load video understanding model '{model_id}': {e}")
+            return None
 
     async def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:
         """

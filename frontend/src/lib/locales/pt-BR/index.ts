@@ -855,6 +855,8 @@ export const ptBR = {
     ttsModelDesc: "Usado para geração de podcast",
     sttModelLabel: "Modelo Speech-to-Text",
     sttModelDesc: "Usado para transcrição de áudio",
+    videoModelLabel: "Modelo de entendimento de vídeo",
+    videoModelDesc: "Usado para enriquecer fontes de vídeo com análise visual e semântica",
     embeddingChangeTitle: "Alteração de Modelo de Embedding",
     embeddingChangeConfirm: "Você está prestes a alterar seu modelo de embedding de {from} para {to}.",
     rebuildRequired: "Importante: Reconstrução Necessária",

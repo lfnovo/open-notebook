@@ -856,6 +856,8 @@ export const enUS = {
     ttsModelDesc: "Used for podcast generation",
     sttModelLabel: "Speech-to-Text Model",
     sttModelDesc: "Used for audio transcription",
+    videoModelLabel: "Video Understanding Model",
+    videoModelDesc: "Used to enrich video sources with visual-semantic analysis",
     embeddingChangeTitle: "Embedding Model Change",
     embeddingChangeConfirm: "You are about to change your embedding model from {from} to {to}.",
     rebuildRequired: "Important: Rebuild Required",

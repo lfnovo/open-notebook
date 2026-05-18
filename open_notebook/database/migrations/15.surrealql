@@ -1,0 +1,11 @@
+-- Migration 15: structured source analyses for multimodal capabilities
+
+DEFINE TABLE IF NOT EXISTS source_analysis SCHEMALESS;
+DEFINE FIELD IF NOT EXISTS source ON TABLE source_analysis TYPE record<source>;
+DEFINE FIELD IF NOT EXISTS capability ON TABLE source_analysis TYPE string;
+DEFINE FIELD IF NOT EXISTS provider ON TABLE source_analysis TYPE string;
+DEFINE FIELD IF NOT EXISTS model ON TABLE source_analysis TYPE string;
+DEFINE FIELD IF NOT EXISTS status ON TABLE source_analysis TYPE string;
+DEFINE FIELD IF NOT EXISTS raw_output ON TABLE source_analysis TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS normalized_output ON TABLE source_analysis TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS rendered_markdown ON TABLE source_analysis TYPE option<string>;

@@ -75,7 +75,13 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "ollama": ["language", "embedding"],
     "vertex": ["language", "embedding"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "openai_compatible": [
+        "language",
+        "embedding",
+        "speech_to_text",
+        "text_to_speech",
+        "video_understanding",
+    ],
     "dashscope": ["language"],
     "minimax": ["language"],
 }

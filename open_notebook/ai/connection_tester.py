@@ -381,6 +381,15 @@ async def test_individual_model(model) -> Tuple[bool, str]:
     from open_notebook.ai.models import ModelManager
 
     try:
+        if model.type == "video_understanding":
+            from open_notebook.multimodal.registry import (
+                get_video_understanding_provider,
+            )
+
+            provider = await get_video_understanding_provider(model)
+            provider_name = getattr(provider, "__class__", type(provider)).__name__
+            return True, f"Video understanding adapter ready: {provider_name}"
+
         manager = ModelManager()
         esp_model = await manager.get_model(model.id)
 

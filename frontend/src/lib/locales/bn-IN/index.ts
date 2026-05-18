@@ -856,6 +856,8 @@ export const bnIN = {
     ttsModelDesc: "পডকাস্ট তৈরির জন্য ব্যবহৃত",
     sttModelLabel: "স্পিচ-টু-টেক্সট মডেল",
     sttModelDesc: "অডিও ট্রান্সক্রিপশনের জন্য ব্যবহৃত",
+    videoModelLabel: "ভিডিও আন্ডারস্ট্যান্ডিং মডেল",
+    videoModelDesc: "ভিডিও সোর্সে ভিজ্যুয়াল-সেম্যান্টিক বিশ্লেষণ যোগ করতে ব্যবহৃত হয়",
     embeddingChangeTitle: "এমবেডিং মডেল পরিবর্তন",
     embeddingChangeConfirm: "আপনি আপনার এমবেডিং মডেল {from} থেকে {to} তে পরিবর্তন করতে যাচ্ছেন।",
     rebuildRequired: "গুরুত্বপূর্ণ: পুনর্নির্মাণ প্রয়োজন",

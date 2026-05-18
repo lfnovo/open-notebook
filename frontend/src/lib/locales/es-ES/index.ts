@@ -856,6 +856,8 @@ export const esES = {
     ttsModelDesc: "Usado para generación de podcasts",
     sttModelLabel: "Modelo de voz a texto",
     sttModelDesc: "Usado para transcripción de audio",
+    videoModelLabel: "Modelo de comprensión de video",
+    videoModelDesc: "Usado para enriquecer fuentes de video con análisis visual y semántico",
     embeddingChangeTitle: "Cambio de modelo de embedding",
     embeddingChangeConfirm: "Estás a punto de cambiar tu modelo de embedding de {from} a {to}.",
     rebuildRequired: "Importante: Reconstrucción requerida",

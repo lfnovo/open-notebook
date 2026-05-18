@@ -1,0 +1,3 @@
+-- Migration 15 rollback: remove structured source analyses
+
+REMOVE TABLE IF EXISTS source_analysis;

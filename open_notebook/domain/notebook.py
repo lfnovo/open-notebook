@@ -10,6 +10,7 @@ from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
+from open_notebook.domain.source_analysis import SourceAnalysis
 from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
 
 
@@ -403,6 +404,45 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError("Failed to fetch insights for source")
 
+    async def get_analyses(self, capability: Optional[str] = None) -> List[SourceAnalysis]:
+        try:
+            query = "SELECT * FROM source_analysis WHERE source=$id"
+            params = {"id": ensure_record_id(self.id)}
+            if capability:
+                query += " AND capability=$capability"
+                params["capability"] = capability
+            query += " ORDER BY updated DESC"
+            result = await repo_query(query, params)
+            return [SourceAnalysis(**analysis) for analysis in result]
+        except Exception as e:
+            logger.error(f"Error fetching analyses for source {self.id}: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError("Failed to fetch analyses for source")
+
+    async def save_analysis(
+        self,
+        *,
+        capability: str,
+        provider: str,
+        model: str,
+        status: str,
+        normalized_output: Optional[Dict[str, Any]] = None,
+        raw_output: Optional[Dict[str, Any]] = None,
+        rendered_markdown: Optional[str] = None,
+    ) -> SourceAnalysis:
+        analysis = SourceAnalysis(
+            source=str(self.id),
+            capability=capability,
+            provider=provider,
+            model=model,
+            status=status,
+            normalized_output=normalized_output,
+            raw_output=raw_output,
+            rendered_markdown=rendered_markdown,
+        )
+        await analysis.save()
+        return analysis
+
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
@@ -541,6 +581,10 @@ class Source(ObjectModel):
             )
             await repo_query(
                 "DELETE source_insight WHERE source = $source_id",
+                {"source_id": source_id},
+            )
+            await repo_query(
+                "DELETE source_analysis WHERE source = $source_id",
                 {"source_id": source_id},
             )
             logger.debug(f"Deleted embeddings and insights for source {self.id}")

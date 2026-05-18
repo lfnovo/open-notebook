@@ -13,7 +13,6 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.domain.credential import Credential
 from open_notebook.ai.connection_tester import test_individual_model
 from open_notebook.ai.key_provider import provision_provider_keys
 from open_notebook.ai.model_discovery import (
@@ -23,6 +22,7 @@ from open_notebook.ai.model_discovery import (
     sync_provider_models,
 )
 from open_notebook.ai.models import DefaultModels, Model
+from open_notebook.domain.credential import Credential
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
@@ -199,7 +199,13 @@ async def create_model(model_data: ModelCreate):
     """Create a new model configuration."""
     try:
         # Validate model type
-        valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
+        valid_types = [
+            "language",
+            "embedding",
+            "text_to_speech",
+            "speech_to_text",
+            "video_understanding",
+        ]
         if model_data.type not in valid_types:
             raise HTTPException(
                 status_code=400,
@@ -302,6 +308,7 @@ async def get_default_models():
             large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
             default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_video_understanding_model=defaults.default_video_understanding_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
@@ -335,6 +342,10 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             defaults.default_speech_to_text_model = (
                 defaults_data.default_speech_to_text_model
             )  # type: ignore[attr-defined]
+        if defaults_data.default_video_understanding_model is not None:
+            defaults.default_video_understanding_model = (
+                defaults_data.default_video_understanding_model
+            )  # type: ignore[attr-defined]
         if defaults_data.default_embedding_model is not None:
             defaults.default_embedding_model = defaults_data.default_embedding_model  # type: ignore[attr-defined]
         if defaults_data.default_tools_model is not None:
@@ -350,6 +361,7 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
             default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_video_understanding_model=defaults.default_video_understanding_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
@@ -714,6 +726,7 @@ async def auto_assign_defaults():
             "embedding": [],
             "text_to_speech": [],
             "speech_to_text": [],
+            "video_understanding": [],
         }
 
         for model in all_models:
@@ -730,6 +743,7 @@ async def auto_assign_defaults():
             ("default_embedding_model", "embedding", defaults.default_embedding_model),  # type: ignore[attr-defined]
             ("default_text_to_speech_model", "text_to_speech", defaults.default_text_to_speech_model),  # type: ignore[attr-defined]
             ("default_speech_to_text_model", "speech_to_text", defaults.default_speech_to_text_model),  # type: ignore[attr-defined]
+            ("default_video_understanding_model", "video_understanding", defaults.default_video_understanding_model),  # type: ignore[attr-defined]
         ]
 
         assigned: Dict[str, str] = {}

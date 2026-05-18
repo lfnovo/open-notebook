@@ -219,6 +219,16 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 
 *Supports LM Studio and any OpenAI-compatible endpoint
 
+### Video Understanding
+
+Open Notebook now includes a first-class `video_understanding` model slot for enriching video sources with visual-semantic analysis during ingestion.
+
+- The current adapter is provider-neutral at the architecture level and currently targets **OpenAI-compatible** video-understanding endpoints as the first implementation.
+- Structured analysis is stored separately and rendered back into Markdown so existing search, embeddings, and chat flows remain compatible.
+- If no video-understanding model is configured, video sources continue to use the existing transcript-first flow.
+
+See [docs/5-CONFIGURATION/video-understanding.md](docs/5-CONFIGURATION/video-understanding.md) for setup details.
+
 ## ✨ Key Features
 
 ### Core Capabilities

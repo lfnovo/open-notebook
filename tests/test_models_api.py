@@ -115,6 +115,26 @@ class TestModelCreation:
             # Should succeed because type is different
             assert response.status_code == 200
 
+    @pytest.mark.asyncio
+    @patch("open_notebook.database.repository.repo_query")
+    async def test_create_video_understanding_model(self, mock_repo_query, client):
+        """Test that video_understanding is accepted as a model type."""
+        from open_notebook.ai.models import Model
+
+        mock_repo_query.return_value = []
+
+        with patch.object(Model, "save", new_callable=AsyncMock):
+            response = client.post(
+                "/api/models",
+                json={
+                    "name": "ep-video",
+                    "provider": "openai_compatible",
+                    "type": "video_understanding",
+                },
+            )
+
+            assert response.status_code == 200
+
 
 class TestModelsProviderAvailability:
     """Test suite for Models Provider Availability endpoint."""

@@ -86,26 +86,13 @@ async def content_process(state: SourceState) -> dict:
         # Continue without custom audio model (content-core will use its default)
 
     processed_state = await extract_content(content_state)
-
-    if not processed_state.content or not processed_state.content.strip():
-        url = processed_state.url or ""
-        if url and ("youtube.com" in url or "youtu.be" in url):
-            raise ValueError(
-                "Could not extract content from this YouTube video. "
-                "No transcript or subtitles are available. "
-                "Try configuring a Speech-to-Text model in Settings "
-                "to transcribe the audio instead."
-            )
-        raise ValueError(
-            "Could not extract any text content from this source. "
-            "The content may be empty, inaccessible, or in an unsupported format."
-        )
-
     response: dict[str, Any] = {"content_state": processed_state}
-
-    if video_model and is_video_source(
+    is_video = is_video_source(
         url=processed_state.url, file_path=processed_state.file_path
-    ):
+    )
+    has_text_content = bool(processed_state.content and processed_state.content.strip())
+
+    if video_model and is_video:
         try:
             provider = await get_video_understanding_provider(video_model)
             result = await provider.analyze(
@@ -129,6 +116,31 @@ async def content_process(state: SourceState) -> dict:
             logger.warning(
                 f"Video understanding failed for source {state['source_id']}: {e}"
             )
+
+    if not processed_state.content or not processed_state.content.strip():
+        url = processed_state.url or ""
+        if is_video and video_model:
+            raise ValueError(
+                "Could not extract any usable content from this video source. "
+                "Transcript extraction returned no text and video understanding "
+                "did not produce analysis output."
+            )
+        if url and ("youtube.com" in url or "youtu.be" in url):
+            raise ValueError(
+                "Could not extract content from this YouTube video. "
+                "No transcript or subtitles are available. "
+                "Try configuring a Speech-to-Text model in Settings "
+                "to transcribe the audio instead."
+            )
+        if is_video and not has_text_content:
+            raise ValueError(
+                "Could not extract any text content from this video source. "
+                "Configure Speech-to-Text or a Video Understanding model and try again."
+            )
+        raise ValueError(
+            "Could not extract any text content from this source. "
+            "The content may be empty, inaccessible, or in an unsupported format."
+        )
 
     return response
 

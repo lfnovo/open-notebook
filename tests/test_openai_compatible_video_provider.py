@@ -100,3 +100,26 @@ async def test_openai_compatible_video_provider_test_connection(mock_client_cls)
 
     assert success is True
     assert "Connected." in message
+
+
+@pytest.mark.asyncio
+@patch("open_notebook.multimodal.providers.openai_compatible_video.httpx.AsyncClient")
+async def test_openai_compatible_video_provider_test_connection_fails_when_model_missing(
+    mock_client_cls,
+):
+    mock_response = MagicMock(status_code=200)
+    mock_response.json.return_value = {"data": [{"id": "other-model"}]}
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_client_cls.return_value.__aenter__.return_value = mock_client
+
+    provider = OpenAICompatibleVideoProvider(
+        model_name="video-model",
+        base_url="https://example.com/v1",
+        api_key="secret",
+    )
+    success, message = await provider.test_connection()
+
+    assert success is False
+    assert "video-model" in message

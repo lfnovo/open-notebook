@@ -60,6 +60,58 @@ async def test_content_process_merges_video_understanding_markdown(
 
 
 @pytest.mark.asyncio
+@patch("open_notebook.graphs.source.get_video_understanding_provider", new_callable=AsyncMock)
+@patch("open_notebook.graphs.source.ModelManager.get_video_understanding_model_config", new_callable=AsyncMock)
+@patch("open_notebook.graphs.source.ModelManager.get_defaults", new_callable=AsyncMock)
+@patch("open_notebook.graphs.source.extract_content", new_callable=AsyncMock)
+async def test_content_process_allows_video_understanding_without_transcript(
+    mock_extract_content,
+    mock_get_defaults,
+    mock_get_video_model,
+    mock_get_provider,
+):
+    mock_get_defaults.return_value = SimpleNamespace(
+        default_speech_to_text_model=None
+    )
+    mock_extract_content.return_value = SimpleNamespace(
+        content="",
+        url="https://cdn.example.com/video.mp4",
+        file_path=None,
+        title="Demo",
+    )
+    mock_get_video_model.return_value = SimpleNamespace(
+        id="model:123",
+        name="video-model",
+        provider="openai_compatible",
+        credential=None,
+    )
+    mock_provider = AsyncMock()
+    mock_provider.analyze.return_value = VideoUnderstandingResult(
+        summary="Video-only summary",
+        key_events=["Important scene"],
+        provider="openai_compatible",
+        model="video-model",
+    )
+    mock_get_provider.return_value = mock_provider
+
+    result = await content_process(
+        {
+            "content_state": {"url": "https://cdn.example.com/video.mp4"},
+            "apply_transformations": [],
+            "source_id": "source:1",
+            "notebook_ids": [],
+            "source": None,
+            "transformation": [],
+            "embed": False,
+            "video_understanding": None,
+        }
+    )
+
+    assert "Video-only summary" in result["content_state"].content
+    mock_provider.analyze.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 @patch("open_notebook.graphs.source.Source.get", new_callable=AsyncMock)
 async def test_save_source_persists_video_analysis(mock_source_get):
     source = SimpleNamespace(

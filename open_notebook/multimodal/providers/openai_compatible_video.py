@@ -76,7 +76,15 @@ class OpenAICompatibleVideoProvider(VideoUnderstandingProvider):
                 data = response.json()
                 models = data.get("data", [])
                 if models:
-                    return True, f"Connected. {len(models)} models available."
+                    if any(
+                        model.get("id") == self.model_name
+                        for model in models
+                        if isinstance(model, dict)
+                    ):
+                        return True, f"Connected. {len(models)} models available."
+                    return False, (
+                        f"Connected but model '{self.model_name}' was not found on this provider."
+                    )
                 return True, "Connected successfully (no models listed)"
             if response.status_code == 401:
                 return False, "Invalid API key"

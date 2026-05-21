@@ -2,6 +2,8 @@
 
 Get Open Notebook running with **100% local AI** using Ollama. No cloud API keys needed, completely private.
 
+**Already have Ollama installed?** See [External Ollama Guide](quick-start-external-ollama.md) instead.
+
 ## Prerequisites
 
 1. **Docker Desktop** installed
@@ -257,8 +259,6 @@ docker exec open-notebook-local-ollama-1 ollama pull neural-chat
 3. **Full Documentation**: [See all features](../3-USER-GUIDE/index.md)
 4. **Scale Up**: Deploy to a server with better hardware for faster responses
 5. **Benchmark Models**: Try different models to find the speed/quality tradeoff you prefer
-
----
 
 ## Alternative: Using LM Studio Instead of Ollama
 

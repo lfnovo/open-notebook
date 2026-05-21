@@ -4,7 +4,7 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${SURREAL_HOST_PORT:-8000}:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:
@@ -13,14 +13,17 @@ services:
     pull_policy: always
 
   open_notebook:
-    image: lfnovo/open_notebook:v1-latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: open-notebook-local:dev
     ports:
-      - "8502:8502"  # Web UI
-      - "5055:5055"  # REST API
+      - "127.0.0.1:${OPEN_NOTEBOOK_WEB_PORT:-8502}:8502"  # Web UI
+      - "127.0.0.1:${OPEN_NOTEBOOK_API_PORT:-5055}:5055"  # REST API
     environment:
-      # REQUIRED: Change this to your own secret string
-      # This encrypts your API keys in the database
-      - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+      # REQUIRED: Provide this in .env to encrypt stored API credentials
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY}
+      - API_URL=http://localhost:${OPEN_NOTEBOOK_API_PORT:-5055}
 
       # Database connection (default values - no need to change)
       - SURREAL_URL=ws://surrealdb:8000/rpc
@@ -33,4 +36,3 @@ services:
     depends_on:
       - surrealdb
     restart: always
-    pull_policy: always

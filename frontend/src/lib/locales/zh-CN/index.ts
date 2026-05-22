@@ -28,6 +28,7 @@ export const zhCN = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "来源",
     notebook: "笔记本",
     podcast: "播客",

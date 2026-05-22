@@ -98,7 +98,7 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
           onClick={() => setLanguage('de-DE')}
           className={currentLang === 'de-DE' || currentLang.startsWith('de') ? 'bg-accent' : ''}
         >
-          <span>Deutsch</span>
+          <span>{t('common.german')}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

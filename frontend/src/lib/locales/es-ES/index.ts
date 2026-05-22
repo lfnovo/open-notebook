@@ -28,6 +28,7 @@ export const esES = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "Fuente",
     notebook: "Cuaderno",
     podcast: "Podcast",

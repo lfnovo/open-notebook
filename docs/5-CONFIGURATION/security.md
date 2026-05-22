@@ -287,6 +287,31 @@ iptables -A INPUT -p tcp --dport 5055 -j DROP
 
 See [Reverse Proxy Configuration](reverse-proxy.md) for complete nginx/Caddy/Traefik setup with HTTPS.
 
+### CORS Origins
+
+The API accepts cross-origin requests from any origin by default (`*`). This is convenient for development and diverse self-hosted setups, but it's not recommended for internet-facing production deployments because any website the user visits can issue authenticated cross-origin requests to your API.
+
+When `CORS_ORIGINS` is not set, the API logs a startup warning prompting you to configure it.
+
+**For production, set `CORS_ORIGINS` to your frontend's actual origin(s):**
+
+```bash
+# Single origin
+CORS_ORIGINS=https://notebook.example.com
+
+# Multiple origins (comma-separated)
+CORS_ORIGINS=https://notebook.example.com,https://admin.example.com
+```
+
+**Guidelines:**
+
+- Always use HTTPS origins in production.
+- List only the exact origins that should be allowed to call the API.
+- Include the scheme and port (if non-default): `https://example.com`, `http://192.168.1.10:3000`.
+- Changes require an API restart to take effect.
+
+**Error responses** (401, 404, 500, etc.) also respect the configured origins — they only include `Access-Control-Allow-Origin` for allowed origins, so error bodies are not leaked cross-origin when `CORS_ORIGINS` is configured.
+
 ---
 
 ## Security Limitations

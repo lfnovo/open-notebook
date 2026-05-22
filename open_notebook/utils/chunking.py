@@ -9,8 +9,8 @@ Key functions:
 - chunk_text(): Splits text into chunks using appropriate splitter for content type
 
 Environment Variables:
-    OPEN_NOTEBOOK_CHUNK_SIZE: Maximum chunk size in characters (default: 1200)
-    OPEN_NOTEBOOK_CHUNK_OVERLAP: Overlap between chunks in characters (default: 15% of CHUNK_SIZE)
+    OPEN_NOTEBOOK_CHUNK_SIZE: Maximum chunk size in tokens (default: 400)
+    OPEN_NOTEBOOK_CHUNK_OVERLAP: Overlap between chunks in tokens (default: 15% of CHUNK_SIZE)
 """
 
 import os
@@ -25,6 +25,8 @@ from langchain_text_splitters import (
     RecursiveCharacterTextSplitter,
 )
 from loguru import logger
+
+from .token_utils import token_count
 
 
 def _get_chunk_size() -> int:
@@ -44,14 +46,14 @@ def _get_chunk_size() -> int:
                     f"OPEN_NOTEBOOK_CHUNK_SIZE ({chunk_size}) is very large. "
                     f"This may cause issues with some embedding models."
                 )
-            logger.info(f"Using custom chunk size: {chunk_size} characters")
+            logger.info(f"Using custom chunk size: {chunk_size} tokens")
             return chunk_size
         except ValueError:
             logger.warning(
                 f"Invalid OPEN_NOTEBOOK_CHUNK_SIZE value: '{chunk_size_str}'. "
-                f"Using default: 1200"
+                f"Using default: 400"
             )
-    return 1200
+    return 400
 
 
 def _get_chunk_overlap(chunk_size: int) -> int:
@@ -72,7 +74,7 @@ def _get_chunk_overlap(chunk_size: int) -> int:
                     f"Using 15% of chunk size: {int(chunk_size * 0.15)}"
                 )
                 return int(chunk_size * 0.15)
-            logger.info(f"Using custom chunk overlap: {overlap} characters")
+            logger.info(f"Using custom chunk overlap: {overlap} tokens")
             return overlap
         except ValueError:
             logger.warning(
@@ -358,14 +360,14 @@ def _get_plain_splitter() -> RecursiveCharacterTextSplitter:
     return RecursiveCharacterTextSplitter(
         chunk_size=CHUNK_SIZE,
         chunk_overlap=CHUNK_OVERLAP,
-        length_function=len,
+        length_function=token_count,
         separators=["\n\n", "\n", ". ", ", ", " ", ""],
     )
 
 
 def _apply_secondary_chunking(chunks: List[str]) -> List[str]:
     """
-    Apply secondary chunking to ensure no chunk exceeds CHUNK_SIZE.
+    Apply secondary chunking to ensure no chunk exceeds CHUNK_SIZE tokens.
 
     Used when primary splitters (HTML/Markdown) produce oversized chunks.
     """
@@ -373,7 +375,7 @@ def _apply_secondary_chunking(chunks: List[str]) -> List[str]:
     secondary_splitter = _get_plain_splitter()
 
     for chunk in chunks:
-        if len(chunk) > CHUNK_SIZE:
+        if token_count(chunk) > CHUNK_SIZE:
             # Split oversized chunk
             sub_chunks = secondary_splitter.split_text(chunk)
             result.extend(sub_chunks)
@@ -397,13 +399,14 @@ def chunk_text(
         file_path: Optional file path for content type detection
 
     Returns:
-        List of text chunks, each <= CHUNK_SIZE characters
+        List of text chunks, each approximately <= CHUNK_SIZE tokens
     """
     if not text or not text.strip():
         return []
 
     # Short text doesn't need chunking
-    if len(text) <= CHUNK_SIZE:
+    text_tokens = token_count(text)
+    if text_tokens <= CHUNK_SIZE:
         return [text]
 
     # Detect content type if not provided
@@ -441,5 +444,5 @@ def chunk_text(
     # Filter out empty chunks
     chunks = [c.strip() for c in chunks if c and c.strip()]
 
-    logger.debug(f"Created {len(chunks)} chunks from {len(text)} characters")
+    logger.debug(f"Created {len(chunks)} chunks from {text_tokens} tokens")
     return chunks

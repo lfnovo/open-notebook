@@ -342,6 +342,15 @@ async def execute_chat(request: ExecuteChatRequest):
         if not session:
             raise HTTPException(status_code=404, detail="Session not found")
 
+        # Fetch notebook linked to this session
+        notebook_query = await repo_query(
+            "SELECT out FROM refers_to WHERE in = $session_id",
+            {"session_id": ensure_record_id(full_session_id)},
+        )
+        notebook = None
+        if notebook_query:
+            notebook = await Notebook.get(notebook_query[0]["out"])
+
         # Determine model override (per-request override takes precedence over session-level)
         model_override = (
             request.model_override
@@ -360,6 +369,7 @@ async def execute_chat(request: ExecuteChatRequest):
         state_values = current_state.values if current_state else {}
         state_values["messages"] = state_values.get("messages", [])
         state_values["context"] = request.context
+        state_values["notebook"] = notebook
         state_values["model_override"] = model_override
 
         # Add user message to state

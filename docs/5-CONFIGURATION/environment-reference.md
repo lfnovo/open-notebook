@@ -61,6 +61,33 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
+## Embeddings
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` | No | 50 | Number of texts sent per embedding batch. Lower this for CPU-only or stricter OpenAI-compatible embedding providers. |
+
+---
+
+## API / CORS
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `CORS_ORIGINS` | No | `*` | Comma-separated list of origins allowed to call the API (e.g. `https://app.example.com,https://www.example.com`). Default `*` accepts any origin; **for production, set this explicitly to your frontend origin(s)**. Changes require an API restart. The API logs a warning on startup when unset. |
+
+**When to change this**:
+- You access the UI at a custom domain (reverse proxy, HTTPS, public deployment).
+- The frontend runs on a different port than `3000`.
+- You serve the frontend from a different host than the API (e.g. CDN).
+
+Example for a production deployment behind a reverse proxy:
+
+```bash
+CORS_ORIGINS=https://notebook.example.com
+```
+
+---
+
 ## Text-to-Speech (TTS)
 
 | Variable | Required? | Default | Description |

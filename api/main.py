@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -12,16 +13,6 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
-from open_notebook.exceptions import (
-    AuthenticationError,
-    ConfigurationError,
-    ExternalServiceError,
-    InvalidInputError,
-    NetworkError,
-    NotFoundError,
-    OpenNotebookError,
-    RateLimitError,
-)
 from api.routers import (
     auth,
     chat,
@@ -46,7 +37,56 @@ from api.routers import (
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
+from open_notebook.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ExternalServiceError,
+    InvalidInputError,
+    NetworkError,
+    NotFoundError,
+    OpenNotebookError,
+    RateLimitError,
+)
 from open_notebook.utils.encryption import get_secret_from_env
+
+
+def _parse_cors_origins(raw: str) -> list[str]:
+    """Parse CORS_ORIGINS env value into a list of origins."""
+    value = raw.strip()
+    if value == "*":
+        return ["*"]
+    return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+
+# Parsed once at module load; CORS_ORIGINS changes require a restart.
+_cors_origins_raw = os.getenv("CORS_ORIGINS")
+CORS_ALLOWED_ORIGINS = _parse_cors_origins(_cors_origins_raw or "*")
+CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
+
+
+def _cors_headers(request: Request) -> dict[str, str]:
+    """
+    Build CORS headers for error responses.
+
+    Mirrors Starlette CORSMiddleware behavior: reflects the request Origin
+    when the origin is allowed (or when wildcard is configured, since
+    browsers reject `Access-Control-Allow-Origin: *` combined with
+    credentials). Omits `Access-Control-Allow-Origin` for disallowed
+    origins so the browser blocks the error body from leaking cross-origin.
+    """
+    origin = request.headers.get("origin")
+    headers: dict[str, str] = {
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "*",
+        "Access-Control-Allow-Headers": "*",
+    }
+
+    if origin and ("*" in CORS_ALLOWED_ORIGINS or origin in CORS_ALLOWED_ORIGINS):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Vary"] = "Origin"
+
+    return headers
+
 
 # Import commands to register them in the API process
 try:
@@ -61,8 +101,6 @@ async def lifespan(app: FastAPI):
     Lifespan event handler for the FastAPI application.
     Runs database migrations automatically on startup.
     """
-    import os
-
     # Startup: Security checks
     logger.info("Starting API initialization...")
 
@@ -122,6 +160,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+if CORS_IS_DEFAULT_WILDCARD:
+    logger.warning(
+        "CORS_ORIGINS is not set — API accepts cross-origin requests from any "
+        "origin (default: '*'). For production deployments, set CORS_ORIGINS to "
+        "your frontend origin(s), e.g. "
+        "CORS_ORIGINS=https://notebook.example.com"
+    )
+else:
+    logger.info(f"CORS allowed origins: {CORS_ALLOWED_ORIGINS}")
+
 # Add password authentication middleware first
 # Exclude /api/auth/status and /api/config from authentication
 app.add_middleware(
@@ -140,7 +188,7 @@ app.add_middleware(
 # Add CORS middleware last (so it processes first)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -159,29 +207,11 @@ async def custom_http_exception_handler(request: Request, exc: StarletteHTTPExce
     FastAPI, this handler won't be called. In that case, configure your reverse proxy
     to add CORS headers to error responses.
     """
-    # Get the origin from the request
-    origin = request.headers.get("origin", "*")
-
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-        headers={
-            **(exc.headers or {}), "Access-Control-Allow-Origin": origin,
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Methods": "*",
-            "Access-Control-Allow-Headers": "*",
-        },
+        headers={**(exc.headers or {}), **_cors_headers(request)},
     )
-
-
-def _cors_headers(request: Request) -> dict[str, str]:
-    origin = request.headers.get("origin", "*")
-    return {
-        "Access-Control-Allow-Origin": origin,
-        "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Methods": "*",
-        "Access-Control-Allow-Headers": "*",
-    }
 
 
 @app.exception_handler(NotFoundError)

@@ -1,4 +1,5 @@
 import operator
+import os
 from typing import Any, Dict, List, Optional
 
 from content_core import extract_content
@@ -99,6 +100,39 @@ async def content_process(state: SourceState) -> dict:
 
     processed_state = await extract_content(content_state)
 
+    # For PDFs processed by the vision pipeline, also pull literal text via
+    # pdfplumber (content-core's existing extractor) and use that as the
+    # primary `content`. Vision sampling skips pages by design — fine for
+    # figure/layout understanding but bad for RAG/chat, since embeddings
+    # built from a sampled summary can't cite content from pages that
+    # were never read. We move the vision output to metadata.visual_analysis
+    # so save_source can attach it as a separate insight.
+    pdf_path = (
+        content_state.get("file_path") if isinstance(content_state, dict) else None
+    )
+    if (
+        processed_state.identified_type == "application/pdf"
+        and content_state.get("vision_provider")
+        and pdf_path
+        and os.path.exists(pdf_path)
+    ):
+        try:
+            from content_core.processors.pdf import _extract_text_from_pdf
+
+            raw_text = ((await _extract_text_from_pdf(pdf_path)) or "").strip()
+            if len(raw_text) >= 200:
+                processed_state.metadata = dict(processed_state.metadata or {})
+                processed_state.metadata["visual_analysis"] = processed_state.content
+                processed_state.content = raw_text
+                logger.info(
+                    f"PDF: using {len(raw_text)} chars of pdfplumber text as primary "
+                    "content; vision output preserved as visual_analysis insight"
+                )
+        except Exception as e:
+            logger.warning(
+                f"Raw-text extraction fallback failed; keeping vision-only content: {e}"
+            )
+
     if not processed_state.content or not processed_state.content.strip():
         url = processed_state.url or ""
         if url and ("youtube.com" in url or "youtu.be" in url):
@@ -133,6 +167,20 @@ async def save_source(state: SourceState) -> dict:
         source.title = content_state.title
 
     await source.save()
+
+    # When extract_content ran both raw text (for full_text) AND vision-based
+    # visual analysis as enrichment (figures/tables/layout), persist the
+    # visual analysis as a separate insight. Keeps full_text literal so RAG
+    # and chat can cite real document passages, while the visual summary
+    # stays accessible to the user via the Insights tab.
+    visual_analysis = (content_state.metadata or {}).get("visual_analysis")
+    if visual_analysis:
+        try:
+            await source.add_insight("Visual analysis", visual_analysis)
+        except Exception as e:
+            logger.warning(
+                f"Failed to attach visual analysis insight for source {source.id}: {e}"
+            )
 
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness
     # No need to create them here to avoid duplicate edges

@@ -94,6 +94,12 @@ export function LanguageToggle({ iconOnly = false }: LanguageToggleProps) {
         >
           <span>Deutsch</span>
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('pl-PL')}
+          className={currentLang === 'pl-PL' || currentLang.startsWith('pl') ? 'bg-accent' : ''}
+        >
+          <span>Polski</span>
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   )

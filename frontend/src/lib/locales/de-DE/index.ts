@@ -30,6 +30,7 @@ export const deDE = {
     russian: "Русский",
     bengali: "বাংলা",
     spanish: "Español",
+    catalan: "Català",
     source: "Quelle",
     notebook: "Notebook",
     podcast: "Podcast",

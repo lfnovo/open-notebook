@@ -23,6 +23,8 @@
 
 → [Local Quick Start](quick-start-local.md)
 
+**Already have Ollama installed?** → [External Ollama Guide](quick-start-external-ollama.md)
+
 ---
 
 ## What Can You Do?

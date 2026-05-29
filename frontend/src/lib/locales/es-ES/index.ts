@@ -29,6 +29,7 @@ export const esES = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "Fuente",
     notebook: "Cuaderno",
     podcast: "Podcast",

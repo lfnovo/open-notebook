@@ -29,6 +29,7 @@ export const enUS = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",

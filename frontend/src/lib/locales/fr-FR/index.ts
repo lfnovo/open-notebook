@@ -29,6 +29,7 @@ export const frFR = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "Source",
     notebook: "Carnet",
     podcast: "Podcast",

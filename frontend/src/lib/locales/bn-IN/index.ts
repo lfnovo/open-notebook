@@ -29,6 +29,7 @@ export const bnIN = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "উৎস",
     notebook: "নোটবুক",
     podcast: "পডকাস্ট",

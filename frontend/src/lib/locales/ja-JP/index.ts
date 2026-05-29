@@ -29,6 +29,7 @@ export const jaJP = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "ソース",
     notebook: "ノートブック",
     podcast: "ポッドキャスト",

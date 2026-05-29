@@ -29,6 +29,7 @@ export const itIT = {
     catalan: "Català",
     spanish: "Español",
     german: "Deutsch",
+    polish: "Polski",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",

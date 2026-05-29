@@ -2,8 +2,11 @@
 
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+
+from api import credentials_service
 
 
 @pytest.fixture
@@ -94,6 +97,95 @@ class TestCredentialCascadeDelete:
         mock_model.save.assert_awaited_once()
         assert mock_model.credential == "cred:456"
         mock_cred.delete.assert_awaited_once()
+
+
+class TestCredentialModelDiscovery:
+    """Tests for credential-backed model discovery."""
+
+    @pytest.mark.asyncio
+    async def test_openai_discovery_respects_base_url(self, monkeypatch):
+        """OpenAI model discovery should call the configured API base URL."""
+
+        requests = []
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None):
+                requests.append(
+                    {
+                        "url": url,
+                        "headers": headers,
+                        "timeout": timeout,
+                    }
+                )
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "custom-openai-model"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        models = await credentials_service.discover_with_config(
+            "openai",
+            {
+                "api_key": "sk-test",
+                "base_url": "https://llm-gateway.example.com/v1",
+            },
+        )
+
+        assert models == [
+            {
+                "name": "custom-openai-model",
+                "provider": "openai",
+                "description": None,
+            }
+        ]
+        assert requests == [
+            {
+                "url": "https://llm-gateway.example.com/v1/models",
+                "headers": {"Authorization": "Bearer sk-test"},
+                "timeout": 30.0,
+            }
+        ]
+
+    @pytest.mark.asyncio
+    async def test_model_discovery_base_url_can_include_models_path(self, monkeypatch):
+        """Model discovery should not append /models twice."""
+
+        requests = []
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None):
+                requests.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "model-a"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+
+        await credentials_service.discover_with_config(
+            "openai_compatible",
+            {
+                "api_key": "sk-test",
+                "base_url": "https://llm-gateway.example.com/v1/models/",
+            },
+        )
+
+        assert requests == ["https://llm-gateway.example.com/v1/models"]
 
 
 if __name__ == "__main__":

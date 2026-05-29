@@ -146,11 +146,11 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # openai-compatible should be available
-        assert "openai-compatible" in data["available"]
+        assert "openai_compatible" in data["available"]
 
         # Should support all 4 types
-        assert "openai-compatible" in data["supported_types"]
-        supported = data["supported_types"]["openai-compatible"]
+        assert "openai_compatible" in data["supported_types"]
+        supported = data["supported_types"]["openai_compatible"]
         assert "language" in supported
         assert "embedding" in supported
         assert "speech_to_text" in supported
@@ -188,11 +188,11 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # openai-compatible should be available
-        assert "openai-compatible" in data["available"]
+        assert "openai_compatible" in data["available"]
 
         # Should support only language and embedding
-        assert "openai-compatible" in data["supported_types"]
-        supported = data["supported_types"]["openai-compatible"]
+        assert "openai_compatible" in data["supported_types"]
+        supported = data["supported_types"]["openai_compatible"]
         assert "language" in supported
         assert "embedding" in supported
         assert "speech_to_text" not in supported
@@ -222,11 +222,11 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # openai-compatible should NOT be available
-        assert "openai-compatible" not in data["available"]
-        assert "openai-compatible" in data["unavailable"]
+        assert "openai_compatible" not in data["available"]
+        assert "openai_compatible" in data["unavailable"]
 
         # Should not have supported_types entry
-        assert "openai-compatible" not in data["supported_types"]
+        assert "openai_compatible" not in data["supported_types"]
 
     @patch("api.routers.models.os.environ.get")
     @patch("api.routers.models.AIFactory.get_available_providers")
@@ -259,11 +259,11 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # openai-compatible should be available
-        assert "openai-compatible" in data["available"]
+        assert "openai_compatible" in data["available"]
 
         # Generic var enables all, so all 4 should be supported
-        assert "openai-compatible" in data["supported_types"]
-        supported = data["supported_types"]["openai-compatible"]
+        assert "openai_compatible" in data["supported_types"]
+        supported = data["supported_types"]["openai_compatible"]
         assert "language" in supported
         assert "embedding" in supported
         assert "speech_to_text" in supported
@@ -297,7 +297,7 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # Should support only language
-        supported = data["supported_types"]["openai-compatible"]
+        supported = data["supported_types"]["openai_compatible"]
         assert supported == ["language"]
 
     @patch("api.routers.models.os.environ.get")
@@ -327,7 +327,7 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # Should support only embedding
-        supported = data["supported_types"]["openai-compatible"]
+        supported = data["supported_types"]["openai_compatible"]
         assert supported == ["embedding"]
 
     @patch("api.routers.models.os.environ.get")
@@ -357,7 +357,7 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # Should support only speech_to_text
-        supported = data["supported_types"]["openai-compatible"]
+        supported = data["supported_types"]["openai_compatible"]
         assert supported == ["speech_to_text"]
 
     @patch("api.routers.models.os.environ.get")
@@ -387,5 +387,5 @@ class TestModelsProviderAvailability:
         data = response.json()
 
         # Should support only text_to_speech
-        supported = data["supported_types"]["openai-compatible"]
+        supported = data["supported_types"]["openai_compatible"]
         assert supported == ["text_to_speech"]

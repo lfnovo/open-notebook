@@ -414,7 +414,7 @@ async def get_provider_availability():
         )
 
         # OpenAI-compatible: DB credential or env vars
-        provider_status["openai-compatible"] = (
+        provider_status["openai_compatible"] = (
             await _check_provider_has_credential("openai_compatible")
             or _check_openai_compatible_support("LLM")
             or _check_openai_compatible_support("EMBEDDING")
@@ -442,12 +442,15 @@ async def get_provider_availability():
             }
 
             # Special handling for openai-compatible to check mode-specific availability
-            if provider == "openai-compatible":
+            if provider == "openai_compatible":
+                # Esperanto exposes this provider with a hyphen ("openai-compatible"),
+                # while the rest of the codebase uses the underscore form.
+                esperanto_name = "openai-compatible"
                 has_db_cred = await _check_provider_has_credential("openai_compatible")
                 for model_type, mode in mode_mapping.items():
                     if (
                         model_type in esperanto_available
-                        and provider in esperanto_available[model_type]
+                        and esperanto_name in esperanto_available[model_type]
                     ):
                         if has_db_cred or _check_openai_compatible_support(mode):
                             supported_types[provider].append(model_type)

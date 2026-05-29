@@ -28,6 +28,7 @@ export const enUS = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "Source",
     notebook: "Notebook",
     podcast: "Podcast",

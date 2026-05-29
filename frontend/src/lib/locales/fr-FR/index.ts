@@ -28,6 +28,7 @@ export const frFR = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "Source",
     notebook: "Carnet",
     podcast: "Podcast",

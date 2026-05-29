@@ -28,6 +28,7 @@ export const zhTW = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",

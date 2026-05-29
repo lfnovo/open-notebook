@@ -28,6 +28,7 @@ export const ptBR = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "Fonte",
     notebook: "Caderno",
     podcast: "Podcast",

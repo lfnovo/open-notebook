@@ -31,6 +31,7 @@ export const deDE = {
     bengali: "বাংলা",
     spanish: "Español",
     catalan: "Català",
+    german: "Deutsch",
     source: "Quelle",
     notebook: "Notebook",
     podcast: "Podcast",

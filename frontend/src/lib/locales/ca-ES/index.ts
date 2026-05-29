@@ -28,6 +28,7 @@ export const caES = {
     bengali: "বাংলা",
     catalan: "Català",
     spanish: "Español",
+    german: "Deutsch",
     source: "Font",
     notebook: "Quadern",
     podcast: "Podcast",

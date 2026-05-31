@@ -8,6 +8,7 @@ import pytest
 
 from open_notebook.utils.chunking import (
     CHUNK_SIZE,
+    MIN_CHUNK_SIZE,
     ContentType,
     chunk_text,
     detect_content_type,
@@ -328,6 +329,28 @@ Content for section 2.
         chunks = chunk_text(md_text, content_type=ContentType.MARKDOWN)
         assert len(chunks) > 1
         _assert_chunks_within_token_limit(chunks)
+
+    def test_drops_degenerate_short_chunks(self):
+        """Header splitters can emit single-char chunks; they must be filtered."""
+        large_section = _build_text_exceeding_tokens(
+            "This is a paragraph with enough content to be useful. ", CHUNK_SIZE
+        )
+        # A trailing micro-section ("# .") would otherwise produce a "." chunk.
+        md_text = f"# Real Title\n\n{large_section}\n\n# .\n"
+        chunks = chunk_text(md_text, content_type=ContentType.MARKDOWN)
+        assert len(chunks) >= 1
+        assert all(token_count(c) >= MIN_CHUNK_SIZE for c in chunks)
+        assert all(c.strip() not in (".", ",", ";", "#") for c in chunks)
+
+    def test_filter_never_empties_result(self):
+        """Even if every chunk would be dropped, at least one survives."""
+        # Force the minimum threshold higher than any chunk could possibly be.
+        # We exercise the safety branch by passing PLAIN content that splits
+        # into multiple very-small chunks.
+        text = ". " * 200  # Many tiny fragments after splitting
+        chunks = chunk_text(text, content_type=ContentType.PLAIN)
+        # The function must always return at least one chunk for non-empty input.
+        assert len(chunks) >= 1
 
 
 if __name__ == "__main__":

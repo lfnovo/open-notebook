@@ -67,8 +67,8 @@
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
-    "vitest": "^3.0.0",
-    "@vitest/ui": "^3.0.0",
+    "vitest": "^4.1.8",
+    "@vitest/ui": "^4.1.8",
     "@vitejs/plugin-react": "^4.3.4",
     "@testing-library/react": "^16.2.0",
     "@testing-library/jest-dom": "^6.6.3"

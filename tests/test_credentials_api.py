@@ -248,5 +248,27 @@ class TestAudioProviderWiring:
         assert TEST_MODELS["deepgram"][1] == "text_to_speech"
 
 
+class TestAudioMatrixWiring:
+    """Tests for completing the audio matrix (Google/Vertex TTS, Google/ElevenLabs STT)."""
+
+    def test_provider_modalities_matrix(self):
+        from api.credentials_service import PROVIDER_MODALITIES
+
+        for m in ("speech_to_text", "text_to_speech"):
+            assert m in PROVIDER_MODALITIES["google"]
+        assert "text_to_speech" in PROVIDER_MODALITIES["vertex"]
+        assert "speech_to_text" in PROVIDER_MODALITIES["elevenlabs"]
+
+    def test_classify_matrix(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        # Gemini TTS preview is classifiable; plain Gemini STT name stays language
+        assert classify_model_type("gemini-3.1-flash-tts-preview", "google") == "text_to_speech"
+        assert classify_model_type("gemini-2.0-flash", "google") == "language"
+        # ElevenLabs Scribe STT must not be caught by the TTS "eleven" pattern
+        assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
+        assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

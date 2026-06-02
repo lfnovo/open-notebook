@@ -66,17 +66,17 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "openai": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "anthropic": ["language"],
-    "google": ["language", "embedding"],
+    "google": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "groq": ["language", "speech_to_text"],
     "mistral": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "deepseek": ["language"],
     "xai": ["language", "text_to_speech"],
     "openrouter": ["language"],
     "voyage": ["embedding"],
-    "elevenlabs": ["text_to_speech"],
+    "elevenlabs": ["text_to_speech", "speech_to_text"],
     "deepgram": ["text_to_speech"],
     "ollama": ["language", "embedding"],
-    "vertex": ["language", "embedding"],
+    "vertex": ["language", "embedding", "text_to_speech"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "dashscope": ["language"],
@@ -508,6 +508,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         "elevenlabs": [
             "eleven_multilingual_v2", "eleven_turbo_v2_5",
             "eleven_turbo_v2", "eleven_monolingual_v1",
+            "scribe_v1",  # speech-to-text
         ],
         "deepgram": [
             "aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en",

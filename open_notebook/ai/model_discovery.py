@@ -67,6 +67,10 @@ ANTHROPIC_MODELS = {
 GOOGLE_MODEL_TYPES = {
     "language": ["gemini", "palm", "bison", "chat"],
     "embedding": ["embedding", "textembedding"],
+    # Gemini TTS preview models carry "tts" in the name (checked before language).
+    # Google STT reuses plain Gemini names and can't be told apart by name, so it
+    # has no pattern here — users assign the speech_to_text type manually.
+    "text_to_speech": ["tts"],
 }
 
 OLLAMA_MODEL_TYPES = {
@@ -134,6 +138,7 @@ VOYAGE_MODEL_TYPES = {
 
 ELEVENLABS_MODEL_TYPES = {
     "text_to_speech": ["eleven"],
+    "speech_to_text": ["scribe"],
 }
 
 DEEPGRAM_MODEL_TYPES = {
@@ -523,7 +528,7 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     if not api_key:
         return []
 
-    # ElevenLabs specializes in TTS
+    # ElevenLabs TTS models + the Scribe STT model
     elevenlabs_models = [
         "eleven_multilingual_v2",
         "eleven_turbo_v2_5",
@@ -532,10 +537,16 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
         "eleven_multilingual_v1",
     ]
 
-    return [
+    discovered = [
         DiscoveredModel(name=m, provider="elevenlabs", model_type="text_to_speech")
         for m in elevenlabs_models
     ]
+    discovered.append(
+        DiscoveredModel(
+            name="scribe_v1", provider="elevenlabs", model_type="speech_to_text"
+        )
+    )
+    return discovered
 
 
 async def discover_deepgram_models() -> List[DiscoveredModel]:

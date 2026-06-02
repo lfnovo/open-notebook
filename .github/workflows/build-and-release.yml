@@ -27,7 +27,7 @@ jobs:
       has_dockerhub_secrets: ${{ steps.check.outputs.has_dockerhub_secrets }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract version from pyproject.toml
         id: version
@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Free up disk space
         run: |
@@ -67,10 +67,10 @@ jobs:
           df -h
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -78,13 +78,13 @@ jobs:
 
       - name: Login to Docker Hub
         if: needs.extract-version.outputs.has_dockerhub_secrets == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-regular-${{ github.sha }}
@@ -126,7 +126,7 @@ jobs:
           echo "Generated tags: ${TAGS}"
 
       - name: Build and push regular image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
@@ -146,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Free up disk space
         run: |
@@ -158,10 +158,10 @@ jobs:
           df -h
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -169,13 +169,13 @@ jobs:
 
       - name: Login to Docker Hub
         if: needs.extract-version.outputs.has_dockerhub_secrets == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Cache Docker layers
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: /tmp/.buildx-cache-single
           key: ${{ runner.os }}-buildx-single-${{ github.sha }}
@@ -217,7 +217,7 @@ jobs:
           echo "Generated tags: ${TAGS}"
 
       - name: Build and push single-container image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile.single

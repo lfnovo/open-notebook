@@ -202,6 +202,7 @@ def require_encryption_key() -> None:
             "Set OPEN_NOTEBOOK_ENCRYPTION_KEY to enable storing API keys."
         )
 
+
 def credential_to_response(cred: Credential, model_count: int = 0) -> CredentialResponse:
     """Convert a Credential domain object to API response."""
     return CredentialResponse(

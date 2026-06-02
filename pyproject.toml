@@ -46,6 +46,9 @@ dependencies = [
 [tool.setuptools]
 package-dir = {"open_notebook" = "open_notebook"}
 
+[tool.setuptools.package-data]
+open_notebook = ["ai/assets/*"]
+
 
 [project.optional-dependencies]
 dev = [

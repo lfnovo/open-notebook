@@ -214,6 +214,25 @@ def _generate_test_wav() -> io.BytesIO:
     return buf
 
 
+# A short bundled clip of speech ("Hello there") used to validate STT models.
+# Real speech (vs. silence) makes the test transcription non-empty, so a passing
+# test visibly returns text instead of a blank result.
+_TEST_SPEECH_PATH = os.path.join(os.path.dirname(__file__), "assets", "test_speech.mp3")
+
+
+def _get_test_audio() -> io.BytesIO:
+    """Return a short speech clip for STT testing, or silence as a fallback."""
+    try:
+        with open(_TEST_SPEECH_PATH, "rb") as f:
+            buf = io.BytesIO(f.read())
+        buf.name = "test_speech.mp3"
+        buf.seek(0)
+        return buf
+    except OSError:
+        # Fall back to a silent WAV if the bundled clip is missing
+        return _generate_test_wav()
+
+
 def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
     """Normalize common error patterns into user-friendly messages."""
     lower = error_msg.lower()
@@ -289,11 +308,13 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return True, "Speech generation successful"
 
         elif model.type == "speech_to_text":
-            audio_file = _generate_test_wav()
+            audio_file = _get_test_audio()
             result = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
             )
-            text = str(result.text) if hasattr(result, "text") else str(result)
+            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
+            if not text:
+                return True, "Connection successful (test clip produced no transcription)"
             return True, f"Transcription: {text[:100]}"
 
         else:

@@ -182,6 +182,7 @@ function CredentialFormDialog({
   const [project, setProject] = useState('')
   const [location, setLocation] = useState('')
   const [credentialsPath, setCredentialsPath] = useState('')
+  const [numCtx, setNumCtx] = useState('')
   // Modalities
   const [modalities, setModalities] = useState<string[]>([])
 
@@ -193,6 +194,7 @@ function CredentialFormDialog({
       setProject(credential.project || '')
       setLocation(credential.location || '')
       setCredentialsPath(credential.credentials_path || '')
+      setNumCtx(credential.num_ctx ? String(credential.num_ctx) : '')
       setModalities(credential.modalities || [])
     } else {
       setName('')
@@ -201,6 +203,7 @@ function CredentialFormDialog({
       setProject('')
       setLocation('')
       setCredentialsPath('')
+      setNumCtx('')
       setModalities(PROVIDER_MODALITIES[provider] || ['language'])
     }
   }, [credential, provider])
@@ -223,6 +226,10 @@ function CredentialFormDialog({
         if (location !== (credential.location || '')) data.location = location.trim() || undefined
         if (credentialsPath !== (credential.credentials_path || '')) data.credentials_path = credentialsPath.trim() || undefined
       }
+      if (isOllama && numCtx !== (credential.num_ctx ? String(credential.num_ctx) : '')) {
+        // empty clears the override (0 -> backend resets to default)
+        data.num_ctx = numCtx.trim() ? Number(numCtx) : 0
+      }
       updateCredential.mutate({ credentialId: credential.id, data }, { onSuccess })
     } else {
       const data: CreateCredentialRequest = {
@@ -236,6 +243,9 @@ function CredentialFormDialog({
         data.project = project.trim() || undefined
         data.location = location.trim() || undefined
         data.credentials_path = credentialsPath.trim() || undefined
+      }
+      if (isOllama && numCtx.trim()) {
+        data.num_ctx = Number(numCtx)
       }
       createCredential.mutate(data, { onSuccess })
     }
@@ -364,6 +374,27 @@ function CredentialFormDialog({
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">{t('apiKeys.baseUrlOverrideHint')}</p>
+            </div>
+          )}
+
+          {/* num_ctx (Ollama only) */}
+          {isOllama && (
+            <div className="space-y-2">
+              <Label htmlFor="num-ctx" className="text-muted-foreground">
+                {t('apiKeys.numCtx')}
+                <span className="text-muted-foreground font-normal ml-1">({t('common.optional')})</span>
+              </Label>
+              <input
+                id="num-ctx"
+                type="number"
+                min={1}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={numCtx}
+                onChange={(e) => setNumCtx(e.target.value)}
+                placeholder="8192"
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">{t('apiKeys.numCtxHint')}</p>
             </div>
           )}
 

@@ -914,6 +914,8 @@ export const frFR = {
     configNameHint: "Un nom descriptif pour cette configuration (ex : « Production », « Développement »)",
     baseUrl: "URL de base",
     baseUrlOverrideHint: "Ne modifiez ceci que si vous devez remplacer le point d'accès API par défaut du fournisseur.",
+    numCtx: "Fenêtre de Contexte (num_ctx)",
+    numCtxHint: "Fenêtre de contexte maximale pour les modèles Ollama. Laissez vide pour utiliser la valeur par défaut (8192). N'augmentez que si votre matériel peut gérer une fenêtre plus grande.",
     deleteConfigConfirm: "Êtes-vous sûr de vouloir supprimer « {name} » ? Cette action est irréversible.",
     configSaveSuccess: "Configuration enregistrée avec succès",
     configUpdateSuccess: "Configuration mise à jour avec succès",

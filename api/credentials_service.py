@@ -220,6 +220,7 @@ def credential_to_response(cred: Credential, model_count: int = 0) -> Credential
         project=cred.project,
         location=cred.location,
         credentials_path=cred.credentials_path,
+        num_ctx=cred.num_ctx,
         has_api_key=cred.api_key is not None,
         created=str(cred.created) if cred.created else "",
         updated=str(cred.updated) if cred.updated else "",

@@ -915,6 +915,8 @@ export const esES = {
     configNameHint: "Un nombre descriptivo para esta configuración (ej., 'Producción', 'Desarrollo')",
     baseUrl: "URL base",
     baseUrlOverrideHint: "Solo cambia esto si necesitas anular el endpoint API predeterminado del proveedor.",
+    numCtx: "Ventana de Contexto (num_ctx)",
+    numCtxHint: "Ventana de contexto máxima para modelos Ollama. Déjalo vacío para usar el valor predeterminado (8192). Auméntalo solo si tu hardware admite una ventana mayor.",
     deleteConfigConfirm: "¿Estás seguro de que quieres eliminar '{name}'? Esto no se puede deshacer.",
     configSaveSuccess: "Configuración guardada exitosamente",
     configUpdateSuccess: "Configuración actualizada exitosamente",

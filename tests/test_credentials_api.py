@@ -188,5 +188,33 @@ class TestCredentialModelDiscovery:
         assert requests == ["https://llm-gateway.example.com/v1/models"]
 
 
+class TestCredentialNumCtx:
+    """Tests for the Ollama num_ctx override threaded into esperanto config."""
+
+    def test_num_ctx_included_when_set(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            modalities=["language", "embedding"],
+            base_url="http://localhost:11434",
+            num_ctx=32768,
+        )
+        config = cred.to_esperanto_config()
+        assert config["num_ctx"] == 32768
+        assert config["base_url"] == "http://localhost:11434"
+
+    def test_num_ctx_absent_when_unset(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            base_url="http://localhost:11434",
+        )
+        assert "num_ctx" not in cred.to_esperanto_config()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -917,6 +917,8 @@ export const deDE = {
     configNameHint: "Ein beschreibender Name für diese Konfiguration, z. B. 'Produktion' oder 'Entwicklung'",
     baseUrl: "Basis-URL",
     baseUrlOverrideHint: "Nur ändern, wenn du den Standard-API-Endpunkt des Anbieters überschreiben musst.",
+    numCtx: "Kontextfenster (num_ctx)",
+    numCtxHint: "Maximales Kontextfenster für Ollama-Modelle. Leer lassen, um den Standardwert (8192) zu verwenden. Nur erhöhen, wenn deine Hardware ein größeres Fenster verarbeiten kann.",
     deleteConfigConfirm: "Möchtest du '{name}' wirklich löschen? Dies kann nicht rückgängig gemacht werden.",
     configSaveSuccess: "Konfiguration erfolgreich gespeichert",
     configUpdateSuccess: "Konfiguration erfolgreich aktualisiert",

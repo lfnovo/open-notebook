@@ -914,6 +914,8 @@ export const caES = {
     configNameHint: "Un nom descriptiu per a aquesta configuració (p. ex., «Producció», «Desenvolupament»)",
     baseUrl: "URL base",
     baseUrlOverrideHint: "Canvia-ho només si has de substituir el punt d'accés de l'API per defecte del proveïdor.",
+    numCtx: "Finestra de Context (num_ctx)",
+    numCtxHint: "Finestra de context màxima per als models Ollama. Deixa-ho buit per usar el valor per defecte (8192). Augmenta'l només si el teu maquinari pot gestionar una finestra més gran.",
     deleteConfigConfirm: "Segur que vols suprimir «{name}»? Aquesta acció no es pot desfer.",
     configSaveSuccess: "S'ha desat la configuració correctament",
     configUpdateSuccess: "S'ha actualitzat la configuració correctament",

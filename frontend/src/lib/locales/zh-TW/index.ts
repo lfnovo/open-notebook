@@ -914,6 +914,8 @@ export const zhTW = {
     configNameHint: "此設定的描述性名稱（例如：'生產環境'、'開發環境'）",
     baseUrl: "基礎 URL",
     baseUrlOverrideHint: "僅在需要覆蓋提供商預設 API 端點時更改此項。",
+    numCtx: "上下文視窗 (num_ctx)",
+    numCtxHint: "Ollama 模型的最大上下文視窗。留空則使用預設值（8192）。僅在硬體能夠處理更大視窗時增大。",
     deleteConfigConfirm: "確定要刪除 '{name}' 嗎？此操作無法撤銷。",
     configSaveSuccess: "設定儲存成功",
     configUpdateSuccess: "設定更新成功",

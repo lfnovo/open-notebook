@@ -344,6 +344,17 @@ Heavy use: Depends on models chosen
 
 See [Ollama Setup Guide](ollama.md) for detailed network configuration.
 
+**Context Window (`num_ctx`):**
+
+Ollama models default to a **8,192-token** context window. This default is intentionally
+conservative so models run reliably on consumer GPUs (≈8GB VRAM) without running out of memory.
+If your hardware can handle more, set an optional **Context Window (num_ctx)** value on the
+Ollama credential (Settings → API Keys → edit the Ollama credential). It applies to all models
+that use that credential. Leave it empty to keep the default.
+
+- Raise it (e.g. `32768`) when ingesting large documents or using long chat histories.
+- If you hit "out of memory" errors, lower it or leave it at the default.
+
 **Available Models:**
 - `llama3.3:70b` — Best quality (requires 40GB+ RAM)
 - `llama3.1:8b` — Recommended, balanced (8GB RAM)

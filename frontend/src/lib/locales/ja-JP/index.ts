@@ -914,6 +914,8 @@ export const jaJP = {
     configNameHint: "この設定の説明的な名前（例：本番環境、開発環境）",
     baseUrl: "ベースURL",
     baseUrlOverrideHint: "プロバイダーのデフォルト API エンドポイントを上書きする場合のみ変更してください。",
+    numCtx: "コンテキストウィンドウ (num_ctx)",
+    numCtxHint: "Ollama モデルの最大コンテキストウィンドウ。空のままにするとデフォルト（8192）を使用します。ハードウェアがより大きなウィンドウを処理できる場合のみ増やしてください。",
     deleteConfigConfirm: "「{name}」を削除してもよろしいですか？この操作は元に戻せません。",
     configSaveSuccess: "設定が正常に保存されました",
     configUpdateSuccess: "設定が正常に変更されました",

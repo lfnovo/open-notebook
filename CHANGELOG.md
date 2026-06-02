@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - URL source embedding no longer crashes with `TypeError: float() argument must be a string or a real number, not 'NoneType'` when header-based splitters emit single-character fragments from complex HTML pages (e.g. Wikipedia, Project Gutenberg). Such chunks are now filtered before being sent to the embedding provider (#764)
 - Language toggle now uses `t('common.german')` instead of a hardcoded "Deutsch" label, matching the pattern used by every other language entry (follow-up to #794)
+- Speech-to-text model connection tests now transcribe a short bundled speech clip instead of silence, so a passing test returns real text instead of a blank transcription (#838)
 
 ## [1.8.5] - 2026-04-14
 

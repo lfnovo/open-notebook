@@ -72,6 +72,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   openrouter: 'OpenRouter',
   voyage: 'Voyage AI',
   elevenlabs: 'ElevenLabs',
+  deepgram: 'Deepgram',
   ollama: 'Ollama',
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
@@ -83,7 +84,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 // All providers in display order
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
-  'xai', 'openrouter', 'dashscope', 'minimax', 'voyage', 'elevenlabs', 'ollama',
+  'xai', 'openrouter', 'dashscope', 'minimax', 'voyage', 'elevenlabs', 'deepgram', 'ollama',
   'azure', 'vertex', 'openai_compatible',
 ]
 
@@ -93,12 +94,13 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   anthropic: ['language'],
   google: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   groq: ['language', 'speech_to_text'],
-  mistral: ['language', 'embedding'],
+  mistral: ['language', 'embedding', 'speech_to_text', 'text_to_speech'],
   deepseek: ['language'],
-  xai: ['language'],
+  xai: ['language', 'text_to_speech'],
   openrouter: ['language', 'embedding'],
   voyage: ['embedding'],
   elevenlabs: ['text_to_speech', 'speech_to_text'],
+  deepgram: ['text_to_speech'],
   ollama: ['language', 'embedding'],
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
@@ -119,6 +121,7 @@ const PROVIDER_DOCS: Record<string, string> = {
   openrouter: 'https://openrouter.ai/keys',
   voyage: 'https://dash.voyageai.com/api-keys',
   elevenlabs: 'https://elevenlabs.io/app/settings/api-keys',
+  deepgram: 'https://console.deepgram.com/',
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',

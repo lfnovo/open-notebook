@@ -13,7 +13,6 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.domain.credential import Credential
 from open_notebook.ai.connection_tester import test_individual_model
 from open_notebook.ai.key_provider import provision_provider_keys
 from open_notebook.ai.model_discovery import (
@@ -23,6 +22,7 @@ from open_notebook.ai.model_discovery import (
     sync_provider_models,
 )
 from open_notebook.ai.models import DefaultModels, Model
+from open_notebook.domain.credential import Credential
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
@@ -381,6 +381,7 @@ async def get_provider_availability():
             "openrouter": "OPENROUTER_API_KEY",
             "voyage": "VOYAGE_API_KEY",
             "elevenlabs": "ELEVENLABS_API_KEY",
+            "deepgram": "DEEPGRAM_API_KEY",
             "ollama": "OLLAMA_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",

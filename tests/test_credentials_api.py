@@ -216,5 +216,37 @@ class TestCredentialNumCtx:
         assert "num_ctx" not in cred.to_esperanto_config()
 
 
+class TestAudioProviderWiring:
+    """Tests for the new audio providers (Mistral STT/TTS, Deepgram TTS, xAI TTS)."""
+
+    def test_classify_voxtral_and_aura(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        # Mistral Voxtral: TTS model must not be mis-detected as STT
+        assert classify_model_type("voxtral-mini-tts-2603", "mistral") == "text_to_speech"
+        assert classify_model_type("voxtral-mini-latest", "mistral") == "speech_to_text"
+        assert classify_model_type("voxtral-small-latest", "mistral") == "speech_to_text"
+        # Existing Mistral classification still holds
+        assert classify_model_type("mistral-large-latest", "mistral") == "language"
+        assert classify_model_type("mistral-embed", "mistral") == "embedding"
+        # Deepgram Aura voices
+        assert classify_model_type("aura-2-thalia-en", "deepgram") == "text_to_speech"
+
+    def test_provider_modalities_include_audio(self):
+        from api.credentials_service import PROVIDER_MODALITIES
+
+        assert "speech_to_text" in PROVIDER_MODALITIES["mistral"]
+        assert "text_to_speech" in PROVIDER_MODALITIES["mistral"]
+        assert "text_to_speech" in PROVIDER_MODALITIES["xai"]
+        assert PROVIDER_MODALITIES["deepgram"] == ["text_to_speech"]
+
+    def test_deepgram_has_env_and_test_model(self):
+        from api.credentials_service import PROVIDER_ENV_CONFIG
+        from open_notebook.ai.connection_tester import TEST_MODELS
+
+        assert PROVIDER_ENV_CONFIG["deepgram"]["required"] == ["DEEPGRAM_API_KEY"]
+        assert TEST_MODELS["deepgram"][1] == "text_to_speech"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

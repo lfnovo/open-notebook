@@ -14,8 +14,8 @@ import httpx
 from loguru import logger
 
 from open_notebook.ai.models import Model
-from open_notebook.domain.credential import Credential
 from open_notebook.database.repository import repo_query
+from open_notebook.domain.credential import Credential
 
 
 @dataclass
@@ -108,6 +108,11 @@ MISTRAL_MODEL_TYPES = {
         "open-mixtral",
     ],
     "embedding": ["mistral-embed"],
+    # Voxtral. TTS first by specificity: the "-tts" model must not be caught by
+    # the broader STT names. classify_model_type checks speech_to_text before
+    # text_to_speech, so STT patterns are the explicit non-tts model names.
+    "text_to_speech": ["voxtral-mini-tts", "voxtral-tts"],
+    "speech_to_text": ["voxtral-mini-latest", "voxtral-small-latest"],
 }
 
 GROQ_MODEL_TYPES = {
@@ -129,6 +134,10 @@ VOYAGE_MODEL_TYPES = {
 
 ELEVENLABS_MODEL_TYPES = {
     "text_to_speech": ["eleven"],
+}
+
+DEEPGRAM_MODEL_TYPES = {
+    "text_to_speech": ["aura"],
 }
 
 DASHSCOPE_MODEL_TYPES = {
@@ -158,6 +167,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "xai": XAI_MODEL_TYPES,
         "voyage": VOYAGE_MODEL_TYPES,
         "elevenlabs": ELEVENLABS_MODEL_TYPES,
+        "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
     }
@@ -528,6 +538,36 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     ]
 
 
+async def discover_deepgram_models() -> List[DiscoveredModel]:
+    """Return a curated static list of Deepgram Aura TTS voices.
+
+    Deepgram has no model-listing API and treats each voice as a model id.
+    This is a representative subset of the Aura-2 English catalog; users can
+    add any other voice manually via the custom-model input.
+    """
+    api_key = os.environ.get("DEEPGRAM_API_KEY")
+    if not api_key:
+        return []
+
+    deepgram_voices = [
+        "aura-2-thalia-en",
+        "aura-2-andromeda-en",
+        "aura-2-helena-en",
+        "aura-2-apollo-en",
+        "aura-2-arcas-en",
+        "aura-2-asteria-en",
+        "aura-2-athena-en",
+        "aura-2-hera-en",
+        "aura-2-hermes-en",
+        "aura-2-atlas-en",
+    ]
+
+    return [
+        DiscoveredModel(name=m, provider="deepgram", model_type="text_to_speech")
+        for m in deepgram_voices
+    ]
+
+
 async def discover_dashscope_models() -> List[DiscoveredModel]:
     """Fetch available models from DashScope (Qwen) API."""
     api_key = os.environ.get("DASHSCOPE_API_KEY")
@@ -677,6 +717,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "openrouter": discover_openrouter_models,
     "voyage": discover_voyage_models,
     "elevenlabs": discover_elevenlabs_models,
+    "deepgram": discover_deepgram_models,
     "openai_compatible": discover_openai_compatible_models,
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,

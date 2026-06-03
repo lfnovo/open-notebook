@@ -31,6 +31,15 @@ Choose your installation route based on your setup and use case.
 
 ---
 
+### 🪟 I'm on Windows and can't use Docker/WSL
+**→ [Windows Native](windows-native.md)** - Run natively, no Docker or WSL
+- ✅ Works on Windows ARM64
+- ✅ For systems without Hyper-V/Docker Desktop
+- ⚠️ Requires Python 3.12+, Node.js, SurrealDB, uv
+- ⏱️ 15 minutes to running
+
+---
+
 
 ## System Requirements
 

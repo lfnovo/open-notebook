@@ -7,9 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-06-02
+
 ### Added
+- **New audio providers**, surfacing the capabilities added in Esperanto 2.21–2.22:
+  - **Mistral Voxtral** speech-to-text (`voxtral-*-latest`) and text-to-speech (`voxtral-mini-tts`), reusing the existing Mistral credential (#827)
+  - **Deepgram** text-to-speech (Aura voice catalog) as a new provider (`DEEPGRAM_API_KEY`) (#827)
+  - **xAI** text-to-speech (#827)
+  - **Google** speech-to-text & text-to-speech, **Vertex** text-to-speech, and **ElevenLabs** speech-to-text (Scribe), completing the audio provider matrix (#828)
+- Optional per-credential **`num_ctx`** (context window) override for Ollama models, configurable in Settings → API Keys and translated across all 13 locales (#825)
 - `OPEN_NOTEBOOK_EMBEDDING_BATCH_SIZE` environment variable to override the embedding batch size; default remains `50`. Helps with CPU-only local embedding and stricter OpenAI-compatible endpoints (#735)
 - `CORS_ORIGINS` environment variable to configure the API's allowed origins (comma-separated). Default remains `*` for backward compatibility; the API now logs a startup warning prompting users to set it for production deployments. Exception responses honor the configured origins when explicitly set (#585, #597, #730)
+- `OPEN_NOTEBOOK_MIN_CHUNK_SIZE` environment variable (default: 5 tokens) to filter out degenerate tiny chunks before embedding. Set to `0` to disable.
+
+### Changed
+- Bumped **Esperanto 2.20.0 → 2.22.0**. Beyond the new audio providers above, this inherits several upstream fixes and behavior changes (see below).
+
+### Inherited from Esperanto 2.21–2.22
+- **Fixed:** OpenRouter LLM and embedding requests now send a proper JSON body (previously sent a malformed form-encoded payload).
+- **Fixed:** OpenAI-compatible endpoints (e.g. llama.cpp) that return null embeddings now raise a clear, descriptive error instead of an opaque `TypeError`.
+- **Fixed:** Streaming tool calls now return proper `ToolCall` objects across Anthropic, Google, Vertex, and Ollama.
+- **Fixed:** `base_url` trailing slashes are normalized across providers, preventing double-slash URLs (and 301 redirects) for Ollama and other self-hosted endpoints.
+- **Fixed:** Ollama "thinking" models (e.g. Qwen) now merge their reasoning content correctly.
+- **Fixed:** Model discovery honors a custom `base_url` (LiteLLM/vLLM/OpenAI-compatible proxies).
+- **Behavior change:** the Ollama default context window (`num_ctx`) is now **8192** (was 128000) to avoid out-of-memory errors on consumer GPUs. Raise it per-credential via the new `num_ctx` field if your hardware allows.
+- **Behavior change:** the Google embedding default model is now `gemini-embedding-001` (the previous default, `text-embedding-004`, was removed from Google's API). If you used Google embeddings with the old default, re-create the model and re-embed your content (embedding dimensions changed).
+- **Fixed:** Google TTS default model updated to a currently-working preview model.
+
+### Fixed
+- URL source embedding no longer crashes with `TypeError: float() argument must be a string or a real number, not 'NoneType'` when header-based splitters emit single-character fragments from complex HTML pages (e.g. Wikipedia, Project Gutenberg). Such chunks are now filtered before being sent to the embedding provider (#764)
+- Language toggle now uses `t('common.german')` instead of a hardcoded "Deutsch" label, matching the pattern used by every other language entry (follow-up to #794)
+- Speech-to-text model connection tests now transcribe a short bundled speech clip instead of silence, so a passing test returns real text instead of a blank transcription (#838)
 
 ## [1.8.5] - 2026-04-14
 

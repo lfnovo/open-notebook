@@ -202,20 +202,21 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | OpenAI       | ✅          | ✅               | ✅             | ✅             |
 | Anthropic    | ✅          | ❌               | ❌             | ❌             |
 | Groq         | ✅          | ❌               | ✅             | ❌             |
-| Google (GenAI) | ✅          | ✅               | ❌             | ✅             |
+| Google (GenAI) | ✅          | ✅               | ✅             | ✅             |
 | Vertex AI    | ✅          | ✅               | ❌             | ✅             |
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
-| Azure OpenAI | ✅          | ✅               | ❌             | ❌             |
-| Mistral      | ✅          | ✅               | ❌             | ❌             |
+| Deepgram     | ❌          | ❌               | ❌             | ✅             |
+| Azure OpenAI | ✅          | ✅               | ✅             | ✅             |
+| Mistral      | ✅          | ✅               | ✅             | ✅             |
 | DeepSeek     | ✅          | ❌               | ❌             | ❌             |
 | Voyage       | ❌          | ✅               | ❌             | ❌             |
-| xAI          | ✅          | ❌               | ❌             | ❌             |
-| OpenRouter   | ✅          | ❌               | ❌             | ❌             |
+| xAI          | ✅          | ❌               | ❌             | ✅             |
+| OpenRouter   | ✅          | ✅               | ❌             | ❌             |
 | DashScope (Qwen) | ✅          | ❌               | ❌             | ❌             |
 | MiniMax      | ✅          | ❌               | ❌             | ❌             |
-| OpenAI Compatible* | ✅          | ❌               | ❌             | ❌             |
+| OpenAI Compatible* | ✅          | ✅               | ✅             | ✅             |
 
 *Supports LM Studio and any OpenAI-compatible endpoint
 

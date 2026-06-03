@@ -8,13 +8,10 @@ configurations end-to-end.
 import io
 import os
 import struct
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 import httpx
-from esperanto.factory import AIFactory
 from loguru import logger
-
-from open_notebook.domain.credential import Credential
 
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
@@ -29,6 +26,7 @@ TEST_MODELS = {
     "openrouter": ("openai/gpt-3.5-turbo", "language"),
     "voyage": ("voyage-3-lite", "embedding"),
     "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
+    "deepgram": ("aura-2-thalia-en", "text_to_speech"),
     "ollama": (None, "language"),  # Dynamic - will use first available model
     # Complex providers with additional configuration
     "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
@@ -169,148 +167,16 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
     except Exception as e:
         return False, f"Connection error: {str(e)[:100]}"
 
-async def test_provider_connection(
-    provider: str, model_type: str = "language", config_id: Optional[str] = None
-) -> Tuple[bool, str]:
-    """
-    Test if a provider's API key is valid by making a minimal API call.
-
-    Args:
-        provider: Provider name (openai, anthropic, etc.)
-        model_type: Type of model to test (language, embedding, etc.)
-                   Note: This is overridden by TEST_MODELS if provider is in that dict.
-        config_id: Optional specific configuration ID to test (format: configId)
-                   If provided, uses the configuration from ProviderConfig for this specific config.
-
-    Returns:
-        Tuple of (success: bool, message: str)
-    """
-    try:
-        # Get configuration - either specific config or default
-        api_key: Optional[str] = None
-        base_url: Optional[str] = None
-        endpoint: Optional[str] = None
-        api_version: Optional[str] = None
-        model_name: Optional[str] = None
-
-        if config_id:
-            # Load specific credential from database
-            try:
-                cred = await Credential.get(config_id)
-                config = cred.to_esperanto_config()
-                api_key = config.get("api_key")
-                base_url = config.get("base_url")
-                endpoint = config.get("endpoint")
-                api_version = config.get("api_version")
-            except Exception:
-                return False, f"Credential not found: {config_id}"
-
-        # Normalize provider name (handle hyphenated aliases)
-        normalized_provider = provider.replace("-", "_")
-
-        # Special handling for URL-based providers (no API key, just connectivity)
-        if normalized_provider == "ollama":
-            # Use base_url from specific config, or environment variable
-            test_base_url = base_url or os.environ.get("OLLAMA_API_BASE", "http://localhost:11434")
-            return await _test_ollama_connection(test_base_url)
-
-        if normalized_provider == "openai_compatible":
-            # Use base_url from specific config, or environment variable
-            test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_BASE_URL")
-            test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
-            if not test_base_url:
-                return False, "No base URL configured for OpenAI-compatible provider"
-            return await _test_openai_compatible_connection(test_base_url, test_api_key)
-
-        if normalized_provider == "azure":
-            # For Azure, base_url from the UI form maps to endpoint
-            azure_endpoint = endpoint or base_url
-            return await _test_azure_connection(azure_endpoint, api_key, api_version)
-
-        # Get test model for provider
-        if normalized_provider not in TEST_MODELS:
-            return False, f"Unknown provider: {provider}"
-
-        test_model, test_model_type = TEST_MODELS[normalized_provider]
-
-        # Use model from config if provided, otherwise use TEST_MODELS default
-        model_to_use = model_name if model_name else test_model
-
-        # For providers with dynamic model detection
-        if model_to_use is None:
-            if normalized_provider == "openai_compatible":
-                # OpenAI-compatible servers should already be tested via _test_openai_compatible_connection
-                test_base_url = base_url or os.environ.get("OPENAI_COMPATIBLE_BASE_URL", "")
-                test_api_key = api_key or os.environ.get("OPENAI_COMPATIBLE_API_KEY")
-                return await _test_openai_compatible_connection(test_base_url, test_api_key)
-            else:
-                return False, f"No test model configured for {provider}"
-
-        # If we have a specific API key, set it in environment for this test
-        if api_key:
-            os.environ[f"{provider.upper()}_API_KEY"] = api_key
-
-        # Try to create the model and make a minimal call
-        if test_model_type == "language":
-            model = AIFactory.create_language(model_name=model_to_use, provider=provider)
-            # Convert to LangChain and make a minimal call
-            lc_model = model.to_langchain()
-            await lc_model.ainvoke("Hi")
-            return True, "Connection successful"
-
-        elif test_model_type == "embedding":
-            model = AIFactory.create_embedding(model_name=model_to_use, provider=provider)
-            # Embed a single short test string
-            await model.aembed(["test"])
-            return True, "Connection successful"
-
-        elif test_model_type == "text_to_speech":
-            # For TTS, we just verify the model can be created
-            # Making an actual TTS call would be more expensive
-            # Most TTS providers validate the key on model creation
-            AIFactory.create_text_to_speech(
-                model_name=model_to_use, provider=provider
-            )
-            return True, "Connection successful (key format valid)"
-
-        else:
-            return False, f"Unsupported model type for testing: {test_model_type}"
-
-    except Exception as e:
-        error_msg = str(e)
-
-        # Clean up common error messages for user-friendly display
-        if "401" in error_msg or "unauthorized" in error_msg.lower():
-            return False, "Invalid API key"
-        elif "403" in error_msg or "forbidden" in error_msg.lower():
-            return False, "API key lacks required permissions"
-        elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
-            # Rate limit means the key is valid but we hit limits
-            return True, "Rate limited - but connection works"
-        elif "connection" in error_msg.lower() or "network" in error_msg.lower():
-            return False, "Connection error - check network/endpoint"
-        elif "timeout" in error_msg.lower():
-            return False, "Connection timed out - check network/endpoint"
-        elif "not found" in error_msg.lower() and "model" in error_msg.lower():
-            # Model not found but auth worked - this is actually a success for connectivity
-            return True, "API key valid (test model not available)"
-        elif provider == "ollama" and "connection refused" in error_msg.lower():
-            return False, "Ollama not running - check if Ollama server is started"
-        else:
-            logger.debug(f"Test connection error for {provider}: {e}")
-            # Truncate long error messages
-            truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
-            return False, f"Error: {truncated}"
-
-
 # Default voices for TTS testing per provider
-# ElevenLabs excluded: uses voice_id (not name), looked up dynamically
+# ElevenLabs and Mistral excluded: voices looked up dynamically via available_voices
 DEFAULT_TEST_VOICES = {
     "openai": "alloy",
     "azure": "alloy",
     "google": "Kore",
     "vertex": "Kore",
     "openai_compatible": "alloy",
+    "deepgram": "aura-2-thalia-en",
+    "xai": "eve",
 }
 
 
@@ -346,6 +212,25 @@ def _generate_test_wav() -> io.BytesIO:
     buf.seek(0)
     buf.name = "test.wav"
     return buf
+
+
+# A short bundled clip of speech ("Hello there") used to validate STT models.
+# Real speech (vs. silence) makes the test transcription non-empty, so a passing
+# test visibly returns text instead of a blank result.
+_TEST_SPEECH_PATH = os.path.join(os.path.dirname(__file__), "assets", "test_speech.mp3")
+
+
+def _get_test_audio() -> io.BytesIO:
+    """Return a short speech clip for STT testing, or silence as a fallback."""
+    try:
+        with open(_TEST_SPEECH_PATH, "rb") as f:
+            buf = io.BytesIO(f.read())
+        buf.name = "test_speech.mp3"
+        buf.seek(0)
+        return buf
+    except OSError:
+        # Fall back to a silent WAV if the bundled clip is missing
+        return _generate_test_wav()
 
 
 def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
@@ -423,11 +308,13 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return True, "Speech generation successful"
 
         elif model.type == "speech_to_text":
-            audio_file = _generate_test_wav()
+            audio_file = _get_test_audio()
             result = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
             )
-            text = str(result.text) if hasattr(result, "text") else str(result)
+            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
+            if not text:
+                return True, "Connection successful (test clip produced no transcription)"
             return True, f"Transcription: {text[:100]}"
 
         else:

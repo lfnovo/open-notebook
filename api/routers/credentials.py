@@ -171,6 +171,7 @@ async def create_credential(request: CreateCredentialRequest):
             project=request.project,
             location=request.location,
             credentials_path=request.credentials_path,
+            num_ctx=request.num_ctx,
         )
         await cred.save()
         return credential_to_response(cred, 0)
@@ -240,6 +241,9 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
             cred.location = request.location or None
         if request.credentials_path is not None:
             cred.credentials_path = request.credentials_path or None
+        if request.num_ctx is not None:
+            # 0/falsy clears the override and falls back to esperanto's default
+            cred.num_ctx = request.num_ctx or None
 
         await cred.save()
         models = await cred.get_linked_models()

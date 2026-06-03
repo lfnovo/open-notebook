@@ -47,8 +47,17 @@ COPY . /app
 WORKDIR /app/frontend
 ARG NPM_REGISTRY=https://registry.npmjs.org/
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm config set registry ${NPM_REGISTRY}
-RUN npm ci
+RUN npm config set registry ${NPM_REGISTRY} \
+ && npm config set fetch-retries 5 \
+ && npm config set fetch-retry-mintimeout 20000 \
+ && npm config set fetch-retry-maxtimeout 120000
+# Retry npm ci to survive transient registry ECONNRESETs, which are common on
+# the QEMU-emulated arm64 leg of the multi-arch build.
+RUN i=0; until npm ci; do \
+      i=$((i+1)); \
+      if [ "$i" -ge 5 ]; then echo "npm ci failed after $i attempts"; exit 1; fi; \
+      echo "npm ci failed (attempt $i); retrying in 15s"; sleep 15; \
+    done
 COPY frontend/ ./
 RUN npm run build
 

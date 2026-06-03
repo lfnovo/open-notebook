@@ -18,6 +18,7 @@ from loguru import logger
 from pydantic import SecretStr
 
 from api.models import CredentialResponse
+from open_notebook.ai.model_discovery import classify_model_type
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -40,6 +41,7 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
     "openrouter": {"required": ["OPENROUTER_API_KEY"]},
     "voyage": {"required": ["VOYAGE_API_KEY"]},
     "elevenlabs": {"required": ["ELEVENLABS_API_KEY"]},
+    "deepgram": {"required": ["DEEPGRAM_API_KEY"]},
     "ollama": {"required": ["OLLAMA_API_BASE"]},
     "vertex": {
         "required": ["VERTEX_PROJECT", "VERTEX_LOCATION"],
@@ -64,16 +66,17 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "openai": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "anthropic": ["language"],
-    "google": ["language", "embedding"],
+    "google": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "groq": ["language", "speech_to_text"],
-    "mistral": ["language", "embedding"],
+    "mistral": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "deepseek": ["language"],
-    "xai": ["language"],
-    "openrouter": ["language"],
+    "xai": ["language", "text_to_speech"],
+    "openrouter": ["language", "embedding"],
     "voyage": ["embedding"],
-    "elevenlabs": ["text_to_speech"],
+    "elevenlabs": ["text_to_speech", "speech_to_text"],
+    "deepgram": ["text_to_speech"],
     "ollama": ["language", "embedding"],
-    "vertex": ["language", "embedding"],
+    "vertex": ["language", "embedding", "text_to_speech"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "dashscope": ["language"],
@@ -219,6 +222,7 @@ def credential_to_response(cred: Credential, model_count: int = 0) -> Credential
         project=cred.project,
         location=cred.location,
         credentials_path=cred.credentials_path,
+        num_ctx=cred.num_ctx,
         has_api_key=cred.api_key is not None,
         created=str(cred.created) if cred.created else "",
         updated=str(cred.updated) if cred.updated else "",
@@ -480,6 +484,12 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     api_key = config.get("api_key")
     base_url = config.get("base_url")
 
+    def models_endpoint(url: str) -> str:
+        trimmed = url.rstrip("/")
+        if trimmed.endswith("/models"):
+            return trimmed
+        return f"{trimmed}/models"
+
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
         "anthropic": [
@@ -498,6 +508,13 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         "elevenlabs": [
             "eleven_multilingual_v2", "eleven_turbo_v2_5",
             "eleven_turbo_v2", "eleven_monolingual_v1",
+            "scribe_v1",  # speech-to-text
+        ],
+        "deepgram": [
+            "aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en",
+            "aura-2-apollo-en", "aura-2-arcas-en", "aura-2-asteria-en",
+            "aura-2-athena-en", "aura-2-hera-en", "aura-2-hermes-en",
+            "aura-2-atlas-en",
         ],
     }
 
@@ -529,7 +546,11 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 response.raise_for_status()
                 data = response.json()
                 return [
-                    {"name": m.get("name", ""), "provider": "ollama"}
+                    {
+                        "name": m.get("name", ""),
+                        "provider": "ollama",
+                        "model_type": classify_model_type(m.get("name", ""), "ollama"),
+                    }
                     for m in data.get("models", [])
                     if m.get("name")
                 ]
@@ -546,7 +567,9 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 headers["Authorization"] = f"Bearer {api_key}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    f"{base_url.rstrip('/')}/models", headers=headers, timeout=30.0,
+                    models_endpoint(base_url),
+                    headers=headers,
+                    timeout=30.0,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -618,6 +641,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
+    if provider == "openai" and base_url:
+        discovery_url = models_endpoint(base_url)
     if not discovery_url or not api_key:
         return []
 

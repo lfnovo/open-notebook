@@ -19,7 +19,6 @@ from loguru import logger
 
 from open_notebook.domain.credential import Credential
 
-
 # =============================================================================
 # Provider Configuration Mapping
 # =============================================================================
@@ -57,6 +56,9 @@ PROVIDER_CONFIG = {
     },
     "elevenlabs": {
         "env_var": "ELEVENLABS_API_KEY",
+    },
+    "deepgram": {
+        "env_var": "DEEPGRAM_API_KEY",
     },
     # URL-based providers
     "ollama": {

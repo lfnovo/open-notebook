@@ -1,6 +1,6 @@
 [project]
 name = "open-notebook"
-version = "1.8.5"
+version = "1.9.0"
 description = "An open source implementation of a research assistant, inspired by Google Notebook LM"
 authors = [
     {name = "Luis Novo", email = "lfnovo@gmail.com"}
@@ -30,7 +30,7 @@ dependencies = [
     "langchain_mistralai>=1.1.1",
     "langchain_deepseek>=1.0.0",
     "tomli>=2.0.2",
-    "python-dotenv>=1.0.1",
+    "python-dotenv>=1.2.2",
     "httpx[socks]>=0.27.0",
     "content-core>=1.14.1,<2",
     "ai-prompter>=0.4,<1",
@@ -45,6 +45,9 @@ dependencies = [
 
 [tool.setuptools]
 package-dir = {"open_notebook" = "open_notebook"}
+
+[tool.setuptools.package-data]
+open_notebook = ["ai/assets/*"]
 
 
 [project.optional-dependencies]

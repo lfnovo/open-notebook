@@ -7,7 +7,10 @@ import { itIT } from './it-IT';
 import { frFR } from './fr-FR';
 import { ruRU } from './ru-RU';
 import { bnIN } from './bn-IN';
+import { caES } from './ca-ES';
 import { esES } from './es-ES';
+import { deDE } from './de-DE';
+import { plPL } from './pl-PL';
 
 export const resources = {
   'zh-CN': { translation: zhCN },
@@ -19,12 +22,15 @@ export const resources = {
   'fr-FR': { translation: frFR },
   'ru-RU': { translation: ruRU },
   'bn-IN': { translation: bnIN },
+  'ca-ES': { translation: caES },
   'es-ES': { translation: esES },
+  'de-DE': { translation: deDE },
+  'pl-PL': { translation: plPL },
 } as const;
 
 export type TranslationKeys = typeof enUS;
 
-export type LanguageCode = 'zh-CN' | 'en-US' | 'zh-TW' | 'pt-BR' | 'ja-JP' | 'it-IT' | 'fr-FR' | 'ru-RU' | 'bn-IN' | 'es-ES';
+export type LanguageCode = 'zh-CN' | 'en-US' | 'zh-TW' | 'pt-BR' | 'ja-JP' | 'it-IT' | 'fr-FR' | 'ru-RU' | 'bn-IN' | 'ca-ES' | 'es-ES' | 'de-DE' | 'pl-PL';
 
 export type Language = {
   code: LanguageCode;
@@ -33,6 +39,7 @@ export type Language = {
 
 export const languages: Language[] = [
   { code: 'en-US', label: 'English' },
+  { code: 'ca-ES', label: 'Català' },
   { code: 'zh-CN', label: '简体中文' },
   { code: 'zh-TW', label: '繁體中文' },
   { code: 'pt-BR', label: 'Português' },
@@ -42,6 +49,8 @@ export const languages: Language[] = [
   { code: 'ru-RU', label: 'Русский' },
   { code: 'bn-IN', label: 'বাংলা' },
   { code: 'es-ES', label: 'Español' },
+  { code: 'de-DE', label: 'Deutsch' },
+  { code: 'pl-PL', label: 'Polski' },
 ];
 
-export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, esES };
+export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL };

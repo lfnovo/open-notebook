@@ -13,7 +13,6 @@ from api.models import (
     ModelResponse,
     ProviderAvailabilityResponse,
 )
-from open_notebook.domain.credential import Credential
 from open_notebook.ai.connection_tester import test_individual_model
 from open_notebook.ai.key_provider import provision_provider_keys
 from open_notebook.ai.model_discovery import (
@@ -23,6 +22,7 @@ from open_notebook.ai.model_discovery import (
     sync_provider_models,
 )
 from open_notebook.ai.models import DefaultModels, Model
+from open_notebook.domain.credential import Credential
 from open_notebook.exceptions import InvalidInputError
 
 router = APIRouter()
@@ -385,6 +385,7 @@ async def get_provider_availability():
             "openrouter": "OPENROUTER_API_KEY",
             "voyage": "VOYAGE_API_KEY",
             "elevenlabs": "ELEVENLABS_API_KEY",
+            "deepgram": "DEEPGRAM_API_KEY",
             "ollama": "OLLAMA_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
@@ -418,7 +419,7 @@ async def get_provider_availability():
         )
 
         # OpenAI-compatible: DB credential or env vars
-        provider_status["openai-compatible"] = (
+        provider_status["openai_compatible"] = (
             await _check_provider_has_credential("openai_compatible")
             or _check_openai_compatible_support("LLM")
             or _check_openai_compatible_support("EMBEDDING")
@@ -446,12 +447,15 @@ async def get_provider_availability():
             }
 
             # Special handling for openai-compatible to check mode-specific availability
-            if provider == "openai-compatible":
+            if provider == "openai_compatible":
+                # Esperanto exposes this provider with a hyphen ("openai-compatible"),
+                # while the rest of the codebase uses the underscore form.
+                esperanto_name = "openai-compatible"
                 has_db_cred = await _check_provider_has_credential("openai_compatible")
                 for model_type, mode in mode_mapping.items():
                     if (
                         model_type in esperanto_available
-                        and provider in esperanto_available[model_type]
+                        and esperanto_name in esperanto_available[model_type]
                     ):
                         if has_db_cred or _check_openai_compatible_support(mode):
                             supported_types[provider].append(model_type)

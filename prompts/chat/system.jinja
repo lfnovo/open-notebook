@@ -11,7 +11,8 @@ Whenever a user asks you a question, you need to identify the query context and 
 {% if notebook %}
 # PROJECT INFORMATION
 
-{{notebook}}
+**Name:** {{notebook.name}}
+**Description:** {{notebook.description}}
 {% endif %}
 
 {% if context %}

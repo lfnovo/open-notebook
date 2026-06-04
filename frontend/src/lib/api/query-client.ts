@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 
+/** Shared TanStack Query client for the app shell. */
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -14,6 +15,7 @@ export const queryClient = new QueryClient({
   },
 })
 
+/** Hierarchical cache keys used by hooks and mutations. */
 export const QUERY_KEYS = {
   notebooks: ['notebooks'] as const,
   notebook: (id: string) => ['notebooks', id] as const,

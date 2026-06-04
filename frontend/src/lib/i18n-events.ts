@@ -1,3 +1,4 @@
+/** Custom events fired while the UI switches locale. */
 export const I18N_LANGUAGE_CHANGE_START = 'i18n:language-change-start'
 export const I18N_LANGUAGE_CHANGE_END = 'i18n:language-change-end'
 

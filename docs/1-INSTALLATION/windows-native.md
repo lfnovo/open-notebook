@@ -23,7 +23,9 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
 | Python 3.12+ | Via uv (installed automatically) | Yes      |
 | Node.js 18+  | `winget install OpenJS.NodeJS`   | Yes      |
 | uv           | `pip install uv`                 | Yes      |
-| SurrealDB    | `scoop install surrealdb`        | Yes      |
+| SurrealDB 2.x | Install a local SurrealDB v2 binary | Yes   |
+
+> **Important:** current `main` still uses the same SurrealDB `v2` migration syntax pinned in the repo's Docker files. A native install against SurrealDB `v3` currently fails on startup with `FLEXIBLE must be specified after TYPE`.
 
 ## Quick Start
 
@@ -49,30 +51,29 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
      SURREAL_URL="ws://127.0.0.1:8000/rpc"
      ```
 
-3. **Edit `start-open-notebook.bat`:**
+3. **Start SurrealDB 2.x separately**
 
-   - Update `ROOT` and `DATA_ROOT` paths to match your setup
-   - Place in parent directory of `open-notebook`
+   - Use a local SurrealDB v2 instance that listens on `127.0.0.1:8000`
+   - Keep the credentials aligned with your `.env`
+   - If you installed SurrealDB 3.x, downgrade to 2.x before continuing
 
-4. **Run:** Double-click `start-open-notebook.bat`
+4. **Start the API from the repo root:**
 
-## Directory Structure (Recommended)
+   ```batch
+   uv run --env-file .env uvicorn api.main:app --host 127.0.0.1 --port 5055
+   ```
 
-```
-YourProjectsFolder\
-├── open-notebook\           # Source code (git clone)
-│   ├── .venv\               # Python virtual environment (created by uv)
-│   ├── frontend\            # Next.js frontend
-│   ├── commands\            # Worker command modules
-│   └── .env                 # Your configuration
-├── open-notebook-data\      # Data storage (SEPARATE from code!)
-│   ├── surrealdb\           # Database files
-│   ├── uploads\             # Uploaded documents
-│   └── sqlite-db\           # LangGraph checkpoints
-└── start-open-notebook.bat  # Launcher script
-```
+5. **Start the frontend in a second terminal:**
 
-**Why separate data folder?** Prevents accidental data loss when updating/reinstalling code.
+   ```batch
+   cd frontend
+   npm run dev
+   ```
+
+6. **Open the app:**
+
+   - Frontend: `http://127.0.0.1:3000`
+   - API docs: `http://127.0.0.1:5055/docs`
 
 ## Critical Windows Fixes
 
@@ -95,7 +96,7 @@ REM Wrong:
 .venv\Scripts\python.exe run_api.py
 
 REM Correct:
-uv run python run_api.py
+uv run --env-file .env uvicorn api.main:app --host 127.0.0.1 --port 5055
 ```
 
 ### Issue 2: Database Health Check Timeout
@@ -120,53 +121,27 @@ SURREAL_URL="ws://localhost:8000/rpc"
 SURREAL_URL="ws://127.0.0.1:8000/rpc"
 ```
 
-### Issue 3: Worker "Failed to canonicalize script path"
+### Issue 3: SurrealDB 3.x startup failure
 
 **Symptom:**
 
 ```
-Failed to canonicalize script path
+Parse error: FLEXIBLE must be specified after TYPE
 ```
 
-**Cause:** The `surreal-commands-worker.exe` can't find the Python `commands` module.
+**Cause:** the current migration files still target the SurrealDB 2.x syntax used by the repo's Docker setup.
 
-**Solution:** Use Python module invocation with PYTHONPATH:
+**Solution:** Run Open Notebook against SurrealDB 2.x for now.
 
-```batch
-set PYTHONPATH=%ROOT%
-uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands
-```
+### Issue 4: `DATA_ROOT` / `DATA_FOLDER` confusion
 
-### Issue 4: DATA_FOLDER Path Parsing Error
+**Symptom:** Docs or local notes refer to `DATA_ROOT` or a `.env`-driven `DATA_FOLDER`, but the app still writes to the default repo-local `./data` path.
 
-**Symptom:**
+**Cause:** on current `main`, [`open_notebook/config.py`](../../open_notebook/config.py) sets `DATA_FOLDER = "./data"` directly. There is no supported `DATA_ROOT` environment variable in the source tree.
 
-```
-warning: Failed to parse environment file .env at position X
-```
-
-**Cause:** `uv` can't parse Windows paths with backslashes in `.env`.
-
-**Solution:** Keep `DATA_FOLDER` **commented out** in `.env`. Set it via batch file:
-
-```batch
-set DATA_FOLDER=C:\path\to\open-notebook-data
-```
+**Solution:** Leave the default `./data` location in place unless you are intentionally patching the code yourself.
 
 ## Configuration Files
-
-### Modifying `open_notebook/config.py`
-
-The default `config.py` uses a hardcoded data path. Modify it to read from environment:
-
-```python
-import os
-
-# ROOT DATA FOLDER - can be overridden via DATA_FOLDER environment variable
-DATA_FOLDER = os.environ.get("DATA_FOLDER", "./data")
-
-# Rest of file uses DATA_FOLDER...
-```
 
 ### Required `.env` Settings
 
@@ -227,11 +202,6 @@ Then restart all services. Your `.env` and data are preserved.
 
 - Verify API is running: http://127.0.0.1:5055/docs
 - Check `.env` has `API_URL=http://localhost:5055`
-
-### Worker not processing commands
-
-- Check Worker window for errors
-- Verify PYTHONPATH is set in startup script
 
 ## Contributing
 

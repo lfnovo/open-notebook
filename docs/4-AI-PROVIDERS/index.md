@@ -72,6 +72,14 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#minimax)
 
+**Atlas Cloud (Full-Modal, OpenAI-compatible)**
+- Cost: Pay-as-you-go (varies by model)
+- Quality: Excellent
+- Best for: One key for DeepSeek / Qwen / GLM / Kimi / MiniMax and more (LLM + image + video)
+- Advantage: OpenAI-compatible — uses the standard **OpenAI-Compatible** provider with a base URL
+
+→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#atlas-cloud)
+
 ### Local / Self-Hosted (Free)
 
 **Ollama (Recommended for Local)**

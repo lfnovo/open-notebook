@@ -11,6 +11,7 @@ import { caES } from './ca-ES';
 import { esES } from './es-ES';
 import { deDE } from './de-DE';
 import { plPL } from './pl-PL';
+import { trTR } from './tr-TR';
 
 export const resources = {
   'zh-CN': { translation: zhCN },
@@ -26,11 +27,12 @@ export const resources = {
   'es-ES': { translation: esES },
   'de-DE': { translation: deDE },
   'pl-PL': { translation: plPL },
+  'tr-TR': { translation: trTR },
 } as const;
 
 export type TranslationKeys = typeof enUS;
 
-export type LanguageCode = 'zh-CN' | 'en-US' | 'zh-TW' | 'pt-BR' | 'ja-JP' | 'it-IT' | 'fr-FR' | 'ru-RU' | 'bn-IN' | 'ca-ES' | 'es-ES' | 'de-DE' | 'pl-PL';
+export type LanguageCode = 'zh-CN' | 'en-US' | 'zh-TW' | 'pt-BR' | 'ja-JP' | 'it-IT' | 'fr-FR' | 'ru-RU' | 'bn-IN' | 'ca-ES' | 'es-ES' | 'de-DE' | 'pl-PL' | 'tr-TR';
 
 export type Language = {
   code: LanguageCode;
@@ -51,6 +53,7 @@ export const languages: Language[] = [
   { code: 'es-ES', label: 'Español' },
   { code: 'de-DE', label: 'Deutsch' },
   { code: 'pl-PL', label: 'Polski' },
+  { code: 'tr-TR', label: 'Türkçe' },
 ];
 
-export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL };
+export { zhCN, enUS, zhTW, ptBR, jaJP, itIT, frFR, ruRU, bnIN, caES, esES, deDE, plPL, trTR };

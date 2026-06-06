@@ -16,7 +16,7 @@ export const trTR = {
       include: "Yeniden Derlemeye Dahil Et",
       isSafe: "Uygulamayı kullanırken yeniden derlemek güvenli midir?",
       isSafeAns: "Evet, yeniden derleme tamamen güvenlidir! İçeriği silmez, yalnızca vektörleri değiştirir ve hataları sorunsuzca yönetir.",
-      itemsProcessed: "{processed}/{total} görev gönderildi (%{percent})",
+      itemsProcessed: "{processed}/{total} görev gönderildi (yüzde {percent})",
       leavePageHint: "Bu işlem arka planda çalışacağından bu sayfadan ayrılabilirsiniz",
       mode: "Yeniden Derleme Modu",
       queued: "Kuyruğa alındı",

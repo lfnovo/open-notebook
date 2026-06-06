@@ -8,7 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import { Database, Server, ChevronDown, ExternalLink } from 'lucide-react'
+import { Database, Server, ChevronDown, ExternalLink, Copy, Check } from 'lucide-react'
 import { ConnectionError } from '@/lib/types/config'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
@@ -23,7 +23,18 @@ export function ConnectionErrorOverlay({
 }: ConnectionErrorOverlayProps) {
   const { t } = useTranslation()
   const [showDetails, setShowDetails] = useState(false)
+  const [copied, setCopied] = useState(false)
   const isApiError = error.type === 'api-unreachable'
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(error, null, 2))
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy text: ', err)
+    }
+  }
 
   return (
     <div
@@ -33,7 +44,65 @@ export function ConnectionErrorOverlay({
       aria-atomic="true"
     >
       <Card className="max-w-2xl w-full p-8 space-y-6">
-        {/* Error icon and title */}
+        <div className="flex flex-col items-center text-center space-y-4">
+          <div className="p-4 bg-muted rounded-full">
+            {isApiError ? (
+              <Server className="h-12 w-12 text-destructive" />
+            ) : (
+              <Database className="h-12 w-12 text-destructive" />
+            )}
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight">
+            {isApiError ? t('error.apiTitle') : t('error.dbTitle')}
+          </h2>
+          <p className="text-muted-foreground max-w-md">
+            {error.message || t('error.defaultDescription')}
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <Button onClick={onRetry} size="lg" className="w-full sm:w-auto">
+            {t('error.retryButton')}
+          </Button>
+          {error.documentationUrl && (
+            <Button variant="outline" size="lg" className="w-full sm:w-auto" asChild>
+              <a href={error.documentationUrl} target="_blank" rel="noopener noreferrer">
+                {t('error.viewDocs')}
+                <ExternalLink className="ml-2 h-4 w-4" />
+              </a>
+            </Button>
+          )}
+        </div>
+
+        <Collapsible open={showDetails} onOpenChange={setShowDetails} className="w-full border rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 p-0 h-auto hover:bg-transparent">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {showDetails ? t('error.hideDetails') : t('error.showDetails')}
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${showDetails ? 'rotate-180' : ''}`} />
+              </Button>
+            </CollapsibleTrigger>
+            
+            {showDetails && (
+              <Button variant="outline" size="sm" onClick={handleCopy} className="h-8 gap-1.5 px-3">
+                {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? t('error.copied') : t('error.copy')}
+              </Button>
+            )}
+          </div>
+
+          <CollapsibleContent className="mt-4">
+            <pre className="bg-muted p-4 rounded-md overflow-x-auto text-xs font-mono max-h-48">
+              {JSON.stringify(error, null, 2)}
+            </pre>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+    </div>
+  )
+}
         <div className="flex items-center gap-4">
           {isApiError ? (
             <Server className="w-12 h-12 text-destructive" aria-hidden="true" />

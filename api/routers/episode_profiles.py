@@ -137,18 +137,8 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
                 status_code=404, detail=f"Episode profile '{profile_id}' not found"
             )
 
-        profile.name = profile_data.name
-        profile.description = profile_data.description
-        profile.speaker_config = profile_data.speaker_config
-        profile.outline_llm = profile_data.outline_llm
-        profile.transcript_llm = profile_data.transcript_llm
-        profile.language = profile_data.language
-        profile.default_briefing = profile_data.default_briefing
-        profile.num_segments = profile_data.num_segments
-        profile.outline_provider = profile_data.outline_provider
-        profile.outline_model = profile_data.outline_model
-        profile.transcript_provider = profile_data.transcript_provider
-        profile.transcript_model = profile_data.transcript_model
+        for field, value in profile_data.model_dump(exclude_unset=True).items():
+            setattr(profile, field, value)
 
         await profile.save()
         return _profile_to_response(profile)

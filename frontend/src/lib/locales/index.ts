@@ -32,7 +32,7 @@ export const resources = {
 
 export type TranslationKeys = typeof enUS;
 
-export type LanguageCode = 'zh-CN' | 'en-US' | 'zh-TW' | 'pt-BR' | 'ja-JP' | 'it-IT' | 'fr-FR' | 'ru-RU' | 'bn-IN' | 'ca-ES' | 'es-ES' | 'de-DE' | 'pl-PL' | 'tr-TR';
+export type LanguageCode = keyof typeof resources;
 
 export type Language = {
   code: LanguageCode;

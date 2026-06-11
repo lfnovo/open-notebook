@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Controller } from "react-hook-form"
 
 interface CreateSourceFormData {
@@ -93,11 +94,13 @@ interface SourceTypeStepProps {
   errors: FieldErrors<CreateSourceFormData>
   urlValidationErrors?: { url: string; line: number }[]
   onClearUrlErrors?: () => void
+  includeLinkedPages?: boolean
+  onToggleIncludeLinkedPages?: (checked: boolean) => void
 }
 
 const MAX_BATCH_SIZE = 50
 
-export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
+export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors, includeLinkedPages, onToggleIncludeLinkedPages }: SourceTypeStepProps) {
   const { t } = useTranslation()
   // Watch the selected type and inputs to detect batch mode
   const selectedType = useWatch({ control, name: 'type' })
@@ -208,6 +211,24 @@ export function SourceTypeStep({ control, register, setValue, errors, urlValidat
                       <p className="text-xs text-muted-foreground mt-1">
                         {t('sources.batchUrlHint')}
                       </p>
+                      {urlCount === 1 && onToggleIncludeLinkedPages && (
+                        <div className="mt-3 flex items-start gap-2">
+                          <Checkbox
+                            id="include-linked-pages"
+                            checked={!!includeLinkedPages}
+                            onCheckedChange={(checked) => onToggleIncludeLinkedPages(checked === true)}
+                            className="mt-0.5"
+                          />
+                          <div>
+                            <Label htmlFor="include-linked-pages" className="text-sm font-medium">
+                              {t('sources.includeLinkedPages')}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {t('sources.includeLinkedPagesHint')}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                       {errors.url && (
                         <p className="text-sm text-destructive mt-1">{errors.url.message}</p>
                       )}

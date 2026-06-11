@@ -217,6 +217,11 @@ export function AddSourceDialog({
   const totalSteps = stepKeys.length
   const currentStepKey = stepKeys[currentStep - 1]
 
+  // On the source step with recursion on, Done is disabled (link selection is
+  // required first), so promote Next to primary and demote Done to keep exactly
+  // one primary action — the one the user can actually take.
+  const promoteNext = recursionActive && currentStepKey === 'source'
+
   const STEP_TITLES: Record<StepKey, { title: string; description: string }> = {
     source: { title: t('sources.addSource'), description: t('sources.processDescription') },
     links: { title: t('sources.selectLinks'), description: t('sources.selectLinksDescription') },
@@ -658,11 +663,12 @@ export function AddSourceDialog({
                 </Button>
               )}
 
-              {/* Show Next button on all but the final step, styled as outline/secondary */}
+              {/* Show Next button on all but the final step. Promoted to primary
+                  only when Done is disabled by required link selection. */}
               {currentStep < totalSteps && (
                 <Button
                   type="button"
-                  variant="outline"
+                  variant={promoteNext ? 'default' : 'outline'}
                   onClick={(e) => handleNextStep(e)}
                   disabled={!currentStepValid}
                 >
@@ -670,11 +676,11 @@ export function AddSourceDialog({
                 </Button>
               )}
 
-              {/* Show Done button on all steps, styled as primary.
-                  When recursion is active, force the user through the Select Links
-                  step instead of allowing a one-click finish from the source step. */}
+              {/* Show Done button on all steps. Primary by default, demoted to
+                  outline while link selection is required (recursion + source step). */}
               <Button
                 type="submit"
+                variant={promoteNext ? 'outline' : 'default'}
                 disabled={
                   !currentStepValid ||
                   createSource.isPending ||

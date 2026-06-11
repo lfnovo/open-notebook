@@ -32,7 +32,13 @@ export function useSources(notebookId?: string) {
 export function useDiscoverLinks(url: string | undefined, enabled: boolean) {
   return useQuery({
     queryKey: ['discover-links', url],
-    queryFn: () => sourcesApi.discoverLinks(url as string),
+    queryFn: () => {
+      // Guard against a manual refetch() bypassing the `enabled` gate with no URL.
+      if (!url) {
+        throw new Error('A URL is required to discover links')
+      }
+      return sourcesApi.discoverLinks(url)
+    },
     enabled: enabled && !!url,
     staleTime: 5 * 60 * 1000,
     retry: false,

@@ -185,8 +185,12 @@ async def discover_links(request: DiscoverLinksRequest):
     try:
         processed = await extract_content(content_state)
     except Exception as e:
-        logger.error(f"Failed to fetch URL for link discovery: {e}")
-        raise ExternalServiceError(f"Could not fetch the URL: {e}") from e
+        # Log the full traceback server-side; return a sanitized, bounded reason.
+        logger.exception("Failed to fetch URL for link discovery")
+        reason = str(e).strip().splitlines()[0] if str(e).strip() else "unknown error"
+        if len(reason) > 200:
+            reason = reason[:197] + "..."
+        raise ExternalServiceError(f"Could not fetch the URL: {reason}") from e
 
     markdown = processed.content or ""
     links = extract_links_from_markdown(markdown, url)

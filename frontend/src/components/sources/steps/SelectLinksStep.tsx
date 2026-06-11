@@ -25,9 +25,10 @@ export function SelectLinksStep({
   const { data, isLoading, isError } = useDiscoverLinks(sourceUrl, true)
 
   const links = data?.links ?? []
+  const selectedSet = new Set(selectedLinks)
 
   const toggle = (url: string) => {
-    if (selectedLinks.includes(url)) {
+    if (selectedSet.has(url)) {
       onSelectedChange(selectedLinks.filter((u) => u !== url))
     } else {
       onSelectedChange([...selectedLinks, url])
@@ -93,7 +94,7 @@ export function SelectLinksStep({
         {links.map((link) => (
           <li key={link.url} className="flex items-start gap-3 rounded-md border p-2">
             <Checkbox
-              checked={selectedLinks.includes(link.url)}
+              checked={selectedSet.has(link.url)}
               onCheckedChange={() => toggle(link.url)}
               className="mt-1"
             />

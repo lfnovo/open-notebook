@@ -32,7 +32,7 @@ export function useVersionCheck() {
           closeButton: true,
           action: {
             label: t('advanced.viewOnGithub'),
-            onClick: () => window.open('https://github.com/stefanini-applications/sai-notebook', '_blank'),
+            onClick: () => window.open('https://github.com/stefanini-applications/sai-notebook', '_blank', 'noopener,noreferrer'),
           },
           onDismiss: () => sessionStorage.setItem(dismissKey, 'true'),
         })

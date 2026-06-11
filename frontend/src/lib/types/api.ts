@@ -111,6 +111,19 @@ export interface CreateSourceRequest {
   async_processing?: boolean
 }
 
+export interface LinkCandidate {
+  url: string
+  text: string
+  same_domain: boolean
+}
+
+export interface DiscoverLinksResponse {
+  source_url: string
+  title?: string
+  count: number
+  links: LinkCandidate[]
+}
+
 export interface UpdateNoteRequest {
   title?: string
   content?: string

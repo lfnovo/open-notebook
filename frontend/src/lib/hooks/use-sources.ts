@@ -26,6 +26,20 @@ export function useSources(notebookId?: string) {
 }
 
 /**
+ * Hook for discovering the links contained in a single URL, so the user can
+ * choose which to import as separate sources. Read-only; cached for 5 minutes.
+ */
+export function useDiscoverLinks(url: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['discover-links', url],
+    queryFn: () => sourcesApi.discoverLinks(url as string),
+    enabled: enabled && !!url,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
+}
+
+/**
  * Hook for fetching notebook sources with infinite scroll pagination.
  * Returns flattened sources array and pagination controls.
  */

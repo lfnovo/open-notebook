@@ -1,13 +1,14 @@
 import type { AxiosResponse } from 'axios'
 
 import apiClient from './client'
-import { 
-  SourceListResponse, 
-  SourceDetailResponse, 
+import {
+  SourceListResponse,
+  SourceDetailResponse,
   SourceResponse,
   SourceStatusResponse,
-  CreateSourceRequest, 
-  UpdateSourceRequest 
+  CreateSourceRequest,
+  UpdateSourceRequest,
+  DiscoverLinksResponse
 } from '@/lib/types/api'
 
 export const sourcesApi = {
@@ -63,6 +64,14 @@ export const sourcesApi = {
     formData.append('async_processing', String(data.async_processing ?? false))
     
     const response = await apiClient.post<SourceResponse>('/sources', formData)
+    return response.data
+  },
+
+  discoverLinks: async (url: string) => {
+    const response = await apiClient.post<DiscoverLinksResponse>(
+      '/sources/discover-links',
+      { url }
+    )
     return response.data
   },
 

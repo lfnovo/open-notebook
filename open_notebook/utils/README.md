@@ -171,7 +171,7 @@ The ContextBuilder follows these design principles:
 
 ## Integration
 
-The ContextBuilder integrates seamlessly with the existing Open Notebook architecture:
+The ContextBuilder integrates seamlessly with the existing SAI Notebook architecture:
 
 - Uses existing domain models (`Source`, `Notebook`, `Note`)
 - Leverages the repository pattern for database access

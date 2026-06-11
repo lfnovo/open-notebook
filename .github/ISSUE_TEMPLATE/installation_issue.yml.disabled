@@ -28,7 +28,7 @@ body:
     id: installation-method
     attributes:
       label: Installation Method
-      description: How are you trying to install Open Notebook?
+      description: How are you trying to install SAI Notebook?
       options:
         - Docker (docker-compose - recommended)
         - Docker (single container - v1-latest-single, deprecated)

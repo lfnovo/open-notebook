@@ -84,7 +84,7 @@ This folder contains different `docker-compose.yml` configurations for various u
 ---
 
 ### `docker-compose-dev.yml` - Development Setup
-**Use this if:** You're contributing to Open Notebook or developing custom features
+**Use this if:** You're contributing to SAI Notebook or developing custom features
 
 **Features:**
 - Hot-reload for code changes

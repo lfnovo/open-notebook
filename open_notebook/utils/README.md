@@ -1,6 +1,6 @@
 # ContextBuilder
 
-A flexible and generic ContextBuilder class for the Open Notebook project that can handle any parameters and build context from sources, notebooks, insights, and notes.
+A flexible and generic ContextBuilder class for the SAI Notebook project that can handle any parameters and build context from sources, notebooks, insights, and notes.
 
 ## Features
 

@@ -234,7 +234,7 @@ cd frontend && npm install package-name
 
 ### Adding a New Language (i18n)
 
-Open Notebook supports internationalization. To add a new language:
+SAI Notebook supports internationalization. To add a new language:
 
 1. **Create locale file**: Copy an existing locale as template
    ```bash
@@ -340,7 +340,7 @@ make docker-build-local
 ## Project Structure
 
 ```
-open-notebook/
+sai-notebook/
 ├── api/                    # FastAPI backend
 ├── frontend/               # Next.js React frontend
 ├── open_notebook/          # Python core library

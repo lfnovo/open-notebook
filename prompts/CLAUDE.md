@@ -1,6 +1,6 @@
 # Prompts Module
 
-Jinja2 prompt templates for multi-provider AI workflows in Open Notebook.
+Jinja2 prompt templates for multi-provider AI workflows in SAI Notebook.
 
 ## Purpose
 

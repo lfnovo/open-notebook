@@ -1,5 +1,5 @@
 """
-Unified embedding utilities for Open Notebook.
+Unified embedding utilities for SAI Notebook.
 
 Provides centralized embedding generation with support for:
 - Single text embedding (with automatic chunking and mean pooling for large texts)

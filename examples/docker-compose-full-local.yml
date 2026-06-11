@@ -3,7 +3,7 @@
 # This is the complete privacy-focused setup with NO external APIs needed:
 # - Ollama: Local LLM and embeddings (mistral, llama, nomic-embed, etc.)
 # - Speaches: Local TTS (text-to-speech) and STT (speech-to-text)
-# - Open Notebook: Your research assistant
+# - SAI Notebook: Your research assistant
 # - SurrealDB: Local database
 #
 # Perfect for:

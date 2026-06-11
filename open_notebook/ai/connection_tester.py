@@ -300,7 +300,7 @@ async def test_individual_model(model) -> Tuple[bool, str]:
                 voice = "alloy"  # fallback
 
             result = await esp_model.agenerate_speech(
-                text="Hello from Open Notebook", voice=voice
+                text="Hello from SAI Notebook", voice=voice
             )
             if result and hasattr(result, "content"):
                 size = len(result.content)

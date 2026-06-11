@@ -1,4 +1,4 @@
-"""Surreal-commands integration for Open Notebook"""
+"""Surreal-commands integration for SAI Notebook"""
 
 from .embedding_commands import (
     embed_insight_command,

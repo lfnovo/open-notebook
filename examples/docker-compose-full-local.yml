@@ -21,9 +21,9 @@
 #   5. Configure providers in UI
 #
 # Full documentation:
-# - Ollama setup: https://github.com/lfnovo/open-notebook/blob/main/examples/README.md
-# - TTS setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
-# - STT setup: https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/local-stt.md
+# - Ollama setup: https://github.com/stefanini-applications/sai-notebook/blob/main/examples/README.md
+# - TTS setup: https://github.com/stefanini-applications/sai-notebook/blob/main/docs/5-CONFIGURATION/local-tts.md
+# - STT setup: https://github.com/stefanini-applications/sai-notebook/blob/main/docs/5-CONFIGURATION/local-stt.md
 
 services:
   surrealdb:

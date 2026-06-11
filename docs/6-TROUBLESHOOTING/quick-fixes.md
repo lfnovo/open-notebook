@@ -369,4 +369,4 @@ docker compose up
 - **Look up your exact error** in [Troubleshooting Index](index.md)
 - **Check the FAQ** in [FAQ](faq.md)
 - **Check logs:** `docker compose logs | head -50`
-- **Ask for help:** [Discord](https://discord.gg/37XJPXfz2w) or [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **Ask for help:** [Discord](https://discord.gg/37XJPXfz2w) or [GitHub Issues](https://github.com/stefanini-applications/sai-notebook/issues)

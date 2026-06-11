@@ -35,7 +35,7 @@ export const esES = {
     podcast: "Podcast",
     quickActions: "Acciones rápidas",
     quickActionsDesc: "Navegación, búsqueda, preguntar, tema",
-    appName: "Open Notebook",
+    appName: "SAI Notebook",
     add: "Agregar",
     remove: "Quitar",
     confirm: "Confirmar",

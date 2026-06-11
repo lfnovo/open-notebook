@@ -35,7 +35,7 @@ export const ruRU = {
     podcast: "Подкаст",
     quickActions: "Быстрые действия",
     quickActionsDesc: "Навигация, поиск, запрос, тема",
-    appName: "Open Notebook",
+    appName: "SAI Notebook",
     add: "Добавить",
     remove: "Удалить",
     confirm: "Подтвердить",

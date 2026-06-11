@@ -219,7 +219,7 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 - **Documentation**: https://open-notebook.ai
 - **Discord**: https://discord.gg/37XJPXfz2w
-- **Issues**: https://github.com/lfnovo/open-notebook/issues
+- **Issues**: https://github.com/stefanini-applications/sai-notebook/issues
 - **License**: MIT (see LICENSE)
 
 

@@ -1,6 +1,6 @@
 # Open Notebook Windows Installation Guide (Native, No Docker)
 
-This guide documents how to install and run [Open Notebook](https://github.com/lfnovo/open-notebook) on Windows **natively without Docker or WSL**.
+This guide documents how to install and run [Open Notebook](https://github.com/stefanini-applications/sai-notebook) on Windows **natively without Docker or WSL**.
 
 ## Who Is This For?
 
@@ -31,7 +31,7 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
 
    ```bash
    cd %USERPROFILE%\Projects  # or your preferred location
-   git clone https://github.com/lfnovo/open-notebook.git
+   git clone https://github.com/stefanini-applications/sai-notebook.git
    cd open-notebook
    uv sync
    cd frontend && npm install && cd ..

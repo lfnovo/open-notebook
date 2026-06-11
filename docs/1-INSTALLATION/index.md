@@ -113,10 +113,10 @@ Before installing, you'll need:
 4. Access at `http://localhost:8502`
 
 ### For Source Installation (Developers)
-1. Have Python 3.11+, Node.js 18+, Git installed
+1. Have uv, Node.js 18+, Docker, and Git installed
 2. Follow [From Source](from-source.md)
-3. Run `make start-all`
-4. Access at `http://localhost:8502` (frontend) or `http://localhost:5055` (API)
+3. Run `dev.bat` (Windows) or `./dev.sh` (Linux/macOS)
+4. Access at `http://localhost:3000` (frontend) or `http://localhost:5055/docs` (API)
 
 ---
 
@@ -141,7 +141,7 @@ Once you're up and running:
 ## Need Help?
 
 - **Discord**: [Join community](https://discord.gg/37XJPXfz2w)
-- **GitHub Issues**: [Report problems](https://github.com/lfnovo/open-notebook/issues)
+- **GitHub Issues**: [Report problems](https://github.com/stefanini-applications/sai-notebook/issues)
 - **Docs**: See [Full Documentation](../index.md)
 
 ---

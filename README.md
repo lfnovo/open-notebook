@@ -11,8 +11,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/lfnovo/open-notebook">
-    <img src="docs/assets/hero.svg" alt="Logo">
+  <a href="https://github.com/stefanini-applications/sai-notebook">
+    <img src="docs/assets/sai_hero.svg" alt="Logo">
   </a>
 
   <h3 align="center">Open Notebook</h3>
@@ -184,7 +184,7 @@ Done! You're ready to create your first notebook.
 - **🤖 AI Installation Assistant**: [CustomGPT to help you install](https://chatgpt.com/g/g-68776e2765b48191bd1bae3f30212631-open-notebook-installation-assistant)
 - **🆘 Troubleshooting**: [5-minute troubleshooting guide](docs/6-TROUBLESHOOTING/quick-fixes.md)
 - **💬 Community Support**: [Discord Server](https://discord.gg/37XJPXfz2w)
-- **🐛 Report Issues**: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+- **🐛 Report Issues**: [GitHub Issues](https://github.com/stefanini-applications/sai-notebook/issues)
 
 ---
 
@@ -289,7 +289,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **Enhanced Citations**: Improved layout and finer control for source citations
 - **Multiple Chat Sessions**: Manage different conversations within notebooks
 
-See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full list of proposed features and known issues.
+See the [open issues](https://github.com/stefanini-applications/sai-notebook/issues) for a full list of proposed features and known issues.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -304,7 +304,7 @@ See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full
 
 ### Join the Community
 - 💬 **[Discord Server](https://discord.gg/37XJPXfz2w)** - Get help, share ideas, and connect with other users
-- 🐛 **[GitHub Issues](https://github.com/lfnovo/open-notebook/issues)** - Report bugs and request features
+- 🐛 **[GitHub Issues](https://github.com/stefanini-applications/sai-notebook/issues)** - Report bugs and request features
 - ⭐ **Star this repo** - Show your support and help others discover Open Notebook
 
 ### Contributing
@@ -329,7 +329,7 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 
 **Community Support**:
 - 💬 [Discord Server](https://discord.gg/37XJPXfz2w) - Get help, share ideas, and connect with users
-- 🐛 [GitHub Issues](https://github.com/lfnovo/open-notebook/issues) - Report bugs and request features
+- 🐛 [GitHub Issues](https://github.com/stefanini-applications/sai-notebook/issues) - Report bugs and request features
 - 🌐 [Website](https://www.open-notebook.ai) - Learn more about the project
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -338,15 +338,15 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/lfnovo/open-notebook.svg?style=for-the-badge
-[contributors-url]: https://github.com/lfnovo/open-notebook/graphs/contributors
+[contributors-url]: https://github.com/stefanini-applications/sai-notebook/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/lfnovo/open-notebook.svg?style=for-the-badge
-[forks-url]: https://github.com/lfnovo/open-notebook/network/members
+[forks-url]: https://github.com/stefanini-applications/sai-notebook/network/members
 [stars-shield]: https://img.shields.io/github/stars/lfnovo/open-notebook.svg?style=for-the-badge
-[stars-url]: https://github.com/lfnovo/open-notebook/stargazers
+[stars-url]: https://github.com/stefanini-applications/sai-notebook/stargazers
 [issues-shield]: https://img.shields.io/github/issues/lfnovo/open-notebook.svg?style=for-the-badge
-[issues-url]: https://github.com/lfnovo/open-notebook/issues
+[issues-url]: https://github.com/stefanini-applications/sai-notebook/issues
 [license-shield]: https://img.shields.io/github/license/lfnovo/open-notebook.svg?style=for-the-badge
-[license-url]: https://github.com/lfnovo/open-notebook/blob/master/LICENSE.txt
+[license-url]: https://github.com/stefanini-applications/sai-notebook/blob/master/LICENSE.txt
 [linkedin-shield]: https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&logo=linkedin&colorB=555
 [linkedin-url]: https://linkedin.com/in/lfnovo
 [product-screenshot]: images/screenshot.png

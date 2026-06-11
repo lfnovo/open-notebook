@@ -4,62 +4,50 @@ Get Open Notebook running locally in 5 minutes.
 
 ## Prerequisites
 
-- **Python 3.11+**
+- **uv** (package manager) — install: <https://docs.astral.sh/uv/getting-started/installation/>
+  (uv provisions a compatible Python — the project needs **3.11 or 3.12**, not 3.13)
+- **Node.js 18+** — <https://nodejs.org/>
+- **Docker** (for SurrealDB)
 - **Git**
-- **uv** (package manager) - install with `curl -LsSf https://astral.sh/uv/install.sh | sh`
-- **Docker** (optional, for SurrealDB)
 
-## 1. Clone the Repository (2 min)
+> `make` is not required in this fork — use the `dev.*` launcher below.
 
-```bash
-# Fork the repository on GitHub first, then clone your fork
-git clone https://github.com/YOUR_USERNAME/open-notebook.git
-cd open-notebook
-
-# Add upstream remote for updates
-git remote add upstream https://github.com/lfnovo/open-notebook.git
-```
-
-## 2. Install Dependencies (2 min)
+## 1. Clone the Repository
 
 ```bash
-# Install Python dependencies
-uv sync
+git clone https://github.com/stefanini-applications/sai-notebook.git
+cd sai-notebook
 
-# Verify uv is working
-uv --version
+# (If contributing, fork on GitHub, clone your fork, then:)
+# git remote add upstream https://github.com/stefanini-applications/sai-notebook.git
 ```
 
-## 3. Start Services (1 min)
-
-In separate terminal windows:
+## 2. Start Everything (one command)
 
 ```bash
-# Terminal 1: Start SurrealDB (database)
-make database
-# or: docker run -d --name surrealdb -p 8000:8000 surrealdb/surrealdb:v2 start --user root --pass password --bind 0.0.0.0:8000 memory
-
-# Terminal 2: Start API (backend on port 5055)
-make api
-# or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
-
-# Terminal 3: Start Frontend (UI on port 3000)
-cd frontend && npm run dev
+dev.bat        # Windows   (or: .\dev.ps1, or: uv run python dev.py)
+./dev.sh       # Linux/macOS
 ```
 
-## 4. Verify Everything Works (instant)
+The launcher creates `.env`, installs dependencies, and starts SurrealDB + API +
+worker + frontend together with combined logs. Wait for the **"Open Notebook is up"**
+banner. `Ctrl+C` stops everything; `dev.bat stop` / `./dev.sh stop` force-stops leftovers.
 
-- **API Health**: http://localhost:5055/health → should return `{"status": "ok"}`
-- **API Docs**: http://localhost:5055/docs → interactive API documentation
-- **Frontend**: http://localhost:3000 → Open Notebook UI
+## 3. Verify Everything Works
+
+- **Frontend**: <http://localhost:3000> → Open Notebook UI
+- **API Docs**: <http://localhost:5055/docs> → interactive API documentation
+- **Database**: SurrealDB on `localhost:8000`
 
 **All three show up?** ✅ You're ready to develop!
+
+For the manual, terminal-per-service setup, see [from-source installation](../1-INSTALLATION/from-source.md#manual-setup-what-the-launcher-does).
 
 ---
 
 ## Next Steps
 
-- **First Issue?** Pick a [good first issue](https://github.com/lfnovo/open-notebook/issues?q=label%3A%22good+first+issue%22)
+- **First Issue?** Pick a [good first issue](https://github.com/stefanini-applications/sai-notebook/issues?q=label%3A%22good+first+issue%22)
 - **Understand the code?** Read [Architecture Overview](architecture.md)
 - **Make changes?** Follow [Contributing Guide](contributing.md)
 - **Setup details?** See [Development Setup](development-setup.md)
@@ -68,39 +56,30 @@ cd frontend && npm run dev
 
 ## Troubleshooting
 
-### "Port 5055 already in use"
+### "Port 5055 / 3000 / 8000 already in use"
 ```bash
-# Find what's using the port
-lsof -i :5055
-
-# Use a different port
-uv run uvicorn api.main:app --port 5056
+# Stop the stack's processes + container
+dev.bat stop      # Windows
+./dev.sh stop     # Linux/macOS
 ```
 
 ### "Can't connect to SurrealDB"
 ```bash
 # Check if SurrealDB is running
-docker ps | grep surrealdb
+docker compose ps surrealdb
 
-# Restart it
-make database
+# Confirm .env points at localhost (not the docker hostname "surrealdb")
+#   SURREAL_URL=ws://localhost:8000/rpc
 ```
 
 ### "Python version is too old"
 ```bash
-# Check your Python version
-python --version  # Should be 3.11+
-
-# Use Python 3.11 specifically
-uv sync --python 3.11
+# Let uv use a compatible interpreter (3.11–3.12)
+uv sync --python 3.12
 ```
 
 ### "npm: command not found"
-```bash
-# Install Node.js from https://nodejs.org/
-# Then install frontend dependencies
-cd frontend && npm install
-```
+Install Node.js 18+ from <https://nodejs.org/>.
 
 ---
 
@@ -111,16 +90,13 @@ cd frontend && npm install
 uv run pytest
 
 # Format code
-make ruff
+ruff check . --fix
 
 # Type checking
-make lint
+uv run python -m mypy .
 
 # Run the full stack
-make start-all
-
-# View API documentation
-open http://localhost:5055/docs
+./dev.sh          # or dev.bat on Windows
 ```
 
 ---

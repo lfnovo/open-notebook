@@ -76,7 +76,7 @@ Caddy handles HTTPS automatically. The timeout settings ensure long-running oper
 
 ```yaml
 # Add this to your docker-compose.yml alongside the surrealdb service
-# See full base setup: https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# See full base setup: https://github.com/stefanini-applications/sai-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest
@@ -161,7 +161,7 @@ When `API_URL` is not set, the Next.js frontend:
 
 ## Complete Docker Compose Example
 
-> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml) for the complete setup.
+> **Note:** This example only shows the open-notebook and nginx services. You also need a `surrealdb` service. See the [full base docker-compose.yml](https://github.com/stefanini-applications/sai-notebook/blob/main/docker-compose.yml) for the complete setup.
 
 ```yaml
 services:

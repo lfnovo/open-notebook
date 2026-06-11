@@ -35,7 +35,7 @@ export const bnIN = {
     podcast: "পডকাস্ট",
     quickActions: "দ্রুত ক্রিয়া",
     quickActionsDesc: "নেভিগেশন, অনুসন্ধান, প্রশ্ন, থিম",
-    appName: "ওপেন নোটবুক",
+    appName: "SAI Notebook",
     add: "যোগ করুন",
     remove: "সরান",
     confirm: "নিশ্চিত করুন",

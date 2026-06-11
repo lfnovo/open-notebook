@@ -119,7 +119,7 @@ When both Open Notebook and Ollama run in the same Docker Compose stack:
 
 ```yaml
 # Requires surrealdb service — see full base setup:
-# https://github.com/lfnovo/open-notebook/blob/main/docker-compose.yml
+# https://github.com/stefanini-applications/sai-notebook/blob/main/docker-compose.yml
 services:
   open-notebook:
     image: lfnovo/open_notebook:v1-latest

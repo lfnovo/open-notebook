@@ -28,7 +28,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 ### Reporting Bugs
 
 1. **Search existing issues** - Check if the bug was already reported
-2. **Create a bug report** - Use the [Bug Report template](https://github.com/lfnovo/open-notebook/issues/new?template=bug_report.yml)
+2. **Create a bug report** - Use the [Bug Report template](https://github.com/stefanini-applications/sai-notebook/issues/new?template=bug_report.yml)
 3. **Provide details** - Include:
    - Steps to reproduce
    - Expected vs actual behavior
@@ -39,7 +39,7 @@ By participating in this project, you are expected to uphold our Code of Conduct
 ### Suggesting Features
 
 1. **Search existing issues** - Check if the feature was already suggested
-2. **Create a feature request** - Use the [Feature Request template](https://github.com/lfnovo/open-notebook/issues/new?template=feature_request.yml)
+2. **Create a feature request** - Use the [Feature Request template](https://github.com/stefanini-applications/sai-notebook/issues/new?template=feature_request.yml)
 3. **Explain the value** - Describe why this feature would be helpful
 4. **Propose implementation** - If you have ideas on how to implement it, share them
 5. **Indicate if you want to build it** - Check the "I would like to work on this" box if you're interested

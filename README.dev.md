@@ -5,20 +5,23 @@ This guide is for developers working on Open Notebook. For end-user documentatio
 ## Quick Start for Development
 
 ```bash
-# 1. Clone and setup
-git clone https://github.com/lfnovo/open-notebook.git
-cd open-notebook
+# 1. Clone
+git clone https://github.com/stefanini-applications/sai-notebook.git
+cd sai-notebook
 
-# 2. Copy environment files
-cp .env.example .env
-cp .env.example docker.env
-
-# 3. Install dependencies
-uv sync
-
-# 4. Start all services (recommended for development)
-make start-all
+# 2. Start the full stack (DB + API + worker + frontend) in one command
+dev.bat        # Windows   (or: .\dev.ps1, or: uv run python dev.py)
+./dev.sh       # Linux/macOS
 ```
+
+The launcher creates `.env`, installs dependencies, brings up all four services
+with combined logs, and stops everything on `Ctrl+C`. See
+[from-source installation](docs/1-INSTALLATION/from-source.md) for the full
+walkthrough (including the manual, terminal-per-service setup).
+
+> **Note:** the `make` targets below (`make start-all`, `make dev`, `make full`,
+> `make status`, `make stop-all`) are **not used in this fork** — some reference
+> compose files that don't exist here. Use the `dev.*` launcher instead.
 
 ## Development Workflows
 
@@ -26,8 +29,8 @@ make start-all
 
 | Workflow | Use Case | Speed | Production Parity |
 |----------|----------|-------|-------------------|
-| **Local Services** (`make start-all`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
-| **Docker Compose** (`make dev`) | Testing containerized setup | ⚡⚡ Medium | High |
+| **Local Services** (`dev.sh` / `dev.bat`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
+| **Docker Compose** (`docker compose up`) | Testing the published image | ⚡⚡ Medium | High |
 | **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
 | **Multi-platform Build** (`make docker-push`) | Publishing releases | 🐌 Very Slow | Exact |
 
@@ -40,45 +43,33 @@ make start-all
 ### Setup
 
 ```bash
-# Start database
-make database
-
-# Start all services (DB + API + Worker + Frontend)
-make start-all
+dev.bat        # Windows   (or: .\dev.ps1, or: uv run python dev.py)
+./dev.sh       # Linux/macOS
 ```
 
 ### What This Does
 
 1. Starts SurrealDB in Docker (port 8000)
-2. Starts FastAPI backend (port 5055)
-3. Starts background worker (surreal-commands)
-4. Starts Next.js frontend (port 3000)
+2. Starts FastAPI backend (port 5055, auto-reload on `api/` + `open_notebook/`)
+3. Starts background worker (surreal-commands, auto-reload via watchfiles)
+4. Starts Next.js frontend (port 3000, Turbopack HMR)
+
+All four stream into one terminal with `[db]`/`[api]`/`[worker]`/`[frontend]` prefixes.
+
+### Stopping
+
+`Ctrl+C` in the launcher window stops everything. If something is left running:
+
+```bash
+dev.bat stop      # Windows
+./dev.sh stop     # Linux/macOS
+```
 
 ### Individual Services
 
-```bash
-# Just the database
-make database
-
-# Just the API
-make api
-
-# Just the frontend
-make frontend
-
-# Just the worker
-make worker
-```
-
-### Checking Status
-
-```bash
-# See what's running
-make status
-
-# Stop everything
-make stop-all
-```
+To run a single service in its own terminal, see the
+[manual setup](docs/1-INSTALLATION/from-source.md#manual-setup-what-the-launcher-does)
+in the from-source guide.
 
 ### Advantages
 - ✅ Fastest iteration (hot reload)
@@ -98,18 +89,18 @@ make stop-all
 **Best for:** Testing containerized setup, CI/CD verification
 
 ```bash
-# Start with dev profile
-make dev
-
-# Or full stack
-make full
+# Runs SurrealDB + the prebuilt open_notebook image
+docker compose up
 ```
 
 ### Configuration Files
 
-- `docker-compose.dev.yml` - Development setup
-- `docker-compose.full.yml` - Full stack setup
-- `docker-compose.yml` - Base configuration
+- `docker-compose.yml` - the only compose file in this fork: SurrealDB plus the
+  published `open_notebook` image (see [Docker install](docs/1-INSTALLATION/docker-compose.md)).
+
+> The `docker-compose.dev.yml` / `docker-compose.full.yml` files referenced by some
+> Makefile targets do not exist in this fork. For source-based development use the
+> `dev.*` launcher (section 1).
 
 ### Advantages
 - ✅ Closer to production environment
@@ -198,16 +189,13 @@ make tag
 
 ```bash
 # Run linter with auto-fix
-make ruff
+ruff check . --fix
 
 # Run type checking
-make lint
+uv run python -m mypy .
 
 # Run tests
 uv run pytest tests/
-
-# Clean cache directories
-make clean-cache
 ```
 
 ---
@@ -217,15 +205,15 @@ make clean-cache
 ### Adding a New Feature
 
 1. Create feature branch
-2. Develop using `make start-all`
+2. Develop using the `dev.*` launcher (section 1)
 3. Write tests
-4. Run `make ruff` and `make lint`
+4. Run `ruff check . --fix` and `uv run python -m mypy .`
 5. Test with `make docker-build-local`
 6. Create PR
 
 ### Fixing a Bug
 
-1. Reproduce locally with `make start-all`
+1. Reproduce locally with the `dev.*` launcher (section 1)
 2. Add test case demonstrating bug
 3. Fix the bug
 4. Verify test passes
@@ -301,30 +289,27 @@ Database migrations run **automatically** when the API starts.
 ### Services Won't Start
 
 ```bash
-# Check status
-make status
-
 # Check database
 docker compose ps surrealdb
 
 # View logs
 docker compose logs surrealdb
 
-# Restart everything
-make stop-all
-make start-all
+# Stop anything left running, then restart the launcher
+./dev.sh stop      # (dev.bat stop on Windows)
+./dev.sh           # (dev.bat / .\dev.ps1 on Windows)
 ```
 
 ### Port Already in Use
 
 ```bash
-# Find process using port
+# Find process using port (macOS/Linux)
 lsof -i :5055
 lsof -i :3000
 lsof -i :8000
 
-# Kill stuck processes
-make stop-all
+# Stop the stack's processes + container
+./dev.sh stop      # (dev.bat stop on Windows)
 ```
 
 ### Database Connection Issues
@@ -403,22 +388,19 @@ See [docs/5-CONFIGURATION/](docs/5-CONFIGURATION/) for complete configuration gu
 
 ### Speed Up Local Development
 
-1. **Use `make start-all`** instead of Docker for daily work
-2. **Keep SurrealDB running** between sessions (`make database`)
+1. **Use the `dev.*` launcher** instead of Docker for daily work
+2. **Use `--skip-sync`** (`./dev.sh --skip-sync`) to skip dependency checks on restarts
 3. **Use `make docker-build-local`** only when testing Dockerfile changes
 4. **Skip multi-platform builds** until ready to publish
 
 ### Reduce Resource Usage
 
 ```bash
-# Stop unused services
-make stop-all
+# Stop the stack
+./dev.sh stop      # (dev.bat stop on Windows)
 
 # Clean up Docker
 docker system prune -a
-
-# Clean Python cache
-make clean-cache
 ```
 
 ---
@@ -440,10 +422,10 @@ make clean-cache
 
 - **Documentation:** https://open-notebook.ai
 - **Discord:** https://discord.gg/37XJPXfz2w
-- **Issues:** https://github.com/lfnovo/open-notebook/issues
+- **Issues:** https://github.com/stefanini-applications/sai-notebook/issues
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Maintainer Guide:** [MAINTAINER_GUIDE.md](MAINTAINER_GUIDE.md)
 
 ---
 
-**Last Updated:** January 2025
+**Last Updated:** June 2026

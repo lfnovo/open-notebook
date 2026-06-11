@@ -1,12 +1,12 @@
-# Open Notebook - Root CLAUDE.md
+# SAI Notebook - Root CLAUDE.md
 
-This file provides architectural guidance for contributors working on Open Notebook at the project level.
+This file provides architectural guidance for contributors working on SAI Notebook at the project level.
 
 ## Project Overview
 
-**Open Notebook** is an open-source, privacy-focused alternative to Google's Notebook LM. It's an AI-powered research assistant enabling users to upload multi-modal content (PDFs, audio, video, web pages), generate intelligent notes, search semantically, chat with AI models, and produce professional podcasts—all with complete control over data and choice of AI providers.
+**SAI Notebook** is a fork of the open-source, privacy-focused alternative to Google's Notebook LM: Open Notebook. It's an AI-powered research assistant enabling users to upload multi-modal content (PDFs, audio, video, web pages), generate intelligent notes, search semantically, chat with AI models, and produce professional podcasts—all with complete control over data and choice of AI providers.
 
-**Key Values**: Privacy-first, multi-provider AI support, fully self-hosted option, open-source transparency.
+**Key Values**: Privacy-first, multi-provider AI support, fully self-hosted option, open-source transparency, Integrated to Stefanini's ecosystem.
 
 ---
 
@@ -48,6 +48,18 @@ This file provides architectural guidance for contributors working on Open Noteb
 
 User documentation is at @docs/
 
+## Running Locally (from source)
+
+Use the cross-platform **dev launcher** — it brings up SurrealDB (Docker) + API + worker + frontend with combined logs, the from-source equivalent of `docker compose up`:
+
+- **Windows**: `dev.bat`  (or `.\dev.ps1`)
+- **Linux/macOS**: `./dev.sh`
+- **Any**: `uv run python dev.py`
+
+`dev.py` is the source of truth; `dev.bat`/`dev.sh`/`dev.ps1` are thin wrappers. Stop with `Ctrl+C`, or `dev.bat stop` / `./dev.sh stop`. Use `--skip-sync` to skip dependency checks on restart.
+
+Requires uv, Node 18+, Docker, Git. uv provisions Python **3.11/3.12** (not 3.13). **`make` is not used in this fork.** For the manual terminal-per-service setup, see [docs/1-INSTALLATION/from-source.md](docs/1-INSTALLATION/from-source.md).
+
 ## Tech Stack
 
 ### Frontend (`frontend/`)
@@ -61,7 +73,7 @@ User documentation is at @docs/
 
 ### API Backend (`api/` + `open_notebook/`)
 - **Framework**: FastAPI 0.104+
-- **Language**: Python 3.11+
+- **Language**: Python 3.11–3.12 (`requires-python = ">=3.11,<3.13"`)
 - **Workflows**: LangGraph state machines
 - **Database**: SurrealDB async driver
 - **AI Providers**: Esperanto library (8+ providers: OpenAI, Anthropic, Google, Groq, Ollama, Mistral, DeepSeek, xAI)
@@ -79,6 +91,7 @@ User documentation is at @docs/
 - **Prompts**: AI-Prompter with Jinja2 templating
 - **Podcast Generation**: podcast-creator library
 - **Embeddings**: Multi-provider via Esperanto
+- **Authentication**: Microsoft Identity (planned)
 
 ---
 
@@ -113,9 +126,18 @@ User documentation is at @docs/
 - **Current**: Simple password middleware (insecure, dev-only)
 - **Production**: Replace with OAuth/JWT (see CONFIGURATION.md)
 
+### 6. Deepagent Capabilities (Future)
+
 ---
 
 ## Important Quirks & Gotchas
+
+### Local Dev (from source)
+- **Use the `dev.*` launcher** (`dev.py`). `make start-all` / `make dev` / `make full` are **broken in this fork** — they reference `docker-compose.dev.yml` / `docker-compose.full.yml`, which don't exist here. (Docker *publish* targets like `make docker-build-local` still work.)
+- **Worker is required**: `surreal-commands-worker` processes embeddings (semantic search) and podcast jobs. The launcher starts it; if running services by hand, don't forget it.
+- **SURREAL_URL host vs container**: running the API on the host needs `ws://localhost:8000/rpc`. The `surrealdb` hostname only resolves *inside* the Docker network, but `.env.example` ships that container value — the launcher rewrites it to `localhost` when it creates `.env`.
+- **libmagic for uploads**: content-core needs it, but it's not a `pyproject` dependency, so `uv sync` strips it every run. Reinstall after syncing — `python-magic-bin` (Windows, bundles the DLL) or `python-magic` + system libmagic (Linux `apt install libmagic1` / macOS `brew install libmagic`). The launcher does this automatically.
+- **Hot reload**: frontend (Turbopack HMR), API (uvicorn `--reload`, scoped to `api/` + `open_notebook/`), worker (`watchfiles` on `commands/` + `open_notebook/`).
 
 ### API Startup
 - **Migrations run automatically** on startup; check logs for errors
@@ -213,6 +235,6 @@ See dedicated CLAUDE.md files for detailed guidance:
 
 - **Documentation**: https://open-notebook.ai
 - **Discord**: https://discord.gg/37XJPXfz2w
-- **Issues**: https://github.com/lfnovo/open-notebook/issues
+- **Issues**: https://github.com/stefanini-applications/sai-notebook/issues
 - **License**: MIT (see LICENSE)
 

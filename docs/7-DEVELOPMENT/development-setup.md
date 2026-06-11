@@ -2,6 +2,15 @@
 
 This guide walks you through setting up Open Notebook for local development. Follow these steps to get the full stack running on your machine.
 
+> **Just want it running?** Clone the repo and run the one-command launcher:
+> `dev.bat` (Windows) or `./dev.sh` (Linux/macOS) — it starts the database, API,
+> worker, and frontend together with combined logs. See
+> [from-source installation](../1-INSTALLATION/from-source.md). The step-by-step
+> below is for understanding each service or running them in separate terminals.
+>
+> Note: `make start-all` is **not used in this fork** (it references a compose
+> file that doesn't exist here) — use the launcher or the manual steps below.
+
 ## Prerequisites
 
 Before you start, ensure you have the following installed:
@@ -17,11 +26,11 @@ Before you start, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/lfnovo/open-notebook.git
-cd open-notebook
+git clone https://github.com/stefanini-applications/sai-notebook.git
+cd sai-notebook
 
 # Add upstream remote for keeping your fork updated
-git remote add upstream https://github.com/lfnovo/open-notebook.git
+git remote add upstream https://github.com/stefanini-applications/sai-notebook.git
 ```
 
 ## Step 2: Install Python Dependencies
@@ -205,24 +214,31 @@ After setup, verify everything is working:
 ### Quick Start All Services
 
 ```bash
-make start-all
+dev.bat        # Windows   (or: .\dev.ps1, or: uv run python dev.py)
+./dev.sh       # Linux/macOS
 ```
 
-This starts SurrealDB, API, and frontend in one command.
+This starts SurrealDB, API, **worker**, and frontend in one command, with combined logs. `Ctrl+C` stops everything.
 
 ### Individual Terminals (Recommended for Development)
 
-**Terminal 1 - Database:**
+**Terminal 1 — Database:**
 ```bash
-make database
+docker compose up -d surrealdb
 ```
 
-**Terminal 2 - API:**
+**Terminal 2 — API:**
 ```bash
-make api
+uv run --env-file .env uvicorn api.main:app --host 127.0.0.1 --port 5055 \
+  --reload --reload-dir api --reload-dir open_notebook
 ```
 
-**Terminal 3 - Frontend:**
+**Terminal 3 — Worker** (embeddings + podcast jobs):
+```bash
+uv run --env-file .env surreal-commands-worker --import-modules commands
+```
+
+**Terminal 4 — Frontend:**
 ```bash
 cd frontend && npm run dev
 ```

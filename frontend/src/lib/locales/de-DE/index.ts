@@ -38,7 +38,7 @@ export const deDE = {
     podcast: "Podcast",
     quickActions: "Schnellaktionen",
     quickActionsDesc: "Navigation, Suche, Fragen, Design",
-    appName: "Open Notebook",
+    appName: "SAI Notebook",
     add: "Hinzufügen",
     remove: "Entfernen",
     confirm: "Bestätigen",

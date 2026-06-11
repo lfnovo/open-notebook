@@ -241,7 +241,7 @@ Include:
 - System information
 - Configuration details (without API keys)
 
-Submit to: [GitHub Issues](https://github.com/lfnovo/open-notebook/issues)
+Submit to: [GitHub Issues](https://github.com/stefanini-applications/sai-notebook/issues)
 
 ### Where can I get help?
 

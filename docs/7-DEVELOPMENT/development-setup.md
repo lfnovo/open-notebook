@@ -1,6 +1,6 @@
 # Local Development Setup
 
-This guide walks you through setting up Open Notebook for local development. Follow these steps to get the full stack running on your machine.
+This guide walks you through setting up SAI Notebook for local development. Follow these steps to get the full stack running on your machine.
 
 > **Just want it running?** Clone the repo and run the one-command launcher:
 > `dev.bat` (Windows) or `./dev.sh` (Linux/macOS) — it starts the database, API,

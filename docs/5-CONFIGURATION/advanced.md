@@ -228,7 +228,7 @@ SURREAL_PASSWORD=$(openssl rand -base64 32)  # Generate secure password
 ### Add Password Protection
 
 ```env
-# Protect your Open Notebook instance
+# Protect your SAI Notebook instance
 OPEN_NOTEBOOK_PASSWORD=your_secure_password
 ```
 
@@ -241,7 +241,7 @@ API_URL=https://mynotebook.example.com
 
 ### Firewall Rules
 
-Restrict access to your Open Notebook:
+Restrict access to your SAI Notebook:
 - Port 8502 (frontend): Only from your IP
 - Port 5055 (API): Only from frontend
 - Port 8000 (SurrealDB): Never expose to internet
@@ -250,7 +250,7 @@ Restrict access to your Open Notebook:
 
 ## Web Scraping & Content Extraction
 
-Open Notebook uses multiple services for content extraction:
+SAI Notebook uses multiple services for content extraction:
 
 ### Firecrawl
 

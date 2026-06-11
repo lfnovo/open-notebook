@@ -1,12 +1,12 @@
 name: ✨ Feature Suggestion
-description: Suggest a new feature or improvement for Open Notebook
+description: Suggest a new feature or improvement for SAI Notebook
 title: "[Feature]: "
 labels: ["enhancement", "needs-triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to suggest a feature! Your ideas help make Open Notebook better for everyone.
+        Thanks for taking the time to suggest a feature! Your ideas help make SAI Notebook better for everyone.
 
   - type: textarea
     id: feature-description

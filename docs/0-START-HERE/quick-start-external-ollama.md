@@ -1,10 +1,10 @@
 # Quick Start - External Ollama
 
-Run Open Notebook with a **separately installed Ollama** (not via Docker). This avoids Docker running the Ollama service while you use your own local Ollama installation.
+Run SAI Notebook with a **separately installed Ollama** (not via Docker). This avoids Docker running the Ollama service while you use your own local Ollama installation.
 
 ## Prerequisites
 
-1. **Docker Desktop** installed (for SurrealDB and Open Notebook)
+1. **Docker Desktop** installed (for SurrealDB and SAI Notebook)
    - [Download here](https://www.docker.com/products/docker-desktop/)
 
 2. **Ollama** installed separately
@@ -81,11 +81,11 @@ services:
 
 ---
 
-## Step 3: Connect Open Notebook to Host Ollama (1 min)
+## Step 3: Connect SAI Notebook to Host Ollama (1 min)
 
-When Open Notebook runs inside Docker, it cannot reach `localhost:11434` on your host directly. Use the special hostname:
+When SAI Notebook runs inside Docker, it cannot reach `localhost:11434` on your host directly. Use the special hostname:
 
-| Host OS | Ollama URL in Open Notebook |
+| Host OS | Ollama URL in SAI Notebook |
 |---------|----------------------------|
 | Linux | `http://host.containers.internal:11434` |
 | macOS | `http://host.docker.internal:11434` |
@@ -93,7 +93,7 @@ When Open Notebook runs inside Docker, it cannot reach `localhost:11434` on your
 
 ---
 
-## Step 4: Start Open Notebook (1 min)
+## Step 4: Start SAI Notebook (1 min)
 
 Open terminal in your `open-notebook-external-ollama` folder:
 
@@ -130,7 +130,7 @@ Wait 10-15 seconds for services to start.
 
 ---
 
-## Step 7: Access Open Notebook (instant)
+## Step 7: Access SAI Notebook (instant)
 
 Open your browser:
 ```
@@ -203,7 +203,7 @@ docker compose up -d
 
 ## Going Further
 
-- **Add more models**: Run `ollama pull <model>`, then re-discover from Open Notebook
+- **Add more models**: Run `ollama pull <model>`, then re-discover from SAI Notebook
 - **Check Ollama status**: `ollama list` shows downloaded models
 - **Customize Ollama**: Edit `~/.ollama/config.yaml` for advanced settings
 

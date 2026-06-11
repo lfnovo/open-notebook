@@ -1,6 +1,6 @@
 # Quick Start - Development
 
-Get Open Notebook running locally in 5 minutes.
+Get SAI Notebook running locally in 5 minutes.
 
 ## Prerequisites
 
@@ -30,12 +30,12 @@ dev.bat        # Windows   (or: .\dev.ps1, or: uv run python dev.py)
 ```
 
 The launcher creates `.env`, installs dependencies, and starts SurrealDB + API +
-worker + frontend together with combined logs. Wait for the **"Open Notebook is up"**
+worker + frontend together with combined logs. Wait for the **"SAI Notebook is up"**
 banner. `Ctrl+C` stops everything; `dev.bat stop` / `./dev.sh stop` force-stops leftovers.
 
 ## 3. Verify Everything Works
 
-- **Frontend**: <http://localhost:3000> → Open Notebook UI
+- **Frontend**: <http://localhost:3000> → SAI Notebook UI
 - **API Docs**: <http://localhost:5055/docs> → interactive API documentation
 - **Database**: SurrealDB on `localhost:8000`
 

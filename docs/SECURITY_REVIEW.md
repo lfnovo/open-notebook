@@ -7,7 +7,7 @@
 
 ## Summary
 
-Security review of the API key management implementation for Open Notebook. The implementation uses a database-first approach with environment variable fallback.
+Security review of the API key management implementation for SAI Notebook. The implementation uses a database-first approach with environment variable fallback.
 
 ---
 

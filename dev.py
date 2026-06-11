@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cross-platform dev launcher for Open Notebook (from source).
+"""Cross-platform dev launcher for SAI Notebook (from source).
 
 Brings up the whole stack and streams every service's logs into THIS
 terminal with [db]/[api]/[worker]/[frontend] prefixes. Press Ctrl+C once
@@ -292,7 +292,7 @@ def _banner_when_ready() -> None:
                 g = COLORS.get("frontend", "")
                 sys.stdout.write(
                     f"\n{g}  ============================================================\n"
-                    f"   Open Notebook is up:\n"
+                    f"   SAI Notebook is up:\n"
                     f"     Frontend : http://localhost:3000\n"
                     f"     API docs : http://localhost:5055/docs\n"
                     f"     Database : http://localhost:8000\n"
@@ -305,7 +305,7 @@ def _banner_when_ready() -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Open Notebook dev launcher")
+    ap = argparse.ArgumentParser(description="SAI Notebook dev launcher")
     ap.add_argument("command", nargs="?", default="up", choices=["up", "stop"])
     ap.add_argument("--skip-sync", action="store_true",
                     help="skip uv sync / npm install dependency checks")

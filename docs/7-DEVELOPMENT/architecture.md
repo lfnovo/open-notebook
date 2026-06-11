@@ -1,8 +1,8 @@
-# Open Notebook Architecture
+# SAI Notebook Architecture
 
 ## High-Level Overview
 
-Open Notebook follows a three-tier architecture with clear separation of concerns:
+SAI Notebook follows a three-tier architecture with clear separation of concerns:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -39,7 +39,7 @@ Open Notebook follows a three-tier architecture with clear separation of concern
 
 ## Detailed Architecture
 
-Open Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
+SAI Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
 
 **Core Philosophy**:
 - Privacy-first: Users control their data and AI provider choice
@@ -269,7 +269,7 @@ ChatSession
 
 ## LangGraph Workflows
 
-LangGraph is a state machine library that orchestrates multi-step AI workflows. Open Notebook uses five core workflows:
+LangGraph is a state machine library that orchestrates multi-step AI workflows. SAI Notebook uses five core workflows:
 
 ### 1. **Source Processing Workflow** (`open_notebook/graphs/source.py`)
 
@@ -888,4 +888,4 @@ Async job submission (source processing, podcast generation) prevents request ti
 
 ## Summary
 
-Open Notebook's architecture provides a solid foundation for privacy-focused, AI-powered research. The separation of concerns (frontend/API/database), async-first design, and multi-provider flexibility enable rapid development and easy deployment. LangGraph workflows orchestrate complex AI tasks, while Esperanto abstracts provider details. The result is a scalable, maintainable system that puts users in control of their data and AI provider choice.
+SAI Notebook's architecture provides a solid foundation for privacy-focused, AI-powered research. The separation of concerns (frontend/API/database), async-first design, and multi-provider flexibility enable rapid development and easy deployment. LangGraph workflows orchestrate complex AI tasks, while Esperanto abstracts provider details. The result is a scalable, maintainable system that puts users in control of their data and AI provider choice.

@@ -1,6 +1,6 @@
 # Security Guidelines
 
-This document outlines security practices for Open Notebook development. It is informed by real vulnerabilities discovered through coordinated disclosure with [CERT-EU](https://cert.europa.eu) and should be treated as mandatory reading for all contributors.
+This document outlines security practices for SAI Notebook development. It is informed by real vulnerabilities discovered through coordinated disclosure with [CERT-EU](https://cert.europa.eu) and should be treated as mandatory reading for all contributors.
 
 ## Reporting Vulnerabilities
 
@@ -138,7 +138,7 @@ Never pass user-provided file paths directly to file reading or content extracti
 
 ### Authentication
 
-Open Notebook currently uses simple password-based middleware (`PasswordAuthMiddleware`). This is suitable for single-user self-hosted deployments but should be hardened for production:
+SAI Notebook currently uses simple password-based middleware (`PasswordAuthMiddleware`). This is suitable for single-user self-hosted deployments but should be hardened for production:
 
 - Change the default password (`OPEN_NOTEBOOK_PASSWORD`)
 - Change the default encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`)

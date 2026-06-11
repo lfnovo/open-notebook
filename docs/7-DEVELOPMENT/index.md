@@ -1,6 +1,6 @@
 # Development
 
-Welcome to the Open Notebook development documentation! Whether you're contributing code, understanding our architecture, or maintaining the project, you'll find guidance here.
+Welcome to the SAI Notebook development documentation! Whether you're contributing code, understanding our architecture, or maintaining the project, you'll find guidance here.
 
 ## 🎯 Pick Your Path
 

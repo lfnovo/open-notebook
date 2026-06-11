@@ -105,7 +105,7 @@ Open browser to:
 http://localhost:8502
 ```
 
-You should see the Open Notebook interface!
+You should see the SAI Notebook interface!
 
 ---
 
@@ -136,7 +136,7 @@ Your models are now available!
 3. Description: "Getting started"
 4. Click **Create**
 
-Done! You now have a fully working Open Notebook instance.
+Done! You now have a fully working SAI Notebook instance.
 
 ---
 

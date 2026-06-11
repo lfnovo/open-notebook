@@ -1,6 +1,6 @@
-# Open Notebook Windows Installation Guide (Native, No Docker)
+# SAI Notebook Windows Installation Guide (Native, No Docker)
 
-This guide documents how to install and run [Open Notebook](https://github.com/stefanini-applications/sai-notebook) on Windows **natively without Docker or WSL**.
+This guide documents how to install and run [SAI Notebook](https://github.com/stefanini-applications/sai-notebook) on Windows **natively without Docker or WSL**.
 
 ## Who Is This For?
 
@@ -32,7 +32,7 @@ This guide documents how to install and run [Open Notebook](https://github.com/s
    ```bash
    cd %USERPROFILE%\Projects  # or your preferred location
    git clone https://github.com/stefanini-applications/sai-notebook.git
-   cd open-notebook
+   cd sai-notebook
    uv sync
    cd frontend && npm install && cd ..
    ```
@@ -200,7 +200,7 @@ Once running, add models in Settings. Common model names:
 When a new version is released:
 
 ```batch
-cd open-notebook
+cd sai-notebook
 git pull
 uv sync
 cd frontend && npm install && cd ..
@@ -239,5 +239,5 @@ Found another Windows-specific issue? Please share your solution!
 
 ---
 
-*Tested on Windows 11 ARM64 with Open Notebook v1.6.0*
+*Tested on Windows 11 ARM64 with SAI Notebook v1.6.0*
 *Created: January 2026*

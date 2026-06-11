@@ -56,7 +56,7 @@ Then configure your AI provider:
 
 **PikaPods:**
 1. Click "New App"
-2. Search "Open Notebook"
+2. Search "SAI Notebook"
 3. Set environment variables (at minimum: `OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 4. Click "Deploy"
 5. Open the app → Go to **Settings → API Keys** to configure your AI provider

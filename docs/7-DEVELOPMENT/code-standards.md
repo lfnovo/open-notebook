@@ -1,6 +1,6 @@
 # Code Standards
 
-This document outlines coding standards and best practices for Open Notebook contributions. All code should follow these guidelines to ensure consistency, readability, and maintainability.
+This document outlines coding standards and best practices for SAI Notebook contributions. All code should follow these guidelines to ensure consistency, readability, and maintainability.
 
 ## Python Standards
 
@@ -99,7 +99,7 @@ async def vector_search(
 Notebook domain model and operations.
 
 This module contains the core Notebook class and related operations for
-managing research notebooks within the Open Notebook system.
+managing research notebooks within the SAI Notebook system.
 """
 ```
 
@@ -108,7 +108,7 @@ managing research notebooks within the Open Notebook system.
 class Notebook(BaseModel):
     """A research notebook containing sources, notes, and chat sessions.
 
-    Notebooks are the primary organizational unit in Open Notebook, allowing
+    Notebooks are the primary organizational unit in SAI Notebook, allowing
     users to group related research materials and maintain separate contexts
     for different projects.
 

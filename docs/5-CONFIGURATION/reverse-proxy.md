@@ -1,12 +1,12 @@
 # Reverse Proxy Configuration
 
-Deploy Open Notebook behind nginx, Caddy, Traefik, or other reverse proxies with custom domains and HTTPS.
+Deploy SAI Notebook behind nginx, Caddy, Traefik, or other reverse proxies with custom domains and HTTPS.
 
 ---
 
 ## Simplified Setup (v1.1+)
 
-Starting with v1.1, Open Notebook uses Next.js rewrites to simplify configuration. **You only need to proxy to one port** - Next.js handles internal API routing automatically.
+Starting with v1.1, SAI Notebook uses Next.js rewrites to simplify configuration. **You only need to proxy to one port** - Next.js handles internal API routing automatically.
 
 ### How It Works
 
@@ -288,11 +288,11 @@ location / {
 
 ### Remote Server Access (LAN/VPS)
 
-Accessing Open Notebook from a different machine on your network:
+Accessing SAI Notebook from a different machine on your network:
 
 **Step 1: Get your server IP**
 ```bash
-# On the server running Open Notebook:
+# On the server running SAI Notebook:
 hostname -I
 # or
 ifconfig | grep "inet "
@@ -554,7 +554,7 @@ proxy_set_header Connection 'upgrade';
 - `Timeout after 30000ms` errors
 - Operations fail after exactly 30 seconds
 
-**Cause:** Your reverse proxy has a default timeout (often 30s) that's shorter than Open Notebook's operations.
+**Cause:** Your reverse proxy has a default timeout (often 30s) that's shorter than SAI Notebook's operations.
 
 **Solutions by proxy:**
 
@@ -685,7 +685,7 @@ Error creating source. Please try again.
 When uploading files, your reverse proxy may reject the request due to body size limits *before* it reaches the application. Since the error happens at the proxy level, CORS headers are not included in the response.
 
 **Version Requirement:**
-- **Open Notebook v1.3.2+** is required for file uploads >10MB
+- **SAI Notebook v1.3.2+** is required for file uploads >10MB
 - Uses Next.js 16+ which supports the `proxyClientMaxBodySize` configuration option
 - Check your version: Settings → About (bottom of settings page)
 
@@ -757,7 +757,7 @@ When uploading files, your reverse proxy may reject the request due to body size
    }
    ```
 
-**Note:** Open Notebook's API includes CORS headers in error responses, but this only works for errors that reach the application. Proxy-level errors (like 413 from nginx) need to be configured at the proxy level.
+**Note:** SAI Notebook's API includes CORS headers in error responses, but this only works for errors that reach the application. Proxy-level errors (like 413 from nginx) need to be configured at the proxy level.
 
 ---
 
@@ -877,7 +877,7 @@ curl -H "Authorization: Bearer your-password-here" \
 
 ## Legacy Configurations (Pre-v1.1)
 
-If you're running Open Notebook **version 1.0.x or earlier**, you may need to use the legacy two-port configuration where you explicitly route `/api/*` to port 5055.
+If you're running SAI Notebook **version 1.0.x or earlier**, you may need to use the legacy two-port configuration where you explicitly route `/api/*` to port 5055.
 
 **Check your version:**
 ```bash

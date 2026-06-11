@@ -40,7 +40,7 @@ That's it. The launcher will:
 4. Start **SurrealDB** (Docker), then the **API**, **worker**, and **frontend**.
 5. Stream every service's logs into one terminal, prefixed `[db]` / `[api]` / `[worker]` / `[frontend]`.
 
-When it prints the **"Open Notebook is up"** banner, open <http://localhost:3000>.
+When it prints the **"SAI Notebook is up"** banner, open <http://localhost:3000>.
 
 **Press `Ctrl+C` once** to stop everything (processes + the SurrealDB container).
 

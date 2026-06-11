@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { WizardContainer, WizardStep } from '@/components/ui/wizard-container'
 import { SourceTypeStep, parseAndValidateUrls } from './steps/SourceTypeStep'
+import { SelectLinksStep } from './steps/SelectLinksStep'
 import { NotebooksStep } from './steps/NotebooksStep'
 import { ProcessingStep } from './steps/ProcessingStep'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
@@ -92,12 +93,6 @@ export function AddSourceDialog({
 }: AddSourceDialogProps) {
   const { t } = useTranslation()
 
-  const WIZARD_STEPS: readonly WizardStep[] = [
-    { number: 1, title: t('sources.addSource'), description: t('sources.processDescription') },
-    { number: 2, title: t('navigation.notebooks'), description: t('notebooks.searchPlaceholder') },
-    { number: 3, title: t('navigation.process'), description: t('sources.processDescription') },
-  ]
-
   // Simplified state management
   const [currentStep, setCurrentStep] = useState(1)
   const [processing, setProcessing] = useState(false)
@@ -110,6 +105,10 @@ export function AddSourceDialog({
   // Batch-specific state
   const [urlValidationErrors, setUrlValidationErrors] = useState<{ url: string; line: number }[]>([])
   const [batchProgress, setBatchProgress] = useState<BatchProgress | null>(null)
+
+  // Recursive link discovery state
+  const [includeLinkedPages, setIncludeLinkedPages] = useState(false)
+  const [selectedLinks, setSelectedLinks] = useState<string[]>([])
 
   // Cleanup timeouts to prevent memory leaks
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -206,10 +205,36 @@ export function AddSourceDialog({
   // Check for batch size limit
   const isOverLimit = itemCount > MAX_BATCH_SIZE
 
+  // Recursion is single-URL only; disabled in batch mode.
+  const recursionActive =
+    selectedType === 'link' && includeLinkedPages && parsedUrls.length === 1
+
+  // Dynamic step keys: insert "links" after "source" when recursion is active.
+  type StepKey = 'source' | 'links' | 'notebooks' | 'process'
+  const stepKeys: StepKey[] = recursionActive
+    ? ['source', 'links', 'notebooks', 'process']
+    : ['source', 'notebooks', 'process']
+  const totalSteps = stepKeys.length
+  const currentStepKey = stepKeys[currentStep - 1]
+
+  const STEP_TITLES: Record<StepKey, { title: string; description: string }> = {
+    source: { title: t('sources.addSource'), description: t('sources.processDescription') },
+    links: { title: t('sources.selectLinks'), description: t('sources.selectLinksDescription') },
+    notebooks: { title: t('navigation.notebooks'), description: t('notebooks.searchPlaceholder') },
+    process: { title: t('navigation.process'), description: t('sources.processDescription') },
+  }
+
+  const WIZARD_STEPS: WizardStep[] = stepKeys.map((key, idx) => ({
+    number: idx + 1,
+    title: STEP_TITLES[key].title,
+    description: STEP_TITLES[key].description,
+  }))
+
   // Step validation - now reactive with watched values
   const isStepValid = (step: number): boolean => {
-    switch (step) {
-      case 1:
+    const key = stepKeys[step - 1]
+    switch (key) {
+      case 'source':
         if (!selectedType) return false
         // Check batch size limit
         if (isOverLimit) return false
@@ -234,8 +259,11 @@ export function AddSourceDialog({
           return !!watchedFile
         }
         return true
-      case 2:
-      case 3:
+      case 'links':
+        // Always valid: selecting zero links just imports the original.
+        return true
+      case 'notebooks':
+      case 'process':
         return true
       default:
         return false
@@ -257,7 +285,7 @@ export function AddSourceDialog({
       setUrlValidationErrors([])
     }
 
-    if (currentStep < 3 && isStepValid(currentStep)) {
+    if (currentStep < totalSteps && isStepValid(currentStep)) {
       setCurrentStep(currentStep + 1)
     }
   }
@@ -320,13 +348,16 @@ export function AddSourceDialog({
   }
 
   // Batch submission
-  const submitBatch = async (data: CreateSourceFormData): Promise<{ success: number; failed: number }> => {
+  const submitBatch = async (
+    data: CreateSourceFormData,
+    urls: string[],
+  ): Promise<{ success: number; failed: number }> => {
     const results = { success: 0, failed: 0 }
     const items: { type: 'url' | 'file'; value: string | File }[] = []
 
     // Collect items to process
-    if (data.type === 'link' && parsedUrls.length > 0) {
-      parsedUrls.forEach(url => items.push({ type: 'url', value: url }))
+    if (data.type === 'link' && urls.length > 0) {
+      urls.forEach(url => items.push({ type: 'url', value: url }))
     } else if (data.type === 'upload' && parsedFiles.length > 0) {
       parsedFiles.forEach(file => items.push({ type: 'file', value: file }))
     }
@@ -387,10 +418,16 @@ export function AddSourceDialog({
     try {
       setProcessing(true)
 
-      if (isBatchMode) {
-        // Batch submission
+      const importUrls = recursionActive
+        ? [parsedUrls[0], ...selectedLinks]
+        : parsedUrls
+
+      const useBatchPath = isBatchMode || (recursionActive && importUrls.length > 1)
+
+      if (useBatchPath) {
+        // Batch submission (also used for recursive import of original + selected links)
         setProcessingStatus({ message: t('sources.processingFiles') })
-        const results = await submitBatch(data)
+        const results = await submitBatch(data, importUrls)
 
         // Show summary toast
         if (results.failed === 0) {
@@ -436,6 +473,8 @@ export function AddSourceDialog({
     setSelectedNotebooks(defaultNotebookId ? [defaultNotebookId] : [])
     setUrlValidationErrors([])
     setBatchProgress(null)
+    setIncludeLinkedPages(false)
+    setSelectedLinks([])
 
     // Reset to default transformations
     if (transformations.length > 0) {
@@ -549,7 +588,7 @@ export function AddSourceDialog({
             onStepClick={handleStepClick}
             className="border-0"
           >
-            {currentStep === 1 && (
+            {currentStepKey === 'source' && (
               <SourceTypeStep
                 // @ts-expect-error - Type inference issue with zod schema
                 control={control}
@@ -559,10 +598,24 @@ export function AddSourceDialog({
                 errors={errors}
                 urlValidationErrors={urlValidationErrors}
                 onClearUrlErrors={handleClearUrlErrors}
+                includeLinkedPages={includeLinkedPages}
+                onToggleIncludeLinkedPages={setIncludeLinkedPages}
               />
             )}
-            
-            {currentStep === 2 && (
+
+            {currentStepKey === 'links' && (
+              <SelectLinksStep
+                sourceUrl={parsedUrls[0]}
+                selectedLinks={selectedLinks}
+                onSelectedChange={setSelectedLinks}
+                onSkip={() => {
+                  setSelectedLinks([])
+                  setCurrentStep(currentStep + 1)
+                }}
+              />
+            )}
+
+            {currentStepKey === 'notebooks' && (
               <NotebooksStep
                 notebooks={notebooks}
                 selectedNotebooks={selectedNotebooks}
@@ -570,8 +623,8 @@ export function AddSourceDialog({
                 loading={notebooksLoading}
               />
             )}
-            
-            {currentStep === 3 && (
+
+            {currentStepKey === 'process' && (
               <ProcessingStep
                 // @ts-expect-error - Type inference issue with zod schema
                 control={control}
@@ -605,8 +658,8 @@ export function AddSourceDialog({
                 </Button>
               )}
 
-              {/* Show Next button on steps 1 and 2, styled as outline/secondary */}
-              {currentStep < 3 && (
+              {/* Show Next button on all but the final step, styled as outline/secondary */}
+              {currentStep < totalSteps && (
                 <Button
                   type="button"
                   variant="outline"

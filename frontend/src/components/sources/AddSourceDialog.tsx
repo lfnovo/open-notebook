@@ -670,10 +670,16 @@ export function AddSourceDialog({
                 </Button>
               )}
 
-              {/* Show Done button on all steps, styled as primary */}
+              {/* Show Done button on all steps, styled as primary.
+                  When recursion is active, force the user through the Select Links
+                  step instead of allowing a one-click finish from the source step. */}
               <Button
                 type="submit"
-                disabled={!currentStepValid || createSource.isPending}
+                disabled={
+                  !currentStepValid ||
+                  createSource.isPending ||
+                  (recursionActive && currentStepKey === 'source')
+                }
                 className="min-w-[120px]"
               >
                 {createSource.isPending ? t('common.adding') : t('common.done')}

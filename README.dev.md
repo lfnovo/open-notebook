@@ -1,6 +1,6 @@
 # Developer Guide
 
-This guide is for developers working on Open Notebook. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
+This guide is for developers working on SAI Notebook. For end-user documentation, see [README.md](README.md) and [docs/](docs/).
 
 ## Quick Start for Development
 

@@ -16,11 +16,16 @@ from fastapi.responses import FileResponse, Response
 from loguru import logger
 from surreal_commands import execute_command_sync, submit_command
 
+from content_core import extract_content
+
 from api.command_service import CommandService
 from api.models import (
     AssetModel,
     CreateSourceInsightRequest,
+    DiscoverLinksRequest,
+    DiscoverLinksResponse,
     InsightCreationResponse,
+    LinkCandidate,
     SourceCreate,
     SourceInsightResponse,
     SourceListResponse,
@@ -33,7 +38,8 @@ from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import ExternalServiceError, InvalidInputError
+from open_notebook.utils.link_extraction import extract_links_from_markdown
 
 router = APIRouter()
 
@@ -156,6 +162,41 @@ def parse_source_form_data(
         raise
 
     return source_data, file
+
+
+@router.post("/sources/discover-links", response_model=DiscoverLinksResponse)
+async def discover_links(request: DiscoverLinksRequest):
+    """Fetch a URL and return the links it contains, for selective import.
+
+    Read-only: creates no database records. Reuses content-core extraction so the
+    preview matches what the real import would fetch.
+    """
+    url = request.url.strip()
+    if not url:
+        raise InvalidInputError("URL is required")
+
+    content_state = {
+        "url": url,
+        "url_engine": "auto",
+        "document_engine": "auto",
+        "output_format": "markdown",
+    }
+
+    try:
+        processed = await extract_content(content_state)
+    except Exception as e:
+        logger.error(f"Failed to fetch URL for link discovery: {e}")
+        raise ExternalServiceError(f"Could not fetch the URL: {e}") from e
+
+    markdown = processed.content or ""
+    links = extract_links_from_markdown(markdown, url)
+
+    return DiscoverLinksResponse(
+        source_url=url,
+        title=getattr(processed, "title", None),
+        count=len(links),
+        links=[LinkCandidate(**link) for link in links],
+    )
 
 
 @router.get("/sources", response_model=List[SourceListResponse])

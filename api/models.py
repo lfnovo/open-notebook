@@ -325,6 +325,27 @@ class SourceCreate(BaseModel):
         return self
 
 
+class DiscoverLinksRequest(BaseModel):
+    url: str = Field(..., description="URL to scan for links")
+
+
+class LinkCandidate(BaseModel):
+    url: str = Field(..., description="Absolute, normalized link URL")
+    text: str = Field("", description="Link anchor text")
+    same_domain: bool = Field(
+        ..., description="True if the link host matches the source URL host"
+    )
+
+
+class DiscoverLinksResponse(BaseModel):
+    source_url: str = Field(..., description="The scanned URL")
+    title: Optional[str] = Field(None, description="Extracted page title, if any")
+    count: int = Field(..., description="Number of candidate links")
+    links: List[LinkCandidate] = Field(
+        default_factory=list, description="Candidate links found on the page"
+    )
+
+
 class SourceUpdate(BaseModel):
     title: Optional[str] = Field(None, description="Source title")
     topics: Optional[List[str]] = Field(None, description="Source topics")

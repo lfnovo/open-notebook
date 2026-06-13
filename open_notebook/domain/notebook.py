@@ -26,11 +26,12 @@ class Notebook(ObjectModel):
             raise InvalidInputError("Notebook name cannot be empty")
         return v
 
-    async def get_sources(self) -> List["Source"]:
+    async def get_sources(self, include_full_text: bool = False) -> List["Source"]:
         try:
+            source_projection = "" if include_full_text else " omit source.full_text"
             srcs = await repo_query(
-                """
-                select * omit source.full_text from (
+                f"""
+                select *{source_projection} from (
                 select in as source from reference where out=$id
                 fetch source
             ) order by source.updated desc
@@ -43,11 +44,16 @@ class Notebook(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def get_notes(self) -> List["Note"]:
+    async def get_notes(self, include_content: bool = False) -> List["Note"]:
         try:
+            note_projection = (
+                " omit note.embedding"
+                if include_content
+                else " omit note.content, note.embedding"
+            )
             srcs = await repo_query(
-                """
-            select * omit note.content, note.embedding from (
+                f"""
+            select *{note_projection} from (
                 select in as note from artifact where out=$id
                 fetch note
             ) order by note.updated desc
@@ -59,6 +65,66 @@ class Notebook(ObjectModel):
             logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
             logger.exception(e)
             raise DatabaseOperationError(e)
+
+    async def get_context(self) -> str:
+        """
+        Build long-form notebook context for podcast and LLM workflows.
+
+        Normal list retrieval omits large source/note bodies, so this method uses
+        opt-in full-content fetches and formats only substantive context blocks.
+        """
+        sources = await self.get_sources(include_full_text=True)
+        notes = await self.get_notes(include_content=True)
+        context_blocks = []
+
+        for source in sources:
+            source_context = await source.get_context(context_size="long")
+            if isinstance(source_context, dict):
+                title = source_context.get("title") or source.title or "Untitled source"
+                full_text = source_context.get("full_text")
+                insights = source_context.get("insights") or []
+
+                content_parts = []
+                if full_text:
+                    content_parts.append(str(full_text))
+
+                insight_lines = []
+                for insight in insights:
+                    if not isinstance(insight, dict):
+                        continue
+
+                    insight_content = insight.get("content")
+                    if not insight_content:
+                        continue
+
+                    insight_type = insight.get("insight_type") or "Insight"
+                    insight_lines.append(f"- {insight_type}: {insight_content}")
+
+                if insight_lines:
+                    content_parts.append("Insights:\n" + "\n".join(insight_lines))
+
+                content = "\n\n".join(content_parts).strip()
+            else:
+                title = source.title or "Untitled source"
+                content = str(source_context).strip()
+
+            if content:
+                context_blocks.append(f"## Source: {title}\n\n{content}")
+
+        for note in notes:
+            note_context = note.get_context(context_size="long")
+            if isinstance(note_context, dict):
+                title = note_context.get("title") or note.title or "Untitled note"
+                content = note_context.get("content")
+                content = str(content).strip() if content else ""
+            else:
+                title = note.title or "Untitled note"
+                content = str(note_context).strip()
+
+            if content:
+                context_blocks.append(f"## Note: {title}\n\n{content}")
+
+        return "\n\n".join(context_blocks)
 
     async def get_chat_sessions(self) -> List["ChatSession"]:
         try:

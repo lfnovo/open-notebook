@@ -113,12 +113,8 @@ async def update_speaker_profile(profile_id: str, profile_data: SpeakerProfileCr
                 status_code=404, detail=f"Speaker profile '{profile_id}' not found"
             )
 
-        profile.name = profile_data.name
-        profile.description = profile_data.description
-        profile.voice_model = profile_data.voice_model
-        profile.speakers = profile_data.speakers
-        profile.tts_provider = profile_data.tts_provider
-        profile.tts_model = profile_data.tts_model
+        for field, value in profile_data.model_dump(exclude_unset=True).items():
+            setattr(profile, field, value)
 
         await profile.save()
         return _profile_to_response(profile)

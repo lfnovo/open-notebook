@@ -30,6 +30,7 @@ export const esES = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Fuente",
     notebook: "Cuaderno",
     podcast: "Podcast",

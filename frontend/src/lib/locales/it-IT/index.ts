@@ -30,6 +30,7 @@ export const itIT = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Fonte",
     notebook: "Quaderno",
     podcast: "Podcast",

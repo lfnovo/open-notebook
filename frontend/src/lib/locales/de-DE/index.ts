@@ -33,6 +33,7 @@ export const deDE = {
     catalan: "Català",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Quelle",
     notebook: "Notebook",
     podcast: "Podcast",

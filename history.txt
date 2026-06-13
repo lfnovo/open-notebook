@@ -1,0 +1,3 @@
+#V2
+INSERT INTO credential { name: "BrokenTestCred", provider: "fakeprovider", modalities: ["language"], api_key: "gAAAAABnSomeGarbageThatLooksLikeFernetButIsNot123456789012345678901234567890123456789012345678901234=" };
+UPDATE credential:cda9ffofbi4g3ia4edwr SET api_key = "gAAAAABp3DZnxkMFugjpycLrM8b92Dq3luM5TrEdrmdrP4DAEvQvlK30CvYEejWsIn7W-BsT5UL69g8R21p0h5_JuthntwMGURn6J8AqYG-QHHu6I0y84v8=";

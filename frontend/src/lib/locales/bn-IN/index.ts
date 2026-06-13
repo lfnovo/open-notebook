@@ -30,6 +30,7 @@ export const bnIN = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "উৎস",
     notebook: "নোটবুক",
     podcast: "পডকাস্ট",

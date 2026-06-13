@@ -30,6 +30,7 @@ export const jaJP = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "ソース",
     notebook: "ノートブック",
     podcast: "ポッドキャスト",

@@ -30,6 +30,7 @@ export const plPL = {
     catalan: "Kataloński",
     german: "Niemiecki",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Źródło",
     notebook: "Notatnik",
     podcast: "Podcast",

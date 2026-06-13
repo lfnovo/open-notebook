@@ -30,6 +30,7 @@ export const zhCN = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "来源",
     notebook: "笔记本",
     podcast: "播客",

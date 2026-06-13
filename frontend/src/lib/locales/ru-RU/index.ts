@@ -30,6 +30,7 @@ export const ruRU = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Источник",
     notebook: "Блокнот",
     podcast: "Подкаст",

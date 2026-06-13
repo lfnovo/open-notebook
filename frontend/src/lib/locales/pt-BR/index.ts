@@ -30,6 +30,7 @@ export const ptBR = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "Fonte",
     notebook: "Caderno",
     podcast: "Podcast",

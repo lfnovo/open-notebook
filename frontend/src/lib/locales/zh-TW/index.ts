@@ -30,6 +30,7 @@ export const zhTW = {
     spanish: "Español",
     german: "Deutsch",
     polish: "Polski",
+    turkish: "Türkçe",
     source: "來源",
     notebook: "筆記本",
     podcast: "播客",

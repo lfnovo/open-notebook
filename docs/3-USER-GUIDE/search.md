@@ -300,6 +300,34 @@ Result: Comprehensive answer, not just search results
 
 ---
 
+## Notebook-Scoped Search
+
+By default, all search modes (text, vector, and ask) search across **all** sources and notes in your entire Open Notebook instance. If you want to limit results to a specific notebook, you can pass a `notebook_id` parameter via the API.
+
+When `notebook_id` is provided:
+
+- **Sources**: Only sources linked to that notebook are searched
+- **Notes**: Only notes linked to that notebook are searched
+- **Ask**: All sub-searches are scoped to that notebook
+
+When `notebook_id` is omitted, search works as before — globally across all content.
+
+### API Example
+
+```bash
+# Search within a specific notebook
+curl -X POST http://localhost:5055/api/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "attention mechanism", "type": "vector", "notebook_id": "notebook:abc123"}'
+
+# Ask within a specific notebook
+curl -X POST http://localhost:5055/api/search/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "Compare the approaches", "notebook_id": "notebook:abc123", "strategy_model": "model:1", "answer_model": "model:2", "final_answer_model": "model:3"}'
+```
+
+---
+
 ## Tips for Better Searches
 
 ### For Text Search

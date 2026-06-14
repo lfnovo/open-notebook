@@ -38,6 +38,9 @@ class SearchRequest(BaseModel):
     minimum_score: float = Field(
         0.2, description="Minimum score for vector search", ge=0, le=1
     )
+    notebook_id: Optional[str] = Field(
+        None, description="Scope search to a specific notebook"
+    )
 
 
 class SearchResponse(BaseModel):
@@ -51,6 +54,9 @@ class AskRequest(BaseModel):
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")
     final_answer_model: str = Field(..., description="Model ID for final answer")
+    notebook_id: Optional[str] = Field(
+        None, description="Scope search to a specific notebook"
+    )
 
 
 class AskResponse(BaseModel):

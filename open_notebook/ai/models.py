@@ -232,9 +232,8 @@ class ModelManager:
         if not model_id:
             return None
         model = await self.get_model(model_id, **kwargs)
-        assert model is None or isinstance(model, LanguageModel), (
-            f"Expected LanguageModel but got {type(model)}"
-        )
+        if model is not None and not isinstance(model, LanguageModel):
+            raise ConfigurationError(f"Expected LanguageModel but got {type(model)}")
         return model
 
     async def get_default_model(self, model_type: str, **kwargs) -> Optional[ModelType]:

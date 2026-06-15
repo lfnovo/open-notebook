@@ -50,7 +50,11 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
     try:
         response = await raw_llm.ainvoke([message])
         # Depending on the model provider, response could be a string or a message object
-        return response.content if hasattr(response, "content") else str(response)
+        content = response.content if hasattr(response, "content") else str(response)
+        if isinstance(content, list):
+            # Extract text blocks if content is an array (e.g. Anthropic)
+            return "".join([b["text"] if isinstance(b, dict) and b.get("type") == "text" else str(b) for b in content])
+        return str(content)
     except Exception as e:
         logger.error(f"Vision parsing failed: {str(e)}")
         raise
@@ -67,7 +71,8 @@ async def process_image_with_vision(file_path: str) -> Optional[str]:
     logger.info(f"Using vision parsing for image: {file_path}")
     try:
         mime_type = _get_mime_type(file_path)
-        b64_image = _encode_image_to_base64(file_path)
+        import asyncio
+        b64_image = await asyncio.to_thread(_encode_image_to_base64, file_path)
         return await _analyze_base64_image(b64_image, mime_type, vision_model)
     except Exception as e:
         logger.error(f"Failed to process image with vision model: {e}")
@@ -91,20 +96,25 @@ async def process_pdf_with_vision(file_path: str) -> Optional[str]:
     logger.info(f"Using vision parsing for PDF: {file_path}")
     
     import asyncio
+    
+    MAX_PAGES = 50
+
     def _extract_page_base64(path: str, page_num: int) -> str:
         # Open inside the thread to avoid sharing C-objects across threads
-        doc = fitz.open(path)
-        page = doc.load_page(page_num)
-        pix = page.get_pixmap(dpi=150)
-        img_bytes = pix.tobytes("jpeg")
-        doc.close()
-        return base64.b64encode(img_bytes).decode("utf-8")
+        with fitz.open(path) as doc:
+            page = doc.load_page(page_num)
+            pix = page.get_pixmap(dpi=150)
+            img_bytes = pix.tobytes("jpeg")
+            return base64.b64encode(img_bytes).decode("utf-8")
         
     try:
         # Get page count (quick, non-blocking)
-        doc = fitz.open(file_path)
-        page_count = len(doc)
-        doc.close()
+        with fitz.open(file_path) as doc:
+            total_pages = len(doc)
+            
+        page_count = min(total_pages, MAX_PAGES)
+        if total_pages > MAX_PAGES:
+            logger.warning(f"PDF {file_path} has {total_pages} pages. Truncating to {MAX_PAGES} for vision parsing.")
         
         extracted_texts = []
 

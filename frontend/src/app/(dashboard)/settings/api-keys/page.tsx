@@ -1140,7 +1140,7 @@ function DefaultModelSelectors({
     { key: 'default_embedding_model', label: t('models.embeddingModelLabel'), description: t('models.embeddingModelDesc'), modelType: 'embedding', required: true, id: `${generatedId}-embed` },
     { key: 'default_text_to_speech_model', label: t('models.ttsModelLabel'), description: t('models.ttsModelDesc'), modelType: 'text_to_speech', id: `${generatedId}-tts` },
     { key: 'default_speech_to_text_model', label: t('models.sttModelLabel'), description: t('models.sttModelDesc'), modelType: 'speech_to_text', id: `${generatedId}-stt` },
-    { key: 'default_vision_model', label: 'Vision Model', description: 'Model used to parse text and context from images', modelType: 'vision', id: `${generatedId}-vision` },
+    { key: 'default_vision_model', label: t('models.visionModelLabel'), description: t('models.visionModelDesc'), modelType: 'vision', id: `${generatedId}-vision` },
   ]
 
   const advancedConfigs: DefaultConfig[] = [

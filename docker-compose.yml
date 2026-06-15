@@ -13,9 +13,9 @@ services:
     pull_policy: always
 
   open_notebook:
-    # Per testare le modifiche locali (incluso il Vision Parsing), de-commenta 'build' e commenta 'image':
-    build: .
-    # image: lfnovo/open_notebook:v1-latest
+    # To test local changes (including Vision Parsing), uncomment 'build' and comment 'image':
+    # build: .
+    image: lfnovo/open_notebook:v1-latest
     ports:
       - "8502:8502"  # Web UI
       - "5055:5055"  # REST API

@@ -41,7 +41,6 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
-    "PyMuPDF>=1.23.0",
 ]
 
 [tool.setuptools]
@@ -52,6 +51,9 @@ open_notebook = ["ai/assets/*"]
 
 
 [project.optional-dependencies]
+pdf = [
+    "PyMuPDF>=1.23.0",
+]
 dev = [
     "ipykernel>=6.29.5",
     "ruff>=0.5.5",

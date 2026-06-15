@@ -53,7 +53,7 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
         content = response.content if hasattr(response, "content") else str(response)
         if isinstance(content, list):
             # Extract text blocks if content is an array (e.g. Anthropic)
-            return "".join([b["text"] if isinstance(b, dict) and b.get("type") == "text" else str(b) for b in content])
+            return "".join([b.get("text", "") if isinstance(b, dict) and b.get("type") == "text" else str(b) for b in content])
         return str(content)
     except Exception as e:
         logger.error(f"Vision parsing failed: {str(e)}")

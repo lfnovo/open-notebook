@@ -945,15 +945,34 @@ async def retry_source_processing(source_id: str):
 
 @router.delete("/sources/{source_id}")
 async def delete_source(source_id: str):
-    """Delete a source."""
+    """Delete a source and all associated commands/insights."""
     try:
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
-        await source.delete()
+        # Clean up associated commands to prevent zombie processes
+        if source.command_id:
+            try:
+                command_id = str(source.command_id)
+                from surreal_commands import cancel_command
+                await cancel_command(command_id)
+                logger.info(f"Cancelled command {command_id} for source {source_id}")
+            except Exception as e:
+                logger.warning(f"Failed to cancel command {source.command_id}: {e}")
 
-        return {"message": "Source deleted successfully"}
+        # Delete all associated insights
+        try:
+            insights = await source.get_insights()
+            for insight in insights:
+                await insight.delete()
+            logger.info(f"Deleted {len(insights)} insights for source {source_id}")
+        except Exception as e:
+            logger.warning(f"Failed to delete insights for source {source_id}: {e}")
+
+        # Finally delete the source
+        await source.delete()
+        return {"message": "Source and associated resources deleted successfully"}
     except HTTPException:
         raise
     except Exception as e:

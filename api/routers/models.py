@@ -199,7 +199,7 @@ async def create_model(model_data: ModelCreate):
     """Create a new model configuration."""
     try:
         # Validate model type
-        valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
+        valid_types = ["language", "embedding", "text_to_speech", "speech_to_text", "vision"]
         if model_data.type not in valid_types:
             raise HTTPException(
                 status_code=400,
@@ -303,6 +303,7 @@ async def get_default_models():
             default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
+            default_vision_model=defaults.default_vision_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
     except Exception as e:

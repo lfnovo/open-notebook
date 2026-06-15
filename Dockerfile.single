@@ -38,9 +38,8 @@ ENV UV_HTTP_TIMEOUT=120
 
 # Copy dependency files first
 COPY pyproject.toml uv.lock ./
-COPY open_notebook/__init__.py ./open_notebook/__init__.py
-# Install dependencies
-RUN uv sync --frozen --no-dev
+# Install dependencies without installing the project itself (to avoid empty package in site-packages)
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Pre-download tiktoken encoding so the app works offline (issue #264).
 # /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts

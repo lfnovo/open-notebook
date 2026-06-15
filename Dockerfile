@@ -27,10 +27,9 @@ WORKDIR /app
 
 # Copy dependency files and minimal package structure first for better layer caching
 COPY pyproject.toml uv.lock ./
-COPY open_notebook/__init__.py ./open_notebook/__init__.py
 
 # Install dependencies with optimizations (this layer will be cached unless dependencies change)
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --no-install-project
 
 # Pre-download tiktoken encoding so the app works offline (issue #264).
 # /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts

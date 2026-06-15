@@ -75,7 +75,30 @@ async def content_process(state: SourceState) -> dict:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)
 
-    processed_state = await extract_content(content_state)
+    file_path = content_state.get("file_path")
+    vision_text = None
+    if file_path:
+        import os
+        from open_notebook.ai.vision_parser import process_image_with_vision, process_pdf_with_vision
+        
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext in [".png", ".jpg", ".jpeg", ".webp"]:
+            vision_text = await process_image_with_vision(file_path)
+        elif ext == ".pdf":
+            vision_text = await process_pdf_with_vision(file_path)
+
+    if vision_text:
+        import os
+        # Create a processed state manually, bypassing standard extract_content
+        processed_state = ProcessSourceState(
+            url=content_state.get("url"),
+            file_path=file_path,
+            content=vision_text,
+            title=content_state.get("title") or os.path.basename(file_path),
+            error=None
+        )
+    else:
+        processed_state = await extract_content(content_state)
 
     if not processed_state.content or not processed_state.content.strip():
         url = processed_state.url or ""

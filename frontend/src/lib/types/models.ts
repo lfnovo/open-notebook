@@ -2,7 +2,7 @@ export interface Model {
   id: string
   name: string
   provider: string
-  type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+  type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text' | 'vision'
   credential?: string | null
   created: string
   updated: string
@@ -11,7 +11,7 @@ export interface Model {
 export interface CreateModelRequest {
   name: string
   provider: string
-  type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+  type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text' | 'vision'
   credential?: string
 }
 
@@ -22,6 +22,7 @@ export interface ModelDefaults {
   default_text_to_speech_model?: string | null
   default_speech_to_text_model?: string | null
   default_embedding_model?: string | null
+  default_vision_model?: string | null
   default_tools_model?: string | null
 }
 
@@ -35,7 +36,7 @@ export interface ProviderAvailability {
 export interface DiscoveredModel {
   name: string
   provider: string
-  model_type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+  model_type: 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text' | 'vision'
   description?: string
 }
 

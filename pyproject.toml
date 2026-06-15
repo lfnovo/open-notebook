@@ -41,6 +41,7 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
+    "PyMuPDF>=1.23.0",
 ]
 
 [tool.setuptools]

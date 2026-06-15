@@ -122,10 +122,10 @@ class EmbedSourceOutput(CommandOutput):
     "embed_note",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # DB retry for SurrealDB v2 conflicts
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 60,
+        "wait_max": 120,  # Allow queue to drain
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },
@@ -214,10 +214,10 @@ async def embed_note_command(input_data: EmbedNoteInput) -> EmbedNoteOutput:
     "embed_insight",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # DB retry for SurrealDB v2 conflicts
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 60,
+        "wait_max": 120,  # Allow queue to drain
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },
@@ -308,10 +308,10 @@ async def embed_insight_command(input_data: EmbedInsightInput) -> EmbedInsightOu
     "embed_source",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # DB retry for SurrealDB v2 conflicts
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 60,
+        "wait_max": 120,  # Allow queue to drain
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },
@@ -444,10 +444,10 @@ async def embed_source_command(input_data: EmbedSourceInput) -> EmbedSourceOutpu
     "create_insight",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 15,  # DB retry for SurrealDB v2 conflicts
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 60,
+        "wait_max": 120,  # Allow queue to drain
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },
@@ -479,6 +479,26 @@ async def create_insight_command(
             f"Creating insight for source {input_data.source_id}: "
             f"type={input_data.insight_type}"
         )
+
+        # Idempotency check: Check if insight already exists
+        existing = await repo_query(
+            """
+            SELECT * FROM source_insight 
+            WHERE source = $source_id AND insight_type = $insight_type  
+            LIMIT 1;
+            """,
+            {
+                "source_id": ensure_record_id(input_data.source_id),
+                "insight_type": input_data.insight_type,
+            }
+        )
+        if existing and len(existing) > 0:
+            logger.info(f"Insight already exists, skipping creation")
+            return CreateInsightOutput(
+                success=True,
+                insight_id=str(existing[0]["id"]),
+                already_exists=True,
+            )
 
         # 1. Create insight record in database
         result = await repo_query(

@@ -50,10 +50,10 @@ class SourceProcessingOutput(CommandOutput):
     "process_source",
     app="open_notebook",
     retry={
-        "max_attempts": 15,  # Handle deep queues (workaround for SurrealDB v2 transaction conflicts)
+        "max_attempts": 1,  # NO RETRY - prevent LLM spam (workaround for SurrealDB v2 transaction conflicts)
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 120,  # Allow queue to drain
+        "wait_max": 1,  # NO RETRY
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",  # Avoid log noise during transaction conflicts
     },
@@ -182,10 +182,10 @@ class RunTransformationOutput(CommandOutput):
     "run_transformation",
     app="open_notebook",
     retry={
-        "max_attempts": 5,
+        "max_attempts": 3,  # LLM retry only
         "wait_strategy": "exponential_jitter",
         "wait_min": 1,
-        "wait_max": 60,
+        "wait_max": 180,  # LLM rate limit max wait
         "stop_on": [ValueError, ConfigurationError],  # Don't retry validation/config errors
         "retry_log_level": "debug",
     },

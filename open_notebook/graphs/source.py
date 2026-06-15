@@ -140,6 +140,8 @@ def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[
             {
                 "source": state["source"],
                 "transformation": t,
+                "input_text": state["source"].full_text if state["source"] else "",
+                "input_text": state["source"].full_text if state["source"] else "",
             },
         )
         for t in to_apply
@@ -154,10 +156,14 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     transformation: Transformation = state["transformation"]
 
     logger.debug(f"Applying transformation {transformation.name}")
-    result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
-    )
-    await source.add_insight(transformation.title, result["output"])
+    try:
+        result = await transform_graph.ainvoke(
+            dict(input_text=content, transformation=transformation)
+        )
+        await source.add_insight(transformation.title, result["output"])
+    except Exception as e:
+        logger.error(f"Transformation {transformation.name} failed: {e}")
+        return {"transformation": []}
     return {
         "transformation": [
             {

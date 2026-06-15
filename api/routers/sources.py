@@ -951,16 +951,16 @@ async def delete_source(source_id: str):
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
 
-    # Clean up associated commands to prevent zombie processes
-    command_id = getattr(source, 'command_id', None)
-    if command_id:
-        try:
-            command_id_str = str(command_id)
-            from surreal_commands import cancel_command
-            await cancel_command(command_id_str)
-            logger.info(f"Cancelled command {command_id_str} for source {source_id}")
-        except Exception as e:
-            logger.warning(f"Failed to cancel command {command_id}: {e}")
+        # Clean up associated commands to prevent zombie processes
+        command_id = getattr(source, 'command_id', None)
+        if command_id:
+            try:
+                command_id_str = str(command_id)
+                from surreal_commands import cancel_command
+                await cancel_command(command_id_str)
+                logger.info(f"Cancelled command {command_id_str} for source {source_id}")
+            except Exception as e:
+                logger.warning(f"Failed to cancel command {command_id}: {e}")
 
         # Delete all associated insights
         try:

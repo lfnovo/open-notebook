@@ -8,9 +8,12 @@ import { getApiUrl } from '@/lib/config'
 // operations (transformations, insights, synchronous chat) on slower hardware
 // (Ollama, LM Studio). Configure it via NEXT_PUBLIC_API_TIMEOUT_MS for models
 // that can take longer than 10 minutes to respond (#880).
-// Note: value is in milliseconds; 0 disables the timeout entirely.
+// Note: value is in milliseconds; an explicit 0 disables the timeout entirely.
+// An empty or invalid value falls back to the default (so a present-but-empty
+// env var doesn't accidentally disable timeouts).
 const DEFAULT_API_TIMEOUT_MS = 600000 // 600 seconds = 10 minutes
-const parsedTimeout = Number(process.env.NEXT_PUBLIC_API_TIMEOUT_MS)
+const rawTimeout = process.env.NEXT_PUBLIC_API_TIMEOUT_MS
+const parsedTimeout = rawTimeout && rawTimeout.trim() !== '' ? Number(rawTimeout) : NaN
 const apiTimeout = Number.isFinite(parsedTimeout) && parsedTimeout >= 0
   ? parsedTimeout
   : DEFAULT_API_TIMEOUT_MS

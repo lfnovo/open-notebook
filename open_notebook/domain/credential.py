@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 
 from loguru import logger
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
@@ -47,8 +47,13 @@ class Credential(ObjectModel):
         "project",
         "location",
         "credentials_path",
-        "num_ctx",
     }
+
+    # Provider-specific tuning options that are exposed as top-level fields on
+    # this model but persisted inside the flexible `config` object on the
+    # `credential` table (migration 15). Adding a new such option only requires
+    # declaring the Pydantic field below and listing it here — no DB migration.
+    CONFIG_EXTRAS: ClassVar[set[str]] = {"num_ctx"}
 
     name: str
     provider: str
@@ -65,9 +70,34 @@ class Credential(ObjectModel):
     project: Optional[str] = None
     location: Optional[str] = None
     credentials_path: Optional[str] = None
+    # Flexible provider config bag, persisted as-is to the credential table's
+    # `config` FLEXIBLE object (migration 15). This is the source of truth on
+    # disk and holds both the keys this version maps (see CONFIG_EXTRAS) and any
+    # keys written by a newer version, so a load/save round-trip never clobbers
+    # options this version doesn't know about.
+    config: Optional[Dict[str, Any]] = None
+
     # Ollama-only: overrides the context window (num_ctx). Esperanto defaults to
     # 8192; raise this if your hardware can handle a larger context window.
+    # Exposed as a top-level field (and on the API) for convenience; it mirrors
+    # config["num_ctx"].
     num_ctx: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _mirror_config_to_fields(cls, data: Any) -> Any:
+        """Mirror known keys from the persisted `config` bag onto their
+        convenience fields on load. Done in `before` so the values flow through
+        normal Pydantic field validation (e.g. `num_ctx` is coerced/validated as
+        an int) instead of being set raw. Unknown keys stay in `config` untouched
+        and are preserved on save."""
+        if isinstance(data, dict) and isinstance(data.get("config"), dict):
+            config = data["config"]
+            data = dict(data)
+            for key in cls.CONFIG_EXTRAS:
+                if data.get(key) is None and config.get(key) is not None:
+                    data[key] = config[key]
+        return data
 
     def to_esperanto_config(self) -> Dict[str, Any]:
         """
@@ -195,10 +225,11 @@ class Credential(ObjectModel):
         return [Model(**row) for row in results]
 
     def _prepare_save_data(self) -> Dict[str, Any]:
-        """Override to encrypt api_key before storage."""
+        """Override to encrypt api_key and sync provider extras into `config`."""
         data = {}
         for key, value in self.model_dump().items():
-            if key == "decryption_error":
+            if key in ("decryption_error", "config"):
+                # `config` is rebuilt below from the existing bag + convenience fields.
                 continue
             if key == "api_key":
                 # Handle SecretStr: extract, encrypt, store
@@ -209,6 +240,21 @@ class Credential(ObjectModel):
                     data["api_key"] = None
             elif value is not None or key in self.__class__.nullable_fields:
                 data[key] = value
+
+        # Sync the convenience fields (num_ctx, ...) into the flexible `config`
+        # object so the SCHEMAFULL credential table doesn't drop them (migration
+        # 15). Starting from the existing bag preserves any keys written by a
+        # newer version, since repo_update MERGE replaces the whole object.
+        # `config` is None only when the merged result is genuinely empty.
+        config: Dict[str, Any] = dict(self.config or {})
+        for key in self.__class__.CONFIG_EXTRAS:
+            data.pop(key, None)  # not a top-level column; lives in `config`
+            value = getattr(self, key, None)
+            if value is not None:
+                config[key] = value
+            else:
+                config.pop(key, None)
+        data["config"] = config or None
 
         return data
 

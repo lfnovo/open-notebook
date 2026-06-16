@@ -158,7 +158,7 @@ export default function SearchPage() {
 
   return (
     <AppShell>
-      <div className="p-4 md:p-6">
+      <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
@@ -440,7 +440,7 @@ export default function SearchPage() {
                         </CardContent>
                       </Card>
                     ) : (
-                      <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                      <div className="space-y-2">
                         {searchMutation.data.results.map((result, index) => {
                           // Parse type from parent_id (format: "source:id" or "note:id" or "source_insight:id")
                           // Handle null parent_id gracefully (orphaned records)

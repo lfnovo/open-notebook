@@ -842,10 +842,15 @@ async def retry_source_processing(source_id: str):
                 )
                 # Continue with retry if we can't check status
 
-        # Get notebooks that this source belongs to
-        query = "SELECT notebook FROM reference WHERE source = $source_id"
-        references = await repo_query(query, {"source_id": source_id})
-        notebook_ids = [str(ref["notebook"]) for ref in references]
+        # Get notebooks that this source belongs to. `reference` is a graph edge
+        # (RELATE source->reference->notebook), so it only has `in`/`out` columns —
+        # there is no `source`/`notebook` column. Mirror the working query at the
+        # source-list path above. See issue #861.
+        references = await repo_query(
+            "SELECT VALUE out FROM reference WHERE in = $source_id",
+            {"source_id": ensure_record_id(source.id or source_id)},
+        )
+        notebook_ids = [str(nb_id) for nb_id in references] if references else []
 
         if not notebook_ids:
             raise HTTPException(

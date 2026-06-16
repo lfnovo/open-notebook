@@ -70,29 +70,28 @@ class Credential(ObjectModel):
     project: Optional[str] = None
     location: Optional[str] = None
     credentials_path: Optional[str] = None
+    # Flexible provider config bag, persisted as-is to the credential table's
+    # `config` FLEXIBLE object (migration 15). This is the source of truth on
+    # disk and holds both the keys this version maps (see CONFIG_EXTRAS) and any
+    # keys written by a newer version, so a load/save round-trip never clobbers
+    # options this version doesn't know about.
+    config: Optional[Dict[str, Any]] = None
+
     # Ollama-only: overrides the context window (num_ctx). Esperanto defaults to
     # 8192; raise this if your hardware can handle a larger context window.
+    # Exposed as a top-level field (and on the API) for convenience; it mirrors
+    # config["num_ctx"].
     num_ctx: Optional[int] = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def _lift_config(cls, data: Any) -> Any:
-        """Lift provider-specific extras out of the persisted `config` object.
-
-        On read, the DB row carries a flexible `config` object holding options
-        like `num_ctx`. Spread those back onto the corresponding top-level model
-        fields so the model's public shape is unchanged, then drop `config`.
-        """
-        if isinstance(data, dict) and isinstance(data.get("config"), dict):
-            data = dict(data)
-            config = data.pop("config")
-            for key in cls.CONFIG_EXTRAS:
-                if key in config and data.get(key) is None:
-                    data[key] = config[key]
-        elif isinstance(data, dict) and "config" in data and data["config"] is None:
-            # Drop a null `config` so it isn't stored as an extra attribute.
-            data = {k: v for k, v in data.items() if k != "config"}
-        return data
+    @model_validator(mode="after")
+    def _mirror_config_to_fields(self) -> "Credential":
+        """Mirror known keys from the persisted `config` bag onto their
+        convenience fields on load, without losing unmapped keys."""
+        if isinstance(self.config, dict):
+            for key in self.CONFIG_EXTRAS:
+                if self.config.get(key) is not None and getattr(self, key, None) is None:
+                    object.__setattr__(self, key, self.config[key])
+        return self
 
     def to_esperanto_config(self) -> Dict[str, Any]:
         """
@@ -220,10 +219,11 @@ class Credential(ObjectModel):
         return [Model(**row) for row in results]
 
     def _prepare_save_data(self) -> Dict[str, Any]:
-        """Override to encrypt api_key and pack provider extras into `config`."""
+        """Override to encrypt api_key and sync provider extras into `config`."""
         data = {}
         for key, value in self.model_dump().items():
-            if key == "decryption_error":
+            if key in ("decryption_error", "config"):
+                # `config` is rebuilt below from the existing bag + convenience fields.
                 continue
             if key == "api_key":
                 # Handle SecretStr: extract, encrypt, store
@@ -235,14 +235,19 @@ class Credential(ObjectModel):
             elif value is not None or key in self.__class__.nullable_fields:
                 data[key] = value
 
-        # Pack provider-specific extras into the flexible `config` object so the
-        # SCHEMAFULL credential table doesn't drop them (migration 15). Only
-        # non-null values are stored; `config` is None when there are none.
-        config: Dict[str, Any] = {}
+        # Sync the convenience fields (num_ctx, ...) into the flexible `config`
+        # object so the SCHEMAFULL credential table doesn't drop them (migration
+        # 15). Starting from the existing bag preserves any keys written by a
+        # newer version, since repo_update MERGE replaces the whole object.
+        # `config` is None only when the merged result is genuinely empty.
+        config: Dict[str, Any] = dict(self.config or {})
         for key in self.__class__.CONFIG_EXTRAS:
-            value = data.pop(key, None)
+            data.pop(key, None)  # not a top-level column; lives in `config`
+            value = getattr(self, key, None)
             if value is not None:
                 config[key] = value
+            else:
+                config.pop(key, None)
         data["config"] = config or None
 
         return data

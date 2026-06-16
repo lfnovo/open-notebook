@@ -653,8 +653,7 @@ class TestCredentialConfigBag:
             config={"num_ctx": 8192},
         )
 
-        assert cred.num_ctx == 8192
-        assert "config" not in cred.model_dump()  # not kept as a stray attribute
+        assert cred.num_ctx == 8192  # mirrored from config onto the convenience field
 
     def test_num_ctx_round_trips_through_save_and_load(self):
         from open_notebook.domain.credential import Credential
@@ -671,13 +670,43 @@ class TestCredentialConfigBag:
         assert reloaded.num_ctx == 4096
         assert reloaded.to_esperanto_config()["num_ctx"] == 4096
 
-    def test_null_config_is_dropped_on_load(self):
+    def test_null_config_loads_without_extras(self):
         from open_notebook.domain.credential import Credential
 
         cred = Credential(name="OpenAI", provider="openai", config=None)
 
         assert cred.num_ctx is None
-        assert "config" not in cred.model_dump()
+        assert cred.config is None
+        assert cred._prepare_save_data()["config"] is None
+
+    def test_unmapped_config_keys_are_preserved_on_save(self):
+        from open_notebook.domain.credential import Credential
+
+        # A newer version may have written config keys this model doesn't map.
+        # They must survive a load/save round-trip rather than be clobbered
+        # (repo_update MERGE replaces the whole config object).
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        assert cred.num_ctx == 8192
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"num_ctx": 8192, "future_option": "keep-me"}
+
+    def test_clearing_num_ctx_keeps_other_config_keys(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        cred.num_ctx = None  # user clears the override
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"future_option": "keep-me"}
 
 
 if __name__ == "__main__":

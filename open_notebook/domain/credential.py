@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 
 from loguru import logger
-from pydantic import SecretStr
+from pydantic import SecretStr, model_validator
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
@@ -47,8 +47,13 @@ class Credential(ObjectModel):
         "project",
         "location",
         "credentials_path",
-        "num_ctx",
     }
+
+    # Provider-specific tuning options that are exposed as top-level fields on
+    # this model but persisted inside the flexible `config` object on the
+    # `credential` table (migration 15). Adding a new such option only requires
+    # declaring the Pydantic field below and listing it here — no DB migration.
+    CONFIG_EXTRAS: ClassVar[set[str]] = {"num_ctx"}
 
     name: str
     provider: str
@@ -68,6 +73,26 @@ class Credential(ObjectModel):
     # Ollama-only: overrides the context window (num_ctx). Esperanto defaults to
     # 8192; raise this if your hardware can handle a larger context window.
     num_ctx: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _lift_config(cls, data: Any) -> Any:
+        """Lift provider-specific extras out of the persisted `config` object.
+
+        On read, the DB row carries a flexible `config` object holding options
+        like `num_ctx`. Spread those back onto the corresponding top-level model
+        fields so the model's public shape is unchanged, then drop `config`.
+        """
+        if isinstance(data, dict) and isinstance(data.get("config"), dict):
+            data = dict(data)
+            config = data.pop("config")
+            for key in cls.CONFIG_EXTRAS:
+                if key in config and data.get(key) is None:
+                    data[key] = config[key]
+        elif isinstance(data, dict) and "config" in data and data["config"] is None:
+            # Drop a null `config` so it isn't stored as an extra attribute.
+            data = {k: v for k, v in data.items() if k != "config"}
+        return data
 
     def to_esperanto_config(self) -> Dict[str, Any]:
         """
@@ -195,7 +220,7 @@ class Credential(ObjectModel):
         return [Model(**row) for row in results]
 
     def _prepare_save_data(self) -> Dict[str, Any]:
-        """Override to encrypt api_key before storage."""
+        """Override to encrypt api_key and pack provider extras into `config`."""
         data = {}
         for key, value in self.model_dump().items():
             if key == "decryption_error":
@@ -209,6 +234,16 @@ class Credential(ObjectModel):
                     data["api_key"] = None
             elif value is not None or key in self.__class__.nullable_fields:
                 data[key] = value
+
+        # Pack provider-specific extras into the flexible `config` object so the
+        # SCHEMAFULL credential table doesn't drop them (migration 15). Only
+        # non-null values are stored; `config` is None when there are none.
+        config: Dict[str, Any] = {}
+        for key in self.__class__.CONFIG_EXTRAS:
+            value = data.pop(key, None)
+            if value is not None:
+                config[key] = value
+        data["config"] = config or None
 
         return data
 

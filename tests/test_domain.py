@@ -708,6 +708,23 @@ class TestCredentialConfigBag:
         data = cred._prepare_save_data()
         assert data["config"] == {"future_option": "keep-me"}
 
+    def test_mirrored_num_ctx_is_validated_as_int(self):
+        from open_notebook.domain.credential import Credential
+
+        # A value coming from the flexible config bag is routed through normal
+        # Pydantic field validation, not set raw.
+        cred = Credential(
+            name="Local Ollama", provider="ollama", config={"num_ctx": "8192"}
+        )
+        assert cred.num_ctx == 8192
+        assert isinstance(cred.num_ctx, int)
+
+        # A non-coercible value is rejected rather than silently flowing through.
+        with pytest.raises(ValidationError):
+            Credential(
+                name="Local Ollama", provider="ollama", config={"num_ctx": "not-an-int"}
+            )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

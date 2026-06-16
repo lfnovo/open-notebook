@@ -83,15 +83,21 @@ class Credential(ObjectModel):
     # config["num_ctx"].
     num_ctx: Optional[int] = None
 
-    @model_validator(mode="after")
-    def _mirror_config_to_fields(self) -> "Credential":
+    @model_validator(mode="before")
+    @classmethod
+    def _mirror_config_to_fields(cls, data: Any) -> Any:
         """Mirror known keys from the persisted `config` bag onto their
-        convenience fields on load, without losing unmapped keys."""
-        if isinstance(self.config, dict):
-            for key in self.CONFIG_EXTRAS:
-                if self.config.get(key) is not None and getattr(self, key, None) is None:
-                    object.__setattr__(self, key, self.config[key])
-        return self
+        convenience fields on load. Done in `before` so the values flow through
+        normal Pydantic field validation (e.g. `num_ctx` is coerced/validated as
+        an int) instead of being set raw. Unknown keys stay in `config` untouched
+        and are preserved on save."""
+        if isinstance(data, dict) and isinstance(data.get("config"), dict):
+            config = data["config"]
+            data = dict(data)
+            for key in cls.CONFIG_EXTRAS:
+                if data.get(key) is None and config.get(key) is not None:
+                    data[key] = config[key]
+        return data
 
     def to_esperanto_config(self) -> Dict[str, Any]:
         """

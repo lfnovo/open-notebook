@@ -133,10 +133,15 @@ function SourceCardImpl({
   // populates `status` alongside `command_id`, so we no longer poll for every
   // completed source — that scaled linearly with the number of cards and caused the
   // list lag reported in #503.
+  //
+  // A source with a `command_id` but no resolved `status` yet is still ambiguous
+  // (it renders as a synthetic "new"), so keep polling those until a real status
+  // arrives — otherwise such a card would be stuck "processing" forever.
   const shouldFetchStatus =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
+    (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
     wasProcessing // Keep polling if we were processing to catch the completion
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
@@ -408,6 +413,13 @@ function SourceCardImpl({
  * capture the source id, so a stale closure stays correct as long as the source data
  * below is unchanged.
  */
+function topicsEqual(a?: string[], b?: string[]): boolean {
+  if (a === b) return true
+  if ((a?.length ?? 0) !== (b?.length ?? 0)) return false
+  if (!a || !b) return true // both empty/undefined (lengths matched above)
+  return a.every((topic, i) => topic === b[i])
+}
+
 function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
   if (prev === next) return true
 
@@ -424,7 +436,7 @@ function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
     p.insights_count === n.insights_count &&
     p.asset?.url === n.asset?.url &&
     p.asset?.file_path === n.asset?.file_path &&
-    (p.topics?.length ?? 0) === (n.topics?.length ?? 0) &&
+    topicsEqual(p.topics, n.topics) &&
     prev.contextMode === next.contextMode &&
     prev.showRemoveFromNotebook === next.showRemoveFromNotebook &&
     prev.className === next.className

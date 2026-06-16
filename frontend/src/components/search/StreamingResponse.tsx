@@ -56,7 +56,7 @@ export function StreamingResponse({
 
   return (
     <div
-      className="space-y-4 mt-6 max-h-[60vh] overflow-y-auto pr-2"
+      className="space-y-4 mt-6"
       role="region"
       aria-label={t('common.accessibility.askResponse')}
       aria-live="polite"

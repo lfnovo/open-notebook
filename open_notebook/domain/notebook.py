@@ -707,6 +707,28 @@ async def text_search(
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
         return search_results
+    except RuntimeError as e:
+        # SurrealDB's search::highlight can compute a byte position that exceeds the
+        # stored string length on large or multi-byte chunks, aborting the whole query
+        # ("position overflow"). Fall back to vector search so the user still gets
+        # results instead of a 500. See issue #648.
+        if "position overflow" in str(e):
+            logger.warning(
+                f"Highlight position overflow, falling back to vector search: {str(e)}"
+            )
+            try:
+                return await vector_search(keyword, results, source, note)
+            except Exception as ve:
+                # Both search paths failed (e.g. no embedding model configured).
+                # Surface the failure instead of returning [] — an empty list would
+                # be indistinguishable from a legitimate "no matches" and mask a
+                # total search outage from callers.
+                logger.error(f"Vector search fallback also failed: {str(ve)}")
+                logger.exception(ve)
+                raise DatabaseOperationError(ve)
+        logger.error(f"Error performing text search: {str(e)}")
+        logger.exception(e)
+        raise DatabaseOperationError(e)
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)

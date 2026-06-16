@@ -365,24 +365,28 @@ function SourceCardImpl({
           </DropdownMenu>
           </div>
         </div>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(isFailed as any) && (
+        {/* Prominent retry action surfaced directly on failed cards so it's
+            discoverable without opening the dropdown menu (#726). */}
+        {isFailed ? (
           <div className="flex gap-2 pt-2 border-t">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              onClick={handleRetry}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRetry()
+              }}
               disabled={!onRetry}
               className="h-7 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
-              {t('sources.retry')}
+              {t('sources.retryProcessing')}
             </Button>
           </div>
-        )}
+        ) : null}
 
         {/* Processing progress indicator */}
-        {isProcessing && statusData?.processing_info?.progress && (
+        {isProcessing && typeof statusData?.processing_info?.progress === 'number' && (
           <div className="mt-3 pt-2 border-t">
             <div className="flex justify-between items-center mb-1">
             <span className="text-xs text-gray-600">{t('common.progress')}</span>

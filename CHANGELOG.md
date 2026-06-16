@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Failed source cards now show a prominent "Retry processing" button directly on the card instead of only inside the 3-dot dropdown; clicking it no longer also opens the source (the click was missing `stopPropagation`) (#726)
+
 ### Fixed
 - `POST /sources/{id}/retry` no longer returns `400 "Source is not associated with any notebooks"` for every source; it now queries the `reference` graph edge by its `in`/`out` columns instead of a non-existent `source` column (#861)
 - Text search no longer returns a 500 when SurrealDB's `search::highlight` hits a "position overflow" on large or multi-byte document chunks; it now falls back to vector search and returns results (#648)

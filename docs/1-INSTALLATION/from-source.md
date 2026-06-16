@@ -66,7 +66,7 @@ cp .env.example .env
 # OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ```
 
-After starting the app, configure AI providers via the **Settings → API Keys** UI in the browser.
+After starting the app, configure AI providers via the **Manage → Models** UI in the browser.
 
 ### 5. Start API
 
@@ -76,23 +76,38 @@ make api
 # or: uv run --env-file .env uvicorn api.main:app --host 0.0.0.0 --port 5055
 ```
 
-### 6. Start Frontend
+### 6. Start Worker
+
+Source and note processing (content extraction, embedding, insights) is dispatched
+as background jobs that a **separate worker** process consumes. Without it, every
+source stays stuck at `Source processing status: CommandStatus.NEW` forever.
 
 ```bash
 # Terminal 3
+make worker
+# or: uv run --env-file .env surreal-commands-worker --import-modules commands
+```
+
+> `make start-all` starts Database + API + Worker + Frontend together; the steps
+> above run them individually so you can see each process's logs.
+
+### 7. Start Frontend
+
+```bash
+# Terminal 4
 cd frontend && npm install && npm run dev
 ```
 
-### 7. Access
+### 8. Access
 
 - **Frontend**: http://localhost:3000
 - **API Docs**: http://localhost:5055/docs
 - **Database**: http://localhost:8000
 
-### 8. Configure AI Provider
+### 9. Configure AI Provider
 
 1. Open http://localhost:3000
-2. Go to **Settings** → **API Keys**
+2. Go to **Manage** → **Models**
 3. Click **Add Credential** → Select your provider → Paste API key
 4. Click **Save**, then **Test Connection**
 5. Click **Discover Models** → **Register Models**

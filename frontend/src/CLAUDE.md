@@ -40,7 +40,7 @@ User interactions trigger mutations/queries via hooks, which communicate with th
 ### Lib (`src/lib/`) — Data & State Layer
 
 #### `lib/api/` — Backend Communication
-- **`client.ts`**: Central Axios instance with auth interceptor, FormData handling, 10-min timeout
+- **`client.ts`**: Central Axios instance with auth interceptor, FormData handling, configurable request timeout (`NEXT_PUBLIC_API_TIMEOUT_MS`, default 10 min; `0` disables)
 - **`query-client.ts`**: TanStack Query configuration
 - **Resource modules** (`sources.ts`, `chat.ts`, `notebooks.ts`, etc.): Endpoint-specific functions returning typed responses
 - **Pattern**: All requests go through `apiClient`; auth token auto-added from localStorage

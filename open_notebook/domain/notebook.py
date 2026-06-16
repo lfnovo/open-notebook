@@ -719,8 +719,13 @@ async def text_search(
             try:
                 return await vector_search(keyword, results, source, note)
             except Exception as ve:
+                # Both search paths failed (e.g. no embedding model configured).
+                # Surface the failure instead of returning [] — an empty list would
+                # be indistinguishable from a legitimate "no matches" and mask a
+                # total search outage from callers.
                 logger.error(f"Vector search fallback also failed: {str(ve)}")
-                return []
+                logger.exception(ve)
+                raise DatabaseOperationError(ve)
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)
         raise DatabaseOperationError(e)

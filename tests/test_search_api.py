@@ -68,8 +68,9 @@ class TestTextSearchHighlightOverflowFallback:
         mock_vector.assert_awaited_once_with("hello", 10, True, True)
 
     @pytest.mark.asyncio
-    async def test_position_overflow_returns_empty_when_vector_also_fails(self):
+    async def test_position_overflow_raises_when_vector_also_fails(self):
         from open_notebook.domain import notebook as notebook_module
+        from open_notebook.exceptions import DatabaseOperationError
 
         overflow = RuntimeError("position overflow: 1 - len: 0")
         with (
@@ -83,9 +84,10 @@ class TestTextSearchHighlightOverflowFallback:
                 side_effect=Exception("no embedding model"),
             ),
         ):
-            result = await notebook_module.text_search("hello", 10)
-
-        assert result == []
+            # When both search paths fail, surface the error rather than masking it
+            # as an empty result set.
+            with pytest.raises(DatabaseOperationError):
+                await notebook_module.text_search("hello", 10)
 
     @pytest.mark.asyncio
     async def test_other_runtime_errors_still_raise(self):

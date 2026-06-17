@@ -139,15 +139,14 @@ async def process_source_command(
         )
 
     except ValueError as e:
-        # Validation errors are permanent failures - don't retry
-        processing_time = time.time() - start_time
-        logger.error(f"Source processing failed: {e}")
-        return SourceProcessingOutput(
-            success=False,
-            source_id=input_data.source_id,
-            processing_time=processing_time,
-            error_message=str(e),
-        )
+        # Validation errors are permanent failures. Re-raise so surreal-commands
+        # marks the job as `failed` (stop_on=[ValueError] already prevents
+        # pointless retries). Returning a success=False result instead marks the
+        # job `completed` (is_success() checks job status, not the payload),
+        # which hid extraction failures and left the source without a retryable
+        # `failed` status in the UI.
+        logger.error(f"Source processing failed (permanent): {e}")
+        raise
     except Exception as e:
         # Transient failure - will be retried (surreal-commands logs final failure)
         logger.debug(

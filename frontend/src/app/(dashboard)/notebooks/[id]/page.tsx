@@ -107,6 +107,23 @@ export default function NotebookPage() {
     }))
   }
 
+  // Bulk include/exclude every source from the chat context at once (#223).
+  // "include" mirrors the per-source default: insights when available, else full.
+  const handleBulkSourceContext = (action: 'include' | 'exclude') => {
+    setContextSelections(prev => {
+      const next = { ...prev.sources }
+      ;(sources ?? []).forEach(source => {
+        next[source.id] =
+          action === 'exclude'
+            ? 'off'
+            : source.insights_count > 0
+              ? 'insights'
+              : 'full'
+      })
+      return { ...prev, sources: next }
+    })
+  }
+
   if (notebookLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -167,6 +184,7 @@ export default function NotebookPage() {
                     onRefresh={refetchSources}
                     contextSelections={contextSelections.sources}
                     onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                    onBulkContextModeChange={handleBulkSourceContext}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
@@ -211,6 +229,7 @@ export default function NotebookPage() {
                 onRefresh={refetchSources}
                 contextSelections={contextSelections.sources}
                 onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                onBulkContextModeChange={handleBulkSourceContext}
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}

@@ -262,6 +262,9 @@ export const caES = {
     deleteSuccess: "S'ha suprimit el quadern correctament",
   },
   sources: {
+    bulkContext: "Context",
+    includeAllInContext: "Inclou-les totes al context",
+    excludeAllFromContext: "Exclou-les totes del context",
     title: "Fonts",
     add: "Afegeix una font",
     addNew: "Afegeix una font nova",

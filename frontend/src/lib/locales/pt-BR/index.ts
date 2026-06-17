@@ -262,6 +262,9 @@ export const ptBR = {
     deleteSuccess: "Caderno excluído com sucesso",
   },
   sources: {
+    bulkContext: "Contexto",
+    includeAllInContext: "Incluir todas no contexto",
+    excludeAllFromContext: "Excluir todas do contexto",
     title: "Fontes",
     add: "Adicionar Fonte",
     addNew: "Adicionar Nova Fonte",

@@ -262,6 +262,9 @@ export const frFR = {
     deleteSuccess: "Carnet supprimé avec succès",
   },
   sources: {
+    bulkContext: "Contexte",
+    includeAllInContext: "Tout inclure dans le contexte",
+    excludeAllFromContext: "Tout exclure du contexte",
     title: "Sources",
     add: "Ajouter une source",
     addNew: "Ajouter une nouvelle source",

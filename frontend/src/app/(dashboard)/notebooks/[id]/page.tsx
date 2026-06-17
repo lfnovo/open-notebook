@@ -17,13 +17,16 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { cn } from '@/lib/utils'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
+import {
+  applyBulkSourceContext,
+  computeSourceSelections,
+  type SourceContextDefault,
+} from '@/lib/utils/source-context'
 
-export type ContextMode = 'off' | 'insights' | 'full'
-
-export interface ContextSelections {
-  sources: Record<string, ContextMode>
-  notes: Record<string, ContextMode>
-}
+// Re-exported from the shared types module for backward compatibility; several
+// components historically import these from this route file.
+import type { ContextMode, ContextSelections } from '@/lib/types/notebook-context'
+export type { ContextMode, ContextSelections }
 
 export default function NotebookPage() {
   const { t } = useTranslation()
@@ -58,27 +61,20 @@ export default function NotebookPage() {
     notes: {}
   })
 
+  // The default context mode applied to sources as they load. A bulk
+  // include/exclude updates this so sources loaded later via pagination follow
+  // the same intent instead of reverting to "included" (#223/#915).
+  const [sourceContextDefault, setSourceContextDefault] = useState<SourceContextDefault>('include')
+
   // Initialize and update selections when sources load or change
   useEffect(() => {
     if (sources && sources.length > 0) {
-      setContextSelections(prev => {
-        const newSourceSelections = { ...prev.sources }
-        sources.forEach(source => {
-          const currentMode = newSourceSelections[source.id]
-          const hasInsights = source.insights_count > 0
-
-          if (currentMode === undefined) {
-            // Initial setup - default based on insights availability
-            newSourceSelections[source.id] = hasInsights ? 'insights' : 'full'
-          } else if (currentMode === 'full' && hasInsights) {
-            // Source gained insights while in 'full' mode - auto-switch to 'insights'
-            newSourceSelections[source.id] = 'insights'
-          }
-        })
-        return { ...prev, sources: newSourceSelections }
-      })
+      setContextSelections(prev => ({
+        ...prev,
+        sources: computeSourceSelections(prev.sources, sources, sourceContextDefault),
+      }))
     }
-  }, [sources])
+  }, [sources, sourceContextDefault])
 
   useEffect(() => {
     if (notes && notes.length > 0) {
@@ -104,6 +100,16 @@ export default function NotebookPage() {
         ...(type === 'source' ? prev.sources : prev.notes),
         [itemId]: mode
       }
+    }))
+  }
+
+  // Bulk include/exclude every source from the chat context at once (#223).
+  // Also records the action as the default for sources loaded later (#915).
+  const handleBulkSourceContext = (action: SourceContextDefault) => {
+    setSourceContextDefault(action)
+    setContextSelections(prev => ({
+      ...prev,
+      sources: applyBulkSourceContext(prev.sources, sources ?? [], action),
     }))
   }
 
@@ -167,6 +173,7 @@ export default function NotebookPage() {
                     onRefresh={refetchSources}
                     contextSelections={contextSelections.sources}
                     onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                    onBulkContextModeChange={handleBulkSourceContext}
                     hasNextPage={hasNextPage}
                     isFetchingNextPage={isFetchingNextPage}
                     fetchNextPage={fetchNextPage}
@@ -211,6 +218,7 @@ export default function NotebookPage() {
                 onRefresh={refetchSources}
                 contextSelections={contextSelections.sources}
                 onContextModeChange={(sourceId, mode) => handleContextModeChange(sourceId, mode, 'source')}
+                onBulkContextModeChange={handleBulkSourceContext}
                 hasNextPage={hasNextPage}
                 isFetchingNextPage={isFetchingNextPage}
                 fetchNextPage={fetchNextPage}

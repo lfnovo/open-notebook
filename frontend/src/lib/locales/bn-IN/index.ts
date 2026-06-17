@@ -262,6 +262,9 @@ export const bnIN = {
     deleteSuccess: "নোটবুক সফলভাবে মুছে ফেলা হয়েছে",
   },
   sources: {
+    bulkContext: "প্রসঙ্গ",
+    includeAllInContext: "সবগুলো প্রসঙ্গে যোগ করুন",
+    excludeAllFromContext: "সবগুলো প্রসঙ্গ থেকে বাদ দিন",
     title: "উৎসগুলি",
     add: "উৎস যোগ করুন",
     addNew: "নতুন উৎস যোগ করুন",

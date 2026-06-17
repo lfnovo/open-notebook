@@ -262,6 +262,9 @@ export const ruRU = {
     deleteSuccess: "Блокнот успешно удалён",
   },
   sources: {
+    bulkContext: "Контекст",
+    includeAllInContext: "Включить все в контекст",
+    excludeAllFromContext: "Исключить все из контекста",
     title: "Источники",
     add: "Добавить источник",
     addNew: "Добавить новый источник",

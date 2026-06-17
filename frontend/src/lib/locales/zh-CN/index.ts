@@ -262,6 +262,9 @@ export const zhCN = {
     deleteSuccess: "笔记本删除成功",
   },
   sources: {
+    bulkContext: "上下文",
+    includeAllInContext: "全部加入上下文",
+    excludeAllFromContext: "全部移出上下文",
     title: "来源",
     add: "添加来源",
     addNew: "添加新来源",

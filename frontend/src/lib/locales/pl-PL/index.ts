@@ -262,6 +262,9 @@ export const plPL = {
     deleteSuccess: "Notatnik usunięty pomyślnie",
   },
   sources: {
+    bulkContext: "Kontekst",
+    includeAllInContext: "Uwzględnij wszystkie w kontekście",
+    excludeAllFromContext: "Wyklucz wszystkie z kontekstu",
     title: "Źródła",
     add: "Dodaj źródło",
     addNew: "Dodaj nowe źródło",

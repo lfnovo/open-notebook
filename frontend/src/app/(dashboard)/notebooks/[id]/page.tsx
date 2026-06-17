@@ -23,12 +23,10 @@ import {
   type SourceContextDefault,
 } from '@/lib/utils/source-context'
 
-export type ContextMode = 'off' | 'insights' | 'full'
-
-export interface ContextSelections {
-  sources: Record<string, ContextMode>
-  notes: Record<string, ContextMode>
-}
+// Re-exported from the shared types module for backward compatibility; several
+// components historically import these from this route file.
+import type { ContextMode, ContextSelections } from '@/lib/types/notebook-context'
+export type { ContextMode, ContextSelections }
 
 export default function NotebookPage() {
   const { t } = useTranslation()

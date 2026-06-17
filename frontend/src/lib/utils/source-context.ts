@@ -1,4 +1,4 @@
-import type { ContextMode } from '@/app/(dashboard)/notebooks/[id]/page'
+import type { ContextMode } from '@/lib/types/notebook-context'
 
 export type SourceContextDefault = 'include' | 'exclude'
 

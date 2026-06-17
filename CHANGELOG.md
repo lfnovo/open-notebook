@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenRouter embedding models are now correctly recognized via their embedding modality (#842)
 - Search and Ask results now use page-level scrolling instead of being confined to a cramped, height-capped (`60vh`) bottom container, so the full result set is readable (#882)
 - `POST /sources/{id}/retry` no longer returns `400 "Source is not associated with any notebooks"` for every source; it now queries the `reference` graph edge by its `in`/`out` columns instead of a non-existent `source` column (#861)
+- `POST /sources/{id}/retry` no longer returns a `500` ("too many values to unpack") after successfully queuing the retry job; the command ID was being double-prefixed (`command:command:…`) before being saved to the source. Retrying a failed source now succeeds and updates the source's command reference
+- `GET /sources/{id}` for a missing or deleted source now returns `404` instead of `500`; the handler caught `NotFoundError` in its generic `except` and mapped it to a server error
 - Text search no longer returns a 500 when SurrealDB's `search::highlight` hits a "position overflow" on large or multi-byte document chunks; it now falls back to vector search and returns results (#648)
 - `POST /api/search` now rejects a non-positive `limit` with a `422` instead of passing `LIMIT -1`/`LIMIT 0` to SurrealDB (which caused a 500 or a silently empty result set) (#863)
 - Ollama `num_ctx` credential override is now persisted. The `credential` table gained a flexible `config` object (migration 15) and provider-specific tuning options are stored there instead of being dropped by the SCHEMAFULL table; future per-credential options can be added without a schema migration (#875)

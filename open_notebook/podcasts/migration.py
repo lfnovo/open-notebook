@@ -162,7 +162,10 @@ async def migrate_podcast_profiles() -> None:
                 tts_provider, tts_model, "text_to_speech"
             )
             if model_id:
-                from open_notebook.database.repository import ensure_record_id, repo_update
+                from open_notebook.database.repository import (
+                    ensure_record_id,
+                    repo_update,
+                )
 
                 await repo_update(
                     "speaker_profile",

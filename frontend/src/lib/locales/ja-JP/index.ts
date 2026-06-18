@@ -240,6 +240,8 @@ export const jaJP = {
     keepExclusiveSourcesLabel: "リンク解除して保持",
     activeNotebooks: "アクティブなノートブック",
     archivedNotebooks: "アーカイブ済みノートブック",
+    tileView: "タイル表示",
+    listView: "リスト表示",
     notFound: "ノートブックが見つかりません",
     notFoundDesc: "指定されたノートブックは存在しません。",
     updated: "更新日時",

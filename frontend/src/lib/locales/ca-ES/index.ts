@@ -240,6 +240,8 @@ export const caES = {
     keepExclusiveSourcesLabel: "Desenllaça i conserva",
     activeNotebooks: "Quaderns actius",
     archivedNotebooks: "Quaderns arxivats",
+    tileView: "Vista de mosaic",
+    listView: "Vista de llista",
     notFound: "No s'ha trobat el quadern",
     notFoundDesc: "El quadern sol·licitat no existeix.",
     updated: "Actualitzat",

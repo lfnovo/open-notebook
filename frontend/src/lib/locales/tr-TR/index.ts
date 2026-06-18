@@ -240,6 +240,8 @@ export const trTR = {
     keepExclusiveSourcesLabel: "Bağlantıyı kes ve sakla",
     activeNotebooks: "Aktif Defterler",
     archivedNotebooks: "Arşivlenmiş Defterler",
+    tileView: "Döşeme görünümü",
+    listView: "Liste görünümü",
     notFound: "Defter bulunamadı",
     notFoundDesc: "İstenen defter mevcut değil.",
     updated: "Güncellendi",

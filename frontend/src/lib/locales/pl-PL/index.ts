@@ -240,6 +240,8 @@ export const plPL = {
     keepExclusiveSourcesLabel: "Odłącz i zachowaj je",
     activeNotebooks: "Aktywne notatniki",
     archivedNotebooks: "Zarchiwizowane notatniki",
+    tileView: "Widok kafelków",
+    listView: "Widok listy",
     notFound: "Nie znaleziono notatnika",
     notFoundDesc: "Żądany notatnik nie istnieje.",
     updated: "Zaktualizowano",

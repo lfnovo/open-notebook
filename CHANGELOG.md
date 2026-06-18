@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- List view for the Notebooks page — a tile/list toggle in the header lets you switch between the visual card grid and a compact row layout (name, description, source/note counts, last updated) for easier scanning of large collections. The choice is remembered across reloads and translated across all 14 locales (#885)
+
 ### Fixed
 - CRUD endpoints now return `404` (not `500`) for a non-existent resource. `ObjectModel.get()` raises `NotFoundError` rather than returning a falsy value, so the broad `except Exception` in each handler was masking it as a server error. Added an explicit `NotFoundError → 404` arm to the notebook (update / delete / delete-preview / add-source / remove-source), note (get / update / delete / list / create), model (delete), credential (update / delete) and embed handlers (#862)
 

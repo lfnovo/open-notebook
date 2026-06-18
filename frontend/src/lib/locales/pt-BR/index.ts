@@ -240,6 +240,8 @@ export const ptBR = {
     keepExclusiveSourcesLabel: "Desvincular e manter",
     activeNotebooks: "Cadernos Ativos",
     archivedNotebooks: "Cadernos Arquivados",
+    tileView: "Visualização em blocos",
+    listView: "Visualização em lista",
     notFound: "Caderno não encontrado",
     notFoundDesc: "O caderno solicitado não existe.",
     updated: "Atualizado",

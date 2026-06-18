@@ -240,6 +240,8 @@ export const zhTW = {
     keepExclusiveSourcesLabel: "取消關聯並保留",
     activeNotebooks: "活動中的筆記本",
     archivedNotebooks: "封存的筆記本",
+    tileView: "並排檢視",
+    listView: "清單檢視",
     notFound: "未找到筆記本",
     notFoundDesc: "請求的筆記本不存在。",
     updated: "已更新",

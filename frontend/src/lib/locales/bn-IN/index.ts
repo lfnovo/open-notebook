@@ -240,6 +240,8 @@ export const bnIN = {
     keepExclusiveSourcesLabel: "আনলিংক করে রাখুন",
     activeNotebooks: "সক্রিয় নোটবুক",
     archivedNotebooks: "আর্কাইভ নোটবুক",
+    tileView: "টাইল ভিউ",
+    listView: "তালিকা ভিউ",
     notFound: "নোটবুক খুঁজে পাওয়া যায়নি",
     notFoundDesc: "অনুরোধ করা নোটবুক অস্তিত্ব নেই।",
     updated: "আপডেট করা",

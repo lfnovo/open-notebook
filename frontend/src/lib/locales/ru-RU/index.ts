@@ -240,6 +240,8 @@ export const ruRU = {
     keepExclusiveSourcesLabel: "Отвязать и сохранить",
     activeNotebooks: "Активные блокноты",
     archivedNotebooks: "Архивные блокноты",
+    tileView: "Вид плиткой",
+    listView: "Вид списком",
     notFound: "Блокнот не найден",
     notFoundDesc: "Запрошенный блокнот не существует.",
     updated: "Обновлено",

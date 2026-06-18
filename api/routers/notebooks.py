@@ -12,7 +12,7 @@ from api.models import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 router = APIRouter()
 
@@ -136,6 +136,8 @@ async def get_notebook_delete_preview(notebook_id: str):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(f"Error getting delete preview for notebook {notebook_id}: {e}")
         raise HTTPException(
@@ -233,6 +235,8 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -278,6 +282,8 @@ async def add_source_to_notebook(notebook_id: str, source_id: str):
         return {"message": "Source linked to notebook successfully"}
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook or source not found")
     except Exception as e:
         logger.error(
             f"Error linking source {source_id} to notebook {notebook_id}: {str(e)}"
@@ -308,6 +314,8 @@ async def remove_source_from_notebook(notebook_id: str, source_id: str):
         return {"message": "Source removed from notebook successfully"}
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(
             f"Error removing source {source_id} from notebook {notebook_id}: {str(e)}"
@@ -347,6 +355,8 @@ async def delete_notebook(
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(f"Error deleting notebook {notebook_id}: {str(e)}")
         raise HTTPException(

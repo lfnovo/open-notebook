@@ -5,7 +5,7 @@ from loguru import logger
 
 from api.models import NoteCreate, NoteResponse, NoteUpdate
 from open_notebook.domain.notebook import Note
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 router = APIRouter()
 
@@ -41,6 +41,8 @@ async def get_notes(
         ]
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except Exception as e:
         logger.error(f"Error fetching notes: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching notes: {str(e)}")
@@ -100,6 +102,8 @@ async def create_note(note_data: NoteCreate):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -125,6 +129,8 @@ async def get_note(note_id: str):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Note not found")
     except Exception as e:
         logger.error(f"Error fetching note {note_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching note: {str(e)}")
@@ -164,6 +170,8 @@ async def update_note(note_id: str, note_update: NoteUpdate):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Note not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -184,6 +192,8 @@ async def delete_note(note_id: str):
         return {"message": "Note deleted successfully"}
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Note not found")
     except Exception as e:
         logger.error(f"Error deleting note {note_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting note: {str(e)}")

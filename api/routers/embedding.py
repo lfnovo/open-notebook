@@ -5,6 +5,7 @@ from api.command_service import CommandService
 from api.models import EmbedRequest, EmbedResponse
 from open_notebook.ai.models import model_manager
 from open_notebook.domain.notebook import Note, Source
+from open_notebook.exceptions import NotFoundError
 
 router = APIRouter()
 
@@ -104,6 +105,10 @@ async def embed_content(embed_request: EmbedRequest):
 
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(
+            status_code=404, detail=f"{embed_request.item_type} not found"
+        )
     except Exception as e:
         logger.error(
             f"Error embedding {embed_request.item_type} {embed_request.item_id}: {str(e)}"

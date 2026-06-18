@@ -58,7 +58,7 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
         }
         
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
+            async with httpx.AsyncClient(timeout=1800.0) as client:
                 response = await client.post(f"{base_url}/api/chat", json=payload)
                 response.raise_for_status()
                 data = response.json()

@@ -1185,7 +1185,7 @@ function DefaultModelSelectors({
       if (!c.required) return false
       const value = defaults[c.key]
       if (!value) return true
-      return !models.filter(m => m.type === c.modelType).some(m => m.id === value)
+      return !getModelsForType(c.modelType).some(m => m.id === value)
     })
     .map(c => c.label)
 

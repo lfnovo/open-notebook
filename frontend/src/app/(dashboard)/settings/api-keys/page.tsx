@@ -1174,7 +1174,11 @@ function DefaultModelSelectors({
     }
   }
 
-  const getModelsForType = (type: ModelType) => models.filter(m => m.type === type)
+  const getModelsForType = (type: ModelType) => models.filter(m => {
+    // Vision models are multimodal LLMs, so they can also be used for pure language tasks
+    if (type === 'language' && m.type === 'vision') return true
+    return m.type === type
+  })
 
   const missingRequired = defaultConfigs
     .filter(c => {

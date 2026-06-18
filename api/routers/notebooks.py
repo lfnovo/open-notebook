@@ -122,8 +122,6 @@ async def get_notebook_delete_preview(notebook_id: str):
     """Get a preview of what will be deleted when this notebook is deleted."""
     try:
         notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
 
         preview = await notebook.get_delete_preview()
 
@@ -187,8 +185,6 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
     """Update a notebook."""
     try:
         notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
 
         # Update only provided fields
         if notebook_update.name is not None:
@@ -250,15 +246,9 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
 async def add_source_to_notebook(notebook_id: str, source_id: str):
     """Add an existing source to a notebook (create the reference)."""
     try:
-        # Check if notebook exists
-        notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
-
-        # Check if source exists
-        source = await Source.get(source_id)
-        if not source:
-            raise HTTPException(status_code=404, detail="Source not found")
+        # Verify the notebook and source exist (raises NotFoundError -> 404)
+        await Notebook.get(notebook_id)
+        await Source.get(source_id)
 
         # Check if reference already exists (idempotency)
         existing_ref = await repo_query(
@@ -297,10 +287,8 @@ async def add_source_to_notebook(notebook_id: str, source_id: str):
 async def remove_source_from_notebook(notebook_id: str, source_id: str):
     """Remove a source from a notebook (delete the reference)."""
     try:
-        # Check if notebook exists
-        notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
+        # Verify the notebook exists (raises NotFoundError -> 404)
+        await Notebook.get(notebook_id)
 
         # Delete the reference record linking source to notebook
         await repo_query(
@@ -342,8 +330,6 @@ async def delete_notebook(
     """
     try:
         notebook = await Notebook.get(notebook_id)
-        if not notebook:
-            raise HTTPException(status_code=404, detail="Notebook not found")
 
         result = await notebook.delete(delete_exclusive_sources=delete_exclusive_sources)
 

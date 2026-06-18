@@ -254,8 +254,6 @@ async def delete_model(model_id: str):
     """Delete a model configuration."""
     try:
         model = await Model.get(model_id)
-        if not model:
-            raise HTTPException(status_code=404, detail="Model not found")
 
         await model.delete()
 

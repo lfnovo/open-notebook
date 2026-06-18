@@ -11,8 +11,9 @@ from open_notebook.ai.models import model_manager
 VISION_PROMPT = """
 Analyze this image in detail.
 1. Extract all visible text accurately (OCR).
-2. Describe any charts, graphs, diagrams, or visual structures.
-3. Provide a rich contextual description of what is happening in the image.
+2. Describe any charts, graphs, diagrams, or visual structures in deep detail.
+3. CRITICAL: If there are charts, plots, or diagrams, you MUST list all specific labels, data points, categories, variable names, gene names, or exact values shown. Do not just summarize trends; provide the exact names and labels visible in the figure.
+4. Provide a rich contextual description of what is happening in the image.
 
 Output the result in a clear, structured Markdown format.
 """

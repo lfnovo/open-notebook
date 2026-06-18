@@ -264,6 +264,8 @@ export const plPL = {
   sources: {
     bulkContext: "Kontekst",
     includeAllInContext: "Uwzględnij wszystkie w kontekście",
+    includeAllInsights: "Uwzględnij wszystkie (tylko wnioski)",
+    includeAllFull: "Uwzględnij wszystkie (pełna treść)",
     excludeAllFromContext: "Wyklucz wszystkie z kontekstu",
     title: "Źródła",
     add: "Dodaj źródło",

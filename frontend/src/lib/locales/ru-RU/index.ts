@@ -264,6 +264,8 @@ export const ruRU = {
   sources: {
     bulkContext: "Контекст",
     includeAllInContext: "Включить все в контекст",
+    includeAllInsights: "Включить все (только выводы)",
+    includeAllFull: "Включить все (полный текст)",
     excludeAllFromContext: "Исключить все из контекста",
     title: "Источники",
     add: "Добавить источник",

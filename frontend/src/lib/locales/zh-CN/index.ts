@@ -264,6 +264,8 @@ export const zhCN = {
   sources: {
     bulkContext: "上下文",
     includeAllInContext: "全部加入上下文",
+    includeAllInsights: "全部加入（仅见解）",
+    includeAllFull: "全部加入（完整内容）",
     excludeAllFromContext: "全部移出上下文",
     title: "来源",
     add: "添加来源",

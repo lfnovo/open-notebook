@@ -267,6 +267,8 @@ export const deDE = {
   sources: {
     bulkContext: "Kontext",
     includeAllInContext: "Alle in den Kontext aufnehmen",
+    includeAllInsights: "Alle aufnehmen (nur Erkenntnisse)",
+    includeAllFull: "Alle aufnehmen (vollständiger Inhalt)",
     excludeAllFromContext: "Alle aus dem Kontext ausschließen",
     title: "Quellen",
     add: "Quelle hinzufügen",

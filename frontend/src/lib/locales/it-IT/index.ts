@@ -264,6 +264,8 @@ export const itIT = {
   sources: {
     bulkContext: "Contesto",
     includeAllInContext: "Includi tutte nel contesto",
+    includeAllInsights: "Includi tutte (solo approfondimenti)",
+    includeAllFull: "Includi tutte (contenuto completo)",
     excludeAllFromContext: "Escludi tutte dal contesto",
     title: "Fonti",
     add: "Aggiungi fonte",

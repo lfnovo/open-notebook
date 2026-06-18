@@ -243,6 +243,8 @@ export const deDE = {
     keepExclusiveSourcesLabel: "Verknüpfung lösen und behalten",
     activeNotebooks: "Aktive Notebooks",
     archivedNotebooks: "Archivierte Notebooks",
+    tileView: "Kachelansicht",
+    listView: "Listenansicht",
     notFound: "Notebook nicht gefunden",
     notFoundDesc: "Das angeforderte Notebook existiert nicht.",
     updated: "Aktualisiert",
@@ -267,6 +269,8 @@ export const deDE = {
   sources: {
     bulkContext: "Kontext",
     includeAllInContext: "Alle in den Kontext aufnehmen",
+    includeAllInsights: "Alle aufnehmen (nur Erkenntnisse)",
+    includeAllFull: "Alle aufnehmen (vollständiger Inhalt)",
     excludeAllFromContext: "Alle aus dem Kontext ausschließen",
     title: "Quellen",
     add: "Quelle hinzufügen",

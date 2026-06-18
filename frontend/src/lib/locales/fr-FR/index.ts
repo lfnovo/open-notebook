@@ -240,6 +240,8 @@ export const frFR = {
     keepExclusiveSourcesLabel: "Délier et les conserver",
     activeNotebooks: "Carnets actifs",
     archivedNotebooks: "Carnets archivés",
+    tileView: "Vue en mosaïque",
+    listView: "Vue en liste",
     notFound: "Carnet introuvable",
     notFoundDesc: "Le carnet demandé n'existe pas.",
     updated: "Mis à jour",
@@ -264,6 +266,8 @@ export const frFR = {
   sources: {
     bulkContext: "Contexte",
     includeAllInContext: "Tout inclure dans le contexte",
+    includeAllInsights: "Tout inclure (aperçus uniquement)",
+    includeAllFull: "Tout inclure (contenu complet)",
     excludeAllFromContext: "Tout exclure du contexte",
     title: "Sources",
     add: "Ajouter une source",

@@ -162,7 +162,9 @@ class TestRetrySourceProcessing:
 
         # The corrected query returns the linked notebook(s)
         mock_repo_query.return_value = ["notebook:1"]
-        mock_submit.return_value = "123"
+        # submit_command_job returns str(RecordID), which already includes the
+        # "command:" table prefix.
+        mock_submit.return_value = "command:123"
 
         response = client.post("/api/sources/source:1/retry")
 
@@ -171,6 +173,11 @@ class TestRetrySourceProcessing:
         called_query = mock_repo_query.await_args.args[0]
         assert "WHERE in = $source_id" in called_query
         assert "SELECT VALUE out FROM reference" in called_query
+        # Regression guard: command_id must not be double-prefixed
+        # (`command:command:…`), which previously raised a 500 on save.
+        assert "command:command" not in str(source.command)
+        assert str(source.command).count("command:") == 1
+        assert str(source.command).startswith("command:")
 
     @pytest.mark.asyncio
     @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
@@ -188,6 +195,23 @@ class TestRetrySourceProcessing:
 
         assert response.status_code == 400
         assert "not associated with any notebooks" in response.json()["detail"]
+
+
+class TestGetSourceNotFound:
+    """GET /sources/{id} must return 404 (not 500) for a missing/deleted source.
+    `Source.get()` raises NotFoundError rather than returning None, so the handler
+    must map it to 404 instead of catching it in its generic `except`."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_get_missing_source_returns_404(self, mock_get, client):
+        from open_notebook.exceptions import NotFoundError
+
+        mock_get.side_effect = NotFoundError("source with id source:gone not found")
+
+        response = client.get("/api/sources/source:gone")
+
+        assert response.status_code == 404
 
 
 if __name__ == "__main__":

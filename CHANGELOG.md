@@ -8,19 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- List view for the Notebooks page — a tile/list toggle in the header lets you switch between the visual card grid and a compact row layout (name, description, source/note counts, last updated) for easier scanning of large collections. The choice is remembered across reloads and translated across all 14 locales (#885)
+
+### Fixed
+- CRUD endpoints now return `404` (not `500`) for a non-existent resource. `ObjectModel.get()` raises `NotFoundError` rather than returning a falsy value, so the broad `except Exception` in each handler was masking it as a server error. Added an explicit `NotFoundError → 404` arm to the notebook (update / delete / delete-preview / add-source / remove-source), note (get / update / delete / list / create), model (delete), credential (update / delete) and embed handlers (#862)
+
+## [1.10.0] - 2026-06-17
+
+### Security
+- Bumped **Starlette to 1.2.1** and **FastAPI to 0.136.3** to address **CVE-2026-48710** ("BadHost"), a denial-of-service in Starlette's host header handling (#859)
+
+### Added
 - LaTeX math rendering in chat — inline (`$...$`) and display (`$$...$$`) expressions are now rendered with KaTeX (#606)
 - `NEXT_PUBLIC_API_TIMEOUT_MS` environment variable to configure the frontend API request timeout (default `600000` = 10 minutes; set `0` to disable). Lets slow/long-running chat models finish without editing source (#880)
-- Bulk include/exclude all sources from a notebook's chat context in one action, via a "Context" menu in the Sources column header — translated across all 14 locales (#223)
+- Bulk chat-context actions in a notebook, via a "Context" menu in the Sources and Notes column headers — translated across all 14 locales (#223):
+  - Sources: "Include all (insights only)" (sources without insights are left out rather than forced to full), "Include all (full content)", and "Exclude all from context"
+  - Notes: "Include all in context" / "Exclude all from context"
+- **Turkish (tr-TR) localization** — the UI is now fully translated into Turkish (#871)
 
 ### Changed
 - Failed source cards now show a prominent "Retry processing" button directly on the card instead of only inside the 3-dot dropdown; clicking it no longer also opens the source (the click was missing `stopPropagation`) (#726)
+- Docker base image updated to **Debian trixie** and **Node.js 22.x** (#914)
 
 ### Fixed
+- Podcast generation now uses the notebook's real content. `Notebook.get_context()` was missing, so generation ran against empty context; it now assembles source and note content as expected (#864)
+- `PUT` profile handlers now use `model_dump(exclude_unset=True)`, so partial updates no longer overwrite unspecified fields with defaults (#860)
+- OpenRouter embedding models are now correctly recognized via their embedding modality (#842)
 - Search and Ask results now use page-level scrolling instead of being confined to a cramped, height-capped (`60vh`) bottom container, so the full result set is readable (#882)
 - `POST /sources/{id}/retry` no longer returns `400 "Source is not associated with any notebooks"` for every source; it now queries the `reference` graph edge by its `in`/`out` columns instead of a non-existent `source` column (#861)
+- `POST /sources/{id}/retry` no longer returns a `500` ("too many values to unpack") after successfully queuing the retry job; the command ID was being double-prefixed (`command:command:…`) before being saved to the source. Retrying a failed source now succeeds and updates the source's command reference
+- `GET /sources/{id}` for a missing or deleted source now returns `404` instead of `500`; the handler caught `NotFoundError` in its generic `except` and mapped it to a server error
+- Sources that fail to ingest (e.g. an unreachable or invalid URL) are now marked `failed` instead of silently saved as `completed` with the extraction error as their body. This means the "Retry processing" button (#726) actually appears for the most common failure mode; previously the job returned a failure payload but the command still completed, so the source never reached a retryable state (#726)
 - Text search no longer returns a 500 when SurrealDB's `search::highlight` hits a "position overflow" on large or multi-byte document chunks; it now falls back to vector search and returns results (#648)
 - `POST /api/search` now rejects a non-positive `limit` with a `422` instead of passing `LIMIT -1`/`LIMIT 0` to SurrealDB (which caused a 500 or a silently empty result set) (#863)
 - Ollama `num_ctx` credential override is now persisted. The `credential` table gained a flexible `config` object (migration 15) and provider-specific tuning options are stored there instead of being dropped by the SCHEMAFULL table; future per-credential options can be added without a schema migration (#875)
+- Worker no longer crashes on queued jobs from older versions; legacy embedding command aliases (`embed_single_item`, `embed_chunk`, `vectorize_source`) are registered and delegate to the current commands so stale queues drain cleanly (#695, #876)
 
 ### Performance
 - Notebook source list no longer re-renders every `SourceCard` on unrelated state changes (layout toggles, context selection), and completed sources no longer each open a status-polling query. Both scaled with the number of sources and caused UI lag on large notebooks (#503)

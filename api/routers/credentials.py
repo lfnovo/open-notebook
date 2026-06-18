@@ -56,6 +56,7 @@ from api.models import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_delete, repo_query
 from open_notebook.domain.credential import Credential
+from open_notebook.exceptions import NotFoundError
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -251,6 +252,8 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
 
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Credential not found")
     except Exception as e:
         logger.error(f"Error updating credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to update credential")
@@ -344,6 +347,8 @@ async def delete_credential(
 
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Credential not found")
     except Exception as e:
         logger.error(f"Error deleting credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete credential")

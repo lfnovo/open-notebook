@@ -240,6 +240,8 @@ export const caES = {
     keepExclusiveSourcesLabel: "Desenllaça i conserva",
     activeNotebooks: "Quaderns actius",
     archivedNotebooks: "Quaderns arxivats",
+    tileView: "Vista de mosaic",
+    listView: "Vista de llista",
     notFound: "No s'ha trobat el quadern",
     notFoundDesc: "El quadern sol·licitat no existeix.",
     updated: "Actualitzat",
@@ -264,6 +266,8 @@ export const caES = {
   sources: {
     bulkContext: "Context",
     includeAllInContext: "Inclou-les totes al context",
+    includeAllInsights: "Inclou-les totes (només informacions)",
+    includeAllFull: "Inclou-les totes (contingut complet)",
     excludeAllFromContext: "Exclou-les totes del context",
     title: "Fonts",
     add: "Afegeix una font",

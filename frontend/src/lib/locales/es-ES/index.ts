@@ -240,6 +240,8 @@ export const esES = {
     keepExclusiveSourcesLabel: "Desvincular y conservarlas",
     activeNotebooks: "Cuadernos activos",
     archivedNotebooks: "Cuadernos archivados",
+    tileView: "Vista de mosaico",
+    listView: "Vista de lista",
     notFound: "Cuaderno no encontrado",
     notFoundDesc: "El cuaderno solicitado no existe.",
     updated: "Actualizado",
@@ -264,6 +266,8 @@ export const esES = {
   sources: {
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas en el contexto",
+    includeAllInsights: "Incluir todas (solo insights)",
+    includeAllFull: "Incluir todas (contenido completo)",
     excludeAllFromContext: "Excluir todas del contexto",
     title: "Fuentes",
     add: "Agregar fuente",

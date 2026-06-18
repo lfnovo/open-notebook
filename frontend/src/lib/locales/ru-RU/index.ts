@@ -240,6 +240,8 @@ export const ruRU = {
     keepExclusiveSourcesLabel: "Отвязать и сохранить",
     activeNotebooks: "Активные блокноты",
     archivedNotebooks: "Архивные блокноты",
+    tileView: "Вид плиткой",
+    listView: "Вид списком",
     notFound: "Блокнот не найден",
     notFoundDesc: "Запрошенный блокнот не существует.",
     updated: "Обновлено",
@@ -264,6 +266,8 @@ export const ruRU = {
   sources: {
     bulkContext: "Контекст",
     includeAllInContext: "Включить все в контекст",
+    includeAllInsights: "Включить все (только выводы)",
+    includeAllFull: "Включить все (полный текст)",
     excludeAllFromContext: "Исключить все из контекста",
     title: "Источники",
     add: "Добавить источник",

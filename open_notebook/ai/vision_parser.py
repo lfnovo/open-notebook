@@ -36,9 +36,41 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
     """Send base64 image to the vision model and return the parsed text."""
     # Bypass esperanto's schema casting which may stringify multimodal arrays
     raw_llm = vision_model.to_langchain()
-    if hasattr(raw_llm, "streaming"):
-        raw_llm.streaming = False
+    
+    # Bypass buggy langchain_community wrapper for Ollama vision models
+    if raw_llm.__class__.__name__ == "ChatOllama":
+        import httpx
+        base_url = getattr(raw_llm, "base_url", "http://localhost:11434")
+        if isinstance(base_url, str):
+            base_url = base_url.rstrip("/")
+        model_name = getattr(raw_llm, "model", "llama3.2-vision")
         
+        payload = {
+            "model": model_name,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": VISION_PROMPT,
+                    "images": [b64_image]
+                }
+            ],
+            "stream": False
+        }
+        
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                response = await client.post(f"{base_url}/api/chat", json=payload)
+                response.raise_for_status()
+                data = response.json()
+                content = data.get("message", {}).get("content", "")
+                if not content:
+                    logger.warning(f"Ollama returned empty content. Full response: {data}")
+                return content
+        except Exception as e:
+            logger.error(f"Direct Ollama vision parsing failed: {str(e)}")
+            raise
+
+    # Fallback for other providers (OpenAI, Anthropic, etc.)
     message = HumanMessage(
         content=[
             {"type": "text", "text": VISION_PROMPT},
@@ -51,10 +83,8 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
     
     try:
         response = await raw_llm.ainvoke([message])
-        # Depending on the model provider, response could be a string or a message object
         content = response.content if hasattr(response, "content") else str(response)
         if isinstance(content, list):
-            # Extract text blocks if content is an array (e.g. Anthropic)
             return "".join([b.get("text", "") if isinstance(b, dict) and b.get("type") == "text" else str(b) for b in content])
         return str(content)
     except Exception as e:

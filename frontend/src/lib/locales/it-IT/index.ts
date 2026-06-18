@@ -240,6 +240,8 @@ export const itIT = {
     keepExclusiveSourcesLabel: "Scollega e mantieni",
     activeNotebooks: "Quaderni attivi",
     archivedNotebooks: "Quaderni archiviati",
+    tileView: "Vista a riquadri",
+    listView: "Vista a elenco",
     notFound: "Quaderno non trovato",
     notFoundDesc: "Il quaderno richiesto non esiste.",
     updated: "Aggiornato",

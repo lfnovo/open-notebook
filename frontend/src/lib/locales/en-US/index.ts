@@ -240,6 +240,8 @@ export const enUS = {
     keepExclusiveSourcesLabel: "Unlink and keep them",
     activeNotebooks: "Active Notebooks",
     archivedNotebooks: "Archived Notebooks",
+    tileView: "Tile view",
+    listView: "List view",
     notFound: "Notebook not found",
     notFoundDesc: "The requested notebook does not exist.",
     updated: "Updated",

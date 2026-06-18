@@ -240,6 +240,8 @@ export const frFR = {
     keepExclusiveSourcesLabel: "Délier et les conserver",
     activeNotebooks: "Carnets actifs",
     archivedNotebooks: "Carnets archivés",
+    tileView: "Vue en mosaïque",
+    listView: "Vue en liste",
     notFound: "Carnet introuvable",
     notFoundDesc: "Le carnet demandé n'existe pas.",
     updated: "Mis à jour",

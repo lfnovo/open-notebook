@@ -240,6 +240,8 @@ export const zhCN = {
     keepExclusiveSourcesLabel: "取消关联并保留",
     activeNotebooks: "活动的笔记本",
     archivedNotebooks: "归档的笔记本",
+    tileView: "平铺视图",
+    listView: "列表视图",
     notFound: "未找到笔记本",
     notFoundDesc: "请求的笔记本不存在。",
     updated: "已更新",

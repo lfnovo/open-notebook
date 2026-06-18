@@ -240,6 +240,8 @@ export const esES = {
     keepExclusiveSourcesLabel: "Desvincular y conservarlas",
     activeNotebooks: "Cuadernos activos",
     archivedNotebooks: "Cuadernos archivados",
+    tileView: "Vista de mosaico",
+    listView: "Vista de lista",
     notFound: "Cuaderno no encontrado",
     notFoundDesc: "El cuaderno solicitado no existe.",
     updated: "Actualizado",

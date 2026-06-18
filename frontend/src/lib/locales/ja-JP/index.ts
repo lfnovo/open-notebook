@@ -856,7 +856,9 @@ export const jaJP = {
     embeddingModelLabel: "Embeddingモデル",
     embeddingModelDesc: "セマンティック検索とベクトルEmbeddingに使用",
     ttsModelLabel: "音声合成モデル",
-    ttsModelDesc: "ポッドキャスト生成に使用",
+    ttsModelDesc: "ポッドキャスト生成に使用",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "音声認識モデル",
     sttModelDesc: "音声の書き起こしに使用",
     embeddingChangeTitle: "Embeddingモデルの変更",

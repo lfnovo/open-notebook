@@ -856,7 +856,9 @@ export const frFR = {
     embeddingModelLabel: "Modèle d'Embedding",
     embeddingModelDesc: "Utilisé pour la recherche sémantique et les index vectoriels",
     ttsModelLabel: "Modèle de Synthèse Vocale (TTS)",
-    ttsModelDesc: "Utilisé pour la génération de podcasts",
+    ttsModelDesc: "Utilisé pour la génération de podcasts",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Modèle de Transcription Vocale (STT)",
     sttModelDesc: "Utilisé pour la transcription audio",
     embeddingChangeTitle: "Changement de modèle d'embedding",

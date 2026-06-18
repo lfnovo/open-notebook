@@ -857,7 +857,9 @@ export const esES = {
     embeddingModelLabel: "Modelo de embedding",
     embeddingModelDesc: "Usado para búsqueda semántica y embeddings vectoriales",
     ttsModelLabel: "Modelo de texto a voz",
-    ttsModelDesc: "Usado para generación de podcasts",
+    ttsModelDesc: "Usado para generación de podcasts",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Modelo de voz a texto",
     sttModelDesc: "Usado para transcripción de audio",
     embeddingChangeTitle: "Cambio de modelo de embedding",

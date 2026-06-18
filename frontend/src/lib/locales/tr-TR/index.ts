@@ -856,7 +856,9 @@ export const trTR = {
     embeddingModelLabel: "Gömme Modeli",
     embeddingModelDesc: "Anlamsal arama ve vektör gömme için kullanılır",
     ttsModelLabel: "Metinden Sese Modeli",
-    ttsModelDesc: "Podcast oluşturma için kullanılır",
+    ttsModelDesc: "Podcast oluşturma için kullanılır",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Sesten Metne Modeli",
     sttModelDesc: "Ses transkripsiyonu için kullanılır",
     embeddingChangeTitle: "Gömme Modeli Değişikliği",

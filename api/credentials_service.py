@@ -686,23 +686,33 @@ async def register_models(credential_id: str, models_data: list) -> dict:
     cred = await Credential.get(credential_id)
 
     from open_notebook.ai.models import Model
-    from open_notebook.database.repository import repo_query
+    from open_notebook.database.repository import repo_query, repo_update
 
     # Batch fetch existing models for this provider
     existing_models = await repo_query(
-        "SELECT string::lowercase(name) as name, string::lowercase(type) as type FROM model "
+        "SELECT id, string::lowercase(name) as name, string::lowercase(type) as type FROM model "
         "WHERE string::lowercase(provider) = $provider",
         {"provider": cred.provider.lower()},
     )
-    existing_keys = {(m["name"], m["type"]) for m in existing_models}
+    existing_by_name = {m["name"]: m for m in existing_models}
 
     created = 0
     existing = 0
 
     for model_data in models_data:
-        key = (model_data.name.lower(), model_data.model_type.lower())
-        if key in existing_keys:
-            existing += 1
+        m_name = model_data.name.lower()
+        m_type = model_data.model_type.lower()
+        
+        if m_name in existing_by_name:
+            if existing_by_name[m_name]["type"] != m_type:
+                await repo_update(
+                    "model",
+                    existing_by_name[m_name]["id"], 
+                    {"type": model_data.model_type}
+                )
+                created += 1 # Count as newly discovered/updated for UI feedback
+            else:
+                existing += 1
             continue
 
         new_model = Model(

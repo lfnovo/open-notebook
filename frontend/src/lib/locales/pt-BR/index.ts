@@ -856,7 +856,9 @@ export const ptBR = {
     embeddingModelLabel: "Modelo de Embedding",
     embeddingModelDesc: "Usado para busca semântica e embeddings vetoriais",
     ttsModelLabel: "Modelo Text-to-Speech",
-    ttsModelDesc: "Usado para geração de podcast",
+    ttsModelDesc: "Usado para geração de podcast",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Modelo Speech-to-Text",
     sttModelDesc: "Usado para transcrição de áudio",
     embeddingChangeTitle: "Alteração de Modelo de Embedding",

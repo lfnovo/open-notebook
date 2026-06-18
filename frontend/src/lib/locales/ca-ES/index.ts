@@ -856,7 +856,9 @@ export const caES = {
     embeddingModelLabel: "Model d'incrustació",
     embeddingModelDesc: "S'usa per a la cerca semàntica i les incrustacions vectorials",
     ttsModelLabel: "Model de text a veu",
-    ttsModelDesc: "S'usa per a la generació de podcasts",
+    ttsModelDesc: "S'usa per a la generació de podcasts",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Model de veu a text",
     sttModelDesc: "S'usa per a la transcripció d'àudio",
     embeddingChangeTitle: "Canvi de model d'incrustació",

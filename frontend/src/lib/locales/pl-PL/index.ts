@@ -856,7 +856,9 @@ export const plPL = {
     embeddingModelLabel: "Model osadzania",
     embeddingModelDesc: "Używany do wyszukiwania semantycznego i osadzeń wektorowych",
     ttsModelLabel: "Model syntezy mowy",
-    ttsModelDesc: "Używany do generowania podcastów",
+    ttsModelDesc: "Używany do generowania podcastów",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Model rozpoznawania mowy",
     sttModelDesc: "Używany do transkrypcji audio",
     embeddingChangeTitle: "Zmiana modelu osadzania",

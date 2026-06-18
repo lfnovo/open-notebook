@@ -856,7 +856,9 @@ export const zhCN = {
     embeddingModelLabel: "嵌入模型",
     embeddingModelDesc: "用于语义搜索和向量嵌入",
     ttsModelLabel: "文字转语音模型",
-    ttsModelDesc: "用于生成播客",
+    ttsModelDesc: "用于生成播客",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "语音转文字模型",
     sttModelDesc: "用于音频转录",
     embeddingChangeTitle: "嵌入模型变更",

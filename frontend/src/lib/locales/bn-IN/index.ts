@@ -857,7 +857,9 @@ export const bnIN = {
     embeddingModelLabel: "এমবেডিং মডেল",
     embeddingModelDesc: "সেমান্টিক সার্চ এবং ভেক্টর এমবেডিংয়ের জন্য ব্যবহৃত",
     ttsModelLabel: "টেক্সট-টু-স্পিচ মডেল",
-    ttsModelDesc: "পডকাস্ট তৈরির জন্য ব্যবহৃত",
+    ttsModelDesc: "পডকাস্ট তৈরির জন্য ব্যবহৃত",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "স্পিচ-টু-টেক্সট মডেল",
     sttModelDesc: "অডিও ট্রান্সক্রিপশনের জন্য ব্যবহৃত",
     embeddingChangeTitle: "এমবেডিং মডেল পরিবর্তন",

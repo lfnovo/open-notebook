@@ -856,7 +856,9 @@ export const ruRU = {
     embeddingModelLabel: "Модель эмбеддинга",
     embeddingModelDesc: "Используется для семантического поиска и векторных эмбеддингов",
     ttsModelLabel: "Модель озвучивания",
-    ttsModelDesc: "Используется для генерации подкастов",
+    ttsModelDesc: "Используется для генерации подкастов",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Модель распознавания речи",
     sttModelDesc: "Используется для транскрибации аудио",
     embeddingChangeTitle: "Изменение модели эмбеддинга",

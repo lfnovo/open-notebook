@@ -861,7 +861,7 @@ export const enUS = {
     sttModelLabel: "Speech-to-Text Model",
     sttModelDesc: "Used for audio transcription",
     visionModelLabel: "Vision Model",
-+    visionModelDesc: "Used to parse text and context from images and PDFs",
+    visionModelDesc: "Used to parse text and context from images and PDFs",
     embeddingChangeTitle: "Embedding Model Change",
     embeddingChangeConfirm: "You are about to change your embedding model from {from} to {to}.",
     rebuildRequired: "Important: Rebuild Required",

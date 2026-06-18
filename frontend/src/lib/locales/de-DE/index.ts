@@ -859,7 +859,9 @@ export const deDE = {
     embeddingModelLabel: "Embedding-Modell",
     embeddingModelDesc: "Wird für semantische Suche und Vektor-Embeddings verwendet",
     ttsModelLabel: "Text-to-Speech-Modell",
-    ttsModelDesc: "Wird für die Podcast-Erstellung verwendet",
+    ttsModelDesc: "Wird für die Podcast-Erstellung verwendet",    visionModelLabel: "Vision Model",
+    visionModelDesc: "Used to analyze images and extract text from PDFs",
+
     sttModelLabel: "Speech-to-Text-Modell",
     sttModelDesc: "Wird für Audiotranskription verwendet",
     embeddingChangeTitle: "Embedding-Modell ändern",

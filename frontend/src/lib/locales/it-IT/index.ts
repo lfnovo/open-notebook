@@ -856,7 +856,9 @@ export const itIT = {
     embeddingModelLabel: "Modello di embedding",
     embeddingModelDesc: "Usato per ricerca semantica e embedding vettoriali",
     ttsModelLabel: "Modello Text-to-Speech",
-    ttsModelDesc: "Usato per la generazione podcast",
+    ttsModelDesc: "Usato per la generazione podcast",    visionModelLabel: "Modello Visione",
+    visionModelDesc: "Usato per l'analisi di immagini e l'estrazione di testo da PDF",
+
     sttModelLabel: "Modello Speech-to-Text",
     sttModelDesc: "Usato per la trascrizione audio",
     embeddingChangeTitle: "Cambio modello di embedding",

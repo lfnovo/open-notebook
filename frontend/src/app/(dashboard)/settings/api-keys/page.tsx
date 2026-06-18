@@ -506,7 +506,7 @@ function DiscoverModelsDialog({
       .map(m => ({
         name: m.name,
         provider: m.provider,
-        model_type: selectedType,
+        model_type: m.model_type || selectedType,
       }))
     if (customModelSelected && showCustomOption) {
       selected.push({

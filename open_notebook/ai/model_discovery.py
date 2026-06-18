@@ -880,6 +880,7 @@ async def get_provider_model_count(provider: str) -> Dict[str, int]:
         "embedding": 0,
         "speech_to_text": 0,
         "text_to_speech": 0,
+        "vision": 0,
     }
 
     for row in result:

@@ -377,6 +377,7 @@ async def discover_models_for_credential(credential_id: str):
                 DiscoveredModelResponse(
                     name=d["name"],
                     provider=d["provider"],
+                    model_type=d.get("model_type"),
                     description=d.get("description"),
                 )
                 for d in discovered

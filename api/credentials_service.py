@@ -522,7 +522,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not api_key and provider != "ollama":
             return []
         return [
-            {"name": m, "provider": provider}
+            {"name": m, "provider": provider, "model_type": classify_model_type(m, provider)}
             for m in STATIC_MODELS[provider]
         ]
 
@@ -574,7 +574,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 response.raise_for_status()
                 data = response.json()
                 return [
-                    {"name": m.get("id", ""), "provider": "openai_compatible"}
+                    {"name": m.get("id", ""), "provider": "openai_compatible", "model_type": classify_model_type(m.get("id", ""), "openai_compatible")}
                     for m in data.get("data", [])
                     if m.get("id")
                 ]
@@ -595,7 +595,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 response.raise_for_status()
                 data = response.json()
                 return [
-                    {"name": m.get("id", ""), "provider": "azure"}
+                    {"name": m.get("id", ""), "provider": "azure", "model_type": classify_model_type(m.get("id", ""), "azure")}
                     for m in data.get("data", [])
                     if m.get("id")
                 ]
@@ -613,7 +613,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             "gemini-1.5-flash",
             "text-embedding-005",
         ]
-        return [{"name": m, "provider": "vertex"} for m in VERTEX_MODELS]
+        return [{"name": m, "provider": "vertex", "model_type": classify_model_type(m, "vertex")} for m in VERTEX_MODELS]
 
     if provider == "google":
         try:
@@ -630,6 +630,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                     {
                         "name": model.get("name", "").replace("models/", ""),
                         "provider": "google",
+                        "model_type": classify_model_type(model.get("name", "").replace("models/", ""), "google"),
                         "description": model.get("displayName"),
                     }
                     for model in data.get("models", [])
@@ -660,6 +661,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 {
                     "name": m.get("id", ""),
                     "provider": provider,
+                    "model_type": classify_model_type(m.get("id", ""), provider),
                     "description": m.get("name"),
                 }
                 for m in data.get("data", [])

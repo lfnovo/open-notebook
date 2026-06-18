@@ -442,10 +442,8 @@ function DiscoverModelsDialog({
   const [discoveryError, setDiscoveryError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [customModelSelected, setCustomModelSelected] = useState(false)
-  // Model type selector - default to credential's first modality
-  const [selectedType, setSelectedType] = useState<ModelType>(
-    (credential.modalities[0] as ModelType) || 'language'
-  )
+  // Model type selector - default to auto-detect
+  const [selectedType, setSelectedType] = useState<ModelType | 'auto'>('auto')
 
   useEffect(() => {
     if (open && !hasDiscovered) {
@@ -476,7 +474,7 @@ function DiscoverModelsDialog({
       setDiscoveryError(null)
       setSearchQuery('')
       setCustomModelSelected(false)
-      setSelectedType((credential.modalities[0] as ModelType) || 'language')
+      setSelectedType('auto')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only fires on open/close
   }, [open])
@@ -506,13 +504,13 @@ function DiscoverModelsDialog({
       .map(m => ({
         name: m.name,
         provider: m.provider,
-        model_type: m.model_type || selectedType,
+        model_type: selectedType === 'auto' ? m.model_type || 'language' : selectedType,
       }))
     if (customModelSelected && showCustomOption) {
       selected.push({
         name: searchQuery.trim(),
         provider: credential.provider,
-        model_type: selectedType,
+        model_type: selectedType === 'auto' ? 'language' : selectedType,
       })
     }
     registerModels.mutate(
@@ -576,11 +574,17 @@ function DiscoverModelsDialog({
             {/* Model type selector */}
             <div className="space-y-2">
               <Label>{t('models.modelType')}</Label>
-              <Select value={selectedType} onValueChange={(v) => setSelectedType(v as ModelType)}>
+              <Select value={selectedType} onValueChange={(v) => setSelectedType(v as ModelType | 'auto')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="auto">
+                    <div className="flex items-center gap-2">
+                      <Wand2 className="h-4 w-4" />
+                      Auto-detect
+                    </div>
+                  </SelectItem>
                   {(PROVIDER_MODALITIES[credential.provider] || credential.modalities as ModelType[]).map(type => (
                     <SelectItem key={type} value={type}>
                       <div className="flex items-center gap-2">

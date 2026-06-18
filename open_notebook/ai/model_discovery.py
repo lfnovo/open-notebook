@@ -99,7 +99,7 @@ OLLAMA_MODEL_TYPES = {
         "zephyr",
         "tinyllama",
     ],
-    "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
+    "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-", "embedding"],
     "vision": ["vision", "llava", "minicpm-v", "moondream", "bakllava"],
 }
 

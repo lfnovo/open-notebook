@@ -14,7 +14,7 @@
 
 ### Other Commands
 
-- **`process_source_command`**: Ingests content through `source_graph`, creates embeddings (optional), and generates insights. Retries on transaction conflicts (exp. jitter, max 15×, 1-120s).
+- **`process_source_command`**: Ingests content through `source_graph`, creates embeddings (optional), and generates insights. Retries on transaction conflicts (exp. jitter, max 15×, 1-120s). Permanent failures (`ValueError`, e.g. unextractable content) are **re-raised** so the job is marked `failed` (and the source becomes retryable from the UI) rather than completing with a failure payload.
 - **`run_transformation_command`**: Runs a transformation on an existing source to generate an insight. Executes the transformation graph (LLM call) then creates insight via `create_insight_command`. Used by `POST /sources/{id}/insights` API endpoint. Retry: 5 attempts, exponential jitter 1-60s.
 - **`generate_podcast_command`**: Creates podcasts via podcast-creator library. Resolves model registry references and credentials for all profiles before invoking podcast-creator. Validates that outline_llm, transcript_llm, and voice_model are configured.
 - **`process_text_command`** (example): Test fixture for text operations (uppercase, lowercase, reverse, word_count).
@@ -62,7 +62,8 @@ async def process_source_command(input_data: SourceProcessingInput) -> SourcePro
         result = await source_graph.ainvoke({...})
         return SourceProcessingOutput(success=True, ...)
     except ValueError as e:
-        return SourceProcessingOutput(success=False, error_message=str(e))  # No retry
+        logger.error(f"Source processing failed (permanent): {e}")
+        raise  # stop_on=[ValueError] => no retry, job marked `failed`
     except Exception as e:
         raise  # Retry all other exceptions
 ```

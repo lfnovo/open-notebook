@@ -264,6 +264,8 @@ export const trTR = {
   sources: {
     bulkContext: "Bağlam",
     includeAllInContext: "Tümünü bağlama dahil et",
+    includeAllInsights: "Tümünü dahil et (yalnızca içgörüler)",
+    includeAllFull: "Tümünü dahil et (tam içerik)",
     excludeAllFromContext: "Tümünü bağlamdan çıkar",
     title: "Kaynaklar",
     add: "Kaynak Ekle",

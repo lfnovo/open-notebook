@@ -264,6 +264,8 @@ export const caES = {
   sources: {
     bulkContext: "Context",
     includeAllInContext: "Inclou-les totes al context",
+    includeAllInsights: "Inclou-les totes (només informacions)",
+    includeAllFull: "Inclou-les totes (contingut complet)",
     excludeAllFromContext: "Exclou-les totes del context",
     title: "Fonts",
     add: "Afegeix una font",

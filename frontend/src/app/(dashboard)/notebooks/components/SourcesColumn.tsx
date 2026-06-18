@@ -20,6 +20,7 @@ import { useDeleteSource, useRetrySource, useRemoveSourceFromNotebook } from '@/
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { ContextMode } from '../[id]/page'
+import type { SourceBulkAction } from '@/lib/utils/source-context'
 import { CollapsibleColumn, createCollapseButton } from '@/components/notebooks/CollapsibleColumn'
 import { useNotebookColumnsStore } from '@/lib/stores/notebook-columns-store'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -32,7 +33,7 @@ interface SourcesColumnProps {
   onRefresh?: () => void
   contextSelections?: Record<string, ContextMode>
   onContextModeChange?: (sourceId: string, mode: ContextMode) => void
-  onBulkContextModeChange?: (action: 'include' | 'exclude') => void
+  onBulkContextModeChange?: (action: SourceBulkAction) => void
   // Pagination props
   hasNextPage?: boolean
   isFetchingNextPage?: boolean
@@ -169,8 +170,11 @@ export function SourcesColumn({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => onBulkContextModeChange('include')}>
-                        {t('sources.includeAllInContext')}
+                      <DropdownMenuItem onClick={() => onBulkContextModeChange('insights')}>
+                        {t('sources.includeAllInsights')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onBulkContextModeChange('full')}>
+                        {t('sources.includeAllFull')}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onBulkContextModeChange('exclude')}>
                         {t('sources.excludeAllFromContext')}

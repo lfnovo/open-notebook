@@ -265,6 +265,8 @@ export const enUS = {
     title: "Sources",
     bulkContext: "Context",
     includeAllInContext: "Include all in context",
+    includeAllInsights: "Include all (insights only)",
+    includeAllFull: "Include all (full content)",
     excludeAllFromContext: "Exclude all from context",
     add: "Add Source",
     addNew: "Add New Source",

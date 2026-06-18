@@ -19,8 +19,12 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FileText, StickyNote, MessageSquare } from 'lucide-react'
 import {
   applyBulkSourceContext,
+  applyBulkNoteContext,
   computeSourceSelections,
+  computeNoteSelections,
   type SourceContextDefault,
+  type SourceBulkAction,
+  type NoteContextDefault,
 } from '@/lib/utils/source-context'
 
 // Re-exported from the shared types module for backward compatibility; several
@@ -66,6 +70,9 @@ export default function NotebookPage() {
   // the same intent instead of reverting to "included" (#223/#915).
   const [sourceContextDefault, setSourceContextDefault] = useState<SourceContextDefault>('include')
 
+  // Same idea for notes loaded later (notes are binary: included/off).
+  const [noteContextDefault, setNoteContextDefault] = useState<NoteContextDefault>('include')
+
   // Initialize and update selections when sources load or change
   useEffect(() => {
     if (sources && sources.length > 0) {
@@ -78,19 +85,12 @@ export default function NotebookPage() {
 
   useEffect(() => {
     if (notes && notes.length > 0) {
-      setContextSelections(prev => {
-        const newNoteSelections = { ...prev.notes }
-        notes.forEach(note => {
-          // Only set default if not already set
-          if (!(note.id in newNoteSelections)) {
-            // Notes default to 'full'
-            newNoteSelections[note.id] = 'full'
-          }
-        })
-        return { ...prev, notes: newNoteSelections }
-      })
+      setContextSelections(prev => ({
+        ...prev,
+        notes: computeNoteSelections(prev.notes, notes, noteContextDefault),
+      }))
     }
-  }, [notes])
+  }, [notes, noteContextDefault])
 
   // Handler to update context selection
   const handleContextModeChange = (itemId: string, mode: ContextMode, type: 'source' | 'note') => {
@@ -103,13 +103,23 @@ export default function NotebookPage() {
     }))
   }
 
-  // Bulk include/exclude every source from the chat context at once (#223).
-  // Also records the action as the default for sources loaded later (#915).
-  const handleBulkSourceContext = (action: SourceContextDefault) => {
+  // Bulk-apply a context action (insights-only / full / exclude) to every
+  // source at once (#223). Also records the action as the default for sources
+  // loaded later (#915).
+  const handleBulkSourceContext = (action: SourceBulkAction) => {
     setSourceContextDefault(action)
     setContextSelections(prev => ({
       ...prev,
       sources: applyBulkSourceContext(prev.sources, sources ?? [], action),
+    }))
+  }
+
+  // Bulk include/exclude every note from the chat context at once (#223).
+  const handleBulkNoteContext = (action: NoteContextDefault) => {
+    setNoteContextDefault(action)
+    setContextSelections(prev => ({
+      ...prev,
+      notes: applyBulkNoteContext(prev.notes, notes ?? [], action),
     }))
   }
 
@@ -186,6 +196,7 @@ export default function NotebookPage() {
                     notebookId={notebookId}
                     contextSelections={contextSelections.notes}
                     onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                    onBulkContextModeChange={handleBulkNoteContext}
                   />
                 )}
                 {mobileActiveTab === 'chat' && (
@@ -236,6 +247,7 @@ export default function NotebookPage() {
                 notebookId={notebookId}
                 contextSelections={contextSelections.notes}
                 onContextModeChange={(noteId, mode) => handleContextModeChange(noteId, mode, 'note')}
+                onBulkContextModeChange={handleBulkNoteContext}
               />
             </div>
 

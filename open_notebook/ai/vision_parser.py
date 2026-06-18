@@ -36,7 +36,9 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
     """Send base64 image to the vision model and return the parsed text."""
     # Bypass esperanto's schema casting which may stringify multimodal arrays
     raw_llm = vision_model.to_langchain()
-    
+    if hasattr(raw_llm, "streaming"):
+        raw_llm.streaming = False
+        
     message = HumanMessage(
         content=[
             {"type": "text", "text": VISION_PROMPT},

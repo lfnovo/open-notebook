@@ -856,8 +856,9 @@ export const zhTW = {
     embeddingModelLabel: "嵌入模型",
     embeddingModelDesc: "用於語義搜尋和向量嵌入",
     ttsModelLabel: "文字轉語音模型",
-    ttsModelDesc: "用於生成播客",    visionModelLabel: "Vision Model",
-    visionModelDesc: "Used to analyze images and extract text from PDFs",
+    ttsModelDesc: "用於生成播客",
+    visionModelLabel: "視覺模型",
+    visionModelDesc: "用於分析圖像並從 PDF 中提取文字",
 
     sttModelLabel: "語音轉文字模型",
     sttModelDesc: "用於音訊轉錄",

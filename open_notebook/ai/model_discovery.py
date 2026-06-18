@@ -49,6 +49,7 @@ OPENAI_MODEL_TYPES = {
     "embedding": ["text-embedding", "embedding"],
     "speech_to_text": ["whisper"],
     "text_to_speech": ["tts"],
+    "vision": ["vision", "gpt-4o", "o1", "o3", "gpt-4-turbo"],
 }
 
 ANTHROPIC_MODELS = {
@@ -99,6 +100,7 @@ OLLAMA_MODEL_TYPES = {
         "tinyllama",
     ],
     "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
+    "vision": ["vision", "llava", "minicpm-v", "moondream", "bakllava"],
 }
 
 MISTRAL_MODEL_TYPES = {
@@ -117,6 +119,7 @@ MISTRAL_MODEL_TYPES = {
     # text_to_speech, so STT patterns are the explicit non-tts model names.
     "text_to_speech": ["voxtral-mini-tts", "voxtral-tts"],
     "speech_to_text": ["voxtral-mini-latest", "voxtral-small-latest"],
+    "vision": ["pixtral"],
 }
 
 GROQ_MODEL_TYPES = {
@@ -180,7 +183,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
     mapping = type_mappings.get(provider, {})
 
     # Check each type in order of specificity
-    for model_type in ["speech_to_text", "text_to_speech", "embedding", "language"]:
+    for model_type in ["vision", "speech_to_text", "text_to_speech", "embedding", "language"]:
         patterns = mapping.get(model_type, [])
         for pattern in patterns:
             if pattern in name_lower:

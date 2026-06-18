@@ -11,14 +11,16 @@ Instead of relying solely on traditional OCR tools (which often struggle with co
 2. **Rasterization**: 
    - For images, the file is converted directly into a base64 string.
    - For PDFs, `PyMuPDF` (fitz) is used to rasterize each page at a high DPI (150). To prevent blocking the async event loop of the API, this CPU-intensive operation is delegated to `asyncio.to_thread`.
-3. **Multimodal Invocation**: The base64 representation of the image is injected into a `langchain_core` `HumanMessage` payload using the standard dict format: `{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}`.
+3. **Multimodal Invocation**: 
+   - For commercial APIs (OpenAI, Anthropic, Google), the base64 representation is injected into a `langchain_core` `HumanMessage` payload using the standard dict format.
+   - For local Ollama models, the system bypasses LangChain and uses a direct HTTP client (`httpx`) with `stream: false` to ensure perfect compatibility with newer "thinking/reasoning" vision models (e.g., in Ollama 0.20.0+).
 4. **LLM Parsing**: A detailed prompt instructs the VLM to extract text, describe graphs, and explain the context. The output is formatted in Markdown and concatenated.
 
 ## Provider-Agnostic Design
 
-The Vision Parsing pipeline is designed to be fully agnostic of the backend provider. By strictly adhering to the LangChain `HumanMessage` standard, the system seamlessly supports:
-- **Local Models (Privacy-First)**: Open-source multimodal models like `llava`, `gemma2-vision`, or `minicpm-v` running locally via Ollama.
-- **Cloud Models**: Commercial APIs such as OpenAI (`gpt-4o`), Anthropic (`claude-3-5-sonnet-20240620`), or Google (`gemini-1.5-pro`).
+The Vision Parsing pipeline is designed to be fully agnostic of the backend provider while maintaining bulletproof compatibility:
+- **Local Models (Privacy-First)**: Open-source multimodal models like `llama3.2-vision`, `gemma4`, `llava`, or `minicpm-v` running locally via Ollama (using direct HTTP calls).
+- **Cloud Models**: Commercial APIs such as OpenAI (`gpt-4o`), Anthropic (`claude-3-5-sonnet-20240620`), or Google (`gemini-1.5-pro`) (using LangChain).
 
 ## Configuration
 

@@ -41,7 +41,11 @@ async def run_transformation(state: dict, config: RunnableConfig) -> dict:
             data=state
         )
         content_str = str(content) if content else ""
-        payload = [SystemMessage(content=system_prompt), HumanMessage(content=content_str)]
+        full_prompt = f"{system_prompt}\n\n{content_str}"
+        payload = [HumanMessage(content=full_prompt)]
+        
+        logger.debug(f"Payload sent to LLM length: {len(full_prompt)}")
+        
         chain = await provision_langchain_model(
             str(payload),
             config.get("configurable", {}).get("model_id"),

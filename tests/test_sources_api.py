@@ -138,5 +138,57 @@ class TestAsyncSourceAssetPersistence:
         assert source.asset is None
 
 
+class TestRetrySourceProcessing:
+    """POST /sources/{id}/retry must find a source's notebooks via the reference
+    edge's in/out columns, not a non-existent `source` column (#861)."""
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.CommandService.submit_command_job", new_callable=AsyncMock)
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_retry_finds_notebooks_and_requeues(
+        self, mock_get, mock_repo_query, mock_submit, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = None
+        source.title = "My source"
+        source.topics = []
+        source.full_text = None
+        source.asset = MagicMock(file_path=None, url="https://example.com/post")
+        source.save = AsyncMock()
+        source.get_embedded_chunks = AsyncMock(return_value=0)
+        mock_get.return_value = source
+
+        # The corrected query returns the linked notebook(s)
+        mock_repo_query.return_value = ["notebook:1"]
+        mock_submit.return_value = "123"
+
+        response = client.post("/api/sources/source:1/retry")
+
+        assert response.status_code == 200
+        # Regression guard: must query the reference edge by its `in` column
+        called_query = mock_repo_query.await_args.args[0]
+        assert "WHERE in = $source_id" in called_query
+        assert "SELECT VALUE out FROM reference" in called_query
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    @patch("api.routers.sources.Source.get", new_callable=AsyncMock)
+    async def test_retry_400_only_when_truly_unlinked(
+        self, mock_get, mock_repo_query, client
+    ):
+        source = MagicMock()
+        source.id = "source:1"
+        source.command = None
+        mock_get.return_value = source
+        mock_repo_query.return_value = []  # genuinely no notebooks
+
+        response = client.post("/api/sources/source:1/retry")
+
+        assert response.status_code == 400
+        assert "not associated with any notebooks" in response.json()["detail"]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

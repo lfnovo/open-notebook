@@ -262,6 +262,9 @@ export const esES = {
     deleteSuccess: "Cuaderno eliminado exitosamente",
   },
   sources: {
+    bulkContext: "Contexto",
+    includeAllInContext: "Incluir todas en el contexto",
+    excludeAllFromContext: "Excluir todas del contexto",
     title: "Fuentes",
     add: "Agregar fuente",
     addNew: "Agregar nueva fuente",

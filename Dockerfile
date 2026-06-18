@@ -1,17 +1,17 @@
 # Build stage
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.12-slim-trixie AS builder
 
 # Install uv using the official method
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 # Install system dependencies required for building certain Python packages
-# Add Node.js 20.x LTS for building frontend
+# Add Node.js 22.x LTS for building frontend
 # NOTE: gcc/g++/make removed - uv should download pre-built wheels. Add back if build fails.
 # NOTE: gcc/g++/make required for some python dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     build-essential \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
@@ -64,15 +64,15 @@ RUN npm run build
 WORKDIR /app
 
 # Runtime stage
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.12-slim-trixie AS runtime
 
 # Install only runtime system dependencies (no build tools)
-# Add Node.js 20.x LTS for running frontend
+# Add Node.js 22.x LTS for running frontend
 RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     ffmpeg \
     supervisor \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 

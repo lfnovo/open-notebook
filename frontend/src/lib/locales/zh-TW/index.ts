@@ -262,6 +262,9 @@ export const zhTW = {
     deleteSuccess: "筆記本刪除成功",
   },
   sources: {
+    bulkContext: "上下文",
+    includeAllInContext: "全部加入上下文",
+    excludeAllFromContext: "全部移出上下文",
     title: "來源",
     add: "新增來源",
     addNew: "新增新來源",

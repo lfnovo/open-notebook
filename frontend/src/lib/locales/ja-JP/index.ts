@@ -262,6 +262,9 @@ export const jaJP = {
     deleteSuccess: "ノートブックを削除しました",
   },
   sources: {
+    bulkContext: "コンテキスト",
+    includeAllInContext: "すべてをコンテキストに含める",
+    excludeAllFromContext: "すべてをコンテキストから除外",
     title: "ソース",
     add: "ソースを追加",
     addNew: "新規ソースを追加",

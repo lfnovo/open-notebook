@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- LaTeX math rendering in chat — inline (`$...$`) and display (`$$...$$`) expressions are now rendered with KaTeX (#606)
+- `NEXT_PUBLIC_API_TIMEOUT_MS` environment variable to configure the frontend API request timeout (default `600000` = 10 minutes; set `0` to disable). Lets slow/long-running chat models finish without editing source (#880)
+- Bulk include/exclude all sources from a notebook's chat context in one action, via a "Context" menu in the Sources column header — translated across all 14 locales (#223)
+
+### Changed
+- Failed source cards now show a prominent "Retry processing" button directly on the card instead of only inside the 3-dot dropdown; clicking it no longer also opens the source (the click was missing `stopPropagation`) (#726)
+
+### Fixed
+- Search and Ask results now use page-level scrolling instead of being confined to a cramped, height-capped (`60vh`) bottom container, so the full result set is readable (#882)
+- `POST /sources/{id}/retry` no longer returns `400 "Source is not associated with any notebooks"` for every source; it now queries the `reference` graph edge by its `in`/`out` columns instead of a non-existent `source` column (#861)
+- Text search no longer returns a 500 when SurrealDB's `search::highlight` hits a "position overflow" on large or multi-byte document chunks; it now falls back to vector search and returns results (#648)
+- `POST /api/search` now rejects a non-positive `limit` with a `422` instead of passing `LIMIT -1`/`LIMIT 0` to SurrealDB (which caused a 500 or a silently empty result set) (#863)
+- Ollama `num_ctx` credential override is now persisted. The `credential` table gained a flexible `config` object (migration 15) and provider-specific tuning options are stored there instead of being dropped by the SCHEMAFULL table; future per-credential options can be added without a schema migration (#875)
+
+### Performance
+- Notebook source list no longer re-renders every `SourceCard` on unrelated state changes (layout toggles, context selection), and completed sources no longer each open a status-polling query. Both scaled with the number of sources and caused UI lag on large notebooks (#503)
+
 ## [1.9.0] - 2026-06-02
 
 ### Added

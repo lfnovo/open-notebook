@@ -262,6 +262,9 @@ export const trTR = {
     deleteSuccess: "Defter başarıyla silindi",
   },
   sources: {
+    bulkContext: "Bağlam",
+    includeAllInContext: "Tümünü bağlama dahil et",
+    excludeAllFromContext: "Tümünü bağlamdan çıkar",
     title: "Kaynaklar",
     add: "Kaynak Ekle",
     addNew: "Yeni Kaynak Ekle",

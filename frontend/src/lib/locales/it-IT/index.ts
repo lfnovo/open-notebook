@@ -262,6 +262,9 @@ export const itIT = {
     deleteSuccess: "Quaderno eliminato con successo",
   },
   sources: {
+    bulkContext: "Contesto",
+    includeAllInContext: "Includi tutte nel contesto",
+    excludeAllFromContext: "Escludi tutte dal contesto",
     title: "Fonti",
     add: "Aggiungi fonte",
     addNew: "Aggiungi nuova fonte",

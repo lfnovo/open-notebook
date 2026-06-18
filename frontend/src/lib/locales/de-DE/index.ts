@@ -265,6 +265,9 @@ export const deDE = {
     deleteSuccess: "Notebook erfolgreich gelöscht",
   },
   sources: {
+    bulkContext: "Kontext",
+    includeAllInContext: "Alle in den Kontext aufnehmen",
+    excludeAllFromContext: "Alle aus dem Kontext ausschließen",
     title: "Quellen",
     add: "Quelle hinzufügen",
     addNew: "Neue Quelle hinzufügen",

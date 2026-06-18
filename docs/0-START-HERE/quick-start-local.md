@@ -56,6 +56,9 @@ services:
       - SURREAL_PASSWORD=password
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
+
+      # Ollama (required when running Ollama via Docker, as in this compose file)
+      - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - ./notebook_data:/app/data
     depends_on:
@@ -129,7 +132,7 @@ You should see the Open Notebook interface.
 
 ## Step 6: Configure Ollama Provider (1 min)
 
-1. Go to **Settings** → **API Keys**
+1. Go to **Manage** → **Models**
 2. Click **Add Credential**
 3. Select provider: **Ollama**
 4. Give it a name (e.g., "Local Ollama")
@@ -142,7 +145,7 @@ You should see the Open Notebook interface.
 
 ## Step 7: Configure Local Model (1 min)
 
-1. Go to **Settings** → **Models**
+1. Go to **Manage** → **Models**
 2. Set:
    - **Language Model**: `ollama/mistral` (or whichever model you downloaded)
    - **Embedding Model**: `ollama/nomic-embed-text` (auto-downloads if missing)

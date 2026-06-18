@@ -54,7 +54,11 @@ async def _analyze_base64_image(b64_image: str, mime_type: str, vision_model: La
                     "images": [b64_image]
                 }
             ],
-            "stream": False
+            "stream": False,
+            "options": {
+                "temperature": 0.1,
+                "num_predict": 1024
+            }
         }
         
         try:

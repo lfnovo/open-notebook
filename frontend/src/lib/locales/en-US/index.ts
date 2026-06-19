@@ -146,7 +146,7 @@ export const enUS = {
     invalidSourceType: "Invalid source type",
     processingFailed: "Processing failed",
     failedToQueue: "Failed to queue processing",
-    invalidSortBy: "Sort field must be 'created' or 'updated'",
+    invalidSortBy: "Sort field must be type, title, created, updated, insights count, or embedded",
     invalidSortOrder: "Sort order must be 'asc' or 'desc'",
     accessDenied: "Access to file denied",
     fileNotFoundOnServer: "File not found on server",

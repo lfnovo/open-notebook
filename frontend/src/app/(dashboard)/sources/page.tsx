@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { sourcesApi } from '@/lib/api/sources'
+import { sourcesApi, type SourceSortField } from '@/lib/api/sources'
 import { SourceListResponse } from '@/lib/types/api'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowUpDown } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -20,12 +20,13 @@ import { getApiErrorKey } from '@/lib/utils/error-handler'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
+  const failedToLoadMessage = t('sources.failedToLoad')
   const [sources, setSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [sortBy, setSortBy] = useState<'created' | 'updated'>('updated')
+  const [sortBy, setSortBy] = useState<SourceSortField>('updated')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; source: SourceListResponse | null }>({
     open: false,
@@ -75,14 +76,14 @@ export default function SourcesPage() {
       offsetRef.current += data.length
     } catch (err) {
       console.error('Failed to fetch sources:', err)
-      setError(t('sources.failedToLoad'))
-      toast.error(t('sources.failedToLoad'))
+      setError(failedToLoadMessage)
+      toast.error(failedToLoadMessage)
     } finally {
       setLoading(false)
       setLoadingMore(false)
       loadingMoreRef.current = false
     }
-  }, [sortBy, sortOrder, t('sources.failedToLoad')])
+  }, [sortBy, sortOrder, failedToLoadMessage])
 
   // Initial load and when sort changes
   useEffect(() => {
@@ -202,7 +203,7 @@ export default function SourcesPage() {
     }
   }, [fetchSources, sources.length])
 
-  const toggleSort = (field: 'created' | 'updated') => {
+  const toggleSort = (field: SourceSortField) => {
     if (sortBy === field) {
       // Toggle order if clicking the same field
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')
@@ -211,6 +212,33 @@ export default function SourcesPage() {
       setSortBy(field)
       setSortOrder('desc')
     }
+  }
+
+  const renderSortableHeader = (
+    field: SourceSortField,
+    label: string,
+    align: 'left' | 'center' = 'left'
+  ) => {
+    const active = sortBy === field
+    const SortIcon = active ? (sortOrder === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown
+
+    return (
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => toggleSort(field)}
+        className={cn(
+          "h-8 px-2 hover:bg-muted",
+          align === 'center' && "mx-auto"
+        )}
+      >
+        {label}
+        <SortIcon className={cn(
+          "ml-2 h-3 w-3",
+          active ? 'opacity-100' : 'opacity-30'
+        )} />
+      </Button>
+    )
   }
 
   const getSourceIcon = (source: SourceListResponse) => {
@@ -297,11 +325,12 @@ export default function SourcesPage() {
           <table
             ref={tableRef}
             tabIndex={0}
-            className="w-full min-w-[800px] outline-none table-fixed"
+            className="w-full min-w-[920px] outline-none table-fixed"
           >
             <colgroup>
               <col className="w-[120px]" />
               <col className="w-auto" />
+              <col className="w-[140px]" />
               <col className="w-[140px]" />
               <col className="w-[100px]" />
               <col className="w-[100px]" />
@@ -310,35 +339,22 @@ export default function SourcesPage() {
             <thead className="sticky top-0 bg-background z-10">
               <tr className="border-b bg-muted/50">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                  {t('common.type')}
+                  {renderSortableHeader('type', t('common.type'))}
                 </th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
-                  {t('common.title')}
+                  {renderSortableHeader('title', t('common.title'))}
                 </th>
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => toggleSort('created')}
-                    className="h-8 px-2 hover:bg-muted"
-                  >
-                    {t('common.created_label')}
-                    <ArrowUpDown className={cn(
-                      "ml-2 h-3 w-3",
-                      sortBy === 'created' ? 'opacity-100' : 'opacity-30'
-                    )} />
-                    {sortBy === 'created' && (
-                      <span className="ml-1 text-xs">
-                        {sortOrder === 'asc' ? '↑' : '↓'}
-                      </span>
-                    )}
-                  </Button>
+                  {renderSortableHeader('created', t('common.created_label'))}
+                </th>
+                <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground hidden sm:table-cell">
+                  {renderSortableHeader('updated', t('common.updated_label'))}
                 </th>
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden md:table-cell">
-                  {t('sources.insights')}
+                  {renderSortableHeader('insights_count', t('sources.insights'), 'center')}
                 </th>
                 <th className="h-12 px-4 text-center align-middle font-medium text-muted-foreground hidden lg:table-cell">
-                  {t('sources.embedded')}
+                  {renderSortableHeader('embedded', t('sources.embedded'), 'center')}
                 </th>
                 <th className="h-12 px-4 text-right align-middle font-medium text-muted-foreground">
                   {t('common.actions')}
@@ -384,6 +400,12 @@ export default function SourcesPage() {
                       locale: getDateLocale(language)
                     })}
                   </td>
+                  <td className="h-12 px-4 text-muted-foreground text-sm hidden sm:table-cell">
+                    {formatDistanceToNow(new Date(source.updated), {
+                      addSuffix: true,
+                      locale: getDateLocale(language)
+                    })}
+                  </td>
                   <td className="h-12 px-4 text-center hidden md:table-cell">
                     <span className="text-sm font-medium">{source.insights_count || 0}</span>
                   </td>
@@ -406,7 +428,7 @@ export default function SourcesPage() {
               ))}
               {loadingMore && (
                 <tr>
-                  <td colSpan={6} className="h-16 text-center">
+                  <td colSpan={7} className="h-16 text-center">
                     <div className="flex items-center justify-center">
                       <LoadingSpinner />
                       <span className="ml-2 text-muted-foreground">{t('sources.loadingMore')}</span>

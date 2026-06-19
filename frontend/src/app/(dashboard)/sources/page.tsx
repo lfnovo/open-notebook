@@ -204,6 +204,7 @@ export default function SourcesPage() {
   }, [fetchSources, sources.length])
 
   const toggleSort = (field: SourceSortField) => {
+    setSelectedIndex(0)
     if (sortBy === field) {
       // Toggle order if clicking the same field
       setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')

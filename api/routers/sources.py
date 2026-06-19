@@ -200,7 +200,9 @@ async def get_sources(
             )
 
         # Build ORDER BY clause
-        order_clause = f"ORDER BY {SOURCE_SORT_FIELDS[sort_by]} {sort_order.upper()}"
+        order_clause = (
+            f"ORDER BY {SOURCE_SORT_FIELDS[sort_by]} {sort_order.upper()}, id ASC"
+        )
 
         # Build the query
         if notebook_id:

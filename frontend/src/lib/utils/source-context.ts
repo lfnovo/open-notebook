@@ -1,4 +1,4 @@
-import type { ContextMode } from '@/lib/types/notebook-context'
+import type { ContextMode, NoteContextMode } from '@/lib/types/notebook-context'
 
 /**
  * Bulk context actions for sources:
@@ -100,7 +100,7 @@ interface NoteLike {
 }
 
 /** Resolve the context mode a bulk action implies for a single note. */
-export function bulkModeForNote(action: NoteContextDefault): ContextMode {
+export function bulkModeForNote(action: NoteContextDefault): NoteContextMode {
   return action === 'exclude' ? 'off' : 'full'
 }
 
@@ -110,10 +110,10 @@ export function bulkModeForNote(action: NoteContextDefault): ContextMode {
  * action also governs notes that load later.
  */
 export function computeNoteSelections(
-  existing: Record<string, ContextMode>,
+  existing: Record<string, NoteContextMode>,
   notes: NoteLike[],
   defaultAction: NoteContextDefault = 'include',
-): Record<string, ContextMode> {
+): Record<string, NoteContextMode> {
   const next = { ...existing }
   for (const note of notes) {
     if (next[note.id] === undefined) {
@@ -125,10 +125,10 @@ export function computeNoteSelections(
 
 /** Apply a uniform bulk context action to every given note. */
 export function applyBulkNoteContext(
-  existing: Record<string, ContextMode>,
+  existing: Record<string, NoteContextMode>,
   notes: NoteLike[],
   action: NoteContextDefault,
-): Record<string, ContextMode> {
+): Record<string, NoteContextMode> {
   const next = { ...existing }
   for (const note of notes) {
     next[note.id] = bulkModeForNote(action)

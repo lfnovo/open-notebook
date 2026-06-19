@@ -86,6 +86,12 @@ async def content_process(state: SourceState) -> dict:
             vision_text = await process_image_with_vision(file_path)
         elif ext == ".pdf":
             vision_text = await process_pdf_with_vision(file_path)
+        elif ext in [".md", ".txt", ".json", ".yaml", ".yml", ".html", ".xml", ".csv", ".rst", ".log"]:
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                    vision_text = f.read()
+            except Exception as e:
+                logger.warning(f"Failed to read text file directly: {e}")
 
     if vision_text:
         import os

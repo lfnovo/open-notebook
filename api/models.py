@@ -65,6 +65,43 @@ class AskResponse(BaseModel):
     question: str = Field(..., description="Original question")
 
 
+# Repo Review API models
+class ReviewCreate(BaseModel):
+    theme: str = Field(
+        ...,
+        description="The angle/question to review the repo against, e.g. 'security'",
+    )
+    repo_path: str = Field(
+        ..., description="Absolute path to the local repo (within allowed roots)"
+    )
+    notebook_id: Optional[str] = Field(
+        None, description="Notebook whose sources to distill guidance from"
+    )
+    strategy_model: Optional[str] = Field(
+        None, description="Model ID for the distill step (defaults to tools model)"
+    )
+    answer_model: Optional[str] = Field(
+        None, description="Model ID for per-principle judging (defaults to tools model)"
+    )
+    final_answer_model: Optional[str] = Field(
+        None, description="Model ID for the final report (defaults to tools model)"
+    )
+
+
+class ReviewResponse(BaseModel):
+    id: str
+    theme: str
+    repo_path: str
+    notebook_id: Optional[str] = None
+    status: str
+    command_id: Optional[str] = None
+    report_note_id: Optional[str] = None
+    summary: Optional[Dict[str, Any]] = None
+    error_message: Optional[str] = None
+    created: Optional[str] = None
+    updated: Optional[str] = None
+
+
 # Models API models
 class ModelCreate(BaseModel):
     name: str = Field(..., description="Model name (e.g., gpt-5-mini, claude, gemini)")

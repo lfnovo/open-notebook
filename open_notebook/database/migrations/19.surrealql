@@ -1,0 +1,17 @@
+-- Migration 19: Add the review table for the repo-review feature.
+-- A review records one run of "what do my sources say about X, and where does
+-- this local repo follow or break it?" — theme, repo path, the async job, and
+-- the verdict summary plus a pointer to the AI Note holding the full report.
+
+DEFINE TABLE IF NOT EXISTS review SCHEMAFULL;
+
+DEFINE FIELD IF NOT EXISTS theme ON TABLE review TYPE string;
+DEFINE FIELD IF NOT EXISTS repo_path ON TABLE review TYPE string;
+DEFINE FIELD IF NOT EXISTS notebook_id ON TABLE review TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE review TYPE string DEFAULT 'queued';
+DEFINE FIELD IF NOT EXISTS command_id ON TABLE review TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS report_note_id ON TABLE review TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS summary ON TABLE review FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS error_message ON TABLE review TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON review DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON review DEFAULT time::now() VALUE time::now();

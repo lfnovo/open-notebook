@@ -2,6 +2,7 @@
 prompts/patterns/user/
 /notebooks/
 data/
+/data
 .uploads/
 sqlite-db/
 surreal-data/

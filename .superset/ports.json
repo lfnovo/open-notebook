@@ -1,0 +1,7 @@
+{
+  "ports": [
+    { "port": 47300, "label": "Open Notebook Web (Next.js)" },
+    { "port": 47355, "label": "Open Notebook API (FastAPI)" },
+    { "port": 8000, "label": "SurrealDB (shared existing container)" }
+  ]
+}

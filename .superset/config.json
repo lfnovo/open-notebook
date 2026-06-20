@@ -1,0 +1,5 @@
+{
+  "setup": ["./.superset/setup.sh"],
+  "teardown": ["./.superset/teardown.sh"],
+  "run": ["./.superset/run.sh"]
+}

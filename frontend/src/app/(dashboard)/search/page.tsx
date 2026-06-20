@@ -14,7 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion } from 'lucide-react'
+import { Search, ChevronDown, AlertCircle, Settings, Save, MessageCircleQuestion, FolderGit2 } from 'lucide-react'
 import { useSearch } from '@/lib/hooks/use-search'
 import { useAsk } from '@/lib/hooks/use-ask'
 import { useModelDefaults, useModels } from '@/lib/hooks/use-models'
@@ -23,6 +23,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
+import { ReviewCodePanel } from '@/components/search/ReviewCodePanel'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -33,7 +34,7 @@ export default function SearchPage() {
   const urlMode = rawMode === 'search' ? 'search' : 'ask'
 
   // Tab state (controlled)
-  const [activeTab, setActiveTab] = useState<'ask' | 'search'>(
+  const [activeTab, setActiveTab] = useState<'ask' | 'search' | 'review'>(
     urlMode === 'search' ? 'search' : 'ask'
   )
 
@@ -161,7 +162,7 @@ export default function SearchPage() {
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
         <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
 
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search' | 'review')} className="w-full space-y-6">
           <div className="space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('searchPage.chooseAMode')}</p>
             <TabsList aria-label={t('common.accessibility.searchKB')} className="w-full max-w-xl">
@@ -172,6 +173,10 @@ export default function SearchPage() {
               <TabsTrigger value="search">
                 <Search className="h-4 w-4" />
                 {t('searchPage.search')}
+              </TabsTrigger>
+              <TabsTrigger value="review">
+                <FolderGit2 className="h-4 w-4" />
+                {t('reviewPage.tab')}
               </TabsTrigger>
             </TabsList>
           </div>
@@ -492,6 +497,10 @@ export default function SearchPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="review" className="mt-6">
+            <ReviewCodePanel />
           </TabsContent>
         </Tabs>
       </div>

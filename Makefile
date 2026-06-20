@@ -142,7 +142,12 @@ worker: worker-start
 
 worker-start:
 	@echo "Starting surreal-commands worker..."
-	uv run --env-file .env surreal-commands-worker --max-tasks "${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}" --import-modules commands
+	@MAX_TASKS="${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}"; \
+	if ! [[ "$MAX_TASKS" =~ ^[0-9]+$ ]] || [ "$MAX_TASKS" -lt 1 ]; then \
+		echo "⚠️  OPEN_NOTEBOOK_WORKER_MAX_TASKS must be a positive integer, using default: 5"; \
+		MAX_TASKS=5; \
+	fi; \
+	uv run --env-file .env surreal-commands-worker --max-tasks "$MAX_TASKS" --import-modules commands
 
 worker-stop:
 	@echo "Stopping surreal-commands worker..."
@@ -162,7 +167,12 @@ start-all:
 	@uv run run_api.py &
 	@sleep 3
 	@echo "⚙️ Starting background worker..."
-	@uv run --env-file .env surreal-commands-worker --max-tasks "${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}" --import-modules commands &
+	@MAX_TASKS="${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}"; \
+	if ! [[ "$MAX_TASKS" =~ ^[0-9]+$ ]] || [ "$MAX_TASKS" -lt 1 ]; then \
+		echo "⚠️  OPEN_NOTEBOOK_WORKER_MAX_TASKS must be a positive integer, using default: 5"; \
+		MAX_TASKS=5; \
+	fi; \
+	@uv run --env-file .env surreal-commands-worker --max-tasks "$MAX_TASKS" --import-modules commands &
 	@sleep 2
 	@echo "🌐 Starting Next.js frontend..."
 	@echo "✅ All services started!"

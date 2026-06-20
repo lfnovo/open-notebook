@@ -45,10 +45,10 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ## Database: Concurrency
 
-| Variable | Required? | Default | Description |
-|----------|-----------|---------|-------------|
-| `SURREAL_COMMANDS_MAX_TASKS` | No | 5 | Maximum concurrent database tasks |
-
+|| Variable | Required? | Default | Description |
+||----------|-----------|---------|-------------|
+|| `SURREAL_COMMANDS_MAX_TASKS` | No | 5 | Maximum concurrent database tasks |
+|| `OPEN_NOTEBOOK_WORKER_MAX_TASKS` | No | 5 | Maximum concurrent worker tasks (surreal-commands-worker). **Single-GPU Warning**: Set to 1 if you experience LLM rate limits. Recommended ranges: Single GPU: 1-5, Multi-GPU: 5-20, High-memory server: 20-50 |
 ---
 
 ## LLM Timeouts

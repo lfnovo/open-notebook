@@ -35,6 +35,10 @@ jobs:
       - name: Run tests
         run: uv run pytest tests/ -v
 
+      - name: Run worker config tests
+        run: uv run pytest tests/test_worker_config.py tests/test_worker_integration.py -v --tb=short
+        run: uv run pytest tests/ -v
+
   frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest

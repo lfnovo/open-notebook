@@ -1,0 +1,15 @@
+-- Migration 20: Subscription / OAuth credential support.
+-- Adds fields so a credential can authenticate via a consumer subscription
+-- (Codex / ChatGPT, Claude Pro/Max) using OAuth tokens instead of a static
+-- API key. access_token / refresh_token are Fernet-encrypted by the Pydantic
+-- Credential model before storage (same pattern as api_key). The other fields
+-- are queryable plaintext metadata. auth_type defaults to 'api_key' so every
+-- existing credential keeps working unchanged.
+
+DEFINE FIELD auth_type ON credential TYPE option<string> DEFAULT 'api_key';
+DEFINE FIELD subscription_kind ON credential TYPE option<string>;
+DEFINE FIELD access_token ON credential TYPE option<string>;
+DEFINE FIELD refresh_token ON credential TYPE option<string>;
+DEFINE FIELD token_expiry ON credential TYPE option<datetime>;
+DEFINE FIELD account_id ON credential TYPE option<string>;
+DEFINE FIELD experimental ON credential TYPE option<bool> DEFAULT false;

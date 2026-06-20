@@ -37,6 +37,7 @@ import {
   Mic,
   Volume2,
   Bot,
+  Sparkles,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useModels, useDeleteModel, useModelDefaults, useUpdateModelDefaults, useAutoAssignDefaults, useTestModel } from '@/lib/hooks/use-models'
@@ -52,6 +53,8 @@ import {
   useDiscoverModels,
   useRegisterModels,
   useMigrateFromEnv,
+  useCliTokens,
+  useImportFromCli,
 } from '@/lib/hooks/use-credentials'
 import { Credential, CreateCredentialRequest, UpdateCredentialRequest, DiscoveredModel } from '@/lib/api/credentials'
 import { Model, ModelDefaults } from '@/lib/types/models'
@@ -1323,6 +1326,100 @@ function DefaultModelSelectors({
 // Main Page
 // =============================================================================
 
+// =============================================================================
+// Subscriptions Card (experimental: Codex / ChatGPT, Claude Pro/Max via OAuth)
+// =============================================================================
+
+const SUBSCRIPTION_KINDS: { kind: 'chatgpt' | 'claude'; labelKey: string }[] = [
+  { kind: 'chatgpt', labelKey: 'apiKeys.subscriptionCodex' },
+  { kind: 'claude', labelKey: 'apiKeys.subscriptionClaude' },
+]
+
+function SubscriptionsCard({
+  subscriptionCredentials,
+  models,
+  defaults,
+  allCredentials,
+}: {
+  subscriptionCredentials: Credential[]
+  models: Model[]
+  defaults: ModelDefaults | null
+  allCredentials: Credential[]
+}) {
+  const { t } = useTranslation()
+  const { data: cliTokens } = useCliTokens()
+  const importFromCli = useImportFromCli()
+
+  return (
+    <Card className="border-amber-500/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          {t('apiKeys.subscriptionsTitle')}
+          <Badge variant="outline" className="border-amber-500/50 text-amber-700 dark:text-amber-300">
+            {t('apiKeys.experimental')}
+          </Badge>
+        </CardTitle>
+        <CardDescription>{t('apiKeys.subscriptionsDescription')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Experimental / ToS warning */}
+        <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+          <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+          <AlertTitle className="text-amber-800 dark:text-amber-200">
+            {t('apiKeys.subscriptionWarningTitle')}
+          </AlertTitle>
+          <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+            {t('apiKeys.subscriptionWarningDescription')}
+          </AlertDescription>
+        </Alert>
+
+        {/* Import-from-CLI buttons */}
+        <div className="flex flex-wrap gap-2">
+          {SUBSCRIPTION_KINDS.map(({ kind, labelKey }) => {
+            const available = cliTokens?.[kind]
+            return (
+              <Button
+                key={kind}
+                variant="outline"
+                size="sm"
+                disabled={!available || importFromCli.isPending}
+                onClick={() => importFromCli.mutate({ kind })}
+                title={available ? undefined : t('apiKeys.subscriptionCliMissing')}
+              >
+                {importFromCli.isPending && importFromCli.variables?.kind === kind ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                ) : (
+                  <Plus className="h-4 w-4 mr-1" />
+                )}
+                {t('apiKeys.subscriptionImport').replace('{provider}', t(labelKey))}
+              </Button>
+            )
+          })}
+        </div>
+        {!cliTokens?.chatgpt && !cliTokens?.claude && (
+          <p className="text-xs text-muted-foreground">{t('apiKeys.subscriptionNoCli')}</p>
+        )}
+
+        {/* Existing subscription credentials */}
+        {subscriptionCredentials.length > 0 && (
+          <div className="space-y-2">
+            {subscriptionCredentials.map(cred => (
+              <CredentialItem
+                key={cred.id}
+                credential={cred}
+                models={models}
+                defaults={defaults}
+                allCredentials={allCredentials}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function ApiKeysPage() {
   const { t } = useTranslation()
 
@@ -1335,7 +1432,13 @@ export default function ApiKeysPage() {
 
   const encryptionReady = credentialStatus?.encryption_configured ?? true
 
-  // Group credentials by provider
+  // Subscription credentials are shown in their own card, not under a provider.
+  const subscriptionCredentials = useMemo(
+    () => (credentials || []).filter(c => c.auth_type === 'oauth_subscription'),
+    [credentials]
+  )
+
+  // Group non-subscription credentials by provider
   const credentialsByProvider = useMemo(() => {
     const grouped: Record<string, Credential[]> = {}
     for (const provider of ALL_PROVIDERS) {
@@ -1343,6 +1446,7 @@ export default function ApiKeysPage() {
     }
     if (credentials) {
       for (const cred of credentials) {
+        if (cred.auth_type === 'oauth_subscription') continue
         if (!grouped[cred.provider]) grouped[cred.provider] = []
         grouped[cred.provider].push(cred)
       }
@@ -1415,6 +1519,16 @@ export default function ApiKeysPage() {
           {/* Default Model Selectors */}
           {models && defaults && (
             <DefaultModelSelectors models={models} defaults={defaults} />
+          )}
+
+          {/* Subscriptions (experimental) */}
+          {encryptionReady && (
+            <SubscriptionsCard
+              subscriptionCredentials={subscriptionCredentials}
+              models={models || []}
+              defaults={defaults || null}
+              allCredentials={credentials || []}
+            />
           )}
 
           {/* Provider Cards */}

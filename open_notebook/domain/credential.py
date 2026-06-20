@@ -47,7 +47,18 @@ class Credential(ObjectModel):
         "project",
         "location",
         "credentials_path",
+        # Subscription / OAuth fields (migration 16)
+        "subscription_kind",
+        "access_token",
+        "refresh_token",
+        "token_expiry",
+        "account_id",
     }
+
+    # Secret fields stored as SecretStr and Fernet-encrypted at rest. All are
+    # handled uniformly in _prepare_save_data / get / get_all / save so adding
+    # a new secret field only requires listing it here.
+    SECRET_FIELDS: ClassVar[set[str]] = {"api_key", "access_token", "refresh_token"}
 
     # Provider-specific tuning options that are exposed as top-level fields on
     # this model but persisted inside the flexible `config` object on the
@@ -60,6 +71,20 @@ class Credential(ObjectModel):
     modalities: List[str] = []
     api_key: Optional[SecretStr] = None
     decryption_error: Optional[str] = None
+
+    # Subscription / OAuth auth (migration 16). auth_type defaults to "api_key"
+    # so existing credentials are unchanged. When auth_type == "oauth_subscription",
+    # the credential authenticates via a consumer subscription (Codex/ChatGPT or
+    # Claude Pro/Max): its `provider` is "openai_compatible" and `base_url` points
+    # at the internal subscription gateway, which owns the OAuth token refresh and
+    # request translation. These credentials are flagged `experimental`.
+    auth_type: str = "api_key"  # "api_key" | "oauth_subscription"
+    subscription_kind: Optional[str] = None  # "chatgpt" | "claude"
+    access_token: Optional[SecretStr] = None  # encrypted at rest
+    refresh_token: Optional[SecretStr] = None  # encrypted at rest
+    token_expiry: Optional[datetime] = None
+    account_id: Optional[str] = None
+    experimental: bool = False
     base_url: Optional[str] = None
     endpoint: Optional[str] = None
     api_version: Optional[str] = None
@@ -107,6 +132,22 @@ class Credential(ObjectModel):
         Esperanto's AIFactory methods, overriding env var lookup.
         """
         config: Dict[str, Any] = {}
+        if self.auth_type == "oauth_subscription":
+            # The credential's base_url points at the internal subscription
+            # gateway. Esperanto talks to it as an openai_compatible provider;
+            # the loopback call is authenticated with the app password (the
+            # gateway resolves the real OAuth token from the credential id in
+            # the path). The actual subscription tokens never leave the gateway.
+            from open_notebook.utils.encryption import get_secret_from_env
+
+            config["api_key"] = (
+                get_secret_from_env("OPEN_NOTEBOOK_PASSWORD") or "not-required"
+            )
+            if self.base_url:
+                config["base_url"] = self.base_url
+            if self.num_ctx is not None:
+                config["num_ctx"] = self.num_ctx
+            return config
         if self.api_key:
             config["api_key"] = self.api_key.get_secret_value()
         if self.base_url:
@@ -136,6 +177,28 @@ class Credential(ObjectModel):
             config["num_ctx"] = self.num_ctx
         return config
 
+    @property
+    def is_subscription(self) -> bool:
+        """True when this credential authenticates via an OAuth subscription."""
+        return self.auth_type == "oauth_subscription"
+
+    @property
+    def token_expired(self) -> bool:
+        """True when an OAuth subscription token is at/past its expiry.
+
+        Always False for api_key credentials. Used only for surfacing status in
+        the API response; the gateway refreshes proactively before each call.
+        """
+        if not self.is_subscription or self.token_expiry is None:
+            return False
+        from datetime import timezone
+
+        now = datetime.now(timezone.utc)
+        expiry = self.token_expiry
+        if expiry.tzinfo is None:
+            expiry = expiry.replace(tzinfo=timezone.utc)
+        return now >= expiry
+
     @classmethod
     async def get_by_provider(cls, provider: str) -> List["Credential"]:
         """Get all credentials for a provider."""
@@ -154,18 +217,16 @@ class Credential(ObjectModel):
 
     @classmethod
     async def get(cls, id: str) -> "Credential":
-        """Override get() to handle api_key decryption."""
+        """Override get() to handle secret-field decryption."""
         instance = await super().get(id)
         # Pydantic auto-wraps the raw DB string in SecretStr, so we need
         # to extract, decrypt, and re-wrap regardless of type.
-        if instance.api_key:
-            raw = (
-                instance.api_key.get_secret_value()
-                if isinstance(instance.api_key, SecretStr)
-                else instance.api_key
-            )
-            decrypted = decrypt_value(raw)
-            object.__setattr__(instance, "api_key", SecretStr(decrypted))
+        for field in cls.SECRET_FIELDS:
+            value = getattr(instance, field, None)
+            if value:
+                raw = value.get_secret_value() if isinstance(value, SecretStr) else value
+                decrypted = decrypt_value(raw)
+                object.__setattr__(instance, field, SecretStr(decrypted))
         return instance
 
     @classmethod
@@ -231,13 +292,13 @@ class Credential(ObjectModel):
             if key in ("decryption_error", "config"):
                 # `config` is rebuilt below from the existing bag + convenience fields.
                 continue
-            if key == "api_key":
+            if key in self.__class__.SECRET_FIELDS:
                 # Handle SecretStr: extract, encrypt, store
-                if self.api_key:
-                    secret_value = self.api_key.get_secret_value()
-                    data["api_key"] = encrypt_value(secret_value)
+                secret = getattr(self, key, None)
+                if secret:
+                    data[key] = encrypt_value(secret.get_secret_value())
                 else:
-                    data["api_key"] = None
+                    data[key] = None
             elif value is not None or key in self.__class__.nullable_fields:
                 data[key] = value
 
@@ -259,28 +320,29 @@ class Credential(ObjectModel):
         return data
 
     async def save(self) -> None:
-        """Save credential, handling api_key re-hydration after DB round-trip."""
-        # Remember the original SecretStr before save
-        original_api_key = self.api_key
+        """Save credential, handling secret-field re-hydration after DB round-trip."""
+        # Remember the original SecretStr values before save
+        originals = {f: getattr(self, f, None) for f in self.__class__.SECRET_FIELDS}
 
         await super().save()
 
-        # After save, the api_key field may be set to the encrypted string
-        # from the DB result. Restore the original SecretStr.
-        if original_api_key:
-            object.__setattr__(self, "api_key", original_api_key)
-        elif self.api_key and isinstance(self.api_key, str):
-            # Decrypt if DB returned an encrypted string
-            decrypted = decrypt_value(self.api_key)
-            object.__setattr__(self, "api_key", SecretStr(decrypted))
+        # After save, each secret field may be set to the encrypted string from
+        # the DB result. Restore the original SecretStr (or decrypt if needed).
+        for field, original in originals.items():
+            if original:
+                object.__setattr__(self, field, original)
+            else:
+                current = getattr(self, field, None)
+                if current and isinstance(current, str):
+                    object.__setattr__(self, field, SecretStr(decrypt_value(current)))
 
     @classmethod
     def _from_db_row(cls, row: dict) -> "Credential":
-        """Create a Credential from a database row, decrypting api_key."""
-        api_key_val = row.get("api_key")
-        if api_key_val and isinstance(api_key_val, str):
-            decrypted = decrypt_value(api_key_val)
-            row["api_key"] = SecretStr(decrypted)
-        elif api_key_val is None:
-            row["api_key"] = None
+        """Create a Credential from a database row, decrypting secret fields."""
+        for field in cls.SECRET_FIELDS:
+            value = row.get(field)
+            if value and isinstance(value, str):
+                row[field] = SecretStr(decrypt_value(value))
+            elif value is None:
+                row[field] = None
         return cls(**row)

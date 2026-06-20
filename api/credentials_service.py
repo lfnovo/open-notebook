@@ -224,6 +224,10 @@ def credential_to_response(cred: Credential, model_count: int = 0) -> Credential
         credentials_path=cred.credentials_path,
         num_ctx=cred.num_ctx,
         has_api_key=cred.api_key is not None,
+        auth_type=cred.auth_type,
+        subscription_kind=cred.subscription_kind,
+        experimental=cred.experimental,
+        token_expired=cred.token_expired,
         created=str(cred.created) if cred.created else "",
         updated=str(cred.updated) if cred.updated else "",
         model_count=model_count,
@@ -913,3 +917,111 @@ async def migrate_from_env() -> dict:
         "not_configured": not_configured,
         "errors": errors,
     }
+
+
+# =============================================================================
+# Subscription credentials (Codex / ChatGPT, Claude Pro/Max) + presets
+# =============================================================================
+
+# Curated provider presets for category-1 "subscriptions" that are really just
+# an API key + custom base_url (no OAuth). These pre-fill the normal create
+# form; the backend stores them as ordinary api_key credentials.
+SUBSCRIPTION_PRESETS: List[dict] = [
+    {
+        "id": "zai-coding",
+        "label": "Z.ai Coding Plan (GLM)",
+        "provider": "openai_compatible",
+        "base_url": "https://api.z.ai/api/coding/paas/v4",
+        "modalities": ["language"],
+        "docs_url": "https://docs.z.ai/",
+        "description": "Use your Z.ai coding-plan key against the GLM models.",
+    },
+    {
+        "id": "openrouter",
+        "label": "OpenRouter",
+        "provider": "openrouter",
+        "base_url": None,
+        "modalities": ["language"],
+        "docs_url": "https://openrouter.ai/docs",
+        "description": "200+ models behind one key.",
+    },
+    {
+        "id": "kimi",
+        "label": "Kimi (Moonshot)",
+        "provider": "openai_compatible",
+        "base_url": "https://api.moonshot.ai/v1",
+        "modalities": ["language"],
+        "docs_url": "https://platform.moonshot.ai/",
+        "description": "Moonshot Kimi models via OpenAI-compatible API.",
+    },
+    {
+        "id": "minimax",
+        "label": "MiniMax",
+        "provider": "openai_compatible",
+        "base_url": "https://api.minimax.io/v1",
+        "modalities": ["language"],
+        "docs_url": "https://www.minimax.io/platform",
+        "description": "MiniMax models via OpenAI-compatible API.",
+    },
+]
+
+
+def get_subscription_presets() -> List[dict]:
+    """Return the curated provider presets for the create-credential form."""
+    return SUBSCRIPTION_PRESETS
+
+
+def get_internal_gateway_base() -> str:
+    """Base URL the app uses to reach its own subscription gateway.
+
+    Must stay loopback so subscription tokens never traverse the public
+    network. Override with OPEN_NOTEBOOK_INTERNAL_URL only to change the host
+    Esperanto dials (e.g. inside Docker).
+    """
+    base = os.environ.get("OPEN_NOTEBOOK_INTERNAL_URL")
+    if not base:
+        port = os.environ.get("PORT") or os.environ.get("API_PORT") or "5055"
+        base = f"http://localhost:{port}"
+    return base.rstrip("/") + "/api/subscription-gateway"
+
+
+def detect_cli_tokens() -> dict:
+    """Return which local CLI subscriptions can be imported on this host."""
+    from open_notebook.ai.subscription_tokens import detect_local_cli_tokens
+
+    return detect_local_cli_tokens()
+
+
+async def import_subscription_from_cli(kind: str, name: Optional[str] = None) -> Credential:
+    """Create an OAuth-subscription credential from a local CLI token.
+
+    The credential is stored as an ``openai_compatible`` provider whose
+    ``base_url`` points at the internal subscription gateway, so ModelManager
+    and Esperanto route through the gateway with no special-casing.
+    """
+    require_encryption_key()
+    if kind not in ("chatgpt", "claude"):
+        raise ValueError(f"Unknown subscription kind: {kind}")
+
+    from open_notebook.ai.subscription_tokens import import_from_cli
+
+    tokens = import_from_cli(kind)  # raises ValueError if no token present
+
+    default_name = "Codex (ChatGPT subscription)" if kind == "chatgpt" else "Claude Pro/Max"
+    cred = Credential(
+        name=name or default_name,
+        provider="openai_compatible",
+        modalities=["language"],
+        auth_type="oauth_subscription",
+        subscription_kind=kind,
+        access_token=SecretStr(tokens["access_token"]),
+        refresh_token=SecretStr(tokens["refresh_token"]),
+        token_expiry=tokens.get("expiry"),
+        account_id=tokens.get("account_id"),
+        experimental=True,
+    )
+    # First save to obtain the id, then point base_url at the gateway for it.
+    await cred.save()
+    cred.base_url = f"{get_internal_gateway_base()}/{cred.id}/v1"
+    await cred.save()
+    return cred

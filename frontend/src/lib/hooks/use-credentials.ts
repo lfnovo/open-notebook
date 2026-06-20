@@ -6,6 +6,7 @@ import {
   UpdateCredentialRequest,
   TestConnectionResult,
   RegisterModelData,
+  ImportSubscriptionRequest,
 } from '@/lib/api/credentials'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -18,6 +19,57 @@ export const CREDENTIAL_QUERY_KEYS = {
   envStatus: ['credentials', 'env-status'] as const,
   byProvider: (provider: string) => ['credentials', 'provider', provider] as const,
   detail: (id: string) => ['credentials', id] as const,
+  presets: ['credentials', 'presets'] as const,
+  cliTokens: ['credentials', 'cli-tokens'] as const,
+}
+
+/**
+ * Hook to get curated provider presets for the create-credential form
+ */
+export function useProviderPresets() {
+  return useQuery({
+    queryKey: CREDENTIAL_QUERY_KEYS.presets,
+    queryFn: () => credentialsApi.getPresets(),
+    staleTime: 1000 * 60 * 60,
+  })
+}
+
+/**
+ * Hook to detect which subscription CLI tokens are importable on this host
+ */
+export function useCliTokens() {
+  return useQuery({
+    queryKey: CREDENTIAL_QUERY_KEYS.cliTokens,
+    queryFn: () => credentialsApi.getCliTokens(),
+  })
+}
+
+/**
+ * Hook to import an OAuth-subscription credential from a local CLI token
+ */
+export function useImportFromCli() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const { t } = useTranslation()
+
+  return useMutation({
+    mutationFn: (data: ImportSubscriptionRequest) => credentialsApi.importFromCli(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: CREDENTIAL_QUERY_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: MODEL_QUERY_KEYS.providers })
+      toast({
+        title: t('common.success'),
+        description: t('apiKeys.subscriptionImportSuccess'),
+      })
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: t('common.error'),
+        description: getApiErrorKey(error, t('common.error')),
+        variant: 'destructive',
+      })
+    },
+  })
 }
 
 /**

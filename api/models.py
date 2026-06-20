@@ -670,10 +670,42 @@ class CredentialResponse(BaseModel):
     credentials_path: Optional[str] = None
     num_ctx: Optional[int] = None
     has_api_key: bool = False
+    # Subscription / OAuth fields. auth_type is "api_key" for ordinary
+    # credentials and "oauth_subscription" for Codex/Claude subscriptions.
+    auth_type: str = "api_key"
+    subscription_kind: Optional[str] = None
+    experimental: bool = False
+    token_expired: bool = False
     created: str
     updated: str
     model_count: int = 0
     decryption_error: Optional[str] = None
+
+
+class CliTokensResponse(BaseModel):
+    """Which local CLI subscriptions can be imported on this host."""
+
+    chatgpt: bool = False
+    claude: bool = False
+
+
+class ImportSubscriptionRequest(BaseModel):
+    """Request to import a subscription credential from a local CLI token."""
+
+    kind: str  # "chatgpt" | "claude"
+    name: Optional[str] = None
+
+
+class ProviderPresetResponse(BaseModel):
+    """A curated provider preset to pre-fill the create-credential form."""
+
+    id: str
+    label: str
+    provider: str
+    base_url: Optional[str] = None
+    modalities: List[str] = ["language"]
+    docs_url: Optional[str] = None
+    description: Optional[str] = None
 
 
 class CredentialDeleteResponse(BaseModel):

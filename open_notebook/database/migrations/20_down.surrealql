@@ -1,0 +1,9 @@
+-- Migration 20 rollback: remove subscription / OAuth credential fields.
+
+REMOVE FIELD IF EXISTS auth_type ON TABLE credential;
+REMOVE FIELD IF EXISTS subscription_kind ON TABLE credential;
+REMOVE FIELD IF EXISTS access_token ON TABLE credential;
+REMOVE FIELD IF EXISTS refresh_token ON TABLE credential;
+REMOVE FIELD IF EXISTS token_expiry ON TABLE credential;
+REMOVE FIELD IF EXISTS account_id ON TABLE credential;
+REMOVE FIELD IF EXISTS experimental ON TABLE credential;

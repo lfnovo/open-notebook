@@ -26,8 +26,11 @@ from pydantic import SecretStr
 
 from api.credentials_service import (
     credential_to_response,
+    detect_cli_tokens,
     discover_with_config,
     get_provider_status,
+    get_subscription_presets,
+    import_subscription_from_cli,
     register_models,
     require_encryption_key,
     validate_url,
@@ -45,11 +48,14 @@ from api.credentials_service import (
     test_credential as svc_test_credential,
 )
 from api.models import (
+    CliTokensResponse,
     CreateCredentialRequest,
     CredentialDeleteResponse,
     CredentialResponse,
     DiscoveredModelResponse,
     DiscoverModelsResponse,
+    ImportSubscriptionRequest,
+    ProviderPresetResponse,
     RegisterModelsRequest,
     RegisterModelsResponse,
     UpdateCredentialRequest,
@@ -92,6 +98,47 @@ async def get_env_status():
     except Exception as e:
         logger.error(f"Error checking env status: {e}")
         raise HTTPException(status_code=500, detail="Failed to check environment status")
+
+
+# =============================================================================
+# Subscription endpoints (Codex / ChatGPT, Claude Pro/Max) + presets
+#
+# Registered before the /{credential_id} routes so their static paths are not
+# captured by the credential-id path parameter.
+# =============================================================================
+
+
+@router.get("/presets", response_model=List[ProviderPresetResponse])
+async def list_presets():
+    """Curated provider presets to pre-fill the create-credential form."""
+    return [ProviderPresetResponse(**p) for p in get_subscription_presets()]
+
+
+@router.get("/cli-tokens", response_model=CliTokensResponse)
+async def get_cli_tokens():
+    """Detect which subscription CLI tokens are importable on this host."""
+    try:
+        return CliTokensResponse(**detect_cli_tokens())
+    except Exception as e:
+        logger.error(f"Error detecting CLI tokens: {e}")
+        raise HTTPException(status_code=500, detail="Failed to detect CLI tokens")
+
+
+@router.post("/import-from-cli", response_model=CredentialResponse, status_code=201)
+async def import_from_cli(request: ImportSubscriptionRequest):
+    """Import an OAuth-subscription credential from a local CLI token.
+
+    These credentials are experimental and use a consumer subscription via the
+    official CLI's stored token — see the subscription gateway for the ToS caveat.
+    """
+    try:
+        cred = await import_subscription_from_cli(request.kind, request.name)
+        return credential_to_response(cred, 0)
+    except ValueError as e:
+        raise _handle_value_error(e)
+    except Exception as e:
+        logger.error(f"Error importing {request.kind} subscription: {e}")
+        raise HTTPException(status_code=500, detail="Failed to import subscription")
 
 
 # =============================================================================
@@ -370,9 +417,23 @@ async def discover_models_for_credential(credential_id: str):
     """Discover available models using this credential's API key."""
     try:
         cred = await Credential.get(credential_id)
-        config = cred.to_esperanto_config()
         provider = cred.provider.lower()
 
+        # Subscription credentials don't have a discoverable provider API; return
+        # the gateway's curated per-kind model list directly.
+        if cred.is_subscription:
+            from api.routers.subscription_gateway import CURATED_MODELS
+
+            curated = CURATED_MODELS.get(cred.subscription_kind, [])
+            return DiscoverModelsResponse(
+                credential_id=cred.id or "",
+                provider=provider,
+                discovered=[
+                    DiscoveredModelResponse(name=m, provider=provider) for m in curated
+                ],
+            )
+
+        config = cred.to_esperanto_config()
         discovered = await discover_with_config(provider, config)
 
         return DiscoverModelsResponse(

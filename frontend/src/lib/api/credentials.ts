@@ -18,10 +18,38 @@ export interface Credential {
   credentials_path?: string | null
   num_ctx?: number | null
   has_api_key: boolean
+  // Subscription / OAuth fields. auth_type is "api_key" for ordinary
+  // credentials and "oauth_subscription" for Codex/Claude subscriptions.
+  auth_type?: string
+  subscription_kind?: string | null
+  experimental?: boolean
+  token_expired?: boolean
   created: string
   updated: string
   model_count: number
   decryption_error?: string | null
+}
+
+export type SubscriptionKind = 'chatgpt' | 'claude'
+
+export interface CliTokensResponse {
+  chatgpt: boolean
+  claude: boolean
+}
+
+export interface ImportSubscriptionRequest {
+  kind: SubscriptionKind
+  name?: string
+}
+
+export interface ProviderPreset {
+  id: string
+  label: string
+  provider: string
+  base_url?: string | null
+  modalities: string[]
+  docs_url?: string | null
+  description?: string | null
 }
 
 export interface CreateCredentialRequest {
@@ -238,6 +266,30 @@ export const credentialsApi = {
    */
   migrateFromEnv: async (): Promise<MigrationResult> => {
     const response = await apiClient.post<MigrationResult>('/credentials/migrate-from-env')
+    return response.data
+  },
+
+  /**
+   * Curated provider presets for the create-credential form
+   */
+  getPresets: async (): Promise<ProviderPreset[]> => {
+    const response = await apiClient.get<ProviderPreset[]>('/credentials/presets')
+    return response.data
+  },
+
+  /**
+   * Detect which subscription CLI tokens are importable on this host
+   */
+  getCliTokens: async (): Promise<CliTokensResponse> => {
+    const response = await apiClient.get<CliTokensResponse>('/credentials/cli-tokens')
+    return response.data
+  },
+
+  /**
+   * Import an OAuth-subscription credential from a local CLI token (experimental)
+   */
+  importFromCli: async (data: ImportSubscriptionRequest): Promise<Credential> => {
+    const response = await apiClient.post<Credential>('/credentials/import-from-cli', data)
     return response.data
   },
 }

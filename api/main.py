@@ -35,6 +35,7 @@ from api.routers import (
     source_chat,
     sources,
     speaker_profiles,
+    subscription_gateway,
     transformations,
 )
 from api.routers import commands as commands_router
@@ -360,6 +361,9 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(
+    subscription_gateway.router, prefix="/api", tags=["subscription-gateway"]
+)
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 

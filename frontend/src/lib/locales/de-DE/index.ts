@@ -392,6 +392,7 @@ export const deDE = {
     loadFailed: "Quellendetails konnten nicht geladen werden",
     removeFromNotebook: "Aus Notebook entfernen",
     retryProcessing: "Verarbeitung erneut versuchen",
+    refreshContent: "Inhalt aktualisieren",
     deleteSource: "Quelle löschen",
     retry: "Erneut versuchen",
     addExistingTitle: "Vorhandene Quellen hinzufügen",

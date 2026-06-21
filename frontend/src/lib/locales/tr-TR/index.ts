@@ -389,6 +389,7 @@ export const trTR = {
     loadFailed: "Kaynak ayrıntıları yüklenemedi",
     removeFromNotebook: "Defterden Kaldır",
     retryProcessing: "İşlemeyi Yeniden Dene",
+    refreshContent: "İçeriği yenile",
     deleteSource: "Kaynağı Sil",
     retry: "Yeniden Dene",
     addExistingTitle: "Mevcut Kaynakları Ekle",

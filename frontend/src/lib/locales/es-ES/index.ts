@@ -389,6 +389,7 @@ export const esES = {
     loadFailed: "Error al cargar los detalles de la fuente",
     removeFromNotebook: "Quitar del cuaderno",
     retryProcessing: "Reintentar procesamiento",
+    refreshContent: "Actualizar contenido",
     deleteSource: "Eliminar fuente",
     retry: "Reintentar",
     addExistingTitle: "Agregar fuentes existentes",

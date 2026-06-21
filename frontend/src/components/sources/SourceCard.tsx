@@ -36,6 +36,7 @@ interface SourceCardProps {
   source: SourceListResponse
   onDelete?: (sourceId: string) => void
   onRetry?: (sourceId: string) => void
+  onRefreshContent?: (sourceId: string) => void
   onRemoveFromNotebook?: (sourceId: string) => void
   onClick?: (sourceId: string) => void
   onRefresh?: () => void
@@ -112,6 +113,7 @@ function SourceCardImpl({
   onClick,
   onDelete,
   onRetry,
+  onRefreshContent,
   onRemoveFromNotebook,
   onRefresh,
   className,
@@ -187,6 +189,12 @@ function SourceCardImpl({
   const handleRetry = () => {
     if (onRetry) {
       onRetry(source.id)
+    }
+  }
+
+  const handleRefreshContent = () => {
+    if (onRefreshContent) {
+      onRefreshContent(source.id)
     }
   }
 
@@ -345,6 +353,21 @@ function SourceCardImpl({
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
                     {t('sources.retryProcessing')}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+
+              {sourceType === 'link' && isCompleted && onRefreshContent && (
+                <>
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRefreshContent()
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    {t('sources.refreshContent')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </>

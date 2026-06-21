@@ -389,6 +389,7 @@ export const enUS = {
     loadFailed: "Failed to load source details",
     removeFromNotebook: "Remove from Notebook",
     retryProcessing: "Retry Processing",
+    refreshContent: "Refresh content",
     deleteSource: "Delete Source",
     retry: "Retry",
     addExistingTitle: "Add Existing Sources",

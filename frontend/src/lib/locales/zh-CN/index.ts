@@ -389,6 +389,7 @@ export const zhCN = {
     loadFailed: "加载来源详情失败",
     removeFromNotebook: "从笔记本移除",
     retryProcessing: "重试处理",
+    refreshContent: "刷新内容",
     deleteSource: "删除来源",
     retry: "重试",
     addExistingTitle: "添加现有来源",

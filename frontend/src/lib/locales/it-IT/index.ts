@@ -389,6 +389,7 @@ export const itIT = {
     loadFailed: "Impossibile caricare i dettagli della fonte",
     removeFromNotebook: "Rimuovi dal quaderno",
     retryProcessing: "Riprova elaborazione",
+    refreshContent: "Aggiorna contenuto",
     deleteSource: "Elimina fonte",
     retry: "Riprova",
     addExistingTitle: "Aggiungi fonti esistenti",

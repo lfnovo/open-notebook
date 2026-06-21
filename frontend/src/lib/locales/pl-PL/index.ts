@@ -389,6 +389,7 @@ export const plPL = {
     loadFailed: "Nie udało się załadować szczegółów źródła",
     removeFromNotebook: "Usuń z notatnika",
     retryProcessing: "Ponów przetwarzanie",
+    refreshContent: "Odśwież treść",
     deleteSource: "Usuń źródło",
     retry: "Ponów",
     addExistingTitle: "Dodaj istniejące źródła",

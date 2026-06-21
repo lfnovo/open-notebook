@@ -389,6 +389,7 @@ export const bnIN = {
     loadFailed: "উৎসের বিবরণ লোড করতে ব্যর্থ",
     removeFromNotebook: "নোটবুক থেকে সরান",
     retryProcessing: "প্রক্রিয়াকরণ পুনরায় চেষ্টা করুন",
+    refreshContent: "বিষয়বস্তু রিফ্রেশ করুন",
     deleteSource: "উৎস মুছে ফেলুন",
     retry: "আবার চেষ্টা",
     addExistingTitle: "বিদ্যমান উৎস যোগ করুন",

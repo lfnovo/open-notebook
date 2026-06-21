@@ -389,6 +389,7 @@ export const zhTW = {
     loadFailed: "載入來源詳情失敗",
     removeFromNotebook: "從筆記本移除",
     retryProcessing: "重試處理",
+    refreshContent: "重新整理內容",
     deleteSource: "刪除來源",
     retry: "重試",
     addExistingTitle: "新增現有來源",

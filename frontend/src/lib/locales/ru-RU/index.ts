@@ -389,6 +389,7 @@ export const ruRU = {
     loadFailed: "Не удалось загрузить детали источника",
     removeFromNotebook: "Удалить из блокнота",
     retryProcessing: "Повторить обработку",
+    refreshContent: "Обновить содержимое",
     deleteSource: "Удалить источник",
     retry: "Повторить",
     addExistingTitle: "Добавить существующие источники",

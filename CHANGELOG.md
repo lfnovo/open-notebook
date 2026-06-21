@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Documented the `ESPERANTO_TTS_TIMEOUT` environment variable (default `300`s) in the environment reference; raise it for slow or self-hosted TTS providers so long podcast segments don't fail with a timeout (#937)
 - `SECURITY.md` with a coordinated-disclosure policy: how to privately report a vulnerability via GitHub's private vulnerability reporting, supported versions, and response expectations (#943)
 - LaTeX math rendering (KaTeX) now also applies to source content, source insights, Ask answers, transformation output, and the note editor preview — previously only chat had it (#269)
+- "Refresh content" action on web-link sources — re-fetches the URL and re-embeds the source so its content stays current, available from the source card menu once processing has completed (translated across all 14 locales) (#259)
 
 ### Changed
 - `docker-compose.yml` now sources the SurrealDB credentials from `SURREAL_USER` / `SURREAL_PASSWORD` (applied to both the database server and the app), defaulting to `root:root` so the zero-config quick start is unchanged. Set them in a `.env` file to use your own credentials before exposing the instance; `.env.example` and the compose file note this (#946)

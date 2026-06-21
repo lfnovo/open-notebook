@@ -389,6 +389,7 @@ export const ptBR = {
     loadFailed: "Falha ao carregar detalhes da fonte",
     removeFromNotebook: "Remover do Caderno",
     retryProcessing: "Tentar Processamento Novamente",
+    refreshContent: "Atualizar conteúdo",
     deleteSource: "Excluir Fonte",
     retry: "Tentar Novamente",
     addExistingTitle: "Adicionar Fontes Existentes",

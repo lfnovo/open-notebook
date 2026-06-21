@@ -389,6 +389,7 @@ export const frFR = {
     loadFailed: "Échec du chargement des détails de la source",
     removeFromNotebook: "Retirer du carnet",
     retryProcessing: "Réessayer le traitement",
+    refreshContent: "Actualiser le contenu",
     deleteSource: "Supprimer la source",
     retry: "Réessayer",
     addExistingTitle: "Ajouter des sources existantes",

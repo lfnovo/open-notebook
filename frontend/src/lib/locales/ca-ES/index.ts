@@ -389,6 +389,7 @@ export const caES = {
     loadFailed: "Ha fallat la càrrega dels detalls de la font",
     removeFromNotebook: "Elimina del quadern",
     retryProcessing: "Torna a processar",
+    refreshContent: "Actualitza el contingut",
     deleteSource: "Suprimeix la font",
     retry: "Reintenta",
     addExistingTitle: "Afegeix fonts existents",

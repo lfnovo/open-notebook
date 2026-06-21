@@ -389,6 +389,7 @@ export const jaJP = {
     loadFailed: "ソース詳細の読み込みに失敗しました",
     removeFromNotebook: "ノートブックから削除",
     retryProcessing: "処理を再試行",
+    refreshContent: "コンテンツを更新",
     deleteSource: "ソースを削除",
     retry: "再試行",
     addExistingTitle: "既存ソースを追加",

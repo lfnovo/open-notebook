@@ -146,7 +146,7 @@ export const trTR = {
     invalidSourceType: "Geçersiz kaynak türü",
     processingFailed: "İşleme başarısız",
     failedToQueue: "İşleme kuyruğa eklenemedi",
-    invalidSortBy: "Sıralama alanı 'created' veya 'updated' olmalıdır",
+    invalidSortBy: "Sıralama alanı type, title, created, updated, insights count veya embedded olmalıdır",
     invalidSortOrder: "Sıralama yönü 'asc' veya 'desc' olmalıdır",
     accessDenied: "Dosyaya erişim reddedildi",
     fileNotFoundOnServer: "Sunucuda dosya bulunamadı",

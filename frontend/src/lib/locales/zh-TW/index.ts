@@ -146,7 +146,7 @@ export const zhTW = {
     invalidSourceType: "無效的源類型",
     processingFailed: "處理失敗",
     failedToQueue: "排隊處理失敗",
-    invalidSortBy: "排序欄位必須是 'created' 或 'updated'",
+    invalidSortBy: "排序欄位必須是 type、title、created、updated、insights count 或 embedded",
     invalidSortOrder: "排序方向必須是 'asc' 或 'desc'",
     accessDenied: "檔案存取被拒絕",
     fileNotFoundOnServer: "伺服器上找不到該檔案",

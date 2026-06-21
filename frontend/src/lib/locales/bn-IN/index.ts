@@ -146,7 +146,7 @@ export const bnIN = {
     invalidSourceType: "অবৈধ উৎস ধরন",
     processingFailed: "প্রক্রিয়াকরণ ব্যর্থ",
     failedToQueue: "প্রক্রিয়াকরণ কিউ করতে ব্যর্থ",
-    invalidSortBy: "সাজানোর ফিল্ড 'created' বা 'updated' হতে হবে",
+    invalidSortBy: "সাজানোর ফিল্ড type, title, created, updated, insights count, বা embedded হতে হবে",
     invalidSortOrder: "সাজানোর ক্রম 'asc' বা 'desc' হতে হবে",
     accessDenied: "ফাইলের অ্যাক্সেস অস্বীকৃত",
     fileNotFoundOnServer: "সার্ভারে ফাইল খুঁজে পাওয়া যায়নি",

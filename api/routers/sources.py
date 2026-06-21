@@ -43,11 +43,13 @@ SOURCE_SORT_FIELDS = {
     "title": "title",
     "insights_count": "insights_count",
     "embedded": "embedded",
-    "type": (
-        "IF asset.file_path != NONE THEN 'file' "
-        "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END END"
-    ),
+    "type": "type",
 }
+
+SOURCE_TYPE_EXPRESSION = (
+    "IF asset.file_path != NONE THEN 'file' "
+    "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
+)
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
@@ -214,6 +216,7 @@ async def get_sources(
             # Query sources for specific notebook - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
                 FROM (select value in from reference where out=$notebook_id)
@@ -233,6 +236,7 @@ async def get_sources(
             # Query all sources - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
                 FROM source

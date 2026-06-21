@@ -146,7 +146,7 @@ export const esES = {
     invalidSourceType: "Tipo de fuente inválido",
     processingFailed: "El procesamiento falló",
     failedToQueue: "Error al poner en cola el procesamiento",
-    invalidSortBy: "El campo de ordenamiento debe ser 'created' o 'updated'",
+    invalidSortBy: "El campo de ordenamiento debe ser type, title, created, updated, recuento de insights o embedded",
     invalidSortOrder: "El orden debe ser 'asc' o 'desc'",
     accessDenied: "Acceso al archivo denegado",
     fileNotFoundOnServer: "Archivo no encontrado en el servidor",

@@ -146,7 +146,7 @@ export const zhCN = {
     invalidSourceType: "无效的源类型",
     processingFailed: "处理失败",
     failedToQueue: "排队处理失败",
-    invalidSortBy: "排序字段必须是 'created' 或 'updated'",
+    invalidSortBy: "排序字段必须是 type、title、created、updated、insights count 或 embedded",
     invalidSortOrder: "排序方向必须是 'asc' 或 'desc'",
     accessDenied: "文件访问被拒绝",
     fileNotFoundOnServer: "服务器上找不到该文件",

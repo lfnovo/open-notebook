@@ -149,7 +149,7 @@ export const deDE = {
     invalidSourceType: "Ungültiger Quellentyp",
     processingFailed: "Verarbeitung fehlgeschlagen",
     failedToQueue: "Verarbeitung konnte nicht in die Warteschlange gestellt werden",
-    invalidSortBy: "Sortierfeld muss „created“ oder „updated“ sein",
+    invalidSortBy: "Sortierfeld muss type, title, created, updated, insights count oder embedded sein",
     invalidSortOrder: "Sortierreihenfolge muss „asc“ oder „desc“ sein",
     accessDenied: "Zugriff auf Datei verweigert",
     fileNotFoundOnServer: "Datei auf dem Server nicht gefunden",

@@ -11,7 +11,7 @@ Axios-based client and resource-specific API modules for backend communication w
 
 ## Important Patterns
 
-- **Single axios instance**: `apiClient` with 10-minute timeout (for slow LLM operations)
+- **Single axios instance**: `apiClient` with a configurable request timeout for slow LLM operations — `NEXT_PUBLIC_API_TIMEOUT_MS` (default `600000` = 10 min; an explicit `0` disables it, empty/invalid falls back to the default)
 - **Request interceptor**: Auto-fetches base URL from config, adds Bearer auth from localStorage `auth-storage`
 - **FormData handling**: Auto-removes Content-Type header for FormData to let browser set multipart boundary
 - **Response interceptor**: 401 clears auth and redirects to `/login`
@@ -41,7 +41,7 @@ Axios-based client and resource-specific API modules for backend communication w
 
 - **Base URL delay**: First request waits for `getApiUrl()` to resolve; can be slow on startup
 - **FormData fields as JSON strings**: Nested objects (arrays, objects) must be JSON stringified in FormData (e.g., `notebooks`, `transformations`)
-- **Timeout for streaming**: 10-minute timeout may not cover very long-running LLM operations; consider extending if needed
+- **Timeout for streaming**: the default 10-minute timeout may not cover very long-running LLM operations; raise it via `NEXT_PUBLIC_API_TIMEOUT_MS` (or set `0` to disable)
 - **Auth token management**: Token stored in localStorage `auth-storage` key; uses Zustand persist middleware
 - **Headers mutation in interceptor**: Mutating `config.headers` directly; be careful with middleware order
 - **No automatic retry logic**: Failed requests not automatically retried; must be handled in consuming code. Podcast episodes have explicit retry via `retryEpisode()` in `podcasts.ts` and `useRetryPodcastEpisode()` hook

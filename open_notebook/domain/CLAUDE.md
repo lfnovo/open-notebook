@@ -43,7 +43,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Asset**: File/URL reference helper
 
 - **Search functions**:
-  - `text_search()`: Full-text keyword search
+  - `text_search()`: Full-text keyword search. On a SurrealDB `search::highlight` "position overflow" (large/multi-byte chunks) it falls back to `vector_search()`; if that also fails it raises `DatabaseOperationError` (never silently returns an empty list)
   - `vector_search()`: Semantic search via embeddings (default minimum_score=0.2)
 
 ### content_settings.py

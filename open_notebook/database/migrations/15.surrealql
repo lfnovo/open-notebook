@@ -1,0 +1,6 @@
+-- Migration 15: Add a flexible config object to the credential table.
+-- Stores provider-specific tuning options (e.g. Ollama num_ctx) without a
+-- schema change per option. FLEXIBLE allows arbitrary keys inside the object
+-- on this SCHEMAFULL table; validation stays in the Pydantic Credential model.
+
+DEFINE FIELD config ON credential FLEXIBLE TYPE option<object>;

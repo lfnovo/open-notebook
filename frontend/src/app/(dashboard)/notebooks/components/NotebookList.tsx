@@ -2,6 +2,8 @@
 
 import { NotebookResponse } from '@/lib/types/api'
 import { NotebookCard } from './NotebookCard'
+import { NotebookRow } from './NotebookRow'
+import { useNotebookViewStore } from '@/lib/stores/notebook-view-store'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Book, ChevronDown, ChevronRight, Plus } from 'lucide-react'
@@ -31,6 +33,7 @@ export function NotebookList({
   actionLabel,
 }: NotebookListProps) {
   const { t } = useTranslation()
+  const viewMode = useNotebookViewStore((state) => state.viewMode)
   const [isExpanded, setIsExpanded] = useState(!collapsible)
 
   if (isLoading) {
@@ -78,11 +81,19 @@ export function NotebookList({
       </div>
 
       {isExpanded && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {notebooks.map((notebook) => (
-            <NotebookCard key={notebook.id} notebook={notebook} />
-          ))}
-        </div>
+        viewMode === 'list' ? (
+          <div className="flex flex-col gap-2">
+            {notebooks.map((notebook) => (
+              <NotebookRow key={notebook.id} notebook={notebook} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {notebooks.map((notebook) => (
+              <NotebookCard key={notebook.id} notebook={notebook} />
+            ))}
+          </div>
+        )
       )}
     </div>
   )

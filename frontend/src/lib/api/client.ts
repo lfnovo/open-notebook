@@ -3,12 +3,23 @@ import { getApiUrl } from '@/lib/config'
 
 // API client with runtime-configurable base URL
 // The base URL is fetched from the API config endpoint on first request
-// Timeout increased to 10 minutes (600000ms = 600s) to accommodate slow LLM operations
-// (transformations, insights generation, chat) especially on slower hardware (Ollama, LM Studio)
-// Note: Frontend uses milliseconds, backend uses seconds
-// Local LLMs can take several minutes for complex questions with large contexts
+//
+// Request timeout defaults to 10 minutes (600000ms) to accommodate slow LLM
+// operations (transformations, insights, synchronous chat) on slower hardware
+// (Ollama, LM Studio). Configure it via NEXT_PUBLIC_API_TIMEOUT_MS for models
+// that can take longer than 10 minutes to respond (#880).
+// Note: value is in milliseconds; an explicit 0 disables the timeout entirely.
+// An empty or invalid value falls back to the default (so a present-but-empty
+// env var doesn't accidentally disable timeouts).
+const DEFAULT_API_TIMEOUT_MS = 600000 // 600 seconds = 10 minutes
+const rawTimeout = process.env.NEXT_PUBLIC_API_TIMEOUT_MS
+const parsedTimeout = rawTimeout && rawTimeout.trim() !== '' ? Number(rawTimeout) : NaN
+const apiTimeout = Number.isFinite(parsedTimeout) && parsedTimeout >= 0
+  ? parsedTimeout
+  : DEFAULT_API_TIMEOUT_MS
+
 export const apiClient = axios.create({
-  timeout: 600000, // 600 seconds = 10 minutes
+  timeout: apiTimeout,
   headers: {
     'Content-Type': 'application/json',
   },

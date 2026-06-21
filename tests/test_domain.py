@@ -616,5 +616,115 @@ class TestEpisodeProfile:
         assert profile.num_segments == 5
 
 
+# ============================================================================
+# TEST SUITE: Credential flexible config bag (#875)
+# ============================================================================
+
+
+class TestCredentialConfigBag:
+    """Provider-specific extras (num_ctx) round-trip through the flexible
+    `config` object instead of a dedicated SCHEMAFULL column."""
+
+    def test_prepare_save_data_packs_num_ctx_into_config(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="Local Ollama", provider="ollama", num_ctx=16384)
+        data = cred._prepare_save_data()
+
+        assert data["config"] == {"num_ctx": 16384}
+        assert "num_ctx" not in data  # not a top-level column anymore
+
+    def test_prepare_save_data_config_none_when_no_extras(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="OpenAI", provider="openai")
+        data = cred._prepare_save_data()
+
+        assert data["config"] is None
+        assert "num_ctx" not in data
+
+    def test_db_row_with_config_lifts_num_ctx_to_top_level(self):
+        from open_notebook.domain.credential import Credential
+
+        # Simulates a row read back from the DB
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192},
+        )
+
+        assert cred.num_ctx == 8192  # mirrored from config onto the convenience field
+
+    def test_num_ctx_round_trips_through_save_and_load(self):
+        from open_notebook.domain.credential import Credential
+
+        original = Credential(name="Local Ollama", provider="ollama", num_ctx=4096)
+        persisted = original._prepare_save_data()
+        # Rebuild from the persisted shape (as the DB would return it)
+        reloaded = Credential(
+            name=persisted["name"],
+            provider=persisted["provider"],
+            config=persisted["config"],
+        )
+
+        assert reloaded.num_ctx == 4096
+        assert reloaded.to_esperanto_config()["num_ctx"] == 4096
+
+    def test_null_config_loads_without_extras(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="OpenAI", provider="openai", config=None)
+
+        assert cred.num_ctx is None
+        assert cred.config is None
+        assert cred._prepare_save_data()["config"] is None
+
+    def test_unmapped_config_keys_are_preserved_on_save(self):
+        from open_notebook.domain.credential import Credential
+
+        # A newer version may have written config keys this model doesn't map.
+        # They must survive a load/save round-trip rather than be clobbered
+        # (repo_update MERGE replaces the whole config object).
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        assert cred.num_ctx == 8192
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"num_ctx": 8192, "future_option": "keep-me"}
+
+    def test_clearing_num_ctx_keeps_other_config_keys(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        cred.num_ctx = None  # user clears the override
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"future_option": "keep-me"}
+
+    def test_mirrored_num_ctx_is_validated_as_int(self):
+        from open_notebook.domain.credential import Credential
+
+        # A value coming from the flexible config bag is routed through normal
+        # Pydantic field validation, not set raw.
+        cred = Credential(
+            name="Local Ollama", provider="ollama", config={"num_ctx": "8192"}
+        )
+        assert cred.num_ctx == 8192
+        assert isinstance(cred.num_ctx, int)
+
+        # A non-coercible value is rejected rather than silently flowing through.
+        with pytest.raises(ValidationError):
+            Credential(
+                name="Local Ollama", provider="ollama", config={"num_ctx": "not-an-int"}
+            )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

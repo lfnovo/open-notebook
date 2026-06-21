@@ -18,7 +18,7 @@ import { NoteEditorDialog } from './NoteEditorDialog'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { formatDistanceToNow } from 'date-fns'
 import { ContextToggle } from '@/components/common/ContextToggle'
-import { ContextMode } from '../[id]/page'
+import type { NoteContextMode } from '../[id]/page'
 import type { NoteContextDefault } from '@/lib/utils/source-context'
 import { useDeleteNote } from '@/lib/hooks/use-notes'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
@@ -30,8 +30,8 @@ interface NotesColumnProps {
   notes?: NoteResponse[]
   isLoading: boolean
   notebookId: string
-  contextSelections?: Record<string, ContextMode>
-  onContextModeChange?: (noteId: string, mode: ContextMode) => void
+  contextSelections?: Record<string, NoteContextMode>
+  onContextModeChange?: (noteId: string, mode: NoteContextMode) => void
   onBulkContextModeChange?: (action: NoteContextDefault) => void
 }
 
@@ -53,9 +53,10 @@ export function NotesColumn({
 
   // Collapsible column state
   const { notesCollapsed, toggleNotes } = useNotebookColumnsStore()
+  const notesLabel = t('common.notes')
   const collapseButton = useMemo(
-    () => createCollapseButton(toggleNotes, t('common.notes')),
-    [toggleNotes, t('common.notes')]
+    () => createCollapseButton(toggleNotes, notesLabel),
+    [toggleNotes, notesLabel]
   )
 
   const handleDeleteClick = (noteId: string) => {
@@ -81,12 +82,12 @@ export function NotesColumn({
         isCollapsed={notesCollapsed}
         onToggle={toggleNotes}
         collapsedIcon={StickyNote}
-        collapsedLabel={t('common.notes')}
+        collapsedLabel={notesLabel}
       >
         <Card className="h-full flex flex-col flex-1 overflow-hidden">
           <CardHeader className="pb-3 flex-shrink-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-lg">{t('common.notes')}</CardTitle>
+              <CardTitle className="text-lg">{notesLabel}</CardTitle>
               <div className="flex items-center gap-2">
                 {onBulkContextModeChange && notes && notes.length > 0 && (
                   <DropdownMenu>

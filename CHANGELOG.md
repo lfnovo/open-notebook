@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CRUD endpoints now return `404` (not `500`) for a non-existent resource. `ObjectModel.get()` raises `NotFoundError` rather than returning a falsy value, so the broad `except Exception` in each handler was masking it as a server error. Added an explicit `NotFoundError → 404` arm to the notebook (update / delete / delete-preview / add-source / remove-source), note (get / update / delete / list / create), model (delete), credential (update / delete) and embed handlers (#862)
 - Token counting no longer raises `ValueError: disallowed special token '<|endoftext|>'` when source/context content contains special-token sequences; `token_count()` now encodes with `disallowed_special=()` so such substrings are treated as ordinary text (#667)
 - Single-container image no longer hangs at "API not ready yet" on a brand-new instance. `supervisord.single.conf` ran the API and worker with `uv run` (without `--no-sync`), so at startup `uv` tried to sync dev dependencies it couldn't resolve against the `--no-dev` build. Both processes now use `uv run --no-sync`, matching the multi-container `supervisord.conf` (#609)
+- Note editor now expands to fill the dialog instead of being capped at `500px`; removed the `max-h-[500px]` constraint that overrode the `flex-1` parent and cramped editing on tall windows (#932)
 
 ## [1.10.0] - 2026-06-17
 

@@ -2,11 +2,22 @@
 
 import dynamic from 'next/dynamic'
 import { forwardRef } from 'react'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 
 const MDEditor = dynamic(
   () => import('@uiw/react-md-editor').then((mod) => mod.default),
   { ssr: false }
 )
+
+// Render `$...$` / `$$...$$` math in the live preview. @uiw/react-md-editor
+// concatenates these with its defaults (gfm, prism, raw), so syntax
+// highlighting and GFM are preserved. KaTeX CSS is loaded globally in
+// app/layout.tsx.
+const PREVIEW_OPTIONS = {
+  remarkPlugins: [remarkMath],
+  rehypePlugins: [rehypeKatex],
+}
 
 export interface MarkdownEditorProps {
   value?: string
@@ -35,6 +46,7 @@ export const MarkdownEditor = forwardRef<HTMLDivElement, MarkdownEditorProps>(
             id: textareaId,
             name: name,
           }}
+          previewOptions={PREVIEW_OPTIONS}
           data-color-mode="light"
         />
       </div>

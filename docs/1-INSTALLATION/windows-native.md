@@ -49,12 +49,30 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
      SURREAL_URL="ws://127.0.0.1:8000/rpc"
      ```
 
-3. **Edit `start-open-notebook.bat`:**
+3. **Start the four services**, each in its own terminal, from the `open-notebook` folder.
 
-   - Update `ROOT` and `DATA_ROOT` paths to match your setup
-   - Place in parent directory of `open-notebook`
+   > Open Notebook does not ship a launcher script — start the services manually as below (or wrap them in your own `.bat`, see [Optional: one-click launcher](#optional-one-click-launcher)).
 
-4. **Run:** Double-click `start-open-notebook.bat`
+   ```batch
+   REM Optional: point Open Notebook at a separate data folder (see Issue 4 below).
+   REM Set this in each terminal before running, or skip to use ./data.
+   set DATA_FOLDER=%USERPROFILE%\Projects\open-notebook-data
+
+   REM Terminal 1 — SurrealDB
+   surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DATA_FOLDER%\surrealdb
+
+   REM Terminal 2 — API
+   uv run --env-file .env run_api.py
+
+   REM Terminal 3 — Worker (module form avoids the Windows "canonicalize" error, see Issue 3)
+   set PYTHONPATH=%CD%
+   uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands
+
+   REM Terminal 4 — Frontend
+   cd frontend && npm run dev
+   ```
+
+4. **Open the app:** http://127.0.0.1:3000
 
 ## Directory Structure (Recommended)
 
@@ -69,10 +87,34 @@ YourProjectsFolder\
 │   ├── surrealdb\           # Database files
 │   ├── uploads\             # Uploaded documents
 │   └── sqlite-db\           # LangGraph checkpoints
-└── start-open-notebook.bat  # Launcher script
+└── start-open-notebook.bat  # Optional launcher you create yourself (see below)
 ```
 
 **Why separate data folder?** Prevents accidental data loss when updating/reinstalling code.
+
+## Optional: one-click launcher
+
+Open Notebook does not ship a launcher, but you can save the following as
+`start-open-notebook.bat` (anywhere you like) to start all four services with a
+double-click. Adjust `ROOT` and `DATA_ROOT` to match your setup.
+
+```batch
+@echo off
+REM --- adjust these two paths ---
+set ROOT=%USERPROFILE%\Projects\open-notebook
+set DATA_ROOT=%USERPROFILE%\Projects\open-notebook-data
+
+set DATA_FOLDER=%DATA_ROOT%
+set PYTHONPATH=%ROOT%
+cd /d %ROOT%
+
+start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:%DATA_ROOT%\surrealdb
+start "API" cmd /k "uv run --env-file .env run_api.py"
+start "Worker" cmd /k "uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands"
+start "Frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
+```
+
+Then open http://127.0.0.1:3000.
 
 ## Critical Windows Fixes
 

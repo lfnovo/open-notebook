@@ -21,7 +21,7 @@ Thank you for your interest in contributing to Open Notebook! We welcome contrib
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our Code of Conduct. Be respectful, constructive, and collaborative.
+By participating in this project, you are expected to uphold our [Code of Conduct](/CODE_OF_CONDUCT.md). Be respectful, constructive, and collaborative.
 
 ## How Can I Contribute?
 

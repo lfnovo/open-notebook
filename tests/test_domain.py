@@ -5,13 +5,16 @@ This test suite focuses on validation logic, business rules, and data structures
 that can be tested without database mocking.
 """
 
+import sys
 import tempfile
 from pathlib import Path
+from types import ModuleType
 from unittest.mock import AsyncMock, patch
 
 import pytest
 from pydantic import ValidationError
 
+from api.podcast_service import PodcastService
 from open_notebook.ai.models import ModelManager
 from open_notebook.domain.base import RecordModel
 from open_notebook.domain.content_settings import ContentSettings
@@ -98,6 +101,118 @@ class TestNotebookDomain:
 
         notebook_archived = Notebook(name="Test", description="Test", archived=True)
         assert notebook_archived.archived is True
+
+    @pytest.mark.asyncio
+    async def test_notebook_get_context_includes_source_full_text(self):
+        """Test notebook context includes full source content for podcasts."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+        sources = [
+            Source(
+                id="source:first",
+                title="First Source",
+                full_text="First source full text for podcast generation.",
+            ),
+            Source(
+                id="source:second",
+                title="Second Source",
+                full_text="Second source full text for podcast generation.",
+            ),
+        ]
+        get_sources_calls = []
+
+        async def fake_get_sources(self, include_full_text=False):
+            get_sources_calls.append(include_full_text)
+            return sources
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        async def fake_get_insights(self):
+            return []
+
+        with (
+            patch.object(Notebook, "get_sources", new=fake_get_sources),
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(Source, "get_insights", new=fake_get_insights),
+        ):
+            context = await notebook.get_context()
+
+        assert get_sources_calls == [True]
+        assert "## Source: First Source" in context
+        assert "First source full text for podcast generation." in context
+        assert "## Source: Second Source" in context
+        assert "Second source full text for podcast generation." in context
+        assert "Notebook(id=" not in context
+
+    @pytest.mark.asyncio
+    async def test_notebook_get_context_includes_note_content(self):
+        """Test notebook context includes linked note content."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+        notes = [
+            Note(
+                id="note:first",
+                title="Research Note",
+                content="Important notebook note for the podcast.",
+            )
+        ]
+        get_notes_calls = []
+
+        async def fake_get_sources(self, include_full_text=False):
+            return []
+
+        async def fake_get_notes(self, include_content=False):
+            get_notes_calls.append(include_content)
+            return notes
+
+        with (
+            patch.object(Notebook, "get_sources", new=fake_get_sources),
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+        ):
+            context = await notebook.get_context()
+
+        assert get_notes_calls == [True]
+        assert "## Note: Research Note" in context
+        assert "Important notebook note for the podcast." in context
+
+    @pytest.mark.asyncio
+    async def test_notebook_get_context_returns_empty_string_without_content(self):
+        """Test notebooks with no source or note content produce empty context."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+
+        async def fake_get_sources(self, include_full_text=False):
+            return []
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        with (
+            patch.object(Notebook, "get_sources", new=fake_get_sources),
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+        ):
+            assert await notebook.get_context() == ""
+
+    @pytest.mark.asyncio
+    async def test_notebook_get_context_propagates_source_errors(self):
+        """Test source context failures are not swallowed by notebook context."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+        source = Source(id="source:first", title="First Source")
+
+        async def fake_get_sources(self, include_full_text=False):
+            return [source]
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        async def fake_get_context(self, context_size="short"):
+            raise RuntimeError("source context failed")
+
+        with (
+            patch.object(Notebook, "get_sources", new=fake_get_sources),
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(Source, "get_context", new=fake_get_context),
+        ):
+            with pytest.raises(RuntimeError, match="source context failed"):
+                await notebook.get_context()
 
 
 # ============================================================================
@@ -200,7 +315,6 @@ class TestSourceDomain:
             result = await source.delete()
             assert result is True
             mock_delete.assert_called_once()
-
 
     @pytest.mark.asyncio
     async def test_vectorize_raises_valueerror_when_no_text(self):
@@ -336,6 +450,77 @@ class TestPodcastDomain:
         assert profile.speakers[0]["name"] == "Host"
 
 
+class TestPodcastService:
+    """Test suite for podcast service notebook content resolution."""
+
+    @pytest.mark.asyncio
+    async def test_submit_generation_job_uses_notebook_context_content(self):
+        """Test notebook podcast jobs submit real source content, not model repr."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+        sources = [
+            Source(
+                id="source:first",
+                title="First Source",
+                full_text="First source full text for submitted podcast content.",
+            ),
+            Source(
+                id="source:second",
+                title="Second Source",
+                full_text="Second source full text for submitted podcast content.",
+            ),
+        ]
+        submitted_args = {}
+
+        async def fake_get_sources(self, include_full_text=False):
+            return sources
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        async def fake_get_insights(self):
+            return []
+
+        def fake_submit_command(app_name, command_name, command_args):
+            submitted_args.update(command_args)
+            return "command:podcast"
+
+        fake_commands_module = ModuleType("commands.podcast_commands")
+        # The real commands/__init__.py runs `from .podcast_commands import
+        # generate_podcast_command` when the package is imported, so the fake
+        # submodule must expose that name or the package import fails before the
+        # patched submit_command is reached.
+        fake_commands_module.generate_podcast_command = lambda *a, **k: None
+
+        with (
+            patch.object(
+                EpisodeProfile, "get_by_name", new=AsyncMock(return_value=object())
+            ),
+            patch.object(
+                SpeakerProfile, "get_by_name", new=AsyncMock(return_value=object())
+            ),
+            patch.object(Notebook, "get", new=AsyncMock(return_value=notebook)),
+            patch.object(Notebook, "get_sources", new=fake_get_sources),
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(Source, "get_insights", new=fake_get_insights),
+            patch("api.podcast_service.submit_command", new=fake_submit_command),
+            patch.dict(
+                sys.modules, {"commands.podcast_commands": fake_commands_module}
+            ),
+        ):
+            job_id = await PodcastService.submit_generation_job(
+                episode_profile_name="Episode",
+                speaker_profile_name="Speakers",
+                episode_name="Episode Name",
+                notebook_id="notebook:test",
+            )
+
+        assert job_id == "command:podcast"
+        content = submitted_args["content"]
+        assert "First source full text for submitted podcast content." in content
+        assert "Second source full text for submitted podcast content." in content
+        assert "Notebook(id=" not in content
+
+
 # ============================================================================
 # TEST SUITE 7: Transformation Domain
 # ============================================================================
@@ -429,6 +614,116 @@ class TestEpisodeProfile:
             num_segments=5,
         )
         assert profile.num_segments == 5
+
+
+# ============================================================================
+# TEST SUITE: Credential flexible config bag (#875)
+# ============================================================================
+
+
+class TestCredentialConfigBag:
+    """Provider-specific extras (num_ctx) round-trip through the flexible
+    `config` object instead of a dedicated SCHEMAFULL column."""
+
+    def test_prepare_save_data_packs_num_ctx_into_config(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="Local Ollama", provider="ollama", num_ctx=16384)
+        data = cred._prepare_save_data()
+
+        assert data["config"] == {"num_ctx": 16384}
+        assert "num_ctx" not in data  # not a top-level column anymore
+
+    def test_prepare_save_data_config_none_when_no_extras(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="OpenAI", provider="openai")
+        data = cred._prepare_save_data()
+
+        assert data["config"] is None
+        assert "num_ctx" not in data
+
+    def test_db_row_with_config_lifts_num_ctx_to_top_level(self):
+        from open_notebook.domain.credential import Credential
+
+        # Simulates a row read back from the DB
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192},
+        )
+
+        assert cred.num_ctx == 8192  # mirrored from config onto the convenience field
+
+    def test_num_ctx_round_trips_through_save_and_load(self):
+        from open_notebook.domain.credential import Credential
+
+        original = Credential(name="Local Ollama", provider="ollama", num_ctx=4096)
+        persisted = original._prepare_save_data()
+        # Rebuild from the persisted shape (as the DB would return it)
+        reloaded = Credential(
+            name=persisted["name"],
+            provider=persisted["provider"],
+            config=persisted["config"],
+        )
+
+        assert reloaded.num_ctx == 4096
+        assert reloaded.to_esperanto_config()["num_ctx"] == 4096
+
+    def test_null_config_loads_without_extras(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="OpenAI", provider="openai", config=None)
+
+        assert cred.num_ctx is None
+        assert cred.config is None
+        assert cred._prepare_save_data()["config"] is None
+
+    def test_unmapped_config_keys_are_preserved_on_save(self):
+        from open_notebook.domain.credential import Credential
+
+        # A newer version may have written config keys this model doesn't map.
+        # They must survive a load/save round-trip rather than be clobbered
+        # (repo_update MERGE replaces the whole config object).
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        assert cred.num_ctx == 8192
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"num_ctx": 8192, "future_option": "keep-me"}
+
+    def test_clearing_num_ctx_keeps_other_config_keys(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Local Ollama",
+            provider="ollama",
+            config={"num_ctx": 8192, "future_option": "keep-me"},
+        )
+        cred.num_ctx = None  # user clears the override
+
+        data = cred._prepare_save_data()
+        assert data["config"] == {"future_option": "keep-me"}
+
+    def test_mirrored_num_ctx_is_validated_as_int(self):
+        from open_notebook.domain.credential import Credential
+
+        # A value coming from the flexible config bag is routed through normal
+        # Pydantic field validation, not set raw.
+        cred = Credential(
+            name="Local Ollama", provider="ollama", config={"num_ctx": "8192"}
+        )
+        assert cred.num_ctx == 8192
+        assert isinstance(cred.num_ctx, int)
+
+        # A non-coercible value is rejected rather than silently flowing through.
+        with pytest.raises(ValidationError):
+            Credential(
+                name="Local Ollama", provider="ollama", config={"num_ctx": "not-an-int"}
+            )
 
 
 if __name__ == "__main__":

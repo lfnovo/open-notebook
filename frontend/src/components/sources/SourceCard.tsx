@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo } from 'react'
 import { SourceListResponse } from '@/lib/types/api'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -107,7 +107,7 @@ function getSourceType(source: SourceListResponse): 'link' | 'upload' | 'text' {
   return 'text'
 }
 
-export function SourceCard({
+function SourceCardImpl({
   source,
   onClick,
   onDelete,
@@ -128,10 +128,20 @@ export function SourceCard({
   // Track processing state to continue polling until we detect completion
   const [wasProcessing, setWasProcessing] = useState(false)
 
-  const shouldFetchStatus = !!sourceWithStatus.command_id ||
+  // Only poll status while the source is actually being processed (or just finished
+  // and we still need one more poll to catch completion). The list endpoint already
+  // populates `status` alongside `command_id`, so we no longer poll for every
+  // completed source — that scaled linearly with the number of cards and caused the
+  // list lag reported in #503.
+  //
+  // A source with a `command_id` but no resolved `status` yet is still ambiguous
+  // (it renders as a synthetic "new"), so keep polling those until a real status
+  // arrives — otherwise such a card would be stuck "processing" forever.
+  const shouldFetchStatus =
     sourceWithStatus.status === 'new' ||
     sourceWithStatus.status === 'queued' ||
     sourceWithStatus.status === 'running' ||
+    (!!sourceWithStatus.command_id && !sourceWithStatus.status) ||
     wasProcessing // Keep polling if we were processing to catch the completion
 
   const { data: statusData, isLoading: statusLoading } = useSourceStatus(
@@ -355,24 +365,28 @@ export function SourceCard({
           </DropdownMenu>
           </div>
         </div>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        {(isFailed as any) && (
+        {/* Prominent retry action surfaced directly on failed cards so it's
+            discoverable without opening the dropdown menu (#726). */}
+        {isFailed ? (
           <div className="flex gap-2 pt-2 border-t">
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              onClick={handleRetry}
+              onClick={(e) => {
+                e.stopPropagation()
+                handleRetry()
+              }}
               disabled={!onRetry}
               className="h-7 text-xs"
             >
               <RefreshCw className="h-3 w-3 mr-1" />
-              {t('sources.retry')}
+              {t('sources.retryProcessing')}
             </Button>
           </div>
-        )}
+        ) : null}
 
         {/* Processing progress indicator */}
-        {isProcessing && statusData?.processing_info?.progress && (
+        {isProcessing && typeof statusData?.processing_info?.progress === 'number' && (
           <div className="mt-3 pt-2 border-t">
             <div className="flex justify-between items-center mb-1">
             <span className="text-xs text-gray-600">{t('common.progress')}</span>
@@ -392,3 +406,45 @@ export function SourceCard({
     </Card>
   )
 }
+
+/**
+ * SourceCard is rendered in long lists (one per source). Without memoization, any
+ * parent re-render (layout toggles, context-selection changes elsewhere) re-rendered
+ * every card, causing UI jank that scaled with the number of sources (#503).
+ *
+ * We compare only the props that affect this card's rendered output. Handler identity
+ * is intentionally ignored: callers often pass inline closures, and those closures
+ * capture the source id, so a stale closure stays correct as long as the source data
+ * below is unchanged.
+ */
+function topicsEqual(a?: string[], b?: string[]): boolean {
+  if (a === b) return true
+  if ((a?.length ?? 0) !== (b?.length ?? 0)) return false
+  if (!a || !b) return true // both empty/undefined (lengths matched above)
+  return a.every((topic, i) => topic === b[i])
+}
+
+function areEqual(prev: SourceCardProps, next: SourceCardProps): boolean {
+  if (prev === next) return true
+
+  const p = prev.source as SourceListResponse & { command_id?: string; status?: string }
+  const n = next.source as SourceListResponse & { command_id?: string; status?: string }
+
+  return (
+    p.id === n.id &&
+    p.title === n.title &&
+    p.updated === n.updated &&
+    p.status === n.status &&
+    p.command_id === n.command_id &&
+    p.embedded === n.embedded &&
+    p.insights_count === n.insights_count &&
+    p.asset?.url === n.asset?.url &&
+    p.asset?.file_path === n.asset?.file_path &&
+    topicsEqual(p.topics, n.topics) &&
+    prev.contextMode === next.contextMode &&
+    prev.showRemoveFromNotebook === next.showRemoveFromNotebook &&
+    prev.className === next.className
+  )
+}
+
+export const SourceCard = memo(SourceCardImpl, areEqual)

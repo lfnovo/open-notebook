@@ -23,7 +23,7 @@ from open_notebook.ai.model_discovery import (
 )
 from open_notebook.ai.models import DefaultModels, Model
 from open_notebook.domain.credential import Credential
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 router = APIRouter()
 
@@ -254,14 +254,14 @@ async def delete_model(model_id: str):
     """Delete a model configuration."""
     try:
         model = await Model.get(model_id)
-        if not model:
-            raise HTTPException(status_code=404, detail="Model not found")
 
         await model.delete()
 
         return {"message": "Model deleted successfully"}
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Model not found")
     except Exception as e:
         logger.error(f"Error deleting model {model_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting model: {str(e)}")

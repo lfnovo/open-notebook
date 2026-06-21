@@ -1,0 +1,3 @@
+-- Migration 15 rollback: remove the flexible config field from credential
+
+REMOVE FIELD IF EXISTS config ON TABLE credential;

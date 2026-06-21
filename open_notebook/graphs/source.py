@@ -100,6 +100,19 @@ async def content_process(state: SourceState) -> dict:
 
     processed_state = await extract_content(content_state)
 
+    # content-core signals a soft extraction failure (e.g. an unreachable or
+    # invalid URL) by returning title="Error" and content prefixed with
+    # "Failed to extract content:" instead of raising. Detect that sentinel and
+    # raise so the job is marked failed and the source becomes retryable, rather
+    # than being saved as a "completed" source whose body is the error string.
+    if processed_state.title == "Error" and (processed_state.content or "").startswith(
+        "Failed to extract content:"
+    ):
+        raise ValueError(
+            "Could not extract content from this source. "
+            "The URL or file may be unreachable, invalid, or in an unsupported format."
+        )
+
     # For PDFs processed by the vision pipeline, also pull literal text via
     # pdfplumber (content-core's existing extractor) and use that as the
     # primary `content`. Vision sampling skips pages by design — fine for

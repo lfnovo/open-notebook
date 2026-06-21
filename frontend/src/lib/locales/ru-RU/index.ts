@@ -146,7 +146,7 @@ export const ruRU = {
     invalidSourceType: "Недопустимый тип источника",
     processingFailed: "Обработка не удалась",
     failedToQueue: "Не удалось поставить в очередь обработки",
-    invalidSortBy: "Поле сортировки должно быть type, title, created, updated, количество insights или embedded",
+    invalidSortBy: "Поле сортировки должно быть type, title, created, updated, insights_count или embedded",
     invalidSortOrder: "Порядок сортировки должен быть 'asc' или 'desc'",
     accessDenied: "Доступ к файлу запрещён",
     fileNotFoundOnServer: "Файл не найден на сервере",

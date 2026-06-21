@@ -146,7 +146,7 @@ export const ptBR = {
     invalidSourceType: "Tipo de fonte inválido",
     processingFailed: "Processamento falhou",
     failedToQueue: "Falha ao enfileirar processamento",
-    invalidSortBy: "Campo de ordenação deve ser type, title, created, updated, contagem de insights ou embedded",
+    invalidSortBy: "Campo de ordenação deve ser type, title, created, updated, insights_count ou embedded",
     invalidSortOrder: "Ordem deve ser 'asc' ou 'desc'",
     accessDenied: "Acesso ao arquivo negado",
     fileNotFoundOnServer: "Arquivo não encontrado no servidor",

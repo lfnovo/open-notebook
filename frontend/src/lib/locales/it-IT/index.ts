@@ -146,7 +146,7 @@ export const itIT = {
     invalidSourceType: "Tipo di fonte non valido",
     processingFailed: "Elaborazione fallita",
     failedToQueue: "Impossibile accodare l'elaborazione",
-    invalidSortBy: "Il campo di ordinamento deve essere type, title, created, updated, conteggio insight o embedded",
+    invalidSortBy: "Il campo di ordinamento deve essere type, title, created, updated, insights_count o embedded",
     invalidSortOrder: "L'ordine deve essere 'asc' o 'desc'",
     accessDenied: "Accesso al file negato",
     fileNotFoundOnServer: "File non trovato sul server",

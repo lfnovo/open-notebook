@@ -146,7 +146,7 @@ export const plPL = {
     invalidSourceType: "Nieprawidłowy typ źródła",
     processingFailed: "Przetwarzanie nie powiodło się",
     failedToQueue: "Nie udało się dodać do kolejki przetwarzania",
-    invalidSortBy: "Pole sortowania musi mieć wartość type, title, created, updated, liczba insights lub embedded",
+    invalidSortBy: "Pole sortowania musi mieć wartość type, title, created, updated, insights_count lub embedded",
     invalidSortOrder: "Kolejność sortowania musi mieć wartość „asc” lub „desc”",
     accessDenied: "Odmowa dostępu do pliku",
     fileNotFoundOnServer: "Nie znaleziono pliku na serwerze",

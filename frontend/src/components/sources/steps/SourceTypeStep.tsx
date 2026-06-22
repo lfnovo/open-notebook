@@ -95,7 +95,7 @@ interface SourceTypeStepProps {
   onClearUrlErrors?: () => void
 }
 
-const MAX_BATCH_SIZE = 50
+const MAX_BATCH_SIZE = 500
 
 export function SourceTypeStep({ control, register, setValue, errors, urlValidationErrors, onClearUrlErrors }: SourceTypeStepProps) {
   const { t } = useTranslation()

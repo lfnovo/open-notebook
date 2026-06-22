@@ -34,6 +34,7 @@ from api.routers import (
     sources,
     speaker_profiles,
     transformations,
+    web_agent,
 )
 from api.routers import commands as commands_router
 from open_notebook.database.async_migrate import AsyncMigrationManager
@@ -310,6 +311,7 @@ app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
+app.include_router(web_agent.router, prefix="/api/v1/web-agent", tags=["web-agent"])
 
 
 @app.get("/")

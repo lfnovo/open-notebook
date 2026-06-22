@@ -4,13 +4,21 @@ import { useState } from 'react'
 import { NotebookResponse } from '@/lib/types/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Archive, ArchiveRestore, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, Trash2, FileText, Loader2 } from 'lucide-react'
 import { useUpdateNotebook } from '@/lib/hooks/use-notebooks'
 import { NotebookDeleteDialog } from './NotebookDeleteDialog'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import ReactMarkdown from 'react-markdown'
 
 interface NotebookHeaderProps {
   notebook: NotebookResponse
@@ -21,6 +29,30 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
   const dfLocale = getDateLocale(language)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   
+  const [isCompiling, setIsCompiling] = useState(false)
+  const [studyGuide, setStudyGuide] = useState<string | null>(null)
+  const [showGuideModal, setShowGuideModal] = useState(false)
+
+  const handleCompileGuide = async () => {
+    setIsCompiling(true)
+    try {
+      const res = await fetch('/api/v1/web-agent/compile-guide', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notebook_id: notebook.id })
+      })
+      if (!res.ok) throw new Error('Compilation failed')
+      const data = await res.json()
+      setStudyGuide(data.markdown_content)
+      setShowGuideModal(true)
+    } catch (err) {
+      console.error('Failed to compile:', err)
+      alert('Failed to generate study guide. Check console for details.')
+    } finally {
+      setIsCompiling(false)
+    }
+  }
+
   const updateNotebook = useUpdateNotebook()
 
   const handleUpdateName = async (name: string) => {
@@ -86,6 +118,16 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
                 )}
               </Button>
               <Button
+                variant="default"
+                size="sm"
+                onClick={handleCompileGuide}
+                disabled={isCompiling}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isCompiling ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+                Generate Web-Enhanced Study Guide
+              </Button>
+              <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowDeleteDialog(true)}
@@ -115,6 +157,20 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
           </div>
         </div>
       </div>
+
+      <Dialog open={showGuideModal} onOpenChange={setShowGuideModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Web-Enhanced Study Guide</DialogTitle>
+            <DialogDescription>
+              Compiled using your notebook documents and live web search results.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="prose dark:prose-invert max-w-none mt-4">
+            <ReactMarkdown>{studyGuide || ''}</ReactMarkdown>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <NotebookDeleteDialog
         open={showDeleteDialog}

@@ -25,7 +25,7 @@ import { useSettings } from '@/lib/hooks/use-settings'
 import { CreateSourceRequest } from '@/lib/types/api'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
-const MAX_BATCH_SIZE = 50
+const MAX_BATCH_SIZE = 500
 
 const createSourceSchema = z.object({
   type: z.enum(['link', 'upload', 'text']),

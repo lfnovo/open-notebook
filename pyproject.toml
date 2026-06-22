@@ -41,6 +41,8 @@ dependencies = [
     "numpy>=2.4.1",
     "pycountry>=26.2.16",
     "babel>=2.18.0",
+    "langchain-nvidia-ai-endpoints>=1.4.1",
+    "duckduckgo-search>=8.1.1",
 ]
 
 [tool.setuptools]

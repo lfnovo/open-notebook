@@ -75,5 +75,12 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "ws": "8.21.0",
+    "brace-expansion": "1.1.15",
+    "ajv": "6.15.0",
+    "@eslint/plugin-kit": "0.7.2",
+    "postcss": "8.5.10"
   }
 }

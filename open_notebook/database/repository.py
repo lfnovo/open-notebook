@@ -9,6 +9,11 @@ from surrealdb import AsyncSurreal, RecordID  # type: ignore
 T = TypeVar("T", Dict[str, Any], List[Dict[str, Any]])
 
 
+def _get_env_or_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value if value else default
+
+
 def get_database_url() -> str:
     """Get database URL with backward compatibility"""
     surreal_url = os.getenv("SURREAL_URL")
@@ -28,12 +33,12 @@ def get_database_password() -> str:
 
 def get_database_namespace() -> str:
     """Get configured SurrealDB namespace."""
-    return os.getenv("SURREAL_NAMESPACE", "open_notebook")
+    return _get_env_or_default("SURREAL_NAMESPACE", "open_notebook")
 
 
 def get_database_name() -> str:
     """Get configured SurrealDB database name."""
-    return os.getenv("SURREAL_DATABASE", "open_notebook")
+    return _get_env_or_default("SURREAL_DATABASE", "open_notebook")
 
 
 def parse_record_ids(obj: Any) -> Any:

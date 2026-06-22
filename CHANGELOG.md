@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Documented the flow-driven release process in `.github/RELEASE_PROCESS.md`, including the `ready` to `main` to stable release path, dev/stable image labels, and maintainer verification checklist (#938)
 - List view for the Notebooks page — a tile/list toggle in the header lets you switch between the visual card grid and a compact row layout (name, description, source/note counts, last updated) for easier scanning of large collections. The choice is remembered across reloads and translated across all 14 locales (#885)
 - Documented the `ESPERANTO_TTS_TIMEOUT` environment variable (default `300`s) in the environment reference; raise it for slow or self-hosted TTS providers so long podcast segments don't fail with a timeout (#937)
 - `SECURITY.md` with a coordinated-disclosure policy: how to privately report a vulnerability via GitHub's private vulnerability reporting, supported versions, and response expectations (#943)

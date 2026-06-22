@@ -255,7 +255,172 @@ services:
 
 ---
 
-## 6. Git Workflow
+## 6. Development Pipeline
+
+### Complete Workflow: Issue → Development → PR
+
+```
+┌─────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Issue      │ ──▶ │  Development     │ ──▶ │   Commit    │ ──▶ │    Push      │
+│  Selection  │     │  with Hot-Reload │     │  & Tests    │     │  to Fork     │
+└─────────────┘     └──────────────────┘     └─────────────┘     └──────────────┘
+                                                                  │
+                                                                  ▼
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐     ┌──────────────┐
+│  Deploy     │ ◀── │   Merge      │ ◀── │   Review    │ ◀── │   PR         │
+│  to Docker  │     │  to main     │     │  & Feedback │     │  Creation    │
+│  Host       │     │              │     │             │     │              │
+└─────────────┘     └──────────────┘     └─────────────┘     └──────────────┘
+```
+
+### Step 1: Issue Selection
+
+**Options:**
+- Existing issue in GitHub Fork (`D-revv/open-notebook`)
+- New issue creation (required before coding)
+
+### Step 2: Feature Branch Creation
+
+```bash
+# Update main branch
+git checkout main
+git pull origin-fork main
+
+# Create feature branch (named after issue)
+git checkout -b fix/893-worker-max-tasks-env
+# or: git checkout -b feature/neues-feature
+```
+
+**Branch Naming Convention:**
+- `fix/<issue-number>-description` - Bug fixes
+- `feature/<issue-number>-description` - New features
+- `docs/<issue-number>-description` - Documentation
+
+### Step 3: Development with Hot-Reload
+
+**Start Services** (3 separate terminals):
+
+```powershell
+# Terminal 1 - SurrealDB
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && make database"
+
+# Terminal 2 - API Backend (Hot-Reload, Port 5055)
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && .venv/bin/python -m uvicorn api.main:app --host 0.0.0.0 --port 5055"
+
+# Terminal 3 - Frontend (Hot-Reload, Port 3000)
+wsl --exec bash -c "export NVM_DIR=/home/t11/.nvm && [ -s \$NVM_DIR/nvm.sh ] && . \$NVM_DIR/nvm.sh && nvm use 20 && cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook/frontend && npm run dev"
+```
+
+**Development Loop:**
+1. Edit code in IDE
+2. Changes auto-reload (API + Frontend)
+3. Test live in browser: http://localhost:3000
+4. API docs: http://localhost:5055/docs
+
+### Step 4: Testing & Linting
+
+**Before Commit:**
+```bash
+# Check status
+git status
+git diff
+
+# Run linter
+wsl --exec bash -c "uv run ruff check ."
+
+# Run tests
+wsl --exec bash -c "uv run pytest tests/"
+```
+
+### Step 5: Commit
+
+**Commit Message Format:**
+```bash
+git add .
+git commit -m "[type] Short description (Issue #XYZ)"
+
+# Types: feat, fix, docs, style, refactor, test, chore
+```
+
+**Examples:**
+- `[feat] Add worker concurrency control (Issue #893)`
+- `[fix] Resolve TTS audio playback bug (Issue #776)`
+- `[docs] Update API documentation`
+
+### Step 6: Push to Fork
+
+```bash
+git push origin-fork fix/893-worker-max-tasks-env
+```
+
+### Step 7: Create Pull Request
+
+**Via GitHub Web UI:**
+1. Go to: `https://github.com/D-revv/open-notebook`
+2. Click "Compare & pull request"
+3. PR Configuration:
+   - **Base repository**: `lfnovo/open-notebook`
+   - **Base branch**: `main`
+   - **Head repository**: `D-revv/open-notebook`
+   - **Head branch**: `fix/893-worker-max-tasks-env`
+
+**PR Description Template:**
+```markdown
+## Description
+Brief description of changes
+
+## Related Issue
+Closes #893 (if applicable)
+
+## Changes
+- [x] Feature implemented
+- [x] Tests added
+- [x] Documentation updated
+
+## Testing
+- [x] Local tests passed
+- [ ] Code review required
+```
+
+### Step 8: Synchronization (if needed)
+
+**Update from Upstream:**
+```bash
+# Fetch upstream
+git fetch upstream
+
+# Merge upstream main into your branch
+git checkout fix/893-worker-max-tasks-env
+git merge upstream/main
+
+# Resolve conflicts if any
+# Then push
+git push origin-fork fix/893-worker-max-tasks-env
+```
+
+### Step 9: After Merge
+
+**Clean up branches:**
+```bash
+# Delete local branch
+git checkout main
+git branch -d fix/893-worker-max-tasks-env
+
+# Delete remote branch
+git push origin-fork --delete fix/893-worker-max-tasks-env
+```
+
+**Deploy to Docker Host** (optional):
+```powershell
+# On Docker Host (.142)
+ssh opencode@192.168.178.142
+docker compose pull
+docker compose up -d
+```
+
+---
+
+## 7. Git Workflow
 
 ### Branch Strategy
 - `main` - Production-ready code
@@ -279,7 +444,33 @@ services:
 
 ---
 
-## 7. Test Status
+## 8. Test Status
+
+### ⚠️ Test Requirement (CRITICAL)
+
+**Alle Änderungen MÜSSEN durch automatisierte Tests bestätigt werden:**
+
+- ✅ **Neue Features**: Unit tests + Integration tests
+- ✅ **Bugfixes**: Regression tests + Unit tests
+- ✅ **API Änderungen**: Integration tests für Endpoints
+- ✅ **Datenbankänderungen**: Migration tests + Query tests
+- ✅ **Frontend Änderungen**: Component tests + E2E tests (wenn anwendbar)
+
+**Vor jedem Commit:**
+```bash
+# Alle Tests laufen lassen
+wsl --exec bash -c "uv run pytest tests/ -v"
+
+# Linting prüfen
+wsl --exec bash -c "uv run ruff check ."
+wsl --exec bash -c "uv run mypy ."
+```
+
+**PR-Voraussetzung:**
+- ✅ Alle Tests müssen grün sein (0 failures)
+- ✅ Neue Code Coverage ≥ 80% für neue Funktionen
+- ✅ Keine Linting-Warnings
+- ✅ Tests dokumentieren erwartetes Verhalten
 
 ### Latest Verification (2026-06-20)
 

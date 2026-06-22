@@ -535,13 +535,14 @@ async def execute_chat_stream(request: ExecuteChatRequest):
     """Execute a chat request and stream the AI response as Server-Sent Events."""
     return StreamingResponse(
         _stream_execute_chat(request),
-        media_type="text/plain",
+        media_type="text/event-stream",
         headers={
-            # Prevent intermediate proxies from compressing or buffering the
-            # stream; required for per-token delivery through Next.js rewrite
-            # proxy which otherwise applies gzip (buffered) when the client
-            # sends Accept-Encoding: gzip.
-            "Cache-Control": "no-cache, no-transform",
+            # SSE is delivered through a dedicated Next.js route handler
+            # (frontend/src/app/api/chat/execute/stream/route.ts) rather than
+            # the rewrites() proxy, which buffers gzipped streams to
+            # completion. These headers also stop intermediate proxies from
+            # compressing or buffering, preserving per-token delivery.
+            "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",
         },
     )

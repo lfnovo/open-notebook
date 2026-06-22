@@ -80,7 +80,9 @@ export const chatApi = {
       }
     }
 
-    // Use relative URL to leverage Next.js rewrites
+    // Relative URL handled by the dedicated SSE route handler
+    // (app/api/chat/execute/stream/route.ts), which proxies to the backend
+    // without the rewrites() gzip buffering that breaks streaming.
     const url = '/api/chat/execute/stream'
 
     const response = await fetch(url, {

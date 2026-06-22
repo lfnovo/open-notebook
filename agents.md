@@ -18,32 +18,61 @@
 - 🌐 Multi-language UI
 
 ### Lokale Entwicklungsumgebung (Dieses System)
-- **Working Directory**: `/mnt/c/Users/T11/SynologyDrive/LLM/open-notebook`
+- **Working Directory**: `/mnt/c/Users/T11/SynologyDrive/LLM/open-notebook` (WSL2)
+- **Host System**: Windows 11 mit WSL2 (Ubuntu)
 - **Git Repo**: `lfnovo/open-notebook` (main branch)
 - **Hot-Reload**: ✅ Next.js Frontend (Port 3000), FastAPI Backend (Port 5055)
 - **Database**: SurrealDB in Docker (Port 8000)
-- **Entwicklungsmode**: `make start-all` für schnelle Iteration
+- **Entwicklungsmode**: Manuelle Startskripte für Hot-Reload
 
-**Hot-Reload Commands**:
+**WSL2 Setup** (2026-06-22 eingerichtet):
+- **Python**: 3.12.3 (system) + `uv` package manager
+- **Node.js**: v20.20.2 (via nvm)
+- **Docker**: Desktop mit WSL2 Integration
+- **Konfiguration**: `.wslconfig` optimiert (2 CPUs, 4GB RAM, mirrored networking)
+
+**Hot-Reload Start** (manuell, da `make start-all` docker-compose.dev.yml fehlt):
 ```bash
-# Alles starten (DB + API + Worker + Frontend)
-make start-all
+# Terminal 1 - SurrealDB (Docker)
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && make database"
 
-# Einzelne Services
-make database    # SurrealDB nur
-make api         # FastAPI Backend nur
-make frontend    # Next.js Frontend nur (Port 3000)
-make worker      # Background Worker nur
+# Terminal 2 - API Backend (Hot-Reload)
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && .venv/bin/python -m uvicorn api.main:app --host 0.0.0.0 --port 5055"
 
-# Status prüfen
-make status
-make stop-all
+# Terminal 3 - Frontend (Hot-Reload)
+wsl --exec bash -c "export NVM_DIR=/home/t11/.nvm && [ -s \$NVM_DIR/nvm.sh ] && . \$NVM_DIR/nvm.sh && nvm use 20 && cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook/frontend && npm run dev"
+```
+
+**Alternative**: Startskripte verwenden:
+```bash
+# API starten
+wsl --exec bash -c "/tmp/start_api.sh"
+
+# Frontend starten  
+wsl --exec bash -c "/tmp/start_frontend.sh"
+```
+
+**Status prüfen**:
+```bash
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && docker ps --filter 'name=open-notebook'"
+wsl --exec bash -c "ps aux | grep -E 'uvicorn|next|node' | grep -v grep"
+```
+
+**Stoppen**:
+```bash
+wsl --exec bash -c "cd /mnt/c/Users/T11/SynologyDrive/LLM/open-notebook && make stop-all"
+# Oder alle WSL Prozesse beenden
+wsl --shutdown
 ```
 
 **Ports**:
 - Frontend: http://localhost:3000 (Next.js Dev Server)
 - API: http://localhost:5055 (FastAPI, /docs verfügbar)
 - Database: http://localhost:8000 (SurrealDB)
+
+**Startskripte** (in `/tmp/` unter WSL):
+- `/tmp/start_api.sh` - Startet API Backend mit Hot-Reload
+- `/tmp/start_frontend.sh` - Startet Frontend mit Hot-Reload
 
 ### Produktives Setup (Docker Host .142)
 - **Host**: Docker Host mit IP .142

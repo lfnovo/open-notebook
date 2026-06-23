@@ -7,8 +7,8 @@ from surreal_commands import CommandInput, CommandOutput, command, submit_comman
 
 from open_notebook.ai.models import model_manager
 from open_notebook.database.repository import ensure_record_id, repo_insert, repo_query
-from open_notebook.exceptions import ConfigurationError
 from open_notebook.domain.notebook import Note, Source, SourceInsight
+from open_notebook.exceptions import ConfigurationError
 from open_notebook.utils.chunking import ContentType, chunk_text, detect_content_type
 from open_notebook.utils.embedding import generate_embedding, generate_embeddings
 

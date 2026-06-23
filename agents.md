@@ -687,8 +687,19 @@ curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-no
 
 **Berechtigungen**:
 - `repo` - Vollzugriff auf private Repositories
-- `read:org` - Lesen von Organisationsdaten
+- `workflow` - **ERFORDERLICH** für `.github/workflows/*.yml` Änderungen
+- `read:org` - Lesen von Organisationsdaten (optional)
 
+**Wichtig**: Der `workflow` Scope ist **Pflicht**, wenn du GitHub Actions Workflows ändern willst (z.B. `.github/workflows/test.yml`). Ohne diesen Scope blockiert GitHub den Push mit der Fehlermeldung:
+
+```
+refusing to allow a Personal Access Token to create or update workflow without `workflow` scope
+```
+
+**Empfohlene Scopes für Issue-Arbeit**:
+- ✅ `repo` (vollständig) - Code, Issues, PRs
+- ✅ `workflow` - Workflow-Dateien ändern
+- ✅ `read:org` - Nur wenn in GitHub Organisation
 **Aktuelle Offene Issues** (über API abgerufen):
 - **#945** - Mypy Type-Checking (ready)
 - **#942** - Test Coverage (ready)
@@ -757,8 +768,15 @@ curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-no
 #### Minimale benötigte Berechtigungen
 Für Issue/PR-Tracking via API:
 - ✅ `repo` (Vollzugriff auf private Repos)
+- ✅ `workflow` - **ERFORDERLICH** für `.github/workflows/*.yml` Änderungen
 - ✅ `read:org` (Organisationsdaten, falls in Org)
-- ❌ **NICHT benötigt**: `admin:*`, `workflow`, `delete_repo`, `user`
+- ❌ **NICHT benötigt**: `admin:*`, `delete_repo`, `user`
+
+**Wichtig**: Der `workflow` Scope ist **Pflicht**, wenn du GitHub Actions Workflows ändern willst (z.B. `.github/workflows/test.yml`). Ohne diesen Scope blockiert GitHub den Push mit der Fehlermeldung:
+
+```
+refusing to allow a Personal Access Token to create or update workflow without `workflow` scope
+```
 
 **Merksatz**: Ein Token gehört in `.gitignore`, nicht in Git!
 ---

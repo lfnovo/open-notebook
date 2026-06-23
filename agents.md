@@ -671,8 +671,365 @@ All contributions MUST include:
 2. Identify new feature opportunities
 3. Expand test coverage
 
+## 16. GitHub Integration
+
+### Personal Access Token (PAT)
+
+**GitHub PAT** wird für die API-Integration verwendet, um Issues, PRs und Repository-Informationen direkt abzurufen.
+
+**Token-Speicher**: `.github_pat` (im Repository, nicht in Git)
+
+**Verwendung**:
+```powershell
+$PAT = Get-Content .github_pat
+curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-notebook/issues?state=open"
+```
+
+**Berechtigungen**:
+- `repo` - Vollzugriff auf private Repositories
+- `read:org` - Lesen von Organisationsdaten
+
+**Aktuelle Offene Issues** (über API abgerufen):
+- **#945** - Mypy Type-Checking (ready)
+- **#942** - Test Coverage (ready)
+- **#940** - CI Lint + Type-Check (ready)
+- **#941** - Branch Protection (ready)
+- **#938** - Release Tooling (ready)
+
+**Aktuelle Offene PRs**:
+- **#961** - refactor(types): type-check domain base model
+- **#960** - docs: document flow-driven release process
+
+### Workflow mit GitHub API
+
+**Issues abrufen**:
+```powershell
+$PAT = Get-Content .github_pat
+curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-notebook/issues?state=open&per_page=20" | ConvertFrom-Json
+```
+
+**PRs abrufen**:
+```powershell
+curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-notebook/pulls?state=open" | ConvertFrom-Json
+```
+
+**Commit status prüfen**:
+```powershell
+curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-notebook/commits/main/status" | ConvertFrom-Json
+```
+
 ---
 
-**Letzte Aktualisierung**: 2026-06-20  
-**Nächster Review**: After PR #933 merge  
-**Verantwortlich**: Development Team
+## 17. Planungs-Pipeline (.sisyphus)
+
+### Überblick
+
+**Zweck**: Jeder Plan im Ordner `.sisyphus/plans/` MUSS die vollständige Pipeline dokumentieren, bevor die Implementierung beginnt.
+
+**Kern-Prinzip**: **Plan First, Implement Later** - Prometheus (Planer) schreibt Pläne, Sisyphus (Implementer) führt aus.
+
+**Mandatory Rule**: Kein Plan darf Implementierungsschritte enthalten, ohne die Pipeline-Schritte vorher zu dokumentieren.
+
+---
+
+### Mandatory Plan Sections
+
+Jeder Plan in `.sisyphus/plans/` MUSS folgende 6 Sections enthalten:
+
+```markdown
+# Plan: [Title]
+
+## TL;DR
+> Quick Summary
+> Deliverables (bullet list)
+> Estimated Effort
+> Parallel Execution: YES/NO
+> Critical Path: [description]
+
+## Context
+### Original Request
+### Interview Summary
+### Research Findings
+
+## Work Objectives
+### Core Objective
+### Concrete Deliverables
+### Definition of Done
+### Must Have
+### Must NOT Have (Guardrails)
+
+## Verification Strategy (MANDATORY)
+> ZERO HUMAN INTERVENTION - ALL verification is agent-executed
+### Test Decision
+### QA Policy
+
+## Execution Strategy
+### Parallel Execution Waves
+```
+Wave 1 (Discovery):
+├── Task 1A: [explore] description [category]
+└── Task 1B: [librarian] description [category]
+
+Wave 2 (Implementation):
+├── Task 2A: [deep] description [category]
+├── Task 2B: [deep] description [category]
+└── Task 2C: [deep] description [category]
+
+Wave FINAL (Verification):
+└── Task FINAL: [oracle] Final Review [category]
+```
+
+**Critical Path**: [description]
+**Parallel Speedup**: [estimated]
+**Max Concurrent**: [number]
+
+## TODOs
+
+- [ ] 1. [Task title]
+
+  **What to do**:
+  - [Specific action 1]
+  - [Specific action 2]
+
+  **Must NOT do**:
+  - [Forbidden action 1]
+
+  **Recommended Agent Profile**:
+  > Select category + skills based on task domain. Justify each choice.
+  - **Category**: `[category]`
+    - Reason: [justification]
+  - **Skills**: `["skill-1", "skill-2"]`
+    - Why each skill: [justification]
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES/NO
+  - **Parallel Group**: [group name]
+  - **Blocks**: [list]
+  - **Blocked By**: [list]
+
+  **References**:
+  - `path/to/file:line-range` - [why this matters]
+
+  **WHY Each Reference Matters**:
+  - [explanation]
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: [description]
+    Tool: [tool name]
+    Preconditions: [state]
+    Steps:
+      1. [step]
+    Expected Result: [outcome]
+    Failure Indicators: [what fails]
+    Evidence: .sisyphus/evidence/[filename]
+  ```
+
+  **Evidence to Capture**:
+  - [ ] [evidence item 1]
+
+  **Commit**: YES/NO
+  - Message: `[type]: [description]`
+  - Files: `file1`, `file2`
+  - Pre-commit: [checks]
+
+---
+
+## Commit Strategy
+
+- `1`: `[type]: [description]` - [files]
+
+---
+
+## Success Criteria
+
+### Verification Commands
+```bash
+# [verification command]
+```
+
+### Final Checklist
+- [ ] [criteria 1]
+- [ ] [criteria 2]
+
+---
+
+**Plan Created**: [date]  
+**Related Issue**: [issue number]  
+**Status**: Ready for Implementation
+```
+
+---
+
+### Pipeline Workflow
+
+#### Phase 1: Pre-Generation (MANDATORY)
+
+**Step 1: Metis Consultation**
+
+BEFORE writing any plan, Metis MUST be consulted for:
+
+- Identifying hidden intentions in user requests
+- Detecting ambiguities that require clarification
+- Finding AI failure points and edge cases
+- Determining if user clarification is needed
+
+**When to skip Metis**:
+- Trivial single-file changes (typo fixes, simple edits)
+- Direct user instructions with no ambiguity
+
+**Example**:
+```
+task(subagent_type="metis", run_in_background=false, prompt="User wants to implement test coverage. Analyze for hidden complexities, ambiguities, and AI failure points. Should we ask clarifying questions first?")
+```
+
+#### Phase 2: Plan Generation
+
+**Step 2: Plan with Self-Clearance Check**
+
+When writing the plan, include:
+
+1. **Explicit clearance check**:
+   ```
+   ### Pre-Implementation Gate
+   - [ ] Metis consultation completed (if complex)
+   - [ ] All ambiguities resolved
+   - [ ] User clarification obtained (if needed)
+   - [ ] Oracle consulted (if architecture decision)
+   ```
+
+2. **Mandatory TODO structure**:
+   - Atomic tasks (1-3 tool calls each)
+   - Clear acceptance criteria
+   - Evidence requirements
+   - Parallelization strategy
+
+#### Phase 3: Post-Generation (MANDATORY)
+
+**Step 3: Self-Review**
+
+BEFORE marking plan as 'Ready', self-review:
+
+- [ ] All 6 mandatory sections present?
+- [ ] TODOs are atomic and specific?
+- [ ] Verification Strategy defined?
+- [ ] Parallel execution waves clear?
+- [ ] Evidence requirements specified?
+
+**Step 4: High Accuracy Mode (Optional)**
+
+For complex implementations, trigger Momus review:
+
+```
+task(subagent_type="momus", run_in_background=false, prompt="Review plan at .sisyphus/plans/[plan-name].md for clarity, verifiability, and completeness. Identify gaps, ambiguities, and missing context.")
+```
+
+**Momus Feedback Loop**:
+1. Momus identifies issues
+2. Revise plan based on feedback
+3. Re-run Momus (max 3 iterations)
+4. If issues persist → consult Oracle
+
+#### Phase 4: Execution
+
+**Step 5: Parallel Execution Waves**
+
+Follow the execution strategy in the plan:
+
+```
+Wave 1: Discovery (parallel explore/librarian)
+Wave 2: Implementation (parallel deep agents)
+Wave FINAL: Verification (oracle review)
+```
+
+**Critical Rules**:
+- Never wait for sequential completion
+- End response after launching parallel agents
+- Wait for `<system-reminder>` before collecting results
+- Use `task(task_id="ses_...")` for continuation
+
+#### Phase 5: Final Verification (MANDATORY)
+
+**Step 6: Oracle Final Review**
+
+BEFORE declaring task complete, run final verification:
+
+```
+task(subagent_type="oracle", run_in_background=false, prompt="Final verification for [task]. Check: 1) All acceptance criteria met, 2) Evidence captured, 3) No regressions, 4) Code quality standards followed. Return PASS/FAIL with detailed report.")
+```
+
+**Verification Checklist**:
+- [ ] All TODOs marked completed
+- [ ] Evidence files captured in `.sisyphus/evidence/`
+- [ ] LSP diagnostics clean on changed files
+- [ ] Tests passing (if applicable)
+- [ ] No pre-existing issues introduced
+- [ ] Commit created (if required)
+
+---
+
+### Draft Management
+
+**Draft Location**: `.sisyphus/drafts/`
+
+**Draft Lifecycle**:
+1. Create draft: `.sisyphus/drafts/[issue-number]-[description].md`
+2. Iterate with user feedback
+3. Once approved → move to `.sisyphus/plans/`
+4. Mark draft as `ARCHIVED` or delete
+
+**Draft vs Plan**:
+| Aspect | Draft | Plan |
+|--------|-------|------|
+| Location | `.sisyphus/drafts/` | `.sisyphus/plans/` |
+| Status | Working document | Ready for execution |
+| Pipeline | Optional sections | ALL mandatory sections |
+| Changes | Frequent iterations | Fixed (new version if major changes) |
+
+---
+
+### Plan Completion Checklist
+
+BEFORE marking any plan as 'Complete':
+
+```
+## Final Verification
+
+- [ ] All TODOs marked `completed`
+- [ ] Evidence captured:
+    - [ ] `.sisyphus/evidence/[task-id]-[description].txt`
+    - [ ] Screenshots/logs as needed
+- [ ] Code quality:
+    - [ ] `lsp_diagnostics` clean on changed files
+    - [ ] `ruff check .` (Python)
+    - [ ] `eslint` (Frontend)
+- [ ] Tests:
+    - [ ] `pytest tests/` passing
+    - [ ] New tests for new functionality
+- [ ] Documentation:
+    - [ ] Code comments where needed
+    - [ ] AGENTS.md updated (if behavior changed)
+- [ ] Git:
+    - [ ] Changes committed (if required)
+    - [ ] Commit message follows convention
+    - [ ] Pushed to fork
+
+## Oracle Final Sign-off
+
+Consult Oracle for final verification:
+
+```
+task(subagent_type="oracle", prompt="Final verification: [task description]. Return PASS/FAIL with evidence.")
+```
+
+- [ ] Oracle verification PASSED
+```
+
+---
+
+**Letzte Aktualisierung**: 2026-06-23  
+**Verantwortlich**: Prometheus (Planer) → Sisyphus (Implementer)  
+**Status**: Mandatory für alle .sisyphus/plans/ Pläne

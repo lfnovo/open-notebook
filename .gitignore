@@ -141,4 +141,4 @@ specs/
 **/*.local.md
 .harness/
 
-.mcp.json
+.mcp.json.github_pat

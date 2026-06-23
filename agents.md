@@ -732,6 +732,37 @@ curl -H "Authorization: token $PAT" "https://api.github.com/repos/lfnovo/open-no
 
 ---
 
+### ⚠️ CRITICAL: GitHub Token Security
+
+**NIEMALS einen GitHub PAT in Git committen!**
+
+#### Warum?
+- GitHub Secret Scanning erkennt Tokens und blockiert Pushes
+- Selbst widerrufene Tokens bleiben in der Git-Historie
+- Force Push und Historien-Bereinigung sind aufwendig und fehleranfällig
+
+#### Richtige Handhabung
+1. **Datei**: `.github_pat` im Repository (NIEMALS in Git)
+2. **.gitignore**: `.github_pat` MUSS in `.gitignore` stehen
+3. **Lokal speichern**: Token nur lokal oder in Umgebungsvariablen
+4. **Verwendung**: `$(cat .github_pat)` oder `$GITHUB_TOKEN`
+
+#### Wenn Token versehentlich committed wurde
+1. **SOFORT widerrufen** (GitHub Settings → Developer settings → Personal access tokens)
+2. **Neuen Token erstellen** mit minimalen Berechtigungen
+3. **GitHub Unblock**: Secret Scanning Unblock-Link verwenden
+4. **Historie bereinigen**: `git filter-branch` oder `BFG Repo-Cleaner`
+5. **Force push**: `git push --force` (nach Bereinigung)
+
+#### Minimale benötigte Berechtigungen
+Für Issue/PR-Tracking via API:
+- ✅ `repo` (Vollzugriff auf private Repos)
+- ✅ `read:org` (Organisationsdaten, falls in Org)
+- ❌ **NICHT benötigt**: `admin:*`, `workflow`, `delete_repo`, `user`
+
+**Merksatz**: Ein Token gehört in `.gitignore`, nicht in Git!
+---
+
 ### Mandatory Plan Sections
 
 Jeder Plan in `.sisyphus/plans/` MUSS folgende 6 Sections enthalten:

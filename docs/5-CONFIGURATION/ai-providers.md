@@ -319,6 +319,33 @@ Heavy use: Depends on models chosen
 
 ---
 
+### Atlas Cloud
+
+**Cost:** Pay-as-you-go (varies by model)
+
+**Get Your API Key:**
+1. Go to [Atlas Cloud](https://www.atlascloud.ai/)
+2. Create an account and open the console
+3. Create an API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **OpenAI-Compatible**
+4. Give it a name (e.g., "Atlas Cloud"), set the base URL to `https://api.atlascloud.ai/v1`, and paste your API key
+5. Click **Save**, then **Test Connection**
+6. Add a model id (e.g. `deepseek-ai/deepseek-v4-pro`)
+
+**Available Models:**
+
+Atlas Cloud provides 300+ models (DeepSeek, Qwen, GLM, Kimi, MiniMax, and more) via a single OpenAI-compatible endpoint. A solid default is `deepseek-ai/deepseek-v4-pro`. For the full model catalog see [atlascloud.ai/console](https://www.atlascloud.ai/console).
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the Atlas console
+- "Model not available" → Use the exact Atlas model id (e.g. `deepseek-ai/deepseek-v4-pro`)
+
+---
+
 ## Self-Hosted / Local
 
 ### Ollama (Recommended for Local)

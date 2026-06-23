@@ -10,6 +10,11 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     alias: {
       '@': path.resolve(__dirname, './src')
+    },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html']
+      // Note: reportsDirectory is NOT specified - vitest 4.x uses default location
     }
   }
 })

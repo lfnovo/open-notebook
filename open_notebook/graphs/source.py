@@ -141,7 +141,6 @@ def trigger_transformations(state: SourceState, config: RunnableConfig) -> List[
                 "source": state["source"],
                 "transformation": t,
                 "input_text": state["source"].full_text if state["source"] else "",
-                "input_text": state["source"].full_text if state["source"] else "",
             },
         )
         for t in to_apply

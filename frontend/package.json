@@ -9,7 +9,8 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
@@ -67,6 +68,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.8",
     "@vitest/ui": "^4.1.8",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",

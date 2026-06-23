@@ -35,14 +35,6 @@
 </div>
 
 <p align="center">
-  <a href="https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=open-notebook">
-    <img src="docs/assets/atlas-cloud-logo.png" alt="Atlas Cloud" width="200">
-  </a>
-</p>
-
-> 🎁 **[Atlas Cloud](https://www.atlascloud.ai/?utm_source=github&utm_medium=link&utm_campaign=open-notebook)** is a full-modal, OpenAI-compatible AI inference platform (DeepSeek, Qwen, GLM, Kimi, MiniMax, …). Use it in Open Notebook via the **OpenAI-Compatible** provider with base URL `https://api.atlascloud.ai/v1` — see [AI Providers → Atlas Cloud](docs/5-CONFIGURATION/ai-providers.md#atlas-cloud).
-
-<p align="center">
 <a href="https://trendshift.io/repositories/14536" target="_blank"><img src="https://trendshift.io/api/badge/repositories/14536" alt="lfnovo%2Fopen-notebook | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 

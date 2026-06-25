@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single-container image no longer hangs at "API not ready yet" on a brand-new instance. `supervisord.single.conf` ran the API and worker with `uv run` (without `--no-sync`), so at startup `uv` tried to sync dev dependencies it couldn't resolve against the `--no-dev` build. Both processes now use `uv run --no-sync`, matching the multi-container `supervisord.conf` (#609)
 - Note editor now expands to fill the dialog instead of being capped at `500px`; removed the `max-h-[500px]` constraint that overrode the `flex-1` parent and cramped editing on tall windows (#932)
 
+### Security
+- Resolved dependency audit findings: added npm `overrides` for vulnerable transitive frontend packages (`ws`, `brace-expansion`, `ajv`, `@eslint/plugin-kit`, `postcss`) — `npm audit` now reports 0 vulnerabilities — refreshed `uv.lock` (`langsmith`, `pydantic-settings`, `pip`), and hardened external `window.open(..., '_blank')` calls with `noopener,noreferrer` (#962)
+
 ## [1.10.0] - 2026-06-17
 
 ### Security

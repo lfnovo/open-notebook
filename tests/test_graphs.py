@@ -15,7 +15,10 @@ from open_notebook.graphs.prompt import PatternChainState, graph
 from open_notebook.graphs.tools import get_current_timestamp
 from open_notebook.graphs.transformation import (
     TransformationState,
-    run_transformation,
+    _batch_results_by_tokens,
+    fan_out_chunks,
+    synthesize_results,
+    try_full_content,
 )
 from open_notebook.graphs.transformation import (
     graph as transformation_graph,
@@ -127,8 +130,8 @@ class TestTransformationGraph:
         assert state["output"] == ""
 
     @pytest.mark.asyncio
-    async def test_run_transformation_assertion_no_content(self):
-        """Test transformation raises assertion with no content."""
+    async def test_try_full_content_assertion_no_content(self):
+        """try_full_content raises an assertion when there's no content."""
         from unittest.mock import MagicMock
 
         from open_notebook.domain.transformation import Transformation
@@ -144,13 +147,79 @@ class TestTransformationGraph:
         config = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
-            await run_transformation(state, config)
+            await try_full_content(state, config)
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
         assert transformation_graph is not None
         assert hasattr(transformation_graph, "invoke")
         assert hasattr(transformation_graph, "ainvoke")
+
+    def test_fan_out_chunks_routes_to_synthesize_without_chunking(self):
+        """fan_out_chunks goes straight to synthesize when no chunking needed."""
+        assert fan_out_chunks({"needs_chunking": False}) == "synthesize"
+        assert fan_out_chunks({"needs_chunking": True, "chunks": []}) == "synthesize"
+
+
+class TestTransformationChunkingReduce:
+    """Tests for the large-document chunking + hierarchical synthesis reduce."""
+
+    def test_batch_results_by_tokens_respects_budget(self):
+        from open_notebook.graphs.transformation import token_count
+
+        results = ["word " * 100 for _ in range(10)]  # ~100 tokens each
+        budget = 250
+        batches = _batch_results_by_tokens(results, budget)
+
+        assert sum(len(b) for b in batches) == 10  # nothing dropped
+        for b in batches:
+            assert len(b) == 1 or sum(token_count(r) for r in b) <= budget
+
+    @pytest.mark.asyncio
+    async def test_synthesize_batches_instead_of_overflowing(self):
+        """Many/large chunk results must be reduced in context-sized batches,
+        not concatenated into one oversized synthesis call."""
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import token_count
+
+        chunk_results = [{"idx": i, "result": "word " * 1000} for i in range(12)]
+        state = {
+            "output": None,
+            "needs_chunking": True,
+            "chunk_results": chunk_results,
+            "title": "Dense Summary",
+            "system_prompt": "Summarize the document.",
+            "output_buffer": 1000,
+            "context_limit": 8000,
+            "model_id": None,
+            "source": None,
+            "transformation": MagicMock(title="Dense Summary"),
+        }
+
+        seen_call_tokens: list[int] = []
+
+        async def fake_ainvoke(payload):
+            seen_call_tokens.append(token_count(payload[-1].content))
+            resp = MagicMock()
+            resp.content = "merged"  # small result so the reduction converges
+            return resp
+
+        fake_chain = MagicMock()
+        fake_chain.ainvoke = fake_ainvoke
+
+        budget = int(8000 * 0.90)  # generous upper bound for any single call
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new=AsyncMock(return_value=fake_chain),
+        ):
+            result = await synthesize_results(state, {"configurable": {}})
+
+        assert result["output"] == "merged"
+        assert len(seen_call_tokens) > 1, "should batch into multiple calls"
+        assert all(
+            n <= budget for n in seen_call_tokens
+        ), f"a synthesis call exceeded budget: {seen_call_tokens}"
 
 
 # ============================================================================

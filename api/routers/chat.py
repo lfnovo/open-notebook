@@ -378,8 +378,12 @@ async def execute_chat(request: ExecuteChatRequest):
         user_message = HumanMessage(content=request.message)
         state_values["messages"].append(user_message)
 
-        # Execute chat graph
-        result = chat_graph.invoke(
+        # Execute chat graph in a thread so the synchronous LangGraph invoke
+        # (SqliteSaver checkpoints are sync) doesn't block the event loop and
+        # freeze the rest of the API while the LLM responds. Mirrors the
+        # get_state() calls above.
+        result = await asyncio.to_thread(
+            chat_graph.invoke,
             input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={

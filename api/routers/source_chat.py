@@ -440,8 +440,12 @@ async def stream_source_chat_response(
         user_event = {"type": "user_message", "content": message, "timestamp": None}
         yield f"data: {json.dumps(user_event)}\n\n"
 
-        # Execute source chat graph synchronously (like notebook chat does)
-        result = source_chat_graph.invoke(
+        # Run the synchronous LangGraph invoke in a thread so it doesn't block the
+        # event loop. While blocked, even the already-yielded SSE events can't
+        # flush and every other request stalls until the LLM finishes. Mirrors the
+        # get_state() calls above.
+        result = await asyncio.to_thread(
+            source_chat_graph.invoke,
             input=state_values,  # type: ignore[arg-type]
             config=RunnableConfig(
                 configurable={"thread_id": session_id, "model_id": model_override}

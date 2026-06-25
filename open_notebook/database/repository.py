@@ -9,7 +9,12 @@ from surrealdb import AsyncSurreal, RecordID  # type: ignore
 T = TypeVar("T", Dict[str, Any], List[Dict[str, Any]])
 
 
-def get_database_url():
+def _get_env_or_default(name: str, default: str) -> str:
+    value = os.getenv(name)
+    return value if value else default
+
+
+def get_database_url() -> str:
     """Get database URL with backward compatibility"""
     surreal_url = os.getenv("SURREAL_URL")
     if surreal_url:
@@ -21,9 +26,19 @@ def get_database_url():
     return f"ws://{address}/rpc:{port}"
 
 
-def get_database_password():
+def get_database_password() -> str:
     """Get password with backward compatibility"""
-    return os.getenv("SURREAL_PASSWORD") or os.getenv("SURREAL_PASS")
+    return os.getenv("SURREAL_PASSWORD") or os.getenv("SURREAL_PASS") or "root"
+
+
+def get_database_namespace() -> str:
+    """Get configured SurrealDB namespace."""
+    return _get_env_or_default("SURREAL_NAMESPACE", "open_notebook")
+
+
+def get_database_name() -> str:
+    """Get configured SurrealDB database name."""
+    return _get_env_or_default("SURREAL_DATABASE", "open_notebook")
 
 
 def parse_record_ids(obj: Any) -> Any:
@@ -53,9 +68,7 @@ async def db_connection():
             "password": get_database_password(),
         }
     )
-    await db.use(
-        os.environ.get("SURREAL_NAMESPACE"), os.environ.get("SURREAL_DATABASE")
-    )
+    await db.use(get_database_namespace(), get_database_name())
     try:
         yield db
     finally:

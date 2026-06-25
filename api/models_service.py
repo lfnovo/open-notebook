@@ -70,6 +70,7 @@ class ModelsService:
         defaults.default_speech_to_text_model = defaults_data.get(
             "default_speech_to_text_model"
         )
+        defaults.default_vision_model = defaults_data.get("default_vision_model")
         defaults.default_embedding_model = defaults_data.get("default_embedding_model")
         defaults.default_tools_model = defaults_data.get("default_tools_model")
 
@@ -83,6 +84,7 @@ class ModelsService:
             "large_context_model": defaults.large_context_model,
             "default_text_to_speech_model": defaults.default_text_to_speech_model,
             "default_speech_to_text_model": defaults.default_speech_to_text_model,
+            "default_vision_model": defaults.default_vision_model,
             "default_embedding_model": defaults.default_embedding_model,
             "default_tools_model": defaults.default_tools_model,
         }
@@ -102,6 +104,7 @@ class ModelsService:
         defaults.default_speech_to_text_model = defaults_data.get(
             "default_speech_to_text_model"
         )
+        defaults.default_vision_model = defaults_data.get("default_vision_model")
         defaults.default_embedding_model = defaults_data.get("default_embedding_model")
         defaults.default_tools_model = defaults_data.get("default_tools_model")
 

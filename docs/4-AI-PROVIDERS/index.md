@@ -149,6 +149,7 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 
 ### I need multimodal (images, audio, video)
 → **Google Gemini** — Best multimodal support
+→ See [Vision Models](../5-CONFIGURATION/vision-models.md) to configure a default vision model for image / PDF page / video frame extraction (also works with OpenAI, Anthropic, OpenRouter, Ollama, …).
 
 ### I want access to many models with one API key
 → **OpenRouter** — 100+ models, unified billing

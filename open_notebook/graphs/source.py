@@ -1,4 +1,5 @@
 import operator
+import os
 from typing import Any, Dict, List, Optional
 
 from content_core import extract_content
@@ -32,6 +33,8 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
+    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
+
     content_settings = ContentSettings(
         default_content_processing_engine_doc="auto",
         default_content_processing_engine_url="auto",
@@ -49,7 +52,6 @@ async def content_process(state: SourceState) -> dict:
             "ja",
         ],
     )
-    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
 
     content_state["url_engine"] = (
         content_settings.default_content_processing_engine_url or "auto"
@@ -59,21 +61,42 @@ async def content_process(state: SourceState) -> dict:
     )
     content_state["output_format"] = "markdown"
 
-    # Add speech-to-text model configuration from Default Models
+    # Add model configurations from Default Models
     try:
         model_manager = ModelManager()
         defaults = await model_manager.get_defaults()
+
+        # Speech-to-text model config (for audio/video transcription)
         if defaults.default_speech_to_text_model:
             stt_model = await Model.get(defaults.default_speech_to_text_model)
             if stt_model:
                 content_state["audio_provider"] = stt_model.provider
                 content_state["audio_model"] = stt_model.name
+                if stt_model.credential:
+                    cred = await stt_model.get_credential_obj()
+                    if cred:
+                        content_state["audio_config"] = cred.to_esperanto_config()
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
+
+        # Vision model config (for image, video frame, and PDF page analysis)
+        vision_model_id = defaults.default_vision_model or defaults.default_chat_model
+        if vision_model_id:
+            vision_db_model = await Model.get(vision_model_id)
+            if vision_db_model:
+                content_state["vision_provider"] = vision_db_model.provider
+                content_state["vision_model"] = vision_db_model.name
+                if vision_db_model.credential:
+                    cred = await vision_db_model.get_credential_obj()
+                    if cred:
+                        content_state["vision_config"] = cred.to_esperanto_config()
+                logger.debug(
+                    f"Using vision model: {vision_db_model.provider}/{vision_db_model.name}"
+                )
     except Exception as e:
-        logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
-        # Continue without custom audio model (content-core will use its default)
+        logger.warning(f"Failed to retrieve model configuration: {e}")
+        # Continue without custom models (content-core will use its defaults)
 
     processed_state = await extract_content(content_state)
 
@@ -89,6 +112,39 @@ async def content_process(state: SourceState) -> dict:
             "Could not extract content from this source. "
             "The URL or file may be unreachable, invalid, or in an unsupported format."
         )
+
+    # For PDFs processed by the vision pipeline, also pull literal text via
+    # pdfplumber (content-core's existing extractor) and use that as the
+    # primary `content`. Vision sampling skips pages by design — fine for
+    # figure/layout understanding but bad for RAG/chat, since embeddings
+    # built from a sampled summary can't cite content from pages that
+    # were never read. We move the vision output to metadata.visual_analysis
+    # so save_source can attach it as a separate insight.
+    pdf_path = (
+        content_state.get("file_path") if isinstance(content_state, dict) else None
+    )
+    if (
+        processed_state.identified_type == "application/pdf"
+        and content_state.get("vision_provider")
+        and pdf_path
+        and os.path.exists(pdf_path)
+    ):
+        try:
+            from content_core.processors.pdf import _extract_text_from_pdf
+
+            raw_text = ((await _extract_text_from_pdf(pdf_path)) or "").strip()
+            if len(raw_text) >= 200:
+                processed_state.metadata = dict(processed_state.metadata or {})
+                processed_state.metadata["visual_analysis"] = processed_state.content
+                processed_state.content = raw_text
+                logger.info(
+                    f"PDF: using {len(raw_text)} chars of pdfplumber text as primary "
+                    "content; vision output preserved as visual_analysis insight"
+                )
+        except Exception as e:
+            logger.warning(
+                f"Raw-text extraction fallback failed; keeping vision-only content: {e}"
+            )
 
     if not processed_state.content or not processed_state.content.strip():
         url = processed_state.url or ""
@@ -124,6 +180,20 @@ async def save_source(state: SourceState) -> dict:
         source.title = content_state.title
 
     await source.save()
+
+    # When extract_content ran both raw text (for full_text) AND vision-based
+    # visual analysis as enrichment (figures/tables/layout), persist the
+    # visual analysis as a separate insight. Keeps full_text literal so RAG
+    # and chat can cite real document passages, while the visual summary
+    # stays accessible to the user via the Insights tab.
+    visual_analysis = (content_state.metadata or {}).get("visual_analysis")
+    if visual_analysis:
+        try:
+            await source.add_insight("Visual analysis", visual_analysis)
+        except Exception as e:
+            logger.warning(
+                f"Failed to attach visual analysis insight for source {source.id}: {e}"
+            )
 
     # NOTE: Notebook associations are created by the API immediately for UI responsiveness
     # No need to create them here to avoid duplicate edges

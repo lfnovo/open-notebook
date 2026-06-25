@@ -210,6 +210,12 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 - GPU acceleration
 - Docker networking
 
+### [Vision Models](vision-models.md)
+- Configure a default vision model (GPT-4o, Claude 3+, Gemini, …)
+- Image, PDF page, and video frame extraction
+- Adaptive sampling and cost considerations
+- System binaries (`pdftoppm`, `ffmpeg`)
+
 ### [Ollama](ollama.md)
 - Setting up and pointing to an Ollama server
 - Downloading models

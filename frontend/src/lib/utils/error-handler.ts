@@ -11,7 +11,7 @@ export const ERROR_MAP: Record<string, string> = {
   "Invalid source type": "apiErrors.invalidSourceType",
   "Processing failed": "apiErrors.processingFailed",
   "Failed to queue processing": "apiErrors.failedToQueue",
-  "sort_by must be 'created' or 'updated'": "apiErrors.invalidSortBy",
+  "sort_by must be one of: type, title, created, updated, insights_count, embedded": "apiErrors.invalidSortBy",
   "sort_order must be 'asc' or 'desc'": "apiErrors.invalidSortOrder",
   "Access to file denied": "apiErrors.accessDenied",
   "File not found on server": "apiErrors.fileNotFoundOnServer",

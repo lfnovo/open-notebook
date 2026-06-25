@@ -146,7 +146,7 @@ export const caES = {
     invalidSourceType: "Tipus de font no vàlid",
     processingFailed: "Ha fallat el processament",
     failedToQueue: "Ha fallat l'addició a la cua de processament",
-    invalidSortBy: "El camp d'ordenació ha de ser 'created' o 'updated'",
+    invalidSortBy: "El camp d'ordenació ha de ser type, title, created, updated, insights_count o embedded",
     invalidSortOrder: "L'ordre d'ordenació ha de ser 'asc' o 'desc'",
     accessDenied: "Accés al fitxer denegat",
     fileNotFoundOnServer: "No s'ha trobat el fitxer al servidor",

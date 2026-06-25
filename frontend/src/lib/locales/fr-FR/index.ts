@@ -146,7 +146,7 @@ export const frFR = {
     invalidSourceType: "Type de source invalide",
     processingFailed: "Échec du traitement",
     failedToQueue: "Échec de la mise en file d'attente du traitement",
-    invalidSortBy: "Le champ de tri doit être 'created' ou 'updated'",
+    invalidSortBy: "Le champ de tri doit être type, title, created, updated, insights_count ou embedded",
     invalidSortOrder: "L'ordre de tri doit être 'asc' ou 'desc'",
     accessDenied: "Accès au fichier refusé",
     fileNotFoundOnServer: "Fichier introuvable sur le serveur",

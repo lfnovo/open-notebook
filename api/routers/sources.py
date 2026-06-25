@@ -37,6 +37,20 @@ from open_notebook.exceptions import InvalidInputError, NotFoundError
 
 router = APIRouter()
 
+SOURCE_SORT_FIELDS = {
+    "created": "created",
+    "updated": "updated",
+    "title": "title",
+    "insights_count": "insights_count",
+    "embedded": "embedded",
+    "type": "type",
+}
+
+SOURCE_TYPE_EXPRESSION = (
+    "IF asset.file_path != NONE THEN 'file' "
+    "ELSE IF asset.url != NONE THEN 'link' ELSE 'text' END"
+)
+
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
     """Generate unique filename like Streamlit app (append counter if file exists)."""
@@ -166,16 +180,21 @@ async def get_sources(
     ),
     offset: int = Query(0, ge=0, description="Number of sources to skip"),
     sort_by: str = Query(
-        "updated", description="Field to sort by (created or updated)"
+        "updated",
+        description="Field to sort by (type, title, created, updated, insights_count, or embedded)",
     ),
     sort_order: str = Query("desc", description="Sort order (asc or desc)"),
 ):
     """Get sources with pagination and sorting support."""
     try:
         # Validate sort parameters
-        if sort_by not in ["created", "updated"]:
+        if sort_by not in SOURCE_SORT_FIELDS:
             raise HTTPException(
-                status_code=400, detail="sort_by must be 'created' or 'updated'"
+                status_code=400,
+                detail=(
+                    "sort_by must be one of: type, title, created, updated, "
+                    "insights_count, embedded"
+                ),
             )
         if sort_order.lower() not in ["asc", "desc"]:
             raise HTTPException(
@@ -183,7 +202,9 @@ async def get_sources(
             )
 
         # Build ORDER BY clause
-        order_clause = f"ORDER BY {sort_by} {sort_order.upper()}"
+        order_clause = (
+            f"ORDER BY {SOURCE_SORT_FIELDS[sort_by]} {sort_order.upper()}, id ASC"
+        )
 
         # Build the query
         if notebook_id:
@@ -195,6 +216,7 @@ async def get_sources(
             # Query sources for specific notebook - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
                 FROM (select value in from reference where out=$notebook_id)
@@ -214,6 +236,7 @@ async def get_sources(
             # Query all sources - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
                 FROM source

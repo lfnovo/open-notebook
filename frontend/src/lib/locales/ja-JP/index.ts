@@ -146,7 +146,7 @@ export const jaJP = {
     invalidSourceType: "無効なソースタイプです",
     processingFailed: "処理に失敗しました",
     failedToQueue: "処理キューへの追加に失敗しました",
-    invalidSortBy: "ソートフィールドは'created'または'updated'である必要があります",
+    invalidSortBy: "ソートフィールドは type、title、created、updated、insights_count、または embedded である必要があります",
     invalidSortOrder: "ソート順は'asc'または'desc'である必要があります",
     accessDenied: "ファイルへのアクセスが拒否されました",
     fileNotFoundOnServer: "サーバー上にファイルが見つかりません",

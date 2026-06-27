@@ -1,0 +1,5 @@
+-- Migration 16: Recently viewed timestamps
+-- Adds optional last-viewed timestamps for notebooks and sources.
+
+DEFINE FIELD IF NOT EXISTS last_viewed_at ON TABLE notebook TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS last_viewed_at ON TABLE source TYPE option<datetime>;

@@ -38,6 +38,13 @@ from open_notebook.exceptions import InvalidInputError
 router = APIRouter()
 
 
+async def _stamp_source_view(source_id: str) -> None:
+    await repo_query(
+        "UPDATE $source_id SET last_viewed_at = time::now();",
+        {"source_id": ensure_record_id(source_id)},
+    )
+
+
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
     """Generate unique filename like Streamlit app (append counter if file exists)."""
     file_path = Path(upload_folder)
@@ -631,6 +638,8 @@ async def get_source(source_id: str):
         source = await Source.get(source_id)
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
+
+        await _stamp_source_view(source.id or source_id)
 
         # Get status information if command exists
         status = None

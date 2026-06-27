@@ -1,0 +1,4 @@
+-- Migration 16 rollback: Remove recently viewed timestamps
+
+REMOVE FIELD IF EXISTS last_viewed_at ON TABLE notebook;
+REMOVE FIELD IF EXISTS last_viewed_at ON TABLE source;

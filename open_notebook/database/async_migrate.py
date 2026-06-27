@@ -196,6 +196,15 @@ class AsyncMigrationManager:
         """Get current database version."""
         return await get_latest_version()
 
+    async def ping(self) -> None:
+        """Check whether SurrealDB is reachable for migration startup."""
+        async with db_connection() as connection:
+            await connection.query("RETURN true;")
+
+        # Also exercise the migration version path. get_current_version() already
+        # treats a missing migrations table as version 0 for fresh databases.
+        await self.get_current_version()
+
     async def needs_migration(self) -> bool:
         """Check if migration is needed."""
         current_version = await self.get_current_version()

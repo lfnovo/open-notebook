@@ -28,6 +28,13 @@ class NotebookResponse(BaseModel):
     note_count: int
 
 
+class RecentlyViewedResponse(BaseModel):
+    type: Literal["notebook", "source"]
+    id: str
+    title: str
+    last_viewed_at: str
+
+
 # Search models
 class SearchRequest(BaseModel):
     query: str = Field(..., description="Search query")
@@ -456,12 +463,8 @@ class SetApiKeyRequest(BaseModel):
     base_url: Optional[str] = Field(
         None, description="Base URL for URL-based providers (Ollama, OpenAI-compatible)"
     )
-    endpoint: Optional[str] = Field(
-        None, description="Endpoint URL for Azure OpenAI"
-    )
-    api_version: Optional[str] = Field(
-        None, description="API version for Azure OpenAI"
-    )
+    endpoint: Optional[str] = Field(None, description="Endpoint URL for Azure OpenAI")
+    api_version: Optional[str] = Field(None, description="API version for Azure OpenAI")
     endpoint_llm: Optional[str] = Field(
         None, description="Service-specific endpoint for LLM (Azure)"
     )

@@ -55,6 +55,13 @@ async def get_transformations():
 async def create_transformation(transformation_data: TransformationCreate):
     """Create a new transformation."""
     try:
+        # Reject unknown model references up front (same check as execute);
+        # otherwise an invalid model_id is stored and only fails at run time.
+        if transformation_data.model_id:
+            model = await Model.get(transformation_data.model_id)
+            if not model:
+                raise HTTPException(status_code=404, detail="Model not found")
+
         new_transformation = Transformation(
             name=transformation_data.name,
             title=transformation_data.title,
@@ -66,6 +73,8 @@ async def create_transformation(transformation_data: TransformationCreate):
         await new_transformation.save()
 
         return _transformation_response(new_transformation)
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -201,6 +210,11 @@ async def update_transformation(
         if transformation_update.apply_default is not None:
             transformation.apply_default = transformation_update.apply_default
         if "model_id" in transformation_update.model_fields_set:
+            # Validate a newly supplied model reference (allow clearing to None).
+            if transformation_update.model_id:
+                model = await Model.get(transformation_update.model_id)
+                if not model:
+                    raise HTTPException(status_code=404, detail="Model not found")
             transformation.model_id = transformation_update.model_id
 
         await transformation.save()

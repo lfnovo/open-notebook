@@ -1,0 +1,7 @@
+-- Migration 16: Add optional max_tokens override to episode_profile.
+-- Lets a profile cap (or raise) the output tokens used for outline and
+-- transcript generation, which is passed through to podcast_creator.
+-- The episode_profile table is SCHEMAFULL, so the field must be declared
+-- here for the value to persist.
+
+DEFINE FIELD IF NOT EXISTS max_tokens ON TABLE episode_profile TYPE option<int>;

@@ -40,13 +40,13 @@ export type Language = {
 };
 
 export const languages: Language[] = [
+  { code: 'ja-JP', label: '日本語' },
   { code: 'en-US', label: 'English' },
   { code: 'tr-TR', label: 'Türkçe' },
   { code: 'ca-ES', label: 'Català' },
   { code: 'zh-CN', label: '简体中文' },
   { code: 'zh-TW', label: '繁體中文' },
   { code: 'pt-BR', label: 'Português' },
-  { code: 'ja-JP', label: '日本語' },
   { code: 'it-IT', label: 'Italiano' },
   { code: 'fr-FR', label: 'Français' },
   { code: 'ru-RU', label: 'Русский' },

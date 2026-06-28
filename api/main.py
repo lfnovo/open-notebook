@@ -67,6 +67,10 @@ CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
 DATABASE_STARTUP_RETRY_ATTEMPTS = 12
 DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
 DATABASE_STARTUP_RETRY_MAX_DELAY_SECONDS = 5
+# Per-probe ceiling so a hung connection cannot exceed the retry budget or
+# block startup indefinitely. A probe that exceeds this is treated as a
+# transient failure and retried like any other unreachable-database attempt.
+DATABASE_STARTUP_RETRY_PROBE_TIMEOUT_SECONDS = 5
 
 
 def _cors_headers(request: Request) -> dict[str, str]:
@@ -112,7 +116,10 @@ async def _wait_for_database(migration_manager: AsyncMigrationManager) -> None:
 
     for attempt in range(1, attempts + 1):
         try:
-            await migration_manager.ping()
+            await asyncio.wait_for(
+                migration_manager.ping(),
+                timeout=DATABASE_STARTUP_RETRY_PROBE_TIMEOUT_SECONDS,
+            )
             if attempt > 1:
                 logger.info(f"Database became reachable on attempt {attempt}")
             return

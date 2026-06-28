@@ -1,0 +1,6 @@
+-- Migration 16 rollback: Remove recently viewed timestamps
+
+REMOVE INDEX IF EXISTS idx_notebook_last_viewed ON TABLE notebook;
+REMOVE INDEX IF EXISTS idx_source_last_viewed ON TABLE source;
+REMOVE FIELD IF EXISTS last_viewed_at ON TABLE notebook;
+REMOVE FIELD IF EXISTS last_viewed_at ON TABLE source;

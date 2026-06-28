@@ -239,3 +239,10 @@ export interface BuildContextResponse {
   token_count: number
   char_count: number
 }
+
+export interface RecentlyViewedResponse {
+  type: 'notebook' | 'source'
+  id: string
+  title: string
+  last_viewed_at: string
+}

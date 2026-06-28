@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useId } from 'react'
+import { useEffect, useId, useMemo } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,11 +11,25 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { MarkdownEditor } from '@/components/ui/markdown-editor'
-import { useCreateTransformation, useUpdateTransformation, useTransformation } from '@/lib/hooks/use-transformations'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  useCreateTransformation,
+  useUpdateTransformation,
+  useTransformation,
+} from '@/lib/hooks/use-transformations'
+import { useModels } from '@/lib/hooks/use-models'
 import { Transformation } from '@/lib/types/transformations'
 import { useQueryClient } from '@tanstack/react-query'
 import { TRANSFORMATION_QUERY_KEYS } from '@/lib/hooks/use-transformations'
 import { useTranslation } from '@/lib/hooks/use-translation'
+
+const DEFAULT_MODEL_VALUE = '__default_transformation_model__'
 
 const transformationSchema = z.object({
   name: z.string().min(1),
@@ -23,6 +37,7 @@ const transformationSchema = z.object({
   description: z.string().optional(),
   prompt: z.string().min(1),
   apply_default: z.boolean().optional(),
+  model_id: z.string().nullable().optional(),
 })
 
 type TransformationFormData = z.infer<typeof transformationSchema>
@@ -40,10 +55,16 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
   const defaultId = useId()
   const descriptionId = useId()
   const promptId = useId()
+  const modelId = useId()
   const isEditing = Boolean(transformation)
   const { data: fetchedTransformation, isLoading } = useTransformation(transformation?.id ?? '', {
     enabled: open && Boolean(transformation?.id),
   })
+  const { data: models = [], isLoading: isLoadingModels } = useModels()
+  const languageModels = useMemo(
+    () => models.filter((model) => model.type === 'language'),
+    [models]
+  )
   const createTransformation = useCreateTransformation()
   const updateTransformation = useUpdateTransformation()
   const queryClient = useQueryClient()
@@ -61,12 +82,20 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
       description: '',
       prompt: '',
       apply_default: false,
+      model_id: null,
     },
   })
 
   useEffect(() => {
     if (!open) {
-      reset({ name: '', title: '', description: '', prompt: '', apply_default: false })
+      reset({
+        name: '',
+        title: '',
+        description: '',
+        prompt: '',
+        apply_default: false,
+        model_id: null,
+      })
       return
     }
 
@@ -77,6 +106,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
       description: source?.description ?? '',
       prompt: source?.prompt ?? '',
       apply_default: source?.apply_default ?? false,
+      model_id: source?.model_id ?? null,
     })
   }, [open, transformation, fetchedTransformation, reset])
 
@@ -90,6 +120,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
           description: data.description || undefined,
           prompt: data.prompt,
           apply_default: Boolean(data.apply_default),
+          model_id: data.model_id || null,
         },
       })
       queryClient.invalidateQueries({ queryKey: TRANSFORMATION_QUERY_KEYS.transformation(transformation.id) })
@@ -100,6 +131,7 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
         description: data.description || '',
         prompt: data.prompt,
         apply_default: Boolean(data.apply_default),
+        model_id: data.model_id || null,
       })
     }
 
@@ -170,22 +202,58 @@ export function TransformationEditorDialog({ open, onOpenChange, transformation 
                       )}
                     />
                   </div>
-                  <div className="flex items-center gap-2 pt-6 md:pt-8">
+                  <div>
+                    <Label htmlFor={modelId} className="text-sm font-medium">
+                      {t('transformations.model')}
+                    </Label>
                     <Controller
                       control={control}
-                      name="apply_default"
+                      name="model_id"
                       render={({ field }) => (
-                        <Checkbox
-                          id={defaultId}
-                          checked={field.value}
-                          onCheckedChange={(checked) => field.onChange(Boolean(checked))}
-                        />
+                        <Select
+                          name={field.name}
+                          value={field.value ?? DEFAULT_MODEL_VALUE}
+                          onValueChange={(value) =>
+                            field.onChange(
+                              value === DEFAULT_MODEL_VALUE ? null : value
+                            )
+                          }
+                          disabled={isLoadingModels}
+                        >
+                          <SelectTrigger id={modelId} className="w-full">
+                            <SelectValue placeholder={t('transformations.selectModel')} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={DEFAULT_MODEL_VALUE}>
+                              {t('transformations.systemDefault')}
+                            </SelectItem>
+                            {languageModels.map((model) => (
+                              <SelectItem key={model.id} value={model.id}>
+                                {model.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       )}
                     />
-                     <Label htmlFor={defaultId} className="text-sm">
-                       {t('transformations.suggestDefault')}
-                     </Label>
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Controller
+                    control={control}
+                    name="apply_default"
+                    render={({ field }) => (
+                      <Checkbox
+                        id={defaultId}
+                        checked={field.value}
+                        onCheckedChange={(checked) => field.onChange(Boolean(checked))}
+                      />
+                    )}
+                  />
+                   <Label htmlFor={defaultId} className="text-sm">
+                     {t('transformations.suggestDefault')}
+                   </Label>
                 </div>
 
                 <div>

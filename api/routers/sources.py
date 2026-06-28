@@ -39,10 +39,15 @@ router = APIRouter()
 
 
 async def _stamp_source_view(source_id: str) -> None:
-    await repo_query(
-        "UPDATE $source_id SET last_viewed_at = time::now();",
-        {"source_id": ensure_record_id(source_id)},
-    )
+    # Best-effort write-on-read: recording the view timestamp must never turn a
+    # successful read into a 500. Log and move on if the stamp update fails.
+    try:
+        await repo_query(
+            "UPDATE $source_id SET last_viewed_at = time::now();",
+            {"source_id": ensure_record_id(source_id)},
+        )
+    except Exception as e:
+        logger.warning(f"Failed to stamp last_viewed_at for source {source_id}: {e}")
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:

@@ -23,10 +23,17 @@ def _last_viewed_sort_key(item: RecentlyViewedResponse) -> str:
 
 
 async def _stamp_notebook_view(notebook_id: str) -> None:
-    await repo_query(
-        "UPDATE $notebook_id SET last_viewed_at = time::now();",
-        {"notebook_id": ensure_record_id(notebook_id)},
-    )
+    # Best-effort write-on-read: recording the view timestamp must never turn a
+    # successful read into a 500. Log and move on if the stamp update fails.
+    try:
+        await repo_query(
+            "UPDATE $notebook_id SET last_viewed_at = time::now();",
+            {"notebook_id": ensure_record_id(notebook_id)},
+        )
+    except Exception as e:
+        logger.warning(
+            f"Failed to stamp last_viewed_at for notebook {notebook_id}: {e}"
+        )
 
 
 def _recently_viewed_notebook(row: dict) -> RecentlyViewedResponse:
@@ -179,9 +186,11 @@ async def get_recently_viewed(
         items.sort(key=_last_viewed_sort_key, reverse=True)
         return items[:limit]
     except Exception as e:
-        logger.error(f"Error fetching recently viewed items: {str(e)}")
+        # Log full context server-side; return a generic message so internal
+        # details are not leaked to clients.
+        logger.exception(f"Error fetching recently viewed items: {e}")
         raise HTTPException(
-            status_code=500, detail=f"Error fetching recently viewed items: {str(e)}"
+            status_code=500, detail="Error fetching recently viewed items"
         )
 
 

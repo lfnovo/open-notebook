@@ -153,14 +153,16 @@ async def generate_podcast_command(
             try:
                 if ep_dict.get("outline_llm"):
                     prov, model, conf = await _resolve_model_config(
-                        str(ep_dict["outline_llm"])
+                        str(ep_dict["outline_llm"]),
+                        max_tokens=ep_dict.get("max_tokens"),
                     )
                     ep_dict["outline_provider"] = prov
                     ep_dict["outline_model"] = model
                     ep_dict["outline_config"] = conf
                 if ep_dict.get("transcript_llm"):
                     prov, model, conf = await _resolve_model_config(
-                        str(ep_dict["transcript_llm"])
+                        str(ep_dict["transcript_llm"]),
+                        max_tokens=ep_dict.get("max_tokens"),
                     )
                     ep_dict["transcript_provider"] = prov
                     ep_dict["transcript_model"] = model

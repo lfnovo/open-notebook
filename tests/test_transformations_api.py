@@ -49,8 +49,15 @@ def test_create_transformation_with_model_id_persists_and_reads_back():
         transformation.created = datetime(2026, 1, 1, 12, 0, 0)
         transformation.updated = datetime(2026, 1, 1, 12, 0, 0)
 
-    with patch.object(
-        Transformation, "save", autospec=True, side_effect=capture_save
+    with (
+        patch.object(
+            Transformation, "save", autospec=True, side_effect=capture_save
+        ),
+        patch(
+            "api.routers.transformations.Model.get",
+            new_callable=AsyncMock,
+            return_value=object(),
+        ) as mock_model_get,
     ):
         response = client.post(
             "/api/transformations", json=_create_payload("model:local")
@@ -59,6 +66,7 @@ def test_create_transformation_with_model_id_persists_and_reads_back():
     assert response.status_code == 200
     assert saved_transformations[0].model_id == "model:local"
     assert response.json()["model_id"] == "model:local"
+    mock_model_get.assert_awaited_once_with("model:local")
 
     with patch(
         "api.routers.transformations.Transformation.get",
@@ -186,7 +194,9 @@ def test_update_transformation_model_id_is_used_by_subsequent_execution():
     assert update_response.json()["model_id"] == "model:new"
     assert execute_response.status_code == 200
     assert execute_response.json()["model_id"] == "model:new"
-    mock_model_get.assert_awaited_once_with("model:new")
+    # model:new is validated once at update time and looked up again at execute.
+    assert mock_model_get.await_count == 2
+    mock_model_get.assert_awaited_with("model:new")
     assert (
         mock_ainvoke.call_args.kwargs["config"]["configurable"]["model_id"]
         == "model:new"

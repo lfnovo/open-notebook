@@ -3,8 +3,9 @@ from typing import Optional
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from loguru import logger
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import JSONResponse, Response
+from starlette.types import ASGIApp
 
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -16,10 +17,12 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
     Supports Docker secrets via OPEN_NOTEBOOK_PASSWORD_FILE.
     """
 
-    def __init__(self, app, excluded_paths: Optional[list] = None):
+    def __init__(
+        self, app: ASGIApp, excluded_paths: Optional[list[str]] = None
+    ) -> None:
         super().__init__(app)
         self.password = get_secret_from_env("OPEN_NOTEBOOK_PASSWORD")
-        self.excluded_paths = excluded_paths or [
+        self.excluded_paths: list[str] = excluded_paths or [
             "/",
             "/health",
             "/docs",
@@ -27,7 +30,9 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
             "/redoc",
         ]
 
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         # Skip authentication if no password is set
         if not self.password:
             return await call_next(request)

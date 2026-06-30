@@ -1,0 +1,146 @@
+# Open Notebook - Production Compose
+# =============================================================================
+# Usage:
+#   cp .env.server.example .env.server
+#   $EDITOR .env.server                       # replace every CHANGEME_* value
+#   docker compose -f docker-compose.server.yml --env-file .env.server up -d
+#
+# This is the SERVER-TARGETED counterpart to the zero-config docker-compose.yml
+# at the repo root. It assumes:
+#   - Public HTTPS terminated by Caddy (see ./Caddyfile)
+#   - Domain name and certificates handled automatically by Caddy + Let's Encrypt
+#   - Only ports 22, 80, 443 are open on the host firewall
+#
+# Pin the image tag before going to production; v1-latest is the rolling
+# tag. Replace it with the release version you have validated.
+# =============================================================================
+
+name: open-notebook
+
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: open-notebook-caddy
+    restart: unless-stopped
+    # Caddy joins BOTH networks: caddy_public for ACME + inbound 80/443,
+    # notebook_private to reach the app container by service name.
+    networks:
+      - caddy_public
+      - notebook_private
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      open_notebook:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # No healthcheck: Caddy has no reliable /status endpoint we can rely
+    # on across versions; depends_on + restart policy is sufficient.
+
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    container_name: open-notebook-surrealdb
+    restart: unless-stopped
+    # Internal-only. Caddy and the app reach SurrealDB over notebook_private.
+    # Deliberately no host port mapping.
+    networks:
+      - notebook_private
+    command: >
+      start --log info
+      --user ${SURREAL_USER}
+      --pass ${SURREAL_PASSWORD}
+      rocksdb:/mydata/mydatabase.db
+    volumes:
+      - notebook_surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
+    healthcheck:
+      # `surreal isready` is shipped in surrealdb/surrealdb:v2.
+      test: ["CMD", "surreal", "isready", "--conn", "ws://localhost:8000"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  open_notebook:
+    image: lfnovo/open_notebook:v1-latest
+    container_name: open-notebook-app
+    restart: unless-stopped
+    # Internal-only. Caddy reaches us at open_notebook:8502 via
+    # notebook_private. Deliberately no host port mapping; debug via
+    # `docker compose exec` or `docker compose logs` instead.
+    networks:
+      - notebook_private
+    environment:
+      # REQUIRED - no fallback. Fail-fast if unset. The `?msg` form
+      # surfaces a clear error on `docker compose up`.
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${OPEN_NOTEBOOK_ENCRYPTION_KEY:?OPEN_NOTEBOOK_ENCRYPTION_KEY must be set}
+
+      # Database
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=${SURREAL_USER}
+      - SURREAL_PASSWORD=${SURREAL_PASSWORD}
+      - SURREAL_NAMESPACE=${SURREAL_NAMESPACE:-open_notebook}
+      - SURREAL_DATABASE=${SURREAL_DATABASE:-open_notebook}
+
+      # Public-facing config consumed by the API and the frontend.
+      - API_URL=${API_URL}
+      - CORS_ORIGINS=${CORS_ORIGINS:-*}
+      - OPEN_NOTEBOOK_PASSWORD=${OPEN_NOTEBOOK_PASSWORD:-}
+    volumes:
+      # /app/data holds uploads, podcast artefacts, and LangGraph SQLite
+      # checkpoints. /app/tiktoken-cache is INTENTIONALLY not mounted
+      # (see Dockerfile) so the pre-baked encodings are preserved.
+      - notebook_app_data:/app/data
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+    healthcheck:
+      # FastAPI /health is unauthenticated. 127.0.0.1 to dodge IPv6
+      # surprises on slim images.
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:5055/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Do not silently pull v1-latest on every start. Change to `never`
+    # after pinning a specific tag in production.
+    pull_policy: missing
+
+networks:
+  caddy_public:
+    name: caddy_public
+    driver: bridge
+  notebook_private:
+    name: notebook_private
+    # internal: true  -> no outbound, no route to host external iface.
+    # Caddy is exempted by also being attached to caddy_public above.
+    internal: true
+
+volumes:
+  notebook_surreal_data:
+    name: notebook_surreal_data
+  notebook_app_data:
+    name: notebook_app_data
+  caddy_data:
+    name: caddy_data
+  caddy_config:
+    name: caddy_config

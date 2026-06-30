@@ -142,3 +142,7 @@ specs/
 .harness/
 
 .mcp.json
+
+# Production deployment artefacts (see docs/7-DEVELOPMENT/plans/03-server-deployment-plan.md)
+.env.server
+backups/

@@ -1,0 +1,71 @@
+# Open Notebook - Caddy reverse proxy
+# =============================================================================
+# Replace `notebook.example.com` with your real hostname before starting
+# the stack. Caddy will request a Let's Encrypt certificate automatically
+# once the DNS A/AAAA records for that hostname point at this server's
+# public IP.
+#
+# Generate a fresh config from this template with:
+#   sed -i 's/notebook.example.com/your.domain.com/g' Caddyfile
+# =============================================================================
+
+
+# ----- HTTP -> HTTPS redirect -----
+http://notebook.example.com {
+    redir https://{host}{uri} permanent
+}
+
+
+# ----- Main site -----
+notebook.example.com {
+    encode zstd gzip
+
+    # Allow large uploads (PDFs, audio, etc.). Bump higher if you
+    # regularly import larger media files. `request_body` is a top-level
+    # directive inside the site block, not a `reverse_proxy` sub-directive.
+    request_body {
+        max_size 100MB
+    }
+
+    # Reverse-proxy to the open_notebook Next.js frontend container.
+    # Docker's embedded DNS on notebook_private resolves the service name
+    # to the container's IP, so no port mapping on the host is needed.
+    reverse_proxy open_notebook:8502 {
+        # Long-lived AI requests (embedding rebuilds, podcast generation)
+        # can easily exceed 60s. Next.js server-side proxy also benefits.
+        transport http {
+            dial_timeout 30s
+            response_header_timeout 600s
+            read_timeout 600s
+            write_timeout 600s
+        }
+
+        # Forward the original Host + scheme so the app sees the real
+        # public hostname and HTTPS scheme. Caddy sets these itself;
+        # this just makes the intent explicit.
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+
+    # Security headers. Tighten as needed for your threat model.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        # Placeholder CSP - uncomment and adjust if you embed third-party
+        # content (e.g. external podcast players or video iframes).
+        # Content-Security-Policy "default-src 'self'; img-src 'self' data:; ..."
+        -Server
+    }
+
+    # Emit access logs to stdout so `docker logs open-notebook-caddy`
+    # captures them; the json-file driver handles rotation.
+    log {
+        output stdout
+        format console
+        level INFO
+    }
+}

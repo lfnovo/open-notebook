@@ -262,6 +262,11 @@ export const esES = {
     createSuccess: "Cuaderno creado exitosamente",
     updateSuccess: "Cuaderno actualizado exitosamente",
     deleteSuccess: "Cuaderno eliminado exitosamente",
+    recentlyViewed: "Vistos recientemente",
+    toggleRecentlyViewed: "Alternar vistos recientemente",
+    recentlyViewedNotebook: "Cuaderno",
+    recentlyViewedSource: "Fuente",
+    lastViewed: "Visto {{time}}",
   },
   sources: {
     bulkContext: "Contexto",

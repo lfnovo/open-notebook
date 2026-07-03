@@ -262,6 +262,11 @@ export const bnIN = {
     createSuccess: "নোটবুক সফলভাবে তৈরি হয়েছে",
     updateSuccess: "নোটবুক সফলভাবে আপডেট হয়েছে",
     deleteSuccess: "নোটবুক সফলভাবে মুছে ফেলা হয়েছে",
+    recentlyViewed: "সম্প্রতি দেখা",
+    toggleRecentlyViewed: "সম্প্রতি দেখা টগল করুন",
+    recentlyViewedNotebook: "নোটবুক",
+    recentlyViewedSource: "উৎস",
+    lastViewed: "{{time}} দেখা হয়েছে",
   },
   sources: {
     bulkContext: "প্রসঙ্গ",

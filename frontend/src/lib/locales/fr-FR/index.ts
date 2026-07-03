@@ -262,6 +262,11 @@ export const frFR = {
     createSuccess: "Carnet créé avec succès",
     updateSuccess: "Carnet mis à jour avec succès",
     deleteSuccess: "Carnet supprimé avec succès",
+    recentlyViewed: "Consultés récemment",
+    toggleRecentlyViewed: "Afficher/masquer les éléments récents",
+    recentlyViewedNotebook: "Carnet",
+    recentlyViewedSource: "Source",
+    lastViewed: "Consulté {{time}}",
   },
   sources: {
     bulkContext: "Contexte",

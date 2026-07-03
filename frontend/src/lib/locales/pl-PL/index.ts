@@ -262,6 +262,11 @@ export const plPL = {
     createSuccess: "Notatnik utworzony pomyślnie",
     updateSuccess: "Notatnik zaktualizowany pomyślnie",
     deleteSuccess: "Notatnik usunięty pomyślnie",
+    recentlyViewed: "Ostatnio przeglądane",
+    toggleRecentlyViewed: "Przełącz ostatnio przeglądane",
+    recentlyViewedNotebook: "Notatnik",
+    recentlyViewedSource: "Źródło",
+    lastViewed: "Wyświetlono {{time}}",
   },
   sources: {
     bulkContext: "Kontekst",

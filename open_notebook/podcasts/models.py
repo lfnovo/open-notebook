@@ -8,11 +8,13 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel
 
 
-async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
+async def _resolve_model_config(
+    model_id: str, max_tokens: Optional[int] = None
+) -> Tuple[str, str, dict]:
     """Load Model record, resolve credential -> (provider, model_name, config_dict).
 
     Used by resolve_outline_config, resolve_transcript_config, resolve_tts_config,
-    and per-speaker TTS overrides.
+    and per-speaker TTS overrides. Optionally passes through a max_tokens override.
     """
     from open_notebook.ai.models import Model
 
@@ -26,6 +28,8 @@ async def _resolve_model_config(model_id: str) -> Tuple[str, str, dict]:
         from open_notebook.ai.key_provider import provision_provider_keys
 
         await provision_provider_keys(model.provider)
+    if max_tokens is not None:
+        config = {**config, "max_tokens": max_tokens}
     return (model.provider, model.name, config)
 
 
@@ -45,6 +49,7 @@ class EpisodeProfile(ObjectModel):
         "outline_llm",
         "transcript_llm",
         "language",
+        "max_tokens",
     }
 
     name: str = Field(..., description="Unique profile name")
@@ -78,6 +83,10 @@ class EpisodeProfile(ObjectModel):
 
     default_briefing: str = Field(..., description="Default briefing template")
     num_segments: int = Field(default=5, description="Number of podcast segments")
+    max_tokens: Optional[int] = Field(
+        None,
+        description="Max output tokens for outline/transcript generation (passed through to podcast_creator)",
+    )
 
     @field_validator("num_segments")
     @classmethod
@@ -101,7 +110,7 @@ class EpisodeProfile(ObjectModel):
                 f"Episode profile '{self.name}' has no outline model configured. "
                 "Please update the profile to select an outline model."
             )
-        return await _resolve_model_config(self.outline_llm)
+        return await _resolve_model_config(self.outline_llm, max_tokens=self.max_tokens)
 
     async def resolve_transcript_config(self) -> Tuple[str, str, dict]:
         """Resolve transcript model -> (provider, model_name, config_dict)"""
@@ -110,7 +119,9 @@ class EpisodeProfile(ObjectModel):
                 f"Episode profile '{self.name}' has no transcript model configured. "
                 "Please update the profile to select a transcript model."
             )
-        return await _resolve_model_config(self.transcript_llm)
+        return await _resolve_model_config(
+            self.transcript_llm, max_tokens=self.max_tokens
+        )
 
     @classmethod
     async def get_by_name(cls, name: str) -> Optional["EpisodeProfile"]:

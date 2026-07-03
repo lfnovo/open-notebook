@@ -19,6 +19,7 @@ class EpisodeProfileResponse(BaseModel):
     language: Optional[str] = None
     default_briefing: str
     num_segments: int
+    max_tokens: Optional[int] = None
     # Legacy fields (for display/migration awareness)
     outline_provider: Optional[str] = None
     outline_model: Optional[str] = None
@@ -37,6 +38,7 @@ def _profile_to_response(profile: EpisodeProfile) -> EpisodeProfileResponse:
         language=profile.language,
         default_briefing=profile.default_briefing,
         num_segments=profile.num_segments,
+        max_tokens=profile.max_tokens,
         outline_provider=profile.outline_provider,
         outline_model=profile.outline_model,
         transcript_provider=profile.transcript_provider,
@@ -90,6 +92,10 @@ class EpisodeProfileCreate(BaseModel):
     language: Optional[str] = Field(None, description="Podcast language code")
     default_briefing: str = Field(..., description="Default briefing template")
     num_segments: int = Field(default=5, description="Number of podcast segments")
+    max_tokens: Optional[int] = Field(
+        None,
+        description="Max output tokens for outline/transcript generation",
+    )
     # Legacy fields (accepted but not required)
     outline_provider: Optional[str] = None
     outline_model: Optional[str] = None
@@ -110,6 +116,7 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
             language=profile_data.language,
             default_briefing=profile_data.default_briefing,
             num_segments=profile_data.num_segments,
+            max_tokens=profile_data.max_tokens,
             outline_provider=profile_data.outline_provider,
             outline_model=profile_data.outline_model,
             transcript_provider=profile_data.transcript_provider,
@@ -198,6 +205,7 @@ async def duplicate_episode_profile(profile_id: str):
             language=original.language,
             default_briefing=original.default_briefing,
             num_segments=original.num_segments,
+            max_tokens=original.max_tokens,
             outline_provider=original.outline_provider,
             outline_model=original.outline_model,
             transcript_provider=original.transcript_provider,

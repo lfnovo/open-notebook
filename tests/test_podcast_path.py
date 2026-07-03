@@ -8,8 +8,13 @@ spaces and special characters (GitHub issue #663).
 
 import uuid
 from pathlib import PurePosixPath
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import pytest
 
 from commands.podcast_commands import build_episode_output_dir
+from open_notebook.podcasts.models import EpisodeProfile, _resolve_model_config
 
 
 class TestBuildEpisodeOutputDir:
@@ -66,3 +71,78 @@ class TestBuildEpisodeOutputDir:
         output_dir.mkdir(parents=True, exist_ok=True)
         assert output_dir.exists()
         assert output_dir.is_dir()
+
+
+class TestResolveModelConfigMaxTokens:
+    """Test max_tokens passthrough without database access."""
+
+    @pytest.mark.asyncio
+    async def test_includes_max_tokens_when_configured(self):
+        fake_model = SimpleNamespace(
+            provider="anthropic",
+            name="claude-sonnet-4",
+            credential=None,
+        )
+
+        with (
+            patch(
+                "open_notebook.ai.models.Model.get",
+                new=AsyncMock(return_value=fake_model),
+            ),
+            patch(
+                "open_notebook.ai.key_provider.provision_provider_keys",
+                new=AsyncMock(return_value=True),
+            ),
+        ):
+            provider, model_name, config = await _resolve_model_config(
+                "model:test", max_tokens=12000
+            )
+
+        assert provider == "anthropic"
+        assert model_name == "claude-sonnet-4"
+        assert config["max_tokens"] == 12000
+
+    @pytest.mark.asyncio
+    async def test_omits_max_tokens_when_not_configured(self):
+        fake_model = SimpleNamespace(
+            provider="anthropic",
+            name="claude-sonnet-4",
+            credential=None,
+        )
+
+        with (
+            patch(
+                "open_notebook.ai.models.Model.get",
+                new=AsyncMock(return_value=fake_model),
+            ),
+            patch(
+                "open_notebook.ai.key_provider.provision_provider_keys",
+                new=AsyncMock(return_value=True),
+            ),
+        ):
+            _, _, config = await _resolve_model_config("model:test")
+
+        assert "max_tokens" not in config
+
+
+class TestEpisodeProfileMaxTokens:
+    """Test EpisodeProfile accepts optional max_tokens."""
+
+    def test_accepts_max_tokens(self):
+        profile = EpisodeProfile(
+            name="Long Form",
+            speaker_config="default",
+            default_briefing="Test briefing",
+            max_tokens=12000,
+        )
+
+        assert profile.max_tokens == 12000
+
+    def test_max_tokens_defaults_to_none(self):
+        profile = EpisodeProfile(
+            name="Default",
+            speaker_config="default",
+            default_briefing="Test briefing",
+        )
+
+        assert profile.max_tokens is None

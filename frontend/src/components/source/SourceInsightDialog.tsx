@@ -5,10 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FileText } from 'lucide-react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
+import {MarkdownRenderer} from '@/components/ui/markdown-renderer'
 import { useInsight } from '@/lib/hooks/use-insights'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -127,26 +124,9 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
                 <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
               </div>
             ) : displayInsight ? (
-              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkMath]}
-                  rehypePlugins={[rehypeKatex]}
-                  components={{
-                    table: ({ children }) => (
-                      <div className="my-4 overflow-x-auto">
-                        <table className="min-w-full border-collapse border border-border">{children}</table>
-                      </div>
-                    ),
-                    thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
-                    tbody: ({ children }) => <tbody>{children}</tbody>,
-                    tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-                    th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
-                    td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-                  }}
-                >
-                  {displayInsight.content}
-                </ReactMarkdown>
-              </div>
+              <MarkdownRenderer>
+                {displayInsight.content}
+              </MarkdownRenderer>
             ) : (
               <p className="text-sm text-muted-foreground">{t('sources.noInsightSelected')}</p>
             )}

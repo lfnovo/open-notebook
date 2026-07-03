@@ -112,6 +112,9 @@ class TransformationCreate(BaseModel):
     apply_default: bool = Field(
         False, description="Whether to apply this transformation by default"
     )
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use by default for this transformation"
+    )
 
 
 class TransformationUpdate(BaseModel):
@@ -126,6 +129,9 @@ class TransformationUpdate(BaseModel):
     apply_default: Optional[bool] = Field(
         None, description="Whether to apply this transformation by default"
     )
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use by default for this transformation"
+    )
 
 
 class TransformationResponse(BaseModel):
@@ -135,6 +141,7 @@ class TransformationResponse(BaseModel):
     description: str
     prompt: str
     apply_default: bool
+    model_id: Optional[str] = None
     created: str
     updated: str
 
@@ -146,7 +153,9 @@ class TransformationExecuteRequest(BaseModel):
         ..., description="ID of the transformation to execute"
     )
     input_text: str = Field(..., description="Text to transform")
-    model_id: str = Field(..., description="Model ID to use for the transformation")
+    model_id: Optional[str] = Field(
+        None, description="Model ID to use for this transformation run"
+    )
 
 
 class TransformationExecuteResponse(BaseModel):
@@ -154,7 +163,7 @@ class TransformationExecuteResponse(BaseModel):
 
     output: str = Field(..., description="Transformed text")
     transformation_id: str = Field(..., description="ID of the transformation used")
-    model_id: str = Field(..., description="Model ID used")
+    model_id: Optional[str] = Field(None, description="Model ID used")
 
 
 # Default Prompt API models

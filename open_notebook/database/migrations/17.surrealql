@@ -1,0 +1,3 @@
+-- Migration 17: Per-transformation model selection
+
+DEFINE FIELD IF NOT EXISTS model_id ON TABLE transformation TYPE option<record<model>>;

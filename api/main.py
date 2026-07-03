@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -63,6 +64,14 @@ _cors_origins_raw = os.getenv("CORS_ORIGINS")
 CORS_ALLOWED_ORIGINS = _parse_cors_origins(_cors_origins_raw or "*")
 CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
 
+DATABASE_STARTUP_RETRY_ATTEMPTS = 12
+DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
+DATABASE_STARTUP_RETRY_MAX_DELAY_SECONDS = 5
+# Per-probe ceiling so a hung connection cannot exceed the retry budget or
+# block startup indefinitely. A probe that exceeds this is treated as a
+# transient failure and retried like any other unreachable-database attempt.
+DATABASE_STARTUP_RETRY_PROBE_TIMEOUT_SECONDS = 5
+
 
 def _cors_headers(request: Request) -> dict[str, str]:
     """
@@ -95,6 +104,60 @@ except Exception as e:
     logger.error(f"Failed to import commands in API process: {e}")
 
 
+async def _wait_for_database(migration_manager: AsyncMigrationManager) -> None:
+    """
+    Wait for SurrealDB to accept connections before running migrations.
+
+    Docker Compose can start the API before the database name is resolvable. Keep
+    migration errors fail-fast by only retrying this lightweight readiness probe.
+    """
+    attempts = max(1, DATABASE_STARTUP_RETRY_ATTEMPTS)
+    delay = DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS
+
+    for attempt in range(1, attempts + 1):
+        try:
+            await asyncio.wait_for(
+                migration_manager.ping(),
+                timeout=DATABASE_STARTUP_RETRY_PROBE_TIMEOUT_SECONDS,
+            )
+            if attempt > 1:
+                logger.info(f"Database became reachable on attempt {attempt}")
+            return
+        except Exception as e:
+            if attempt == attempts:
+                logger.error(
+                    f"Database did not become reachable after {attempts} attempts"
+                )
+                raise
+
+            logger.warning(
+                "Database is not reachable yet "
+                f"(attempt {attempt}/{attempts}): {str(e)}. "
+                f"Retrying in {delay:g} seconds..."
+            )
+            await asyncio.sleep(delay)
+            delay = min(delay * 2, DATABASE_STARTUP_RETRY_MAX_DELAY_SECONDS)
+
+
+async def _run_database_migrations() -> None:
+    """Run startup database migrations after SurrealDB is reachable."""
+    migration_manager = AsyncMigrationManager()
+    await _wait_for_database(migration_manager)
+
+    current_version = await migration_manager.get_current_version()
+    logger.info(f"Current database version: {current_version}")
+
+    if await migration_manager.needs_migration():
+        logger.warning("Database migrations are pending. Running migrations...")
+        await migration_manager.run_migration_up()
+        new_version = await migration_manager.get_current_version()
+        logger.success(
+            f"Migrations completed successfully. Database is now at version {new_version}"
+        )
+    else:
+        logger.info("Database is already at the latest version. No migrations needed.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -115,21 +178,7 @@ async def lifespan(app: FastAPI):
     # Run database migrations
 
     try:
-        migration_manager = AsyncMigrationManager()
-        current_version = await migration_manager.get_current_version()
-        logger.info(f"Current database version: {current_version}")
-
-        if await migration_manager.needs_migration():
-            logger.warning("Database migrations are pending. Running migrations...")
-            await migration_manager.run_migration_up()
-            new_version = await migration_manager.get_current_version()
-            logger.success(
-                f"Migrations completed successfully. Database is now at version {new_version}"
-            )
-        else:
-            logger.info(
-                "Database is already at the latest version. No migrations needed."
-            )
+        await _run_database_migrations()
     except Exception as e:
         logger.error(f"CRITICAL: Database migration failed: {str(e)}")
         logger.exception(e)

@@ -21,8 +21,10 @@ SAFETY_BUFFER = 0.90
 # Conservative fallback context limit (tokens) when an error can't be parsed.
 DEFAULT_CONTEXT_LIMIT = 8192
 
-# Initial output buffer (tokens).
-DEFAULT_OUTPUT_TOKENS = 4096
+# Initial output buffer (tokens). Matches the max_tokens the transformation
+# graph has always used for the full-content attempt; lowering it would
+# silently truncate outputs on the common (non-chunked) path.
+DEFAULT_OUTPUT_TOKENS = 8192
 
 # Fraction of the context window reserved for the model's output.
 OUTPUT_RATIO = 0.10
@@ -73,7 +75,17 @@ def token_cost(token_count: int, cost_per_million: float = 0.150) -> float:
 def parse_context_limit_error(error: Exception) -> Optional[Tuple[int, int]]:
     """Extract token counts from a context-limit error message.
 
-    Supports the common formats from OpenAI, Anthropic, and Google.
+    Context-limit detection is inherently provider-format-dependent: providers
+    report the limit only in free-text error messages, so this parses the known
+    wordings and will return ``None`` for formats it doesn't recognize (callers
+    then fall back to ``DEFAULT_CONTEXT_LIMIT`` — see
+    ``get_context_limit_from_error``). Supported formats:
+
+    - OpenAI: ``"maximum context length is 8192 tokens... 10000 tokens"``
+    - Anthropic: ``"prompt is too long: 10000 tokens > 8192 maximum"``
+    - Google: ``"input token count (10000) exceeds the maximum (8192)"``
+    - Generic variants: ``"10000 tokens > 8192"``, ``"tokens (10000) exceeded
+      ... limit 8192"``, or a lone ``"max/maximum ... <limit>"``
 
     Returns:
         ``(tokens_sent, context_limit)`` if parseable, else ``None``.
@@ -147,7 +159,12 @@ def parse_context_limit_error(error: Exception) -> Optional[Tuple[int, int]]:
 
 def is_context_limit_error(error: Exception) -> bool:
     """Return True if the exception is a context/token-limit error (and not a
-    rate limit, auth, quota, network, etc.)."""
+    rate limit, auth, quota, network, etc.).
+
+    Like ``parse_context_limit_error``, this matches provider wordings by
+    keyword: non-context errors are excluded first, then context keywords are
+    required. Unknown wordings return False, so callers treat the error as a
+    regular failure rather than chunking on it."""
     error_msg = str(error).lower()
 
     non_context_keywords = [
@@ -198,7 +215,12 @@ def get_context_limit_from_error(
     error: Exception, default_limit: int = DEFAULT_CONTEXT_LIMIT
 ) -> Tuple[Optional[int], int]:
     """Parse a context-limit error, falling back to ``default_limit`` when the
-    limit can't be parsed. Returns ``(tokens_sent, context_limit)``."""
+    limit can't be parsed. Returns ``(tokens_sent, context_limit)``.
+
+    The fallback is deliberately conservative: an unrecognized wording yields
+    ``DEFAULT_CONTEXT_LIMIT`` (8192), which may over-chunk a large-context
+    model (more, smaller chunks) but never produces chunks that are too big to
+    process."""
     parsed = parse_context_limit_error(error)
     if parsed:
         return parsed

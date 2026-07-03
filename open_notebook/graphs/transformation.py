@@ -13,6 +13,7 @@ to fit a token budget and synthesized in rounds until one result remains.
 
 import asyncio
 import operator
+import weakref
 from typing import Annotated, List, Optional, Union
 
 from ai_prompter import Prompter
@@ -42,9 +43,28 @@ from open_notebook.utils.token_utils import (
 )
 
 # Bound how many chunk/synthesis LLM calls run at once so a large document (many
-# chunks) doesn't fan out into a burst of provider requests.
+# chunks) doesn't fan out into a burst of provider requests. Note this is a
+# second concurrency layer on top of the worker's own task limit
+# (OPEN_NOTEBOOK_WORKER_MAX_TASKS, see #893): the worst-case number of
+# concurrent provider calls is roughly worker tasks x this limit.
 _CHUNK_CONCURRENCY_LIMIT = 3
-_chunk_semaphore = asyncio.Semaphore(_CHUNK_CONCURRENCY_LIMIT)
+
+# Semaphores are created lazily per event loop: an asyncio.Semaphore binds to
+# the loop it is first awaited from, and this graph runs from both the worker's
+# and the API's loops. All Send() nodes of one invocation share a loop, so a
+# per-loop semaphore still bounds the fan-out of a single transformation.
+_chunk_semaphores: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, asyncio.Semaphore]" = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def _get_chunk_semaphore() -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    sem = _chunk_semaphores.get(loop)
+    if sem is None:
+        sem = asyncio.Semaphore(_CHUNK_CONCURRENCY_LIMIT)
+        _chunk_semaphores[loop] = sem
+    return sem
 
 
 class ChunkResult(TypedDict):
@@ -214,16 +234,18 @@ async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
     title = state.get("title", "transformation")
 
     logger.info(f"Processing chunk {idx + 1}/{total} for '{title}'")
+    # The section hint lives in the system prompt so it can't bleed into the
+    # output of extraction-style transformations that echo the user content.
+    chunk_system_prompt = (
+        f"{state['system_prompt']}\n\n"
+        f"[Note: The input is section {idx + 1} of {total} of a larger "
+        f"document. Apply the instructions to this section only.]"
+    )
     payload = [
-        SystemMessage(content=state["system_prompt"]),
-        HumanMessage(
-            content=(
-                f"[Processing section {idx + 1} of {total} from a larger document]"
-                f"\n\n{state['chunk']}"
-            )
-        ),
+        SystemMessage(content=chunk_system_prompt),
+        HumanMessage(content=state["chunk"]),
     ]
-    async with _chunk_semaphore:
+    async with _get_chunk_semaphore():
         chain = await provision_langchain_model(
             str(payload),
             state.get("model_id"),
@@ -265,7 +287,7 @@ async def _synthesize_once(
         SystemMessage(content=synthesis_prompt),
         HumanMessage(content=combined_text),
     ]
-    async with _chunk_semaphore:
+    async with _get_chunk_semaphore():
         chain = await provision_langchain_model(
             str(payload),
             state.get("model_id"),

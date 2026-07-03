@@ -161,6 +161,104 @@ class TestTransformationGraph:
         assert fan_out_chunks({"needs_chunking": True, "chunks": []}) == "synthesize"
 
 
+class TestTransformationFullContentPath:
+    """Tests for the optimistic full-content attempt."""
+
+    @pytest.mark.asyncio
+    async def test_full_content_uses_8192_output_cap(self):
+        """The full-content attempt must keep the pre-chunking 8192 output cap;
+        a lower cap would silently truncate outputs on the common path."""
+        from open_notebook.domain.transformation import Transformation
+
+        mock_transformation = MagicMock(spec=Transformation)
+        mock_transformation.prompt = "Summarize the document."
+        mock_transformation.title = "Summary"
+
+        state = {
+            "input_text": "Some short content.",
+            "transformation": mock_transformation,
+            "source": None,
+        }
+
+        resp = MagicMock()
+        resp.content = "summary"
+        fake_chain = MagicMock()
+        fake_chain.ainvoke = AsyncMock(return_value=resp)
+        provision = AsyncMock(return_value=fake_chain)
+
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new=provision,
+        ):
+            result = await try_full_content(state, {"configurable": {}})
+
+        assert result == {"output": "summary", "needs_chunking": False}
+        assert provision.await_args.kwargs["max_tokens"] == 8192
+
+
+class TestProcessChunk:
+    """Tests for the parallel chunk processor."""
+
+    @pytest.mark.asyncio
+    async def test_chunk_sent_verbatim_with_hint_in_system_prompt(self):
+        """The section hint must live in the system prompt, not the user
+        content, so it can't bleed into extraction-style outputs."""
+        from open_notebook.graphs.transformation import process_chunk
+
+        state = {
+            "system_prompt": "Extract all names.",
+            "model_id": None,
+            "output_buffer": 800,
+            "title": "Names",
+            "chunk": "Alice met Bob.",
+            "chunk_idx": 1,
+            "total_chunks": 3,
+        }
+
+        resp = MagicMock()
+        resp.content = "Alice, Bob"
+        fake_chain = MagicMock()
+        fake_chain.ainvoke = AsyncMock(return_value=resp)
+
+        with patch(
+            "open_notebook.graphs.transformation.provision_langchain_model",
+            new=AsyncMock(return_value=fake_chain),
+        ):
+            result = await process_chunk(state, {"configurable": {}})
+
+        payload = fake_chain.ainvoke.await_args.args[0]
+        system_message, human_message = payload
+        assert human_message.content == "Alice met Bob."
+        assert system_message.content.startswith("Extract all names.")
+        assert "section 2 of 3" in system_message.content
+        assert result == {"chunk_results": [{"idx": 1, "result": "Alice, Bob"}]}
+
+    def test_chunk_semaphore_is_per_event_loop(self):
+        """Each event loop gets its own semaphore (a shared one would raise
+        'bound to a different event loop' across worker/API loops)."""
+        import asyncio
+
+        from open_notebook.graphs.transformation import _get_chunk_semaphore
+
+        async def grab_twice():
+            return _get_chunk_semaphore(), _get_chunk_semaphore()
+
+        loop1 = asyncio.new_event_loop()
+        try:
+            sem_a, sem_b = loop1.run_until_complete(grab_twice())
+        finally:
+            loop1.close()
+
+        loop2 = asyncio.new_event_loop()
+        try:
+            sem_c, _ = loop2.run_until_complete(grab_twice())
+        finally:
+            loop2.close()
+
+        assert sem_a is sem_b  # same loop reuses its semaphore
+        assert sem_a is not sem_c  # different loop gets a fresh one
+
+
 class TestTransformationChunkingReduce:
     """Tests for the large-document chunking + hierarchical synthesis reduce."""
 

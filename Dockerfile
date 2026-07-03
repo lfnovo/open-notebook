@@ -100,6 +100,8 @@ ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 
 # Bind Next.js to all interfaces (required for Docker networking and reverse proxies)
 ENV HOSTNAME=0.0.0.0
+# Bind the API to all interfaces (IPv4). Set API_HOST=:: for IPv6 dual-stack environments
+ENV API_HOST=0.0.0.0
 
 # Copy built frontend from builder stage
 COPY --from=builder /app/frontend/.next/standalone /app/frontend/

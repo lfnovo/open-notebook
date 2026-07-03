@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Refresh content" action on web-link sources — re-fetches the URL and re-embeds the source so its content stays current, available from the source card menu once processing has completed (translated across all 14 locales) (#259)
 
 ### Changed
+- The API's listen interface in the Docker images is now configurable via a new `API_HOST` environment variable instead of a hardcoded `--host 0.0.0.0`. The default is unchanged (`0.0.0.0`); set `API_HOST=::` to serve IPv6/dual-stack environments (#985)
 - `docker-compose.yml` now sources the SurrealDB credentials from `SURREAL_USER` / `SURREAL_PASSWORD` (applied to both the database server and the app), defaulting to `root:root` so the zero-config quick start is unchanged. Set them in a `.env` file to use your own credentials before exposing the instance; `.env.example` and the compose file note this (#946)
 
 ### Fixed

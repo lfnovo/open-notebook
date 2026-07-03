@@ -262,6 +262,11 @@ export const ptBR = {
     createSuccess: "Caderno criado com sucesso",
     updateSuccess: "Caderno atualizado com sucesso",
     deleteSuccess: "Caderno excluído com sucesso",
+    recentlyViewed: "Vistos recentemente",
+    toggleRecentlyViewed: "Alternar vistos recentemente",
+    recentlyViewedNotebook: "Caderno",
+    recentlyViewedSource: "Fonte",
+    lastViewed: "Visto {{time}}",
   },
   sources: {
     bulkContext: "Contexto",

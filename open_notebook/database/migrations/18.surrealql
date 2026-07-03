@@ -1,0 +1,10 @@
+-- Migration 18: Recently viewed timestamps
+-- Adds optional last-viewed timestamps for notebooks and sources.
+
+DEFINE FIELD IF NOT EXISTS last_viewed_at ON TABLE notebook TYPE option<datetime>;
+DEFINE FIELD IF NOT EXISTS last_viewed_at ON TABLE source TYPE option<datetime>;
+
+-- Indexes backing the recently-viewed query (ORDER BY last_viewed_at DESC LIMIT)
+-- so it does not degrade into a full table scan as data grows.
+DEFINE INDEX IF NOT EXISTS idx_notebook_last_viewed ON TABLE notebook FIELDS last_viewed_at CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_source_last_viewed ON TABLE source FIELDS last_viewed_at CONCURRENTLY;

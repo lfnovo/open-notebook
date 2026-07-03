@@ -262,6 +262,11 @@ export const enUS = {
     createSuccess: "Notebook created successfully",
     updateSuccess: "Notebook updated successfully",
     deleteSuccess: "Notebook deleted successfully",
+    recentlyViewed: "Recently Viewed",
+    toggleRecentlyViewed: "Toggle recently viewed",
+    recentlyViewedNotebook: "Notebook",
+    recentlyViewedSource: "Source",
+    lastViewed: "Viewed {{time}}",
   },
   sources: {
     title: "Sources",

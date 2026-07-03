@@ -262,6 +262,11 @@ export const zhCN = {
     createSuccess: "笔记本创建成功",
     updateSuccess: "笔记本更新成功",
     deleteSuccess: "笔记本删除成功",
+    recentlyViewed: "最近查看",
+    toggleRecentlyViewed: "切换最近查看",
+    recentlyViewedNotebook: "笔记本",
+    recentlyViewedSource: "来源",
+    lastViewed: "查看于{{time}}",
   },
   sources: {
     bulkContext: "上下文",

@@ -265,6 +265,11 @@ export const deDE = {
     createSuccess: "Notebook erfolgreich erstellt",
     updateSuccess: "Notebook erfolgreich aktualisiert",
     deleteSuccess: "Notebook erfolgreich gelöscht",
+    recentlyViewed: "Zuletzt angesehen",
+    toggleRecentlyViewed: "Zuletzt angesehen ein-/ausblenden",
+    recentlyViewedNotebook: "Notebook",
+    recentlyViewedSource: "Quelle",
+    lastViewed: "Angesehen {{time}}",
   },
   sources: {
     bulkContext: "Kontext",

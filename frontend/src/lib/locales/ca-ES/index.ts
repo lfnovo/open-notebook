@@ -262,6 +262,11 @@ export const caES = {
     createSuccess: "S'ha creat el quadern correctament",
     updateSuccess: "S'ha actualitzat el quadern correctament",
     deleteSuccess: "S'ha suprimit el quadern correctament",
+    recentlyViewed: "Vistos recentment",
+    toggleRecentlyViewed: "Commuta els vistos recentment",
+    recentlyViewedNotebook: "Quadern",
+    recentlyViewedSource: "Font",
+    lastViewed: "Vist {{time}}",
   },
   sources: {
     bulkContext: "Context",

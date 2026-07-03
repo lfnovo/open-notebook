@@ -262,6 +262,11 @@ export const zhTW = {
     createSuccess: "筆記本新增成功",
     updateSuccess: "筆記本更新成功",
     deleteSuccess: "筆記本刪除成功",
+    recentlyViewed: "最近檢視",
+    toggleRecentlyViewed: "切換最近檢視",
+    recentlyViewedNotebook: "筆記本",
+    recentlyViewedSource: "來源",
+    lastViewed: "檢視於{{time}}",
   },
   sources: {
     bulkContext: "上下文",

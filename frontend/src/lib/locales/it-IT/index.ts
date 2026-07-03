@@ -262,6 +262,11 @@ export const itIT = {
     createSuccess: "Quaderno creato con successo",
     updateSuccess: "Quaderno aggiornato con successo",
     deleteSuccess: "Quaderno eliminato con successo",
+    recentlyViewed: "Visti di recente",
+    toggleRecentlyViewed: "Mostra/nascondi visti di recente",
+    recentlyViewedNotebook: "Quaderno",
+    recentlyViewedSource: "Fonte",
+    lastViewed: "Visto {{time}}",
   },
   sources: {
     bulkContext: "Contesto",

@@ -262,6 +262,11 @@ export const trTR = {
     createSuccess: "Defter başarıyla oluşturuldu",
     updateSuccess: "Defter başarıyla güncellendi",
     deleteSuccess: "Defter başarıyla silindi",
+    recentlyViewed: "Son Görüntülenenler",
+    toggleRecentlyViewed: "Son görüntülenenleri aç/kapat",
+    recentlyViewedNotebook: "Defter",
+    recentlyViewedSource: "Kaynak",
+    lastViewed: "{{time}} görüntülendi",
   },
   sources: {
     bulkContext: "Bağlam",

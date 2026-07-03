@@ -262,6 +262,11 @@ export const jaJP = {
     createSuccess: "ノートブックを作成しました",
     updateSuccess: "ノートブックを更新しました",
     deleteSuccess: "ノートブックを削除しました",
+    recentlyViewed: "最近表示した項目",
+    toggleRecentlyViewed: "最近表示した項目の表示切替",
+    recentlyViewedNotebook: "ノートブック",
+    recentlyViewedSource: "ソース",
+    lastViewed: "{{time}}に表示",
   },
   sources: {
     bulkContext: "コンテキスト",

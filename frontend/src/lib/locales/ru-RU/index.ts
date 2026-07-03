@@ -262,6 +262,11 @@ export const ruRU = {
     createSuccess: "Блокнот успешно создан",
     updateSuccess: "Блокнот успешно обновлён",
     deleteSuccess: "Блокнот успешно удалён",
+    recentlyViewed: "Недавно просмотренные",
+    toggleRecentlyViewed: "Показать/скрыть недавно просмотренные",
+    recentlyViewedNotebook: "Блокнот",
+    recentlyViewedSource: "Источник",
+    lastViewed: "Просмотрено {{time}}",
   },
   sources: {
     bulkContext: "Контекст",

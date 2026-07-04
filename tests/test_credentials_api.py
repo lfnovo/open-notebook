@@ -259,6 +259,14 @@ class TestAudioMatrixWiring:
         assert "text_to_speech" in PROVIDER_MODALITIES["vertex"]
         assert "speech_to_text" in PROVIDER_MODALITIES["elevenlabs"]
 
+    def test_google_and_vertex_use_current_test_model(self):
+        # Regression test for #970: the connection test used the retired
+        # gemini-2.0-flash, so testing a valid Google AI key failed with 404.
+        from open_notebook.ai.connection_tester import TEST_MODELS
+
+        assert TEST_MODELS["google"] == ("gemini-2.5-flash", "language")
+        assert TEST_MODELS["vertex"] == ("gemini-2.5-flash", "language")
+
     def test_classify_matrix(self):
         from open_notebook.ai.model_discovery import classify_model_type
 

@@ -172,7 +172,7 @@ Maps each provider to `(model_name, model_type)` for testing:
 TEST_MODELS = {
     "openai": ("gpt-3.5-turbo", "language"),
     "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-1.5-flash", "language"),
+    "google": ("gemini-2.5-flash", "language"),
     "groq": ("llama-3.1-8b-instant", "language"),
     "voyage": ("voyage-3-lite", "embedding"),
     "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),

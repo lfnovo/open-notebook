@@ -87,6 +87,17 @@ export function AppSidebar() {
   const [createMenuOpen, setCreateMenuOpen] = useState(false)
   const [isMac, setIsMac] = useState(true) // Default to Mac for SSR
 
+  // Determine the single active nav item by longest matching path prefix.
+  // Avoids highlighting parent routes (e.g. /settings) when a more specific
+  // item (e.g. /settings/api-keys) is active.
+  const activeHref = navigation
+    .reduce<string[]>((hrefs, section) => {
+      section.items.forEach((item) => hrefs.push(item.href))
+      return hrefs
+    }, [])
+    .filter((href) => pathname === href || pathname?.startsWith(href + '/'))
+    .sort((a, b) => b.length - a.length)[0]
+
   // Detect platform for keyboard shortcut display
   useEffect(() => {
     setIsMac(navigator.platform.toLowerCase().includes('mac'))
@@ -253,7 +264,7 @@ export function AppSidebar() {
                 )}
 
                 {section.items.map((item) => {
-                  const isActive = pathname?.startsWith(item.href) || false
+                  const isActive = item.href === activeHref
                   const button = (
                     <Button
                       variant={isActive ? 'secondary' : 'ghost'}

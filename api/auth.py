@@ -1,3 +1,4 @@
+import secrets
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request
@@ -67,8 +68,10 @@ class PasswordAuthMiddleware(BaseHTTPMiddleware):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Check password
-        if credentials != self.password:
+        # Check password (constant-time to avoid a timing side-channel)
+        if not secrets.compare_digest(
+            credentials.encode("utf-8"), self.password.encode("utf-8")
+        ):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Invalid password"},
@@ -108,8 +111,10 @@ def check_api_password(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # Check password
-    if credentials.credentials != password:
+    # Check password (constant-time to avoid a timing side-channel)
+    if not secrets.compare_digest(
+        credentials.credentials.encode("utf-8"), password.encode("utf-8")
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid password",

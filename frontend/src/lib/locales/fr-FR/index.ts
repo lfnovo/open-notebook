@@ -12,6 +12,8 @@ export const frFR = {
     repoPathBrowse: "Browse…",
     repoPathBrowseRoot: "Choose root",
     repoPathBrowseHelp: "Only the folder name is detected — if you picked a subfolder, adjust the full path before starting.",
+    repoPathRecent: "Recent paths",
+    repoPathNoRecents: "No recent paths yet",
     theme: "What should we check?",
     themePlaceholder: "e.g. What do my sources say about API security, and does this repo follow it?",
     themeHelp: "Your question is the review theme — the angle the sources are distilled around.",

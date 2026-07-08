@@ -5,7 +5,13 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useNotebooks } from '@/lib/hooks/use-notebooks'
-import { useCreateReview, useReviewStatus, useReviewReport } from '@/lib/hooks/use-review'
+import {
+  useCreateReview,
+  useReviewStatus,
+  useReviewReport,
+  useReviewConfig,
+  useRecentReviewPaths,
+} from '@/lib/hooks/use-review'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -19,6 +25,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { RepoBrowseButton } from '@/components/search/RepoBrowseButton'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { AlertCircle, FolderGit2 } from 'lucide-react'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
@@ -40,6 +59,10 @@ export function ReviewCodePanel() {
   const [repoPath, setRepoPath] = useState('')
   const [theme, setTheme] = useState('')
   const [reviewId, setReviewId] = useState<string | null>(null)
+  const [pathPopoverOpen, setPathPopoverOpen] = useState(false)
+  const { data: reviewConfig } = useReviewConfig()
+  const { data: recentPaths } = useRecentReviewPaths()
+  const allowedRoots = reviewConfig?.allowed_roots ?? []
 
   const createReview = useCreateReview()
   const { data: review } = useReviewStatus(reviewId)
@@ -112,15 +135,58 @@ export function ReviewCodePanel() {
         {/* Repo path */}
         <div className="space-y-2">
           <Label htmlFor="review-path">{t('reviewPage.repoPath')}</Label>
-          <Input
-            id="review-path"
-            placeholder={t('reviewPage.repoPathPlaceholder')}
-            value={repoPath}
-            onChange={(e) => setRepoPath(e.target.value)}
-            disabled={isRunning}
-            autoComplete="off"
-          />
+          <Popover open={pathPopoverOpen} onOpenChange={setPathPopoverOpen}>
+            <PopoverAnchor>
+              <Input
+                id="review-path"
+                placeholder={t('reviewPage.repoPathPlaceholder')}
+                value={repoPath}
+                onChange={(e) => setRepoPath(e.target.value)}
+                onFocus={() => setPathPopoverOpen(true)}
+                disabled={isRunning}
+                autoComplete="off"
+              />
+            </PopoverAnchor>
+            <PopoverContent
+              className="w-[--radix-popover-trigger-width] p-0"
+              align="start"
+              onOpenAutoFocus={(e) => e.preventDefault()}
+            >
+              <Command shouldFilter={false}>
+                <CommandList>
+                  <CommandEmpty>{t('reviewPage.repoPathNoRecents')}</CommandEmpty>
+                  <CommandGroup heading={t('reviewPage.repoPathRecent')}>
+                    {(recentPaths || [])
+                      .filter(
+                        (path) =>
+                          !repoPath.trim() ||
+                          path.toLowerCase().includes(repoPath.trim().toLowerCase())
+                      )
+                      .map((path) => (
+                        <CommandItem
+                          key={path}
+                          value={path}
+                          onSelect={() => {
+                            setRepoPath(path)
+                            setPathPopoverOpen(false)
+                          }}
+                        >
+                          {path}
+                        </CommandItem>
+                      ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <p className="text-xs text-muted-foreground">{t('reviewPage.repoPathHelp')}</p>
+          {allowedRoots.length > 0 && (
+            <RepoBrowseButton
+              allowedRoots={allowedRoots}
+              disabled={isRunning}
+              onPick={setRepoPath}
+            />
+          )}
         </div>
 
         {/* Theme */}

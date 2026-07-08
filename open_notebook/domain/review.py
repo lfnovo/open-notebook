@@ -50,3 +50,26 @@ class Review(ObjectModel):
                 {"limit": limit},
             )
         return [cls(**row) for row in result]
+
+    @classmethod
+    async def get_recent_paths(cls, limit: int = 10, scan_limit: int = 200) -> List[str]:
+        """Distinct repo_path values from recent reviews, newest first.
+
+        Scans the most recent `scan_limit` review records and dedupes in Python,
+        since SurrealQL's DISTINCT doesn't preserve the ORDER BY recency we need.
+        """
+        result = await repo_query(
+            "SELECT repo_path FROM review ORDER BY created DESC LIMIT $scan_limit",
+            {"scan_limit": scan_limit},
+        )
+        seen: set = set()
+        paths: List[str] = []
+        for row in result:
+            path = row.get("repo_path")
+            if not path or path in seen:
+                continue
+            seen.add(path)
+            paths.append(path)
+            if len(paths) >= limit:
+                break
+        return paths

@@ -8,6 +8,7 @@ provider-configured URL immediately before it is actually used - closing most
 of the DNS-rebinding TOCTOU window left by validating only once, at save time.
 """
 
+import asyncio
 import ipaddress
 import socket
 from urllib.parse import urlparse
@@ -18,7 +19,7 @@ from urllib.parse import urlparse
 _AWS_IMDS_V6_ADDRESS = ipaddress.ip_address("fd00:ec2::254")
 
 
-def validate_url(url: str, provider: str) -> None:
+async def validate_url(url: str, provider: str) -> None:
     """
     Validate URL format for API endpoints.
 
@@ -68,8 +69,12 @@ def validate_url(url: str, provider: str) -> None:
                 raise
             # Not an IP address, it's a hostname - need to resolve and check
             try:
-                # Resolve hostname to IP address
-                resolved_ips = socket.getaddrinfo(hostname, None)
+                # Resolve hostname to IP address. This is a blocking call -
+                # run it off the event loop so a slow/hanging DNS lookup
+                # doesn't stall every other concurrent request (this is
+                # called on the hot path of model provisioning, potentially
+                # once per chat message/transformation).
+                resolved_ips = await asyncio.to_thread(socket.getaddrinfo, hostname, None)
                 for family, _, _, _, sockaddr in resolved_ips:
                     ip_addr = sockaddr[0]
                     try:

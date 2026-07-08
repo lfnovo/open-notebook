@@ -178,7 +178,7 @@ The Credential Management system enables users to configure AI provider credenti
 
 **Security Features**:
 - NEVER returns actual API key values (only metadata)
-- URL validation (SSRF protection) on all URL fields via `_validate_url()`
+- URL validation (SSRF protection) on all URL fields via `validate_url()` (`open_notebook/utils/url_validation.py`) - async, since hostname resolution runs `socket.getaddrinfo()` via `asyncio.to_thread` rather than blocking the event loop
 - Allows private IPs and localhost for self-hosted services (Ollama, LM Studio)
 - Requires `OPEN_NOTEBOOK_ENCRYPTION_KEY` to be set for storing credentials
 

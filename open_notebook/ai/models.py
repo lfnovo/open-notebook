@@ -28,7 +28,7 @@ _URL_CONFIG_KEYS = (
 )
 
 
-def _revalidate_config_urls(config: dict, provider: str) -> None:
+async def _revalidate_config_urls(config: dict, provider: str) -> None:
     """
     Re-validate a credential's URL fields immediately before they're used for
     a real request.
@@ -44,7 +44,7 @@ def _revalidate_config_urls(config: dict, provider: str) -> None:
         value = config.get(key)
         if value:
             try:
-                validate_url(value, provider)
+                await validate_url(value, provider)
             except ValueError as e:
                 raise ConfigurationError(str(e)) from e
 
@@ -156,7 +156,7 @@ class ModelManager:
             credential = await model.get_credential_obj()
             if credential:
                 config = credential.to_esperanto_config()
-                _revalidate_config_urls(config, model.provider)
+                await _revalidate_config_urls(config, model.provider)
                 logger.debug(
                     f"Using credential '{credential.name}' for model {model.name}"
                 )

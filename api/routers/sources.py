@@ -66,7 +66,10 @@ async def _stamp_source_view(source_id: str) -> None:
 
 
 def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
-    """Generate unique filename like Streamlit app (append counter if file exists)."""
+    """Generate unique filename like Streamlit app (append counter if file exists),
+    atomically reserving it so two concurrent uploads that land on the same
+    candidate name can't both pass the check and then clobber each other -
+    the loser's claim attempt fails and moves on to the next candidate."""
     file_path = Path(upload_folder)
     file_path.mkdir(parents=True, exist_ok=True)
 
@@ -78,8 +81,9 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
     # Split filename and extension
     stem = Path(safe_filename).stem
     suffix = Path(safe_filename).suffix
+    safe_root = file_path.resolve()
 
-    # Check if file exists and generate unique name
+    # Find and atomically claim a unique name
     counter = 0
     while True:
         if counter == 0:
@@ -90,11 +94,17 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
         full_path = file_path / new_filename
         # Verify resolved path stays within upload folder
         resolved = full_path.resolve()
-        if not str(resolved).startswith(str(file_path.resolve()) + os.sep):
+        if not str(resolved).startswith(str(safe_root) + os.sep):
             raise ValueError("Invalid filename: path traversal detected")
-        if not resolved.exists():
+
+        try:
+            # O_EXCL via touch(exist_ok=False): atomically create-or-fail,
+            # instead of exists() (check) followed by a separate write
+            # (act) elsewhere with a race window in between.
+            resolved.touch(exist_ok=False)
             return str(resolved)
-        counter += 1
+        except FileExistsError:
+            counter += 1
 
 
 def _write_uploaded_file(filename: str, content: bytes) -> str:
@@ -642,7 +652,7 @@ async def _resolve_source_file(source_id: str) -> tuple[str, str]:
     safe_root = os.path.realpath(UPLOADS_FOLDER)
     resolved_path = os.path.realpath(file_path)
 
-    if not resolved_path.startswith(safe_root):
+    if resolved_path != safe_root and not resolved_path.startswith(safe_root + os.sep):
         logger.warning(
             f"Blocked download outside uploads directory for source {source_id}: {resolved_path}"
         )
@@ -663,7 +673,7 @@ def _is_source_file_available(source: Source) -> Optional[bool]:
     safe_root = os.path.realpath(UPLOADS_FOLDER)
     resolved_path = os.path.realpath(file_path)
 
-    if not resolved_path.startswith(safe_root):
+    if resolved_path != safe_root and not resolved_path.startswith(safe_root + os.sep):
         return False
 
     return os.path.exists(resolved_path)

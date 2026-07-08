@@ -301,7 +301,9 @@ class SourceCreate(BaseModel):
     )
     # New multi-notebook support
     notebooks: Optional[List[str]] = Field(
-        None, description="List of notebook IDs to add the source to"
+        None,
+        max_length=50,
+        description="List of notebook IDs to add the source to (max 50)",
     )
     # Required fields
     type: str = Field(..., description="Source type: link, upload, or text")
@@ -310,7 +312,9 @@ class SourceCreate(BaseModel):
     content: Optional[str] = Field(None, description="Text content for text type")
     title: Optional[str] = Field(None, description="Source title")
     transformations: Optional[List[str]] = Field(
-        default_factory=list, description="Transformation IDs to apply"
+        default_factory=list,
+        max_length=50,
+        description="Transformation IDs to apply (max 50)",
     )
     embed: bool = Field(False, description="Whether to embed content for vector search")
     delete_source: bool = Field(

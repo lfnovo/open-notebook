@@ -146,7 +146,7 @@ Open Notebook currently uses simple password-based middleware (`PasswordAuthMidd
 
 ### CORS
 
-The default CORS configuration allows all origins (`allow_origins=["*"]`). This is tracked for improvement in [#730](https://github.com/lfnovo/open-notebook/issues/730). For production deployments, restrict origins to only the frontend URL.
+The default CORS configuration allows all origins (`allow_origins=["*"]`). `allow_credentials` is tied to that: `False` for the default wildcard (avoids Starlette reflecting any Origin alongside credentials), automatically `True` once `CORS_ORIGINS` is explicitly scoped to specific origins. For production deployments, still restrict `CORS_ORIGINS` to only the frontend URL.
 
 ---
 

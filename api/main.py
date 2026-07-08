@@ -82,13 +82,17 @@ def _cors_headers(request: Request) -> dict[str, str]:
     browsers reject `Access-Control-Allow-Origin: *` combined with
     credentials). Omits `Access-Control-Allow-Origin` for disallowed
     origins so the browser blocks the error body from leaking cross-origin.
+    Only claims Access-Control-Allow-Credentials when the real CORSMiddleware
+    would (see its allow_credentials comment above) - otherwise error
+    responses would grant credentialed access the success path doesn't.
     """
     origin = request.headers.get("origin")
     headers: dict[str, str] = {
-        "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Methods": "*",
         "Access-Control-Allow-Headers": "*",
     }
+    if not CORS_IS_DEFAULT_WILDCARD:
+        headers["Access-Control-Allow-Credentials"] = "true"
 
     if origin and ("*" in CORS_ALLOWED_ORIGINS or origin in CORS_ALLOWED_ORIGINS):
         headers["Access-Control-Allow-Origin"] = origin
@@ -235,10 +239,21 @@ app.add_middleware(
 )
 
 # Add CORS middleware last (so it processes first)
+#
+# allow_credentials is tied to whether CORS_ORIGINS was explicitly scoped:
+# combining allow_origins=["*"] with allow_credentials=True makes Starlette
+# reflect the request's Origin header verbatim (browsers reject a literal
+# "*" alongside credentials), which defeats the origin allowlist. The
+# frontend never sends credentialed requests (withCredentials: false) and
+# auth is a Bearer header, not a cookie, so this isn't independently
+# exploitable today - but there's no reason to allow it for the default
+# wildcard case. Once an operator explicitly scopes CORS_ORIGINS to real
+# origins, credentialed cross-origin requests to those origins are safe to
+# allow again.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=not CORS_IS_DEFAULT_WILDCARD,
     allow_methods=["*"],
     allow_headers=["*"],
 )

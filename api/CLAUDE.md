@@ -99,7 +99,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **Graph invocation is blocking**: chat/podcast workflows may take minutes; no timeout handling in services
 - **Command job fire-and-forget**: podcast_service.py submits jobs but doesn't wait (async job queue pattern)
 - **Model override scoping**: Model config override via RunnableConfig is per-request only (not persistent)
-- **CORS open by default**: main.py CORS settings allow all origins (restrict before production)
+- **CORS open by default**: main.py CORS settings allow all origins (restrict before production) via `CORS_ORIGINS`. `allow_credentials` is tied to that: `False` for the default wildcard (combining wildcard + credentials would make Starlette reflect any Origin), automatically `True` once `CORS_ORIGINS` is scoped to explicit origins
 - **No OpenAPI security scheme**: API docs available without auth (disable before production)
 - **Services don't validate user permission**: All endpoints trust authentication layer; no per-notebook permission checks
 

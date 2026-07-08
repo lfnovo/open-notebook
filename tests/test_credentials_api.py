@@ -264,7 +264,7 @@ class TestAudioMatrixWiring:
 
         # Gemini TTS preview is classifiable; plain Gemini STT name stays language
         assert classify_model_type("gemini-3.1-flash-tts-preview", "google") == "text_to_speech"
-        assert classify_model_type("gemini-2.0-flash", "google") == "language"
+        assert classify_model_type("gemini-2.5-flash", "google") == "language"
         # ElevenLabs Scribe STT must not be caught by the TTS "eleven" pattern
         assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
         assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"

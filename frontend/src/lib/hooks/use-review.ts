@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { reviewsApi, CreateReviewRequest } from '@/lib/api/reviews'
 import { notesApi } from '@/lib/api/notes'
 
@@ -6,8 +6,12 @@ const TERMINAL = new Set(['completed', 'failed'])
 
 /** Start a repo review. Returns the created (queued) Review record. */
 export function useCreateReview() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (data: CreateReviewRequest) => reviewsApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['review-recent-paths'] })
+    },
   })
 }
 

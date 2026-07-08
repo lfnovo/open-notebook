@@ -251,12 +251,20 @@ async def get_all_versions() -> List[dict]:
 
 
 async def bump_version() -> None:
-    """Bump the version by adding a new entry to migrations table."""
+    """Bump the version by adding a new entry to migrations table.
+
+    Uses UPSERT rather than CREATE: with CREATE, concurrent API replicas that
+    both read the same current_version and race to bump to the same
+    new_version would have the second CREATE fail ("already exists"),
+    crash-looping that replica's startup. UPSERT makes a duplicate bump to
+    the same version a harmless no-op (just re-applies the same fields)
+    instead of an error.
+    """
     current_version = await get_latest_version()
     new_version = current_version + 1
 
     await repo_query(
-        "CREATE type::thing('_sbl_migrations', $version) SET version = $version, applied_at = time::now();",
+        "UPSERT type::thing('_sbl_migrations', $version) SET version = $version, applied_at = time::now();",
         {"version": new_version},
     )
 

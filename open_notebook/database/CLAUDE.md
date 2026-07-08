@@ -58,7 +58,7 @@ Both leverage connection context manager for lifecycle management and automatic 
 **Version Tracking**
 - `get_latest_version()`: Query max version; returns 0 if _sbl_migrations table missing
 - `get_all_versions()`: Fetch all migration records; returns empty list on error
-- `bump_version()`: INSERT new entry into _sbl_migrations with version + applied_at timestamp
+- `bump_version()`: UPSERT (not CREATE) a new entry into _sbl_migrations with version + applied_at timestamp - UPSERT makes a duplicate bump to the same version (e.g. two replicas racing during startup) a harmless no-op instead of an "already exists" error that would crash-loop the replica
 - `lower_version()`: DELETE latest migration record (rollback)
 
 ### migrate.py

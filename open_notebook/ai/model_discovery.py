@@ -265,7 +265,7 @@ async def discover_google_models() -> List[DiscoveredModel]:
             data = response.json()
 
             for model in data.get("models", []):
-                # Google returns full path like "models/gemini-1.5-flash"
+                # Google returns full path like "models/gemini-2.5-flash"
                 model_name = model.get("name", "").replace("models/", "")
                 if model_name:
                     model_type = classify_model_type(model_name, "google")

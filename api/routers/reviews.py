@@ -12,7 +12,8 @@ from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
 from api.command_service import CommandService
-from api.models import ReviewCreate, ReviewResponse
+from api.models import ReviewConfigResponse, ReviewCreate, ReviewResponse
+from open_notebook.config import REPO_REVIEW_ALLOWED_ROOTS
 from open_notebook.domain.review import Review
 from open_notebook.exceptions import (
     ConfigurationError,
@@ -110,6 +111,24 @@ async def list_reviews(
     except Exception as e:
         logger.error(f"Error listing reviews: {e}")
         raise HTTPException(status_code=500, detail=f"Error listing reviews: {e}")
+
+
+@router.get("/reviews/config", response_model=ReviewConfigResponse)
+async def get_review_config():
+    """Expose the configured allowed roots so the frontend can offer a folder picker."""
+    return ReviewConfigResponse(allowed_roots=list(REPO_REVIEW_ALLOWED_ROOTS))
+
+
+@router.get("/reviews/recent-paths", response_model=List[str])
+async def get_recent_review_paths():
+    """Distinct repo paths from past reviews, newest first — powers the path combobox."""
+    try:
+        return await Review.get_recent_paths()
+    except Exception as e:
+        logger.error(f"Error fetching recent review paths: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Error fetching recent review paths: {e}"
+        )
 
 
 @router.get("/reviews/{review_id}", response_model=ReviewResponse)

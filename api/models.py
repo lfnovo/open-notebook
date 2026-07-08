@@ -102,6 +102,10 @@ class ReviewResponse(BaseModel):
     updated: Optional[str] = None
 
 
+class ReviewConfigResponse(BaseModel):
+    allowed_roots: List[str]
+
+
 # Models API models
 class ModelCreate(BaseModel):
     name: str = Field(..., description="Model name (e.g., gpt-5-mini, claude, gemini)")

@@ -172,8 +172,8 @@ The Credential Management system enables users to configure AI provider credenti
 | POST | `/credentials/{credential_id}/register-models` | Register discovered models |
 | POST | `/credentials/migrate-from-provider-config` | Migrate from legacy ProviderConfig |
 
-**Supported Providers** (13 total):
-- Simple API key: `openai`, `anthropic`, `google`, `groq`, `mistral`, `deepseek`, `xai`, `openrouter`, `voyage`, `elevenlabs`
+**Supported Providers** (17 total; enforced via `SupportedProvider` Literal in `api/models.py`, kept in sync with the frontend's `ALL_PROVIDERS`, `connection_tester.py`'s `TEST_MODELS`, and `credentials_service.py`'s `PROVIDER_ENV_CONFIG`):
+- Simple API key: `openai`, `anthropic`, `google`, `groq`, `mistral`, `deepseek`, `xai`, `openrouter`, `voyage`, `elevenlabs`, `deepgram`, `dashscope`, `minimax`
 - URL-based: `ollama`
 - Multi-field: `azure`, `vertex`, `openai_compatible`
 

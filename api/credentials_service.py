@@ -7,11 +7,8 @@ Extracted from the credentials router to follow the service layer pattern.
 All functions raise ValueError for business errors (router converts to HTTPException).
 """
 
-import ipaddress
 import os
-import socket
 from typing import Dict, List, Optional
-from urllib.parse import urlparse
 
 import httpx
 from loguru import logger
@@ -21,6 +18,7 @@ from api.models import CredentialResponse
 from open_notebook.ai.model_discovery import classify_model_type
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
+from open_notebook.utils.url_validation import validate_url
 
 # =============================================================================
 # Constants
@@ -82,113 +80,6 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "dashscope": ["language"],
     "minimax": ["language"],
 }
-
-
-# =============================================================================
-# URL Validation (SSRF protection)
-# =============================================================================
-
-
-def validate_url(url: str, provider: str) -> None:
-    """
-    Validate URL format for API endpoints.
-
-    This is a self-hosted application, so we allow:
-    - Private IPs (10.x, 172.16-31.x, 192.168.x) for self-hosted services
-    - Localhost for local services (Ollama, LM Studio, etc.)
-
-    We only block:
-    - Invalid schemes (must be http or https)
-    - Malformed URLs
-    - Link-local addresses (169.254.x.x) - used for cloud metadata endpoints
-    - Hostnames that resolve to link-local addresses
-
-    Args:
-        url: The URL to validate
-        provider: The provider name (for logging/context)
-
-    Raises:
-        ValueError: If the URL is invalid
-    """
-    if not url or not url.strip():
-        return  # Empty URLs handled elsewhere
-
-    try:
-        parsed = urlparse(url.strip())
-
-        # Validate scheme - only http/https allowed
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(
-                f"Invalid URL scheme: '{parsed.scheme}'. Only http and https are allowed."
-            )
-
-        # Extract hostname
-        hostname = parsed.hostname
-        if not hostname:
-            raise ValueError("Invalid URL: hostname could not be determined.")
-
-        # Try to parse as IP address to check for dangerous addresses
-        try:
-            ip = ipaddress.ip_address(hostname)
-
-            # Block link-local addresses (169.254.x.x) - used for cloud metadata
-            # These are dangerous as they can expose cloud instance credentials
-            if ip.is_link_local:
-                raise ValueError(
-                    "Link-local addresses (169.254.x.x) are not allowed for security reasons. "
-                    "These addresses are used for cloud metadata endpoints."
-                )
-
-            # Block IPv4-mapped IPv6 addresses pointing to link-local
-            # e.g. ::ffff:169.254.169.254 bypasses IPv6 is_link_local check
-            if hasattr(ip, "ipv4_mapped") and ip.ipv4_mapped and ip.ipv4_mapped.is_link_local:
-                raise ValueError(
-                    "Link-local addresses (169.254.x.x) are not allowed for security reasons. "
-                    "These addresses are used for cloud metadata endpoints."
-                )
-
-        except ValueError as ve:
-            # Re-raise our own ValueErrors
-            if "Link-local" in str(ve) or "Invalid URL" in str(ve):
-                raise
-            # Not an IP address, it's a hostname - need to resolve and check
-            try:
-                # Resolve hostname to IP address
-                resolved_ips = socket.getaddrinfo(hostname, None)
-                for family, _, _, _, sockaddr in resolved_ips:
-                    ip_addr = sockaddr[0]
-                    try:
-                        parsed_ip = ipaddress.ip_address(ip_addr)
-                        if parsed_ip.is_link_local:
-                            raise ValueError(
-                                f"Hostname '{hostname}' resolves to a link-local address (169.254.x.x) which is not allowed for security reasons. "
-                                "These addresses are used for cloud metadata endpoints."
-                            )
-                        # Block IPv4-mapped IPv6 addresses pointing to link-local
-                        if (
-                            hasattr(parsed_ip, "ipv4_mapped")
-                            and parsed_ip.ipv4_mapped
-                            and parsed_ip.ipv4_mapped.is_link_local
-                        ):
-                            raise ValueError(
-                                f"Hostname '{hostname}' resolves to a link-local address (169.254.x.x) which is not allowed for security reasons. "
-                                "These addresses are used for cloud metadata endpoints."
-                            )
-                    except ValueError as inner_ve:
-                        if "link-local" in str(inner_ve).lower() or "Link-local" in str(inner_ve):
-                            raise
-                        # Skip non-IP addresses (e.g., IPv6 zones)
-                        continue
-            except socket.gaierror:
-                # Could not resolve hostname - allow it since the URL may be
-                # valid in the deployment environment (e.g., Azure endpoints,
-                # internal DNS names). We only block link-local addresses.
-                pass
-
-    except ValueError:
-        raise
-    except Exception:
-        raise ValueError("Invalid URL format. Check server logs for details.")
 
 
 # =============================================================================
@@ -541,6 +432,10 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     if provider == "ollama":
         ollama_url = base_url or "http://localhost:11434"
         try:
+            # Re-validate at request time: the base_url may have been saved
+            # against a hostname that only later resolved to an internal
+            # address (DNS rebinding).
+            validate_url(ollama_url, "ollama")
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{ollama_url}/api/tags", timeout=10.0)
                 response.raise_for_status()
@@ -562,6 +457,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not base_url:
             return []
         try:
+            # Re-validate at request time (see ollama branch above).
+            validate_url(base_url, "openai_compatible")
             headers = {}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -588,6 +485,8 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not endpoint or not api_key:
             return []
         try:
+            # Re-validate at request time (see ollama branch above).
+            validate_url(endpoint, "azure")
             url = f"{endpoint.rstrip('/')}/openai/models?api-version={api_version}"
             headers = {"api-key": api_key}
             async with httpx.AsyncClient() as client:

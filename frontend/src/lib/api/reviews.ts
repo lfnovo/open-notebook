@@ -23,6 +23,10 @@ export interface CreateReviewRequest {
   final_answer_model?: string | null
 }
 
+export interface ReviewConfigResponse {
+  allowed_roots: string[]
+}
+
 export const reviewsApi = {
   list: async (params?: { notebook_id?: string }) => {
     const response = await apiClient.get<ReviewResponse[]>('/reviews', { params })
@@ -41,5 +45,15 @@ export const reviewsApi = {
 
   delete: async (id: string) => {
     await apiClient.delete(`/reviews/${id}`)
+  },
+
+  getConfig: async () => {
+    const response = await apiClient.get<ReviewConfigResponse>('/reviews/config')
+    return response.data
+  },
+
+  getRecentPaths: async () => {
+    const response = await apiClient.get<string[]>('/reviews/recent-paths')
+    return response.data
   },
 }

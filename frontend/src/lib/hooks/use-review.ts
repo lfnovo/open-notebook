@@ -37,3 +37,19 @@ export function useReviewReport(noteId: string | null | undefined) {
     enabled: !!noteId,
   })
 }
+
+/** Roots the backend is allowed to scan — powers the repo-path folder picker. */
+export function useReviewConfig() {
+  return useQuery({
+    queryKey: ['review-config'],
+    queryFn: () => reviewsApi.getConfig(),
+  })
+}
+
+/** Distinct repo paths used in past reviews, newest first — powers the "recent paths" combobox. */
+export function useRecentReviewPaths() {
+  return useQuery({
+    queryKey: ['review-recent-paths'],
+    queryFn: () => reviewsApi.getRecentPaths(),
+  })
+}

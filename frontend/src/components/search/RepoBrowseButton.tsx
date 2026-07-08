@@ -79,7 +79,6 @@ export function RepoBrowseButton({ allowedRoots, disabled, onPick }: RepoBrowseB
         onChange={handleFilesSelected}
         // @ts-expect-error non-standard attribute, not in React's DOM typings
         webkitdirectory=""
-        // @ts-expect-error non-standard attribute, not in React's DOM typings
         directory=""
       />
     </div>

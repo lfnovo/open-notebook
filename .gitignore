@@ -142,3 +142,6 @@ specs/
 .harness/
 
 .mcp.json
+
+# Codebase-graphing tool output (local analysis artifacts, not part of the project)
+graphify-out/

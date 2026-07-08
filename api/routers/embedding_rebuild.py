@@ -39,14 +39,19 @@ async def start_rebuild(request: RebuildRequest):
 
         if request.include_sources:
             if request.mode == "existing":
-                # Count sources with embeddings
+                # Count sources with embeddings. SurrealQL requires a FROM
+                # clause on SELECT, but this is a single self-contained
+                # aggregate expression with nothing to iterate over - RETURN
+                # is the correct idiom for that (wrapped in [] to match the
+                # list-of-one-value shape the branch below expects, same as
+                # every other query in this function).
                 result = await repo_query(
                     """
-                    SELECT VALUE count(array::distinct(
+                    RETURN [count(array::distinct(
                         SELECT VALUE source.id
                         FROM source_embedding
                         WHERE embedding != none AND array::len(embedding) > 0
-                    )) as count FROM {}
+                    ))];
                     """
                 )
             else:

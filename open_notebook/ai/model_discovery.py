@@ -34,6 +34,7 @@ class DiscoveredModel:
 # These mappings help classify models by their capabilities based on naming patterns
 
 OPENAI_MODEL_TYPES = {
+    "image_generation": ["gpt-image", "dall-e"],
     "language": [
         "gpt-4",
         "gpt-3.5",
@@ -65,6 +66,7 @@ ANTHROPIC_MODELS = {
 }
 
 GOOGLE_MODEL_TYPES = {
+    "image_generation": ["image"],
     "language": ["gemini", "palm", "bison", "chat"],
     "embedding": ["embedding", "textembedding"],
     # Gemini TTS preview models carry "tts" in the name (checked before language).
@@ -158,7 +160,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
     """
     Classify a model into a type based on its name and provider.
 
-    Returns one of: language, embedding, speech_to_text, text_to_speech
+    Returns one of: language, embedding, speech_to_text, text_to_speech, image_generation
     """
     name_lower = model_name.lower()
 
@@ -180,7 +182,13 @@ def classify_model_type(model_name: str, provider: str) -> str:
     mapping = type_mappings.get(provider, {})
 
     # Check each type in order of specificity
-    for model_type in ["speech_to_text", "text_to_speech", "embedding", "language"]:
+    for model_type in [
+        "image_generation",
+        "speech_to_text",
+        "text_to_speech",
+        "embedding",
+        "language",
+    ]:
         patterns = mapping.get(model_type, [])
         for pattern in patterns:
             if pattern in name_lower:
@@ -273,8 +281,11 @@ async def discover_google_models() -> List[DiscoveredModel]:
                     methods = model.get("supportedGenerationMethods", [])
                     if "embedContent" in methods:
                         model_type = "embedding"
+                    elif "generateImages" in methods or "predict" in methods:
+                        model_type = "image_generation"
                     elif "generateContent" in methods:
-                        model_type = "language"
+                        if model_type != "image_generation":
+                            model_type = "language"
 
                     models.append(
                         DiscoveredModel(

@@ -102,9 +102,17 @@ PROVIDER_PRIORITY = [
 
 # Model preference patterns (preferred models within each provider)
 MODEL_PREFERENCES = {
-    "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
+    "openai": ["gpt-image-2", "gpt-image-1", "gpt-4o", "gpt-4", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-sonnet"],
-    "google": ["gemini-2.0", "gemini-1.5-pro", "gemini-pro"],
+    "google": [
+        "gemini-2.5-flash-image",
+        "gemini-3.1-flash-lite-image",
+        "gemini-3.1-flash-image",
+        "gemini-3-pro-image",
+        "gemini-2.0",
+        "gemini-1.5-pro",
+        "gemini-pro",
+    ],
     "mistral": ["mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
@@ -199,7 +207,13 @@ async def create_model(model_data: ModelCreate):
     """Create a new model configuration."""
     try:
         # Validate model type
-        valid_types = ["language", "embedding", "text_to_speech", "speech_to_text"]
+        valid_types = [
+            "language",
+            "embedding",
+            "text_to_speech",
+            "speech_to_text",
+            "image_generation",
+        ]
         if model_data.type not in valid_types:
             raise HTTPException(
                 status_code=400,
@@ -302,6 +316,7 @@ async def get_default_models():
             large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
             default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_image_generation_model=defaults.default_image_generation_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
@@ -335,6 +350,10 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             defaults.default_speech_to_text_model = (
                 defaults_data.default_speech_to_text_model
             )  # type: ignore[attr-defined]
+        if defaults_data.default_image_generation_model is not None:
+            defaults.default_image_generation_model = (
+                defaults_data.default_image_generation_model
+            )  # type: ignore[attr-defined]
         if defaults_data.default_embedding_model is not None:
             defaults.default_embedding_model = defaults_data.default_embedding_model  # type: ignore[attr-defined]
         if defaults_data.default_tools_model is not None:
@@ -350,6 +369,7 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             large_context_model=defaults.large_context_model,  # type: ignore[attr-defined]
             default_text_to_speech_model=defaults.default_text_to_speech_model,  # type: ignore[attr-defined]
             default_speech_to_text_model=defaults.default_speech_to_text_model,  # type: ignore[attr-defined]
+            default_image_generation_model=defaults.default_image_generation_model,  # type: ignore[attr-defined]
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
@@ -718,6 +738,7 @@ async def auto_assign_defaults():
             "embedding": [],
             "text_to_speech": [],
             "speech_to_text": [],
+            "image_generation": [],
         }
 
         for model in all_models:
@@ -734,6 +755,7 @@ async def auto_assign_defaults():
             ("default_embedding_model", "embedding", defaults.default_embedding_model),  # type: ignore[attr-defined]
             ("default_text_to_speech_model", "text_to_speech", defaults.default_text_to_speech_model),  # type: ignore[attr-defined]
             ("default_speech_to_text_model", "speech_to_text", defaults.default_speech_to_text_model),  # type: ignore[attr-defined]
+            ("default_image_generation_model", "image_generation", defaults.default_image_generation_model),  # type: ignore[attr-defined]
         ]
 
         assigned: Dict[str, str] = {}

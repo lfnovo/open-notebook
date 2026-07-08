@@ -64,9 +64,21 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
 }
 
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
-    "openai": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "openai": [
+        "language",
+        "embedding",
+        "speech_to_text",
+        "text_to_speech",
+        "image_generation",
+    ],
     "anthropic": ["language"],
-    "google": ["language", "embedding", "speech_to_text", "text_to_speech"],
+    "google": [
+        "language",
+        "embedding",
+        "speech_to_text",
+        "text_to_speech",
+        "image_generation",
+    ],
     "groq": ["language", "speech_to_text"],
     "mistral": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "deepseek": ["language"],

@@ -1,0 +1,20 @@
+-- Migration 19: Podcast episode video artifacts
+-- Stores editable storyboard-based video renders generated from podcast episodes.
+
+DEFINE TABLE IF NOT EXISTS episode_video SCHEMALESS;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE episode_video TYPE string;
+DEFINE FIELD IF NOT EXISTS episode ON TABLE episode_video TYPE record<episode>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE episode_video TYPE option<record<command>>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE episode_video TYPE string;
+DEFINE FIELD IF NOT EXISTS video_file ON TABLE episode_video TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS storyboard ON TABLE episode_video FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS assets ON TABLE episode_video FLEXIBLE TYPE array;
+DEFINE FIELD IF NOT EXISTS settings ON TABLE episode_video FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS usage ON TABLE episode_video FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS error_message ON TABLE episode_video TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE episode_video TYPE datetime;
+DEFINE FIELD IF NOT EXISTS updated ON TABLE episode_video TYPE datetime;
+
+DEFINE INDEX IF NOT EXISTS idx_episode_video_episode ON TABLE episode_video FIELDS episode CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_video_created ON TABLE episode_video FIELDS created CONCURRENTLY;

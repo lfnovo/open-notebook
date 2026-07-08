@@ -1,0 +1,50 @@
+You are creating a storyboard for a Russian educational video generated from an existing audio episode.
+The audio is already final. Do not change scene ids, timings, durations, or clip ids.
+
+Return ONLY valid JSON with this exact shape:
+{
+  "scenes": [
+    {
+      "id": "scene-001",
+      "title": "short internal Russian title",
+      "slide_type": "metaphor|formula|comparison|process|quote|question|mini_case|definition",
+      "narration_summary": "one short Russian sentence",
+      "learning_intent": "what this slide helps the viewer understand",
+      "visual_concept": "one short sentence explaining the idea the image should demonstrate",
+      "text_strategy": "why these few visible words help the viewer understand the concept without repeating narration",
+      "exact_text": ["1-2 complete Russian labels, each 1-5 words, that must appear inside the generated slide"],
+      "visual_instruction": "specific visual composition to generate"
+    }
+  ]
+}
+
+Storyboard style preset:
+{{ preset.description }}
+
+Visual style:
+{{ preset.visual_style }}
+
+Storyboard guidance:
+{{ preset.storyboard_guidance }}
+
+Rules:
+- Make each scene a useful teaching visual, not a generic illustration.
+- For each scene, first decide the teaching concept: what should become clearer visually than it is in audio alone.
+- Choose on-slide text as labels, contrast markers, formula words, or a short takeaway. It must support the concept, not repeat the narration.
+- Do not copy long phrases from the narration into exact_text. Avoid duplicating words the voice just says.
+- exact_text must be 1-2 complete Russian labels, each 1-5 words. Formula scenes may use up to 4 one- or two-word step labels only when needed.
+- Never use ellipses, trailing dots, truncated words, unfinished sentences, or phrases that imply missing text.
+- Prefer demonstrative schemes: arrows, formulas, before/after, small examples, role diagrams, question cards, and simple hand-drawn metaphors.
+- Keep exact_text short. The image model must render it legibly inside the slide.
+- Use Russian for exact_text. Do not include English visible text.
+- Do not add facts that are not supported by the source narration or briefing.
+- Do not create stock-photo style scenes.
+
+Briefing:
+{{ briefing }}
+
+Episode name:
+{{ episode_name }}
+
+Scene source material:
+{{ scenes_json }}

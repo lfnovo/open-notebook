@@ -254,8 +254,9 @@ class TestAudioMatrixWiring:
     def test_provider_modalities_matrix(self):
         from api.credentials_service import PROVIDER_MODALITIES
 
-        for m in ("speech_to_text", "text_to_speech"):
+        for m in ("speech_to_text", "text_to_speech", "image_generation"):
             assert m in PROVIDER_MODALITIES["google"]
+        assert "image_generation" in PROVIDER_MODALITIES["openai"]
         assert "text_to_speech" in PROVIDER_MODALITIES["vertex"]
         assert "speech_to_text" in PROVIDER_MODALITIES["elevenlabs"]
 
@@ -264,7 +265,11 @@ class TestAudioMatrixWiring:
 
         # Gemini TTS preview is classifiable; plain Gemini STT name stays language
         assert classify_model_type("gemini-3.1-flash-tts-preview", "google") == "text_to_speech"
+        assert classify_model_type("gemini-2.5-flash-image", "google") == "image_generation"
+        assert classify_model_type("gemini-3-pro-image", "google") == "image_generation"
         assert classify_model_type("gemini-2.0-flash", "google") == "language"
+        assert classify_model_type("gpt-image-2", "openai") == "image_generation"
+        assert classify_model_type("gpt-image-1", "openai") == "image_generation"
         # ElevenLabs Scribe STT must not be caught by the TTS "eleven" pattern
         assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
         assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"

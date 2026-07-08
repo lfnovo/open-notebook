@@ -9,7 +9,7 @@ interface ModelSelectorProps {
   id?: string
   name?: string
   label?: string
-  modelType: 'language' | 'embedding' | 'speech_to_text' | 'text_to_speech'
+  modelType: 'language' | 'embedding' | 'speech_to_text' | 'text_to_speech' | 'image_generation'
   value: string
   onChange: (value: string) => void
   placeholder?: string

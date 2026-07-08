@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import List, Optional
-from urllib.parse import unquote, urlparse
+from urllib.parse import quote, unquote, urlparse
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -11,6 +11,12 @@ from api.podcast_service import (
     PodcastGenerationRequest,
     PodcastGenerationResponse,
     PodcastService,
+)
+from api.video_service import (
+    EpisodeVideoGenerationRequest,
+    EpisodeVideoGenerationResponse,
+    StoryboardItemPatchRequest,
+    VideoService,
 )
 
 router = APIRouter()
@@ -31,11 +37,52 @@ class PodcastEpisodeResponse(BaseModel):
     error_message: Optional[str] = None
 
 
+class EpisodeVideoResponse(BaseModel):
+    id: str
+    name: str
+    episode: str
+    status: str
+    video_file: Optional[str] = None
+    video_url: Optional[str] = None
+    storyboard: Optional[dict] = None
+    assets: list = []
+    settings: dict = {}
+    usage: Optional[dict] = None
+    error_message: Optional[str] = None
+    created: Optional[str] = None
+
+
 def _resolve_audio_path(audio_file: str) -> Path:
     if audio_file.startswith("file://"):
         parsed = urlparse(audio_file)
         return Path(unquote(parsed.path))
     return Path(audio_file)
+
+
+def _resolve_file_path(file_path: str) -> Path:
+    return _resolve_audio_path(file_path)
+
+
+def _video_to_response(video) -> EpisodeVideoResponse:
+    video_url = None
+    if video.video_file:
+        video_path = _resolve_file_path(video.video_file)
+        if video_path.exists():
+            video_url = f"/api/podcasts/videos/{quote(str(video.id), safe='')}/file"
+    return EpisodeVideoResponse(
+        id=str(video.id),
+        name=video.name,
+        episode=str(video.episode),
+        status=video.status,
+        video_file=video.video_file,
+        video_url=video_url,
+        storyboard=video.storyboard,
+        assets=video.assets,
+        settings=video.settings,
+        usage=video.usage,
+        error_message=video.error_message,
+        created=str(video.created) if video.created else None,
+    )
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -81,6 +128,95 @@ async def get_podcast_job_status(job_id: str):
         raise HTTPException(
             status_code=500, detail="Failed to fetch job status"
         )
+
+
+@router.post(
+    "/podcasts/episodes/{episode_id}/video",
+    response_model=EpisodeVideoGenerationResponse,
+)
+async def generate_episode_video(
+    episode_id: str,
+    request: EpisodeVideoGenerationRequest,
+):
+    """Generate a storyboard video for an existing podcast episode."""
+    job_id = await VideoService.submit_generation_job(episode_id, request)
+    return EpisodeVideoGenerationResponse(
+        job_id=job_id,
+        status="submitted",
+        message=f"Video generation started for episode '{episode_id}'",
+    )
+
+
+@router.get("/podcasts/video-presets")
+async def list_episode_video_presets():
+    """List available codex-configurable video style presets."""
+    return VideoService.list_presets()
+
+
+@router.get("/podcasts/videos/jobs/{job_id}")
+async def get_episode_video_job_status(job_id: str):
+    """Get the status of a video generation job."""
+    return await VideoService.get_job_status(job_id)
+
+
+@router.get(
+    "/podcasts/episodes/{episode_id}/videos",
+    response_model=List[EpisodeVideoResponse],
+)
+async def list_episode_videos(episode_id: str):
+    """List generated videos for a podcast episode."""
+    videos = await VideoService.list_for_episode(episode_id)
+    return [_video_to_response(video) for video in videos]
+
+
+@router.get("/podcasts/videos/{video_id}", response_model=EpisodeVideoResponse)
+async def get_episode_video(video_id: str):
+    """Get a generated episode video artifact."""
+    video = await VideoService.get(video_id)
+    return _video_to_response(video)
+
+
+@router.get("/podcasts/videos/{video_id}/file")
+async def stream_episode_video_file(video_id: str):
+    """Stream the MP4 file associated with an episode video."""
+    video = await VideoService.get(video_id)
+    if not video.video_file:
+        raise HTTPException(status_code=404, detail="Video has no rendered file")
+    video_path = _resolve_file_path(video.video_file)
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+    return FileResponse(video_path, media_type="video/mp4", filename=video_path.name)
+
+
+@router.patch(
+    "/podcasts/videos/{video_id}/storyboard/items/{item_id}",
+    response_model=EpisodeVideoResponse,
+)
+async def patch_episode_video_storyboard_item(
+    video_id: str,
+    item_id: str,
+    request: StoryboardItemPatchRequest,
+):
+    """Patch a single storyboard item. Regenerate its asset before rendering."""
+    video = await VideoService.patch_item(video_id, item_id, request)
+    return _video_to_response(video)
+
+
+@router.post(
+    "/podcasts/videos/{video_id}/storyboard/items/{item_id}/regenerate",
+    response_model=EpisodeVideoResponse,
+)
+async def regenerate_episode_video_storyboard_item(video_id: str, item_id: str):
+    """Regenerate one scene image asset from the current storyboard prompt."""
+    video = await VideoService.regenerate_item(video_id, item_id)
+    return _video_to_response(video)
+
+
+@router.post("/podcasts/videos/{video_id}/render", response_model=EpisodeVideoResponse)
+async def render_episode_video(video_id: str):
+    """Rerender an MP4 from the current storyboard assets and source audio."""
+    video = await VideoService.render(video_id)
+    return _video_to_response(video)
 
 
 @router.get("/podcasts/episodes", response_model=List[PodcastEpisodeResponse])

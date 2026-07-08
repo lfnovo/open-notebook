@@ -1,7 +1,7 @@
 import os
 
 # ROOT DATA FOLDER
-DATA_FOLDER = "./data"
+DATA_FOLDER = os.environ.get("OPEN_NOTEBOOK_DATA_FOLDER", "./data")
 
 # LANGGRAPH CHECKPOINT FILE
 sqlite_folder = f"{DATA_FOLDER}/sqlite-db"

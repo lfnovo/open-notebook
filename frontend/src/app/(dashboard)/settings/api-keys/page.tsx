@@ -37,6 +37,7 @@ import {
   Mic,
   Volume2,
   Bot,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useModels, useDeleteModel, useModelDefaults, useUpdateModelDefaults, useAutoAssignDefaults, useTestModel } from '@/lib/hooks/use-models'
@@ -58,7 +59,7 @@ import { Model, ModelDefaults } from '@/lib/types/models'
 import { MigrationBanner, ModelTestResultDialog } from '@/components/settings'
 import { EmbeddingModelChangeDialog } from '@/components/settings/EmbeddingModelChangeDialog'
 
-type ModelType = 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text'
+type ModelType = 'language' | 'embedding' | 'text_to_speech' | 'speech_to_text' | 'image_generation'
 
 // Provider display names
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
@@ -90,9 +91,9 @@ const ALL_PROVIDERS = [
 
 // Default modalities per provider
 const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
-  openai: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  openai: ['language', 'embedding', 'text_to_speech', 'speech_to_text', 'image_generation'],
   anthropic: ['language'],
-  google: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
+  google: ['language', 'embedding', 'text_to_speech', 'speech_to_text', 'image_generation'],
   groq: ['language', 'speech_to_text'],
   mistral: ['language', 'embedding', 'speech_to_text', 'text_to_speech'],
   deepseek: ['language'],
@@ -134,6 +135,7 @@ const TYPE_ICONS: Record<ModelType, React.ReactNode> = {
   embedding: <Code className="h-3 w-3" />,
   text_to_speech: <Volume2 className="h-3 w-3" />,
   speech_to_text: <Mic className="h-3 w-3" />,
+  image_generation: <ImageIcon className="h-3 w-3" />,
 }
 
 const TYPE_COLORS: Record<ModelType, string> = {
@@ -141,6 +143,7 @@ const TYPE_COLORS: Record<ModelType, string> = {
   embedding: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300',
   text_to_speech: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
   speech_to_text: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-300',
+  image_generation: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300',
 }
 
 const TYPE_COLOR_INACTIVE = 'bg-muted text-muted-foreground opacity-50'
@@ -150,6 +153,7 @@ const TYPE_LABELS: Record<ModelType, string> = {
   embedding: 'Embedding',
   text_to_speech: 'TTS',
   speech_to_text: 'STT',
+  image_generation: 'Image',
 }
 
 // =============================================================================
@@ -819,6 +823,7 @@ function CredentialItem({
       'Embedding': defaults.default_embedding_model,
       'TTS': defaults.default_text_to_speech_model,
       'STT': defaults.default_speech_to_text_model,
+      'Image': defaults.default_image_generation_model,
     }
     for (const [slot, modelId] of Object.entries(slotMap)) {
       if (modelId) defaultSlots[modelId] = slot
@@ -902,7 +907,7 @@ function CredentialItem({
         {/* Linked models grouped by type */}
         {linkedModels.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            {(['language', 'embedding', 'text_to_speech', 'speech_to_text'] as ModelType[])
+            {(['language', 'embedding', 'text_to_speech', 'speech_to_text', 'image_generation'] as ModelType[])
               .filter(type => linkedModels.some(m => m.type === type))
               .map(type => (
                 <div key={type} className="flex items-start gap-1.5">
@@ -1138,6 +1143,7 @@ function DefaultModelSelectors({
     { key: 'default_embedding_model', label: t('models.embeddingModelLabel'), description: t('models.embeddingModelDesc'), modelType: 'embedding', required: true, id: `${generatedId}-embed` },
     { key: 'default_text_to_speech_model', label: t('models.ttsModelLabel'), description: t('models.ttsModelDesc'), modelType: 'text_to_speech', id: `${generatedId}-tts` },
     { key: 'default_speech_to_text_model', label: t('models.sttModelLabel'), description: t('models.sttModelDesc'), modelType: 'speech_to_text', id: `${generatedId}-stt` },
+    { key: 'default_image_generation_model', label: t('models.imageGenerationModelLabel'), description: t('models.imageGenerationModelDesc'), modelType: 'image_generation', id: `${generatedId}-image` },
   ]
 
   const advancedConfigs: DefaultConfig[] = [

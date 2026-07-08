@@ -1,0 +1,5 @@
+-- Migration 19 rollback: Remove podcast episode video artifacts
+
+REMOVE INDEX IF EXISTS idx_episode_video_episode ON TABLE episode_video;
+REMOVE INDEX IF EXISTS idx_episode_video_created ON TABLE episode_video;
+REMOVE TABLE IF EXISTS episode_video;

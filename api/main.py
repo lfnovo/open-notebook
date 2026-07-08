@@ -99,6 +99,8 @@ def _cors_headers(request: Request) -> dict[str, str]:
 
 # Import commands to register them in the API process
 try:
+    import commands  # noqa: F401
+
     logger.info("Commands imported in API process")
 except Exception as e:
     logger.error(f"Failed to import commands in API process: {e}")

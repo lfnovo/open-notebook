@@ -872,6 +872,8 @@ export const ruRU = {
     ttsModelDesc: "Используется для генерации подкастов",
     sttModelLabel: "Модель распознавания речи",
     sttModelDesc: "Используется для транскрибации аудио",
+    imageGenerationModelLabel: "Модель генерации изображений",
+    imageGenerationModelDesc: "Используется для визуалов storyboard-видео",
     embeddingChangeTitle: "Изменение модели эмбеддинга",
     embeddingChangeConfirm: "Вы собираетесь изменить модель эмбеддинга с {from} на {to}.",
     rebuildRequired: "Важно: Требуется пересоздание",

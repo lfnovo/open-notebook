@@ -286,3 +286,57 @@ class PodcastEpisode(ObjectModel):
             data["command"] = ensure_record_id(data["command"])
 
         return data
+
+
+class EpisodeVideo(ObjectModel):
+    """Video artifact generated from an existing podcast episode."""
+
+    table_name: ClassVar[str] = "episode_video"
+    nullable_fields: ClassVar[set[str]] = {
+        "command",
+        "video_file",
+        "error_message",
+        "usage",
+    }
+
+    name: str = Field(..., description="Video artifact name")
+    episode: Union[str, RecordID] = Field(..., description="Source podcast episode")
+    command: Optional[Union[str, RecordID]] = Field(
+        default=None, description="Link to surreal-commands job"
+    )
+    status: str = Field(default="pending", description="Video generation status")
+    video_file: Optional[str] = Field(
+        default=None, description="Path to generated MP4 file"
+    )
+    storyboard: Dict[str, Any] = Field(
+        default_factory=dict, description="Editable storyboard JSON"
+    )
+    assets: List[Dict[str, Any]] = Field(
+        default_factory=list, description="Generated visual assets"
+    )
+    settings: Dict[str, Any] = Field(
+        default_factory=dict, description="Render and model settings"
+    )
+    usage: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Provider usage and cost metadata"
+    )
+    error_message: Optional[str] = Field(
+        default=None, description="Failure details if generation failed"
+    )
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @field_validator("episode", "command", mode="before")
+    @classmethod
+    def parse_record_fields(cls, value):
+        if isinstance(value, str):
+            return ensure_record_id(value)
+        return value
+
+    def _prepare_save_data(self) -> dict:
+        data = super()._prepare_save_data()
+        if data.get("episode") is not None:
+            data["episode"] = ensure_record_id(data["episode"])
+        if data.get("command") is not None:
+            data["command"] = ensure_record_id(data["command"])
+        return data

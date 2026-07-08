@@ -1,0 +1,43 @@
+Create one complete 16:9 educational explainer slide in Russian.
+
+The generated image is the final slide. No external text overlay, subtitle bar, lower third, app UI, watermark, or logo will be added later.
+
+Visual style:
+{{ preset.visual_style }}
+
+Image-generation guidance:
+{{ preset.image_prompt_guidance }}
+
+Slide type:
+{{ item.slide_type }}
+
+Learning intent:
+{{ item.learning_intent }}
+
+Visual concept to demonstrate:
+{{ item.visual_concept }}
+
+On-slide text strategy:
+{{ item.text_strategy }}
+
+Visual composition:
+{{ item.visual_instruction }}
+
+Required visible Russian text. Use ONLY these exact complete labels as large, clean Russian text. Do not add any other readable text:
+{% for text in item.exact_text %}
+- {{ text }}
+{% endfor %}
+
+Composition requirements:
+- Make the slide feel like a NotebookLM-style whiteboard explainer, not a stock photo.
+- Use hand-drawn black line art, simple business characters only when useful, arrows, boxed steps, doodle icons, charts, formulas, or metaphorical objects.
+- Text must be large, clean, and readable at 1280x720.
+- Keep the slide uncluttered: one main idea, 1-2 short text elements maximum unless the required text is a compact formula.
+- Do not copy narration into the image. The visible text should be a short label or takeaway, not a sentence from the voiceover.
+- Never use ellipses, trailing dots, cropped words, half-written text, fake text, placeholder text, tiny captions, or paragraph fragments.
+- Every visible word must fit fully inside the canvas with generous margins.
+- Avoid tiny labels, dense tables, small UI text, subtitles, paragraph text, and decorative micro-copy.
+- Use soft accents sparingly: pastel pink, yellow marker highlight, teal, light green.
+- Avoid photorealistic people, office stock imagery, tiny unreadable UI screens, dense paragraphs, and decorative filler.
+- Do not include brand marks, NotebookLM logo, Open Notebook text, signatures, or watermarks.
+- Do not include English words anywhere in the slide.

@@ -266,6 +266,13 @@ async def test_individual_model(model) -> Tuple[bool, str]:
     from open_notebook.ai.models import ModelManager
 
     try:
+        if model.type == "image_generation":
+            credential = await model.get_credential_obj() if model.credential else None
+            config = credential.to_esperanto_config() if credential else {}
+            if config.get("api_key"):
+                return True, "Image generation credential is configured"
+            return False, "Image generation requires a linked credential with an API key"
+
         manager = ModelManager()
         esp_model = await manager.get_model(model.id)
 

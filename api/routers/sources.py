@@ -17,6 +17,7 @@ from loguru import logger
 from surreal_commands import execute_command_sync, submit_command
 
 from api.command_service import CommandService
+from api.credentials_service import validate_url
 from api.models import (
     AssetModel,
     CreateSourceInsightRequest,
@@ -360,6 +361,12 @@ async def create_source(
                 raise HTTPException(
                     status_code=400, detail="URL is required for link type"
                 )
+            # Block SSRF to internal/metadata addresses before the server ever
+            # fetches this URL (same guard used for provider-credential URLs).
+            try:
+                validate_url(source_data.url, "source")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
             content_state["url"] = source_data.url
         elif source_data.type == "upload":
             # Use uploaded file path or provided file_path (backward compatibility)

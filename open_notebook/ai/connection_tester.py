@@ -6,6 +6,7 @@ by making minimal API calls to each provider, and to test individual model
 configurations end-to-end.
 """
 import io
+import json
 import os
 import struct
 from typing import Optional, Tuple
@@ -14,6 +15,28 @@ import httpx
 from loguru import logger
 
 from open_notebook.utils.url_validation import validate_url
+
+
+def _is_vertex_credentials_file_error(exc: Exception) -> bool:
+    """
+    True if `exc` came from loading a Vertex service-account file
+    (credentials_path - free text, no path validation; see
+    open_notebook/ai/key_provider.py).
+
+    Google's auth library raises distinguishable exceptions for "file
+    missing" (FileNotFoundError, an OSError), "not valid JSON"
+    (json.JSONDecodeError), and "valid JSON but wrong shape"
+    (google.auth.exceptions.GoogleAuthError) - confirmed by direct
+    reproduction. Echoing any of these back to an API caller turns
+    credential/model testing into a filesystem oracle: an attacker who can
+    create/test a Vertex credential could probe for the existence and
+    contents-shape of arbitrary files on the server. Callers should catch
+    these and return one generic message instead of the raw exception text.
+    """
+    from google.auth.exceptions import GoogleAuthError
+
+    return isinstance(exc, (OSError, json.JSONDecodeError, GoogleAuthError))
+
 
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
@@ -337,6 +360,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return False, f"Unsupported model type: {model.type}"
 
     except Exception as e:
+        if model.provider == "vertex" and _is_vertex_credentials_file_error(e):
+            logger.debug(f"Vertex credentials file error for model {model.id}: {e}")
+            return False, "Invalid or inaccessible credentials file"
+
         error_msg = str(e)
         success, normalized = _normalize_error_message(error_msg)
         if success:

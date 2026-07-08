@@ -1,12 +1,38 @@
 import type { NextConfig } from "next";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Next.js walks up the tree and can pick a parent lockfile (e.g. ~/package-lock.json)
+// as the Turbopack root, which breaks resolution of frontend/node_modules packages
+// like react-syntax-highlighter.
+const frontendRoot = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: frontendRoot,
+    resolveAlias: {
+      tailwindcss: path.join(frontendRoot, "node_modules/tailwindcss"),
+      "@tailwindcss/typography": path.join(
+        frontendRoot,
+        "node_modules/@tailwindcss/typography"
+      ),
+      "@tailwindcss/postcss": path.join(
+        frontendRoot,
+        "node_modules/@tailwindcss/postcss"
+      ),
+    },
+  },
+  outputFileTracingRoot: frontendRoot,
+
   // Enable standalone output for optimized Docker deployment
   output: "standalone",
 
   // Experimental features
   // Type assertion needed: proxyClientMaxBodySize is valid in Next.js 15 but types lag behind
   experimental: {
+    // PostCSS/Tailwind resolve from frontend/ when a parent lockfile (e.g. ~/package-lock.json)
+    // would otherwise make Turbopack treat the repo root as the workspace.
+    turbopackLocalPostcssConfig: true,
     // Increase proxy body size limit for file uploads (default is 10MB)
     // This allows larger files to be uploaded through the /api/* rewrite proxy to FastAPI
     proxyClientMaxBodySize: '100mb',

@@ -73,21 +73,45 @@ export API_PORT
 export NEXT_PUBLIC_API_URL="http://localhost:${API_PORT}"
 export INTERNAL_API_URL="http://localhost:${API_PORT}"
 
+if [[ ! -d "$WORKSPACE_DIR/frontend/node_modules/react-syntax-highlighter" ]]; then
+  echo "Frontend dependencies missing — running npm ci..."
+  ( cd "$WORKSPACE_DIR/frontend" && npm ci )
+fi
+
 echo "Starting API on :$API_PORT ..."
 uv run --env-file .env run_api.py &
 
 echo "Starting background worker ..."
 uv run --env-file .env surreal-commands-worker --import-modules commands &
 
-echo "Starting Web on :$WEB_PORT ..."
-( cd frontend && PORT="$WEB_PORT" npm run dev ) &
+echo "Starting Web (Next.js UI) on :$WEB_PORT ..."
+# Turbopack mis-detects ~/package-lock.json as workspace root on this machine;
+# webpack dev avoids broken tailwindcss/react-syntax-highlighter resolution.
+( cd frontend && PORT="$WEB_PORT" npm run dev -- --webpack ) &
+
+# Wait for the UI to actually be listening so the banner below is the LAST
+# thing on screen instead of getting buried under Next.js compile logs.
+echo "Waiting for the UI to compile on :$WEB_PORT (first build can take ~10-30s)..."
+for _ in $(seq 1 60); do
+  if (exec 3<>/dev/tcp/127.0.0.1/"$WEB_PORT") 2>/dev/null; then exec 3>&- 3<&-; break; fi
+  sleep 1
+done
 
 echo ""
-echo "Open Notebook is starting:"
-echo "  Web      : http://localhost:$WEB_PORT"
-echo "  API      : http://localhost:$API_PORT"
-echo "  API docs : http://localhost:$API_PORT/docs"
-echo "  Database : SurrealDB :8000 (shared — your existing data)"
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║  Open Notebook (Superset) is up                              ║"
+echo "╠══════════════════════════════════════════════════════════════╣"
+echo "║                                                              ║"
+printf   "║   👉  OPEN THE APP UI:  %-37s║\n" "http://localhost:$WEB_PORT"
+echo "║                                                              ║"
+echo "╟──────────────────────────────────────────────────────────────╢"
+printf   "║   API server         :  %-36s║\n" "http://localhost:$API_PORT"
+printf   "║   API docs (Swagger) :  %-36s║\n" "http://localhost:$API_PORT/docs"
+printf   "║   Database           :  %-36s║\n" "SurrealDB on :8000 (shared)"
+echo "║                                                              ║"
+echo "║   This terminal is streaming live logs — leave it running.   ║"
+echo "║   Press Ctrl+C to stop the API, worker, and UI together.     ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
 wait

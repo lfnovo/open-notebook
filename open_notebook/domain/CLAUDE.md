@@ -32,7 +32,7 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
   - `vectorize()`: Submit async embedding job (returns command_id, fire-and-forget)
   - `get_status()`, `get_processing_progress()`: Track job via surreal_commands
   - `get_context()`: Returns summary for LLM context
-  - `add_insight()`: Submit async insight creation via `create_insight_command` (fire-and-forget, returns command_id)
+  - `add_insight()`: Submit async insight creation via `create_insight_command` (fire-and-forget, returns command_id). Raises `DatabaseOperationError` if *submission* itself fails (matches `vectorize()`) - callers (`transformation.py`, `source.py`) run inside surreal-commands jobs whose outer exception handling already retries/fails on this
 
 - **Note**: Standalone or linked notes
   - `save()`: Submits `embed_note` command after save (fire-and-forget)
@@ -95,9 +95,9 @@ Two base classes support different persistence patterns: **ObjectModel** (mutabl
 - **Source.command field**: Stored as RecordID; auto-parsed from strings via field_validator
 - **Text truncation**: `Note.get_context(short)` hardcodes 100-char limit
 - **Auto-embedding behavior**:
-  - `Note.save()` → auto-submits `embed_note` command
+  - `Note.save()` → auto-submits `embed_note` command; submission failure is caught and logged (returns `None`), not raised - the note's core save already succeeded by that point. `api/routers/embedding.py`'s explicit `POST /embed` (item_type=note) checks for this and still surfaces it as a failure, since submission is the whole point of that call
   - `Source.save()` → does NOT auto-submit (must call `vectorize()` explicitly)
-  - `Source.add_insight()` → submits `create_insight_command` which handles DB insert + `embed_insight` command (all fire-and-forget)
+  - `Source.add_insight()` → submits `create_insight_command` which handles DB insert + `embed_insight` command (all fire-and-forget - but a failure to *submit* the command raises rather than being swallowed)
 - **Relationship strings**: Must match SurrealDB schema (reference, artifact, refers_to)
 
 ## How to Add New Model

@@ -564,7 +564,7 @@ class Source(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def add_insight(self, insight_type: str, content: str) -> Optional[str]:
+    async def add_insight(self, insight_type: str, content: str) -> str:
         """
         Submit insight creation as an async command (fire-and-forget).
 
@@ -581,10 +581,17 @@ class Source(ObjectModel):
             content: The insight content text
 
         Returns:
-            command_id for optional tracking, or None if submission failed
+            command_id for optional tracking
 
         Raises:
             InvalidInputError: If insight_type or content is empty
+            DatabaseOperationError: If submitting the command fails. Matches
+                vectorize()'s contract - callers (transformation.py, source.py)
+                run inside surreal-commands jobs whose outer exception
+                handling already retries transient failures, so a swallowed
+                submission failure here previously meant a transformation
+                could report success while the insight was silently never
+                persisted.
         """
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
@@ -609,7 +616,8 @@ class Source(ObjectModel):
 
         except Exception as e:
             logger.error(f"Error submitting create_insight for source {self.id}: {e}")
-            return None
+            logger.exception(e)
+            raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> dict:
         """Override to ensure command field is always RecordID format for database"""
@@ -683,20 +691,30 @@ class Note(ObjectModel):
         after saving, instead of inline embedding.
 
         Returns:
-            Optional[str]: The command_id if embedding was submitted, None otherwise
+            Optional[str]: The command_id if embedding was submitted, None
+                otherwise (either no content to embed, or submission failed)
         """
         # Call parent save (without embedding)
         await super().save()
 
-        # Submit embedding command (fire-and-forget) if note has content
+        # Submit embedding command (fire-and-forget) if note has content.
+        # Unlike Source.vectorize()/add_insight() (explicit, dedicated calls
+        # whose whole point is the submission), this runs automatically
+        # inside save() - the note itself is already durably saved above,
+        # so a submission hiccup here shouldn't fail an otherwise-successful
+        # save with a 500. Best-effort: log and move on.
         if self.id and self.content and self.content.strip():
-            command_id = submit_command(
-                "open_notebook",
-                "embed_note",
-                {"note_id": str(self.id)},
-            )
-            logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
-            return command_id
+            try:
+                command_id = submit_command(
+                    "open_notebook",
+                    "embed_note",
+                    {"note_id": str(self.id)},
+                )
+                logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
+                return command_id
+            except Exception as e:
+                logger.error(f"Failed to submit embed_note command for {self.id}: {e}")
+                return None
 
         return None
 

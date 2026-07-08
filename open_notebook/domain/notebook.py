@@ -475,6 +475,7 @@ class Source(ObjectModel):
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
+        await Notebook.get(notebook_id)  # raises NotFoundError if invalid/missing
         return await self.relate("reference", notebook_id)
 
     async def vectorize(self) -> str:
@@ -662,6 +663,7 @@ class Note(ObjectModel):
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
+        await Notebook.get(notebook_id)  # raises NotFoundError if invalid/missing
         return await self.relate("artifact", notebook_id)
 
     def get_context(

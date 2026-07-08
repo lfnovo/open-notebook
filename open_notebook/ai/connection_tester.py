@@ -13,6 +13,8 @@ from typing import Optional, Tuple
 import httpx
 from loguru import logger
 
+from open_notebook.utils.url_validation import validate_url
+
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
 TEST_MODELS = {
@@ -61,6 +63,10 @@ async def _test_azure_connection(
     test_endpoint = test_endpoint.rstrip("/")
 
     try:
+        # Re-validate at request time: the endpoint may have been saved
+        # against a hostname that only later resolved to an internal
+        # address (DNS rebinding), so a save-time check alone isn't enough.
+        validate_url(test_endpoint, "azure")
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
                 f"{test_endpoint}/openai/models?api-version={test_api_version}",
@@ -86,6 +92,8 @@ async def _test_azure_connection(
             else:
                 return False, f"Azure returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to Azure endpoint. Check the URL."
     except httpx.TimeoutException:
@@ -97,6 +105,8 @@ async def _test_azure_connection(
 async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
     """Test Ollama server connectivity."""
     try:
+        # Re-validate at request time (see _test_azure_connection for why).
+        validate_url(base_url, "ollama")
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try /api/tags endpoint (standard Ollama)
             response = await client.get(f"{base_url}/api/tags")
@@ -121,6 +131,8 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
             else:
                 return False, f"Server returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to Ollama. Check if Ollama server is running."
     except httpx.TimeoutException:
@@ -132,6 +144,8 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
 async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
+        # Re-validate at request time (see _test_azure_connection for why).
+        validate_url(base_url, "openai_compatible")
         headers = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -160,6 +174,8 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
             else:
                 return False, f"Server returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to server. Check the URL is correct."
     except httpx.TimeoutException:

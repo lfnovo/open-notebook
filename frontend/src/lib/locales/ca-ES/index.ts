@@ -163,6 +163,7 @@ export const caES = {
     saveSuccess: "S'ha desat correctament",
     contextModes: {
       off: "No s'inclou al xat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Només anàlisis",
       full: "Contingut complet",
       clickToCycle: "Fes clic per canviar",

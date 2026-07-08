@@ -36,12 +36,15 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
   const contextStats = useMemo(() => {
     let sourcesInsights = 0
     let sourcesFull = 0
+    let sourcesAuto = 0
     let notesCount = 0
 
     // Count sources by mode
     sources.forEach(source => {
       const mode = contextSelections.sources[source.id]
-      if (mode === 'insights') {
+      if (mode === 'auto') {
+        sourcesAuto++
+      } else if (mode === 'insights') {
         sourcesInsights++
       } else if (mode === 'full') {
         sourcesFull++
@@ -59,6 +62,7 @@ export function ChatColumn({ notebookId, contextSelections, sources, sourcesLoad
     return {
       sourcesInsights,
       sourcesFull,
+      sourcesAuto,
       notesCount,
       tokenCount: chat.tokenCount,
       charCount: chat.charCount

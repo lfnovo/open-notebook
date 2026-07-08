@@ -742,7 +742,15 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    source_ids: Optional[List[str]] = None,
 ):
+    """Semantic search over embedded sources/insights/notes.
+
+    When ``source_ids`` is provided (non-empty), source and insight hits are
+    restricted to those source ids — this is how smart Chat scopes retrieval to
+    a single notebook. Passing ``None``/empty keeps the global behaviour used by
+    Ask and repo-review.
+    """
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
@@ -752,7 +760,7 @@ async def vector_search(
         embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score, $source_ids);
             """,
             {
                 "embed": embed,
@@ -760,6 +768,7 @@ async def vector_search(
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
+                "source_ids": source_ids or [],
             },
         )
         return search_results

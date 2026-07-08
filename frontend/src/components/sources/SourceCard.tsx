@@ -309,6 +309,7 @@ function SourceCardImpl({
               <ContextToggle
                 mode={contextMode}
                 hasInsights={source.insights_count > 0}
+                allowAuto
                 onChange={onContextModeChange}
               />
             )}

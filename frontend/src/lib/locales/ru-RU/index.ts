@@ -163,6 +163,7 @@ export const ruRU = {
     saveSuccess: "Успешно сохранено",
     contextModes: {
       off: "Не включено в чат",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Только инсайты",
       full: "Полное содержимое",
       clickToCycle: "Нажмите для переключения",

@@ -163,6 +163,7 @@ export const plPL = {
     saveSuccess: "Zapisano pomyślnie",
     contextModes: {
       off: "Nieuwzględniane w czacie",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Tylko wglądy",
       full: "Pełna treść",
       clickToCycle: "Kliknij, aby przełączyć",

@@ -163,6 +163,7 @@ export const itIT = {
     saveSuccess: "Salvato con successo",
     contextModes: {
       off: "Non incluso nella chat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Solo approfondimenti",
       full: "Contenuto completo",
       clickToCycle: "Clicca per cambiare",

@@ -163,6 +163,7 @@ export const jaJP = {
     saveSuccess: "保存しました",
     contextModes: {
       off: "チャットに含めない",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "インサイトのみ",
       full: "全文",
       clickToCycle: "クリックで切り替え",

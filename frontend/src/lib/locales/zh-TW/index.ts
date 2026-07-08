@@ -163,6 +163,7 @@ export const zhTW = {
     saveSuccess: "儲存成功",
     contextModes: {
       off: "未包含在聊天中",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "僅限見解",
       full: "全部內容",
       clickToCycle: "點擊循環切換",

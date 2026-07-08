@@ -220,6 +220,15 @@ export interface SendNotebookChatMessageRequest {
     sources: Array<Record<string, unknown>>
     notes: Array<Record<string, unknown>>
   }
+  /**
+   * Per-source/note selection modes. When present, the server builds smart
+   * notebook-scoped context (verbatim pins + per-message vector retrieval over
+   * 'auto' sources) instead of using the pre-built `context` blob.
+   */
+  context_config?: {
+    sources: Record<string, string>
+    notes: Record<string, string>
+  }
   model_override?: string
 }
 

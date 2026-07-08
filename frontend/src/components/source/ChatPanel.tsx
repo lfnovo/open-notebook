@@ -26,6 +26,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 interface NotebookContextStats {
   sourcesInsights: number
   sourcesFull: number
+  sourcesAuto: number
   notesCount: number
   tokenCount?: number
   charCount?: number
@@ -269,6 +270,7 @@ export function ChatPanel({
           <ContextIndicator
             sourcesInsights={notebookContextStats.sourcesInsights}
             sourcesFull={notebookContextStats.sourcesFull}
+            sourcesAuto={notebookContextStats.sourcesAuto}
             notesCount={notebookContextStats.notesCount}
             tokenCount={notebookContextStats.tokenCount}
             charCount={notebookContextStats.charCount}

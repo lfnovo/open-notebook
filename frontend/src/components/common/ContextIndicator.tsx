@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Lightbulb, StickyNote } from 'lucide-react'
+import { FileText, Lightbulb, StickyNote, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 interface ContextIndicatorProps {
   sourcesInsights: number
   sourcesFull: number
+  sourcesAuto?: number
   notesCount: number
   tokenCount?: number
   charCount?: number
@@ -28,12 +29,14 @@ function formatNumber(num: number): string {
 export function ContextIndicator({
   sourcesInsights,
   sourcesFull,
+  sourcesAuto = 0,
   notesCount,
   tokenCount,
   charCount,
   className
 }: ContextIndicatorProps) {
-  const hasContext = (sourcesInsights + sourcesFull) > 0 || notesCount > 0
+  const hasContext =
+    (sourcesInsights + sourcesFull + sourcesAuto) > 0 || notesCount > 0
 
   if (!hasContext) {
     return (
@@ -49,6 +52,20 @@ export function ContextIndicator({
         <span className="text-xs font-medium text-muted-foreground">Context:</span>
 
         <div className="flex items-center gap-1.5">
+          {sourcesAuto > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-violet-600 border-violet-600/50 cursor-default">
+                  <Sparkles className="h-3 w-3" />
+                  <span>{sourcesAuto}</span>
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Smart retrieval across {sourcesAuto} source{sourcesAuto !== 1 ? 's' : ''}</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {sourcesInsights > 0 && (
             <Tooltip>
               <TooltipTrigger asChild>

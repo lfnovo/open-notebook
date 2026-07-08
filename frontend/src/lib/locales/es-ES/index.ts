@@ -163,6 +163,7 @@ export const esES = {
     saveSuccess: "Guardado exitosamente",
     contextModes: {
       off: "No incluido en el chat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Solo análisis",
       full: "Contenido completo",
       clickToCycle: "Clic para cambiar",

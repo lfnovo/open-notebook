@@ -166,6 +166,7 @@ export const deDE = {
     saveSuccess: "Erfolgreich gespeichert",
     contextModes: {
       off: "Nicht im Chat enthalten",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Nur Insights",
       full: "Vollständiger Inhalt",
       clickToCycle: "Klicken zum Wechseln",

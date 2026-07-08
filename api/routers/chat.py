@@ -18,6 +18,94 @@ from open_notebook.utils.graph_utils import get_session_message_count
 router = APIRouter()
 
 
+def _classify_source_modes(
+    context_config: Dict[str, Any],
+) -> tuple[list[str], list[str], list[str]]:
+    """Split a context_config's sources into (full_ids, auto_ids, note_full_ids).
+
+    Modes: 'not in' -> excluded; 'full content' -> verbatim; anything else that
+    is included ('auto' or legacy 'insights') -> retrieval pool. Pure/testable.
+    """
+    full_ids: list[str] = []
+    auto_ids: list[str] = []
+    for source_id, status in (context_config.get("sources") or {}).items():
+        status = str(status)
+        full_id = source_id if source_id.startswith("source:") else f"source:{source_id}"
+        if "not in" in status:
+            continue
+        if "full content" in status:
+            full_ids.append(full_id)
+        else:
+            # 'auto' (new default) and legacy 'insights' both mean retrieve.
+            auto_ids.append(full_id)
+    note_full_ids: list[str] = []
+    for note_id, status in (context_config.get("notes") or {}).items():
+        if "full content" in str(status):
+            note_full_ids.append(
+                note_id if note_id.startswith("note:") else f"note:{note_id}"
+            )
+    return full_ids, auto_ids, note_full_ids
+
+
+async def _build_smart_context(
+    context_config: Dict[str, Any],
+    message: str,
+    history_messages: list,
+) -> str:
+    """Assemble notebook-scoped smart context for one chat turn.
+
+    Full sources/notes are injected verbatim (pinned); Auto sources are retrieved
+    per-message via notebook-scoped vector search. Returns a single context string
+    with document ids so the model can cite. Retrieval is resilient: a failure in
+    one part never blocks the others.
+    """
+    from open_notebook.graphs.chat_retrieval import retrieve_context
+
+    full_ids, auto_ids, note_full_ids = _classify_source_modes(context_config)
+
+    pinned_blocks: list[str] = []
+    for sid in full_ids:
+        try:
+            source = await Source.get(sid)
+        except Exception:
+            continue
+        text = (source.full_text or "").strip()
+        if not text:
+            ctx = await source.get_context(context_size="long")
+            text = str(ctx.get("full_text") or "").strip()
+        if text:
+            title = (source.title or "").strip()
+            pinned_blocks.append(f"## [{sid}]" + (f" {title}" if title else "") + f"\n\n{text}")
+    for nid in note_full_ids:
+        try:
+            note = await Note.get(nid)
+        except Exception:
+            continue
+        text = (note.content or "").strip() if getattr(note, "content", None) else ""
+        if text:
+            title = (getattr(note, "title", "") or "").strip()
+            pinned_blocks.append(f"## [{nid}]" + (f" {title}" if title else "") + f"\n\n{text}")
+
+    retrieval = await retrieve_context(message, history_messages, auto_ids)
+
+    parts: list[str] = []
+    if pinned_blocks:
+        parts.append("# PINNED SOURCES (full text)\n\n" + "\n\n".join(pinned_blocks))
+    if retrieval["context"]:
+        parts.append(
+            "# RELEVANT PASSAGES (retrieved from this notebook)\n\n"
+            + retrieval["context"]
+        )
+    if not parts:
+        return ""
+    logger.debug(
+        f"Smart chat context: {len(pinned_blocks)} pinned, "
+        f"{retrieval['chunk_count']} retrieved chunks from {len(auto_ids)} auto sources; "
+        f"queries={retrieval['queries']}"
+    )
+    return "\n\n".join(parts)
+
+
 # Request/Response models
 class CreateSessionRequest(BaseModel):
     notebook_id: str = Field(..., description="Notebook ID to create session for")
@@ -66,6 +154,16 @@ class ExecuteChatRequest(BaseModel):
     message: str = Field(..., description="User message content")
     context: Dict[str, Any] = Field(
         ..., description="Chat context with sources and notes"
+    )
+    context_config: Optional[Dict[str, Any]] = Field(
+        None,
+        description=(
+            "Per-source/note selection modes (auto|full content|insights|not in). "
+            "When present, the server builds smart notebook-scoped context: "
+            "'full content' sources are injected verbatim, 'auto'/'insights' "
+            "sources are retrieved per-message via vector search, 'not in' are "
+            "excluded. Falls back to the pre-built `context` when omitted."
+        ),
     )
     model_override: Optional[str] = Field(
         None, description="Optional model override for this message"
@@ -368,9 +466,28 @@ async def execute_chat(request: ExecuteChatRequest):
         # Prepare state for execution
         state_values = current_state.values if current_state else {}
         state_values["messages"] = state_values.get("messages", [])
-        state_values["context"] = request.context
         state_values["notebook"] = notebook
         state_values["model_override"] = model_override
+
+        # Build context. When the client sends a context_config, build smart,
+        # notebook-scoped context server-side (verbatim pins + per-message vector
+        # retrieval over Auto sources) using the prior messages as history. This
+        # keeps large libraries from blowing up the context window. Fall back to
+        # the client's pre-built context when no config is provided.
+        if request.context_config is not None:
+            try:
+                state_values["context"] = await _build_smart_context(
+                    request.context_config,
+                    request.message,
+                    state_values["messages"],
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Smart context build failed, falling back to client context: {e}"
+                )
+                state_values["context"] = request.context
+        else:
+            state_values["context"] = request.context
 
         # Add user message to state
         from langchain_core.messages import HumanMessage

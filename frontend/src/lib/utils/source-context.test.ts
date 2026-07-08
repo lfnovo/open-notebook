@@ -12,9 +12,9 @@ const src = (id: string, insights_count = 0) => ({ id, insights_count })
 const note = (id: string) => ({ id })
 
 describe('includedMode', () => {
-  it('prefers insights when available, else full', () => {
-    expect(includedMode(0)).toBe('full')
-    expect(includedMode(3)).toBe('insights')
+  it('defaults to auto (smart retrieval) regardless of insight count', () => {
+    expect(includedMode(0)).toBe('auto')
+    expect(includedMode(3)).toBe('auto')
   })
 })
 
@@ -35,9 +35,9 @@ describe('bulkModeForSource', () => {
 })
 
 describe('computeSourceSelections', () => {
-  it('defaults new sources to included (insights/full)', () => {
+  it('defaults new sources to auto (smart retrieval)', () => {
     const result = computeSourceSelections({}, [src('s:1', 2), src('s:2', 0)], 'include')
-    expect(result).toEqual({ 's:1': 'insights', 's:2': 'full' })
+    expect(result).toEqual({ 's:1': 'auto', 's:2': 'auto' })
   })
 
   it('defaults new sources to off when the default mode is exclude', () => {
@@ -59,14 +59,11 @@ describe('computeSourceSelections', () => {
     const existing = { 's:1': 'off' as const }
     const result = computeSourceSelections(existing, [src('s:1', 2), src('s:2', 0)], 'include')
     expect(result['s:1']).toBe('off') // untouched
-    expect(result['s:2']).toBe('full')
+    expect(result['s:2']).toBe('auto')
   })
 
-  it('upgrades a full source to insights once it has insights (implicit default only)', () => {
-    expect(computeSourceSelections({ 's:1': 'full' }, [src('s:1', 5)], 'include')['s:1']).toBe('insights')
-  })
-
-  it('does not auto-upgrade an explicit full bulk choice', () => {
+  it('never silently downgrades an explicit full pin', () => {
+    expect(computeSourceSelections({ 's:1': 'full' }, [src('s:1', 5)], 'include')['s:1']).toBe('full')
     expect(computeSourceSelections({ 's:1': 'full' }, [src('s:1', 5)], 'full')['s:1']).toBe('full')
   })
 
@@ -93,13 +90,13 @@ describe('applyBulkSourceContext', () => {
     expect(result).toEqual({ 's:1': 'off', 's:2': 'off' })
   })
 
-  it('includes all sources using their sensible mode', () => {
+  it('includes all sources as auto (smart retrieval)', () => {
     const result = applyBulkSourceContext(
       { 's:1': 'off', 's:2': 'off' },
       [src('s:1', 0), src('s:2', 3)],
       'include',
     )
-    expect(result).toEqual({ 's:1': 'full', 's:2': 'insights' })
+    expect(result).toEqual({ 's:1': 'auto', 's:2': 'auto' })
   })
 
   it('insights-only includes sources with insights and excludes the rest', () => {

@@ -163,6 +163,7 @@ export const trTR = {
     saveSuccess: "Başarıyla kaydedildi",
     contextModes: {
       off: "Sohbete dahil edilmedi",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Yalnızca içgörüler",
       full: "Tam içerik",
       clickToCycle: "Geçiş yapmak için tıklayın",

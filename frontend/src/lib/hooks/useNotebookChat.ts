@@ -140,7 +140,9 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     // Map source selections
     sources.forEach(source => {
       const mode = contextSelections.sources[source.id]
-      if (mode === 'insights') {
+      if (mode === 'auto') {
+        context_config.sources[source.id] = 'auto'
+      } else if (mode === 'insights') {
         context_config.sources[source.id] = 'insights'
       } else if (mode === 'full') {
         context_config.sources[source.id] = 'full content'
@@ -169,7 +171,9 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
     setTokenCount(response.token_count)
     setCharCount(response.char_count)
 
-    return response.context
+    // Return both the pre-built context (legacy/fallback + token display) and
+    // the raw config so the server can do smart notebook-scoped retrieval.
+    return { context: response.context, context_config }
   }, [notebookId, sources, notes, contextSelections])
 
   // Send message (synchronous, no streaming)
@@ -214,11 +218,12 @@ export function useNotebookChat({ notebookId, sources, notes, contextSelections 
 
     try {
       // Build context and send message
-      const context = await buildContext()
+      const { context, context_config } = await buildContext()
       const response = await chatApi.sendMessage({
         session_id: sessionId,
         message,
         context,
+        context_config,
         model_override: modelOverride ?? (currentSession?.model_override ?? undefined)
       })
 

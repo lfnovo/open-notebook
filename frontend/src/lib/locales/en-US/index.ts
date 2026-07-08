@@ -163,8 +163,9 @@ export const enUS = {
     saveSuccess: "Saved successfully",
     contextModes: {
       off: "Not included in chat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Insights only",
-      full: "Full content",
+      full: "Full content (always injected)",
       clickToCycle: "Click to cycle",
     },
     clickToEdit: "Click to edit",

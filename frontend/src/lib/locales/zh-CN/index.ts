@@ -163,6 +163,7 @@ export const zhCN = {
     saveSuccess: "保存成功",
     contextModes: {
       off: "未包含在聊天中",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "仅限见解",
       full: "全部内容",
       clickToCycle: "点击循环切换",

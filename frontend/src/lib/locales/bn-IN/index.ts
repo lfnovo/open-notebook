@@ -163,6 +163,7 @@ export const bnIN = {
     saveSuccess: "সফলভাবে সংরক্ষিত",
     contextModes: {
       off: "চ্যাটে অন্তর্ভুক্ত নয়",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "শুধুমাত্র অন্তর্দৃষ্টি",
       full: "সম্পূর্ণ কন্টেন্ট",
       clickToCycle: "সাইকেল করতে ক্লিক করুন",

@@ -163,6 +163,7 @@ export const frFR = {
     saveSuccess: "Enregistré avec succès",
     contextModes: {
       off: "Non inclus dans le chat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Analyses uniquement",
       full: "Contenu complet",
       clickToCycle: "Cliquez pour faire défiler",

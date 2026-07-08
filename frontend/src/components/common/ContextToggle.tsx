@@ -1,6 +1,6 @@
 'use client'
 
-import { EyeOff, Lightbulb, FileText } from 'lucide-react'
+import { EyeOff, Lightbulb, FileText, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -15,13 +15,14 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 interface ContextToggleProps {
   mode: ContextMode
   hasInsights?: boolean // For sources - determines if 'insights' mode is available
+  allowAuto?: boolean // For sources - enables the smart-retrieval 'auto' mode
   onChange: (mode: ContextMode) => void
   className?: string
 }
 
 export function ContextToggle<TMode extends ContextMode = ContextMode>({
   mode,
-  hasInsights = false,
+  allowAuto = false,
   onChange,
   className
 }: Omit<ContextToggleProps, 'mode' | 'onChange'> & {
@@ -36,6 +37,12 @@ export function ContextToggle<TMode extends ContextMode = ContextMode>({
       label: t('common.contextModes.off'),
       color: 'text-muted-foreground',
       bgColor: 'hover:bg-muted'
+    },
+    auto: {
+      icon: Sparkles,
+      label: t('common.contextModes.auto'),
+      color: 'text-violet-600',
+      bgColor: 'hover:bg-violet-50'
     },
     insights: {
       icon: Lightbulb,
@@ -53,9 +60,10 @@ export function ContextToggle<TMode extends ContextMode = ContextMode>({
   const config = MODE_CONFIG[mode]
   const Icon = config.icon
 
-  // Determine available modes based on whether item has insights
-  const availableModes = (hasInsights
-    ? ['off', 'insights', 'full']
+  // Sources cycle Off → Auto (smart retrieval) → Full. Legacy 'insights'
+  // selections still render but aren't part of the cycle. Notes are binary.
+  const availableModes = (allowAuto
+    ? ['off', 'auto', 'full']
     : ['off', 'full']) as TMode[]
 
   const handleClick = (e: React.MouseEvent) => {

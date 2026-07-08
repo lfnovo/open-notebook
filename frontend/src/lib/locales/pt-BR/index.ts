@@ -163,6 +163,7 @@ export const ptBR = {
     saveSuccess: "Salvo com sucesso",
     contextModes: {
       off: "Não incluído no chat",
+      auto: "Smart (auto-retrieve relevant passages)",
       insights: "Apenas insights",
       full: "Conteúdo completo",
       clickToCycle: "Clique para alternar",

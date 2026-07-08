@@ -20,9 +20,14 @@ interface SourceLike {
   insights_count: number
 }
 
-/** The "included" context mode for a source: insights when available, else full. */
-export function includedMode(insightsCount: number): ContextMode {
-  return insightsCount > 0 ? 'insights' : 'full'
+/**
+ * The "included" context mode for a source. Defaults to `auto` (smart
+ * per-message retrieval) so notebooks with many/large sources stay within the
+ * model's context window instead of injecting everything. `insightsCount` is no
+ * longer needed to choose the default but is kept for signature stability.
+ */
+export function includedMode(_insightsCount?: number): ContextMode {
+  return 'auto'
 }
 
 /** Resolve the context mode a bulk action implies for a single source. */
@@ -63,12 +68,9 @@ export function computeSourceSelections(
     const current = next[source.id]
     if (current === undefined) {
       next[source.id] = bulkModeForSource(defaultMode, source.insights_count)
-    } else if (defaultMode === 'include' && current === 'full' && source.insights_count > 0) {
-      // Auto-upgrade only under the implicit default: a source included as
-      // 'full' (because it had no insights yet) prefers leaner insights once
-      // they exist. An explicit 'full' bulk choice is left untouched.
-      next[source.id] = 'insights'
     }
+    // Existing selections are preserved as-is: `auto` is the smart default, and
+    // an explicit `full` pin is never silently downgraded.
   }
   return next
 }

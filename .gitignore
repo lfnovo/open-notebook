@@ -131,8 +131,12 @@ docs/custom_gpt
 doc_exports/
 
 specs/
+plans/
 .claude
 .sisyphus
+
+# Personal local overrides (per docker-compose.override.yml's own header comment)
+docker-compose.override.yml
 
 .playwright-mcp/
 

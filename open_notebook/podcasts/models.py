@@ -270,6 +270,46 @@ class PodcastEpisode(ObjectModel):
         except Exception:
             return {"status": "unknown", "error_message": None}
 
+    @classmethod
+    async def get_job_details_for_commands(
+        cls, command_ids: List[Union[str, RecordID]]
+    ) -> Dict[str, dict]:
+        """
+        Batch-fetch {status, error_message} for many commands in one query.
+
+        Listing episodes otherwise calls get_job_detail() -> surreal_commands
+        .get_command_status() once per episode, each its own round trip
+        against the `command` table (see database/CLAUDE.md: no connection
+        pooling) - O(n) queries for n episodes. surreal_commands has no
+        batch lookup, but its command table lives in the same database
+        (same SURREAL_* env vars - see surreal_commands/repository/CLAUDE.md),
+        so this queries it directly in one shot instead of looping through
+        the library's per-command helper.
+
+        CommandStatus is a `str` subclass (`class CommandStatus(str, Enum)`),
+        so returning the raw DB string here is interchangeable with the
+        enum-wrapped value get_job_detail() returns for every comparison
+        this codebase does against it.
+        """
+        ids = [cid for cid in command_ids if cid]
+        grouped: Dict[str, dict] = {}
+        if not ids:
+            return grouped
+        try:
+            result = await repo_query(
+                "SELECT * FROM command WHERE id IN $command_ids",
+                {"command_ids": [ensure_record_id(cid) for cid in ids]},
+            )
+        except Exception as e:
+            logger.error(f"Error batch-fetching command status: {e}")
+            return grouped
+        for row in result:
+            grouped[str(row.get("id"))] = {
+                "status": row.get("status", "unknown"),
+                "error_message": row.get("error_message"),
+            }
+        return grouped
+
     @field_validator("command", mode="before")
     @classmethod
     def parse_command(cls, value):

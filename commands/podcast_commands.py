@@ -230,6 +230,18 @@ async def generate_podcast_command(
         )
         await episode.save()
 
+        # SECURITY NOTE for future work: podcast_creator also supports
+        # configure("templates", {...}), which compiles the given string
+        # directly as Jinja2 template *source* (Prompter(template_text=...)
+        # in podcast_creator/config.py) - the exact SSTI shape already fixed
+        # in open_notebook/graphs/transformation.py (GHSA-f35w-wx37-26q7).
+        # We don't call it today (confirmed: no code path here sets the
+        # "templates" key, so podcast generation always uses the file-based
+        # prompts/podcast/*.jinja templates in this repo). If a "custom
+        # podcast template" feature is ever added, do NOT wire user/profile
+        # text into configure("templates", ...) - render it through a
+        # fixed, developer-authored template with the user text passed in
+        # as a plain variable instead, matching transformation.py's fix.
         configure("speakers_config", {"profiles": speaker_profiles_dict})
         configure("episode_config", {"profiles": episode_profiles_dict})
 

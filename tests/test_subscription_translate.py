@@ -18,7 +18,12 @@ def test_openai_to_anthropic_splits_system_and_messages():
         "temperature": 0.5,
     }
     out = tr.openai_to_anthropic(body)
-    assert out["system"] == "You are helpful."
+    # OAuth subscription requires the Claude Code identity as the first system
+    # block; the caller's own system prompt follows.
+    assert out["system"] == [
+        {"type": "text", "text": tr.CLAUDE_CODE_IDENTITY},
+        {"type": "text", "text": "You are helpful."},
+    ]
     assert out["model"] == "claude-sonnet-4"
     assert out["max_tokens"] == tr.DEFAULT_MAX_TOKENS
     assert out["temperature"] == 0.5
@@ -27,6 +32,15 @@ def test_openai_to_anthropic_splits_system_and_messages():
         {"role": "assistant", "content": "Hello!"},
         {"role": "user", "content": "Bye"},
     ]
+
+
+def test_openai_to_anthropic_injects_claude_code_identity_without_system():
+    # Even with no system message, the Claude Code identity must be present as
+    # the first (and only) system block, or Anthropic rejects the OAuth token.
+    out = tr.openai_to_anthropic(
+        {"model": "claude-opus-4-8", "messages": [{"role": "user", "content": "Hi"}]}
+    )
+    assert out["system"] == [{"type": "text", "text": tr.CLAUDE_CODE_IDENTITY}]
 
 
 def test_openai_to_anthropic_tools_and_tool_result():

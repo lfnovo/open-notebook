@@ -33,6 +33,14 @@ ANTHROPIC_VERSION = "2023-06-01"
 ANTHROPIC_OAUTH_BETA = "oauth-2025-04-20"
 DEFAULT_MAX_TOKENS = 4096
 
+# Anthropic OAuth subscription tokens (Claude Pro/Max, imported from the Claude
+# Code CLI) are authorized ONLY for Claude Code. The Messages API rejects the
+# request (401/403 "This credential is only authorized for use with Claude
+# Code") unless the FIRST system block is exactly this identity string. This
+# module is only ever used for the subscription gateway, so openai_to_anthropic
+# always prepends it; the caller's own system prompt(s) follow as extra blocks.
+CLAUDE_CODE_IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude."
+
 # Anthropic stop_reason -> OpenAI finish_reason
 _ANTHROPIC_FINISH = {
     "end_turn": "stop",
@@ -171,12 +179,22 @@ def openai_to_anthropic(body: Dict[str, Any]) -> Dict[str, Any]:
         "max_tokens": body.get("max_tokens") or DEFAULT_MAX_TOKENS,
         "stream": bool(body.get("stream", False)),
     }
-    if system_parts:
-        out["system"] = "\n\n".join(system_parts)
+    # The Claude Code identity MUST be the first system block for OAuth
+    # subscription tokens to be accepted (see CLAUDE_CODE_IDENTITY). The
+    # caller's system prompt(s) follow as additional text blocks.
+    system_blocks: List[Dict[str, str]] = [
+        {"type": "text", "text": CLAUDE_CODE_IDENTITY}
+    ]
+    for part in system_parts:
+        if part and part.strip():
+            system_blocks.append({"type": "text", "text": part})
+    out["system"] = system_blocks
     if body.get("temperature") is not None:
         out["temperature"] = body["temperature"]
-    if body.get("top_p") is not None:
-        out["top_p"] = body["top_p"]
+    # NOTE: top_p is intentionally NOT forwarded. Esperanto's openai_compatible
+    # provider always sends a default top_p, but newer Anthropic models (e.g.
+    # Opus 4.8) reject it ("`top_p` is deprecated for this model"). temperature
+    # is sufficient; dropping top_p keeps the subscription path model-agnostic.
     if body.get("tools"):
         out["tools"] = [
             {

@@ -41,6 +41,7 @@ router = APIRouter(prefix="/subscription-gateway")
 # and model registration work. Users can also register any model name manually.
 CURATED_MODELS = {
     "claude": [
+        "claude-opus-4-8",
         "claude-opus-4-20250514",
         "claude-sonnet-4-20250514",
         "claude-3-5-haiku-20241022",

@@ -13,6 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import api.routers.subscription_gateway as gw
+from api import subscription_gateway_translate as tr
 
 
 class _FakeResponse:
@@ -102,8 +103,12 @@ def test_claude_chat_completion_translates_and_sets_oauth_headers(client):
     assert sent["headers"]["authorization"] == "Bearer oauth-access-token"
     assert sent["headers"]["anthropic-beta"] == "oauth-2025-04-20"
     assert "x-api-key" not in sent["headers"]
-    # System split out, user message preserved.
-    assert sent["json"]["system"] == "Be brief."
+    # Claude Code identity is injected first (required for OAuth subscription),
+    # then the caller's system prompt; user message preserved.
+    assert sent["json"]["system"] == [
+        {"type": "text", "text": tr.CLAUDE_CODE_IDENTITY},
+        {"type": "text", "text": "Be brief."},
+    ]
     assert sent["json"]["messages"] == [{"role": "user", "content": "ping"}]
 
 

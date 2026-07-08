@@ -35,6 +35,7 @@ FastAPI application serving three architectural layers: routes (HTTP endpoints),
 - **main.py**: FastAPI app initialization, CORS setup, auth middleware, lifespan event, router registration
 - **Lifespan handler**: Runs AsyncMigrationManager on startup (database schema migration)
 - **Auth middleware**: PasswordAuthMiddleware protects endpoints (password-based access control)
+- **Body size middleware**: `MaxBodySizeMiddleware` (`api/middleware.py`) rejects requests over `OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB` (default 100MB) before auth/routing - both via `Content-Length` pre-check and by counting bytes as the body streams in, so it also catches chunked requests with no `Content-Length`. Registered inside `CORSMiddleware` so a rejected upload still gets CORS headers.
 
 ### Services (Business Logic)
 - **chat_service.py**: Invokes chat.py graph; handles message history via SqliteSaver

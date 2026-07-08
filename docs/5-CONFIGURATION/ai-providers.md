@@ -133,13 +133,15 @@ Opus: $10-50+/month
 6. Click **Discover Models** → **Register Models**
 
 **Available Models:**
-- `gemini-2.0-flash-exp` — Latest experimental, fastest (recommended)
-- `gemini-2.0-flash` — Stable version, fast, cheap
+- `gemini-3.5-pro` — Strongest, best for long context (2M tokens)
+- `gemini-3.5-flash` — Fast, good for general use
+- `gemini-3.1-flash` — Stable version, fast, cheap
+- `gemini-2.5-flash` — Stable version, fast, cheaper
 
 **Recommended:**
-- For general use: `gemini-2.0-flash-exp` (best value, latest)
-- For cheap: `gemini-1.5-flash` (very cheap)
-- For complex/long context: `gemini-1.5-pro-latest` (2M token context)
+- For general use: `gemini-3.1-flash` (best value, latest)
+- For cheap: `gemini-2.5-flash` (very cheap)
+- For complex/long context: `gemini-3.5-pro` (2M token context)
 
 **Advantages:**
 - Very long context (1M tokens)

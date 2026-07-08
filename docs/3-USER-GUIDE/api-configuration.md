@@ -31,7 +31,7 @@ environment:
   - OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
 ```
 
-Any string works as a key — it will be securely derived via SHA-256 internally.
+Any string works as a key — it will be securely derived via salted PBKDF2-HMAC-SHA256 (600k iterations) internally.
 
 > **Warning**: If you change or lose the encryption key, **all stored credentials become unreadable**. Back up your encryption key securely and separately from your database backups.
 

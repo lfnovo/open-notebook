@@ -5,8 +5,12 @@ This module provides encryption/decryption for API keys stored in the database.
 Fernet uses AES-128-CBC with HMAC-SHA256 for authenticated encryption.
 
 OPEN_NOTEBOOK_ENCRYPTION_KEY accepts **any string**. A Fernet key is derived
-from it via SHA-256, so users can set a simple passphrase like
-``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will work.
+from it via PBKDF2-HMAC-SHA256 (salted, 600k iterations), so users can set a
+simple passphrase like ``OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret`` and it will
+work. Values encrypted under the older unsalted-single-round-SHA-256 scheme
+(pre-PBKDF2) still decrypt via an automatic fallback - see `decrypt_value` -
+and get re-encrypted under the current scheme the next time the owning record
+is saved. No migration step is required to upgrade.
 
 Usage:
     # Encrypt before storing
@@ -92,6 +96,20 @@ def _get_or_create_encryption_key() -> str:
 # when other modules import from this file.
 _ENCRYPTION_KEY: Optional[str] = None
 
+# Fixed, non-secret domain-separation salt for the PBKDF2 derivation below.
+# It doesn't need to be random or per-install (there's nowhere durable to
+# store a random one without a migration) - its job is just to stop
+# precomputed hash tables from unrelated contexts from applying here.
+# Actual brute-force resistance comes from the iteration count.
+_KDF_SALT = b"open-notebook:credential-encryption:v2"
+_KDF_ITERATIONS = 600_000  # OWASP 2023 guidance for PBKDF2-HMAC-SHA256
+
+# Both derived Fernet keys are cached lazily: the PBKDF2 derivation below is
+# deliberately expensive (~50ms), so paying that cost once per process
+# instead of on every encrypt/decrypt call matters.
+_FERNET_KEY: Optional[bytes] = None
+_LEGACY_FERNET_KEY: Optional[bytes] = None
+
 
 def _get_encryption_key() -> str:
     """Get the encryption key, initializing lazily on first call."""
@@ -101,12 +119,24 @@ def _get_encryption_key() -> str:
     return _ENCRYPTION_KEY
 
 
-def _ensure_fernet_key(key: str) -> str:
+def _derive_fernet_key(key: str) -> str:
     """
-    Derive a valid Fernet key from an arbitrary string via SHA-256.
+    Derive a valid Fernet key from an arbitrary string via PBKDF2-HMAC-SHA256.
 
-    Any string is accepted as input. The key is derived by hashing it with
-    SHA-256 and encoding the result as URL-safe base64.
+    Any string is accepted as input. Salted and stretched so a weak/short
+    passphrase is expensive to brute-force offline.
+    """
+    derived = hashlib.pbkdf2_hmac(
+        "sha256", key.encode(), _KDF_SALT, _KDF_ITERATIONS
+    )
+    return base64.urlsafe_b64encode(derived).decode()
+
+
+def _derive_legacy_fernet_key(key: str) -> str:
+    """
+    Derive a Fernet key using the original (pre-PBKDF2) scheme: a single
+    unsalted SHA-256 round. Only used as a fallback so ciphertext written
+    before the PBKDF2 upgrade keeps decrypting - see `decrypt_value`.
     """
     derived = hashlib.sha256(key.encode()).digest()
     return base64.urlsafe_b64encode(derived).decode()
@@ -122,7 +152,18 @@ def get_fernet() -> Fernet:
     Raises:
         ValueError: If encryption key is not configured.
     """
-    return Fernet(_ensure_fernet_key(_get_encryption_key()).encode())
+    global _FERNET_KEY
+    if _FERNET_KEY is None:
+        _FERNET_KEY = _derive_fernet_key(_get_encryption_key()).encode()
+    return Fernet(_FERNET_KEY)
+
+
+def _get_legacy_fernet() -> Fernet:
+    """Fernet instance derived via the legacy unsalted-SHA-256 scheme."""
+    global _LEGACY_FERNET_KEY
+    if _LEGACY_FERNET_KEY is None:
+        _LEGACY_FERNET_KEY = _derive_legacy_fernet_key(_get_encryption_key()).encode()
+    return Fernet(_LEGACY_FERNET_KEY)
 
 
 def encrypt_value(value: str) -> str:
@@ -168,7 +209,11 @@ def decrypt_value(value: str) -> str:
     """
     Decrypt a Fernet-encrypted string value.
 
-    Handles graceful fallback for legacy unencrypted data.
+    Tries the current (PBKDF2) key derivation first, then falls back to the
+    legacy unsalted-SHA-256 derivation so ciphertext written before that
+    upgrade keeps decrypting - it gets transparently re-encrypted under the
+    current scheme the next time the owning record is saved. Finally falls
+    back to treating the value as legacy unencrypted plaintext.
 
     Args:
         value: The encrypted string (or plain text for legacy data).
@@ -180,18 +225,25 @@ def decrypt_value(value: str) -> str:
         ValueError: If encryption is not configured or if decryption fails
             for what appears to be encrypted data (wrong key).
     """
-    fernet = get_fernet()
+    try:
+        return get_fernet().decrypt(value.encode()).decode()
+    except InvalidToken:
+        pass
+    except Exception as e:
+        logger.error(f"Decryption failed: {e}")
+        raise ValueError(f"Decryption failed: {str(e)}")
 
     try:
-        return fernet.decrypt(value.encode()).decode()
+        return _get_legacy_fernet().decrypt(value.encode()).decode()
     except InvalidToken:
         if looks_like_fernet_token(value):
-            # Looks like encrypted data but failed to decrypt - likely wrong key
+            # Looks like encrypted data but failed under both key derivations
+            # - likely wrong key rather than a legacy-scheme mismatch.
             raise ValueError(
                 "Decryption failed: data appears to be encrypted but key is incorrect. "
                 "Check OPEN_NOTEBOOK_ENCRYPTION_KEY configuration."
             )
-        # Not a valid token - treat as legacy plaintext
+        # Not a valid token under either scheme - treat as legacy plaintext
         return value
     except Exception as e:
         logger.error(f"Decryption failed: {e}")

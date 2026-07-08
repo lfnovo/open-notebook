@@ -17,6 +17,7 @@ from loguru import logger
 from surreal_commands import execute_command_sync, submit_command
 
 from api.command_service import CommandService
+from api.credentials_service import validate_url
 from api.models import (
     AssetModel,
     CreateSourceInsightRequest,
@@ -96,18 +97,12 @@ def generate_unique_filename(original_filename: str, upload_folder: str) -> str:
         counter += 1
 
 
-async def save_uploaded_file(upload_file: UploadFile) -> str:
-    """Save uploaded file to uploads folder and return file path."""
-    if not upload_file.filename:
-        raise ValueError("No filename provided")
-
-    # Generate unique filename
-    file_path = generate_unique_filename(upload_file.filename, UPLOADS_FOLDER)
-
+def _write_uploaded_file(filename: str, content: bytes) -> str:
+    """Sync filesystem work for save_uploaded_file() - run via asyncio.to_thread
+    so a large upload doesn't block the event loop for other requests."""
+    file_path = generate_unique_filename(filename, UPLOADS_FOLDER)
     try:
-        # Save file
         with open(file_path, "wb") as f:
-            content = await upload_file.read()
             f.write(content)
 
         logger.info(f"Saved uploaded file to: {file_path}")
@@ -118,6 +113,15 @@ async def save_uploaded_file(upload_file: UploadFile) -> str:
         if os.path.exists(file_path):
             os.unlink(file_path)
         raise
+
+
+async def save_uploaded_file(upload_file: UploadFile) -> str:
+    """Save uploaded file to uploads folder and return file path."""
+    if not upload_file.filename:
+        raise ValueError("No filename provided")
+
+    content = await upload_file.read()
+    return await asyncio.to_thread(_write_uploaded_file, upload_file.filename, content)
 
 
 def parse_source_form_data(
@@ -360,6 +364,12 @@ async def create_source(
                 raise HTTPException(
                     status_code=400, detail="URL is required for link type"
                 )
+            # Block SSRF to internal/metadata addresses before the server ever
+            # fetches this URL (same guard used for provider-credential URLs).
+            try:
+                validate_url(source_data.url, "source")
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
             content_state["url"] = source_data.url
         elif source_data.type == "upload":
             # Use uploaded file path or provided file_path (backward compatibility)

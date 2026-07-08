@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import { forwardRef } from 'react'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeSanitize from 'rehype-sanitize'
 
 const MDEditor = dynamic(
   () => import('@uiw/react-md-editor').then((mod) => mod.default),
@@ -14,9 +15,18 @@ const MDEditor = dynamic(
 // concatenates these with its defaults (gfm, prism, raw), so syntax
 // highlighting and GFM are preserved. KaTeX CSS is loaded globally in
 // app/layout.tsx.
-const PREVIEW_OPTIONS = {
+//
+// The library's own `raw` default lets literal HTML in the markdown source
+// (e.g. pasted content, or an AI-generated note echoing an indirect prompt
+// injection) render as live elements - notably a real <iframe>, not just
+// inert text. rehypeSanitize (default schema) strips that down to safe
+// HTML. It must run *before* rehypeKatex: katex's own generated markup
+// (katex-html spans, MathML) isn't in the default sanitize schema and gets
+// stripped if sanitize runs after it - order here is load-bearing, verified
+// against the actual rendered output for math/code/GFM before changing it.
+export const PREVIEW_OPTIONS = {
   remarkPlugins: [remarkMath],
-  rehypePlugins: [rehypeKatex],
+  rehypePlugins: [rehypeSanitize, rehypeKatex],
 }
 
 export interface MarkdownEditorProps {

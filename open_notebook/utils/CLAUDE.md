@@ -203,15 +203,17 @@ for item in context_items:
 
 **Key behavior**:
 - Key source: OPEN_NOTEBOOK_ENCRYPTION_KEY_FILE (Docker secrets) → OPEN_NOTEBOOK_ENCRYPTION_KEY (env var)
-- Accepts **any string**: always derived to a Fernet key via SHA-256
+- Accepts **any string**: derived to a Fernet key via salted PBKDF2-HMAC-SHA256 (600k iterations)
 - No default key — encryption is unavailable until the env var is set
-- Graceful fallback on decryption: InvalidToken errors (legacy unencrypted data) return the original value
+- Graceful fallback on decryption: tries the current PBKDF2 derivation, then the legacy pre-PBKDF2 unsalted-SHA-256 derivation (so ciphertext written before that upgrade keeps decrypting), then falls back to the original value for legacy unencrypted data. `InvalidToken` under both derivations + doesn't look like a Fernet token → treated as legacy plaintext
+- Both derived keys are cached lazily per process (the PBKDF2 step is deliberately expensive, ~50ms)
 - Lazy-loaded key: initialized on first use, not at import time
 
 **Security considerations**:
 - OPEN_NOTEBOOK_ENCRYPTION_KEY must be set explicitly (no default)
 - Docker secrets pattern supported for secure key injection in containerized environments
-- Key rotation would require re-encrypting all stored keys (not currently implemented)
+- Key *derivation* upgrades (e.g. the PBKDF2 migration) are transparent and self-healing: old ciphertext decrypts via the legacy-scheme fallback and gets re-encrypted under the current scheme the next time the owning record is saved — no migration script needed
+- Key *rotation* (changing OPEN_NOTEBOOK_ENCRYPTION_KEY itself) would still require re-encrypting all stored values (not currently implemented) — the fallback only covers derivation-scheme changes, not a genuinely different passphrase
 - Encryption is transparent to callers; unencrypted legacy data continues to work
 
 **Usage Example**:

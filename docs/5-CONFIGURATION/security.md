@@ -24,7 +24,7 @@ Set the encryption key to any secret string:
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-passphrase
 ```
 
-Any string works — it will be securely derived via SHA-256 internally. Use a strong passphrase for production deployments.
+Any string works — it will be securely derived via salted PBKDF2-HMAC-SHA256 (600k iterations) internally. Use a strong passphrase for production deployments.
 
 ### Default Credentials
 

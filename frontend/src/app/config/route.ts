@@ -1,5 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Basic hostname/IPv4 validation (letters, digits, dots, hyphens) plus a
+// bracketed-IPv6-literal form. Host and X-Forwarded-Proto are client-
+// controlled; behind a reverse proxy that forwards them untrusted, an
+// unvalidated value here could redirect the browser's subsequent API
+// traffic (including the auth bearer token - see lib/api/client.ts) to an
+// attacker-chosen host. Reject anything that isn't syntactically a
+// hostname/IP before it's used to build the URL the client will trust.
+const HOSTNAME_PATTERN = /^[a-zA-Z0-9.-]+$/
+const IPV6_LITERAL_PATTERN = /^\[[0-9a-fA-F:]+\]$/
+
+function isValidHostname(hostname: string): boolean {
+  return (
+    hostname.length > 0 &&
+    hostname.length <= 253 &&
+    (HOSTNAME_PATTERN.test(hostname) || IPV6_LITERAL_PATTERN.test(hostname))
+  )
+}
+
 /**
  * Runtime Configuration Endpoint
  *
@@ -35,10 +53,13 @@ export async function GET(request: NextRequest) {
   // Priority 2: Auto-detect from request headers
   try {
     // Get the protocol (http or https)
-    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme
-    const proto = request.headers.get('x-forwarded-proto') ||
+    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme.
+    // Only ever trust "http"/"https" - reject anything else a spoofed or
+    // misconfigured-proxy header might supply.
+    const rawProto = request.headers.get('x-forwarded-proto') ||
                   request.nextUrl.protocol.replace(':', '') ||
                   'http'
+    const proto = rawProto === 'https' ? 'https' : 'http'
 
     // Get the host header (includes port if non-standard)
     const hostHeader = request.headers.get('host')
@@ -47,14 +68,18 @@ export async function GET(request: NextRequest) {
       // Extract just the hostname (remove port if present)
       const hostname = hostHeader.split(':')[0]
 
-      // Construct the API URL with port 5055
-      const apiUrl = `${proto}://${hostname}:5055`
+      if (isValidHostname(hostname)) {
+        // Construct the API URL with port 5055
+        const apiUrl = `${proto}://${hostname}:5055`
 
-      console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+        console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
 
-      return NextResponse.json({
-        apiUrl,
-      })
+        return NextResponse.json({
+          apiUrl,
+        })
+      }
+
+      console.warn(`[runtime-config] Rejected malformed Host header, falling back to localhost: ${hostHeader}`)
     }
   } catch (error) {
     console.error('[runtime-config] Auto-detection failed:', error)

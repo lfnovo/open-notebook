@@ -219,7 +219,7 @@ Opus: $10-50+/month
 **Available Models (100+ options):**
 - OpenAI: `openai/gpt-4o`, `openai/o1`
 - Anthropic: `anthropic/claude-sonnet-4.5`, `anthropic/claude-3.5-haiku`
-- Google: `google/gemini-2.0-flash-exp`, `google/gemini-1.5-pro`
+- Google: `google/gemini-2.5-flash`, `google/gemini-3.5-pro`
 - Meta: `meta-llama/llama-3.3-70b-instruct`, `meta-llama/llama-3.1-405b-instruct`
 - Mistral: `mistralai/mistral-large-2411`
 - DeepSeek: `deepseek/deepseek-chat`
@@ -227,7 +227,7 @@ Opus: $10-50+/month
 
 **Recommended:**
 - For quality: `anthropic/claude-sonnet-4.5` (best overall)
-- For speed/cost: `google/gemini-2.0-flash-exp` (very fast, cheap)
+- For speed/cost: `google/gemini-2.5-flash` (very fast, cheap)
 - For open-source: `meta-llama/llama-3.3-70b-instruct`
 - For reasoning: `openai/o1`
 

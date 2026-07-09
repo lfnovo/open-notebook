@@ -4,8 +4,6 @@ services:
     container_name: open-notebook-desktop-surrealdb
     command: start --log info --user ${SURREAL_USER:-root} --pass ${SURREAL_PASSWORD:-root} rocksdb:/mydata/mydatabase.db
     user: root
-    ports:
-      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

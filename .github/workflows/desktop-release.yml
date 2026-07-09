@@ -44,20 +44,26 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop
           tagName: ${{ github.ref_name }}
           releaseName: Open Notebook Desktop ${{ github.ref_name }}
           releaseBody: |
-            Linux desktop launcher for Open Notebook.
+            Linux-Release von Open Notebook Desktop.
 
             **Downloads:**
-            - **AppImage** — portable, recommended (in-app updates)
+            - **AppImage** — portable, empfohlen (In-App-Updates)
             - **.deb** — Debian/Ubuntu/Linux Mint
 
-            Docker must be installed separately. On first launch the app downloads the official Open Notebook images.
+            Docker muss separat installiert sein. Beim ersten Start werden die Open-Notebook-Images heruntergeladen.
           releaseDraft: false
           prerelease: false
           uploadUpdaterJson: true
           uploadUpdaterSignatures: true
           args: --bundles appimage deb
+
+      - name: Mark desktop release as latest
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ github.ref_name }}" --repo "${{ github.repository }}" --latest

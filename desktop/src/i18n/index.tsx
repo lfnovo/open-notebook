@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import type { Language } from "./languages";
 import { translate } from "./translations";
 
@@ -15,6 +15,10 @@ interface I18nProviderProps {
 }
 
 export function I18nProvider({ language, children }: I18nProviderProps) {
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const value = useMemo<I18nContextValue>(
     () => ({
       language,

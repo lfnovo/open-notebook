@@ -36,6 +36,7 @@ export function StartScreen() {
 
   const phase = isLaunchPhase(progress.phase) ? progress.phase : "checkingDocker";
   const statusText = t(`splash.phases.${phase}`);
+  const percent = Math.max(0, Math.min(100, progress.percent));
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6 py-12">
@@ -51,20 +52,20 @@ export function StartScreen() {
         <div className="mt-10">
           <div className="mb-3 flex items-center justify-between text-sm">
             <span className="text-slate-300">{statusText}</span>
-            <span className="font-mono text-sky-300">{progress.percent}%</span>
+            <span className="font-mono text-sky-300">{percent}%</span>
           </div>
 
           <div
             className="h-2 overflow-hidden rounded-full bg-white/10"
             role="progressbar"
-            aria-valuenow={progress.percent}
+            aria-valuenow={percent}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={statusText}
           >
             <div
               className="h-full rounded-full bg-gradient-to-r from-[#bd34fe] to-[#41d1ff] transition-all duration-500 ease-out"
-              style={{ width: `${Math.max(progress.percent, 2)}%` }}
+              style={{ width: `${Math.max(percent, 2)}%` }}
             />
           </div>
         </div>

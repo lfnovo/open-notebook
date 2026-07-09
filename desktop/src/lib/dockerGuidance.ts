@@ -77,8 +77,7 @@ export function getDockerGuidance(status: DockerStatus, t: Translate): DockerGui
   if (
     status.available &&
     status.daemonRunning &&
-    status.composeAvailable &&
-    status.userInDockerGroup
+    status.composeAvailable
   ) {
     return {
       situation: "ready",

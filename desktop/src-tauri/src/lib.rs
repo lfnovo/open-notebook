@@ -6,7 +6,7 @@ mod update;
 
 use config::{
     detect_system_locale, ensure_compose_file, generate_encryption_key, load_config, save_config,
-    AppConfig,
+    validate_public_config, AppConfig, PublicAppConfig,
 };
 use docker::{
     check_docker_status, compose_down, compose_logs, compose_pull, compose_up,
@@ -30,6 +30,7 @@ use tauri_plugin_opener::OpenerExt;
 
 struct AppState {
     config: Mutex<AppConfig>,
+    config_load_error: Mutex<Option<String>>,
 }
 
 #[derive(Clone, Serialize)]
@@ -37,6 +38,28 @@ struct AppState {
 struct LaunchProgress {
     percent: u8,
     phase: String,
+}
+
+fn bundled_compose_path(app: &AppHandle) -> Option<PathBuf> {
+    app.path().resource_dir().ok().and_then(|dir| {
+        let direct = dir.join("docker-compose.yml");
+        if direct.exists() {
+            return Some(direct);
+        }
+
+        let nested = dir.join("_up_").join("resources").join("docker-compose.yml");
+        if nested.exists() {
+            return Some(nested);
+        }
+
+        None
+    })
+}
+
+fn stop_stack_if_needed(config: &AppConfig) {
+    if config.stop_on_exit {
+        let _ = compose_down(&config.data_dir);
+    }
 }
 
 fn emit_launch_progress(app: &AppHandle, percent: u8, phase: &str) {
@@ -67,7 +90,7 @@ fn build_app_menu(app: &AppHandle, language: &str) -> Result<Menu<tauri::Wry>, t
     let separator = PredefinedMenuItem::separator(app)?;
     let open_notebook =
         MenuItem::with_id(app, "open-notebook", labels.open_notebook, true, None::<&str>)?;
-    let quit = PredefinedMenuItem::quit(app, Some(labels.quit))?;
+    let quit = MenuItem::with_id(app, "quit", labels.quit, true, None::<&str>)?;
 
     let app_menu = Submenu::with_items(
         app,
@@ -102,13 +125,7 @@ fn focus_notebook(app: &AppHandle) {
     }
 }
 
-async fn open_notebook_window_async(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
-    if !wait_for_health_async(config.ui_port, 5).await {
-        return Err(
-            "Open Notebook antwortet noch nicht. Bitte warte, bis der Stack läuft.".to_string(),
-        );
-    }
-
+fn show_notebook_window(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
     let url = format!("http://127.0.0.1:{}", config.ui_port);
     let parsed_url: url::Url = url.parse().map_err(|e: url::ParseError| e.to_string())?;
 
@@ -131,6 +148,16 @@ async fn open_notebook_window_async(app: &AppHandle, config: &AppConfig) -> Resu
     Ok(())
 }
 
+async fn open_notebook_window_async(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
+    if !wait_for_health_async(config.ui_port, 5).await {
+        return Err(
+            "Open Notebook antwortet noch nicht. Bitte warte, bis der Stack läuft.".to_string(),
+        );
+    }
+
+    show_notebook_window(app, config)
+}
+
 fn open_notebook_window_internal(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
     if !wait_for_health("127.0.0.1", config.ui_port, 5) {
         return Err(
@@ -138,26 +165,7 @@ fn open_notebook_window_internal(app: &AppHandle, config: &AppConfig) -> Result<
         );
     }
 
-    let url = format!("http://127.0.0.1:{}", config.ui_port);
-    let parsed_url: url::Url = url.parse().map_err(|e: url::ParseError| e.to_string())?;
-
-    if let Some(window) = app.get_webview_window("notebook") {
-        window
-            .navigate(parsed_url.clone())
-            .map_err(|e| e.to_string())?;
-        window.show().map_err(|e| e.to_string())?;
-        window.set_focus().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    tauri::WebviewWindowBuilder::new(app, "notebook", WebviewUrl::External(parsed_url))
-        .title("Open Notebook")
-        .inner_size(1280.0, 800.0)
-        .min_inner_size(900.0, 600.0)
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    Ok(())
+    show_notebook_window(app, config)
 }
 
 async fn ensure_stack_running(app: &AppHandle, config: &AppConfig) -> Result<(), String> {
@@ -177,11 +185,7 @@ async fn ensure_stack_running(app: &AppHandle, config: &AppConfig) -> Result<(),
         return Ok(());
     }
 
-    let bundled = app
-        .path()
-        .resource_dir()
-        .ok()
-        .map(|dir| dir.join("docker-compose.yml"));
+    let bundled = bundled_compose_path(app);
 
     ensure_compose_file(
         PathBuf::from(&config.data_dir).as_path(),
@@ -287,7 +291,7 @@ fn spawn_direct_launch(app: AppHandle) {
     tauri::async_runtime::spawn(async move {
         let config = get_config_from_state(&app);
 
-        if !config.onboarding_complete || !config.open_notebook_directly {
+        if !config.onboarding_complete || !config.open_notebook_directly || !config.auto_start_on_launch {
             return;
         }
 
@@ -306,36 +310,66 @@ fn handle_menu_event(app: &AppHandle, id: &str) {
                 run_launch_sequence(app_handle, true).await;
             });
         }
+        "quit" => {
+            let config = get_config_from_state(app);
+            stop_stack_if_needed(&config);
+            app.exit(0);
+        }
         _ => {}
     }
 }
 
 #[tauri::command]
-fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
+fn get_config(state: State<'_, AppState>) -> Result<PublicAppConfig, String> {
     state
         .config
         .lock()
-        .map(|c| c.clone())
+        .map(|config| PublicAppConfig::from(&*config))
         .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
+fn get_config_load_error(state: State<'_, AppState>) -> Option<String> {
+    state.config_load_error.lock().ok()?.clone()
+}
+
+#[tauri::command]
 fn save_app_config(
-    config: AppConfig,
+    config: PublicAppConfig,
+    encryption_key: Option<String>,
     state: State<'_, AppState>,
     app: AppHandle,
 ) -> Result<(), String> {
+    validate_public_config(&config)?;
+
     let was_complete = state
         .config
         .lock()
         .map(|c| c.onboarding_complete)
         .unwrap_or(false);
 
-    save_config(&config).map_err(|e| e.to_string())?;
-    *state.config.lock().map_err(|e| e.to_string())? = config.clone();
-    refresh_app_menu(&app, &config.language);
+    let current = state.config.lock().map_err(|e| e.to_string())?.clone();
+    let next = current.merge_public(&config, encryption_key.as_deref());
 
-    if config.onboarding_complete && !was_complete && config.open_notebook_directly {
+    if next.onboarding_complete && next.encryption_key.is_empty() {
+        return Err("Verschlüsselungsschlüssel fehlt. Bitte Onboarding abschließen.".to_string());
+    }
+
+    if was_complete && encryption_key.is_some() {
+        return Err(
+            "Der Verschlüsselungsschlüssel kann nach dem Onboarding nicht mehr geändert werden."
+                .to_string(),
+        );
+    }
+
+    save_config(&next).map_err(|e| e.to_string())?;
+    *state.config.lock().map_err(|e| e.to_string())? = next.clone();
+    if state.config_load_error.lock().map_err(|e| e.to_string())?.is_some() {
+        *state.config_load_error.lock().map_err(|e| e.to_string())? = None;
+    }
+    refresh_app_menu(&app, &next.language);
+
+    if next.onboarding_complete && !was_complete && next.open_notebook_directly {
         spawn_direct_launch(app);
     }
 
@@ -374,6 +408,12 @@ fn install_engine() -> Result<String, String> {
 
 #[tauri::command]
 fn install_desktop() -> Result<String, String> {
+    let distro = detect_distro();
+    if distro.family != "debian" {
+        return Err(
+            "Docker Desktop wird nur automatisch auf Debian/Ubuntu amd64 unterstützt.".to_string(),
+        );
+    }
     install_docker_desktop().map_err(|e| e.to_string())
 }
 
@@ -416,19 +456,14 @@ async fn get_stack_status(state: State<'_, AppState>) -> Result<StackStatus, Str
 }
 
 #[tauri::command]
-fn initialize_stack(app: AppHandle, state: State<'_, AppState>) -> Result<String, String> {
+async fn initialize_stack(app: AppHandle, state: State<'_, AppState>) -> Result<String, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?.clone();
 
     if config.encryption_key.is_empty() {
         return Err("Verschlüsselungsschlüssel fehlt. Bitte Onboarding abschließen.".to_string());
     }
 
-    let bundled = app
-        .path()
-        .resource_dir()
-        .ok()
-        .map(|dir| dir.join("docker-compose.yml"));
-
+    let bundled = bundled_compose_path(&app);
     let compose_path = ensure_compose_file(
         PathBuf::from(&config.data_dir).as_path(),
         bundled.as_deref(),
@@ -436,8 +471,15 @@ fn initialize_stack(app: AppHandle, state: State<'_, AppState>) -> Result<String
     .map_err(|e| e.to_string())?;
 
     save_config(&config).map_err(|e| e.to_string())?;
-    compose_pull(&config.data_dir).map_err(|e| e.to_string())?;
-    compose_up(&config.data_dir).map_err(|e| e.to_string())?;
+    let data_dir = config.data_dir.clone();
+
+    tokio::task::spawn_blocking(move || {
+        compose_pull(&data_dir)?;
+        compose_up(&data_dir)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
 
     Ok(format!(
         "Stack initialisiert unter {}",
@@ -446,28 +488,47 @@ fn initialize_stack(app: AppHandle, state: State<'_, AppState>) -> Result<String
 }
 
 #[tauri::command]
-fn start_stack(state: State<'_, AppState>) -> Result<String, String> {
+async fn start_stack(state: State<'_, AppState>) -> Result<String, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?.clone();
-    compose_up(&config.data_dir).map_err(|e| e.to_string())
+    let data_dir = config.data_dir.clone();
+    tokio::task::spawn_blocking(move || compose_up(&data_dir))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn stop_stack(state: State<'_, AppState>) -> Result<String, String> {
+async fn stop_stack(state: State<'_, AppState>) -> Result<String, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?.clone();
-    compose_down(&config.data_dir).map_err(|e| e.to_string())
+    let data_dir = config.data_dir.clone();
+    tokio::task::spawn_blocking(move || compose_down(&data_dir))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn restart_stack(state: State<'_, AppState>) -> Result<String, String> {
+async fn restart_stack(state: State<'_, AppState>) -> Result<String, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?.clone();
-    compose_down(&config.data_dir).map_err(|e| e.to_string())?;
-    compose_up(&config.data_dir).map_err(|e| e.to_string())
+    let data_dir = config.data_dir.clone();
+    tokio::task::spawn_blocking(move || {
+        compose_down(&data_dir)?;
+        compose_up(&data_dir)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-fn fetch_logs(state: State<'_, AppState>, tail: Option<usize>) -> Result<String, String> {
+async fn fetch_logs(state: State<'_, AppState>, tail: Option<usize>) -> Result<String, String> {
     let config = state.config.lock().map_err(|e| e.to_string())?.clone();
-    compose_logs(&config.data_dir, tail.unwrap_or(200)).map_err(|e| e.to_string())
+    let tail = tail.unwrap_or(200).min(5000);
+    let data_dir = config.data_dir.clone();
+    tokio::task::spawn_blocking(move || compose_logs(&data_dir, tail))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -496,12 +557,27 @@ fn show_launcher_window(app: AppHandle, screen: Option<String>) -> Result<(), St
 }
 
 fn setup_app_state() -> AppState {
-    let mut config = load_config().unwrap_or_default();
-    if config.encryption_key.is_empty() && config.onboarding_complete {
-        config.onboarding_complete = false;
-    }
+    let config_load_error = match load_config() {
+        Ok(config) => {
+            return AppState {
+                config: Mutex::new(config),
+                config_load_error: Mutex::new(None),
+            };
+        }
+        Err(config::ConfigError::Corrupted {
+            message,
+            backup_path,
+        }) => Some(format!(
+            "Die Konfigurationsdatei ist beschädigt ({message}). Eine Sicherung wurde unter {backup_path} gespeichert. Bitte stelle die Datei wieder her oder benenne die Sicherung in config.json um."
+        )),
+        Err(error) => Some(format!(
+            "Die Konfiguration konnte nicht geladen werden: {error}"
+        )),
+    };
+
     AppState {
-        config: Mutex::new(config),
+        config: Mutex::new(AppConfig::default()),
+        config_load_error: Mutex::new(config_load_error),
     }
 }
 
@@ -516,10 +592,20 @@ pub fn run() {
         .setup(|app| {
             let config = get_config_from_state(&app.handle());
             refresh_app_menu(&app.handle(), &config.language);
+            if let Some(error) = app
+                .state::<AppState>()
+                .config_load_error
+                .lock()
+                .ok()
+                .and_then(|value| value.clone())
+            {
+                let _ = app.handle().emit("config-load-error", error);
+            }
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             get_config,
+            get_config_load_error,
             save_app_config,
             detect_system_language,
             generate_key,
@@ -553,18 +639,19 @@ pub fn run() {
 
                 match window.label() {
                     "main" => {
-                        if config.open_notebook_directly && config.onboarding_complete {
+                        if config.open_notebook_directly
+                            && config.onboarding_complete
+                            && app.get_webview_window("notebook").is_some()
+                        {
                             api.prevent_close();
                             let _ = window.hide();
                             focus_notebook(&app);
                         } else if config.stop_on_exit {
-                            let _ = compose_down(&config.data_dir);
+                            stop_stack_if_needed(&config);
                         }
                     }
                     "notebook" => {
-                        if config.stop_on_exit {
-                            let _ = compose_down(&config.data_dir);
-                        }
+                        stop_stack_if_needed(&config);
                         app.exit(0);
                     }
                     _ => {}
@@ -575,9 +662,14 @@ pub fn run() {
         .expect("error while building tauri application")
         .run(|app, event| {
             if let RunEvent::Ready = event {
+                let state = app.state::<AppState>();
+                if state.config_load_error.lock().ok().and_then(|e| e.clone()).is_some() {
+                    return;
+                }
+
                 let config = get_config_from_state(app);
                 if config.onboarding_complete {
-                    if config.open_notebook_directly {
+                    if config.open_notebook_directly && config.auto_start_on_launch {
                         spawn_direct_launch(app.clone());
                     } else if config.auto_start_on_launch {
                         spawn_stack_only(app.clone());

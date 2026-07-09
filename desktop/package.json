@@ -1,11 +1,11 @@
 {
   "name": "open-notebook-desktop",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },

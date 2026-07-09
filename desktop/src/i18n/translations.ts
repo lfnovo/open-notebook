@@ -156,6 +156,12 @@ export const translations: Record<Language, TranslationTree> = {
       dataDir: "Datenverzeichnis",
       keyRequired: "Bitte einen Verschlüsselungsschlüssel setzen.",
     },
+    configError: {
+      title: "Konfiguration beschädigt",
+      subtitle: "Die gespeicherte Launcher-Konfiguration konnte nicht geladen werden.",
+      fallback: "Die Konfiguration konnte nicht geladen werden.",
+      hint: "Stelle config.json aus der Sicherungskopie wieder her, bevor du fortfährst. Ein neues Onboarding würde sonst einen neuen Verschlüsselungsschlüssel erzeugen.",
+    },
     dashboard: {
       title: "Dashboard",
       subtitle: "Starte Open Notebook direkt — Verwaltung nur bei Bedarf über die Menüleiste.",
@@ -244,6 +250,8 @@ export const translations: Record<Language, TranslationTree> = {
       openNotebookDirectly: "Open Notebook direkt öffnen (Dashboard überspringen)",
       stopOnExit: "Container beim Beenden der App stoppen",
       encryptionSet: "Verschlüsselungsschlüssel ist gesetzt",
+      invalidDataDir: "Bitte einen absoluten, nicht leeren Pfad für das Datenverzeichnis angeben.",
+      invalidPort: "Ports müssen ganze Zahlen zwischen 1 und 65535 sein.",
       saved: "Einstellungen gespeichert.",
     },
     updates: {
@@ -432,6 +440,12 @@ export const translations: Record<Language, TranslationTree> = {
       dataDir: "Data directory",
       keyRequired: "Please set an encryption key.",
     },
+    configError: {
+      title: "Configuration error",
+      subtitle: "The saved launcher configuration could not be loaded.",
+      fallback: "The configuration could not be loaded.",
+      hint: "Restore config.json from the backup copy before continuing. A fresh onboarding would generate a new encryption key.",
+    },
     dashboard: {
       title: "Dashboard",
       subtitle: "Launch Open Notebook directly — management via the menu bar when needed.",
@@ -520,6 +534,8 @@ export const translations: Record<Language, TranslationTree> = {
       openNotebookDirectly: "Open Open Notebook directly (skip dashboard)",
       stopOnExit: "Stop containers when closing the app",
       encryptionSet: "Encryption key is set",
+      invalidDataDir: "Please provide an absolute, non-empty data directory path.",
+      invalidPort: "Ports must be whole numbers between 1 and 65535.",
       saved: "Settings saved.",
     },
     updates: {
@@ -580,9 +596,8 @@ export function translate(
     key;
 
   if (!vars) return value;
-  return Object.entries(vars).reduce(
-    (result, [name, replacement]) =>
-      result.replace(new RegExp(`\\{\\{${name}\\}\\}`, "g"), replacement),
-    value,
-  );
+  return Object.entries(vars).reduce((result, [name, replacement]) => {
+    const pattern = new RegExp(`\\{\\{${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\}\\}`, "g");
+    return result.replace(pattern, () => replacement);
+  }, value);
 }

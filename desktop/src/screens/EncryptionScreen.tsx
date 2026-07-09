@@ -1,25 +1,43 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
+import { truncateError } from "../lib/validation";
 import { useI18n } from "../i18n";
 import type { AppConfig } from "../types";
 import { Button, Card, ScreenShell } from "../components/ui";
 
 interface EncryptionScreenProps {
   config: AppConfig;
-  onSave: (config: AppConfig) => Promise<void>;
+  onSave: (config: AppConfig, encryptionKey: string) => Promise<void>;
   onBack: () => void;
 }
 
 export function EncryptionScreen({ config, onSave, onBack }: EncryptionScreenProps) {
   const { t } = useI18n();
-  const [encryptionKey, setEncryptionKey] = useState(config.encryptionKey);
+  const [encryptionKey, setEncryptionKey] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    let active = true;
+
     if (!encryptionKey) {
-      void api.generateKey().then(setEncryptionKey);
+      void api
+        .generateKey()
+        .then((key) => {
+          if (active) {
+            setEncryptionKey(key);
+          }
+        })
+        .catch((error) => {
+          if (active) {
+            setMessage(truncateError(error));
+          }
+        });
     }
+
+    return () => {
+      active = false;
+    };
   }, [encryptionKey]);
 
   async function handleSave() {
@@ -31,15 +49,18 @@ export function EncryptionScreen({ config, onSave, onBack }: EncryptionScreenPro
     setLoading(true);
     setMessage("");
     try {
-      await onSave({
-        ...config,
-        encryptionKey: encryptionKey.trim(),
-        onboardingComplete: true,
-        autoStartOnLaunch: true,
-        openNotebookDirectly: true,
-      });
+      await onSave(
+        {
+          ...config,
+          onboardingComplete: true,
+          autoStartOnLaunch: true,
+          openNotebookDirectly: true,
+          encryptionKeyConfigured: true,
+        },
+        encryptionKey.trim(),
+      );
     } catch (error) {
-      setMessage(String(error));
+      setMessage(truncateError(error));
     } finally {
       setLoading(false);
     }
@@ -65,7 +86,15 @@ export function EncryptionScreen({ config, onSave, onBack }: EncryptionScreenPro
           />
         </label>
         <div className="flex flex-wrap gap-3">
-          <Button variant="secondary" onClick={() => void api.generateKey().then(setEncryptionKey)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void api
+                .generateKey()
+                .then(setEncryptionKey)
+                .catch((error) => setMessage(truncateError(error)));
+            }}
+          >
             {t("encryption.generate")}
           </Button>
           <Button disabled={loading} onClick={() => void handleSave()}>

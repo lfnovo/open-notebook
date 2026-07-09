@@ -4,6 +4,7 @@ import { UpdatePanel } from "../components/UpdatePanel";
 import { useAppUpdateContext } from "../contexts/AppUpdateContext";
 import { useI18n } from "../i18n";
 import { normalizeLanguage } from "../i18n/languages";
+import { isValidDataDir, isValidPort, truncateError } from "../lib/validation";
 import type { AppConfig } from "../types";
 import { Button, Card, ScreenShell } from "../components/ui";
 
@@ -27,16 +28,26 @@ export function SettingsScreen({ config, onSave, onBack }: SettingsScreenProps) 
   const [loading, setLoading] = useState(false);
 
   async function handleSave() {
+    if (!isValidDataDir(draft.dataDir)) {
+      setMessage(t("settings.invalidDataDir"));
+      return;
+    }
+    if (!isValidPort(draft.uiPort) || !isValidPort(draft.apiPort)) {
+      setMessage(t("settings.invalidPort"));
+      return;
+    }
+
     setLoading(true);
     setMessage("");
     try {
       await onSave({
         ...draft,
+        dataDir: draft.dataDir.trim(),
         language: normalizeLanguage(draft.language),
       });
       setMessage(t("settings.saved"));
     } catch (error) {
-      setMessage(String(error));
+      setMessage(truncateError(error));
     } finally {
       setLoading(false);
     }
@@ -62,83 +73,88 @@ export function SettingsScreen({ config, onSave, onBack }: SettingsScreenProps) 
         />
 
         <Card className="space-y-5">
-        <LanguageSelect
-          label={t("common.language")}
-          value={normalizeLanguage(draft.language)}
-          onChange={(language) => setDraft({ ...draft, language })}
-        />
-
-        <label className="block space-y-2">
-          <span className="text-sm text-slate-300">{t("settings.dataDir")}</span>
-          <input
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-sky-400"
-            value={draft.dataDir}
-            onChange={(e) => setDraft({ ...draft, dataDir: e.target.value })}
+          <LanguageSelect
+            label={t("common.language")}
+            value={normalizeLanguage(draft.language)}
+            onChange={(language) => setDraft({ ...draft, language })}
           />
-        </label>
 
-        <div className="grid gap-4 md:grid-cols-2">
           <label className="block space-y-2">
-            <span className="text-sm text-slate-300">{t("settings.uiPort")}</span>
+            <span className="text-sm text-slate-300">{t("settings.dataDir")}</span>
             <input
-              type="number"
               className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-sky-400"
-              value={draft.uiPort}
-              onChange={(e) => setDraft({ ...draft, uiPort: Number(e.target.value) })}
+              value={draft.dataDir}
+              onChange={(e) => setDraft({ ...draft, dataDir: e.target.value })}
             />
           </label>
-          <label className="block space-y-2">
-            <span className="text-sm text-slate-300">{t("settings.apiPort")}</span>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="block space-y-2">
+              <span className="text-sm text-slate-300">{t("settings.uiPort")}</span>
+              <input
+                type="number"
+                min={1}
+                max={65535}
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-sky-400"
+                value={draft.uiPort}
+                onChange={(e) => setDraft({ ...draft, uiPort: Number(e.target.value) })}
+              />
+            </label>
+            <label className="block space-y-2">
+              <span className="text-sm text-slate-300">{t("settings.apiPort")}</span>
+              <input
+                type="number"
+                min={1}
+                max={65535}
+                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-sky-400"
+                value={draft.apiPort}
+                onChange={(e) => setDraft({ ...draft, apiPort: Number(e.target.value) })}
+              />
+            </label>
+          </div>
+
+          <label className="flex items-center gap-3 text-slate-300">
             <input
-              type="number"
-              className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none focus:border-sky-400"
-              value={draft.apiPort}
-              onChange={(e) => setDraft({ ...draft, apiPort: Number(e.target.value) })}
+              type="checkbox"
+              checked={draft.autoStartOnLaunch}
+              onChange={(e) => setDraft({ ...draft, autoStartOnLaunch: e.target.checked })}
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
             />
+            {t("settings.autoStartOnLaunch")}
           </label>
-        </div>
 
-        <label className="flex items-center gap-3 text-slate-300">
-          <input
-            type="checkbox"
-            checked={draft.autoStartOnLaunch}
-            onChange={(e) => setDraft({ ...draft, autoStartOnLaunch: e.target.checked })}
-            className="h-4 w-4 rounded border-white/20 bg-black/30"
-          />
-          {t("settings.autoStartOnLaunch")}
-        </label>
+          <label className="flex items-center gap-3 text-slate-300">
+            <input
+              type="checkbox"
+              checked={draft.openNotebookDirectly}
+              onChange={(e) => setDraft({ ...draft, openNotebookDirectly: e.target.checked })}
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
+            />
+            {t("settings.openNotebookDirectly")}
+          </label>
 
-        <label className="flex items-center gap-3 text-slate-300">
-          <input
-            type="checkbox"
-            checked={draft.openNotebookDirectly}
-            onChange={(e) => setDraft({ ...draft, openNotebookDirectly: e.target.checked })}
-            className="h-4 w-4 rounded border-white/20 bg-black/30"
-          />
-          {t("settings.openNotebookDirectly")}
-        </label>
+          <label className="flex items-center gap-3 text-slate-300">
+            <input
+              type="checkbox"
+              checked={draft.stopOnExit}
+              onChange={(e) => setDraft({ ...draft, stopOnExit: e.target.checked })}
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
+            />
+            {t("settings.stopOnExit")}
+          </label>
 
-        <label className="flex items-center gap-3 text-slate-300">
-          <input
-            type="checkbox"
-            checked={draft.stopOnExit}
-            onChange={(e) => setDraft({ ...draft, stopOnExit: e.target.checked })}
-            className="h-4 w-4 rounded border-white/20 bg-black/30"
-          />
-          {t("settings.stopOnExit")}
-        </label>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
+            {t("settings.encryptionSet")}:{" "}
+            {draft.encryptionKeyConfigured ? t("common.yes") : t("common.no")}
+          </div>
 
-        <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-slate-400">
-          {t("settings.encryptionSet")}: {draft.encryptionKey ? t("common.yes") : t("common.no")}
-        </div>
+          <div className="flex gap-3">
+            <Button disabled={loading} onClick={() => void handleSave()}>
+              {t("common.save")}
+            </Button>
+          </div>
 
-        <div className="flex gap-3">
-          <Button disabled={loading} onClick={() => void handleSave()}>
-            {t("common.save")}
-          </Button>
-        </div>
-
-        {message ? <p className="text-sm text-slate-300">{message}</p> : null}
+          {message ? <p className="text-sm text-slate-300">{message}</p> : null}
         </Card>
       </div>
     </ScreenShell>

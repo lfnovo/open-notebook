@@ -1,9 +1,21 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { AppConfig, DistroInfo, DockerStatus, InstallContext, StackStatus } from "../types";
+import type {
+  AppConfig,
+  DistroInfo,
+  DockerStatus,
+  InstallContext,
+  SaveAppConfigOptions,
+  StackStatus,
+} from "../types";
 
 export const api = {
   getConfig: () => invoke<AppConfig>("get_config"),
-  saveConfig: (config: AppConfig) => invoke<void>("save_app_config", { config }),
+  getConfigLoadError: () => invoke<string | null>("get_config_load_error"),
+  saveConfig: (config: AppConfig, options?: SaveAppConfigOptions) =>
+    invoke<void>("save_app_config", {
+      config,
+      encryptionKey: options?.encryptionKey ?? null,
+    }),
   detectSystemLanguage: () => invoke<string>("detect_system_language"),
   getInstallContext: () => invoke<InstallContext>("get_install_context_cmd"),
   openReleasePage: () => invoke<void>("open_release_page"),

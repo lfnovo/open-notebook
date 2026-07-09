@@ -23,7 +23,7 @@ pub fn menu_labels(language: &str) -> MenuLabels {
             dashboard: "Management…",
             logs: "Logs…",
             settings: "Settings…",
-            open_notebook: "Open Open Notebook",
+            open_notebook: "Open Notebook",
             quit: "Quit",
         }
     }

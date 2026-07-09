@@ -1,6 +1,6 @@
 [package]
 name = "open-notebook-desktop"
-version = "0.1.1"
+version = "0.1.2"
 description = "Open Notebook Desktop Launcher for Linux"
 authors = ["Open Notebook Desktop"]
 edition = "2021"

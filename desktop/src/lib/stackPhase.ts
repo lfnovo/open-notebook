@@ -4,7 +4,7 @@ export type StackPhase = "loading" | "missing" | "stopped" | "starting" | "ready
 
 export function getStackPhase(status: StackStatus | null): StackPhase {
   if (!status) return "loading";
-  if (status.healthy) return "ready";
+  if (status.running && status.healthy) return "ready";
   if (status.running) return "starting";
   if (status.containers.some((container) => container.state === "missing")) {
     return "missing";

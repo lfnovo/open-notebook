@@ -1,6 +1,6 @@
 export interface AppConfig {
   dataDir: string;
-  encryptionKey: string;
+  encryptionKeyConfigured: boolean;
   stopOnExit: boolean;
   onboardingComplete: boolean;
   uiPort: number;
@@ -8,6 +8,10 @@ export interface AppConfig {
   language: string;
   autoStartOnLaunch: boolean;
   openNotebookDirectly: boolean;
+}
+
+export interface SaveAppConfigOptions {
+  encryptionKey?: string;
 }
 
 export interface DockerStatus {
@@ -76,7 +80,8 @@ export type Screen =
   | "splash"
   | "dashboard"
   | "logs"
-  | "settings";
+  | "settings"
+  | "config-error";
 
 export type LaunchPhase =
   | "checkingDocker"

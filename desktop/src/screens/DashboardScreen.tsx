@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { getContainerLabel, getStackPhase, needsInitialize, type StackPhase } from "../lib/stackPhase";
+import { truncateError } from "../lib/validation";
 import { useI18n } from "../i18n";
 import type { StackStatus } from "../types";
 import { Button, Card, GuidanceCard, ScreenShell, StatusBadge } from "../components/ui";
@@ -48,7 +49,7 @@ export function DashboardScreen({
       setStatus(stack);
       setError("");
     } catch (err) {
-      setError(String(err));
+      setError(truncateError(err));
     }
   }, []);
 
@@ -70,7 +71,8 @@ export function DashboardScreen({
         await refresh();
         return true;
       } catch (err) {
-        setError(String(err));
+        setError(truncateError(err));
+        setInfo("");
         return false;
       } finally {
         setBusy(null);

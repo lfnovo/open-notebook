@@ -44,18 +44,24 @@ pub fn check_docker_status() -> DockerStatus {
     let user_in_group = current_user_in_docker_group();
 
     let available = version.is_ok();
-    let daemon_running = daemon.is_ok();
     let compose_available = compose.is_ok();
+    let daemon_running = daemon.is_ok();
+    let permission_denied = daemon
+        .as_ref()
+        .err()
+        .is_some_and(|message| message.to_ascii_lowercase().contains("permission denied"));
 
     let message = if !available {
         "Docker CLI nicht gefunden. Bitte Docker Engine oder Docker Desktop installieren."
             .to_string()
+    } else if !daemon_running && !user_in_group && permission_denied {
+        "Docker läuft, aber dein Benutzer hat keine Berechtigung. Melde dich ab und wieder an, nachdem du in der docker-Gruppe bist.".to_string()
     } else if !daemon_running {
         "Docker ist installiert, aber der Daemon läuft nicht. Starte den Docker-Dienst.".to_string()
     } else if !compose_available {
         "Docker Compose Plugin nicht gefunden.".to_string()
     } else if !user_in_group {
-        "Docker läuft, aber dein Benutzer ist nicht in der docker-Gruppe. Nach der Installation neu anmelden.".to_string()
+        "Docker funktioniert, aber dein Benutzer ist nicht in der docker-Gruppe. Für dauerhaften Zugriff neu anmelden.".to_string()
     } else {
         "Docker ist bereit.".to_string()
     };
@@ -274,11 +280,19 @@ pub fn compose_logs(data_dir: &str, tail: usize) -> Result<String, DockerError> 
         .output()
         .map_err(|e| DockerError::Message(e.to_string()))?;
 
-    Ok(format!(
-        "{}{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    ))
+    if output.status.success() {
+        Ok(format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        ))
+    } else {
+        Err(DockerError::Message(format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        )))
+    }
 }
 
 pub async fn wait_for_health_async(port: u16, timeout_secs: u64) -> bool {

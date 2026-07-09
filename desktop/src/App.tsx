@@ -11,19 +11,30 @@ import { DashboardScreen } from "./screens/DashboardScreen";
 import { LogsScreen } from "./screens/LogsScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
 import { StartScreen } from "./screens/StartScreen";
+import { ConfigErrorScreen } from "./screens/ConfigErrorScreen";
 import { AppUpdateProvider, useAppUpdateContext } from "./contexts/AppUpdateContext";
 import { UpdateBanner } from "./components/UpdateBanner";
 
-function getInitialScreen(config: AppConfig): Screen {
-  if (config.onboardingComplete && config.openNotebookDirectly) return "splash";
+function getInitialScreen(config: AppConfig, configLoadError: string | null): Screen {
+  if (configLoadError) return "config-error";
+  if (config.onboardingComplete && config.openNotebookDirectly && config.autoStartOnLaunch) {
+    return "splash";
+  }
   if (config.onboardingComplete) return "dashboard";
   return "welcome";
 }
 
 function isScreen(value: string): value is Screen {
-  return ["welcome", "docker", "encryption", "splash", "dashboard", "logs", "settings"].includes(
-    value,
-  );
+  return [
+    "welcome",
+    "docker",
+    "encryption",
+    "splash",
+    "dashboard",
+    "logs",
+    "settings",
+    "config-error",
+  ].includes(value);
 }
 
 interface AppRoutesProps {
@@ -59,6 +70,7 @@ function AppShell({ onLanguageChange }: AppRoutesProps) {
 function AppRoutes({ onLanguageChange }: AppRoutesProps) {
   const { t } = useI18n();
   const [config, setConfig] = useState<AppConfig | null>(null);
+  const [configLoadError, setConfigLoadError] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("welcome");
   const [loading, setLoading] = useState(true);
   const [launchError, setLaunchError] = useState("");
@@ -66,6 +78,7 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
   useEffect(() => {
     void (async () => {
       const loaded = await api.getConfig();
+      const loadError = await api.getConfigLoadError();
       const normalized = {
         ...loaded,
         language: normalizeLanguage(loaded.language || (await api.detectSystemLanguage())),
@@ -73,8 +86,9 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
         openNotebookDirectly: loaded.openNotebookDirectly ?? true,
       };
       setConfig(normalized);
+      setConfigLoadError(loadError);
       onLanguageChange(normalizeLanguage(normalized.language));
-      setScreen(getInitialScreen(normalized));
+      setScreen(getInitialScreen(normalized, loadError));
       setLoading(false);
     })();
   }, [onLanguageChange]);
@@ -95,31 +109,47 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
       setLaunchError("");
     });
 
+    const unlistenConfigError = listen<string>("config-load-error", (event) => {
+      setConfigLoadError(event.payload);
+      setScreen("config-error");
+    });
+
     return () => {
       void unlistenNavigate.then((unlisten) => unlisten());
       void unlistenError.then((unlisten) => unlisten());
       void unlistenComplete.then((unlisten) => unlisten());
+      void unlistenConfigError.then((unlisten) => unlisten());
     };
   }, []);
 
-  async function saveConfig(next: AppConfig) {
+  async function saveConfig(
+    next: AppConfig,
+    options?: { encryptionKey?: string; navigateAfterSave?: Screen },
+  ) {
     const normalized = {
       ...next,
       language: normalizeLanguage(next.language),
       autoStartOnLaunch: next.autoStartOnLaunch ?? true,
       openNotebookDirectly: next.openNotebookDirectly ?? true,
     };
-    await api.saveConfig(normalized);
-    setConfig(normalized);
+    await api.saveConfig(normalized, { encryptionKey: options?.encryptionKey });
+    const refreshed = await api.getConfig();
+    setConfig({
+      ...refreshed,
+      language: normalizeLanguage(refreshed.language),
+      autoStartOnLaunch: refreshed.autoStartOnLaunch ?? true,
+      openNotebookDirectly: refreshed.openNotebookDirectly ?? true,
+    });
     onLanguageChange(normalizeLanguage(normalized.language));
-    if (normalized.onboardingComplete) {
-      setScreen(normalized.openNotebookDirectly ? "splash" : "dashboard");
+
+    if (options?.navigateAfterSave) {
+      setScreen(options.navigateAfterSave);
     }
   }
 
   async function updateLanguage(language: Language) {
     if (!config) return;
-    await saveConfig({ ...config, language });
+    await saveConfig({ ...config, language }, { navigateAfterSave: screen });
   }
 
   if (loading || !config) {
@@ -131,6 +161,8 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
   }
 
   switch (screen) {
+    case "config-error":
+      return <ConfigErrorScreen message={configLoadError ?? t("configError.fallback")} />;
     case "welcome":
       return (
         <WelcomeScreen
@@ -150,7 +182,9 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
       return (
         <EncryptionScreen
           config={config}
-          onSave={saveConfig}
+          onSave={(next, encryptionKey) =>
+            saveConfig(next, { encryptionKey, navigateAfterSave: "splash" })
+          }
           onBack={() => setScreen("docker")}
         />
       );
@@ -162,7 +196,7 @@ function AppRoutes({ onLanguageChange }: AppRoutesProps) {
       return (
         <SettingsScreen
           config={config}
-          onSave={saveConfig}
+          onSave={(next) => saveConfig(next, { navigateAfterSave: "settings" })}
           onBack={() => setScreen("dashboard")}
         />
       );

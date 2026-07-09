@@ -40,6 +40,16 @@ Choose your installation route based on your setup and use case.
 
 ---
 
+### 🖥️ I want a native Linux desktop app
+**→ [Desktop Launcher](desktop-launcher.md)** - Tauri app with guided setup
+- ✅ Manages Docker stack automatically
+- ✅ Opens Open Notebook in its own window
+- ✅ AppImage and .deb packages
+- ⚠️ Linux only (for now)
+- ⏱️ 5 minutes after Docker is installed
+
+---
+
 
 ## System Requirements
 
@@ -88,6 +98,7 @@ Choose your installation route based on your setup and use case.
 - [Docker Compose](docker-compose.md) - **Most users**
 - [Single Container](single-container.md) - **Deprecated**
 - [From Source](from-source.md) - **Developers**
+- [Desktop Launcher](desktop-launcher.md) - **Linux desktop app**
 
 > **Privacy-first?** Any installation method works with Ollama for 100% local AI. See [Local Quick Start](../0-START-HERE/quick-start-local.md).
 

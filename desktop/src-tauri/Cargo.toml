@@ -1,0 +1,39 @@
+[package]
+name = "open-notebook-desktop"
+version = "0.1.1"
+description = "Open Notebook Desktop Launcher for Linux"
+authors = ["Open Notebook Desktop"]
+edition = "2021"
+
+[lib]
+name = "open_notebook_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["sync", "time", "rt-multi-thread", "macros"] }
+bollard = "0.18"
+reqwest = { version = "0.12", features = ["blocking", "rustls-tls"], default-features = false }
+dirs = "6"
+uuid = { version = "1", features = ["v4"] }
+thiserror = "2"
+log = "0.4"
+url = "2"
+tauri-plugin-process = "2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"

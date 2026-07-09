@@ -142,3 +142,8 @@ specs/
 .harness/
 
 .mcp.json
+
+# Desktop launcher (Tauri)
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/

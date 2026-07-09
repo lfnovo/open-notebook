@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Open Notebook Desktop",
+  "version": "0.1.1",
+  "identifier": "com.opennotebook.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Open Notebook Desktop",
+        "width": 960,
+        "height": 720,
+        "minWidth": 720,
+        "minHeight": 560,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' http://127.0.0.1:8502 http://127.0.0.1:5055 http://localhost:1420; connect-src 'self' http://127.0.0.1:8502 http://127.0.0.1:5055 http://localhost:1420 ipc: http://ipc.localhost; img-src 'self' http://127.0.0.1:8502 data: blob:; style-src 'self' 'unsafe-inline' http://127.0.0.1:8502; script-src 'self' 'unsafe-inline' http://127.0.0.1:8502"
+    }
+  },
+    "bundle": {
+    "active": true,
+    "createUpdaterArtifacts": true,
+    "targets": ["deb", "appimage"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": ["../resources/docker-compose.yml"],
+    "linux": {
+      "deb": {
+        "depends": ["docker.io | docker-ce | moby-engine", "docker-compose-plugin | docker-compose"],
+        "desktopTemplate": "open-notebook-desktop.desktop"
+      },
+      "appimage": {
+        "bundleMediaFramework": false,
+        "files": {
+          "usr/share/applications/open-notebook-desktop.desktop": "open-notebook-desktop.desktop"
+        }
+      }
+    },
+    "shortDescription": "Desktop launcher for Open Notebook",
+    "longDescription": "Native Linux desktop application that manages the Open Notebook Docker stack and embeds the web UI.",
+    "category": "Productivity"
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJBOUU1QzY0NTJGODVDRjUKUldUMVhQaFNaRnlldXZTUEFZOUhqL2NRYVNvUERsS0pzYjAvTmpPdTJLVHJTWjd3dUFSTG5GYVUK",
+      "endpoints": [
+        "https://github.com/lfnovo/open-notebook/releases/latest/download/latest.json"
+      ],
+      "dangerousInsecureTransportProtocol": false
+    }
+  }
+}

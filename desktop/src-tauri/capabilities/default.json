@@ -1,0 +1,24 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main", "notebook"],
+  "permissions": [
+    "core:default",
+    "core:webview:allow-create-webview-window",
+    "core:webview:allow-webview-position",
+    "core:webview:allow-webview-size",
+    "core:window:allow-create",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-hide",
+    "core:window:allow-unminimize",
+    "core:event:allow-emit",
+    "core:event:allow-listen",
+    "opener:default",
+    "opener:allow-open-url",
+    "shell:allow-open",
+    "updater:default",
+    "process:default"
+  ]
+}

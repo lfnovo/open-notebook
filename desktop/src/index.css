@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #0b1020;
+  color: #e8edf7;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a2440 0%, #0b1020 55%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+@keyframes hero-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+}
+
+.hero-nodes circle {
+  animation: hero-pulse 3s infinite ease-in-out;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+.hero-nodes circle:nth-child(2n) {
+  animation-delay: 1s;
+}
+
+.hero-nodes circle:nth-child(3n) {
+  animation-delay: 2s;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

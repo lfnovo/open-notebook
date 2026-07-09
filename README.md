@@ -31,6 +31,8 @@
     <a href="docs/2-CORE-CONCEPTS/index.md">✨ Features</a>
     ·
     <a href="docs/1-INSTALLATION/index.md">🚀 Deploy</a>
+    ·
+    <a href="docs/1-INSTALLATION/desktop-launcher.md">🖥️ Linux Desktop</a>
   </p>
 </div>
 

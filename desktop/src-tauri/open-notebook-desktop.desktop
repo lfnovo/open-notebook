@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Open Notebook Desktop
+GenericName=Research Notebook Launcher
+Comment=Native Linux launcher for the Open Notebook Docker stack
+Exec=open-notebook-desktop
+Icon=open-notebook-desktop
+Terminal=false
+Categories=Office;Education;Utility;
+Keywords=notebook;research;docker;ai;
+StartupWMClass=open-notebook-desktop

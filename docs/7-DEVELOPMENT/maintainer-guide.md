@@ -77,7 +77,7 @@ After reviewing against our [vision and principles](https://github.com/lfnovo/op
 
 However, you might be able to achieve this through [alternative approach, if applicable].
 
-We appreciate your interest in contributing! Feel free to check out our [open issues](link) for other ways to contribute.
+We appreciate your interest in contributing! Feel free to check out our [open issues](https://github.com/lfnovo/open-notebook/issues) for other ways to contribute.
 ```
 
 ### Labels

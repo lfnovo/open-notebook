@@ -133,15 +133,15 @@ Opus: $10-50+/month
 6. Click **Discover Models** → **Register Models**
 
 **Available Models:**
-- `gemini-3.5-pro` — Strongest, best for long context (2M tokens)
+- `gemini-2.5-pro` — Strongest, best for long context (1M tokens)
 - `gemini-3.5-flash` — Fast, good for general use
-- `gemini-3.1-flash` — Stable version, fast, cheap
-- `gemini-2.5-flash` — Stable version, fast, cheaper
+- `gemini-3.1-flash-lite` — Fastest and cheapest
+- `gemini-2.5-flash` — Previous-gen stable, cheaper
 
 **Recommended:**
-- For general use: `gemini-3.1-flash` (best value, latest)
-- For cheap: `gemini-2.5-flash` (very cheap)
-- For complex/long context: `gemini-3.5-pro` (2M token context)
+- For general use: `gemini-3.5-flash` (best value, latest)
+- For cheap: `gemini-3.1-flash-lite` (very cheap)
+- For complex/long context: `gemini-2.5-pro` (1M token context)
 
 **Advantages:**
 - Very long context (1M tokens)
@@ -219,7 +219,7 @@ Opus: $10-50+/month
 **Available Models (100+ options):**
 - OpenAI: `openai/gpt-4o`, `openai/o1`
 - Anthropic: `anthropic/claude-sonnet-4.5`, `anthropic/claude-3.5-haiku`
-- Google: `google/gemini-2.5-flash`, `google/gemini-3.5-pro`
+- Google: `google/gemini-3.5-flash`, `google/gemini-2.5-pro`
 - Meta: `meta-llama/llama-3.3-70b-instruct`, `meta-llama/llama-3.1-405b-instruct`
 - Mistral: `mistralai/mistral-large-2411`
 - DeepSeek: `deepseek/deepseek-chat`

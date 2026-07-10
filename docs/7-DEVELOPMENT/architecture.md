@@ -470,7 +470,7 @@ response = await model.ainvoke({"input": prompt})
 **LLM Providers**:
 - OpenAI (gpt-4, gpt-4-turbo, gpt-3.5-turbo)
 - Anthropic (claude-opus, claude-sonnet, claude-haiku)
-- Google (gemini-pro, gemini-2.5)
+- Google (gemini-3.5-flash, gemini-2.5-pro)
 - Groq (mixtral, llama-2)
 - Ollama (local models)
 - Mistral (mistral-large, mistral-medium)

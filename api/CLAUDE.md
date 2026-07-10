@@ -220,6 +220,7 @@ The `/credentials/{credential_id}/test` endpoint uses minimal API calls to verif
 - Uses cheapest/smallest models per provider (TEST_MODELS map)
 - Returns success status and descriptive message
 - Special handlers for ollama, openai_compatible, and azure providers
+- Vertex-specific: `credentials_path` is free text with no path validation, and Google's auth library raises distinguishable exceptions for "file missing"/"not JSON"/"wrong shape" - `_is_vertex_credentials_file_error()` catches all three and returns one generic "Invalid or inaccessible credentials file" message (both here and in `test_individual_model()`) so testing a credential can't be used as a filesystem oracle
 
 ### Migration Workflows
 

@@ -265,6 +265,7 @@ async def test_credential(credential_id: str) -> dict:
         config = cred.to_esperanto_config()
 
         from open_notebook.ai.connection_tester import (
+            _is_vertex_credentials_file_error,
             _test_azure_connection,
             _test_ollama_connection,
             _test_openai_compatible_connection,
@@ -350,6 +351,14 @@ async def test_credential(credential_id: str) -> dict:
         }
 
     except Exception as e:
+        if provider == "vertex" and _is_vertex_credentials_file_error(e):
+            logger.debug(f"Vertex credentials file error for credential {credential_id}: {e}")
+            return {
+                "provider": provider,
+                "success": False,
+                "message": "Invalid or inaccessible credentials file",
+            }
+
         error_msg = str(e)
         if "401" in error_msg or "unauthorized" in error_msg.lower():
             return {"provider": provider, "success": False, "message": "Invalid API key"}

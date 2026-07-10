@@ -152,7 +152,7 @@ async def create_credential(request: CreateCredentialRequest):
     ]:
         if url_field:
             try:
-                validate_url(url_field, request.provider)
+                await validate_url(url_field, request.provider)
             except ValueError as e:
                 raise _handle_value_error(e)
 
@@ -209,7 +209,7 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
     ]:
         if url_field:
             try:
-                validate_url(url_field, "update")
+                await validate_url(url_field, "update")
             except ValueError as e:
                 raise _handle_value_error(e)
 

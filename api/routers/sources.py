@@ -367,7 +367,7 @@ async def create_source(
             # Block SSRF to internal/metadata addresses before the server ever
             # fetches this URL (same guard used for provider-credential URLs).
             try:
-                validate_url(source_data.url, "source")
+                await validate_url(source_data.url, "source")
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
             content_state["url"] = source_data.url

@@ -435,7 +435,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             # Re-validate at request time: the base_url may have been saved
             # against a hostname that only later resolved to an internal
             # address (DNS rebinding).
-            validate_url(ollama_url, "ollama")
+            await validate_url(ollama_url, "ollama")
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{ollama_url}/api/tags", timeout=10.0)
                 response.raise_for_status()
@@ -458,7 +458,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             return []
         try:
             # Re-validate at request time (see ollama branch above).
-            validate_url(base_url, "openai_compatible")
+            await validate_url(base_url, "openai_compatible")
             headers = {}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -486,7 +486,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             return []
         try:
             # Re-validate at request time (see ollama branch above).
-            validate_url(endpoint, "azure")
+            await validate_url(endpoint, "azure")
             url = f"{endpoint.rstrip('/')}/openai/models?api-version={api_version}"
             headers = {"api-key": api_key}
             async with httpx.AsyncClient() as client:

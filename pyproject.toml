@@ -102,3 +102,12 @@ ignore = [
 [[tool.mypy.overrides]]
 module = "pages.*"
 ignore_errors = true
+
+[tool.uv]
+# Pillow < 12.2.0 has open security advisories (PSD OOB write, FITS
+# decompression bomb, PDF trailer DoS). The only thing holding it back is
+# moviepy's `pillow<12` cap, pulled in via podcast-creator 0.12.0 — and
+# moviepy only touches PIL in its video modules, which the audio-only podcast
+# pipeline never imports. Drop this override once podcast-creator ships a
+# release without moviepy (already removed on its main branch).
+override-dependencies = ["pillow>=12.2.0"]

@@ -63,6 +63,18 @@ describe('MarkdownEditor preview sanitization', () => {
     expect(container.querySelectorAll('span[class*="token"]').length).toBeGreaterThan(0)
   })
 
+  it('still renders the code-block copy button the library injects', () => {
+    // The preview library's rehypeRewrite injects div.copied[data-code] with
+    // two octicon SVGs before user plugins run; the sanitize schema must let
+    // exactly that markup through or the copy feature dies silently.
+    const { container } = renderPreview('```js\nconst a = 1;\n```')
+    const button = container.querySelector('pre div.copied')
+    expect(button).not.toBeNull()
+    expect(button?.getAttribute('data-code')).toContain('const a = 1;')
+    expect(button?.querySelector('svg.octicon-copy')).not.toBeNull()
+    expect(button?.querySelector('svg.octicon-check')).not.toBeNull()
+  })
+
   it('still renders GFM tables, task lists, and safe links', () => {
     const { container } = renderPreview(
       '| a | b |\n|---|---|\n| 1 | 2 |\n\n- [x] done\n- [ ] todo\n\n[a link](https://example.com)'

@@ -108,7 +108,7 @@ class PodcastService:
             logger.error(f"Failed to submit podcast generation job: {e}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to submit podcast generation job: {str(e)}",
+                detail="Failed to submit podcast generation job",
             )
 
     @staticmethod
@@ -133,9 +133,7 @@ class PodcastService:
             }
         except Exception as e:
             logger.error(f"Failed to get podcast job status: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to get job status: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail="Failed to get job status")
 
     @staticmethod
     async def list_episodes() -> list:
@@ -145,9 +143,7 @@ class PodcastService:
             return episodes
         except Exception as e:
             logger.error(f"Failed to list podcast episodes: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to list episodes: {str(e)}"
-            )
+            raise HTTPException(status_code=500, detail="Failed to list episodes")
 
     @staticmethod
     async def get_episode(episode_id: str) -> PodcastEpisode:
@@ -157,7 +153,7 @@ class PodcastService:
             return episode
         except Exception as e:
             logger.error(f"Failed to get podcast episode {episode_id}: {e}")
-            raise HTTPException(status_code=404, detail=f"Episode not found: {str(e)}")
+            raise HTTPException(status_code=404, detail="Episode not found")
 
 
 class DefaultProfiles:

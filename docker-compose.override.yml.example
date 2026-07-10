@@ -1,0 +1,18 @@
+# Local Docker Compose override — copy to `docker-compose.override.yml`
+# (which `docker compose up` merges automatically) to apply host-specific
+# tweaks without touching the tracked docker-compose.yml.
+#
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#
+# The example below re-exposes SurrealDB's port on all interfaces. The
+# shipped default binds it to 127.0.0.1 only, because the database starts
+# with root:root credentials and exposing it on 0.0.0.0 lets anyone who can
+# reach the host connect as root. Only re-expose it if you actually need to
+# reach the database from another machine (e.g. Surrealist on your laptop),
+# and put it behind a firewall or an SSH tunnel and set SURREAL_USER /
+# SURREAL_PASSWORD to real credentials first.
+
+services:
+  surrealdb:
+    ports:
+      - "8000:8000"

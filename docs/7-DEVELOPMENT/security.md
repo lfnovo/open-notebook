@@ -144,7 +144,7 @@ Never pass user-provided file paths directly to file reading or content extracti
 
 Open Notebook currently uses simple password-based middleware (`PasswordAuthMiddleware`). This is suitable for single-user self-hosted deployments but should be hardened for production:
 
-- Change the default password (`OPEN_NOTEBOOK_PASSWORD`)
+- Set `OPEN_NOTEBOOK_PASSWORD` explicitly - there is no hardcoded default password; if it's unset, auth is fully disabled (all requests pass through unchecked)
 - Change the default encryption key (`OPEN_NOTEBOOK_ENCRYPTION_KEY`)
 - Consider deploying behind a reverse proxy with proper authentication (OAuth, OIDC)
 

@@ -49,7 +49,7 @@ def main() -> int:
             target = match.group(1)
             if target.startswith(SKIP_PREFIXES):
                 continue
-            file_part = target.split("#")[0]
+            file_part = target.split("#")[0].split("?")[0]
             if not file_part:
                 continue
             if file_part.startswith("/"):

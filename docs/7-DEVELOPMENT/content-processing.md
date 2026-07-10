@@ -37,7 +37,7 @@ All embedding is fire-and-forget through the surreal-commands worker — nothing
 
 `ContextBuilder` assembles LLM context from selected sources/notes/insights under a token budget:
 
-- Each `ContextItem` counts its own tokens on construction; `build()` adds items in priority order (default weights: insight 1.2 > source 1.0 > note 0.8) and stops once `max_tokens` is exceeded (no prorating).
+- Each `ContextItem` counts its own tokens on construction; `build()` adds items in priority order (default weights: source 100 > insight 75 > note 50, see `ContextConfig`) and stops once `max_tokens` is exceeded (no prorating).
 - Fetching is lazy (nothing is loaded until `build()`), and every call re-fetches — there is no cache layer.
 - Token counting uses `o200k_base` via tiktoken and is an estimate (±5-10% vs. the actual model); `token_count()` falls back to a coarse estimate if tiktoken is unavailable.
 

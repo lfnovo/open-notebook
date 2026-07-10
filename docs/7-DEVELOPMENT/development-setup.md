@@ -209,7 +209,7 @@ After setup, verify everything is working:
 | **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
 | **Multi-platform Build** (`make docker-push`) | Publishing releases (see [Release Process](../../.github/RELEASE_PROCESS.md)) | 🐌 Very Slow | Exact |
 
-Local services give hot reload, direct log access and easy debugging; Docker Compose (`docker-compose.dev.yml` / `docker-compose.full.yml`) is closer to production. Use `make docker-build-local` before touching anything Docker-related in a PR.
+Local services give hot reload, direct log access and easy debugging; Docker Compose (`examples/docker-compose-dev.yml` via `make dev`, `examples/docker-compose-full-local.yml` via `make full`) is closer to production. Use `make docker-build-local` before touching anything Docker-related in a PR.
 
 ## Starting Services Together
 

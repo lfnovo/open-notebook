@@ -30,7 +30,7 @@ Settings UI ──► /credentials API ──► Credential record (encrypted, S
 ## Provisioning: two paths
 
 1. **Credential-linked model (preferred).** A `Model` record has a `credential` field pointing at a Credential. `ModelManager.get_model()` calls `credential.to_esperanto_config()` and passes the config directly — no env var mutation, multiple credentials per provider work naturally.
-2. **Env-var fallback (`open_notebook/ai/key_provider.py`).** When a model has no linked credential, `provision_provider_keys(provider)` copies DB-stored keys into `os.environ` so Esperanto can read them; pre-existing env vars are left untouched when no DB config exists. Config maps (`PROVIDER_CONFIG`, `VERTEX_CONFIG`, `AZURE_CONFIG`, `OPENAI_COMPATIBLE_CONFIG` in `key_provider.py`) define the env-var ↔ config-field mapping per provider.
+2. **Env-var fallback (`open_notebook/ai/key_provider.py`).** When a model has no linked credential, `provision_provider_keys(provider)` copies DB-stored keys into `os.environ` so Esperanto can read them; pre-existing env vars are left untouched when no DB config exists. The `PROVIDER_CONFIG` map in `key_provider.py` defines the env-var ↔ config-field mapping for simple providers; multi-field providers (Vertex, Azure, OpenAI-compatible) are handled by the dedicated `_provision_vertex()` / `_provision_azure()` / `_provision_openai_compatible()` functions.
 
 ## The API surface (`api/routers/credentials.py`)
 

@@ -269,15 +269,15 @@ class TestAudioMatrixWiring:
         assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
         assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"
 
-    def test_google_and_vertex_use_current_test_model(self):
-        # Regression test for #970: the connection test used the retired
-        # gemini-2.0-flash, so testing a valid Google AI key failed with 404.
-        # gemini-3.5-flash is the current stable GA (gemini-2.5-flash is
-        # already scheduled for shutdown), so pin the longer-lived one.
+    def test_google_and_vertex_use_floating_alias(self):
+        # Regression test for #970: the connection test used a hard-coded
+        # Gemini id (gemini-2.0-flash) that Google later shut down, so a
+        # valid key failed with 404. Use Google's floating alias, which the
+        # provider repoints on each retirement, so it can't go stale.
         from open_notebook.ai.connection_tester import TEST_MODELS
 
-        assert TEST_MODELS["google"] == ("gemini-3.5-flash", "language")
-        assert TEST_MODELS["vertex"] == ("gemini-3.5-flash", "language")
+        assert TEST_MODELS["google"] == ("gemini-flash-latest", "language")
+        assert TEST_MODELS["vertex"] == ("gemini-flash-latest", "language")
 
 
 if __name__ == "__main__":

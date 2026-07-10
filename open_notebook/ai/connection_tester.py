@@ -49,10 +49,18 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
 
 # Test models for each provider - uses minimal/cheapest models for testing
 # Format: (model_name, model_type)
+#
+# Prefer a provider-maintained floating alias where one exists, so a model
+# retirement doesn't silently break the connection test (see #970: Google
+# hard-shuts-down Gemini model ids on a schedule). `gemini-flash-latest`
+# is Google's alias for the current stable Flash model and moves forward on
+# its own. The provider test also no longer treats a model-level failure as
+# a connection failure (see `_connection_failure_reason`), so even if an
+# alias ever breaks, the test still reports the credentials correctly.
 TEST_MODELS = {
     "openai": ("gpt-3.5-turbo", "language"),
     "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-3.5-flash", "language"),
+    "google": ("gemini-flash-latest", "language"),
     "groq": ("llama-3.1-8b-instant", "language"),
     "mistral": ("mistral-small-latest", "language"),
     "deepseek": ("deepseek-chat", "language"),
@@ -63,7 +71,7 @@ TEST_MODELS = {
     "deepgram": ("aura-2-thalia-en", "text_to_speech"),
     "ollama": (None, "language"),  # Dynamic - will use first available model
     # Complex providers with additional configuration
-    "vertex": ("gemini-3.5-flash", "language"),  # Uses Google Vertex AI
+    "vertex": ("gemini-flash-latest", "language"),  # Uses Google Vertex AI
     "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
     "openai_compatible": (None, "language"),  # Dynamic - will use first available model
     "dashscope": ("qwen-plus", "language"),
@@ -281,24 +289,112 @@ def _get_test_audio() -> io.BytesIO:
         return _generate_test_wav()
 
 
-def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
-    """Normalize common error patterns into user-friendly messages."""
+def _connection_failure_reason(error_msg: str) -> Optional[str]:
+    """Classify whether an error means the provider is genuinely unreachable
+    or the credentials are rejected.
+
+    Returns a user-facing failure message for the only errors that actually
+    disprove a working provider connection — bad key (401), insufficient
+    permissions (403), and network/timeout failures. Returns None for
+    anything the provider itself returned *after* authenticating (a missing
+    or retired model, an unsupported request, a rate limit): reaching the
+    model layer at all proves the credentials and endpoint work, so those
+    are not connection failures. This is what keeps a retired test model
+    (see #970) from being misreported as a broken provider connection.
+    """
     lower = error_msg.lower()
 
     if "401" in error_msg or "unauthorized" in lower:
-        return False, "Invalid API key"
-    elif "403" in error_msg or "forbidden" in lower:
-        return False, "API key lacks required permissions"
-    elif "rate" in lower and "limit" in lower:
+        return "Invalid API key"
+    if "403" in error_msg or "forbidden" in lower:
+        return "API key lacks required permissions"
+    if "timeout" in lower or "timed out" in lower:
+        return "Connection timed out - check network/endpoint"
+    if (
+        "connection" in lower
+        or "network" in lower
+        or "getaddrinfo" in lower
+        or "name resolution" in lower
+        or "failed to establish" in lower
+    ):
+        return "Connection error - check network/endpoint"
+    return None
+
+
+def _is_rate_limit(error_msg: str) -> bool:
+    """True if the error is a throttling/quota response. Being rate-limited
+    proves the request authenticated, so callers treat this as connection-OK.
+    Covers the common phrasings across providers (429, quota, resource
+    exhausted) rather than just the literal words "rate limit"."""
+    lower = error_msg.lower()
+    return (
+        ("rate" in lower and "limit" in lower)
+        or "429" in error_msg
+        or "quota" in lower
+        or "resource has been exhausted" in lower
+        or "resource exhausted" in lower
+    )
+
+
+def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
+    """Normalize common error patterns into user-friendly messages.
+
+    Used by the *individual model* test, where the user is validating one
+    specific registered model — so a missing model IS a failure (unlike the
+    provider-level test, which only cares that the credentials work).
+    """
+    reason = _connection_failure_reason(error_msg)
+    if reason:
+        return False, reason
+
+    if _is_rate_limit(error_msg):
         return True, "Rate limited - but connection works"
-    elif "not found" in lower and "model" in lower:
+    lower = error_msg.lower()
+    if "not found" in lower and "model" in lower:
         return False, "Model not found on this provider"
-    elif "connection" in lower or "network" in lower:
-        return False, "Connection error - check network/endpoint"
-    elif "timeout" in lower:
-        return False, "Connection timed out - check network/endpoint"
 
     return False, error_msg
+
+
+# Substrings that indicate the provider answered but the *test model* is
+# missing/retired/unsupported - proof the credentials and endpoint work.
+# Only consulted for fixed-endpoint API-key providers (URL-based providers
+# are tested via their own handlers), so a "not found" here is about the
+# model, never a user-supplied base URL.
+_MODEL_UNAVAILABLE_MARKERS = (
+    "not found",
+    "not supported",
+    "does not exist",
+    "deprecated",
+    "unavailable",
+    "no longer available",
+)
+
+
+def classify_provider_test_error(error_msg: str) -> Tuple[bool, str]:
+    """Classify a provider connection-test exception into (success, message).
+
+    The provider test only asks "do these credentials reach a working
+    provider?" - so the sole real failures are a rejected key (401),
+    insufficient permissions (403), and an unreachable endpoint. Anything
+    the provider returned after authenticating - a rate limit, or a
+    missing/retired/unsupported test model - still proves the connection
+    works, so it's reported as success. This is the durable half of the
+    #970 fix: even if the hard-coded test model is retired, a valid key is
+    never misreported as a broken connection.
+    """
+    reason = _connection_failure_reason(error_msg)
+    if reason:
+        return False, reason
+
+    if _is_rate_limit(error_msg):
+        return True, "Rate limited - but connection works"
+    lower = error_msg.lower()
+    if any(marker in lower for marker in _MODEL_UNAVAILABLE_MARKERS):
+        return True, "API key valid (test model unavailable)"
+
+    truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
+    return False, f"Error: {truncated}"
 
 
 async def test_individual_model(model) -> Tuple[bool, str]:

@@ -269,6 +269,7 @@ async def test_credential(credential_id: str) -> dict:
             _test_azure_connection,
             _test_ollama_connection,
             _test_openai_compatible_connection,
+            classify_provider_test_error,
         )
 
         provider = cred.provider.lower()
@@ -360,18 +361,10 @@ async def test_credential(credential_id: str) -> dict:
             }
 
         error_msg = str(e)
-        if "401" in error_msg or "unauthorized" in error_msg.lower():
-            return {"provider": provider, "success": False, "message": "Invalid API key"}
-        elif "403" in error_msg or "forbidden" in error_msg.lower():
-            return {"provider": provider, "success": False, "message": "API key lacks required permissions"}
-        elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
-            return {"provider": provider, "success": True, "message": "Rate limited - but connection works"}
-        elif "not found" in error_msg.lower() and "model" in error_msg.lower():
-            return {"provider": provider, "success": True, "message": "API key valid (test model not available)"}
-        else:
+        success, message = classify_provider_test_error(error_msg)
+        if not success:
             logger.debug(f"Test connection error for credential {credential_id}: {e}")
-            truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
-            return {"provider": provider, "success": False, "message": f"Error: {truncated}"}
+        return {"provider": provider, "success": success, "message": message}
 
 
 async def discover_with_config(provider: str, config: dict) -> List[dict]:

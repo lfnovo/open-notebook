@@ -615,8 +615,7 @@ class Source(ObjectModel):
             return str(command_id)
 
         except Exception as e:
-            logger.error(f"Error submitting create_insight for source {self.id}: {e}")
-            logger.exception(e)
+            logger.exception(f"Error submitting create_insight for source {self.id}: {e}")
             raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> dict:

@@ -51,7 +51,7 @@ By participating in this project, you are expected to uphold our [Code of Conduc
 Once your issue is assigned:
 
 1. **Fork the repo** and create your branch from `main`
-2. **Understand our vision and principles** - Read [design-principles.md](design-principles.md) to understand what guides our decisions
+2. **Understand our vision and principles** - Read [VISION.md](../../VISION.md) (what the product is and where it's going) and [design-principles.md](design-principles.md) (engineering practices)
 3. **Follow our architecture** - Refer to the architecture documentation to understand project structure
 4. **Write quality code** - Follow the standards outlined in [code-standards.md](code-standards.md)
 5. **Test your changes** - See [testing.md](testing.md) for test guidelines
@@ -77,6 +77,28 @@ Once your issue is assigned:
 - Conflict with our architectural vision
 - Lack tests or documentation
 - Try to solve multiple unrelated problems
+
+### AI-Assisted and Agent-Generated PRs
+
+A large share of contributions — including our own — are written with coding agents (Claude Code,
+Cursor, Copilot, etc.). That's welcome. The tool doesn't change the contract; **the operator
+does not stop being the author**:
+
+1. **You own the PR.** You must have read, understood, and be able to explain every line of the
+   diff. "The agent wrote it" is never an answer in review.
+2. **Issue-first still applies.** Agents make it cheap to produce large unsolicited PRs — those
+   get closed like any other unassigned PR, regardless of code quality.
+3. **Tests must have actually run.** Paste real output. An agent *claiming* tests pass is not
+   test evidence.
+4. **Point your agent at the right context.** The repo ships `AGENTS.md` files (root,
+   `open_notebook/`, `frontend/`) with the normative rules, and
+   [change-playbooks.md](change-playbooks.md) with step-by-step recipes — agents that read them
+   produce PRs that pass review faster.
+5. **Keep it scoped.** Agents tend to "improve" surrounding code along the way. Unrelated
+   refactors belong in separate issues/PRs.
+
+Disclosure of AI assistance is appreciated but optional — responsibility for the result is what
+matters, and it's yours either way.
 
 ## Git Commit Messages
 
@@ -180,7 +202,9 @@ We're actively looking for contributions in these areas:
 
 ### Documentation References
 
-- [Design Principles](design-principles.md) - Understanding our project vision
+- [VISION.md](../../VISION.md) - Product identity and current posture
+- [Design Principles](design-principles.md) - Engineering practices and anti-patterns
+- [Decision Records](decisions/README.md) - Why things are the way they are
 - [Code Standards](code-standards.md) - Coding guidelines by language
 - [Testing Guide](testing.md) - How to write tests
 - [Development Setup](development-setup.md) - Getting started locally

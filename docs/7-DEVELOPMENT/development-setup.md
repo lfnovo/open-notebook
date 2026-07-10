@@ -200,15 +200,28 @@ After setup, verify everything is working:
 - [ ] **Database**: API logs show migrations completing
 - [ ] **Frontend** (optional): `http://localhost:3000` loads
 
+## Development Workflows: When to Use What?
+
+| Workflow | Use Case | Speed | Production Parity |
+|----------|----------|-------|-------------------|
+| **Local Services** (`make start-all`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
+| **Docker Compose** (`make dev`) | Testing containerized setup | ⚡⚡ Medium | High |
+| **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
+| **Multi-platform Build** (`make docker-push`) | Publishing releases (see [Release Process](../../.github/RELEASE_PROCESS.md)) | 🐌 Very Slow | Exact |
+
+Local services give hot reload, direct log access and easy debugging; Docker Compose
+(`docker-compose.dev.yml` / `docker-compose.full.yml`) is closer to production. Use
+`make docker-build-local` before touching anything Docker-related in a PR.
+
 ## Starting Services Together
 
 ### Quick Start All Services
 
 ```bash
-make start-all
+make start-all    # SurrealDB + API + worker + frontend
+make status       # see what's running
+make stop-all     # stop everything
 ```
-
-This starts SurrealDB, API, and frontend in one command.
 
 ### Individual Terminals (Recommended for Development)
 
@@ -222,10 +235,23 @@ make database
 make api
 ```
 
-**Terminal 3 - Frontend:**
+**Terminal 3 - Background worker** (required for podcasts, embeddings, source processing):
+```bash
+make worker-start
+```
+
+**Terminal 4 - Frontend:**
 ```bash
 cd frontend && npm run dev
 ```
+
+### Performance Tips
+
+1. Use `make start-all` instead of Docker for daily work
+2. Keep SurrealDB running between sessions (`make database`)
+3. Use `make docker-build-local` only when testing Dockerfile changes
+4. Skip multi-platform builds until ready to publish
+5. Clean caches when things get weird: `make clean-cache`, `docker system prune -a`
 
 ## Development Tools Setup
 

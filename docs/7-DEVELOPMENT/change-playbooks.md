@@ -22,7 +22,7 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 | Step | File(s) | What to Do |
 |------|---------|------------|
 | 1 | `open_notebook/domain/<model>.py` | Add field with type hint and default value. Follow existing patterns in the class. |
-| 2 | `migrations/NNN_<description>.surql` | Create migration. Use next number in sequence. `DEFINE FIELD` for new fields, `UPDATE` for backfilling existing records. |
+| 2 | `open_notebook/database/migrations/N.surrealql` | Create migration. Use next number in sequence. `DEFINE FIELD` for new fields, `UPDATE` for backfilling existing records. Register it in `AsyncMigrationManager` (`async_migrate.py`) — migrations are not auto-discovered. |
 | 3 | `api/models.py` | Add field to `*Create`, `*Update` (Optional), and `*Response` schemas. |
 | 4 | `frontend/src/lib/types/api.ts` | Add field to the corresponding TypeScript interface (`*Response`, `Create*Request`, `Update*Request`). |
 | 5 | Frontend component (if user-facing) | Display or edit the field in the relevant component. |
@@ -85,7 +85,7 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 | Step | What to Do |
 |------|------------|
 | 1 | **Identify the layer.** Read the issue and determine: frontend, API router, service, domain model, database, or graph. |
-| 2 | **Read the module's CLAUDE.md.** Every major module has one. It documents patterns and gotchas. |
+| 2 | **Read the relevant AGENTS.md** (root, `open_notebook/`, or `frontend/`) and the matching page in `docs/7-DEVELOPMENT/`. They document the rules and gotchas. |
 | 3 | **Reproduce.** Use the API docs (`/docs`), browser, or a test to confirm the bug. |
 | 4 | **Fix.** Make the minimal change needed. Don't refactor surrounding code. |
 | 5 | **Add a test** that reproduces the bug and verifies the fix. |
@@ -113,14 +113,15 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 
 | Step | File(s) | What to Do |
 |------|---------|------------|
-| 1 | `migrations/NNN_<description>.surql` | Write SurrealQL. Use next number in sequence. Check existing migrations for patterns. |
-| 2 | Domain model (if schema change) | Update field definitions to match. |
-| 3 | API schemas (if new/changed fields) | Update Pydantic models. |
-| 4 | **Verify:** Restart API and check logs | Migrations auto-run on startup. Look for errors in Loguru output. |
+| 1 | `open_notebook/database/migrations/N.surrealql` (+ `N_down.surrealql`) | Write SurrealQL. Use next number in sequence. Check existing migrations for patterns. |
+| 2 | `open_notebook/database/async_migrate.py` | Register the new files in `AsyncMigrationManager.__init__` — migrations are hard-coded, not auto-discovered. |
+| 3 | Domain model (if schema change) | Update field definitions to match. |
+| 4 | API schemas (if new/changed fields) | Update Pydantic models. |
+| 5 | **Verify:** Restart API and check logs | Migrations auto-run on startup. Look for errors in Loguru output. |
 
 **Important:**
 - Migrations are numbered and run in order
-- They're tracked in `_migrations` table — won't re-run
+- They're tracked in the `_sbl_migrations` table — won't re-run
 - For destructive changes (DROP FIELD), consider data preservation
 - Test with existing data, not just empty database
 
@@ -171,9 +172,18 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 |------|---------|------------|
 | 1 | `frontend/src/lib/locales/en-US/index.ts` | Add English strings first. Group by feature. |
 | 2 | All other locale files | Add the same keys to: `pt-BR`, `zh-CN`, `zh-TW`, `ja-JP`, `ru-RU`, `bn-IN`. Use English as placeholder if translation unavailable. |
-| 3 | Component | Use `const { t } = useTranslation()` and access via `t.section.key`. |
+| 3 | Component | Use `const { t } = useTranslation()` and access via `t('section.key')`. |
 
 **7 locales total.** Don't forget any.
+
+### Adding a whole new language
+
+| Step | File(s) | What to Do |
+|------|---------|------------|
+| 1 | `frontend/src/lib/locales/<code>/index.ts` | Copy the structure from `en-US/index.ts` and translate all strings. |
+| 2 | `frontend/src/lib/locales/index.ts` | Register the locale: import it, add to `resources`, add to the `languages` array (`{ code, label }`). |
+| 3 | `frontend/src/lib/utils/date-locale.ts` | Import the matching `date-fns/locale` and add it to `LOCALE_MAP`. |
+| 4 | **Test** | Switch languages via the UI language toggle; missing keys fall back to en-US. |
 
 ---
 
@@ -183,7 +193,7 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 |-------|----------|-------------|-------|
 | Domain models | `open_notebook/domain/` | Pydantic fields | `tests/` |
 | Database | `open_notebook/database/repository.py` | SurrealQL | `tests/` |
-| Migrations | `migrations/*.surql` | SurrealQL | Auto-run on startup |
+| Migrations | `open_notebook/database/migrations/*.surrealql` | SurrealQL | Auto-run on startup |
 | AI/LLM | `open_notebook/ai/` | Esperanto types | `tests/` |
 | Graphs | `open_notebook/graphs/` | TypedDict state | `tests/` |
 | Prompts | `prompts/**/*.jinja` | Jinja2 context | — |

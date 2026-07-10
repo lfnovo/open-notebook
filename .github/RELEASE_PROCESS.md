@@ -36,6 +36,33 @@ version when the branch has enough validated change to ship.
    Docker Hub credentials are configured.
 7. Mark shipped issues with `released` and close any release-tracking tasks.
 
+## Docker Image Publishing
+
+The publishing workflow, from local test to promoted release:
+
+```bash
+make docker-build-local   # 1. Build for the current platform, test locally
+make docker-push          # 2. Push version tags (does NOT update latest)
+                          # 3. Test the pushed version in staging/production
+make docker-push-latest   # 4. Promote: push version + update v1-latest
+```
+
+| Command | What it does | Updates latest? |
+|---------|--------------|-----------------|
+| `make docker-build-local` | Build for current platform only (tags `<version>` + `local`) | No registry push |
+| `make docker-push` | Push version tags to registries | ❌ No |
+| `make docker-push-latest` | Push version + update `v1-latest` | ✅ Yes |
+| `make docker-release` | Full release (same as docker-push-latest) | ✅ Yes |
+| `make tag` | Create and push a git tag matching `pyproject.toml` | — |
+
+Publishing details:
+
+- **Platforms:** `linux/amd64`, `linux/arm64`
+- **Registries:** Docker Hub + GitHub Container Registry
+- **Image variants:** regular + single-container (`-single`)
+- **Version source:** `pyproject.toml`
+- Build issues: `docker builder prune`, then `make docker-buildx-reset`
+
 ## Manual Verification
 
 Before publishing a stable release, manually verify the areas touched by the

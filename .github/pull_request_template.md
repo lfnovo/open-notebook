@@ -37,7 +37,7 @@ Fixes #<!-- issue number -->
 
 <!-- This section helps ensure your PR aligns with our project vision -->
 
-**Which design principles does this PR support?** (See [DESIGN_PRINCIPLES.md](../DESIGN_PRINCIPLES.md))
+**Which design principles does this PR support?** (See [VISION.md](https://github.com/lfnovo/open-notebook/blob/main/VISION.md))
 
 - [ ] Privacy First
 - [ ] Simplicity Over Features
@@ -96,8 +96,8 @@ Fixes #<!-- issue number -->
 
 Before submitting, please verify:
 
-- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md)
-- [ ] I have read [DESIGN_PRINCIPLES.md](../DESIGN_PRINCIPLES.md)
+- [ ] I have read [CONTRIBUTING.md](https://github.com/lfnovo/open-notebook/blob/main/docs/7-DEVELOPMENT/contributing.md)
+- [ ] I have read [VISION.md](https://github.com/lfnovo/open-notebook/blob/main/VISION.md)
 - [ ] This PR addresses an approved issue that was assigned to me
 - [ ] I have not included unrelated changes in this PR
 - [ ] My PR title follows conventional commits format (e.g., "feat: add user authentication")

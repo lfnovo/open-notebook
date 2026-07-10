@@ -270,6 +270,8 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 - **[🔧 REST API Reference](docs/7-DEVELOPMENT/api-reference.md)** - Complete API documentation
 - **[🔐 Security](docs/5-CONFIGURATION/security.md)** - Password protection and privacy
 - **[🚀 Deployment](docs/1-INSTALLATION/index.md)** - Complete deployment guides for all scenarios
+- **[🧭 Vision & Principles](VISION.md)** - What Open Notebook is, and where it's going
+- **[🛠️ Developer Docs](docs/7-DEVELOPMENT/index.md)** - Architecture, setup, contributing, decision records
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -318,7 +320,7 @@ We welcome contributions! We're especially looking for help with:
 **Current Tech Stack**: Python, FastAPI, Next.js, React, SurrealDB
 **Future Roadmap**: Real-time updates, enhanced async processing
 
-See our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started.
+See our [Contributing Guide](CONTRIBUTING.md) for detailed information on how to get started, including our guidelines for [AI-assisted contributions](docs/7-DEVELOPMENT/contributing.md#ai-assisted-and-agent-generated-prs). To understand what we're building (and what we'll say no to), read [VISION.md](VISION.md).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

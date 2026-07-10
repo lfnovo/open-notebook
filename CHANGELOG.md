@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Five new engineering docs pages under `docs/7-DEVELOPMENT/`: credentials, content processing, podcasts, prompts, and frontend architecture
 - Contribution guidelines for AI-assisted and agent-generated PRs in the contributing guide — the operator owns the PR, issue-first still applies, tests must have actually run
 - CI check for broken relative links in markdown (`scripts/check_md_links.py` + `docs-links` workflow on PRs touching `*.md`)
+- `cubic.yaml` — AI review settings as code: PR-contract instructions, three custom review agents (vision & principles alignment backed by `VISION.md`, known mechanical caveats, security & testability) and automatic ultrareviews for auth/credential/encryption/migration changes
 - Documented the flow-driven release process in `.github/RELEASE_PROCESS.md`, including the `ready` to `main` to stable release path, dev/stable image labels, and maintainer verification checklist (#938)
 - List view for the Notebooks page — a tile/list toggle in the header lets you switch between the visual card grid and a compact row layout (name, description, source/note counts, last updated) for easier scanning of large collections. The choice is remembered across reloads and translated across all 14 locales (#885)
 - Documented the `ESPERANTO_TTS_TIMEOUT` environment variable (default `300`s) in the environment reference; raise it for slow or self-hosted TTS providers so long podcast segments don't fail with a timeout (#937)

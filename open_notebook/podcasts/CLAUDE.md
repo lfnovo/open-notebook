@@ -51,6 +51,7 @@ All inherit from `ObjectModel` (SurrealDB base class with table_name and save/lo
 - **Job tracking**: command field links to surreal-commands RecordID.
 - `get_job_status()` fetches async job status via surreal-commands library.
 - `get_job_detail()` returns both status and error_message from the job (used for retry validation and UI error display).
+- `get_job_details_for_commands(command_ids)` (classmethod): batch version of `get_job_detail()` - fetches status/error_message for many commands in one query against the `command` table (same underlying SurrealDB as the rest of the app, just via `surreal_commands`' own connection module) instead of one round trip per command. Used by `GET /podcasts/episodes` so listing N episodes costs one job-status query instead of N.
 - `_prepare_save_data()` ensures command field is always RecordID format for database.
 
 ### migration.py

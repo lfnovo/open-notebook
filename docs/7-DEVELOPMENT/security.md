@@ -85,6 +85,10 @@ The [ai-prompter](https://github.com/lfnovo/ai-prompter) library (>= 0.4.0) uses
 - If using Jinja2 directly (outside ai-prompter), always use `jinja2.sandbox.SandboxedEnvironment`
 - Never pass user-provided strings to `jinja2.Environment` or `jinja2.Template` directly
 
+### Third-party libraries with the same shape
+
+The `podcast_creator` library's `configure("templates", {...})` compiles the given string directly as Jinja2 template source (`Prompter(template_text=...)` in its `config.py`) - the identical pattern to the vulnerability above. `commands/podcast_commands.py` never calls it (confirmed: podcast generation always uses the file-based `prompts/podcast/*.jinja` templates in this repo), so this is currently dormant, not exploitable. If a "custom podcast template" feature is ever added, route user/profile text through a fixed, developer-authored template with the text passed in as a plain variable - do not wire it into `configure("templates", ...)`.
+
 ---
 
 ## File Handling (Path Traversal and Local File Inclusion)

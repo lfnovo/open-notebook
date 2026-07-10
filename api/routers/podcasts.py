@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import List, Optional
 from urllib.parse import unquote, urlparse
@@ -12,6 +13,8 @@ from api.podcast_service import (
     PodcastGenerationResponse,
     PodcastService,
 )
+from open_notebook.config import PODCASTS_FOLDER
+from open_notebook.podcasts.models import PodcastEpisode
 
 router = APIRouter()
 
@@ -36,6 +39,21 @@ def _resolve_audio_path(audio_file: str) -> Path:
         parsed = urlparse(audio_file)
         return Path(unquote(parsed.path))
     return Path(audio_file)
+
+
+def _is_audio_path_contained(audio_path: Path) -> bool:
+    """Verify the resolved audio path stays within the podcasts output root.
+
+    Defense in depth: audio_file is only ever set server-side today from a
+    UUID-named directory under PODCASTS_FOLDER (build_episode_output_dir), so
+    this can't currently be tripped - but any endpoint that streams or
+    deletes the file should still refuse to follow it outside that root, in
+    case a future code path (e.g. importing external audio) sets it to
+    something else.
+    """
+    safe_root = Path(os.path.realpath(PODCASTS_FOLDER))
+    resolved = Path(os.path.realpath(audio_path))
+    return resolved.is_relative_to(safe_root)
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -89,6 +107,17 @@ async def list_podcast_episodes():
     try:
         episodes = await PodcastService.list_episodes()
 
+        # Batch-fetch job status for every episode with a command in one
+        # query instead of one round trip per episode (see
+        # PodcastEpisode.get_job_details_for_commands docstring).
+        try:
+            details_by_command = await PodcastEpisode.get_job_details_for_commands(
+                [episode.command for episode in episodes if episode.command]
+            )
+        except Exception as e:
+            logger.warning(f"Error batch-fetching podcast job statuses: {str(e)}")
+            details_by_command = {}
+
         response_episodes = []
         for episode in episodes:
             # Skip incomplete episodes without command or audio
@@ -99,11 +128,11 @@ async def list_podcast_episodes():
             job_status = None
             error_message = None
             if episode.command:
-                try:
-                    detail = await episode.get_job_detail()
+                detail = details_by_command.get(str(episode.command))
+                if detail is not None:
                     job_status = detail["status"]
                     error_message = detail["error_message"]
-                except Exception:
+                else:
                     job_status = "unknown"
             else:
                 # No command but has audio file = completed import
@@ -112,7 +141,7 @@ async def list_podcast_episodes():
             audio_url = None
             if episode.audio_file:
                 audio_path = _resolve_audio_path(episode.audio_file)
-                if audio_path.exists():
+                if _is_audio_path_contained(audio_path) and audio_path.exists():
                     audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
             response_episodes.append(
@@ -164,7 +193,7 @@ async def get_podcast_episode(episode_id: str):
         audio_url = None
         if episode.audio_file:
             audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
+            if _is_audio_path_contained(audio_path) and audio_path.exists():
                 audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
         return PodcastEpisodeResponse(
@@ -202,6 +231,12 @@ async def stream_podcast_episode_audio(episode_id: str):
         raise HTTPException(status_code=404, detail="Episode has no audio file")
 
     audio_path = _resolve_audio_path(episode.audio_file)
+    if not _is_audio_path_contained(audio_path):
+        logger.warning(
+            f"Blocked audio access outside podcasts directory for episode {episode_id}: {audio_path}"
+        )
+        raise HTTPException(status_code=403, detail="Access to file denied")
+
     if not audio_path.exists():
         raise HTTPException(status_code=404, detail="Audio file not found on disk")
 
@@ -241,7 +276,11 @@ async def retry_podcast_episode(episode_id: str):
         # Delete audio file if any
         if episode.audio_file:
             audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
+            if not _is_audio_path_contained(audio_path):
+                logger.warning(
+                    f"Refusing to delete audio file outside podcasts directory for episode {episode_id}: {audio_path}"
+                )
+            elif audio_path.exists():
                 try:
                     audio_path.unlink()
                 except Exception as e:
@@ -279,7 +318,11 @@ async def delete_podcast_episode(episode_id: str):
         # Delete the physical audio file if it exists
         if episode.audio_file:
             audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
+            if not _is_audio_path_contained(audio_path):
+                logger.warning(
+                    f"Refusing to delete audio file outside podcasts directory for episode {episode_id}: {audio_path}"
+                )
+            elif audio_path.exists():
                 try:
                     audio_path.unlink()
                     logger.info(f"Deleted audio file: {audio_path}")

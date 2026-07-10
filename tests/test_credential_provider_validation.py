@@ -40,12 +40,7 @@ def client():
 
 
 class TestSupportedProviderMatchesOtherSourcesOfTruth:
-    def test_matches_frontend_backend_and_env_config_provider_lists(self):
-        """Cross-checked against ALL_PROVIDERS in
-        frontend/src/app/(dashboard)/settings/api-keys/page.tsx,
-        TEST_MODELS in open_notebook/ai/connection_tester.py, and
-        PROVIDER_ENV_CONFIG in api/credentials_service.py - all three
-        independently agree on this exact set."""
+    def test_matches_known_good_provider_list(self):
         assert set(SupportedProvider.__args__) == set(KNOWN_GOOD_PROVIDERS)
 
     def test_matches_connection_tester_test_models_keys(self):
@@ -57,6 +52,23 @@ class TestSupportedProviderMatchesOtherSourcesOfTruth:
         from api.credentials_service import PROVIDER_ENV_CONFIG
 
         assert set(SupportedProvider.__args__) == set(PROVIDER_ENV_CONFIG.keys())
+
+    def test_matches_frontend_all_providers_list(self):
+        """The frontend keeps its own copy (ALL_PROVIDERS) that a Python
+        test can't import, so extract the string literals from the source
+        instead - adding a provider to only one of the lists must fail CI."""
+        import re
+        from pathlib import Path
+
+        page = (
+            Path(__file__).parent.parent
+            / "frontend/src/app/(dashboard)/settings/api-keys/page.tsx"
+        )
+        source = page.read_text()
+        match = re.search(r"const ALL_PROVIDERS = \[(.*?)\]", source, re.DOTALL)
+        assert match, "ALL_PROVIDERS array not found in api-keys/page.tsx"
+        frontend_providers = re.findall(r"'([a-z0-9_]+)'", match.group(1))
+        assert set(SupportedProvider.__args__) == set(frontend_providers)
 
 
 class TestCreateCredentialRequestValidation:

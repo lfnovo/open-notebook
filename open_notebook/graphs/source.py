@@ -2,7 +2,7 @@ import operator
 from typing import Any, Dict, List, Optional
 
 from content_core import extract_content
-from content_core.common import ProcessSourceState
+from content_core.common import ProcessSourceState, UnsupportedTypeException
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
@@ -75,7 +75,14 @@ async def content_process(state: SourceState) -> dict:
         logger.warning(f"Failed to retrieve speech-to-text model configuration: {e}")
         # Continue without custom audio model (content-core will use its default)
 
-    processed_state = await extract_content(content_state)
+    try:
+        processed_state = await extract_content(content_state)
+    except UnsupportedTypeException as e:
+        # Permanent failure: retrying can't make an unsupported format
+        # processable. Re-raise as ValueError so the command's stop_on list
+        # fails the job immediately (and logs the reason) instead of burning
+        # 15 exponential-backoff retries (~1 hour) on a deterministic error.
+        raise ValueError(str(e)) from e
 
     # content-core signals a soft extraction failure (e.g. an unreachable or
     # invalid URL) by returning title="Error" and content prefixed with

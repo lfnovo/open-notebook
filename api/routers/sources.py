@@ -125,6 +125,48 @@ def _write_uploaded_file(filename: str, content: bytes) -> str:
         raise
 
 
+async def ensure_file_type_supported(file_path: str) -> None:
+    """Reject files that content-core cannot process, so the user gets an
+    immediate, specific error instead of a background job that only fails
+    after exhausting its retry budget (~1 hour, see #975).
+
+    Runs content-core's own identification + routing (reads ~1KB of the
+    file, no extraction) rather than a hand-maintained extension allowlist,
+    which would drift out of sync with content-core's supported types and
+    reject files it actually handles, e.g. extensionless plain text (see
+    tests/test_upload_type_mitigations.py for the earlier analysis).
+    Fails open on unexpected errors - worst case the failure surfaces at
+    processing time, as before."""
+    try:
+        from content_core.common import (
+            ProcessSourceState,
+            UnsupportedTypeException,
+        )
+        from content_core.content.extraction.graph import file_type_router_docling
+        from content_core.content.identification import get_file_type
+    except ImportError as e:
+        logger.warning(f"content-core layout changed, skipping upload validation: {e}")
+        return
+
+    try:
+        identified_type = await get_file_type(file_path)
+        state = ProcessSourceState(
+            file_path=file_path,
+            identified_type=identified_type,
+            document_engine="auto",  # same engine content_process() runs with
+        )
+        await file_type_router_docling(state)
+    except UnsupportedTypeException as e:
+        suffix = Path(file_path).suffix.lower() or "unknown"
+        logger.info(f"Rejected upload with unsupported file type ({suffix}): {e}")
+        raise InvalidInputError(
+            f"Unsupported file type: {suffix}. Supported formats include PDF, "
+            "EPUB, DOCX, PPTX, XLSX, TXT, Markdown, and common audio/video files."
+        )
+    except Exception as e:
+        logger.warning(f"Could not pre-validate file type for {file_path}: {e}")
+
+
 async def save_uploaded_file(upload_file: UploadFile) -> str:
     """Save uploaded file to uploads folder and return file path."""
     if not upload_file.filename:
@@ -395,6 +437,7 @@ async def create_source(
                     status_code=400,
                     detail="Invalid file path: must be within the uploads directory",
                 )
+            await ensure_file_type_supported(final_file_path)
             content_state["file_path"] = final_file_path
             content_state["delete_source"] = source_data.delete_source
         elif source_data.type == "text":
@@ -798,7 +841,14 @@ async def get_source_status(source_id: str):
             if status == "completed":
                 message = "Source processing completed successfully"
             elif status == "failed":
-                message = "Source processing failed"
+                # Surface the stored failure reason (e.g. an unsupported file
+                # type) instead of a generic message the user can't act on
+                error_detail = (processing_info or {}).get("error")
+                message = (
+                    f"Source processing failed: {error_detail}"
+                    if error_detail
+                    else "Source processing failed"
+                )
             elif status == "running":
                 message = "Source processing in progress"
             elif status == "queued":

@@ -14,6 +14,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, Response
 from loguru import logger
+from pydantic import ValidationError
 from surreal_commands import execute_command_sync, submit_command
 
 from api.command_service import CommandService
@@ -41,7 +42,10 @@ router = APIRouter()
 SOURCE_SORT_FIELDS = {
     "created": "created",
     "updated": "updated",
-    "title": "title",
+    # `title` carries a SEARCH (BM25) index; SurrealDB's planner tries to use
+    # it for ORDER BY and fails ("No iterator has been found"), so we sort by
+    # a computed alias instead — which also makes the sort case-insensitive.
+    "title": "title_sort",
     "insights_count": "insights_count",
     "embedded": "embedded",
     "type": "type",
@@ -165,7 +169,9 @@ def parse_source_form_data(
             notebooks_list = json.loads(notebooks)
         except json.JSONDecodeError:
             logger.error(f"Invalid JSON in notebooks field: {notebooks}")
-            raise ValueError("Invalid JSON in notebooks field")
+            raise HTTPException(
+                status_code=422, detail="Invalid JSON in notebooks field"
+            )
 
     transformations_list = []
     if transformations:
@@ -173,7 +179,9 @@ def parse_source_form_data(
             transformations_list = json.loads(transformations)
         except json.JSONDecodeError:
             logger.error(f"Invalid JSON in transformations field: {transformations}")
-            raise ValueError("Invalid JSON in transformations field")
+            raise HTTPException(
+                status_code=422, detail="Invalid JSON in transformations field"
+            )
 
     # Create SourceCreate instance
     try:
@@ -190,7 +198,10 @@ def parse_source_form_data(
             delete_source=delete_source_bool,
             async_processing=async_processing_bool,
         )
-        pass  # SourceCreate instance created successfully
+    except ValidationError as e:
+        errors = "; ".join(err.get("msg", "invalid value") for err in e.errors())
+        logger.error(f"Invalid source form data: {errors}")
+        raise HTTPException(status_code=422, detail=f"Invalid source data: {errors}")
     except Exception as e:
         logger.error(f"Failed to create SourceCreate instance: {e}")
         raise
@@ -242,6 +253,7 @@ async def get_sources(
             # Query sources for specific notebook - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                string::lowercase(title OR '') AS title_sort,
                 ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded
@@ -262,6 +274,7 @@ async def get_sources(
             # Query all sources - include command field with FETCH
             query = f"""
                 SELECT id, asset, created, title, updated, topics, command,
+                string::lowercase(title OR '') AS title_sort,
                 ({SOURCE_TYPE_EXPRESSION}) AS type,
                 (SELECT VALUE count() FROM source_insight WHERE source = $parent.id GROUP ALL)[0].count OR 0 AS insights_count,
                 (SELECT VALUE id FROM source_embedding WHERE source = $parent.id LIMIT 1) != [] AS embedded

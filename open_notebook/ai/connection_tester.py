@@ -32,9 +32,18 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
     create/test a Vertex credential could probe for the existence and
     contents-shape of arbitrary files on the server. Callers should catch
     these and return one generic message instead of the raw exception text.
-    """
-    from google.auth.exceptions import GoogleAuthError
 
+    Network failures are excluded even though they'd otherwise match
+    (ConnectionError/TimeoutError are OSError subclasses, TransportError a
+    GoogleAuthError subclass): they say nothing about the credentials file,
+    and classifying them here would tell a user with a blocked network to
+    go debug their file path. Letting them fall through reveals only the
+    error's category ("connection error"), which keeps the oracle closed.
+    """
+    from google.auth.exceptions import GoogleAuthError, TransportError
+
+    if isinstance(exc, (ConnectionError, TimeoutError, TransportError)):
+        return False
     return isinstance(exc, (OSError, json.JSONDecodeError, GoogleAuthError))
 
 

@@ -63,6 +63,19 @@ class TestIsVertexCredentialsFileError:
         assert _is_vertex_credentials_file_error(ValueError("some other error")) is False
         assert _is_vertex_credentials_file_error(RuntimeError("rate limited")) is False
 
+    def test_does_not_misclassify_network_errors(self):
+        # ConnectionError/TimeoutError are OSError subclasses and
+        # TransportError is a GoogleAuthError subclass, so without an
+        # explicit exclusion a blocked network would surface as "Invalid or
+        # inaccessible credentials file" - a false lead. They must fall
+        # through to the normal connection-error handling instead.
+        from google.auth.exceptions import TransportError
+
+        assert _is_vertex_credentials_file_error(ConnectionError("connection refused")) is False
+        assert _is_vertex_credentials_file_error(ConnectionRefusedError("refused")) is False
+        assert _is_vertex_credentials_file_error(TimeoutError("timed out")) is False
+        assert _is_vertex_credentials_file_error(TransportError("failed to connect")) is False
+
 
 class TestTestCredentialClosesOracle:
     @pytest.mark.asyncio

@@ -171,11 +171,12 @@ class Credential(ObjectModel):
     @classmethod
     async def get_all(cls, order_by=None) -> List["Credential"]:
         """Override get_all() to handle api_key decryption with per-row error handling."""
-        order_clause = f" ORDER BY {order_by}" if order_by else ""
-        results = await repo_query(
-            f"SELECT * FROM {cls.table_name}{order_clause}",
-            {},
-        )
+        if order_by:
+            validated_order_by = cls._validate_order_by(order_by)
+            query = f"SELECT * FROM {cls.table_name} ORDER BY {validated_order_by}"
+        else:
+            query = f"SELECT * FROM {cls.table_name}"
+        results = await repo_query(query, {})
         credentials = []
         for row in results:
             try:

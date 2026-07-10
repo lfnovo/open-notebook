@@ -5,9 +5,9 @@ Combining allow_origins=["*"] with allow_credentials=True makes Starlette's
 CORSMiddleware reflect the request's Origin header verbatim instead of
 returning a literal "*" (browsers reject a literal wildcard alongside
 credentials) - defeating the origin allowlist for any credentialed request.
-allow_credentials is now tied to whether CORS_ORIGINS was explicitly scoped:
-False for the default wildcard, True once an operator opts into specific
-origins.
+allow_credentials is now keyed on the parsed origins list: False whenever it
+contains "*" (whether from the unset default or an explicit CORS_ORIGINS=*),
+True once an operator scopes CORS_ORIGINS to specific origins.
 """
 
 from starlette.middleware.cors import CORSMiddleware
@@ -23,6 +23,7 @@ class TestRealAppDefaultsToNoCredentialsWithWildcard:
     def test_default_test_environment_is_wildcard(self):
         assert api_main.CORS_IS_DEFAULT_WILDCARD is True
         assert api_main.CORS_ALLOWED_ORIGINS == ["*"]
+        assert api_main.CORS_ALLOW_CREDENTIALS is False
 
     def test_cors_middleware_registered_with_credentials_disabled(self):
         matches = [
@@ -45,22 +46,28 @@ class TestRealAppDefaultsToNoCredentialsWithWildcard:
         assert response.headers.get("access-control-allow-origin") in ("*", "https://evil.example.com")
 
 
-class TestAllowCredentialsFormula:
-    """Direct check of the allow_credentials = not CORS_IS_DEFAULT_WILDCARD
-    formula for the case the live test environment can't easily cover
-    in-process (CORS_ORIGINS explicitly set) - CORS_IS_DEFAULT_WILDCARD is
-    fixed at api.main import time from the environment, so this proves the
-    formula's behavior directly rather than reloading the module."""
+class TestExplicitWildcardAlsoDisablesCredentials:
+    """An operator who sets CORS_ORIGINS=* explicitly must get the same
+    treatment as the unset default. The predicate keys on the parsed list
+    containing "*", not on whether the env var was set - keying on the env
+    var would reintroduce the exact reflect-any-Origin behavior this fix
+    prevents. CORS_ALLOW_CREDENTIALS is fixed at api.main import time, so
+    these exercise the real parser plus the same expression used there."""
 
-    def test_wildcard_default_disables_credentials(self):
-        cors_origins_raw = None  # CORS_ORIGINS unset
-        is_default_wildcard = cors_origins_raw is None
-        assert (not is_default_wildcard) is False
+    def test_explicit_wildcard_disables_credentials(self):
+        origins = api_main._parse_cors_origins("*")
+        assert origins == ["*"]
+        assert ("*" not in origins) is False
 
-    def test_explicit_origins_enables_credentials(self):
-        cors_origins_raw = "https://notebook.example.com"
-        is_default_wildcard = cors_origins_raw is None
-        assert (not is_default_wildcard) is True
+    def test_explicit_origins_enable_credentials(self):
+        origins = api_main._parse_cors_origins(
+            "https://notebook.example.com, https://other.example.com"
+        )
+        assert origins == [
+            "https://notebook.example.com",
+            "https://other.example.com",
+        ]
+        assert ("*" not in origins) is True
 
 
 class TestCorsHeadersHelperMatchesMiddlewarePolicy:
@@ -68,8 +75,8 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
     responses (for errors raised before CORSMiddleware runs) - it must not
     grant credentials the real middleware wouldn't."""
 
-    def test_omits_allow_credentials_header_for_wildcard_default(self, monkeypatch):
-        monkeypatch.setattr(api_main, "CORS_IS_DEFAULT_WILDCARD", True)
+    def test_omits_allow_credentials_header_for_wildcard(self, monkeypatch):
+        monkeypatch.setattr(api_main, "CORS_ALLOW_CREDENTIALS", False)
         monkeypatch.setattr(api_main, "CORS_ALLOWED_ORIGINS", ["*"])
 
         class FakeRequest:
@@ -79,7 +86,7 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
         assert "Access-Control-Allow-Credentials" not in headers
 
     def test_includes_allow_credentials_header_for_explicit_origins(self, monkeypatch):
-        monkeypatch.setattr(api_main, "CORS_IS_DEFAULT_WILDCARD", False)
+        monkeypatch.setattr(api_main, "CORS_ALLOW_CREDENTIALS", True)
         monkeypatch.setattr(
             api_main, "CORS_ALLOWED_ORIGINS", ["https://notebook.example.com"]
         )
@@ -91,7 +98,7 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
         assert headers["Access-Control-Allow-Credentials"] == "true"
 
     def test_disallowed_origin_still_gets_no_allow_origin_header(self, monkeypatch):
-        monkeypatch.setattr(api_main, "CORS_IS_DEFAULT_WILDCARD", False)
+        monkeypatch.setattr(api_main, "CORS_ALLOW_CREDENTIALS", True)
         monkeypatch.setattr(
             api_main, "CORS_ALLOWED_ORIGINS", ["https://notebook.example.com"]
         )

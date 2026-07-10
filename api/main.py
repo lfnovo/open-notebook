@@ -63,6 +63,11 @@ def _parse_cors_origins(raw: str) -> list[str]:
 _cors_origins_raw = os.getenv("CORS_ORIGINS")
 CORS_ALLOWED_ORIGINS = _parse_cors_origins(_cors_origins_raw or "*")
 CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
+# Keyed on the parsed list, not on whether the env var was set: an operator
+# who explicitly sets CORS_ORIGINS=* must get the same wildcard treatment as
+# the default, or credentials would combine with a wildcard origin - the
+# exact reflect-any-Origin behavior this flag exists to prevent.
+CORS_ALLOW_CREDENTIALS = "*" not in CORS_ALLOWED_ORIGINS
 
 DATABASE_STARTUP_RETRY_ATTEMPTS = 12
 DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
@@ -91,7 +96,7 @@ def _cors_headers(request: Request) -> dict[str, str]:
         "Access-Control-Allow-Methods": "*",
         "Access-Control-Allow-Headers": "*",
     }
-    if not CORS_IS_DEFAULT_WILDCARD:
+    if CORS_ALLOW_CREDENTIALS:
         headers["Access-Control-Allow-Credentials"] = "true"
 
     if origin and ("*" in CORS_ALLOWED_ORIGINS or origin in CORS_ALLOWED_ORIGINS):
@@ -253,7 +258,7 @@ app.add_middleware(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
-    allow_credentials=not CORS_IS_DEFAULT_WILDCARD,
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -163,7 +163,7 @@ PR** — link it as a phase instead.
 - [ ] Are there tests? Screenshots (for UI changes)?
 
 **Red Flags** (may require closing PR):
-- No associated issue
+- No associated issue on a non-trivial change (small obvious fixes are exempt; sizeable PRs can be converted to draft while their issue goes through triage)
 - Issue was not assigned to contributor
 - PR tries to solve multiple unrelated problems
 - Breaking changes without discussion

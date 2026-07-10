@@ -7,8 +7,11 @@ version: 1
 
 reviews:
   custom_instructions: |
-    This project follows an issue-first workflow: every PR should reference an approved,
-    assigned issue and stay scoped to it. Unrelated refactors belong in separate PRs.
+    This project follows an issue-first workflow for anything non-trivial: features and
+    architecture changes must reference an approved, assigned issue and stay scoped to it.
+    Small obvious fixes (typos, docs, tiny bugs, i18n completions) are welcome without an
+    issue. A sizeable PR without one should be converted to draft with an issue opened —
+    don't flag small fixes for lacking an issue. Unrelated refactors belong in separate PRs.
     Test evidence must be real (actual output), especially for bug fixes, which should
     include a regression test. Many PRs are agent-generated; hold them to the same bar.
     Normative rules live in AGENTS.md (root, open_notebook/, frontend/); product direction

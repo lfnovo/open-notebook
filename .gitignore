@@ -142,3 +142,8 @@ specs/
 .harness/
 
 .mcp.json
+
+# Local Docker Compose override (auto-merged by `docker compose up`).
+# Use it for host-specific tweaks like re-exposing the SurrealDB port;
+# see docker-compose.override.yml.example.
+docker-compose.override.yml

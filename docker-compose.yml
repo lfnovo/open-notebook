@@ -8,7 +8,12 @@ services:
     command: start --log info --user ${SURREAL_USER:-root} --pass ${SURREAL_PASSWORD:-root} rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
     ports:
-      - "8000:8000"
+      # Bound to localhost only: the open_notebook service reaches this over
+      # the internal compose network regardless, so the host port is purely
+      # for local debugging (e.g. Surrealist, `surreal sql`). Exposing this
+      # on 0.0.0.0 would let anyone who can reach the host connect with the
+      # default root:root credentials.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

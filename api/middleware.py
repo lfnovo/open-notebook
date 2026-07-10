@@ -1,5 +1,6 @@
 import os
 
+from loguru import logger
 from starlette.datastructures import Headers
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
@@ -12,13 +13,20 @@ def get_max_upload_size_bytes() -> int:
     """Read the configured max request body size, in bytes.
 
     Configurable via OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB for deployments that
-    need larger audio/video uploads; falls back to the default on unset or
-    malformed values.
+    need larger audio/video uploads; falls back to the default on unset,
+    malformed, or non-positive values (a zero/negative limit would reject
+    every request that has a body).
     """
     raw = os.environ.get("OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB", "").strip()
     try:
         mb = float(raw) if raw else DEFAULT_MAX_UPLOAD_SIZE_MB
     except ValueError:
+        mb = DEFAULT_MAX_UPLOAD_SIZE_MB
+    if mb <= 0:
+        logger.warning(
+            f"OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB={raw!r} is not a positive size; "
+            f"using the default of {DEFAULT_MAX_UPLOAD_SIZE_MB}MB"
+        )
         mb = DEFAULT_MAX_UPLOAD_SIZE_MB
     return int(mb * 1024 * 1024)
 
@@ -56,6 +64,11 @@ class MaxBodySizeMiddleware:
         if content_length is not None:
             try:
                 if int(content_length) > self.max_body_size:
+                    logger.warning(
+                        f"Rejected {scope.get('method', '?')} {scope.get('path', '?')}: "
+                        f"declared body of {content_length} bytes exceeds the "
+                        f"{self.max_body_size}-byte limit"
+                    )
                     await _send_413(send)
                     return
             except ValueError:
@@ -82,6 +95,10 @@ class MaxBodySizeMiddleware:
         try:
             await self.app(scope, receive_wrapper, send_wrapper)
         except _RequestBodyTooLarge:
+            logger.warning(
+                f"Rejected {scope.get('method', '?')} {scope.get('path', '?')}: "
+                f"streamed body exceeded the {self.max_body_size}-byte limit"
+            )
             if not response_started:
                 await _send_413(send)
             # Else the app already started responding - nothing safe to send;

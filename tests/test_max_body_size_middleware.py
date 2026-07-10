@@ -106,6 +106,13 @@ class TestConfig:
         monkeypatch.setenv("OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB", "not-a-number")
         assert get_max_upload_size_bytes() == 100 * 1024 * 1024
 
+    def test_non_positive_env_falls_back_to_default(self, monkeypatch):
+        # A zero/negative limit would 413 every request that has a body.
+        monkeypatch.setenv("OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB", "0")
+        assert get_max_upload_size_bytes() == 100 * 1024 * 1024
+        monkeypatch.setenv("OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB", "-5")
+        assert get_max_upload_size_bytes() == 100 * 1024 * 1024
+
 
 class TestMiddlewareAsgiLevel:
     @pytest.mark.asyncio

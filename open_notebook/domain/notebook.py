@@ -79,8 +79,14 @@ class Notebook(ObjectModel):
         notes = await self.get_notes(include_content=True)
         context_blocks = []
 
+        insights_by_source = await SourceInsight.get_for_sources(
+            [source.id for source in sources if source.id]
+        )
         for source in sources:
-            source_context = await source.get_context(context_size="long")
+            source_context = await source.get_context(
+                context_size="long",
+                insights=insights_by_source.get(source.id or "", []),
+            )
             if isinstance(source_context, dict):
                 title = source_context.get("title") or source.title or "Untitled source"
                 full_text = source_context.get("full_text")
@@ -327,6 +333,35 @@ class SourceInsight(ObjectModel):
     insight_type: str
     content: str
 
+    @classmethod
+    async def get_for_sources(
+        cls, source_ids: List[str]
+    ) -> Dict[str, List["SourceInsight"]]:
+        """
+        Batch-fetch insights for many sources in a single query.
+
+        Building notebook/chat context otherwise calls get_insights() once
+        per source - fine for one source, but O(n) round trips (each paying
+        its own connection setup, see database/CLAUDE.md) when a caller
+        loops over every source in a notebook.
+        """
+        grouped: Dict[str, List[SourceInsight]] = {sid: [] for sid in source_ids if sid}
+        if not grouped:
+            return grouped
+        try:
+            result = await repo_query(
+                "SELECT * FROM source_insight WHERE source IN $source_ids",
+                {"source_ids": [ensure_record_id(sid) for sid in grouped]},
+            )
+        except Exception as e:
+            logger.error(f"Error batch-fetching insights for sources: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError("Failed to fetch insights for sources")
+        for row in result:
+            key = str(row.get("source"))
+            grouped.setdefault(key, []).append(cls(**row))
+        return grouped
+
     async def get_source(self) -> "Source":
         try:
             src = await repo_query(
@@ -428,10 +463,15 @@ class Source(ObjectModel):
             return None
 
     async def get_context(
-        self, context_size: Literal["short", "long"] = "short"
+        self,
+        context_size: Literal["short", "long"] = "short",
+        insights: Optional[List["SourceInsight"]] = None,
     ) -> Dict[str, Any]:
-        insights_list = await self.get_insights()
-        insights = [insight.model_dump() for insight in insights_list]
+        # Callers looping over many sources can batch-fetch insights up front
+        # via SourceInsight.get_for_sources() and pass them in here, instead
+        # of paying a separate query per source.
+        insight_objects = insights if insights is not None else await self.get_insights()
+        insights = [insight.model_dump() for insight in insight_objects]
         if context_size == "long":
             return dict(
                 id=self.id,

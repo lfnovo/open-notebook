@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 
 from api.models import ContextRequest, ContextResponse
-from open_notebook.domain.notebook import Note, Notebook, Source
+from open_notebook.domain.notebook import Note, Notebook, Source, SourceInsight
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.utils import token_count
 
@@ -77,9 +77,21 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
         else:
             # Default behavior - include all sources and notes with short context
             sources = await notebook.get_sources()
+            try:
+                insights_by_source = await SourceInsight.get_for_sources(
+                    [source.id for source in sources if source.id]
+                )
+            except Exception as e:
+                # Match the per-source fallback below: a hiccup fetching
+                # insights shouldn't fail the whole context request.
+                logger.warning(f"Error batch-fetching source insights: {str(e)}")
+                insights_by_source = {}
             for source in sources:
                 try:
-                    source_context = await source.get_context(context_size="short")
+                    source_context = await source.get_context(
+                        context_size="short",
+                        insights=insights_by_source.get(source.id or "", []),
+                    )
                     context_data["source"].append(source_context)
                     total_content += str(source_context)
                 except Exception as e:

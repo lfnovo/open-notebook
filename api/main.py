@@ -14,6 +14,7 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
+from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
     chat,
@@ -68,6 +69,9 @@ CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
 # the default, or credentials would combine with a wildcard origin - the
 # exact reflect-any-Origin behavior this flag exists to prevent.
 CORS_ALLOW_CREDENTIALS = "*" not in CORS_ALLOWED_ORIGINS
+
+# Parsed once at module load; OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB changes require a restart.
+MAX_UPLOAD_SIZE_BYTES = get_max_upload_size_bytes()
 
 DATABASE_STARTUP_RETRY_ATTEMPTS = 12
 DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
@@ -243,18 +247,27 @@ app.add_middleware(
     ],
 )
 
-# Add CORS middleware last (so it processes first)
+# Reject oversized request bodies before they reach auth or routing - added
+# after PasswordAuthMiddleware (so it wraps around it) so a too-large request
+# is rejected before spending any work checking credentials.
+logger.info(
+    f"Max request body size: {MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):g}MB "
+    "(set OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB to change)"
+)
+app.add_middleware(MaxBodySizeMiddleware, max_body_size=MAX_UPLOAD_SIZE_BYTES)
+
+# Add CORS middleware last (so it processes first, and so it can attach
+# CORS headers to a 413 raised by MaxBodySizeMiddleware)
 #
-# allow_credentials is tied to whether CORS_ORIGINS was explicitly scoped:
-# combining allow_origins=["*"] with allow_credentials=True makes Starlette
-# reflect the request's Origin header verbatim (browsers reject a literal
-# "*" alongside credentials), which defeats the origin allowlist. The
-# frontend never sends credentialed requests (withCredentials: false) and
-# auth is a Bearer header, not a cookie, so this isn't independently
-# exploitable today - but there's no reason to allow it for the default
-# wildcard case. Once an operator explicitly scopes CORS_ORIGINS to real
-# origins, credentialed cross-origin requests to those origins are safe to
-# allow again.
+# allow_credentials is tied to whether CORS_ORIGINS resolves to specific
+# origins: combining allow_origins=["*"] with allow_credentials=True makes
+# Starlette reflect the request's Origin header verbatim (browsers reject a
+# literal "*" alongside credentials), which defeats the origin allowlist.
+# The frontend never sends credentialed requests (withCredentials: false)
+# and auth is a Bearer header, not a cookie, so this isn't independently
+# exploitable today - but there's no reason to allow it for any wildcard
+# case. Once an operator explicitly scopes CORS_ORIGINS to real origins,
+# credentialed cross-origin requests to those origins are safe to allow.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,

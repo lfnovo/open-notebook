@@ -279,12 +279,12 @@ class PodcastEpisode(ObjectModel):
 
         Listing episodes otherwise calls get_job_detail() -> surreal_commands
         .get_command_status() once per episode, each its own round trip
-        against the `command` table (see database/CLAUDE.md: no connection
-        pooling) - O(n) queries for n episodes. surreal_commands has no
-        batch lookup, but its command table lives in the same database
-        (same SURREAL_* env vars - see surreal_commands/repository/CLAUDE.md),
-        so this queries it directly in one shot instead of looping through
-        the library's per-command helper.
+        against the `command` table (no connection pooling in the repository
+        layer, see docs/7-DEVELOPMENT/architecture.md) - O(n) queries for n
+        episodes. surreal_commands has no batch lookup, but its command table
+        lives in the same database (same SURREAL_* env vars), so this queries
+        it directly in one shot instead of looping through the library's
+        per-command helper.
 
         CommandStatus is a `str` subclass (`class CommandStatus(str, Enum)`),
         so returning the raw DB string here is interchangeable with the

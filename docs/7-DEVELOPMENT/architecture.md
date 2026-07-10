@@ -39,7 +39,7 @@ Open Notebook follows a three-tier architecture with clear separation of concern
 
 ## Detailed Architecture
 
-Open Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 8+ AI providers.
+Open Notebook is built on a **three-tier, async-first architecture** designed for scalability, modularity, and multi-provider AI flexibility. The system separates concerns across frontend, API, and database layers, with LangGraph powering intelligent workflows and Esperanto enabling seamless integration with 17 AI providers.
 
 **Core Philosophy**:
 - Privacy-first: Users control their data and AI provider choice
@@ -156,7 +156,7 @@ Response ← Pydantic serialization ← Service ← Result
 - **Database**: SurrealDB (multi-model, ACID transactions)
 - **Query Language**: SurrealQL (SQL-like syntax with graph operations)
 - **Async Driver**: Async Rust client for Python
-- **Migrations**: Manual `.surql` files in `/migrations/` (auto-run on API startup)
+- **Migrations**: `.surrealql` files in `open_notebook/database/migrations/`, registered in `AsyncMigrationManager` (auto-run on API startup)
 
 **Core Tables**:
 
@@ -256,7 +256,7 @@ ChatSession
 ### Why Esperanto for AI Providers?
 
 **Esperanto Library**:
-- Unified interface to 8+ LLM providers (OpenAI, Anthropic, Google, Groq, Ollama, Mistral, DeepSeek, xAI)
+- Unified interface to 17 providers (OpenAI, Anthropic, Google, Groq, Ollama, Mistral, DeepSeek, xAI, OpenRouter, Azure, Vertex, and more)
 - Multi-provider embeddings (OpenAI, Google, Ollama, Mistral, Voyage)
 - TTS/STT integration (OpenAI, Groq, ElevenLabs, Google)
 - Smart provider selection (fallback logic, cost optimization)
@@ -698,10 +698,10 @@ status = await response.json()  # returns { status: "running|queued|completed|fa
 
 **Migrations**:
 - Automatic on API startup
-- Located in `/migrations/` directory
-- Numbered sequentially (001_*.surql, 002_*.surql, etc)
+- Located in `open_notebook/database/migrations/`
+- Numbered sequentially (`1.surrealql`, `2.surrealql`, …) and registered explicitly in `AsyncMigrationManager` (no auto-discovery)
 - Tracked in `_sbl_migrations` table
-- Rollback via `_down.surql` files (manual)
+- Rollback via `N_down.surrealql` files (manual)
 
 ### Relationship Model
 
@@ -746,7 +746,7 @@ All I/O operations are non-blocking to maximize concurrency and responsiveness.
 
 ### 2. **Multi-Provider from Day 1**
 
-Built-in support for 8+ AI providers prevents vendor lock-in.
+Built-in support for 17 AI providers prevents vendor lock-in.
 
 **Trade-off**: Added complexity in ModelManager vs. flexibility and cost optimization.
 
@@ -852,7 +852,7 @@ Async job submission (source processing, podcast generation) prevents request ti
 2. Inherit from BaseModel (domain object)
 3. Implement `save()`, `get()`, `delete()` methods (CRUD)
 4. Add repository functions if complex queries needed
-5. Create database migration in `migrations/`
+5. Create database migration in `open_notebook/database/migrations/` (and register it in `AsyncMigrationManager`)
 6. Add API routes and models in `api/`
 
 ### Adding a New AI Provider

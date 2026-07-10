@@ -342,8 +342,8 @@ class SourceInsight(ObjectModel):
 
         Building notebook/chat context otherwise calls get_insights() once
         per source - fine for one source, but O(n) round trips (each paying
-        its own connection setup, see database/CLAUDE.md) when a caller
-        loops over every source in a notebook.
+        its own connection setup - no pooling in the repository layer) when
+        a caller loops over every source in a notebook.
         """
         grouped: Dict[str, List[SourceInsight]] = {sid: [] for sid in source_ids if sid}
         if not grouped:

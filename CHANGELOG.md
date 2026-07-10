@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `VISION.md` — the product's source of truth in two layers: durable identity (what Open Notebook is and is not, core principles) and current posture (the phase we're in, directional constraints, and the horizon clusters under consideration)
+- Decision records at `docs/7-DEVELOPMENT/decisions/` — short, immutable ADRs/PDRs answering "why is it like this?", seeded with 4 retroactive ADRs (SurrealDB, delegation to external libraries, Streamlit→Next.js, background workers) and 2 PDRs (single-user first, provider-agnostic core)
+- `AGENTS.md` files (root, `open_notebook/`, `frontend/`) with the normative rules for coding agents and humans — commands, hard rules, and gotchas not derivable from the code; `CLAUDE.md` files are now one-line pointers to them
+- Five new engineering docs pages under `docs/7-DEVELOPMENT/`: credentials, content processing, podcasts, prompts, and frontend architecture
+- Contribution guidelines for AI-assisted and agent-generated PRs in the contributing guide — the operator owns the PR, issue-first still applies, tests must have actually run
+- CI check for broken relative links in markdown (`scripts/check_md_links.py` + `docs-links` workflow on PRs touching `*.md`)
+- `cubic.yaml` — AI review settings as code: PR-contract instructions, three custom review agents (vision & principles alignment backed by `VISION.md`, known mechanical caveats, security & testability) and automatic ultrareviews for auth/credential/encryption/migration changes
 - Documented the flow-driven release process in `.github/RELEASE_PROCESS.md`, including the `ready` to `main` to stable release path, dev/stable image labels, and maintainer verification checklist (#938)
 - List view for the Notebooks page — a tile/list toggle in the header lets you switch between the visual card grid and a compact row layout (name, description, source/note counts, last updated) for easier scanning of large collections. The choice is remembered across reloads and translated across all 14 locales (#885)
 - Documented the `ESPERANTO_TTS_TIMEOUT` environment variable (default `300`s) in the environment reference; raise it for slow or self-hosted TTS providers so long podcast segments don't fail with a timeout (#937)
@@ -19,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - "Refresh content" action on web-link sources — re-fetches the URL and re-embeds the source so its content stays current, available from the source card menu once processing has completed (translated across all 14 locales) (#259)
 
 ### Changed
+- Developer documentation restructured: 17 knowledge-heavy `CLAUDE.md` files consolidated into the 3 `AGENTS.md` + docs pages above; `README.dev.md` became a pointer after its unique content moved into `development-setup.md` (make-workflow matrix), `.github/RELEASE_PROCESS.md` (Docker publishing) and the change playbooks (add-a-language); the maintainer guide now carries the curated label taxonomy (state funnel, `area:` labels, consolidation rules)
+- Fixed stale developer docs while migrating: real migration path/format (`open_notebook/database/migrations/N.surrealql` + `AsyncMigrationManager` registration), provider count (17), locale list (7), and 9 README links that pointed at documentation pages that never existed
 - The API's listen interface in the Docker images is now configurable via a new `API_HOST` environment variable instead of a hardcoded `--host 0.0.0.0`. The default is unchanged (`0.0.0.0`); set `API_HOST=::` to serve IPv6/dual-stack environments (#985)
 - `docker-compose.yml` now sources the SurrealDB credentials from `SURREAL_USER` / `SURREAL_PASSWORD` (applied to both the database server and the app), defaulting to `root:root` so the zero-config quick start is unchanged. Set them in a `.env` file to use your own credentials before exposing the instance; `.env.example` and the compose file note this (#946)
 

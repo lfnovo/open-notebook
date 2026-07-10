@@ -570,11 +570,39 @@ class MigrationResult(BaseModel):
 
 # Notebook delete cascade models
 # Credential models
+
+# Kept in sync with the frontend's ALL_PROVIDERS
+# (frontend/src/app/(dashboard)/settings/api-keys/page.tsx), TEST_MODELS
+# (open_notebook/ai/connection_tester.py), and PROVIDER_ENV_CONFIG
+# (api/credentials_service.py) - all three independently agree on this set.
+SupportedProvider = Literal[
+    "openai",
+    "anthropic",
+    "google",
+    "groq",
+    "mistral",
+    "deepseek",
+    "xai",
+    "openrouter",
+    "dashscope",
+    "minimax",
+    "voyage",
+    "elevenlabs",
+    "deepgram",
+    "ollama",
+    "azure",
+    "vertex",
+    "openai_compatible",
+]
+
+
 class CreateCredentialRequest(BaseModel):
     """Request to create a new credential."""
 
     name: str = Field(..., description="Credential name")
-    provider: str = Field(..., description="Provider name (openai, anthropic, etc.)")
+    provider: SupportedProvider = Field(
+        ..., description="Provider name (openai, anthropic, etc.)"
+    )
     modalities: List[str] = Field(
         default_factory=list,
         description="Supported modalities (language, embedding, text_to_speech, speech_to_text)",

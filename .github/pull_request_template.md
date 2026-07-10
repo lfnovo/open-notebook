@@ -4,9 +4,11 @@
 
 ## Related Issue
 
-<!-- This PR should be linked to an approved issue. If not, please create an issue first. -->
+<!-- Non-trivial PRs (features, architecture changes) must link an approved issue.
+     Small obvious fixes (typo, docs, tiny bug) don't need one — write "N/A (small fix)" below.
+     Sizeable change without an issue? Mark this PR as draft and create the issue first. -->
 
-Fixes #<!-- issue number -->
+Fixes #<!-- issue number, or "N/A (small fix)" -->
 
 ## Type of Change
 

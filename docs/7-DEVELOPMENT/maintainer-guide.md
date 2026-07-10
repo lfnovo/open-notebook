@@ -15,8 +15,7 @@ This guide is for project maintainers to help manage contributions effectively w
 
 **1. Initial Triage** (within 24-48 hours)
 
-- Issues arrive with the intake label `needs-triage` (applied by the issue templates). Triage
-  replaces it with exactly **one state label** from the funnel below (or closes the issue).
+- Issues arrive with the intake label `needs-triage` (applied by the issue templates). Triage replaces it with exactly **one state label** from the funnel below (or closes the issue).
 - Add one **type** and one **area** label where they apply (see [Labels](#labels)).
 
 - Quick assessment:
@@ -82,9 +81,7 @@ We appreciate your interest in contributing! Feel free to check out our [open is
 
 ### Labels
 
-The label set is curated — **don't invent labels**. If something doesn't fit, raise it instead of
-adding one. Assign **one state**, **one type**, and **one area** where each applies; multiple
-bundling/ecosystem labels are fine.
+The label set is curated — **don't invent labels**. If something doesn't fit, raise it instead of adding one. Assign **one state**, **one type**, and **one area** where each applies; multiple bundling/ecosystem labels are fine.
 
 **State funnel** — every open issue lands in exactly one state:
 
@@ -99,8 +96,7 @@ bundling/ecosystem labels are fine.
 
 **Type** — what kind of work it is (apply one when clear):
 - `bug` · `enhancement` · `documentation`
-- `installation` is an intake label applied by the issue-creation workflow (not by triage);
-  installation reports get routed to `area: deploy`.
+- `installation` is an intake label applied by the issue-creation workflow (not by triage); installation reports get routed to `area: deploy`.
 
 **Area** — which part of the system (apply always, one per issue):
 
@@ -126,8 +122,7 @@ bundling/ecosystem labels are fine.
 - `upstream` — root cause lives in one of our libraries, not this repo
 
 **Ecosystem** — issues whose real home is an upstream library:
-- `esperanto` (model abstraction) · `content-core` (content extraction) · `podcast-creator`
-  (podcast generation)
+- `esperanto` (model abstraction) · `content-core` (content extraction) · `podcast-creator` (podcast generation)
 
 **Community:**
 - `good first issue` — small, well-scoped, newcomer-friendly
@@ -135,20 +130,12 @@ bundling/ecosystem labels are fine.
 
 ### Consolidation: one issue vs. umbrella
 
-When several open issues circle the same topic, pick the model by **how decided the work is** —
-not just by shared theme:
+When several open issues circle the same topic, pick the model by **how decided the work is** — not just by shared theme:
 
-- **Pre-vision / pre-design topic** → collapse into **one** issue (`needs-vision` or
-  `needs-design`), capture each request's signal (👍 counts, interested contributors) in its body,
-  and close the rest as duplicates pointing to it. A topic isn't N issues — it's one thinking
-  space.
-- **Already decomposed into real parallel tasks** → use `umbrella` + `tracked-in-umbrella`.
-  Children stay open because each is independently pickable (e.g. the multi-user umbrella #712).
+- **Pre-vision / pre-design topic** → collapse into **one** issue (`needs-vision` or `needs-design`), capture each request's signal (👍 counts, interested contributors) in its body, and close the rest as duplicates pointing to it. A topic isn't N issues — it's one thinking space.
+- **Already decomposed into real parallel tasks** → use `umbrella` + `tracked-in-umbrella`. Children stay open because each is independently pickable (e.g. the multi-user umbrella #712).
 
-Rule of thumb: if the issues can't be worked until *we* make a call, they're one issue. If the
-call is made and the work splits into things a contributor could pick up today, they're an
-umbrella with children. **Never close an issue that has an active assignee/contributor or open
-PR** — link it as a phase instead.
+Rule of thumb: if the issues can't be worked until *we* make a call, they're one issue. If the call is made and the work splits into things a contributor could pick up today, they're an umbrella with children. **Never close an issue that has an active assignee/contributor or open PR** — link it as a phase instead.
 
 ## Pull Request Review
 

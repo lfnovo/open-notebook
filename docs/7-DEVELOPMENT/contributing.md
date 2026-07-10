@@ -22,9 +22,7 @@ Thank you for your interest in contributing to Open Notebook! We welcome contrib
 - Breaking changes
 - Anything where the *how* has more than one reasonable answer
 
-**Already coded something sizeable without an issue?** Don't throw it away: mark the PR as
-**draft**, open an issue describing the problem and your approach, and link it from the PR.
-Our triage is fast — expect a call within 1–2 days.
+**Already coded something sizeable without an issue?** Don't throw it away: mark the PR as **draft**, open an issue describing the problem and your approach, and link it from the PR. Our triage is fast — expect a call within 1–2 days.
 
 **Why this process?**
 - Prevents duplicate work
@@ -95,27 +93,15 @@ Once your issue is assigned:
 
 ### AI-Assisted and Agent-Generated PRs
 
-A large share of contributions — including our own — are written with coding agents (Claude Code,
-Cursor, Copilot, etc.). That's welcome. The tool doesn't change the contract; **the operator
-does not stop being the author**:
+A large share of contributions — including our own — are written with coding agents (Claude Code, Cursor, Copilot, etc.). That's welcome. The tool doesn't change the contract; **the operator does not stop being the author**:
 
-1. **You own the PR.** You must have read, understood, and be able to explain every line of the
-   diff. "The agent wrote it" is never an answer in review.
-2. **Issue-first still applies to anything non-trivial.** Agents make it cheap to produce large
-   unsolicited PRs — those get closed like any other unassigned PR, regardless of code quality.
-   (Small obvious fixes are exempt, same as for humans; a sizeable PR without an issue can be
-   converted to draft while its issue goes through triage.)
-3. **Tests must have actually run.** Paste real output. An agent *claiming* tests pass is not
-   test evidence.
-4. **Point your agent at the right context.** The repo ships `AGENTS.md` files (root,
-   `open_notebook/`, `frontend/`) with the normative rules, and
-   [change-playbooks.md](change-playbooks.md) with step-by-step recipes — agents that read them
-   produce PRs that pass review faster.
-5. **Keep it scoped.** Agents tend to "improve" surrounding code along the way. Unrelated
-   refactors belong in separate issues/PRs.
+1. **You own the PR.** You must have read, understood, and be able to explain every line of the diff. "The agent wrote it" is never an answer in review.
+2. **Issue-first still applies to anything non-trivial.** Agents make it cheap to produce large unsolicited PRs — those get closed like any other unassigned PR, regardless of code quality. (Small obvious fixes are exempt, same as for humans; a sizeable PR without an issue can be converted to draft while its issue goes through triage.)
+3. **Tests must have actually run.** Paste real output. An agent *claiming* tests pass is not test evidence.
+4. **Point your agent at the right context.** The repo ships `AGENTS.md` files (root, `open_notebook/`, `frontend/`) with the normative rules, and [change-playbooks.md](change-playbooks.md) with step-by-step recipes — agents that read them produce PRs that pass review faster.
+5. **Keep it scoped.** Agents tend to "improve" surrounding code along the way. Unrelated refactors belong in separate issues/PRs.
 
-Disclosure of AI assistance is appreciated but optional — responsibility for the result is what
-matters, and it's yours either way.
+Disclosure of AI assistance is appreciated but optional — responsibility for the result is what matters, and it's yours either way.
 
 ## Git Commit Messages
 

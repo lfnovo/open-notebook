@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `VISION.md` — the product's source of truth in two layers: durable identity (what Open Notebook is and is not, core principles) and current posture (the phase we're in, directional constraints, and the horizon clusters under consideration)
-- Decision records at `docs/7-DEVELOPMENT/decisions/` — short, immutable ADRs/PDRs answering "why is it like this?", seeded with 4 retroactive ADRs (SurrealDB, Esperanto, Streamlit→Next.js, Surreal Commands) and 2 PDRs (single-user first, provider-agnostic core)
+- Decision records at `docs/7-DEVELOPMENT/decisions/` — short, immutable ADRs/PDRs answering "why is it like this?", seeded with 4 retroactive ADRs (SurrealDB, delegation to external libraries, Streamlit→Next.js, background workers) and 2 PDRs (single-user first, provider-agnostic core)
 - `AGENTS.md` files (root, `open_notebook/`, `frontend/`) with the normative rules for coding agents and humans — commands, hard rules, and gotchas not derivable from the code; `CLAUDE.md` files are now one-line pointers to them
 - Five new engineering docs pages under `docs/7-DEVELOPMENT/`: credentials, content processing, podcasts, prompts, and frontend architecture
 - Contribution guidelines for AI-assisted and agent-generated PRs in the contributing guide — the operator owns the PR, issue-first still applies, tests must have actually run

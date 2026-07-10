@@ -12,8 +12,41 @@ from loguru import logger
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 from open_notebook.exceptions import ConfigurationError
+from open_notebook.utils.url_validation import validate_url
 
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
+
+# Config keys from Credential.to_esperanto_config() that may carry a
+# user-configured URL (ollama/azure/openai_compatible/vertex).
+_URL_CONFIG_KEYS = (
+    "base_url",
+    "endpoint",
+    "endpoint_llm",
+    "endpoint_embedding",
+    "endpoint_stt",
+    "endpoint_tts",
+)
+
+
+def _revalidate_config_urls(config: dict, provider: str) -> None:
+    """
+    Re-validate a credential's URL fields immediately before they're used for
+    a real request.
+
+    validate_url() is also enforced when a credential is created/updated, but
+    that alone leaves a DNS-rebinding TOCTOU window: a hostname that resolved
+    to a public IP at save time can later be repointed to an internal/
+    metadata address, and Esperanto/httpx re-resolve DNS fresh on every
+    connection. Re-checking here narrows that window to "this call", instead
+    of "any time after the credential was saved".
+    """
+    for key in _URL_CONFIG_KEYS:
+        value = config.get(key)
+        if value:
+            try:
+                validate_url(value, provider)
+            except ValueError as e:
+                raise ConfigurationError(str(e)) from e
 
 
 class Model(ObjectModel):
@@ -123,6 +156,7 @@ class ModelManager:
             credential = await model.get_credential_obj()
             if credential:
                 config = credential.to_esperanto_config()
+                _revalidate_config_urls(config, model.provider)
                 logger.debug(
                     f"Using credential '{credential.name}' for model {model.name}"
                 )

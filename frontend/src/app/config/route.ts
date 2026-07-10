@@ -18,6 +18,26 @@ function isValidHostname(hostname: string): boolean {
   )
 }
 
+// Strip the optional port from a Host header, keeping the hostname (with
+// brackets for an IPv6 literal). Deliberately NOT `new URL()`: the URL
+// parser would "helpfully" extract the host from userinfo/path payloads
+// (e.g. `legit@evil.com` -> `evil.com`), defeating the strict validation
+// below. A bracketed IPv6 literal (`[::1]` / `[::1]:5055`) can't be split
+// on the first colon, so it's handled explicitly; everything else is a
+// hostname/IPv4 where the first colon begins the port. Anything malformed
+// returns null and falls back to localhost.
+function extractHostname(hostHeader: string): string | null {
+  if (hostHeader.startsWith('[')) {
+    const end = hostHeader.indexOf(']')
+    if (end === -1) return null
+    const afterBracket = hostHeader.slice(end + 1)
+    // Only an optional `:port` may follow the closing bracket.
+    if (afterBracket !== '' && !/^:\d+$/.test(afterBracket)) return null
+    return hostHeader.slice(0, end + 1) // includes the brackets
+  }
+  return hostHeader.split(':')[0]
+}
+
 /**
  * Runtime Configuration Endpoint
  *
@@ -65,11 +85,13 @@ export async function GET(request: NextRequest) {
     const hostHeader = request.headers.get('host')
 
     if (hostHeader) {
-      // Extract just the hostname (remove port if present)
-      const hostname = hostHeader.split(':')[0]
+      // Extract just the hostname (remove port if present), bracket-aware
+      // for IPv6 literals.
+      const hostname = extractHostname(hostHeader)
 
-      if (isValidHostname(hostname)) {
-        // Construct the API URL with port 5055
+      if (hostname && isValidHostname(hostname)) {
+        // hostname already carries brackets for IPv6 literals, so this
+        // yields e.g. http://[::1]:5055, not a mangled http://::1:5055
         const apiUrl = `${proto}://${hostname}:5055`
 
         console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)

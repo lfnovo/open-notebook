@@ -63,6 +63,51 @@ describe('GET /config', () => {
     expect(body.apiUrl).toBe('http://192.168.1.50:5055')
   })
 
+  it('accepts a bracketed IPv6 literal Host header', async () => {
+    const request = makeRequest({ host: '[2001:db8::1]' })
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.apiUrl).toBe('http://[2001:db8::1]:5055')
+  })
+
+  it('strips the port from a bracketed IPv6 Host header and keeps the brackets', async () => {
+    const request = makeRequest({ host: '[::1]:3000' })
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.apiUrl).toBe('http://[::1]:5055')
+  })
+
+  it('falls back to localhost for a bracketed IPv6 literal with trailing junk', async () => {
+    const request = makeRequest({ host: '[::1]@evil.example.com' })
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.apiUrl).toBe('http://localhost:5055')
+  })
+
+  it('falls back to localhost for an unclosed IPv6 bracket', async () => {
+    const request = makeRequest({ host: '[::1' })
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.apiUrl).toBe('http://localhost:5055')
+  })
+
+  it('falls back to localhost for a path-like payload inside IPv6 brackets', async () => {
+    const request = makeRequest({ host: '[::1]/../../attacker' })
+
+    const response = await GET(request)
+    const body = await response.json()
+
+    expect(body.apiUrl).toBe('http://localhost:5055')
+  })
+
   it('falls back to localhost for a Host header containing a path-like payload', async () => {
     const request = makeRequest({ host: 'evil.example.com/../../attacker' })
 

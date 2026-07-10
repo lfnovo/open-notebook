@@ -104,7 +104,7 @@ PROVIDER_PRIORITY = [
 MODEL_PREFERENCES = {
     "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-sonnet"],
-    "google": ["gemini-2.0", "gemini-1.5-pro", "gemini-pro"],
+    "google": ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
     "mistral": ["mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],

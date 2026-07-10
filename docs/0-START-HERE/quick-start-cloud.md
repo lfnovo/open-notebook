@@ -109,7 +109,7 @@ Your provider's models are now available!
 |----------|-------------------|-------|
 | **OpenRouter** | `anthropic/claude-3.5-sonnet` | Access 100+ models |
 | **Anthropic** | `claude-3-5-sonnet-latest` | Best reasoning |
-| **Google** | `gemini-2.0-flash` | Large context, fast |
+| **Google** | `gemini-3.5-flash` | Large context, fast |
 | **Groq** | `llama-3.3-70b-versatile` | Ultra-fast |
 | **Mistral** | `mistral-large-latest` | Strong European option |
 

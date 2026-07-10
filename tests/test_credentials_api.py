@@ -264,10 +264,20 @@ class TestAudioMatrixWiring:
 
         # Gemini TTS preview is classifiable; plain Gemini STT name stays language
         assert classify_model_type("gemini-3.1-flash-tts-preview", "google") == "text_to_speech"
-        assert classify_model_type("gemini-2.0-flash", "google") == "language"
+        assert classify_model_type("gemini-2.5-flash", "google") == "language"
         # ElevenLabs Scribe STT must not be caught by the TTS "eleven" pattern
         assert classify_model_type("scribe_v1", "elevenlabs") == "speech_to_text"
         assert classify_model_type("eleven_multilingual_v2", "elevenlabs") == "text_to_speech"
+
+    def test_google_and_vertex_use_current_test_model(self):
+        # Regression test for #970: the connection test used the retired
+        # gemini-2.0-flash, so testing a valid Google AI key failed with 404.
+        # gemini-3.5-flash is the current stable GA (gemini-2.5-flash is
+        # already scheduled for shutdown), so pin the longer-lived one.
+        from open_notebook.ai.connection_tester import TEST_MODELS
+
+        assert TEST_MODELS["google"] == ("gemini-3.5-flash", "language")
+        assert TEST_MODELS["vertex"] == ("gemini-3.5-flash", "language")
 
 
 if __name__ == "__main__":

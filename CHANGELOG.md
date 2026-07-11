@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Chat, source chat, Ask and transformation prompts now steer models to write math as `$$...$$` (display) / `$...$` (inline) so formulas render via KaTeX, reserving fenced `latex` code blocks for when the user explicitly asks for the LaTeX source (#1051)
 
+### Removed
+- Dead Streamlit-era service layer (~2,000 lines): `api/client.py` (a synchronous HTTP client that called the app's own API) and 13 `api/*_service.py` wrappers that consumed the app's own HTTP API — none were imported by any router, command or test. Also removed the toy `process_text`/`analyze_data` demo commands (`commands/example_commands.py`) from the background worker
+
 ## [1.11.0] - 2026-07-11
 
 ### Added

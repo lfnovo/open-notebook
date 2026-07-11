@@ -563,7 +563,7 @@ async def create_source(source_data: SourceCreate):
 Services orchestrate domain objects, repositories, and workflows:
 
 ```python
-# api/notebook_service.py
+# illustrative example (see api/podcast_service.py for a real service)
 class NotebookService:
     async def get_notebook_with_stats(notebook_id: str):
         notebook = await Notebook.get(notebook_id)

@@ -8,7 +8,7 @@ All functions raise ValueError for business errors (router converts to HTTPExcep
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from loguru import logger

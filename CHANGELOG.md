@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
 
 ### Changed
+- Re-enabled the ruff rules for unused imports (`F401`), unused local variables (`F841`) and bare `except:` (`E722`) that were ignored to silence legacy Streamlit-era noise, and cleaned up the remaining fallout (10 unused imports, 2 unused test variables; no bare excepts remained)
 - Chat, source chat, Ask and transformation prompts now steer models to write math as `$$...$$` (display) / `$...$` (inline) so formulas render via KaTeX, reserving fenced `latex` code blocks for when the user explicitly asks for the LaTeX source (#1051)
 
 ### Removed

@@ -503,7 +503,8 @@ class TestPodcastService:
         # generate_podcast_command` when the package is imported, so the fake
         # submodule must expose that name or the package import fails before the
         # patched submit_command is reached.
-        fake_commands_module.generate_podcast_command = lambda *a, **k: None
+        # setattr: dynamic module attribute mypy can't know about
+        setattr(fake_commands_module, "generate_podcast_command", lambda *a, **k: None)
 
         with (
             patch.object(
@@ -575,6 +576,7 @@ class TestContentSettings:
         assert settings.default_content_processing_engine_doc == "auto"
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"
+        assert settings.youtube_preferred_languages is not None
         assert len(settings.youtube_preferred_languages) > 0
 
 

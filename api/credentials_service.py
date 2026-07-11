@@ -292,10 +292,10 @@ async def test_credential(credential_id: str) -> dict:
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "embedding":
-            model = AIFactory.create_embedding(
+            embedding_model = AIFactory.create_embedding(
                 model_name=test_model, provider=provider, config=config
             )
-            await model.aembed(["test"])
+            await embedding_model.aembed(["test"])
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "text_to_speech":

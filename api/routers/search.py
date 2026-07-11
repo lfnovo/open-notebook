@@ -65,8 +65,10 @@ async def stream_ask_response(
     try:
         final_answer = None
 
-        async for chunk in ask_graph.astream(
-            input=dict(question=question),  # type: ignore[arg-type]
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        async for chunk in ask_graph.astream(  # type: ignore[call-overload]
+            input=dict(question=question),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -196,8 +198,10 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
 
         # Run the ask graph and get final result
         final_answer = None
-        async for chunk in ask_graph.astream(
-            input=dict(question=ask_request.question),  # type: ignore[arg-type]
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        async for chunk in ask_graph.astream(  # type: ignore[call-overload]
+            input=dict(question=ask_request.question),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,

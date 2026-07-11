@@ -12,6 +12,13 @@ import struct
 from typing import Dict, Optional, Tuple
 
 import httpx
+from esperanto import (
+    EmbeddingModel,
+    LanguageModel,
+    SpeechToTextModel,
+    TextToSpeechModel,
+)
+from esperanto.common_types import ChatCompletion
 from loguru import logger
 
 from open_notebook.ai.provider_registry import PROVIDERS
@@ -402,13 +409,20 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return False, "Could not create model instance"
 
         if model.type == "language":
+            if not isinstance(esp_model, LanguageModel):
+                return False, f"Model type mismatch: expected a language model, got {type(esp_model).__name__}"
             response = await esp_model.achat_complete(
                 messages=[{"role": "user", "content": "Hi!"}]
             )
+            if not isinstance(response, ChatCompletion):
+                # Non-streaming call; a streaming response would be a bug upstream.
+                return True, "Connection successful (streaming response)"
             text = response.content[:100] if response.content else "(empty response)"
             return True, f"Response: {text}"
 
         elif model.type == "embedding":
+            if not isinstance(esp_model, EmbeddingModel):
+                return False, f"Model type mismatch: expected an embedding model, got {type(esp_model).__name__}"
             result = await esp_model.aembed(["This is a test."])
             if result and len(result) > 0:
                 dims = len(result[0])
@@ -416,6 +430,8 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return True, "Embedding successful"
 
         elif model.type == "text_to_speech":
+            if not isinstance(esp_model, TextToSpeechModel):
+                return False, f"Model type mismatch: expected a text-to-speech model, got {type(esp_model).__name__}"
             # For ElevenLabs, look up first available voice (API uses voice_id, not name)
             voice = DEFAULT_TEST_VOICES.get(model.provider)
             if not voice and hasattr(esp_model, "available_voices"):
@@ -428,20 +444,26 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             if not voice:
                 voice = "alloy"  # fallback
 
-            result = await esp_model.agenerate_speech(
+            audio = await esp_model.agenerate_speech(
                 text="Hello from Open Notebook", voice=voice
             )
-            if result and hasattr(result, "content"):
-                size = len(result.content)
+            if audio and hasattr(audio, "content"):
+                size = len(audio.content)
                 return True, f"Audio generated: {size} bytes"
             return True, "Speech generation successful"
 
         elif model.type == "speech_to_text":
+            if not isinstance(esp_model, SpeechToTextModel):
+                return False, f"Model type mismatch: expected a speech-to-text model, got {type(esp_model).__name__}"
             audio_file = _get_test_audio()
-            result = await esp_model.atranscribe(
+            transcription = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
             )
-            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
+            text = (
+                str(transcription.text).strip()
+                if hasattr(transcription, "text")
+                else str(transcription).strip()
+            )
             if not text:
                 return True, "Connection successful (test clip produced no transcription)"
             return True, f"Transcription: {text[:100]}"

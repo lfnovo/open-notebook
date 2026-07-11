@@ -308,7 +308,11 @@ async def delete_credential(
                             "UPDATE $model_id SET credential = $target_id",
                             {
                                 "model_id": ensure_record_id(model_id),
-                                "target_id": ensure_record_id(target_cred.id),
+                                # A fetched credential always has an id; fall
+                                # back to the requested id for the type checker.
+                                "target_id": ensure_record_id(
+                                    target_cred.id or migrate_to
+                                ),
                             },
                         )
             elif linked:

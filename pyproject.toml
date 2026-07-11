@@ -92,17 +92,6 @@ ignore = [
     "F841",  # local variable assigned but never used
 ]
 
-[tool.ruff.lint.per-file-ignores]
-# Streamlit files need nest_asyncio.apply() before imports
-"app_home.py" = ["E402"]
-"pages/**/*.py" = ["E402"]
-
-[tool.mypy]
-# Exclude Streamlit UI pages from type checking
-[[tool.mypy.overrides]]
-module = "pages.*"
-ignore_errors = true
-
 [tool.uv]
 # Pillow < 12.2.0 has open security advisories (PSD OOB write, FITS
 # decompression bomb, PDF trailer DoS). The only thing holding it back is

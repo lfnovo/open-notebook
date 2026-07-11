@@ -164,7 +164,7 @@ Access API directly: `http://localhost:5056/docs`
 services:
   surrealdb:
     ports:
-      - "8001:8000"  # Change from 8000 to 8001
+      - "127.0.0.1:8001:8000"  # Change from 8000 to 8001 (localhost only)
     environment:
       - SURREAL_URL=ws://surrealdb:8001/rpc  # Update connection URL
 ```

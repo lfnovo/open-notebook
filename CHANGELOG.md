@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Setup snippets no longer teach publishing SurrealDB on `0.0.0.0` — the compose and `docker run` examples across the README, quick starts, installation, configuration and development docs, and the `examples/docker-compose-*.yml` files now bind port 8000 to `127.0.0.1` (matching the shipped `docker-compose.yml`), with docs pointing to `docker-compose.override.yml.example` for opt-in remote access behind a firewall or SSH tunnel; the override example itself gained the `!override` tag it needs to actually replace the base port binding instead of colliding with it (#1034)
+
 ### Added
 - Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
 

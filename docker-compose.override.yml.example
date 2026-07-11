@@ -14,5 +14,8 @@
 
 services:
   surrealdb:
-    ports:
+    # `!override` replaces the base file's port list instead of merging with
+    # it — without it, compose keeps both entries and the container fails to
+    # start with "port is already allocated".
+    ports: !override
       - "8000:8000"

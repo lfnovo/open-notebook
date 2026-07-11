@@ -34,7 +34,13 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
     ports:
-      - "8000:8000"
+      # Localhost only: Open Notebook reaches the database over the internal
+      # compose network, so this host port exists purely for local debugging.
+      # The database uses default root credentials, so never publish it on
+      # 0.0.0.0. To reach it from another machine, use the opt-in override in
+      # docker-compose.override.yml.example (repo root) behind a firewall or
+      # SSH tunnel, with real SURREAL_USER / SURREAL_PASSWORD set.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

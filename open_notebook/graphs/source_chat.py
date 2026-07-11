@@ -15,7 +15,7 @@ from open_notebook.config import LANGGRAPH_CHECKPOINT_FILE
 from open_notebook.domain.notebook import Source, SourceInsight
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.utils import clean_thinking_content
-from open_notebook.utils.context_builder import ContextBuilder
+from open_notebook.utils.context_builder import build_source_context
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
 
@@ -37,7 +37,7 @@ def call_model_with_source_context(
     Main function that builds source context and calls the model.
 
     This function:
-    1. Uses ContextBuilder to build source-specific context
+    1. Uses build_source_context to build source-specific context
     2. Applies the source_chat Jinja2 prompt template
     3. Handles model provisioning with override support
     4. Tracks context indicators for referenced insights/content
@@ -58,19 +58,18 @@ def _call_model_with_source_context_inner(
     if not source_id:
         raise ValueError("source_id is required in state")
 
-    # Build source context using ContextBuilder (run async code in new loop)
+    # Build source context using build_source_context (run async code in new loop)
     def build_context():
         """Build context in a new event loop"""
         new_loop = asyncio.new_event_loop()
         try:
             asyncio.set_event_loop(new_loop)
-            context_builder = ContextBuilder(
-                source_id=source_id,
-                include_insights=True,
-                include_notes=False,  # Focus on source-specific content
-                max_tokens=50000,  # Reasonable limit for source context
+            return new_loop.run_until_complete(
+                build_source_context(
+                    source_id=source_id,
+                    max_tokens=50000,  # Reasonable limit for source context
+                )
             )
-            return new_loop.run_until_complete(context_builder.build())
         finally:
             new_loop.close()
             asyncio.set_event_loop(None)
@@ -192,7 +191,7 @@ def _format_source_context(context_data: Dict) -> str:
     Format the context data into a readable string for the prompt.
 
     Args:
-        context_data: Context data from ContextBuilder
+        context_data: Context data from build_source_context
 
     Returns:
         Formatted context string

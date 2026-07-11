@@ -386,30 +386,6 @@ class SourceListResponse(BaseModel):
     processing_info: Optional[Dict[str, Any]] = None
 
 
-# Context API models
-class ContextConfig(BaseModel):
-    sources: Dict[str, str] = Field(
-        default_factory=dict, description="Source inclusion config {source_id: level}"
-    )
-    notes: Dict[str, str] = Field(
-        default_factory=dict, description="Note inclusion config {note_id: level}"
-    )
-
-
-class ContextRequest(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID to get context for")
-    context_config: Optional[ContextConfig] = Field(
-        None, description="Context configuration"
-    )
-
-
-class ContextResponse(BaseModel):
-    notebook_id: str
-    sources: List[Dict[str, Any]] = Field(..., description="Source context data")
-    notes: List[Dict[str, Any]] = Field(..., description="Note context data")
-    total_tokens: Optional[int] = Field(None, description="Estimated token count")
-
-
 # Insights API models
 class SourceInsightResponse(BaseModel):
     id: str

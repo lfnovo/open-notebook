@@ -12,21 +12,16 @@ from api.routers._chat_shared import (
     SuccessResponse,
     extract_chat_messages,
     get_session_or_404,
-    normalize_record_id,
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
-from open_notebook.domain.notebook import (
-    ChatSession,
-    Note,
-    Notebook,
-    Source,
-    SourceInsight,
-)
+from open_notebook.domain.notebook import ChatSession, Notebook
 from open_notebook.exceptions import (
     NotFoundError,
     OpenNotebookError,
 )
 from open_notebook.graphs.chat import graph as chat_graph
+from open_notebook.utils import token_count
+from open_notebook.utils.context_builder import build_notebook_context
 from open_notebook.utils.graph_utils import get_session_message_count
 
 router = APIRouter()
@@ -402,100 +397,12 @@ async def build_context(request: BuildContextRequest):
         if not notebook:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
-        context_data: dict[str, list[dict[str, str]]] = {"sources": [], "notes": []}
-        total_content = ""
+        context_data, total_content = await build_notebook_context(
+            notebook, request.context_config
+        )
 
-        # Process context configuration if provided
-        if request.context_config:
-            # Process sources
-            for source_id, status in request.context_config.get("sources", {}).items():
-                if "not in" in status:
-                    continue
-
-                try:
-                    # Add table prefix if not present
-                    full_source_id = normalize_record_id("source", source_id)
-
-                    try:
-                        source = await Source.get(full_source_id)
-                    except Exception:
-                        continue
-
-                    if "insights" in status:
-                        source_context = await source.get_context(context_size="short")
-                        context_data["sources"].append(source_context)
-                        total_content += str(source_context)
-                    elif "full content" in status:
-                        source_context = await source.get_context(context_size="long")
-                        context_data["sources"].append(source_context)
-                        total_content += str(source_context)
-                except Exception as e:
-                    logger.warning(f"Error processing source {source_id}: {str(e)}")
-                    continue
-
-            # Process notes
-            for note_id, status in request.context_config.get("notes", {}).items():
-                if "not in" in status:
-                    continue
-
-                try:
-                    # Add table prefix if not present
-                    full_note_id = normalize_record_id("note", note_id)
-                    note = await Note.get(full_note_id)
-                    if not note:
-                        continue
-
-                    if "full content" in status:
-                        note_context = note.get_context(context_size="long")
-                        context_data["notes"].append(note_context)
-                        total_content += str(note_context)
-                except Exception as e:
-                    logger.warning(f"Error processing note {note_id}: {str(e)}")
-                    continue
-        else:
-            # Default behavior - include all sources and notes with short context
-            sources = await notebook.get_sources()
-            try:
-                insights_by_source = await SourceInsight.get_for_sources(
-                    [source.id for source in sources if source.id]
-                )
-            except Exception as e:
-                # Match the per-source fallback below: a hiccup fetching
-                # insights shouldn't fail the whole context request.
-                logger.warning(f"Error batch-fetching source insights: {str(e)}")
-                insights_by_source = {}
-            for source in sources:
-                try:
-                    source_context = await source.get_context(
-                        context_size="short",
-                        insights=insights_by_source.get(source.id or "", []),
-                    )
-                    context_data["sources"].append(source_context)
-                    total_content += str(source_context)
-                except Exception as e:
-                    logger.warning(f"Error processing source {source.id}: {str(e)}")
-                    continue
-
-            notes = await notebook.get_notes()
-            for note in notes:
-                try:
-                    note_context = note.get_context(context_size="short")
-                    context_data["notes"].append(note_context)
-                    total_content += str(note_context)
-                except Exception as e:
-                    logger.warning(f"Error processing note {note.id}: {str(e)}")
-                    continue
-
-        # Calculate character and token counts
         char_count = len(total_content)
-        # Use token count utility if available
-        try:
-            from open_notebook.utils import token_count
-
-            estimated_tokens = token_count(total_content) if total_content else 0
-        except ImportError:
-            # Fallback to simple estimation
-            estimated_tokens = char_count // 4
+        estimated_tokens = token_count(total_content) if total_content else 0
 
         return BuildContextResponse(
             context=context_data, token_count=estimated_tokens, char_count=char_count

@@ -47,7 +47,6 @@ CASES = [
     ("notes", "api.routers.notes.Note.get_all", "GET", "/api/notes", None),
     ("models", "api.routers.models.Model.get_all", "GET", "/api/models", None),
     ("commands", "api.routers.commands.CommandService.get_command_status", "GET", "/api/commands/jobs/command:abc", None),
-    ("context", "api.routers.context.Notebook.get", "POST", "/api/notebooks/notebook:1/context", {"notebook_id": "notebook:1"}),
     ("credentials", "api.routers.credentials.Credential.get_all", "GET", "/api/credentials", None),
     ("embedding", "api.routers.embedding.model_manager.get_embedding_model", "POST", "/api/embed", {"item_id": "source:1", "item_type": "source"}),
     ("embedding_rebuild", "api.routers.embedding_rebuild.repo_query", "POST", "/api/embeddings/rebuild", {"mode": "existing"}),

@@ -67,9 +67,7 @@ _LANGUAGE_ONLY = ("language",)
 _ALL_MODALITIES = ("language", "embedding", "speech_to_text", "text_to_speech")
 
 
-PROVIDERS: Dict[str, ProviderSpec] = {
-    spec.name: spec
-    for spec in (
+_PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ProviderSpec(
             name="openai",
             display_name="OpenAI",
@@ -227,5 +225,23 @@ PROVIDERS: Dict[str, ProviderSpec] = {
             test_model=None,  # Dynamic - uses first available model
             docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md",
         ),
-    )
-}
+)
+
+
+def _build_registry(specs: Tuple[ProviderSpec, ...]) -> Dict[str, ProviderSpec]:
+    """Build the name -> spec map, refusing duplicate names at import time.
+
+    A plain dict comprehension would silently drop the earlier spec on a
+    name collision; fail loudly instead.
+    """
+    registry: Dict[str, ProviderSpec] = {}
+    for spec in specs:
+        if spec.name in registry:
+            raise ValueError(
+                f"Duplicate provider name in registry: {spec.name!r}"
+            )
+        registry[spec.name] = spec
+    return registry
+
+
+PROVIDERS: Dict[str, ProviderSpec] = _build_registry(_PROVIDER_SPECS)

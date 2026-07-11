@@ -76,6 +76,46 @@ class TestProviderRegistryIsTheSourceOfTruth:
 
         assert set(PROVIDER_DISCOVERY_FUNCTIONS.keys()) == set(PROVIDERS.keys())
 
+    def test_registry_rejects_duplicate_provider_names(self):
+        """A plain dict comprehension would silently drop the earlier spec
+        on a name collision; the registry builder must raise instead."""
+        from open_notebook.ai.provider_registry import (
+            ProviderSpec,
+            _build_registry,
+        )
+
+        duplicate = (
+            ProviderSpec(name="dupe", display_name="Dupe A", modalities=("language",)),
+            ProviderSpec(name="dupe", display_name="Dupe B", modalities=("language",)),
+        )
+        with pytest.raises(ValueError, match="Duplicate provider name"):
+            _build_registry(duplicate)
+
+    def test_openai_compat_discovery_urls_are_exactly_as_expected(self):
+        """Pin the derived provider -> discovery URL mapping so a registry
+        edit can't silently drop or misassign a URL (both the model_discovery
+        table and the credentials_service url_map are built from these)."""
+        from open_notebook.ai.model_discovery import OPENAI_COMPAT_PROVIDERS
+
+        expected = {
+            "openai": "https://api.openai.com/v1/models",
+            "groq": "https://api.groq.com/openai/v1/models",
+            "mistral": "https://api.mistral.ai/v1/models",
+            "deepseek": "https://api.deepseek.com/models",
+            "xai": "https://api.x.ai/v1/models",
+            "openrouter": "https://openrouter.ai/api/v1/models",
+            "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
+            "minimax": "https://api.minimax.io/v1/models",
+        }
+        assert {
+            name: spec.openai_compat_discovery_url
+            for name, spec in PROVIDERS.items()
+            if spec.openai_compat_discovery_url
+        } == expected
+        assert {
+            name: spec.url for name, spec in OPENAI_COMPAT_PROVIDERS.items()
+        } == expected
+
 
 class TestSupportedProviderMatchesOtherSourcesOfTruth:
     def test_matches_known_good_provider_list(self):

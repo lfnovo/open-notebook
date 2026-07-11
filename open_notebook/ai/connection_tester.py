@@ -9,7 +9,7 @@ import io
 import json
 import os
 import struct
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import httpx
 from loguru import logger
@@ -59,7 +59,7 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
 # its own. The provider test also no longer treats a model-level failure as
 # a connection failure (see `_connection_failure_reason`), so even if an
 # alias ever breaks, the test still reports the credentials correctly.
-TEST_MODELS: dict = {
+TEST_MODELS: Dict[str, Tuple[Optional[str], str]] = {
     name: (spec.test_model, spec.test_model_type) for name, spec in PROVIDERS.items()
 }
 

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Pruned unused langchain packages: removed `langchain-community` and `langchain-deepseek` from the dependencies (nothing imports them — DeepSeek and xAI route through esperanto's OpenAI-compatible path, which uses `langchain-openai`). The remaining `langchain-*` provider packages are documented as runtime requirements of esperanto's dynamic `to_langchain()` and the whole langchain/langgraph family now carries explicit upper bounds; `langchain-core` and `langchain-text-splitters` (both directly imported but previously only transitive) are now declared explicitly
 - The two Docker images (regular and single-container) are now built from a single multi-stage `Dockerfile` with shared stages — regular is the default (`runtime`) target, single-container is `--target single` — so deploy fixes (tiktoken pre-cache, env defaults, npm retry logic) no longer have to be applied twice. `Dockerfile.single` and `supervisord.single.conf` were removed; the single image appends a small `supervisord.surrealdb.conf` to the shared `supervisord.conf` at build time. Published image names and tags are unchanged
 
 ### Added

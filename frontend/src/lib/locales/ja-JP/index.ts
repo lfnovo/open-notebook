@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const jaJP = {
   common: {
     search: "検索...",
@@ -946,4 +948,4 @@ export const jaJP = {
     goToSettings: "設定へ移動",
     viewDocs: "ドキュメントを見る",
   },
-}
+} satisfies TranslationShape;

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Re-enabled the ruff rules for unused imports (`F401`), unused local variables (`F841`) and bare `except:` (`E722`) that were ignored to silence legacy Streamlit-era noise, and cleaned up the remaining fallout (10 unused imports, 2 unused test variables; no bare excepts remained)
 - Chat, source chat, Ask and transformation prompts now steer models to write math as `$$...$$` (display) / `$...$` (inline) so formulas render via KaTeX, reserving fenced `latex` code blocks for when the user explicitly asks for the LaTeX source (#1051)
+- Frontend locale files are now type-checked at compile time: every non-en-US locale declares `satisfies TranslationShape` (derived from the en-US object), so a missing or extra i18n key fails `tsc` in the editor instead of only the runtime parity test. Also removed two unused frontend dependencies (`next-themes`, `@monaco-editor/react`) and fixed `frontend/AGENTS.md` drift (14 locales, not 7; dark mode is the hand-rolled zustand theme-store, not next-themes)
 
 ### Removed
 - Dead Streamlit-era service layer (~2,000 lines): `api/client.py` (a synchronous HTTP client that called the app's own API) and 13 `api/*_service.py` wrappers that consumed the app's own HTTP API — none were imported by any router, command or test. Also removed the toy `process_text`/`analyze_data` demo commands (`commands/example_commands.py`) from the background worker

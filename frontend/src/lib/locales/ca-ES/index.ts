@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const caES = {
   common: {
     search: "Cerca...",
@@ -946,4 +948,4 @@ export const caES = {
     goToSettings: "Ves a la configuració",
     viewDocs: "Visualitza la documentació",
   },
-}
+} satisfies TranslationShape;

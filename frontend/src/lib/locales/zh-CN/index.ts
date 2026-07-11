@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const zhCN = {
   common: {
     search: "搜索...",
@@ -946,4 +948,4 @@ export const zhCN = {
     goToSettings: "前往设置",
     viewDocs: "查看文档",
   },
-}
+} satisfies TranslationShape;

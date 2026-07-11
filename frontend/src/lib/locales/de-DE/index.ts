@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 // German locale.
 // Translate values only; do not change keys, placeholders or structure.
 
@@ -949,4 +951,4 @@ export const deDE = {
     goToSettings: "Zu den Einstellungen",
     viewDocs: "Dokumentation anzeigen",
   },
-}
+} satisfies TranslationShape;

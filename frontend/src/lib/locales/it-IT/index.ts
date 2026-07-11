@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const itIT = {
   common: {
     search: "Cerca...",
@@ -946,4 +948,4 @@ export const itIT = {
     goToSettings: "Vai alle Impostazioni",
     viewDocs: "Vedi documentazione",
   },
-}
+} satisfies TranslationShape;

@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const ruRU = {
   common: {
     search: "Поиск...",
@@ -946,4 +948,4 @@ export const ruRU = {
     goToSettings: "Перейти к настройкам",
     viewDocs: "Документация",
   },
-}
+} satisfies TranslationShape;

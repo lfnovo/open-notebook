@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The two Docker images (regular and single-container) are now built from a single multi-stage `Dockerfile` with shared stages — regular is the default (`runtime`) target, single-container is `--target single` — so deploy fixes (tiktoken pre-cache, env defaults, npm retry logic) no longer have to be applied twice. `Dockerfile.single` and `supervisord.single.conf` were removed; the single image appends a small `supervisord.surrealdb.conf` to the shared `supervisord.conf` at build time. Published image names and tags are unchanged
+
 ### Added
 - Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
 

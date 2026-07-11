@@ -126,6 +126,13 @@ class TestUrlValidation:
         await validate_url("http://192.168.1.1:8080", "openai_compatible")
         # Should not raise
 
+    async def test_omlx_urls(self):
+        """oMLX (local OpenAI-compatible) URLs should be validated."""
+        await validate_url("http://localhost:11435/v1", "omlx")
+        await validate_url("http://127.0.0.1:11435/v1", "omlx")
+        await validate_url("http://host.docker.internal:11435/v1", "omlx")
+        # Should not raise
+
     async def test_ipv4_mapped_ipv6_link_local_rejected(self):
         """IPv4-mapped IPv6 addresses pointing to link-local should be rejected."""
         with pytest.raises(ValueError, match="Link-local addresses"):

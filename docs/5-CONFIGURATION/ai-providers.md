@@ -403,6 +403,27 @@ CPU-only:
 
 ---
 
+### oMLX (Apple Silicon)
+
+**Cost:** Free (electricity only)
+
+**Requirements:** Apple Silicon Mac; macOS 15+ recommended.
+
+**Setup oMLX:**
+1. Install from [omlx.ai](https://omlx.ai/) / [Releases](https://github.com/jundot/omlx/releases) or Homebrew
+2. Run on a non-conflicting port (SurrealDB uses **8000**): `OMLX_PORT=11435 omlx serve`
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential** → select **oMLX**
+3. Base URL: `http://localhost:11435/v1` (include `/v1`)
+4. Optional API key if oMLX was started with `--api-key`
+5. **Save** → **Test Connection** → **Discover Models**
+
+See [oMLX Setup Guide](omlx.md) for port conflict details and Docker networking.
+
+---
+
 ### LM Studio (Local Alternative)
 
 **Cost:** Free
@@ -544,6 +565,7 @@ If you are migrating from an older version that used environment variables, go t
 - **[Environment Reference](environment-reference.md)** - Complete list of all environment variables
 - **[Advanced Configuration](advanced.md)** - Timeouts, SSL, performance tuning
 - **[Ollama Setup](ollama.md)** - Detailed Ollama configuration guide
+- **[oMLX Setup](omlx.md)** - Apple Silicon MLX server setup
 - **[OpenAI-Compatible](openai-compatible.md)** - LM Studio and other compatible providers
 - **[Local TTS Setup](local-tts.md)** - Text-to-speech with Speaches
 - **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches

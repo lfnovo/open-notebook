@@ -102,6 +102,7 @@ Navigation: Settings → API Keys
 | Provider | Required Fields | Notes |
 |----------|-----------------|-------|
 | Ollama | Base URL | Typically `http://localhost:11434` or `http://ollama:11434` |
+| oMLX | Base URL | Typically `http://localhost:11435/v1` (avoid port 8000 — SurrealDB) |
 
 ### Enterprise
 
@@ -205,6 +206,16 @@ For OpenAI, Anthropic, Google, Groq, Mistral, DeepSeek, xAI, OpenRouter:
 4. Discover and register models
 
 Ollama allows localhost and private IPs since it runs locally.
+
+### oMLX (URL-Based, Apple Silicon)
+
+1. Add credential with provider **oMLX**
+2. Enter the base URL ending in `/v1` (e.g., `http://localhost:11435/v1`)
+3. Optionally enter an API key if oMLX was started with `--api-key`
+4. Test connection
+5. Discover and register models
+
+> **Port conflict:** oMLX defaults to port 8000, same as SurrealDB. Prefer `OMLX_PORT=11435`. See [oMLX Setup](../5-CONFIGURATION/omlx.md).
 
 ### Azure OpenAI
 
@@ -371,6 +382,11 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 - No API key required
 - Default URL: `http://localhost:11434` (local) or `http://ollama:11434` (Docker)
 - Ensure Ollama server is running
+
+### oMLX
+- API key optional (only if started with `--api-key`)
+- Recommended URL: `http://localhost:11435/v1` (avoid port 8000 — SurrealDB conflict)
+- See [oMLX Setup](../5-CONFIGURATION/omlx.md)
 
 ### Azure OpenAI
 - Enter your Azure endpoint in the **URL Base** field (format: `https://{resource-name}.openai.azure.com`)

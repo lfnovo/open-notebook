@@ -74,6 +74,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   elevenlabs: 'ElevenLabs',
   deepgram: 'Deepgram',
   ollama: 'Ollama',
+  omlx: 'oMLX',
   azure: 'Azure OpenAI',
   vertex: 'Google Vertex AI',
   openai_compatible: 'OpenAI Compatible',
@@ -85,7 +86,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 const ALL_PROVIDERS = [
   'openai', 'anthropic', 'google', 'groq', 'mistral', 'deepseek',
   'xai', 'openrouter', 'dashscope', 'minimax', 'voyage', 'elevenlabs', 'deepgram', 'ollama',
-  'azure', 'vertex', 'openai_compatible',
+  'omlx', 'azure', 'vertex', 'openai_compatible',
 ]
 
 // Default modalities per provider
@@ -102,6 +103,7 @@ const PROVIDER_MODALITIES: Record<string, ModelType[]> = {
   elevenlabs: ['text_to_speech', 'speech_to_text'],
   deepgram: ['text_to_speech'],
   ollama: ['language', 'embedding'],
+  omlx: ['language', 'embedding'],
   azure: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
   vertex: ['language', 'embedding', 'text_to_speech'],
   openai_compatible: ['language', 'embedding', 'text_to_speech', 'speech_to_text'],
@@ -122,6 +124,8 @@ const PROVIDER_DOCS: Record<string, string> = {
   voyage: 'https://dash.voyageai.com/api-keys',
   elevenlabs: 'https://elevenlabs.io/app/settings/api-keys',
   deepgram: 'https://console.deepgram.com/',
+  ollama: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ollama.md',
+  omlx: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/omlx.md',
   azure: 'https://portal.azure.com/#view/Microsoft_Azure_ProjectOxford/CognitiveServicesHub/~/OpenAI',
   vertex: 'https://cloud.google.com/vertex-ai/docs/start/cloud-environment',
   openai_compatible: 'https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md',
@@ -175,8 +179,9 @@ function CredentialFormDialog({
 
   const isVertex = provider === 'vertex'
   const isOllama = provider === 'ollama'
+  const isOmlx = provider === 'omlx'
   const isOpenAICompatible = provider === 'openai_compatible'
-  const requiresApiKey = !isVertex && !isOllama && !isOpenAICompatible
+  const requiresApiKey = !isVertex && !isOllama && !isOmlx && !isOpenAICompatible
 
   const [name, setName] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -373,7 +378,13 @@ function CredentialFormDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder={isOllama ? 'http://localhost:11434' : 'https://api.example.com/v1'}
+                placeholder={
+                  isOllama
+                    ? 'http://localhost:11434'
+                    : isOmlx
+                      ? 'http://localhost:11435/v1'
+                      : 'https://api.example.com/v1'
+                }
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">{t('apiKeys.baseUrlOverrideHint')}</p>

@@ -17,7 +17,7 @@ from open_notebook.utils.url_validation import validate_url
 ModelType = Union[LanguageModel, EmbeddingModel, SpeechToTextModel, TextToSpeechModel]
 
 # Config keys from Credential.to_esperanto_config() that may carry a
-# user-configured URL (ollama/azure/openai_compatible/vertex).
+# user-configured URL (ollama/omlx/azure/openai_compatible/vertex).
 _URL_CONFIG_KEYS = (
     "base_url",
     "endpoint",
@@ -26,6 +26,20 @@ _URL_CONFIG_KEYS = (
     "endpoint_stt",
     "endpoint_tts",
 )
+
+
+def to_esperanto_provider(provider: str) -> str:
+    """
+    Normalize a stored provider name for Esperanto's AIFactory.
+
+    DB/UI use underscores (openai_compatible) and first-class aliases
+    (omlx) that Esperanto does not know natively. Esperanto expects
+    hyphenated names and openai-compatible for OpenAI API servers.
+    """
+    normalized = provider.replace("_", "-")
+    if normalized == "omlx":
+        return "openai-compatible"
+    return normalized
 
 
 async def _revalidate_config_urls(config: dict, provider: str) -> None:
@@ -178,8 +192,8 @@ class ModelManager:
         # Merge any additional kwargs (e.g. temperature)
         config.update(kwargs)
 
-        # Normalize provider name: DB stores underscores but Esperanto expects hyphens
-        provider = model.provider.replace("_", "-")
+        # Normalize for Esperanto (underscores→hyphens; omlx→openai-compatible)
+        provider = to_esperanto_provider(model.provider)
 
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":

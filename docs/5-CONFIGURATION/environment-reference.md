@@ -280,6 +280,8 @@ If you have these variables configured from a previous installation, click the *
 | `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
 | `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
 | `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
+| `OMLX_API_BASE` | oMLX | Settings → API Keys → Add oMLX Credential |
+| `OMLX_API_KEY` | oMLX | Optional; only if oMLX started with `--api-key` |
 | `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |
 | `OPENROUTER_BASE_URL` | OpenRouter | Configure in OpenRouter credential |
 | `VOYAGE_API_KEY` | Voyage AI | Settings → API Keys → Add Voyage AI Credential |

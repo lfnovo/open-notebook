@@ -280,5 +280,53 @@ class TestAudioMatrixWiring:
         assert TEST_MODELS["vertex"] == ("gemini-flash-latest", "language")
 
 
+class TestOmlxProviderWiring:
+    """First-class oMLX provider (maps to Esperanto openai-compatible)."""
+
+    def test_modalities_and_env_config(self):
+        from api.credentials_service import PROVIDER_ENV_CONFIG, PROVIDER_MODALITIES
+        from open_notebook.ai.connection_tester import TEST_MODELS
+
+        assert PROVIDER_MODALITIES["omlx"] == ["language", "embedding"]
+        assert PROVIDER_ENV_CONFIG["omlx"]["required"] == ["OMLX_API_BASE"]
+        assert "OMLX_API_KEY" in PROVIDER_ENV_CONFIG["omlx"]["optional"]
+        assert TEST_MODELS["omlx"] == (None, "language")
+
+    def test_create_credential_from_env(self, monkeypatch):
+        from api.credentials_service import create_credential_from_env
+
+        monkeypatch.setenv("OMLX_API_BASE", "http://localhost:11435/v1")
+        monkeypatch.setenv("OMLX_API_KEY", "test-key")
+        cred = create_credential_from_env("omlx")
+        assert cred.provider == "omlx"
+        assert cred.base_url == "http://localhost:11435/v1"
+        assert cred.api_key is not None
+        assert cred.api_key.get_secret_value() == "test-key"
+        assert set(cred.modalities) == {"language", "embedding"}
+
+    def test_create_credential_from_env_without_api_key(self, monkeypatch):
+        from api.credentials_service import create_credential_from_env
+
+        monkeypatch.setenv("OMLX_API_BASE", "http://localhost:11435/v1")
+        monkeypatch.delenv("OMLX_API_KEY", raising=False)
+        cred = create_credential_from_env("omlx")
+        assert cred.api_key is None
+        assert cred.base_url == "http://localhost:11435/v1"
+
+    def test_classify_embedding_models(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("bge-m3", "omlx") == "embedding"
+        assert classify_model_type("nomic-embed-text", "omlx") == "embedding"
+        assert classify_model_type("llama-3.2-3b", "omlx") == "language"
+
+    def test_esperanto_provider_remap(self):
+        from open_notebook.ai.models import to_esperanto_provider
+
+        assert to_esperanto_provider("omlx") == "openai-compatible"
+        assert to_esperanto_provider("openai_compatible") == "openai-compatible"
+        assert to_esperanto_provider("ollama") == "ollama"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

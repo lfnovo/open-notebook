@@ -101,6 +101,20 @@ OLLAMA_MODEL_TYPES = {
     "embedding": ["nomic-embed", "mxbai-embed", "all-minilm", "bge-", "e5-"],
 }
 
+# oMLX serves MLX models over an OpenAI-compatible API; embedding names often
+# include bge-/embed markers similar to Ollama local models.
+OMLX_MODEL_TYPES = {
+    "embedding": [
+        "nomic-embed",
+        "mxbai-embed",
+        "all-minilm",
+        "bge-",
+        "e5-",
+        "embed",
+        "embedding",
+    ],
+}
+
 MISTRAL_MODEL_TYPES = {
     "language": [
         "mistral",
@@ -166,6 +180,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "openai": OPENAI_MODEL_TYPES,
         "google": GOOGLE_MODEL_TYPES,
         "ollama": OLLAMA_MODEL_TYPES,
+        "omlx": OMLX_MODEL_TYPES,
         "mistral": MISTRAL_MODEL_TYPES,
         "groq": GROQ_MODEL_TYPES,
         "deepseek": DEEPSEEK_MODEL_TYPES,
@@ -320,6 +335,72 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
                     )
     except Exception as e:
         logger.warning(f"Failed to discover Ollama models: {e}")
+
+    return models
+
+
+async def discover_omlx_models() -> List[DiscoveredModel]:
+    """
+    Fetch available models from a local oMLX server (OpenAI-compatible /v1).
+
+    Default base URL is http://localhost:11435/v1 to avoid SurrealDB's port 8000.
+    """
+    api_key = None
+    base_url = None
+
+    try:
+        credentials = await Credential.get_by_provider("omlx")
+        if credentials:
+            cred = credentials[0]
+            config = cred.to_esperanto_config()
+            api_key = config.get("api_key")
+            base_url = config.get("base_url", "").rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read omlx config from Credential: {e}")
+
+    if not api_key:
+        api_key = os.environ.get("OMLX_API_KEY")
+    if not base_url:
+        base_url = os.environ.get(
+            "OMLX_API_BASE", "http://localhost:11435/v1"
+        ).rstrip("/")
+
+    if not base_url:
+        logger.warning("No base_url configured for omlx provider")
+        return []
+
+    models = []
+    try:
+        async with httpx.AsyncClient() as client:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+
+            response = await client.get(
+                f"{base_url}/models",
+                headers=headers,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "omlx")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="omlx",
+                            model_type=model_type,
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(
+            f"Failed to discover omlx models: HTTP {e.response.status_code}"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to discover omlx models: {e}")
 
     return models
 
@@ -721,6 +802,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "anthropic": discover_anthropic_models,
     "google": discover_google_models,
     "ollama": discover_ollama_models,
+    "omlx": discover_omlx_models,
     "groq": discover_groq_models,
     "mistral": discover_mistral_models,
     "deepseek": discover_deepseek_models,

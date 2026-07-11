@@ -41,6 +41,10 @@ PROVIDER_ENV_CONFIG: Dict[str, dict] = {
     "elevenlabs": {"required": ["ELEVENLABS_API_KEY"]},
     "deepgram": {"required": ["DEEPGRAM_API_KEY"]},
     "ollama": {"required": ["OLLAMA_API_BASE"]},
+    "omlx": {
+        "required": ["OMLX_API_BASE"],
+        "optional": ["OMLX_API_KEY"],
+    },
     "vertex": {
         "required": ["VERTEX_PROJECT", "VERTEX_LOCATION"],
         "optional": ["GOOGLE_APPLICATION_CREDENTIALS"],
@@ -74,6 +78,7 @@ PROVIDER_MODALITIES: Dict[str, List[str]] = {
     "elevenlabs": ["text_to_speech", "speech_to_text"],
     "deepgram": ["text_to_speech"],
     "ollama": ["language", "embedding"],
+    "omlx": ["language", "embedding"],
     "vertex": ["language", "embedding", "text_to_speech"],
     "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
     "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
@@ -151,6 +156,15 @@ def create_credential_from_env(provider: str) -> Credential:
             provider=provider,
             modalities=modalities,
             base_url=os.environ.get("OLLAMA_API_BASE"),
+        )
+    elif provider == "omlx":
+        api_key = os.environ.get("OMLX_API_KEY")
+        return Credential(
+            name=name,
+            provider=provider,
+            modalities=modalities,
+            api_key=SecretStr(api_key) if api_key else None,
+            base_url=os.environ.get("OMLX_API_BASE"),
         )
     elif provider == "vertex":
         return Credential(
@@ -280,8 +294,11 @@ async def test_credential(credential_id: str) -> dict:
             success, message = await _test_ollama_connection(base_url)
             return {"provider": provider, "success": success, "message": message}
 
-        if provider == "openai_compatible":
-            base_url = config.get("base_url")
+        if provider in ("openai_compatible", "omlx"):
+            default_base = (
+                "http://localhost:11435/v1" if provider == "omlx" else None
+            )
+            base_url = config.get("base_url") or default_base
             api_key = config.get("api_key")
             if not base_url:
                 return {
@@ -412,7 +429,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     }
 
     if provider in STATIC_MODELS:
-        if not api_key and provider != "ollama":
+        if not api_key and provider not in ("ollama", "omlx"):
             return []
         return [
             {"name": m, "provider": provider}
@@ -455,12 +472,14 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             logger.warning(f"Failed to discover Ollama models: {e}")
             return []
 
-    if provider == "openai_compatible":
+    if provider in ("openai_compatible", "omlx"):
+        if provider == "omlx":
+            base_url = base_url or "http://localhost:11435/v1"
         if not base_url:
             return []
         try:
             # Re-validate at request time (see ollama branch above).
-            await validate_url(base_url, "openai_compatible")
+            await validate_url(base_url, provider)
             headers = {}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
@@ -473,12 +492,18 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 response.raise_for_status()
                 data = response.json()
                 return [
-                    {"name": m.get("id", ""), "provider": "openai_compatible"}
+                    {
+                        "name": m.get("id", ""),
+                        "provider": provider,
+                        "model_type": classify_model_type(
+                            m.get("id", ""), provider
+                        ),
+                    }
                     for m in data.get("data", [])
                     if m.get("id")
                 ]
         except Exception as e:
-            logger.warning(f"Failed to discover openai_compatible models: {e}")
+            logger.warning(f"Failed to discover {provider} models: {e}")
             return []
 
     if provider == "azure":

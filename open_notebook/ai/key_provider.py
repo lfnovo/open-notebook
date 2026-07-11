@@ -64,6 +64,10 @@ PROVIDER_CONFIG = {
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
     },
+    # oMLX: optional API key (when started with --api-key); base URL via OMLX_API_BASE
+    "omlx": {
+        "env_var": "OMLX_API_KEY",
+    },
     "dashscope": {
         "env_var": "DASHSCOPE_API_KEY",
     },
@@ -243,6 +247,34 @@ async def _provision_openai_compatible() -> bool:
     return any_set
 
 
+async def _provision_omlx() -> bool:
+    """
+    Set environment variables for oMLX from DB config.
+
+    oMLX speaks the OpenAI API, so we also mirror into OPENAI_COMPATIBLE_*
+    for Esperanto env-var fallback after provider remapping.
+    """
+    any_set = False
+
+    cred = await _get_default_credential("omlx")
+    if not cred:
+        return False
+
+    if cred.api_key:
+        key = cred.api_key.get_secret_value()
+        os.environ["OMLX_API_KEY"] = key
+        os.environ["OPENAI_COMPATIBLE_API_KEY"] = key
+        logger.debug("Set OMLX_API_KEY / OPENAI_COMPATIBLE_API_KEY from Credential")
+        any_set = True
+    if cred.base_url:
+        os.environ["OMLX_API_BASE"] = cred.base_url
+        os.environ["OPENAI_COMPATIBLE_BASE_URL"] = cred.base_url
+        logger.debug("Set OMLX_API_BASE / OPENAI_COMPATIBLE_BASE_URL from Credential")
+        any_set = True
+
+    return any_set
+
+
 async def provision_provider_keys(provider: str) -> bool:
     """
     Provision environment variables from database for a specific provider.
@@ -275,6 +307,8 @@ async def provision_provider_keys(provider: str) -> bool:
         return await _provision_azure()
     elif provider_lower in ("openai-compatible", "openai_compatible"):
         return await _provision_openai_compatible()
+    elif provider_lower == "omlx":
+        return await _provision_omlx()
 
     # Handle simple providers
     return await _provision_simple_provider(provider_lower)
@@ -303,5 +337,6 @@ async def provision_all_keys() -> dict[str, bool]:
     results["vertex"] = await provision_provider_keys("vertex")
     results["azure"] = await provision_provider_keys("azure")
     results["openai_compatible"] = await provision_provider_keys("openai_compatible")
+    results["omlx"] = await provision_provider_keys("omlx")
 
     return results

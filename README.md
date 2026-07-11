@@ -206,6 +206,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | Google (GenAI) | ✅          | ✅               | ✅             | ✅             |
 | Vertex AI    | ✅          | ✅               | ❌             | ✅             |
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
+| oMLX         | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
 | Deepgram     | ❌          | ❌               | ❌             | ✅             |
@@ -219,7 +220,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | MiniMax      | ✅          | ❌               | ❌             | ❌             |
 | OpenAI Compatible* | ✅          | ✅               | ✅             | ✅             |
 
-*Supports LM Studio and any OpenAI-compatible endpoint
+*Supports LM Studio, oMLX (prefer the native oMLX provider), and any OpenAI-compatible endpoint
 
 ## ✨ Key Features
 

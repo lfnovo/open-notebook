@@ -94,6 +94,7 @@ PROVIDER_PRIORITY = [
     "xai",
     "openrouter",
     "ollama",
+    "omlx",
     "azure",
     "openai_compatible",
     "dashscope",
@@ -383,6 +384,7 @@ async def get_provider_availability():
             "elevenlabs": "ELEVENLABS_API_KEY",
             "deepgram": "DEEPGRAM_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "omlx": "OMLX_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
         }
@@ -455,6 +457,16 @@ async def get_provider_availability():
                     ):
                         if has_db_cred or _check_openai_compatible_support(mode):
                             supported_types[provider].append(model_type)
+            # oMLX is first-class in Open Notebook but uses Esperanto's
+            # openai-compatible client under the hood (language + embedding).
+            elif provider == "omlx":
+                esperanto_name = "openai-compatible"
+                for model_type in ("language", "embedding"):
+                    if (
+                        model_type in esperanto_available
+                        and esperanto_name in esperanto_available[model_type]
+                    ):
+                        supported_types[provider].append(model_type)
             # Special handling for azure to check mode-specific availability
             elif provider == "azure":
                 has_db_cred = await _check_provider_has_credential("azure")

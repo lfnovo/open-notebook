@@ -29,8 +29,9 @@ Setup: Get API key → Add credential in Settings UI → Done
 
 ### Option 2: Local (Free & Private)
 - **Ollama** (open-source models, on your machine)
+- **oMLX** (Apple Silicon / MLX, OpenAI-compatible API)
 
-→ Go to **[Ollama Setup](ollama.md)**
+→ Go to **[Ollama Setup](ollama.md)** · **[oMLX Setup](omlx.md)**
 
 ### Option 3: OpenAI-Compatible
 - **LM Studio** (local)
@@ -102,6 +103,8 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 ```
 
 > **Ollama users**: Add an Ollama credential in Settings → API Keys with the correct base URL. See [Ollama Setup](ollama.md) for network configuration help.
+
+> **oMLX users (Apple Silicon)**: Add an oMLX credential with base URL `http://localhost:11435/v1` (avoid port 8000 — SurrealDB). See [oMLX Setup](omlx.md).
 
 > **LM Studio / OpenAI-Compatible**: Add an OpenAI-Compatible credential in Settings → API Keys. See [OpenAI-Compatible Guide](openai-compatible.md).
 
@@ -214,6 +217,10 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 - Setting up and pointing to an Ollama server
 - Downloading models
 - Using embedding
+
+### [oMLX](omlx.md)
+- Apple Silicon MLX server (OpenAI-compatible `/v1`)
+- Port conflict with SurrealDB (use `11435`)
 
 ### [OpenAI-Compatible Providers](openai-compatible.md)
 - LM Studio, vLLM, Text Generation WebUI

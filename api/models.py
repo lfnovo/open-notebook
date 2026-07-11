@@ -416,8 +416,10 @@ class SourceInsightResponse(BaseModel):
     source_id: str
     insight_type: str
     content: str
-    created: str
-    updated: str
+    # Optional: insights created before migration 19 have no timestamps,
+    # and the API must return null for them (never the string "None").
+    created: Optional[str] = None
+    updated: Optional[str] = None
 
 
 class InsightCreationResponse(BaseModel):

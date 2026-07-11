@@ -5,8 +5,9 @@ export interface SourceInsightResponse {
   source_id: string
   insight_type: string
   content: string
-  created: string
-  updated: string
+  // Insights created before backend migration 19 have no timestamps
+  created: string | null
+  updated: string | null
 }
 
 export interface CreateSourceInsightRequest {

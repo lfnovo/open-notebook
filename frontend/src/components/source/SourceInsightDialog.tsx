@@ -17,7 +17,7 @@ interface SourceInsightDialogProps {
     id: string
     insight_type?: string
     content?: string
-    created?: string
+    created?: string | null
     source_id?: string
   }
   onDelete?: (insightId: string) => Promise<void>

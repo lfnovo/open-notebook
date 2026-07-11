@@ -13,7 +13,11 @@ from api.models import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
-from open_notebook.exceptions import InvalidInputError, NotFoundError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -116,6 +120,8 @@ async def get_notebooks(
         ]
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
         raise HTTPException(
@@ -145,6 +151,10 @@ async def create_notebook(notebook: NotebookCreate):
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating notebook: {str(e)}")
         raise HTTPException(
@@ -185,6 +195,10 @@ async def get_recently_viewed(
         ]
         items.sort(key=_last_viewed_sort_key, reverse=True)
         return items[:limit]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         # Log full context server-side; return a generic message so internal
         # details are not leaked to clients.
@@ -215,6 +229,8 @@ async def get_notebook_delete_preview(notebook_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error getting delete preview for notebook {notebook_id}: {e}")
         raise HTTPException(
@@ -253,6 +269,8 @@ async def get_notebook(notebook_id: str):
             note_count=nb.get("note_count", 0),
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching notebook {notebook_id}: {str(e)}")
@@ -316,6 +334,8 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         raise HTTPException(status_code=404, detail="Notebook not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating notebook {notebook_id}: {str(e)}")
         raise HTTPException(
@@ -355,6 +375,8 @@ async def add_source_to_notebook(notebook_id: str, source_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook or source not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(
             f"Error linking source {source_id} to notebook {notebook_id}: {str(e)}"
@@ -385,6 +407,8 @@ async def remove_source_from_notebook(notebook_id: str, source_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(
             f"Error removing source {source_id} from notebook {notebook_id}: {str(e)}"
@@ -426,6 +450,8 @@ async def delete_notebook(
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting notebook {notebook_id}: {str(e)}")
         raise HTTPException(

@@ -35,7 +35,11 @@ from open_notebook.config import UPLOADS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Asset, Notebook, Source
 from open_notebook.domain.transformation import Transformation
-from open_notebook.exceptions import InvalidInputError, NotFoundError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -329,6 +333,8 @@ async def get_sources(
         return response_list
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching sources: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching sources")
@@ -495,6 +501,14 @@ async def _create_source_async_path(
             processing_info={"async": True, "queued": True},
         )
 
+    except (HTTPException, OpenNotebookError):
+        # Clean up source record before the error propagates (typed domain
+        # errors are mapped by the global handlers in api/main.py)
+        try:
+            await source.delete()
+        except Exception:
+            pass
+        raise
     except Exception as e:
         logger.error(f"Failed to submit async processing command: {e}")
         # Clean up source record on command submission failure
@@ -637,6 +651,10 @@ async def create_source(
         # Clean up uploaded file on validation errors if we created it
         _cleanup_uploaded_file(file_path, upload_file)
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        # Clean up uploaded file before the global handlers map the error
+        _cleanup_uploaded_file(file_path, upload_file)
+        raise
     except Exception as e:
         logger.error(f"Error creating source: {str(e)}")
         # Clean up uploaded file on unexpected errors if we created it
@@ -738,6 +756,8 @@ async def get_source(source_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching source")
@@ -750,6 +770,8 @@ async def check_source_file(source_id: str):
         await _resolve_source_file(source_id)
         return Response(status_code=200)
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error checking file for source {source_id}: {str(e)}")
@@ -767,6 +789,8 @@ async def download_source_file(source_id: str):
             media_type="application/octet-stream",
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error downloading file for source {source_id}: {str(e)}")
@@ -828,6 +852,8 @@ async def get_source_status(source_id: str):
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching status for source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error fetching source status")
@@ -855,6 +881,8 @@ async def update_source(source_id: str, source_update: SourceUpdate):
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating source {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error updating source")
@@ -972,6 +1000,8 @@ async def retry_source_processing(source_id: str):
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error retrying source processing for {source_id}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error retrying source processing")
@@ -989,6 +1019,8 @@ async def delete_source(source_id: str):
 
         return {"message": "Source deleted successfully"}
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error deleting source {source_id}: {str(e)}")
@@ -1016,6 +1048,8 @@ async def get_source_insights(source_id: str):
             for insight in insights
         ]
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching insights for source {source_id}: {str(e)}")
@@ -1069,6 +1103,8 @@ async def create_source_insight(source_id: str, request: CreateSourceInsightRequ
         )
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error starting insight generation for source {source_id}: {e}")

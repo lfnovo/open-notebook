@@ -24,6 +24,7 @@ from open_notebook.domain.notebook import (
 )
 from open_notebook.exceptions import (
     NotFoundError,
+    OpenNotebookError,
 )
 from open_notebook.graphs.chat import graph as chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
@@ -128,6 +129,10 @@ async def get_sessions(notebook_id: str = Query(..., description="Notebook ID"))
         return results
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching chat sessions: {str(e)}")
         raise HTTPException(
@@ -166,6 +171,10 @@ async def create_session(request: CreateSessionRequest):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating chat session: {str(e)}")
         raise HTTPException(
@@ -220,6 +229,10 @@ async def get_session(session_id: str):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching session: {str(e)}")
@@ -263,6 +276,10 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error updating session: {str(e)}")
@@ -280,6 +297,10 @@ async def delete_session(session_id: str):
         return SuccessResponse(success=True, message="Session deleted successfully")
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting session: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting session: {str(e)}")
@@ -357,6 +378,10 @@ async def execute_chat(request: ExecuteChatRequest):
         return ExecuteChatResponse(session_id=request.session_id, messages=messages)
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         # Log detailed error with context for debugging
         logger.error(
@@ -476,6 +501,8 @@ async def build_context(request: BuildContextRequest):
             context=context_data, token_count=estimated_tokens, char_count=char_count
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error building context: {str(e)}")

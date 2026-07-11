@@ -137,7 +137,9 @@ accepted improvements immediately — update this document, the scripts under
 
 - **Platforms:** `linux/amd64`, `linux/arm64`
 - **Registries:** Docker Hub + GitHub Container Registry
-- **Image variants:** regular + single-container (`-single`)
+- **Image variants:** regular + single-container (`-single`). Both are built
+  from the same `Dockerfile`: regular is the default/`runtime` target, single
+  is `--target single`
 - **Version source:** `pyproject.toml`
 - Build issues: `docker builder prune`, then `make docker-buildx-reset`
 

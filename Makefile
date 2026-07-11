@@ -90,7 +90,7 @@ docker-push: docker-buildx-prepare
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		--progress=plain \
-		-f Dockerfile.single \
+		--target single \
 		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
 		-t $(GHCR_IMAGE):$(VERSION)-single \
 		--push \
@@ -120,7 +120,7 @@ docker-push-latest: docker-buildx-prepare
 	docker buildx build --pull \
 		--platform $(PLATFORMS) \
 		--progress=plain \
-		-f Dockerfile.single \
+		--target single \
 		-t $(DOCKERHUB_IMAGE):$(VERSION)-single \
 		-t $(DOCKERHUB_IMAGE):v1-latest-single \
 		-t $(GHCR_IMAGE):$(VERSION)-single \

@@ -16,6 +16,8 @@ services:
   surrealdb:
     # `!override` replaces the base file's port list instead of merging with
     # it — without it, compose keeps both entries and the container fails to
-    # start with "port is already allocated".
+    # start with "port is already allocated". Requires Docker Compose
+    # v2.24.4+; on older clients, edit the ports entry in docker-compose.yml
+    # directly instead.
     ports: !override
       - "8000:8000"

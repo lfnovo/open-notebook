@@ -227,7 +227,7 @@ export function SpeakerProfilesPanel({
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteProfile.mutate(profile.id)}
+                            onClick={() => deleteProfile.mutate({ profileId: profile.id, name: profile.name })}
                             disabled={deleteDisabled || deleteProfile.isPending}
                           >
                             {deleteProfile.isPending ? t('podcasts.deleting') : t('podcasts.delete')}

@@ -34,7 +34,10 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root  # Required for bind mounts on Linux
     ports:
-      - "8000:8000"
+      # Localhost only: this starts with root:root, and 0.0.0.0 would
+      # expose that to the network. open_notebook reaches it over the
+      # internal compose network regardless.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

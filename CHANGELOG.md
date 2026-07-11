@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - Dead Streamlit-era service layer (~2,000 lines): `api/client.py` (a synchronous HTTP client that called the app's own API) and 13 `api/*_service.py` wrappers that consumed the app's own HTTP API — none were imported by any router, command or test. Also removed the toy `process_text`/`analyze_data` demo commands (`commands/example_commands.py`) from the background worker
+- Pre-1.6 embedding job compatibility shims (the `embed_single_item`, `embed_chunk` and `vectorize_source` command handlers) — they existed only so jobs queued by a pre-1.6 version could drain after an upgrade, and any worker restarted on 1.6+ has no such jobs. **Upgrade note:** if you are upgrading from a version older than 1.6 with embedding jobs still queued, drain the queue on a 1.x release before upgrading past this change. Also removed dead tooling config from `pyproject.toml`: the `[tool.mypy]` block (the real config is `mypy.ini`) and Streamlit-era ruff per-file-ignores for files that no longer exist
 
 ## [1.11.0] - 2026-07-11
 

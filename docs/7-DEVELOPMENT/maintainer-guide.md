@@ -6,6 +6,7 @@ This guide is for project maintainers to help manage contributions effectively w
 
 - [Issue Management](#issue-management)
 - [Pull Request Review](#pull-request-review)
+- [Merging PR Batches](#merging-pr-batches)
 - [Common Scenarios](#common-scenarios)
 - [Communication Templates](#communication-templates)
 
@@ -223,6 +224,16 @@ Have you considered [alternative approach]? It might be better because [reasons]
 
 What do you think?
 ```
+
+## Merging PR Batches
+
+Mechanics for landing a batch of approved PRs without stepping on each other:
+
+- **Squash-merge everything.** One commit per PR keeps `main` linear and makes reverts trivial.
+- **Expect CHANGELOG conflicts.** Every PR adds a bullet under `[Unreleased]`, so the Nth merge often flips its siblings to DIRTY. Resolve by rebasing the branch onto `main` and keeping **both** sides' bullets — they're independent entries, not competing edits — then `git push --force-with-lease`.
+- **Contributor forks:** rebase the fork's branch onto `origin/main`, skipping commits that are already upstream, and push with an explicit-OID lease: `git push --force-with-lease=<branch>:<headOID>`. This works whenever the contributor left "Allow edits by maintainers" (maintainerCanModify) enabled.
+- **Check for scheduled replacements first.** Before merging a fix into code that's slated to be replaced (e.g. the database layer migrating to surreal-basics, issue #1031), redirect the fix upstream or note it on the tracking issue instead of landing it in code that's about to disappear.
+- **Hunt for competing PRs.** Before merging a fix, search open PRs for others addressing the same bug — pick the best one and close the rest with a link, rather than merging the first one you review.
 
 ## Common Scenarios
 

@@ -6,6 +6,15 @@
 version: 1
 
 reviews:
+  # Skip files with no reviewable logic to preserve the monthly reviewed-line quota:
+  # CHANGELOG entries are prose (and every PR + rebase re-reviews them); lockfiles
+  # are generated.
+  ignore:
+    files:
+      - 'CHANGELOG.md'
+      - 'uv.lock'
+      - 'frontend/package-lock.json'
+
   custom_instructions: |
     This project follows an issue-first workflow for anything non-trivial: features and
     architecture changes must reference an approved, assigned issue and stay scoped to it.

@@ -186,7 +186,7 @@ async def get_source_chat_session(
     """Get a specific source chat session with its messages."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
+        _full_source_id, _source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
 
@@ -247,7 +247,7 @@ async def update_source_chat_session(
     """Update source chat session title and/or model override."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
+        _full_source_id, _source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
 
@@ -290,7 +290,7 @@ async def delete_source_chat_session(
     """Delete a source chat session."""
     try:
         # Verify source + session exist and are related (404s otherwise)
-        full_source_id, _source, full_session_id, session = (
+        _full_source_id, _source, full_session_id, session = (
             await get_verified_source_session(source_id, session_id)
         )
 

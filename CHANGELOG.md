@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.11.0] - 2026-07-11
 
 ### Added
 - `VISION.md` — the product's source of truth in two layers: durable identity (what Open Notebook is and is not, core principles) and current posture (the phase we're in, directional constraints, and the horizon clusters under consideration)
@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Creating a credential with an unknown provider name now fails with a clear `422` at the API boundary instead of an opaque error deep in the domain layer; `provider` is validated against the 17 supported providers, and a test keeps the frontend/backend provider lists in sync (#1016)
 - Podcast episode listing now batch-fetches job statuses in one query instead of one per episode, speeding up notebooks with many episodes; podcast audio-file paths are additionally verified to stay within the podcasts folder before streaming/deleting (#1018)
 - Transformations no longer report success while silently losing their insight when the embedding job fails to queue: `Source.add_insight()` now raises on submission failure (handled by job-level retry), note auto-embedding degrades gracefully instead of turning a note save into a 500, and the explicit note-embed endpoint surfaces queue failures as errors (#1019)
+- Clearing a credential field in the edit dialog (Ollama/OpenAI-compatible `base_url`, Vertex `project`/`location`/`credentials_path`) now actually clears it. Two mirror-image bugs made it impossible: the frontend dropped emptied fields from the PUT body (`undefined` keys are stripped by `JSON.stringify`), and the API ignored explicit `null`s (`is not None` guards) — so the old value survived while the UI reported success. The frontend now sends explicit `null` and the API keys partial updates on field presence (`model_fields_set`) (#1046)
 
 ### Security
 - Resolved dependency audit findings: added npm `overrides` for vulnerable transitive frontend packages (`ws`, `brace-expansion`, `ajv`, `@eslint/plugin-kit`, `postcss`) — `npm audit` now reports 0 vulnerabilities — refreshed `uv.lock` (`langsmith`, `pydantic-settings`, `pip`), and hardened external `window.open(..., '_blank')` calls with `noopener,noreferrer` (#962)
@@ -72,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Credential.get_all()` no longer builds its ORDER BY clause from a raw f-string; ordering fields now go through the base-class allowlist validation (not reachable from the current API surface — defense in depth) (#1021)
 - The frontend runtime-config endpoint validates `Host` and `X-Forwarded-Proto` before using them to build the browser-facing API URL, preventing a spoofed Host header from redirecting browser API traffic (including the bearer token) to an attacker-controlled origin; malformed values fall back to localhost (#1024)
 - `docker-compose.yml` now binds SurrealDB's published port to `127.0.0.1` instead of all interfaces, so the database (root:root by default) is no longer reachable from other machines out of the box; a new `docker-compose.override.yml.example` shows how to re-expose it deliberately (#1025)
+- Forced **Pillow to 12.3.0**, resolving 6 open Dependabot advisories (3 high: PSD out-of-bounds writes, FITS GZIP decompression bomb; 3 moderate: PDF trailer DoS, font integer overflow, heap buffer overflow). The only blocker was moviepy's `pillow<12` cap (pulled in via podcast-creator) — moviepy only touches PIL in its video modules, which the audio-only podcast pipeline never imports, so a documented `[tool.uv] override-dependencies` entry forces the safe version until podcast-creator ships without moviepy (#1041)
 
 ## [1.10.0] - 2026-06-17
 

@@ -30,6 +30,7 @@ from api.routers import (
     notebooks,
     notes,
     podcasts,
+    providers,
     search,
     settings,
     source_chat,
@@ -391,6 +392,7 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(providers.router, prefix="/api", tags=["providers"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 

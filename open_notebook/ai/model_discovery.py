@@ -14,6 +14,7 @@ import httpx
 from loguru import logger
 
 from open_notebook.ai.models import Model
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
 
@@ -218,43 +219,28 @@ class ProviderDiscoverySpec:
     description: Optional[Callable[[dict], Optional[str]]] = None
 
 
+# Per-provider quirk hooks that can't live in the (pure data) registry.
+_COMPAT_CLASSIFY: Dict[str, Callable[[dict], str]] = {
+    "mistral": _classify_mistral,
+    # OpenRouter models are typically language models
+    "openrouter": lambda model: "language",
+}
+_COMPAT_DESCRIPTION: Dict[str, Callable[[dict], Optional[str]]] = {
+    "openrouter": lambda model: model.get("name"),
+}
+
+# Built from the provider registry: every provider with an
+# `openai_compat_discovery_url` gets a discovery spec. The API key env var
+# is the provider's (single) required env var from the registry.
 OPENAI_COMPAT_PROVIDERS: Dict[str, ProviderDiscoverySpec] = {
-    "openai": ProviderDiscoverySpec(
-        url="https://api.openai.com/v1/models",
-        env_var="OPENAI_API_KEY",
-    ),
-    "groq": ProviderDiscoverySpec(
-        url="https://api.groq.com/openai/v1/models",
-        env_var="GROQ_API_KEY",
-    ),
-    "mistral": ProviderDiscoverySpec(
-        url="https://api.mistral.ai/v1/models",
-        env_var="MISTRAL_API_KEY",
-        classify=_classify_mistral,
-    ),
-    "deepseek": ProviderDiscoverySpec(
-        url="https://api.deepseek.com/models",
-        env_var="DEEPSEEK_API_KEY",
-    ),
-    "xai": ProviderDiscoverySpec(
-        url="https://api.x.ai/v1/models",
-        env_var="XAI_API_KEY",
-    ),
-    "openrouter": ProviderDiscoverySpec(
-        url="https://openrouter.ai/api/v1/models",
-        env_var="OPENROUTER_API_KEY",
-        # OpenRouter models are typically language models
-        classify=lambda model: "language",
-        description=lambda model: model.get("name"),
-    ),
-    "dashscope": ProviderDiscoverySpec(
-        url="https://dashscope.aliyuncs.com/compatible-mode/v1/models",
-        env_var="DASHSCOPE_API_KEY",
-    ),
-    "minimax": ProviderDiscoverySpec(
-        url="https://api.minimax.io/v1/models",
-        env_var="MINIMAX_API_KEY",
-    ),
+    name: ProviderDiscoverySpec(
+        url=spec.openai_compat_discovery_url,
+        env_var=spec.required_env[0],
+        classify=_COMPAT_CLASSIFY.get(name),
+        description=_COMPAT_DESCRIPTION.get(name),
+    )
+    for name, spec in PROVIDERS.items()
+    if spec.openai_compat_discovery_url
 }
 
 

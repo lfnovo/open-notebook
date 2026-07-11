@@ -36,7 +36,7 @@ Settings UI ──► /credentials API ──► Credential record (encrypted, S
 
 CRUD plus lifecycle operations: `POST /credentials/{id}/test` (connection check), `/discover` (list available models), `/register-models` (create Model records from discovery), and two migration endpoints (`/migrate-from-env`, `/migrate-from-provider-config`). Swagger at `/docs` documents the shapes.
 
-**Supported providers (17)** are enforced by the `SupportedProvider` Literal in `api/models.py`, kept in sync with three other locations (frontend `ALL_PROVIDERS`, `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`):
+**Supported providers (17)** are defined once in the provider registry (`open_notebook/ai/provider_registry.py` `PROVIDERS`) — env vars, modalities, test models, discovery URLs and docs links all live there, and `connection_tester.TEST_MODELS`, `credentials_service.PROVIDER_ENV_CONFIG`/`PROVIDER_MODALITIES` and `model_discovery.OPENAI_COMPAT_PROVIDERS` are derived from it. `GET /api/providers` exposes the registry to clients. Two manual copies remain, enforced by `tests/test_credential_provider_validation.py`: the `SupportedProvider` Literal in `api/models.py` (typing can't be derived at runtime) and the frontend `ALL_PROVIDERS` tables (`frontend/src/lib/providers.tsx`):
 
 - Simple API key: openai, anthropic, google, groq, mistral, deepseek, xai, openrouter, voyage, elevenlabs, deepgram, dashscope, minimax
 - URL-based: ollama

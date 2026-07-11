@@ -89,9 +89,11 @@ async def process_source_command(
         # 3. Process source with all notebooks
         logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
 
-        # Execute source_graph with all notebooks
-        result = await source_graph.ainvoke(
-            {  # type: ignore[arg-type]
+        # Execute source_graph with all notebooks.
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        result = await source_graph.ainvoke(  # type: ignore[call-overload]
+            {
                 "content_state": input_data.content_state,
                 "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,
@@ -216,8 +218,10 @@ async def run_transformation_command(
                 f"Transformation '{input_data.transformation_id}' not found"
             )
 
-        # Run transformation graph (includes LLM call + insight creation)
-        await transform_graph.ainvoke(
+        # Run transformation graph (includes LLM call + insight creation).
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        await transform_graph.ainvoke(  # type: ignore[call-overload]
             input=dict(source=source, transformation=transformation)
         )
 

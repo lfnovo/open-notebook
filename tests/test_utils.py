@@ -98,13 +98,14 @@ class TestTextUtilities:
 
     def test_parse_thinking_content_invalid_input(self):
         """Test parsing with invalid input types."""
-        # Non-string input
-        thinking, cleaned = parse_thinking_content(None)
+        # Non-string input (intentionally violates the signature to test the
+        # runtime guard)
+        thinking, cleaned = parse_thinking_content(None)  # type: ignore[arg-type]
         assert thinking == ""
         assert cleaned == ""
 
-        # Integer input
-        thinking, cleaned = parse_thinking_content(123)
+        # Integer input (same intentional violation)
+        thinking, cleaned = parse_thinking_content(123)  # type: ignore[arg-type]
         assert thinking == ""
         assert cleaned == "123"
 

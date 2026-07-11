@@ -727,7 +727,7 @@ async def sync_all_providers() -> Dict[str, Tuple[int, int, int]]:
     task_results = await asyncio.gather(*tasks, return_exceptions=True)
 
     for provider, result in zip(providers, task_results):
-        if isinstance(result, Exception):
+        if isinstance(result, BaseException):
             logger.error(f"Error syncing {provider}: {result}")
             results[provider] = (0, 0, 0)
         else:

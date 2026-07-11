@@ -332,15 +332,20 @@ async def execute_chat(request: ExecuteChatRequest):
         # (SqliteSaver checkpoints are sync) doesn't block the event loop and
         # freeze the rest of the API while the LLM responds. Mirrors the
         # get_state() calls above.
+        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
+        # can't resolve overloaded callables on its own. The ignore is a langgraph
+        # typing limitation: it accepts a partial state dict at runtime, but the
+        # signature requires the full state type.
         result = await asyncio.to_thread(
-            chat_graph.invoke,
-            input=state_values,  # type: ignore[arg-type]
-            config=RunnableConfig(
-                configurable={
-                    "thread_id": full_session_id,
-                    "model_id": model_override,
-                }
-            ),
+            lambda: chat_graph.invoke(
+                input=state_values,  # type: ignore[arg-type]
+                config=RunnableConfig(
+                    configurable={
+                        "thread_id": full_session_id,
+                        "model_id": model_override,
+                    }
+                ),
+            )
         )
 
         # Update session timestamp

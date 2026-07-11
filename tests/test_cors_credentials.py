@@ -10,7 +10,10 @@ contains "*" (whether from the unset default or an explicit CORS_ORIGINS=*),
 True once an operator scopes CORS_ORIGINS to specific origins.
 """
 
+from typing import cast
+
 from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
 from starlette.testclient import TestClient
 
 from api import main as api_main
@@ -82,7 +85,8 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
         class FakeRequest:
             headers = {"origin": "https://evil.example.com"}
 
-        headers = api_main._cors_headers(FakeRequest())
+        # cast: _cors_headers only reads request.headers
+        headers = api_main._cors_headers(cast(Request, FakeRequest()))
         assert "Access-Control-Allow-Credentials" not in headers
 
     def test_includes_allow_credentials_header_for_explicit_origins(self, monkeypatch):
@@ -94,7 +98,8 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
         class FakeRequest:
             headers = {"origin": "https://notebook.example.com"}
 
-        headers = api_main._cors_headers(FakeRequest())
+        # cast: _cors_headers only reads request.headers
+        headers = api_main._cors_headers(cast(Request, FakeRequest()))
         assert headers["Access-Control-Allow-Credentials"] == "true"
 
     def test_disallowed_origin_still_gets_no_allow_origin_header(self, monkeypatch):
@@ -106,5 +111,6 @@ class TestCorsHeadersHelperMatchesMiddlewarePolicy:
         class FakeRequest:
             headers = {"origin": "https://evil.example.com"}
 
-        headers = api_main._cors_headers(FakeRequest())
+        # cast: _cors_headers only reads request.headers
+        headers = api_main._cors_headers(cast(Request, FakeRequest()))
         assert "Access-Control-Allow-Origin" not in headers

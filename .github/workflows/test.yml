@@ -62,6 +62,27 @@ jobs:
       - name: Run ruff
         run: uv run ruff check .
 
+  backend-typecheck:
+    name: Backend Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run mypy
+        run: uv run python -m mypy .
+
   frontend:
     name: Frontend Tests
     runs-on: ubuntu-latest

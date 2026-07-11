@@ -75,7 +75,11 @@ class TestGetJobDetailsForCommandsUnit:
         with patch(
             "open_notebook.podcasts.models.repo_query", new=AsyncMock(return_value=[])
         ) as mock_query:
-            await PodcastEpisode.get_job_details_for_commands([None, "", "command:a"])
+            # None intentionally violates the signature: the method must filter
+            # out falsy ids it can receive from unvalidated DB rows.
+            await PodcastEpisode.get_job_details_for_commands(
+                [None, "", "command:a"]  # type: ignore[list-item]
+            )
 
         # Only the truthy id should reach the query's bound params.
         _, kwargs_or_args = mock_query.call_args

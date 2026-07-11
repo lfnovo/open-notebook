@@ -56,8 +56,10 @@ async def create_note(note_data: NoteCreate):
             from open_notebook.graphs.prompt import graph as prompt_graph
 
             prompt = "Based on the Note below, please provide a Title for this content, with max 15 words"
-            result = await prompt_graph.ainvoke(
-                {  # type: ignore[arg-type]
+            # LangGraph accepts a partial state dict at runtime, but its typed
+            # overloads require the full state type (langgraph typing limitation).
+            result = await prompt_graph.ainvoke(  # type: ignore[call-overload]
+                {
                     "input_text": note_data.content,
                     "prompt": prompt,
                 }

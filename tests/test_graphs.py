@@ -6,9 +6,11 @@ without heavy mocking of the actual processing logic.
 """
 
 from datetime import datetime
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from langchain_core.runnables import RunnableConfig
 
 from open_notebook.domain.notebook import Source
 from open_notebook.graphs.prompt import PatternChainState, graph
@@ -31,7 +33,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_format(self):
         """Test timestamp tool returns correct format."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.invoke({})
 
         assert isinstance(timestamp, str)
         assert len(timestamp) == 14  # YYYYMMDDHHmmss format
@@ -39,7 +41,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_validity(self):
         """Test timestamp represents valid datetime."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.invoke({})
 
         # Parse it back to datetime to verify validity
         year = int(timestamp[0:4])
@@ -141,7 +143,7 @@ class TestTransformationGraph:
             "source": None,
         }
 
-        config = {"configurable": {"model_id": None}}
+        config: RunnableConfig = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
             await run_transformation(state, config)
@@ -165,7 +167,7 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_custom_title_preserved(self, mock_get):
         """User-set title is NOT overwritten by content_state.title."""
-        from open_notebook.graphs.source import save_source
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "My Custom Research Title"
@@ -185,7 +187,8 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "My Custom Research Title"
         mock_source.save.assert_awaited_once()
@@ -194,7 +197,7 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_placeholder_title_replaced(self, mock_get):
         """Placeholder 'Processing...' title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "Processing..."
@@ -214,7 +217,8 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Article Title"
         mock_source.save.assert_awaited_once()
@@ -223,7 +227,7 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_none_title_replaced(self, mock_get):
         """None title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = None
@@ -243,7 +247,8 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()
@@ -252,7 +257,7 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_empty_title_replaced(self, mock_get):
         """Empty string title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = ""
@@ -272,7 +277,8 @@ class TestSaveSourceTitlePreservation:
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()

@@ -102,9 +102,11 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
             if not model:
                 raise HTTPException(status_code=404, detail="Model not found")
 
-        # Execute the transformation
-        result = await transformation_graph.ainvoke(
-            dict(  # type: ignore[arg-type]
+        # Execute the transformation.
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        result = await transformation_graph.ainvoke(  # type: ignore[call-overload]
+            dict(
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),

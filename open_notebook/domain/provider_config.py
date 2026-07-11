@@ -10,7 +10,7 @@ is set. If not set, keys are stored as plain text with a warning logged.
 """
 
 from datetime import datetime
-from typing import ClassVar, Dict, List, Optional
+from typing import Any, ClassVar, Dict, List, Optional
 
 from pydantic import Field, SecretStr
 
@@ -416,7 +416,7 @@ class ProviderConfig(RecordModel):
         Encryption is performed using Fernet symmetric encryption if
         OPEN_NOTEBOOK_ENCRYPTION_KEY is configured.
         """
-        data = {"credentials": {}}
+        data: Dict[str, Any] = {"credentials": {}}
 
         for provider, credentials in self.credentials.items():
             data["credentials"][provider] = []

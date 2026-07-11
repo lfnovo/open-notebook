@@ -11,6 +11,8 @@ SupportedProvider Literal and the frontend ALL_PROVIDERS table) must
 match it exactly.
 """
 
+from typing import get_args
+
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
@@ -119,17 +121,17 @@ class TestProviderRegistryIsTheSourceOfTruth:
 
 class TestSupportedProviderMatchesOtherSourcesOfTruth:
     def test_matches_known_good_provider_list(self):
-        assert set(SupportedProvider.__args__) == set(KNOWN_GOOD_PROVIDERS)
+        assert set(get_args(SupportedProvider)) == set(KNOWN_GOOD_PROVIDERS)
 
     def test_matches_connection_tester_test_models_keys(self):
         from open_notebook.ai.connection_tester import TEST_MODELS
 
-        assert set(SupportedProvider.__args__) == set(TEST_MODELS.keys())
+        assert set(get_args(SupportedProvider)) == set(TEST_MODELS.keys())
 
     def test_matches_credentials_service_provider_env_config_keys(self):
         from api.credentials_service import PROVIDER_ENV_CONFIG
 
-        assert set(SupportedProvider.__args__) == set(PROVIDER_ENV_CONFIG.keys())
+        assert set(get_args(SupportedProvider)) == set(PROVIDER_ENV_CONFIG.keys())
 
     def test_matches_frontend_all_providers_list(self):
         """The frontend keeps its own copy (ALL_PROVIDERS) that a Python
@@ -143,7 +145,7 @@ class TestSupportedProviderMatchesOtherSourcesOfTruth:
         match = re.search(r"const ALL_PROVIDERS = \[(.*?)\]", source, re.DOTALL)
         assert match, "ALL_PROVIDERS array not found in lib/providers.tsx"
         frontend_providers = re.findall(r"'([a-z0-9_]+)'", match.group(1))
-        assert set(SupportedProvider.__args__) == set(frontend_providers)
+        assert set(get_args(SupportedProvider)) == set(frontend_providers)
 
 
 class TestProvidersEndpoint:

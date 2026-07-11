@@ -79,7 +79,9 @@ async def test_lifespan_raises_after_database_retry_budget_exhausted(
     monkeypatch.setattr(api_main, "AsyncMigrationManager", lambda: manager)
 
     with pytest.raises(RuntimeError, match="Failed to run database migrations"):
-        async with api_main.lifespan(None):
+        # lifespan never touches its app argument, so None keeps the test
+        # isolated from the real FastAPI app.
+        async with api_main.lifespan(None):  # type: ignore[arg-type]
             pass
 
     assert manager.ping.await_count == 3
@@ -100,7 +102,9 @@ async def test_lifespan_does_not_retry_real_migration_errors(
     monkeypatch.setattr(api_main, "AsyncMigrationManager", lambda: manager)
 
     with pytest.raises(RuntimeError, match="Failed to run database migrations"):
-        async with api_main.lifespan(None):
+        # lifespan never touches its app argument, so None keeps the test
+        # isolated from the real FastAPI app.
+        async with api_main.lifespan(None):  # type: ignore[arg-type]
             pass
 
     manager.ping.assert_awaited_once()

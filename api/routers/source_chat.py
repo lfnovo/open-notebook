@@ -338,12 +338,17 @@ async def stream_source_chat_response(
         # event loop. While blocked, even the already-yielded SSE events can't
         # flush and every other request stalls until the LLM finishes. Mirrors the
         # get_state() calls above.
+        # The lambda pins down which `invoke` overload is used; asyncio.to_thread
+        # can't resolve overloaded callables on its own. The ignore is a langgraph
+        # typing limitation: it accepts a partial state dict at runtime, but the
+        # signature requires the full state type.
         result = await asyncio.to_thread(
-            source_chat_graph.invoke,
-            input=state_values,  # type: ignore[arg-type]
-            config=RunnableConfig(
-                configurable={"thread_id": session_id, "model_id": model_override}
-            ),
+            lambda: source_chat_graph.invoke(
+                input=state_values,  # type: ignore[arg-type]
+                config=RunnableConfig(
+                    configurable={"thread_id": session_id, "model_id": model_override}
+                ),
+            )
         )
 
         # Stream the complete AI response
@@ -372,9 +377,9 @@ async def stream_source_chat_response(
     except Exception as e:
         from open_notebook.utils.error_classifier import classify_error
 
-        _, user_message = classify_error(e)
+        _, error_message = classify_error(e)
         logger.error(f"Error in source chat streaming: {str(e)}")
-        error_event = {"type": "error", "message": user_message}
+        error_event = {"type": "error", "message": error_message}
         yield f"data: {json.dumps(error_event)}\n\n"
 
 

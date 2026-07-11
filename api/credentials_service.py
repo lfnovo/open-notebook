@@ -18,7 +18,10 @@ from api.models import CredentialResponse
 from open_notebook.ai.model_discovery import classify_model_type
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
-from open_notebook.utils.url_validation import validate_url
+from open_notebook.utils.url_validation import (
+    prepare_pinned_http_target,
+    validate_url,
+)
 
 # =============================================================================
 # Constants
@@ -478,16 +481,20 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not base_url:
             return []
         try:
-            # Re-validate at request time (see ollama branch above).
-            await validate_url(base_url, provider)
-            headers = {}
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
+            target = await prepare_pinned_http_target(
+                models_endpoint(base_url), provider
+            )
+            headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    models_endpoint(base_url),
+                    target.url,
                     headers=headers,
                     timeout=30.0,
+                    extensions=target.extensions,
                 )
                 response.raise_for_status()
                 data = response.json()

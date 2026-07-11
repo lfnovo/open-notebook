@@ -14,7 +14,10 @@ from typing import Optional, Tuple
 import httpx
 from loguru import logger
 
-from open_notebook.utils.url_validation import validate_url
+from open_notebook.utils.url_validation import (
+    prepare_pinned_http_target,
+    validate_url,
+)
 
 
 def _is_vertex_credentials_file_error(exc: Exception) -> bool:
@@ -185,19 +188,23 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
 async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
-        # Re-validate at request time (see _test_azure_connection for why).
-        await validate_url(base_url, "openai_compatible")
-        headers = {}
-        if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
-
+        # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
         trimmed = base_url.rstrip("/")
         models_url = (
             trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
         )
+        target = await prepare_pinned_http_target(models_url, "openai_compatible")
+        headers = dict(target.headers)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try /models endpoint (standard OpenAI-compatible)
-            response = await client.get(models_url, headers=headers)
+            response = await client.get(
+                target.url,
+                headers=headers,
+                extensions=target.extensions,
+            )
 
             if response.status_code == 200:
                 data = response.json()

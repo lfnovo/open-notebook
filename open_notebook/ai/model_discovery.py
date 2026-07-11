@@ -16,7 +16,7 @@ from loguru import logger
 from open_notebook.ai.models import Model
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
-from open_notebook.utils.url_validation import validate_url
+from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
 @dataclass
@@ -372,23 +372,23 @@ async def discover_omlx_models() -> List[DiscoveredModel]:
 
     models = []
     try:
-        # Re-validate at request time: hostname may later resolve to a
-        # link-local address (DNS rebinding). Matches ollama/openai_compatible
-        # credential discovery flows.
-        await validate_url(base_url, "omlx")
+        # Resolve+validate once and pin the vetted IP so httpx cannot
+        # re-resolve to a metadata address (DNS rebinding TOCTOU).
         trimmed = base_url.rstrip("/")
         models_url = (
             trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
         )
+        target = await prepare_pinned_http_target(models_url, "omlx")
         async with httpx.AsyncClient() as client:
-            headers = {}
+            headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
 
             response = await client.get(
-                models_url,
+                target.url,
                 headers=headers,
                 timeout=30.0,
+                extensions=target.extensions,
             )
             response.raise_for_status()
             data = response.json()

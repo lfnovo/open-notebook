@@ -157,6 +157,7 @@ class TestCredentialModelDiscovery:
     @pytest.mark.asyncio
     async def test_model_discovery_base_url_can_include_models_path(self, monkeypatch):
         """Model discovery should not append /models twice."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
 
         requests = []
 
@@ -167,7 +168,7 @@ class TestCredentialModelDiscovery:
             async def __aexit__(self, exc_type, exc, tb):
                 return None
 
-            async def get(self, url, headers=None, timeout=None):
+            async def get(self, url, headers=None, timeout=None, extensions=None):
                 requests.append(url)
                 return httpx.Response(
                     200,
@@ -175,7 +176,13 @@ class TestCredentialModelDiscovery:
                     request=httpx.Request("GET", url, headers=headers or {}),
                 )
 
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
         monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
 
         await credentials_service.discover_with_config(
             "openai_compatible",
@@ -358,6 +365,7 @@ class TestOmlxProviderWiring:
     async def test_discover_omlx_models_avoids_double_models_path(self, monkeypatch):
         """Global oMLX discovery should not append /models twice."""
         from open_notebook.ai import model_discovery
+        from open_notebook.utils.url_validation import PinnedHttpTarget
 
         requests = []
 
@@ -368,7 +376,7 @@ class TestOmlxProviderWiring:
             async def __aexit__(self, exc_type, exc, tb):
                 return None
 
-            async def get(self, url, headers=None, timeout=None):
+            async def get(self, url, headers=None, timeout=None, extensions=None):
                 requests.append(url)
                 return httpx.Response(
                     200,
@@ -379,13 +387,15 @@ class TestOmlxProviderWiring:
         async def fake_get_by_provider(provider):
             return []
 
-        async def fake_validate_url(url, provider):
-            return None
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
 
         monkeypatch.setattr(
             model_discovery.Credential, "get_by_provider", fake_get_by_provider
         )
-        monkeypatch.setattr(model_discovery, "validate_url", fake_validate_url)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
         monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
         monkeypatch.setenv("OMLX_API_BASE", "http://localhost:11435/v1/models/")
         monkeypatch.delenv("OMLX_API_KEY", raising=False)
@@ -399,28 +409,30 @@ class TestOmlxProviderWiring:
 
     @pytest.mark.asyncio
     async def test_discover_omlx_models_revalidates_url(self, monkeypatch):
-        """DNS-rebinding guard: validate_url runs immediately before the request."""
+        """DNS-rebinding guard: pin helper runs immediately before the request."""
         from open_notebook.ai import model_discovery
 
-        validated = []
+        pinned = []
 
         async def fake_get_by_provider(provider):
             return []
 
-        async def fake_validate_url(url, provider):
-            validated.append((url, provider))
+        async def fake_prepare_pinned(url, provider):
+            pinned.append((url, provider))
             raise ValueError("Blocked URL")
 
         monkeypatch.setattr(
             model_discovery.Credential, "get_by_provider", fake_get_by_provider
         )
-        monkeypatch.setattr(model_discovery, "validate_url", fake_validate_url)
+        monkeypatch.setattr(
+            model_discovery, "prepare_pinned_http_target", fake_prepare_pinned
+        )
         monkeypatch.setenv("OMLX_API_BASE", "http://evil.example/v1")
         monkeypatch.delenv("OMLX_API_KEY", raising=False)
 
         models = await model_discovery.discover_omlx_models()
 
-        assert validated == [("http://evil.example/v1", "omlx")]
+        assert pinned == [("http://evil.example/v1/models", "omlx")]
         assert models == []
 
 

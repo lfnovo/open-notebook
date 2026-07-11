@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Anthropic models are now discovered live from `GET https://api.anthropic.com/v1/models` (paginated) instead of a hardcoded claude-3-era list — the code comment claiming "Anthropic doesn't have a model listing API" was wrong. A refreshed static list (current Claude 4.x/5 aliases) remains as a fallback when the API call fails, and the credential-based discovery path (`discover_with_config`) uses the same live-with-fallback logic
+- Deduplicated the embedding commands (`commands/embedding_commands.py`, ~100 lines less): `embed_note`/`embed_insight`/`embed_source` now share one load→embed→write core with a single error-handling epilogue, the rebuild command uses one submission-loop helper for all three kinds, and the thrice-copied `full_model_dump()` moved to `open_notebook/utils/model_utils.py`. Pure refactor — same outputs, logs and retry behavior
 
 ### Removed
 - Dead Streamlit-era service layer (~2,000 lines): `api/client.py` (a synchronous HTTP client that called the app's own API) and 13 `api/*_service.py` wrappers that consumed the app's own HTTP API — none were imported by any router, command or test. Also removed the toy `process_text`/`analyze_data` demo commands (`commands/example_commands.py`) from the background worker

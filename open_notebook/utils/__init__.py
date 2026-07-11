@@ -26,6 +26,7 @@ from .encryption import (
     decrypt_value,
     encrypt_value,
 )
+from .model_utils import full_model_dump
 from .text_utils import (
     clean_thinking_content,
     parse_thinking_content,
@@ -66,4 +67,6 @@ __all__ = [
     # Encryption utils
     "decrypt_value",
     "encrypt_value",
+    # Model utils
+    "full_model_dump",
 ]

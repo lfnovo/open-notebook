@@ -53,7 +53,8 @@ import {
   useRegisterModels,
   useMigrateFromEnv,
 } from '@/lib/hooks/use-credentials'
-import { Credential, CreateCredentialRequest, UpdateCredentialRequest, DiscoveredModel } from '@/lib/api/credentials'
+import { Credential, CreateCredentialRequest, DiscoveredModel } from '@/lib/api/credentials'
+import { buildCredentialUpdatePayload } from '@/lib/credential-update-payload'
 import { Model, ModelDefaults } from '@/lib/types/models'
 import { MigrationBanner, ModelTestResultDialog } from '@/components/settings'
 import { EmbeddingModelChangeDialog } from '@/components/settings/EmbeddingModelChangeDialog'
@@ -219,20 +220,10 @@ function CredentialFormDialog({
     }
 
     if (isEditing && credential) {
-      const data: UpdateCredentialRequest = {}
-      if (name !== credential.name) data.name = name
-      if (apiKey.trim()) data.api_key = apiKey.trim()
-      if (baseUrl !== (credential.base_url || '')) data.base_url = baseUrl || undefined
-      if (JSON.stringify(modalities) !== JSON.stringify(credential.modalities)) data.modalities = modalities
-      if (isVertex) {
-        if (project !== (credential.project || '')) data.project = project.trim() || undefined
-        if (location !== (credential.location || '')) data.location = location.trim() || undefined
-        if (credentialsPath !== (credential.credentials_path || '')) data.credentials_path = credentialsPath.trim() || undefined
-      }
-      if (isOllama && numCtx !== (credential.num_ctx ? String(credential.num_ctx) : '')) {
-        // empty clears the override (0 -> backend resets to default)
-        data.num_ctx = numCtx.trim() ? Number(numCtx) : 0
-      }
+      const data = buildCredentialUpdatePayload(credential, {
+        name, apiKey, baseUrl, modalities, project, location,
+        credentialsPath, numCtx, isVertex, isOllama,
+      })
       updateCredential.mutate({ credentialId: credential.id, data }, { onSuccess })
     } else {
       const data: CreateCredentialRequest = {

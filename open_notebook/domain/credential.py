@@ -15,7 +15,6 @@ Usage:
     await cred.save()
 """
 
-from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional
 
 from loguru import logger

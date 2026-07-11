@@ -15,7 +15,11 @@ from loguru import logger
 from pydantic import SecretStr
 
 from api.models import CredentialResponse
-from open_notebook.ai.model_discovery import classify_model_type
+from open_notebook.ai.model_discovery import (
+    ANTHROPIC_FALLBACK_MODELS,
+    classify_model_type,
+    fetch_anthropic_model_ids,
+)
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
 from open_notebook.utils.url_validation import validate_url
@@ -385,15 +389,6 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
-        "anthropic": [
-            "claude-opus-4-20250514",
-            "claude-sonnet-4-20250514",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-        ],
         "voyage": [
             "voyage-3", "voyage-3-lite", "voyage-code-3",
             "voyage-finance-2", "voyage-law-2", "voyage-multilingual-2",
@@ -418,6 +413,18 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             {"name": m, "provider": provider}
             for m in STATIC_MODELS[provider]
         ]
+
+    if provider == "anthropic":
+        if not api_key:
+            return []
+        try:
+            model_names = await fetch_anthropic_model_ids(api_key)
+        except Exception as e:
+            logger.warning(
+                f"Failed to discover Anthropic models, using static fallback: {e}"
+            )
+            model_names = list(ANTHROPIC_FALLBACK_MODELS)
+        return [{"name": m, "provider": "anthropic"} for m in model_names]
 
     # API-based discovery URLs (OpenAI-style /models endpoints)
     url_map = {

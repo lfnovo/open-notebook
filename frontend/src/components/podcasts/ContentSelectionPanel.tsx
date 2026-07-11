@@ -78,19 +78,16 @@ export function ContentSelectionPanel({
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline">
-            {t('podcasts.itemsSelected').replace(
-              '{count}',
-              selectedNotebookSummaries.reduce(
+            {t('podcasts.itemsSelected', { count: selectedNotebookSummaries.reduce(
                 (acc: number, summary: NotebookSummary) => acc + summary.sources + summary.notes,
                 0
-              ).toString()
-            )}
+              ) })}
           </Badge>
           {(tokenCount > 0 || charCount > 0) && (
             <span className="text-xs text-muted-foreground">
-              {tokenCount > 0 && t('podcasts.tokens').replace('{count}', formatNumber(tokenCount))}
+              {tokenCount > 0 && t('podcasts.tokens', { value: formatNumber(tokenCount) })}
               {tokenCount > 0 && charCount > 0 && ' / '}
-              {charCount > 0 && t('podcasts.chars').replace('{count}', formatNumber(charCount))}
+              {charCount > 0 && t('podcasts.chars', { value: formatNumber(charCount) })}
             </span>
           )}
         </div>

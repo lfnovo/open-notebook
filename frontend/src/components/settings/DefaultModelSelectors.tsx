@@ -170,7 +170,7 @@ export function DefaultModelSelectors({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="flex items-center justify-between gap-4">
-              <span>{t('models.missingRequiredModels').replace('{models}', missingRequired.join(', '))}</span>
+              <span>{t('models.missingRequiredModels', { models: missingRequired.join(', ') })}</span>
               <Button
                 variant="outline" size="sm"
                 onClick={() => autoAssign.mutate()}

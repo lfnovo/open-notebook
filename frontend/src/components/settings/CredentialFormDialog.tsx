@@ -120,8 +120,8 @@ export function CredentialFormDialog({
         <DialogHeader>
           <DialogTitle>
             {isEditing
-              ? t('apiKeys.editConfig').replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)
-              : t('apiKeys.addConfig').replace('{provider}', PROVIDER_DISPLAY_NAMES[provider] || provider)}
+              ? t('apiKeys.editConfig', { provider: PROVIDER_DISPLAY_NAMES[provider] || provider })
+              : t('apiKeys.addConfig', { provider: PROVIDER_DISPLAY_NAMES[provider] || provider })}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">

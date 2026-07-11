@@ -26,7 +26,7 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-amber-700 dark:text-amber-300">
-          {t('apiKeys.migrationDescription').replace('{count}', providersToMigrate.length.toString())}
+          {t('apiKeys.migrationDescription', { count: providersToMigrate.length })}
         </span>
         <Button
           variant="outline"

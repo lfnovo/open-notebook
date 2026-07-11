@@ -45,7 +45,7 @@ export function StreamingResponse({
       // This try-catch is here for future enhancements or unexpected errors.
     } catch {
       const typeLabel = type === 'source_insight' ? 'insight' : type
-      toast.error(t('common.itemNotFound').replace('{type}', typeLabel))
+      toast.error(t('common.itemNotFound', { type: typeLabel }))
     }
   }
 
@@ -110,7 +110,7 @@ export function StreamingResponse({
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-primary" />
-                  {t('common.individualAnswers').replace('{count}', answers.length.toString())}
+                  {t('common.individualAnswers', { count: answers.length })}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${answersOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>

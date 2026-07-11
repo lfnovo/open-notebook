@@ -5,6 +5,9 @@ This test suite focuses on testing utility functions that perform actual logic
 without heavy mocking - string processing, validation, and algorithms.
 """
 
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
 import pytest
 
 from open_notebook.utils import (
@@ -16,7 +19,7 @@ from open_notebook.utils import (
     remove_non_printable,
     token_count,
 )
-from open_notebook.utils.context_builder import ContextBuilder, ContextConfig
+from open_notebook.utils.context_builder import build_source_context
 
 # ============================================================================
 # TEST SUITE 1: Text Utilities
@@ -246,39 +249,94 @@ class TestVersionUtilities:
 
 
 # ============================================================================
-# TEST SUITE 4: Context Builder Configuration
+# TEST SUITE 4: Source Context Building
 # ============================================================================
 
 
-class TestContextBuilder:
-    """Test suite for ContextBuilder initialization and configuration."""
+def _mock_source(insights):
+    source = SimpleNamespace(id="source:123")
+    source.get_context = AsyncMock(
+        return_value={"id": "source:123", "title": "T", "full_text": "body"}
+    )
+    source.get_insights = AsyncMock(return_value=insights)
+    return source
 
-    def test_context_config_defaults(self):
-        """Test ContextConfig default values."""
-        config = ContextConfig()
 
-        assert config.sources == {}
-        assert config.notes == {}
-        assert config.include_insights is True
-        assert config.include_notes is True
-        assert config.priority_weights is not None
-        assert "source" in config.priority_weights
-        assert "note" in config.priority_weights
-        assert "insight" in config.priority_weights
+def _insight(insight_id, content="insight content"):
+    return SimpleNamespace(
+        id=insight_id, insight_type="summary", content=content
+    )
 
-    def test_context_builder_initialization(self):
-        """Test ContextBuilder initialization with various params."""
-        builder = ContextBuilder(
-            source_id="source:123",
-            notebook_id="notebook:456",
-            max_tokens=1000,
-            include_insights=False,
+
+class TestBuildSourceContext:
+    """Test suite for build_source_context (used by the source-chat graph)."""
+
+    @pytest.mark.asyncio
+    async def test_source_and_insights_shape(self):
+        """The response carries the source's short context and its insights."""
+        source = _mock_source([_insight("source_insight:1")])
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ) as mock_get:
+            result = await build_source_context("123")
+
+        mock_get.assert_awaited_once_with("source:123")  # bare id gets prefixed
+        source.get_context.assert_awaited_once_with(context_size="short")
+        assert result["sources"] == [
+            {"id": "source:123", "title": "T", "full_text": "body"}
+        ]
+        assert result["insights"] == [
+            {
+                "id": "source_insight:1",
+                "source_id": "source:123",
+                "insight_type": "summary",
+                "content": "insight content",
+            }
+        ]
+        assert result["notes"] == []
+        assert result["total_items"] == 2
+        assert result["total_tokens"] > 0
+        assert result["metadata"] == {
+            "source_count": 1,
+            "note_count": 0,
+            "insight_count": 1,
+        }
+
+    @pytest.mark.asyncio
+    async def test_truncates_insights_to_token_budget(self):
+        """Insights are dropped (last first) when over the token budget."""
+        big = "word " * 500
+        source = _mock_source(
+            [_insight("source_insight:1", big), _insight("source_insight:2", big)]
         )
 
-        assert builder.source_id == "source:123"
-        assert builder.notebook_id == "notebook:456"
-        assert builder.max_tokens == 1000
-        assert builder.include_insights is False
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            result = await build_source_context("source:123", max_tokens=600)
+
+        # Budget fits the source and the first insight, not the second
+        assert len(result["sources"]) == 1
+        assert [i["id"] for i in result["insights"]] == ["source_insight:1"]
+        assert result["total_tokens"] <= 600
+
+    @pytest.mark.asyncio
+    async def test_missing_source_yields_empty_context(self):
+        """A missing source produces an empty context, not an error."""
+        from open_notebook.exceptions import NotFoundError
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(side_effect=NotFoundError("nope")),
+        ):
+            result = await build_source_context("source:missing")
+
+        assert result["sources"] == []
+        assert result["insights"] == []
+        assert result["total_tokens"] == 0
 
 
 if __name__ == "__main__":

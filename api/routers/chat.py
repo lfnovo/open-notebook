@@ -7,6 +7,13 @@ from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from api.routers._chat_shared import (
+    ChatMessage,
+    SuccessResponse,
+    extract_chat_messages,
+    get_session_or_404,
+    normalize_record_id,
+)
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import (
     ChatSession,
@@ -38,13 +45,6 @@ class UpdateSessionRequest(BaseModel):
     model_override: Optional[str] = Field(
         None, description="Model override for this session"
     )
-
-
-class ChatMessage(BaseModel):
-    id: str = Field(..., description="Message ID")
-    type: str = Field(..., description="Message type (human|ai)")
-    content: str = Field(..., description="Message content")
-    timestamp: Optional[str] = Field(None, description="Message timestamp")
 
 
 class ChatSessionResponse(BaseModel):
@@ -92,11 +92,6 @@ class BuildContextResponse(BaseModel):
     context: Dict[str, Any] = Field(..., description="Built context data")
     token_count: int = Field(..., description="Estimated token count")
     char_count: int = Field(..., description="Character count")
-
-
-class SuccessResponse(BaseModel):
-    success: bool = Field(True, description="Operation success status")
-    message: str = Field(..., description="Success message")
 
 
 @router.get("/chat/sessions", response_model=List[ChatSessionResponse])
@@ -184,16 +179,8 @@ async def create_session(request: CreateSessionRequest):
 async def get_session(session_id: str):
     """Get a specific session with its messages."""
     try:
-        # Get session
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(session_id)
 
         # Get session state from LangGraph to retrieve messages
         # Use sync get_state() in a thread since SqliteSaver doesn't support async
@@ -205,24 +192,9 @@ async def get_session(session_id: str):
         # Extract messages from state
         messages: list[ChatMessage] = []
         if thread_state and thread_state.values and "messages" in thread_state.values:
-            for msg in thread_state.values["messages"]:
-                messages.append(
-                    ChatMessage(
-                        id=getattr(msg, "id", f"msg_{len(messages)}"),
-                        type=msg.type if hasattr(msg, "type") else "unknown",
-                        content=msg.content if hasattr(msg, "content") else str(msg),
-                        timestamp=None,  # LangChain messages don't have timestamps by default
-                    )
-                )
+            messages = extract_chat_messages(thread_state.values["messages"])
 
         # Find notebook_id (we need to query the relationship)
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
@@ -257,15 +229,8 @@ async def get_session(session_id: str):
 async def update_session(session_id: str, request: UpdateSessionRequest):
     """Update session title."""
     try:
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(session_id)
 
         update_data = request.model_dump(exclude_unset=True)
 
@@ -278,12 +243,6 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
         await session.save()
 
         # Find notebook_id
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
         notebook_query = await repo_query(
             "SELECT out FROM refers_to WHERE in = $session_id",
             {"session_id": ensure_record_id(full_session_id)},
@@ -313,15 +272,8 @@ async def update_session(session_id: str, request: UpdateSessionRequest):
 async def delete_session(session_id: str):
     """Delete a chat session."""
     try:
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            session_id
-            if session_id.startswith("chat_session:")
-            else f"chat_session:{session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Get session (normalizes the ID and 404s if missing)
+        _full_session_id, session = await get_session_or_404(session_id)
 
         await session.delete()
 
@@ -337,16 +289,8 @@ async def delete_session(session_id: str):
 async def execute_chat(request: ExecuteChatRequest):
     """Execute a chat request and get AI response."""
     try:
-        # Verify session exists
-        # Ensure session_id has proper table prefix
-        full_session_id = (
-            request.session_id
-            if request.session_id.startswith("chat_session:")
-            else f"chat_session:{request.session_id}"
-        )
-        session = await ChatSession.get(full_session_id)
-        if not session:
-            raise HTTPException(status_code=404, detail="Session not found")
+        # Verify session exists (normalizes the ID and 404s if missing)
+        full_session_id, session = await get_session_or_404(request.session_id)
 
         # Fetch notebook linked to this session
         notebook_query = await repo_query(
@@ -403,16 +347,7 @@ async def execute_chat(request: ExecuteChatRequest):
         await session.save()
 
         # Convert messages to response format
-        messages: list[ChatMessage] = []
-        for msg in result.get("messages", []):
-            messages.append(
-                ChatMessage(
-                    id=getattr(msg, "id", f"msg_{len(messages)}"),
-                    type=msg.type if hasattr(msg, "type") else "unknown",
-                    content=msg.content if hasattr(msg, "content") else str(msg),
-                    timestamp=None,
-                )
-            )
+        messages = extract_chat_messages(result.get("messages", []))
 
         return ExecuteChatResponse(session_id=request.session_id, messages=messages)
     except NotFoundError:
@@ -449,11 +384,7 @@ async def build_context(request: BuildContextRequest):
 
                 try:
                     # Add table prefix if not present
-                    full_source_id = (
-                        source_id
-                        if source_id.startswith("source:")
-                        else f"source:{source_id}"
-                    )
+                    full_source_id = normalize_record_id("source", source_id)
 
                     try:
                         source = await Source.get(full_source_id)
@@ -479,9 +410,7 @@ async def build_context(request: BuildContextRequest):
 
                 try:
                     # Add table prefix if not present
-                    full_note_id = (
-                        note_id if note_id.startswith("note:") else f"note:{note_id}"
-                    )
+                    full_note_id = normalize_record_id("note", note_id)
                     note = await Note.get(full_note_id)
                     if not note:
                         continue

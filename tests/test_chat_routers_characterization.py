@@ -181,7 +181,7 @@ async def test_get_chat_session_no_state_yields_empty_messages(
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_create_source_chat_session_missing_source_returns_404(mock_get, client):
     mock_get.side_effect = _nf
     resp = client.post(
@@ -193,7 +193,7 @@ async def test_create_source_chat_session_missing_source_returns_404(mock_get, c
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_list_source_chat_sessions_missing_source_returns_404(mock_get, client):
     mock_get.side_effect = _nf
     resp = client.get("/api/sources/source:gone/chat/sessions")
@@ -206,9 +206,9 @@ async def test_list_source_chat_sessions_missing_source_returns_404(mock_get, cl
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.repo_query", new_callable=AsyncMock)
-@patch("api.routers.source_chat.ChatSession.get", new_callable=AsyncMock)
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.ChatSession.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_get_source_chat_session_missing_session_returns_404(
     mock_source_get, mock_session_get, mock_repo, client
 ):
@@ -224,9 +224,9 @@ async def test_get_source_chat_session_missing_session_returns_404(
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.repo_query", new_callable=AsyncMock)
-@patch("api.routers.source_chat.ChatSession.get", new_callable=AsyncMock)
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.ChatSession.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_get_source_chat_session_missing_relation_behavior(
     mock_source_get, mock_session_get, mock_repo, client
 ):
@@ -250,9 +250,9 @@ async def test_get_source_chat_session_missing_relation_behavior(
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.repo_query", new_callable=AsyncMock)
-@patch("api.routers.source_chat.ChatSession.get", new_callable=AsyncMock)
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.ChatSession.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_delete_source_chat_session_missing_relation_behavior(
     mock_source_get, mock_session_get, mock_repo, client
 ):
@@ -270,9 +270,9 @@ async def test_delete_source_chat_session_missing_relation_behavior(
 
 
 @pytest.mark.asyncio
-@patch("api.routers.source_chat.repo_query", new_callable=AsyncMock)
-@patch("api.routers.source_chat.ChatSession.get", new_callable=AsyncMock)
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.ChatSession.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_send_message_missing_relation_returns_404(
     mock_source_get, mock_session_get, mock_repo, client
 ):
@@ -292,9 +292,9 @@ async def test_send_message_missing_relation_returns_404(
 
 @pytest.mark.asyncio
 @patch("api.routers.source_chat.source_chat_graph")
-@patch("api.routers.source_chat.repo_query", new_callable=AsyncMock)
-@patch("api.routers.source_chat.ChatSession.get", new_callable=AsyncMock)
-@patch("api.routers.source_chat.Source.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.repo_query", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.ChatSession.get", new_callable=AsyncMock)
+@patch("api.routers._chat_shared.Source.get", new_callable=AsyncMock)
 async def test_get_source_chat_session_happy_path_shapes(
     mock_source_get, mock_session_get, mock_repo, mock_graph, client
 ):

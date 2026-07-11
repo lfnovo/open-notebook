@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
 
+### Fixed
+- Podcast generation now honors the `speaker_profile` parameter of `POST /api/podcasts/generate` — previously it was silently ignored and the speaker was always re-derived from the episode profile's `speaker_config`, which failed when that pointed at a renamed/deleted speaker profile even if the caller supplied a valid one (#1044)
+
 ## [1.11.0] - 2026-07-11
 
 ### Added

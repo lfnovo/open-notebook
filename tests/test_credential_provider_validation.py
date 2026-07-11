@@ -60,13 +60,10 @@ class TestSupportedProviderMatchesOtherSourcesOfTruth:
         import re
         from pathlib import Path
 
-        page = (
-            Path(__file__).parent.parent
-            / "frontend/src/app/(dashboard)/settings/api-keys/page.tsx"
-        )
+        page = Path(__file__).parent.parent / "frontend/src/lib/providers.tsx"
         source = page.read_text()
         match = re.search(r"const ALL_PROVIDERS = \[(.*?)\]", source, re.DOTALL)
-        assert match, "ALL_PROVIDERS array not found in api-keys/page.tsx"
+        assert match, "ALL_PROVIDERS array not found in lib/providers.tsx"
         frontend_providers = re.findall(r"'([a-z0-9_]+)'", match.group(1))
         assert set(SupportedProvider.__args__) == set(frontend_providers)
 

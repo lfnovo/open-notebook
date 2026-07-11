@@ -156,12 +156,12 @@ export function useCreateEpisodeProfile() {
   return useMutation({
     mutationFn: (payload: EpisodeProfileInput) =>
       podcastsApi.createEpisodeProfile(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.profileCreated'),
-        description: t('podcasts.profileCreatedDesc'),
+        description: t('podcasts.profileCreatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {
@@ -187,12 +187,12 @@ export function useUpdateEpisodeProfile() {
       profileId: string
       payload: EpisodeProfileInput
     }) => podcastsApi.updateEpisodeProfile(profileId, payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.profileUpdated'),
-        description: t('podcasts.profileUpdatedDesc'),
+        description: t('podcasts.profileUpdatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {
@@ -211,13 +211,14 @@ export function useDeleteEpisodeProfile() {
   const { t } = useTranslation()
 
   return useMutation({
-    mutationFn: (profileId: string) => podcastsApi.deleteEpisodeProfile(profileId),
-    onSuccess: () => {
+    mutationFn: ({ profileId }: { profileId: string; name: string }) =>
+      podcastsApi.deleteEpisodeProfile(profileId),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.profileDeleted'),
-        description: t('podcasts.profileDeletedDesc'),
+        description: t('podcasts.profileDeletedDesc', { name: variables.name }),
       })
     },
     onError: (error: unknown) => {
@@ -238,12 +239,12 @@ export function useDuplicateEpisodeProfile() {
   return useMutation({
     mutationFn: (profileId: string) =>
       podcastsApi.duplicateEpisodeProfile(profileId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.profileDuplicated'),
-        description: t('podcasts.profileDuplicatedDesc'),
+        description: t('podcasts.profileDuplicatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {
@@ -284,13 +285,13 @@ export function useCreateSpeakerProfile() {
   return useMutation({
     mutationFn: (payload: SpeakerProfileInput) =>
       podcastsApi.createSpeakerProfile(payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.speakerProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.speakerCreated'),
-        description: t('podcasts.speakerCreatedDesc'),
+        description: t('podcasts.speakerCreatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {
@@ -316,13 +317,13 @@ export function useUpdateSpeakerProfile() {
       profileId: string
       payload: SpeakerProfileInput
     }) => podcastsApi.updateSpeakerProfile(profileId, payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.speakerProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.speakerUpdated'),
-        description: t('podcasts.speakerUpdatedDesc'),
+        description: t('podcasts.speakerUpdatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {
@@ -341,14 +342,15 @@ export function useDeleteSpeakerProfile() {
   const { t } = useTranslation()
 
   return useMutation({
-    mutationFn: (profileId: string) => podcastsApi.deleteSpeakerProfile(profileId),
-    onSuccess: () => {
+    mutationFn: ({ profileId }: { profileId: string; name: string }) =>
+      podcastsApi.deleteSpeakerProfile(profileId),
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.speakerProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.episodeProfiles })
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.speakerDeleted'),
-        description: t('podcasts.speakerDeletedDesc'),
+        description: t('podcasts.speakerDeletedDesc', { name: variables.name }),
       })
     },
     onError: (error: unknown) => {
@@ -369,11 +371,11 @@ export function useDuplicateSpeakerProfile() {
   return useMutation({
     mutationFn: (profileId: string) =>
       podcastsApi.duplicateSpeakerProfile(profileId),
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.speakerProfiles })
       toast({
         title: t('podcasts.speakerDuplicated'),
-        description: t('podcasts.speakerDuplicatedDesc'),
+        description: t('podcasts.speakerDuplicatedDesc', { name: data.name }),
       })
     },
     onError: (error: unknown) => {

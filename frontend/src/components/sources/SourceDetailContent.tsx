@@ -64,8 +64,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { getDateLocale } from '@/lib/utils/date-locale'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
-import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
-import { NotebookAssociations } from '@/components/source/NotebookAssociations'
+import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
+import { NotebookAssociations } from '@/components/sources/NotebookAssociations'
 
 interface SourceDetailContentProps {
   sourceId: string

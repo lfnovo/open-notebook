@@ -23,7 +23,10 @@ from open_notebook.utils.url_validation import prepare_pinned_http_target
 def _models_endpoint(url: str) -> str:
     """Join base URL with /models without doubling an existing /models suffix."""
     trimmed = url.rstrip("/")
-    return trimmed if trimmed.endswith("/models") else f"{trimmed}/models"@dataclass
+    return trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+
+
+@dataclass
 class DiscoveredModel:
     """Represents a model discovered from a provider."""
 

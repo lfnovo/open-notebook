@@ -26,7 +26,7 @@ export function useVersionCheck() {
         const dismissKey = `version_notification_dismissed_${config.latestVersion}`
         if (sessionStorage.getItem(dismissKey)) return
 
-        toast.info(t('advanced.updateAvailable').replace('{version}', config.latestVersion), {
+        toast.info(t('advanced.updateAvailable', { version: config.latestVersion }), {
           description: t('advanced.updateAvailableDesc'),
           duration: Infinity,
           closeButton: true,

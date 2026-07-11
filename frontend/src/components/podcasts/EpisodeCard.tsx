@@ -212,7 +212,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
     : null
 
   const createdLabel = distance
-    ? t('podcasts.created').replace('{time}', distance)
+    ? t('podcasts.created', { time: distance })
     : null
 
   const handleDelete = () => {
@@ -403,7 +403,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 <AlertDialogHeader>
                   <AlertDialogTitle>{t('podcasts.deleteEpisodeTitle')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {t('podcasts.deleteEpisodeDesc').replace('{name}', episode.name)}
+                    {t('podcasts.deleteEpisodeDesc', { name: episode.name })}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -150,10 +150,7 @@ export function ModelSelector({
           {selectedModel && selectedModel !== 'default' && (
             <div className="rounded-lg bg-muted p-3">
               <p className="text-sm text-muted-foreground">
-                {t('transformations.sessionUseReplacement').replace(
-                  '{name}', 
-                  languageModels.find(m => m.id === selectedModel)?.name || selectedModel
-                )}
+                {t('transformations.sessionUseReplacement', { name: languageModels.find(m => m.id === selectedModel)?.name || selectedModel })}
               </p>
             </div>
           )}

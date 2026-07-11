@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI now gates every PR on `ruff check` (backend lint), `npm run lint` (frontend ESLint) and `npm run build` (frontend production build), in addition to the existing test suites
 
 ### Fixed
+- Frontend translations now use i18next interpolation (`t('key', { count })`) instead of manual `.replace('{count}', ...)` string surgery across ~75 call sites — locale placeholders changed from `{name}` to `{{name}}` in all 14 locales. This restores proper pluralization (e.g. "used by N episodes" now goes through i18next plural forms) and lets translators reorder placeholders freely
 - Podcast generation dialog: the token/char counter no longer fires a request storm on rapid checkbox toggling (debounced, with a stale-response guard so a slow response can't overwrite a fresher count) and the dialog now closes as soon as the episode-list refetch completes instead of after a fixed 500ms timer; the 983-line component was also split (content selection panel and selection helpers extracted, duplicated context-config logic deduplicated) with no behavior changes
 
 ### Changed

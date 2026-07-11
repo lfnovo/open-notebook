@@ -249,7 +249,7 @@ export function DiscoverModelsDialog({
                   />
                   <Plus className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="truncate">
-                    {t('models.addCustomModel').replace('{name}', searchQuery.trim())}
+                    {t('models.addCustomModel', { name: searchQuery.trim() })}
                   </span>
                 </label>
               )}

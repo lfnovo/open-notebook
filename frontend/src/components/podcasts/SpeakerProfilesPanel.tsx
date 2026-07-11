@@ -127,7 +127,7 @@ export function SpeakerProfilesPanel({
                       className="text-xs"
                     >
                       {usageCount > 0
-                        ? (usageCount === 1 ? t('podcasts.usedByCount_one') : t('podcasts.usedByCount_other').replace('{count}', usageCount.toString()))
+                        ? t('podcasts.usedByCount', { count: usageCount })
                         : t('podcasts.unused')}
                     </Badge>
                   </div>
@@ -216,7 +216,7 @@ export function SpeakerProfilesPanel({
                         <AlertDialogHeader>
                           <AlertDialogTitle>{t('podcasts.deleteSpeakerProfileTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t('podcasts.deleteSpeakerProfileDesc').replace('{name}', profile.name)}
+                            {t('podcasts.deleteSpeakerProfileDesc', { name: profile.name })}
                           </AlertDialogDescription>
                           {deleteDisabled ? (
                             <p className="mt-2 text-sm text-muted-foreground">

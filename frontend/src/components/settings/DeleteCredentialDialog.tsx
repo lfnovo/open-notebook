@@ -67,7 +67,7 @@ export function DeleteCredentialDialog({
         <DialogHeader>
           <DialogTitle>{t('apiKeys.deleteConfig')}</DialogTitle>
           <DialogDescription>
-            {t('apiKeys.deleteConfigConfirm').replace('{name}', credential.name)}
+            {t('apiKeys.deleteConfigConfirm', { name: credential.name })}
           </DialogDescription>
         </DialogHeader>
 

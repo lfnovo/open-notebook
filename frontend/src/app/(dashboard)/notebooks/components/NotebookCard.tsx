@@ -106,10 +106,10 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
             </CardDescription>
 
             <div className="mt-3 text-xs text-muted-foreground">
-              {t('common.updated').replace('{time}', formatDistanceToNow(new Date(notebook.updated), { 
+              {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { 
                 addSuffix: true,
                 locale: getDateLocale(language)
-              }))}
+              }) })}
             </div>
 
             {/* Item counts footer */}

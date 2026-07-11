@@ -176,7 +176,7 @@ export function EpisodeProfilesPanel({
                         <AlertDialogHeader>
                           <AlertDialogTitle>{t('podcasts.deleteProfileTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t('podcasts.deleteProfileDesc').replace('{name}', profile.name)}
+                            {t('podcasts.deleteProfileDesc', { name: profile.name })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

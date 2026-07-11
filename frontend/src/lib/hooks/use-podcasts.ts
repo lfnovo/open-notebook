@@ -399,7 +399,7 @@ export function useGeneratePodcast() {
       await queryClient.refetchQueries({ queryKey: QUERY_KEYS.podcastEpisodes })
       toast({
         title: t('podcasts.generationStarted'),
-        description: t('podcasts.generationStartedDesc').replace('{name}', response.episode_name),
+        description: t('podcasts.generationStartedDesc', { name: response.episode_name }),
       })
     },
     onError: (error: unknown) => {

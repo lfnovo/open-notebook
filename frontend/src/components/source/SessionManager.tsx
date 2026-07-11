@@ -231,7 +231,7 @@ export function SessionManager({
                         </div>
                         {session.message_count != null && session.message_count > 0 && (
                           <Badge variant="secondary" className="mt-2 text-xs">
-                            {t('chat.messagesCount').replace('{count}', session.message_count.toString())}
+                            {t('chat.messagesCount', { count: session.message_count })}
                           </Badge>
                         )}
                         {session.model_override && (

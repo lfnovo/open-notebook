@@ -428,7 +428,7 @@ export default function SearchPage() {
                   <div className="mt-6 space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-medium">
-                        {t('searchPage.resultsFound').replace('{count}', searchMutation.data.total_count.toString())}
+                        {t('searchPage.resultsFound', { count: searchMutation.data.total_count })}
                       </h3>
                       <Badge variant="outline">{searchMutation.data.search_type === 'text' ? t('searchPage.textSearch') : t('searchPage.vectorSearch')}</Badge>
                     </div>
@@ -436,7 +436,7 @@ export default function SearchPage() {
                     {searchMutation.data.results.length === 0 ? (
                       <Card>
                         <CardContent className="pt-6 text-center text-muted-foreground">
-                          {t('searchPage.noResultsFor').replace('{query}', searchQuery)}
+                          {t('searchPage.noResultsFor', { query: searchQuery })}
                         </CardContent>
                       </Card>
                     ) : (
@@ -472,7 +472,7 @@ export default function SearchPage() {
                                 <Collapsible className="mt-3">
                                   <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
                                     <ChevronDown className="h-4 w-4" />
-                                    {t('searchPage.matches').replace('{count}', result.matches.length.toString())}
+                                    {t('searchPage.matches', { count: result.matches.length })}
                                   </CollapsibleTrigger>
                                   <CollapsibleContent className="mt-2 space-y-1">
                                     {result.matches.map((match, i) => (

@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 import httpx
 from loguru import logger
 
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.utils.url_validation import validate_url
 
 
@@ -47,8 +48,9 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
     return isinstance(exc, (OSError, json.JSONDecodeError, GoogleAuthError))
 
 
-# Test models for each provider - uses minimal/cheapest models for testing
-# Format: (model_name, model_type)
+# Test models for each provider - uses minimal/cheapest models for testing.
+# Derived from the provider registry (the source of truth for test models).
+# Format: (model_name, model_type); None model = dynamic (first available).
 #
 # Prefer a provider-maintained floating alias where one exists, so a model
 # retirement doesn't silently break the connection test (see #970: Google
@@ -57,25 +59,8 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
 # its own. The provider test also no longer treats a model-level failure as
 # a connection failure (see `_connection_failure_reason`), so even if an
 # alias ever breaks, the test still reports the credentials correctly.
-TEST_MODELS = {
-    "openai": ("gpt-3.5-turbo", "language"),
-    "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-flash-latest", "language"),
-    "groq": ("llama-3.1-8b-instant", "language"),
-    "mistral": ("mistral-small-latest", "language"),
-    "deepseek": ("deepseek-chat", "language"),
-    "xai": ("grok-beta", "language"),
-    "openrouter": ("openai/gpt-3.5-turbo", "language"),
-    "voyage": ("voyage-3-lite", "embedding"),
-    "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
-    "deepgram": ("aura-2-thalia-en", "text_to_speech"),
-    "ollama": (None, "language"),  # Dynamic - will use first available model
-    # Complex providers with additional configuration
-    "vertex": ("gemini-flash-latest", "language"),  # Uses Google Vertex AI
-    "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
-    "openai_compatible": (None, "language"),  # Dynamic - will use first available model
-    "dashscope": ("qwen-plus", "language"),
-    "minimax": ("MiniMax-M2.5", "language"),
+TEST_MODELS: dict = {
+    name: (spec.test_model, spec.test_model_type) for name, spec in PROVIDERS.items()
 }
 
 

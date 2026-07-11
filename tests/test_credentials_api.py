@@ -313,6 +313,33 @@ class TestOmlxProviderWiring:
         assert cred.api_key is None
         assert cred.base_url == "http://localhost:11435/v1"
 
+    def test_create_credential_from_env_defaults_base_url(self, monkeypatch):
+        from api.credentials_service import create_credential_from_env
+
+        monkeypatch.delenv("OMLX_API_BASE", raising=False)
+        monkeypatch.delenv("OMLX_API_KEY", raising=False)
+        cred = create_credential_from_env("omlx")
+        assert cred.base_url == "http://localhost:11435/v1"
+
+    def test_to_esperanto_config_defaults_base_url(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="Local oMLX", provider="omlx", modalities=["language"])
+        config = cred.to_esperanto_config()
+        assert config["base_url"] == "http://localhost:11435/v1"
+
+    def test_to_esperanto_config_keeps_explicit_base_url(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Remote oMLX",
+            provider="omlx",
+            modalities=["language"],
+            base_url="http://192.168.1.10:11435/v1",
+        )
+        config = cred.to_esperanto_config()
+        assert config["base_url"] == "http://192.168.1.10:11435/v1"
+
     def test_classify_embedding_models(self):
         from open_notebook.ai.model_discovery import classify_model_type
 
@@ -326,6 +353,75 @@ class TestOmlxProviderWiring:
         assert to_esperanto_provider("omlx") == "openai-compatible"
         assert to_esperanto_provider("openai_compatible") == "openai-compatible"
         assert to_esperanto_provider("ollama") == "ollama"
+
+    @pytest.mark.asyncio
+    async def test_discover_omlx_models_avoids_double_models_path(self, monkeypatch):
+        """Global oMLX discovery should not append /models twice."""
+        from open_notebook.ai import model_discovery
+
+        requests = []
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None):
+                requests.append(url)
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "llama-3.2-3b"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_get_by_provider(provider):
+            return []
+
+        async def fake_validate_url(url, provider):
+            return None
+
+        monkeypatch.setattr(
+            model_discovery.Credential, "get_by_provider", fake_get_by_provider
+        )
+        monkeypatch.setattr(model_discovery, "validate_url", fake_validate_url)
+        monkeypatch.setattr(model_discovery.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setenv("OMLX_API_BASE", "http://localhost:11435/v1/models/")
+        monkeypatch.delenv("OMLX_API_KEY", raising=False)
+
+        models = await model_discovery.discover_omlx_models()
+
+        assert requests == ["http://localhost:11435/v1/models"]
+        assert len(models) == 1
+        assert models[0].name == "llama-3.2-3b"
+        assert models[0].provider == "omlx"
+
+    @pytest.mark.asyncio
+    async def test_discover_omlx_models_revalidates_url(self, monkeypatch):
+        """DNS-rebinding guard: validate_url runs immediately before the request."""
+        from open_notebook.ai import model_discovery
+
+        validated = []
+
+        async def fake_get_by_provider(provider):
+            return []
+
+        async def fake_validate_url(url, provider):
+            validated.append((url, provider))
+            raise ValueError("Blocked URL")
+
+        monkeypatch.setattr(
+            model_discovery.Credential, "get_by_provider", fake_get_by_provider
+        )
+        monkeypatch.setattr(model_discovery, "validate_url", fake_validate_url)
+        monkeypatch.setenv("OMLX_API_BASE", "http://evil.example/v1")
+        monkeypatch.delenv("OMLX_API_KEY", raising=False)
+
+        models = await model_discovery.discover_omlx_models()
+
+        assert validated == [("http://evil.example/v1", "omlx")]
+        assert models == []
 
 
 if __name__ == "__main__":

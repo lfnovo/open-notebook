@@ -164,7 +164,7 @@ def create_credential_from_env(provider: str) -> Credential:
             provider=provider,
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
-            base_url=os.environ.get("OMLX_API_BASE"),
+            base_url=os.environ.get("OMLX_API_BASE") or "http://localhost:11435/v1",
         )
     elif provider == "vertex":
         return Credential(

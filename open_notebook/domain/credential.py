@@ -114,6 +114,9 @@ class Credential(ObjectModel):
             # For Azure, base_url from the UI form maps to endpoint
             if self.provider and self.provider.lower() == "azure" and not self.endpoint:
                 config["endpoint"] = self.base_url
+        elif self.provider and self.provider.lower() == "omlx":
+            # Match test/discovery fallback so models work without a saved Base URL
+            config["base_url"] = "http://localhost:11435/v1"
         if self.endpoint:
             config["endpoint"] = self.endpoint
         if self.api_version:

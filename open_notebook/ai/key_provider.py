@@ -266,11 +266,12 @@ async def _provision_omlx() -> bool:
         os.environ["OPENAI_COMPATIBLE_API_KEY"] = key
         logger.debug("Set OMLX_API_KEY / OPENAI_COMPATIBLE_API_KEY from Credential")
         any_set = True
-    if cred.base_url:
-        os.environ["OMLX_API_BASE"] = cred.base_url
-        os.environ["OPENAI_COMPATIBLE_BASE_URL"] = cred.base_url
-        logger.debug("Set OMLX_API_BASE / OPENAI_COMPATIBLE_BASE_URL from Credential")
-        any_set = True
+    # Default matches test/discovery fallback when Base URL was left blank
+    base_url = cred.base_url or "http://localhost:11435/v1"
+    os.environ["OMLX_API_BASE"] = base_url
+    os.environ["OPENAI_COMPATIBLE_BASE_URL"] = base_url
+    logger.debug("Set OMLX_API_BASE / OPENAI_COMPATIBLE_BASE_URL from Credential")
+    any_set = True
 
     return any_set
 

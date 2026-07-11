@@ -216,3 +216,37 @@ class TestGetSourceNotFound:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestTitleSortUsesAlias:
+    """Regression for sort_by=title returning a 500 (v1.11 release testing).
+
+    source.title carries a SEARCH (BM25) index and SurrealDB's planner
+    fails ORDER BY on such a column with "No iterator has been found".
+    The router must therefore sort by the computed `title_sort` alias,
+    never by the raw indexed column.
+    """
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_sort_by_title_orders_by_alias(self, mock_query, client):
+        mock_query.return_value = []
+
+        response = client.get("/api/sources?sort_by=title")
+
+        assert response.status_code == 200
+        query = mock_query.call_args[0][0]
+        assert "ORDER BY title_sort" in query
+        assert "AS title_sort" in query
+
+    @pytest.mark.asyncio
+    @patch("api.routers.sources.repo_query", new_callable=AsyncMock)
+    async def test_all_sort_fields_return_200(self, mock_query, client):
+        mock_query.return_value = []
+        for field in ["type", "title", "created", "updated", "insights_count", "embedded"]:
+            response = client.get(f"/api/sources?sort_by={field}")
+            assert response.status_code == 200, f"sort_by={field}"
+
+    def test_invalid_sort_field_returns_400(self, client):
+        response = client.get("/api/sources?sort_by=bogus")
+        assert response.status_code == 400

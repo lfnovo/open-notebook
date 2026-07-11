@@ -2,6 +2,17 @@
 #
 # cubic AI review settings (settings as code).
 # Docs: https://docs.cubic.dev/configure/cubic-yaml
+#
+# Platform mechanics (verified against docs.cubic.dev, Jul 2026):
+# - Max 5 active custom agents (custom_rules) per repo. Each agent's text plus any
+#   file-backed content (file_paths) shares a 10,000-character limit that is truncated
+#   SILENTLY — only link short, stable files.
+# - Config precedence: repo cubic.yaml > org config (`cubic-config` repo) > dashboard UI
+#   > defaults. Schema: https://cubic.dev/schema/cubic-repository-config.schema.json
+# - Replying to a cubic review comment teaches it permanently (team-scoped); manage
+#   learnings under AI review settings → Memory & Learning.
+# - cubic auto-detects context files (AGENTS.md, README, .github/) — those inform the
+#   review; custom agents are what actually enforce rules.
 
 version: 1
 

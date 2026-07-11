@@ -160,12 +160,14 @@ async def prepare_pinned_http_target(url: str, provider: str) -> PinnedHttpTarge
     # Prefer IPv4 when available (simpler URL form; same vetted set).
     pinned_ip = next((ip for ip in safe_ips if ":" not in ip), safe_ips[0])
     host_for_url = f"[{pinned_ip}]" if ":" in pinned_ip else pinned_ip
+    # HTTP Host / TLS SNI must be ASCII; IDNA-encode internationalized names.
+    ascii_hostname = hostname.encode("idna").decode("ascii")
     if parsed.port is not None:
         netloc = f"{host_for_url}:{parsed.port}"
-        host_header = f"{hostname}:{parsed.port}"
+        host_header = f"{ascii_hostname}:{parsed.port}"
     else:
         netloc = host_for_url
-        host_header = hostname
+        host_header = ascii_hostname
 
     pinned_url = urlunparse(
         (
@@ -179,7 +181,7 @@ async def prepare_pinned_http_target(url: str, provider: str) -> PinnedHttpTarge
     )
     extensions: Dict[str, Any] = {}
     if parsed.scheme == "https":
-        extensions["sni_hostname"] = hostname
+        extensions["sni_hostname"] = ascii_hostname
 
     return PinnedHttpTarget(
         url=pinned_url,
@@ -232,8 +234,13 @@ def _reject_dangerous_ip(
         )
 
     # Block AWS's IMDSv6 metadata address - a Unique Local Address, not
-    # link-local, so it needs its own explicit check.
-    if ip == _AWS_IMDS_V6_ADDRESS:
+    # link-local, so it needs its own explicit check. Compare without scope
+    # ID so scoped forms (fd00:ec2::254%eth0) cannot bypass the sentinel.
+    is_aws_imds_v6 = (
+        isinstance(ip, ipaddress.IPv6Address)
+        and int(ip) == int(_AWS_IMDS_V6_ADDRESS)
+    )
+    if is_aws_imds_v6:
         if resolved:
             raise ValueError(
                 f"Hostname '{hostname}' resolves to the AWS IMDSv6 metadata address "

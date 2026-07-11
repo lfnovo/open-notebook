@@ -147,6 +147,19 @@ class TestUrlValidation:
         await validate_url("http://[::ffff:192.168.1.1]", "openai")
         # Should not raise - private IPs allowed for self-hosted
 
+    async def test_aws_imds_v6_rejected(self):
+        """AWS IMDSv6 metadata address must be rejected."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254]/", "openai")
+
+    async def test_scoped_aws_imds_v6_rejected(self):
+        """Scoped IMDSv6 (fd00:ec2::254%eth0) must not bypass the sentinel check."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254%eth0]/", "openai")
+
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254%25eth0]/", "openai")
+
 
 class TestPinnedHttpTarget:
     """DNS pinning closes the validate-then-httpx rebinding window."""
@@ -163,6 +176,18 @@ class TestPinnedHttpTarget:
         with pytest.raises(ValueError, match="Link-local"):
             await prepare_pinned_http_target(
                 "http://169.254.169.254/latest/meta-data", "omlx"
+            )
+
+    async def test_scoped_aws_imds_v6_rejected(self):
+        """Scoped IMDSv6 literals must be rejected before pinning returns a target."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await prepare_pinned_http_target(
+                "http://[fd00:ec2::254%eth0]/", "omlx"
+            )
+
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await prepare_pinned_http_target(
+                "http://[fd00:ec2::254%25eth0]/", "omlx"
             )
 
     async def test_hostname_pinned_to_resolved_ip(self):
@@ -196,6 +221,23 @@ class TestPinnedHttpTarget:
         assert target.url == "https://93.184.216.34/v1/models"
         assert target.headers == {"Host": "api.example.com"}
         assert target.extensions == {"sni_hostname": "api.example.com"}
+
+    async def test_unicode_hostname_idna_encoded_for_host_and_sni(self):
+        """Internationalized hostnames must use ASCII IDNA for Host and SNI."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "https://bücher.example/v1/models", "openai_compatible"
+            )
+
+        assert target.url == "https://93.184.216.34/v1/models"
+        assert target.headers == {"Host": "xn--bcher-kva.example"}
+        assert target.extensions == {"sni_hostname": "xn--bcher-kva.example"}
 
     async def test_hostname_resolving_to_link_local_rejected(self):
         fake_addrs = [

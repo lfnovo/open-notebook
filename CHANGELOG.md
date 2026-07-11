@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
 
+### Fixed
+- Podcast generation dialog: the token/char counter no longer fires a request storm on rapid checkbox toggling (debounced, with a stale-response guard so a slow response can't overwrite a fresher count) and the dialog now closes as soon as the episode-list refetch completes instead of after a fixed 500ms timer; the 983-line component was also split (content selection panel and selection helpers extracted, duplicated context-config logic deduplicated) with no behavior changes
+
 ### Changed
 - Chat, source chat, Ask and transformation prompts now steer models to write math as `$$...$$` (display) / `$...$` (inline) so formulas render via KaTeX, reserving fenced `latex` code blocks for when the user explicitly asks for the LaTeX source (#1051)
 

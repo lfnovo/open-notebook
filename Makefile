@@ -1,6 +1,7 @@
 .PHONY: run frontend check ruff database lint api start-all stop-all status clean-cache worker worker-start worker-stop worker-restart
 .PHONY: docker-buildx-prepare docker-buildx-clean docker-buildx-reset
 .PHONY: docker-push docker-push-latest docker-release docker-build-local tag export-docs
+.PHONY: release-test release-stack release-stack-down
 
 # Get version from pyproject.toml
 VERSION := $(shell grep -m1 version pyproject.toml | cut -d'"' -f2)
@@ -42,6 +43,25 @@ docker-buildx-clean:
 
 docker-buildx-reset: docker-buildx-clean docker-buildx-prepare
 	@echo "✅ Buildx reset complete!"
+
+# === Release Testing (see .github/RELEASE_PROCESS.md) ===
+
+# Automated image gate: fresh install + upgrade against real images.
+# Usage: make release-test TAG=1.12.0 OLD_TAG=1.11.0
+release-test:
+	@test -n "$(TAG)" || (echo "usage: make release-test TAG=<new> [OLD_TAG=<previous>]"; exit 1)
+	bash scripts/release-test/release-image-test.sh all \
+		"$(DOCKERHUB_IMAGE):$(TAG)" \
+		$(if $(OLD_TAG),"$(DOCKERHUB_IMAGE):$(OLD_TAG)")
+
+# Browsable RC stack for manual verification (optionally with a data dump).
+# Usage: make release-stack TAG=1.12.0 [DUMP=/tmp/dev-dump.surql]
+release-stack:
+	@test -n "$(TAG)" || (echo "usage: make release-stack TAG=<tag> [DUMP=<dump.surql>]"; exit 1)
+	bash scripts/release-test/rc-stack.sh up "$(TAG)" $(DUMP)
+
+release-stack-down:
+	bash scripts/release-test/rc-stack.sh down "$(or $(TAG),unused)"
 
 # === Docker Build Targets ===
 

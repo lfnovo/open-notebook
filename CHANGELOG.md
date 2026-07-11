@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Release confidence process, documented and executable: `.github/RELEASE_PROCESS.md` now covers the risk-based test matrix (buckets A/B/C), the Docker image gate, the fix-loop re-test policy and the communication/credits/retro structure, backed by a new decision record (ADR-005) and versioned tooling under `scripts/release-test/` — `make release-test TAG= OLD_TAG=` runs fresh-install + upgrade scenarios against real images, and `make release-stack TAG= [DUMP=]` boots a browsable, isolated release-candidate stack (optionally with a copy of dev data) for manual verification
+
 ## [1.11.0] - 2026-07-11
 
 ### Added

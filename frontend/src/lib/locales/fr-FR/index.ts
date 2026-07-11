@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const frFR = {
   common: {
     search: "Recherche...",
@@ -946,4 +948,4 @@ export const frFR = {
     goToSettings: "Aller aux paramètres",
     viewDocs: "Voir la documentation",
   },
-}
+} satisfies TranslationShape;

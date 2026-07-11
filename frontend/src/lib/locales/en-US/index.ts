@@ -948,3 +948,8 @@ export const enUS = {
     viewDocs: "View docs",
   },
 }
+
+// Compile-time shape of the en-US translations. Every other locale must
+// `satisfies` this type so missing or extra keys fail `tsc`, not just the
+// runtime parity test.
+export type TranslationShape = typeof enUS;

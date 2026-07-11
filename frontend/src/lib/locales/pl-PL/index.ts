@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const plPL = {
   common: {
     search: "Szukaj...",
@@ -946,4 +948,4 @@ export const plPL = {
     goToSettings: "Przejdź do Ustawień",
     viewDocs: "Zobacz dokumentację",
   },
-}
+} satisfies TranslationShape;

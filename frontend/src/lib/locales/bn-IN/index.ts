@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const bnIN = {
   common: {
     search: "অনুসন্ধান...",
@@ -947,4 +949,4 @@ export const bnIN = {
     goToSettings: "সেটিংসে যান",
     viewDocs: "ডকুমেন্টেশন দেখুন",
   },
-}
+} satisfies TranslationShape;

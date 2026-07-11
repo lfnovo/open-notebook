@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const ptBR = {
   common: {
     search: "Buscar...",
@@ -946,4 +948,4 @@ export const ptBR = {
     goToSettings: "Ir para Configurações",
     viewDocs: "Ver documentação",
   },
-}
+} satisfies TranslationShape;

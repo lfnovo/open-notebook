@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const esES = {
   common: {
     search: "Buscar...",
@@ -947,4 +949,4 @@ export const esES = {
     goToSettings: "Ir a configuración",
     viewDocs: "Ver documentación",
   },
-}
+} satisfies TranslationShape;

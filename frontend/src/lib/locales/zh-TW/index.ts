@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const zhTW = {
   common: {
     search: "搜尋...",
@@ -946,4 +948,4 @@ export const zhTW = {
     goToSettings: "前往設定",
     viewDocs: "查看文件",
   },
-}
+} satisfies TranslationShape;

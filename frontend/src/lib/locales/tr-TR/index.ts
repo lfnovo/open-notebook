@@ -1,3 +1,5 @@
+import type { TranslationShape } from '../en-US';
+
 export const trTR = {
   common: {
     search: "Ara...",
@@ -946,4 +948,4 @@ export const trTR = {
     goToSettings: "Ayarlara Git",
     viewDocs: "Belgeleri Görüntüle",
   },
-}
+} satisfies TranslationShape;

@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from surreal_commands import registry
 
 from api.command_service import CommandService
+from open_notebook.exceptions import OpenNotebookError
 
 router = APIRouter()
 
@@ -66,6 +67,10 @@ async def execute_command(request: CommandExecutionRequest):
             message=f"Command '{request.command}' submitted successfully",
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error submitting command: {str(e)}")
         raise HTTPException(
@@ -80,6 +85,10 @@ async def get_command_job_status(job_id: str):
         status_data = await CommandService.get_command_status(job_id)
         return CommandJobStatusResponse(**status_data)
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching job status: {str(e)}")
         raise HTTPException(
@@ -100,6 +109,10 @@ async def list_command_jobs(
         )
         return jobs
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing command jobs: {str(e)}")
         raise HTTPException(
@@ -114,6 +127,10 @@ async def cancel_command_job(job_id: str):
         success = await CommandService.cancel_command_job(job_id)
         return {"job_id": job_id, "cancelled": success}
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error cancelling command job: {str(e)}")
         raise HTTPException(

@@ -14,6 +14,7 @@ from api.podcast_service import (
     PodcastService,
 )
 from open_notebook.config import PODCASTS_FOLDER
+from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.models import PodcastEpisode
 
 router = APIRouter()
@@ -80,6 +81,10 @@ async def generate_podcast(request: PodcastGenerationRequest):
             episode_name=request.episode_name,
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
         raise HTTPException(
@@ -94,6 +99,10 @@ async def get_podcast_job_status(job_id: str):
         status_data = await PodcastService.get_job_status(job_id)
         return status_data
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching podcast job status: {str(e)}")
         raise HTTPException(
@@ -163,6 +172,10 @@ async def list_podcast_episodes():
 
         return response_episodes
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing podcast episodes: {str(e)}")
         raise HTTPException(
@@ -211,6 +224,10 @@ async def get_podcast_episode(episode_id: str):
             error_message=error_message,
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching podcast episode: {str(e)}")
         raise HTTPException(status_code=404, detail="Episode not found")
@@ -222,6 +239,8 @@ async def stream_podcast_episode_audio(episode_id: str):
     try:
         episode = await PodcastService.get_episode(episode_id)
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching podcast episode for audio: {str(e)}")
@@ -301,6 +320,8 @@ async def retry_podcast_episode(episode_id: str):
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error retrying podcast episode: {str(e)}")
         raise HTTPException(
@@ -335,6 +356,10 @@ async def delete_podcast_episode(episode_id: str):
         logger.info(f"Deleted podcast episode: {episode_id}")
         return {"message": "Episode deleted successfully", "episode_id": episode_id}
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
         raise HTTPException(

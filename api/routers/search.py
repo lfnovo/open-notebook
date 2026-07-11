@@ -8,7 +8,11 @@ from loguru import logger
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from open_notebook.ai.models import Model, model_manager
 from open_notebook.domain.notebook import text_search, vector_search
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.graphs.ask import graph as ask_graph
 
 router = APIRouter()
@@ -53,6 +57,10 @@ async def search_knowledge_base(search_request: SearchRequest):
     except DatabaseOperationError as e:
         logger.error(f"Database error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -159,6 +167,8 @@ async def ask_knowledge_base(ask_request: AskRequest):
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error in ask endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ask operation failed: {str(e)}")
@@ -220,6 +230,8 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         return AskResponse(answer=final_answer, question=ask_request.question)
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error in ask simple endpoint: {str(e)}")

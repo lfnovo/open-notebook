@@ -6,7 +6,8 @@ them into `api/routers/_chat_shared.py`:
 
 - record-ID normalization (bare id vs already-prefixed id)
 - session/source verification (missing record -> 404, missing `refers_to`
-  relation -> current behavior, preserved as-is)
+  relation -> 404 on every method now that the routers re-raise HTTPException
+  instead of swallowing it into a 500)
 - LangGraph state -> `ChatMessage` extraction shapes (type/content fallbacks)
 
 DB access and LangGraph state are mocked following the style of
@@ -232,9 +233,10 @@ async def test_get_source_chat_session_missing_relation_behavior(
 ):
     """Session exists but is not related to the source.
 
-    Current behavior (preserved as-is): the inner HTTPException(404) is
-    swallowed by the broad `except Exception` and re-raised as a 500 whose
-    detail embeds the original 404 message.
+    Intentional behavior change: the router now re-raises HTTPException before
+    its broad `except Exception`, so the inner 404 surfaces as a real 404
+    instead of being swallowed and re-raised as a 500 embedding the original
+    404 message.
     """
     mock_source_get.return_value = _source()
     mock_session_get.return_value = _session()
@@ -242,11 +244,8 @@ async def test_get_source_chat_session_missing_relation_behavior(
 
     resp = client.get("/api/sources/xyz/chat/sessions/abc")
 
-    assert resp.status_code == 500
-    assert (
-        resp.json()["detail"]
-        == "Error fetching source chat session: 404: Session not found for this source"
-    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Session not found for this source"
 
 
 @pytest.mark.asyncio
@@ -256,17 +255,16 @@ async def test_get_source_chat_session_missing_relation_behavior(
 async def test_delete_source_chat_session_missing_relation_behavior(
     mock_source_get, mock_session_get, mock_repo, client
 ):
+    # Intentional behavior change: the inner 404 is no longer swallowed into a
+    # 500 by the broad `except Exception` (see the get test above).
     mock_source_get.return_value = _source()
     mock_session_get.return_value = _session()
     mock_repo.return_value = []
 
     resp = client.delete("/api/sources/xyz/chat/sessions/abc")
 
-    assert resp.status_code == 500
-    assert (
-        resp.json()["detail"]
-        == "Error deleting source chat session: 404: Session not found for this source"
-    )
+    assert resp.status_code == 404
+    assert resp.json()["detail"] == "Session not found for this source"
 
 
 @pytest.mark.asyncio

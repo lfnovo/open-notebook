@@ -3,7 +3,10 @@ from loguru import logger
 
 from api.models import ContextRequest, ContextResponse
 from open_notebook.domain.notebook import Note, Notebook, Source, SourceInsight
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.utils import token_count
 
 router = APIRouter()
@@ -122,6 +125,8 @@ async def get_notebook_context(notebook_id: str, context_request: ContextRequest
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error getting context for notebook {notebook_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error getting context: {str(e)}")

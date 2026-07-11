@@ -20,6 +20,7 @@ from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import ChatSession
 from open_notebook.exceptions import (
     NotFoundError,
+    OpenNotebookError,
 )
 from open_notebook.graphs.source_chat import source_chat_graph as source_chat_graph
 from open_notebook.utils.graph_utils import get_session_message_count
@@ -112,6 +113,10 @@ async def create_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating source chat session: {str(e)}")
         raise HTTPException(
@@ -168,6 +173,10 @@ async def get_source_chat_sessions(source_id: str = Path(..., description="Sourc
         return sessions
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching source chat sessions: {str(e)}")
         raise HTTPException(
@@ -228,6 +237,10 @@ async def get_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching source chat session: {str(e)}")
         raise HTTPException(
@@ -273,6 +286,10 @@ async def update_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating source chat session: {str(e)}")
         raise HTTPException(
@@ -301,6 +318,10 @@ async def delete_source_chat_session(
         )
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Source or session not found")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting source chat session: {str(e)}")
         raise HTTPException(
@@ -424,6 +445,8 @@ async def send_message_to_source_chat(
         )
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error sending message to source chat: {str(e)}")

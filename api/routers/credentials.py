@@ -56,7 +56,10 @@ from api.models import (
 )
 from open_notebook.database.repository import ensure_record_id, repo_delete, repo_query
 from open_notebook.domain.credential import Credential
-from open_notebook.exceptions import NotFoundError
+from open_notebook.exceptions import (
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter(prefix="/credentials", tags=["credentials"])
 
@@ -79,6 +82,10 @@ async def get_status():
     """
     try:
         return await get_provider_status()
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching status: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch credential status")
@@ -89,6 +96,10 @@ async def get_env_status():
     """Check what's configured via environment variables."""
     try:
         return await svc_get_env_status()
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error checking env status: {e}")
         raise HTTPException(status_code=500, detail="Failed to check environment status")
@@ -117,6 +128,10 @@ async def list_credentials(
 
         return result
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing credentials: {e}")
         raise HTTPException(status_code=500, detail="Failed to list credentials")
@@ -132,6 +147,10 @@ async def list_credentials_by_provider(provider: str):
             models = await cred.get_linked_models()
             result.append(credential_to_response(cred, len(models)))
         return result
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing credentials for {provider}: {e}")
         raise HTTPException(status_code=500, detail="Failed to list credentials for provider")
@@ -177,6 +196,10 @@ async def create_credential(request: CreateCredentialRequest):
         await cred.save()
         return credential_to_response(cred, 0)
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating credential: {e}")
         raise HTTPException(status_code=500, detail="Failed to create credential")
@@ -189,6 +212,10 @@ async def get_credential(credential_id: str):
         cred = await Credential.get(credential_id)
         models = await cred.get_linked_models()
         return credential_to_response(cred, len(models))
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching credential {credential_id}: {e}")
         raise HTTPException(status_code=404, detail="Credential not found")
@@ -261,6 +288,8 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Credential not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to update credential")
@@ -360,6 +389,8 @@ async def delete_credential(
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Credential not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete credential")
@@ -399,6 +430,10 @@ async def discover_models_for_credential(credential_id: str):
             ],
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error discovering models for credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to discover models")
@@ -412,6 +447,10 @@ async def register_models_for_credential(
     try:
         result = await register_models(credential_id, request.models)
         return RegisterModelsResponse(**result)
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error registering models for credential {credential_id}: {e}")
         raise HTTPException(status_code=500, detail="Failed to register models")
@@ -429,6 +468,10 @@ async def migrate_from_provider_config():
         return await svc_migrate_from_provider_config()
     except ValueError as e:
         raise _handle_value_error(e)
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"ProviderConfig migration FAILED: {type(e).__name__}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Migration from provider config failed")
@@ -441,6 +484,10 @@ async def migrate_from_env():
         return await svc_migrate_from_env()
     except ValueError as e:
         raise _handle_value_error(e)
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Env migration FAILED: {type(e).__name__}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Migration from environment variables failed")

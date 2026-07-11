@@ -53,7 +53,7 @@ class TestProviderRegistryIsTheSourceOfTruth:
     frontend table are the only manual copies and must match it."""
 
     def test_literal_matches_registry_keys(self):
-        assert set(SupportedProvider.__args__) == set(PROVIDERS.keys())
+        assert set(get_args(SupportedProvider)) == set(PROVIDERS.keys())
 
     def test_registry_matches_known_good_provider_list(self):
         assert set(PROVIDERS.keys()) == set(KNOWN_GOOD_PROVIDERS)

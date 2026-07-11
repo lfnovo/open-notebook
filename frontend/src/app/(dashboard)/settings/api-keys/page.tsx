@@ -222,12 +222,14 @@ function CredentialFormDialog({
       const data: UpdateCredentialRequest = {}
       if (name !== credential.name) data.name = name
       if (apiKey.trim()) data.api_key = apiKey.trim()
-      if (baseUrl !== (credential.base_url || '')) data.base_url = baseUrl || undefined
+      // null (not undefined) so clearing a field actually reaches the API —
+      // undefined keys are dropped from the JSON body and the old value survives
+      if (baseUrl !== (credential.base_url || '')) data.base_url = baseUrl || null
       if (JSON.stringify(modalities) !== JSON.stringify(credential.modalities)) data.modalities = modalities
       if (isVertex) {
-        if (project !== (credential.project || '')) data.project = project.trim() || undefined
-        if (location !== (credential.location || '')) data.location = location.trim() || undefined
-        if (credentialsPath !== (credential.credentials_path || '')) data.credentials_path = credentialsPath.trim() || undefined
+        if (project !== (credential.project || '')) data.project = project.trim() || null
+        if (location !== (credential.location || '')) data.location = location.trim() || null
+        if (credentialsPath !== (credential.credentials_path || '')) data.credentials_path = credentialsPath.trim() || null
       }
       if (isOllama && numCtx !== (credential.num_ctx ? String(credential.num_ctx) : '')) {
         // empty clears the override (0 -> backend resets to default)

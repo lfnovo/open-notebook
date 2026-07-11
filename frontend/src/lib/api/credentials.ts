@@ -46,16 +46,18 @@ export interface UpdateCredentialRequest {
   name?: string
   modalities?: string[]
   api_key?: string
-  base_url?: string
-  endpoint?: string
-  api_version?: string
-  endpoint_llm?: string
-  endpoint_embedding?: string
-  endpoint_stt?: string
-  endpoint_tts?: string
-  project?: string
-  location?: string
-  credentials_path?: string
+  // Nullable fields: null explicitly clears the value on the server.
+  // (undefined would be dropped from the JSON payload and the old value kept.)
+  base_url?: string | null
+  endpoint?: string | null
+  api_version?: string | null
+  endpoint_llm?: string | null
+  endpoint_embedding?: string | null
+  endpoint_stt?: string | null
+  endpoint_tts?: string | null
+  project?: string | null
+  location?: string | null
+  credentials_path?: string | null
   num_ctx?: number | null
 }
 

@@ -157,6 +157,7 @@ class TestCredentialModelDiscovery:
     @pytest.mark.asyncio
     async def test_model_discovery_base_url_can_include_models_path(self, monkeypatch):
         """Model discovery should not append /models twice."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
 
         requests = []
 
@@ -167,7 +168,7 @@ class TestCredentialModelDiscovery:
             async def __aexit__(self, exc_type, exc, tb):
                 return None
 
-            async def get(self, url, headers=None, timeout=None):
+            async def get(self, url, headers=None, timeout=None, extensions=None):
                 requests.append(url)
                 return httpx.Response(
                     200,
@@ -175,7 +176,13 @@ class TestCredentialModelDiscovery:
                     request=httpx.Request("GET", url, headers=headers or {}),
                 )
 
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
         monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
 
         await credentials_service.discover_with_config(
             "openai_compatible",

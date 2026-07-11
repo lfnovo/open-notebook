@@ -17,9 +17,13 @@ from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
+from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
-@dataclass
+def _models_endpoint(url: str) -> str:
+    """Join base URL with /models without doubling an existing /models suffix."""
+    trimmed = url.rstrip("/")
+    return trimmed if trimmed.endswith("/models") else f"{trimmed}/models"@dataclass
 class DiscoveredModel:
     """Represents a model discovered from a provider."""
 
@@ -423,10 +427,16 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
 
     models = []
     try:
+        target = await prepare_pinned_http_target(
+            f"{base_url.rstrip('/')}/api/tags", "ollama"
+        )
+        headers = dict(target.headers)
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{base_url}/api/tags",
+                target.url,
+                headers=headers,
                 timeout=10.0,
+                extensions=target.extensions,
             )
             response.raise_for_status()
             data = response.json()
@@ -558,15 +568,19 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
 
     models = []
     try:
-        async with httpx.AsyncClient() as client:
-            headers = {}
-            if api_key:
-                headers["Authorization"] = f"Bearer {api_key}"
+        target = await prepare_pinned_http_target(
+            _models_endpoint(base_url), "openai_compatible"
+        )
+        headers = dict(target.headers)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
 
+        async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{base_url}/models",
+                target.url,
                 headers=headers,
                 timeout=30.0,
+                extensions=target.extensions,
             )
             response.raise_for_status()
             data = response.json()

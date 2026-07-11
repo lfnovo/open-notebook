@@ -22,7 +22,7 @@ from esperanto.common_types import ChatCompletion
 from loguru import logger
 
 from open_notebook.ai.provider_registry import PROVIDERS
-from open_notebook.utils.url_validation import validate_url
+from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
 def _is_vertex_credentials_file_error(exc: Exception) -> bool:
@@ -95,14 +95,18 @@ async def _test_azure_connection(
     test_endpoint = test_endpoint.rstrip("/")
 
     try:
-        # Re-validate at request time: the endpoint may have been saved
-        # against a hostname that only later resolved to an internal
-        # address (DNS rebinding), so a save-time check alone isn't enough.
-        await validate_url(test_endpoint, "azure")
+        # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
+        models_url = (
+            f"{test_endpoint}/openai/models?api-version={test_api_version}"
+        )
+        target = await prepare_pinned_http_target(models_url, "azure")
+        headers = dict(target.headers)
+        headers["api-key"] = test_api_key
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
-                f"{test_endpoint}/openai/models?api-version={test_api_version}",
-                headers={"api-key": test_api_key},
+                target.url,
+                headers=headers,
+                extensions=target.extensions,
             )
 
             if response.status_code == 200:
@@ -137,11 +141,17 @@ async def _test_azure_connection(
 async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
     """Test Ollama server connectivity."""
     try:
-        # Re-validate at request time (see _test_azure_connection for why).
-        await validate_url(base_url, "ollama")
+        # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
+        target = await prepare_pinned_http_target(
+            f"{base_url.rstrip('/')}/api/tags", "ollama"
+        )
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try /api/tags endpoint (standard Ollama)
-            response = await client.get(f"{base_url}/api/tags")
+            response = await client.get(
+                target.url,
+                headers=dict(target.headers),
+                extensions=target.extensions,
+            )
 
             if response.status_code == 200:
                 data = response.json()
@@ -176,15 +186,23 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
 async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
-        # Re-validate at request time (see _test_azure_connection for why).
-        await validate_url(base_url, "openai_compatible")
-        headers = {}
+        # Pin DNS at request time (closes rebinding TOCTOU left by validate_url alone).
+        trimmed = base_url.rstrip("/")
+        models_url = (
+            trimmed if trimmed.endswith("/models") else f"{trimmed}/models"
+        )
+        target = await prepare_pinned_http_target(models_url, "openai_compatible")
+        headers = dict(target.headers)
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try /models endpoint (standard OpenAI-compatible)
-            response = await client.get(f"{base_url}/models", headers=headers)
+            response = await client.get(
+                target.url,
+                headers=headers,
+                extensions=target.extensions,
+            )
 
             if response.status_code == 200:
                 data = response.json()

@@ -6,17 +6,38 @@ layer (credential create/update, source-URL ingestion) and by open_notebook's
 own AI layer (connection_tester.py, ModelManager) to re-validate a
 provider-configured URL immediately before it is actually used - closing most
 of the DNS-rebinding TOCTOU window left by validating only once, at save time.
+
+For outbound HTTP to user-supplied hostnames, prefer
+``prepare_pinned_http_target``: it resolves DNS once, rejects dangerous
+addresses, and returns a URL pinned to the vetted IP so httpx cannot
+re-resolve to a metadata endpoint (while Host/SNI stay on the original host).
 """
 
 import asyncio
 import ipaddress
 import socket
-from urllib.parse import urlparse
+from dataclasses import dataclass, field
+from typing import Any, Dict
+from urllib.parse import urlparse, urlunparse
 
 # AWS's IMDSv6 metadata endpoint. Unlike the IPv4 metadata address
 # (169.254.169.254), this is a Unique Local Address, not link-local, so it is
 # not caught by ip.is_link_local and must be checked explicitly.
 _AWS_IMDS_V6_ADDRESS = ipaddress.ip_address("fd00:ec2::254")
+
+
+@dataclass(frozen=True)
+class PinnedHttpTarget:
+    """Outbound request target pinned to a DNS-vetted IP address.
+
+    Pass ``url`` / ``headers`` / ``extensions`` to httpx so the TCP connection
+    uses the pinned address while Host and TLS SNI still use the original
+    hostname.
+    """
+
+    url: str
+    headers: Dict[str, str] = field(default_factory=dict)
+    extensions: Dict[str, Any] = field(default_factory=dict)
 
 
 async def validate_url(url: str, provider: str) -> None:
@@ -74,17 +95,7 @@ async def validate_url(url: str, provider: str) -> None:
                 # doesn't stall every other concurrent request (this is
                 # called on the hot path of model provisioning, potentially
                 # once per chat message/transformation).
-                resolved_ips = await asyncio.to_thread(socket.getaddrinfo, hostname, None)
-                for family, _, _, _, sockaddr in resolved_ips:
-                    ip_addr = sockaddr[0]
-                    try:
-                        parsed_ip = ipaddress.ip_address(ip_addr)
-                        _reject_dangerous_ip(parsed_ip, hostname, resolved=True)
-                    except ValueError as inner_ve:
-                        if "link-local" in str(inner_ve).lower() or "metadata" in str(inner_ve).lower():
-                            raise
-                        # Skip non-IP addresses (e.g., IPv6 zones)
-                        continue
+                await _resolve_safe_ips(hostname)
             except socket.gaierror:
                 # Could not resolve hostname - allow it since the URL may be
                 # valid in the deployment environment (e.g., Azure endpoints,
@@ -95,6 +106,106 @@ async def validate_url(url: str, provider: str) -> None:
         raise
     except Exception:
         raise ValueError("Invalid URL format. Check server logs for details.")
+
+
+async def prepare_pinned_http_target(url: str, provider: str) -> PinnedHttpTarget:
+    """
+    Validate ``url``, resolve DNS once, and pin the outbound target to a vetted IP.
+
+    Unlike ``validate_url`` alone (which still leaves a DNS-rebinding window
+    because httpx resolves again at connect time), this rewrites the request
+    URL to the vetted address and sets Host / ``sni_hostname`` so routing and
+    TLS verification keep the original hostname.
+
+    ``provider`` is accepted for call-site parity with ``validate_url``.
+
+    Raises:
+        ValueError: If the URL is invalid, resolves to a blocked address, or
+            cannot be resolved for an outbound request.
+    """
+    if not url or not url.strip():
+        raise ValueError("Invalid URL: hostname could not be determined.")
+
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        raise ValueError(
+            f"Invalid URL scheme: '{parsed.scheme}'. Only http and https are allowed."
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("Invalid URL: hostname could not be determined.")
+
+    try:
+        ip = ipaddress.ip_address(hostname)
+        _reject_dangerous_ip(ip, hostname)
+        # Already an IP literal — no rewrite / Host / SNI override needed.
+        return PinnedHttpTarget(url=url.strip())
+    except ValueError as ve:
+        if "Link-local" in str(ve) or "Invalid URL" in str(ve) or "metadata" in str(ve):
+            raise
+
+    try:
+        safe_ips = await _resolve_safe_ips(hostname)
+    except socket.gaierror as exc:
+        raise ValueError(
+            f"Could not resolve hostname '{hostname}' for outbound request."
+        ) from exc
+
+    if not safe_ips:
+        raise ValueError(
+            f"Could not resolve hostname '{hostname}' for outbound request."
+        )
+
+    # Prefer IPv4 when available (simpler URL form; same vetted set).
+    pinned_ip = next((ip for ip in safe_ips if ":" not in ip), safe_ips[0])
+    host_for_url = f"[{pinned_ip}]" if ":" in pinned_ip else pinned_ip
+    # HTTP Host / TLS SNI must be ASCII; IDNA-encode internationalized names.
+    ascii_hostname = hostname.encode("idna").decode("ascii")
+    if parsed.port is not None:
+        netloc = f"{host_for_url}:{parsed.port}"
+        host_header = f"{ascii_hostname}:{parsed.port}"
+    else:
+        netloc = host_for_url
+        host_header = ascii_hostname
+
+    pinned_url = urlunparse(
+        (
+            parsed.scheme,
+            netloc,
+            parsed.path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+    extensions: Dict[str, Any] = {}
+    if parsed.scheme == "https":
+        extensions["sni_hostname"] = ascii_hostname
+
+    return PinnedHttpTarget(
+        url=pinned_url,
+        headers={"Host": host_header},
+        extensions=extensions,
+    )
+
+
+async def _resolve_safe_ips(hostname: str) -> list[str]:
+    """Resolve ``hostname`` and return safe IP strings; raise on blocked addresses."""
+    resolved_ips = await asyncio.to_thread(socket.getaddrinfo, hostname, None)
+    safe: list[str] = []
+    for _family, _, _, _, sockaddr in resolved_ips:
+        ip_addr = sockaddr[0]
+        try:
+            parsed_ip = ipaddress.ip_address(ip_addr)
+            _reject_dangerous_ip(parsed_ip, hostname, resolved=True)
+            safe.append(ip_addr)
+        except ValueError as inner_ve:
+            if "link-local" in str(inner_ve).lower() or "metadata" in str(inner_ve).lower():
+                raise
+            # Skip non-IP addresses (e.g., IPv6 zones)
+            continue
+    return safe
 
 
 def _reject_dangerous_ip(
@@ -123,8 +234,13 @@ def _reject_dangerous_ip(
         )
 
     # Block AWS's IMDSv6 metadata address - a Unique Local Address, not
-    # link-local, so it needs its own explicit check.
-    if ip == _AWS_IMDS_V6_ADDRESS:
+    # link-local, so it needs its own explicit check. Compare without scope
+    # ID so scoped forms (fd00:ec2::254%eth0) cannot bypass the sentinel.
+    is_aws_imds_v6 = (
+        isinstance(ip, ipaddress.IPv6Address)
+        and int(ip) == int(_AWS_IMDS_V6_ADDRESS)
+    )
+    if is_aws_imds_v6:
         if resolved:
             raise ValueError(
                 f"Hostname '{hostname}' resolves to the AWS IMDSv6 metadata address "

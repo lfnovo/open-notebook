@@ -216,34 +216,41 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
     try:
         cred = await Credential.get(credential_id)
 
+        # Partial-update semantics keyed on field PRESENCE, not value:
+        # a field absent from the payload is left untouched, while an explicit
+        # null (or "") clears it. `is not None` checks would silently ignore
+        # a null sent to clear a field — the old value survived while the
+        # client saw success.
+        sent = request.model_fields_set
+
         if request.name is not None:
             cred.name = request.name
         if request.modalities is not None:
             cred.modalities = request.modalities
         if request.api_key is not None:
             cred.api_key = SecretStr(request.api_key)
-        if request.base_url is not None:
+        if "base_url" in sent:
             cred.base_url = request.base_url or None
-        if request.endpoint is not None:
+        if "endpoint" in sent:
             cred.endpoint = request.endpoint or None
-        if request.api_version is not None:
+        if "api_version" in sent:
             cred.api_version = request.api_version or None
-        if request.endpoint_llm is not None:
+        if "endpoint_llm" in sent:
             cred.endpoint_llm = request.endpoint_llm or None
-        if request.endpoint_embedding is not None:
+        if "endpoint_embedding" in sent:
             cred.endpoint_embedding = request.endpoint_embedding or None
-        if request.endpoint_stt is not None:
+        if "endpoint_stt" in sent:
             cred.endpoint_stt = request.endpoint_stt or None
-        if request.endpoint_tts is not None:
+        if "endpoint_tts" in sent:
             cred.endpoint_tts = request.endpoint_tts or None
-        if request.project is not None:
+        if "project" in sent:
             cred.project = request.project or None
-        if request.location is not None:
+        if "location" in sent:
             cred.location = request.location or None
-        if request.credentials_path is not None:
+        if "credentials_path" in sent:
             cred.credentials_path = request.credentials_path or None
-        if request.num_ctx is not None:
-            # 0/falsy clears the override and falls back to esperanto's default
+        if "num_ctx" in sent:
+            # 0/null/falsy clears the override and falls back to esperanto's default
             cred.num_ctx = request.num_ctx or None
 
         await cred.save()

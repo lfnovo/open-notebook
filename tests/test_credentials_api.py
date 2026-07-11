@@ -282,3 +282,62 @@ class TestAudioMatrixWiring:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestCredentialUpdateClearsFields:
+    """PUT /credentials/{id} must distinguish 'field absent' (keep) from
+    'field explicitly null/empty' (clear).
+
+    The handler used `is not None` guards, so an explicit null sent to clear
+    base_url (or the Vertex project/location/credentials_path) was silently
+    ignored — the old value survived while the client saw success. Found in
+    v1.11 release testing: an Ollama credential kept pointing at a stale IP
+    after the user cleared the field. Now keyed on model_fields_set.
+    """
+
+    def _mock_cred(self):
+        from unittest.mock import MagicMock
+
+        cred = MagicMock()
+        cred.base_url = "http://10.0.0.99:11434"
+        cred.credentials_path = "/old/path.json"
+        cred.save = AsyncMock()
+        cred.get_linked_models = AsyncMock(return_value=[])
+        return cred
+
+    def _put(self, client, cred, body):
+        from api.models import CredentialResponse
+
+        fake_response = CredentialResponse(
+            id="credential:1", name="n", provider="ollama", modalities=["language"],
+            has_api_key=False, created="2026-01-01", updated="2026-01-01", model_count=0,
+        )
+        with patch("api.routers.credentials.require_encryption_key"), \
+             patch("api.routers.credentials.Credential.get", new=AsyncMock(return_value=cred)), \
+             patch("api.routers.credentials.credential_to_response", return_value=fake_response):
+            return client.put("/api/credentials/credential:1", json=body)
+
+    def test_explicit_null_clears_base_url(self, client):
+        cred = self._mock_cred()
+        response = self._put(client, cred, {"base_url": None})
+        assert response.status_code == 200
+        assert cred.base_url is None
+        cred.save.assert_awaited_once()
+
+    def test_empty_string_clears_base_url(self, client):
+        cred = self._mock_cred()
+        response = self._put(client, cred, {"base_url": ""})
+        assert response.status_code == 200
+        assert cred.base_url is None
+
+    def test_absent_field_keeps_old_value(self, client):
+        cred = self._mock_cred()
+        response = self._put(client, cred, {"name": "renamed"})
+        assert response.status_code == 200
+        assert cred.base_url == "http://10.0.0.99:11434"
+
+    def test_null_clears_vertex_credentials_path(self, client):
+        cred = self._mock_cred()
+        response = self._put(client, cred, {"credentials_path": None})
+        assert response.status_code == 200
+        assert cred.credentials_path is None

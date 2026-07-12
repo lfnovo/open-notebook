@@ -1,0 +1,37 @@
+docs/7-DEVELOPMENT/decisions/ADR-002-external-libraries.md
+  s_7ddc9b6ed4c681::t_738e660e7715e5 36
+  s_7ddc9b6ed4c681::t_066c9c3c55cf26 33-35
+docs/3-USER-GUIDE/index.md
+  s_7ddc9b6ed4c681::t_b8f0fae127a6c2 28-29
+docs/3-USER-GUIDE/adding-sources.md
+  s_7ddc9b6ed4c681::t_e99ef6f8cabf10 197
+  s_7ddc9b6ed4c681::t_180ee7a38bd22e 71-72,78
+  s_7ddc9b6ed4c681::t_2aaa5482f16569 83
+  s_7ddc9b6ed4c681::t_80a541ac473d97 380
+  s_7ddc9b6ed4c681::t_05c33279ca1f1b 367-368
+  s_7ddc9b6ed4c681::t_16690662f225f9 53,59
+  s_7ddc9b6ed4c681::t_a8d90b4d11782e 60,79
+docs/5-CONFIGURATION/environment-reference.md
+  s_7ddc9b6ed4c681::t_c59a6cb8b83fb9 108-110,112,117-119
+docs/5-CONFIGURATION/advanced.md
+  s_7ddc9b6ed4c681::t_57b07b0e603d30 253,261-269,284-290
+  s_7ddc9b6ed4c681::t_61d1e53b18ca1b 291
+docs/3-USER-GUIDE/content-processing-engines.md
+  s_7ddc9b6ed4c681::t_0a13b610f2d56d 1-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "385e87d80aea06b0d949c3a696dd90055ae26902",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

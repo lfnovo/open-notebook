@@ -114,26 +114,44 @@ Copy this into a new file called `docker-compose.yml`:
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
-    user: root
+    # Credentials default to root:root for a zero-config local setup. Before
+    # exposing this instance to a network, set SURREAL_USER / SURREAL_PASSWORD
+    # in a .env file (see .env.example) — they are applied here and to the
+    # open_notebook service below, so the two always stay in sync.
+    # List (exec) form so each interpolated value stays a single argument —
+    # a password containing spaces would otherwise be split into several.
+    command: ["start", "--log", "info", "--user", "${SURREAL_USER:-root}", "--pass", "${SURREAL_PASSWORD:-root}", "rocksdb:/mydata/mydatabase.db"]
+    user: root  # Required for bind mounts on Linux
     ports:
-      # Localhost only — the database uses default credentials, so never
-      # publish this port on 0.0.0.0
+      # Bound to localhost only: the open_notebook service reaches this over
+      # the internal compose network regardless, so the host port is purely
+      # for local debugging (e.g. Surrealist, `surreal sql`). Exposing this
+      # on 0.0.0.0 would let anyone who can reach the host connect with the
+      # default root:root credentials.
       - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
+    environment:
+      - SURREAL_EXPERIMENTAL_GRAPHQL=true
     restart: always
+    pull_policy: always
 
   open_notebook:
     image: lfnovo/open_notebook:v1-latest
     ports:
-      - "8502:8502"
-      - "5055:5055"
+      - "8502:8502"  # Web UI
+      - "5055:5055"  # REST API
     environment:
+      # REQUIRED: Change this to your own secret string
+      # This encrypts your API keys in the database
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
+
+      # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
+      # for local use; override them in a .env file before exposing the instance
+      # (the same values configure the surrealdb service above).
       - SURREAL_URL=ws://surrealdb:8000/rpc
-      - SURREAL_USER=root
-      - SURREAL_PASSWORD=root
+      - SURREAL_USER=${SURREAL_USER:-root}
+      - SURREAL_PASSWORD=${SURREAL_PASSWORD:-root}
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
     volumes:
@@ -141,6 +159,7 @@ services:
     depends_on:
       - surrealdb
     restart: always
+    pull_policy: always
 ```
 
 ### Step 2: Set Your Encryption Key

@@ -566,6 +566,11 @@ class TestTransformationDomain:
 class TestContentSettings:
     """Test suite for ContentSettings defaults."""
 
+    def teardown_method(self):
+        # ContentSettings is a RecordModel singleton; drop any instance these
+        # tests created so a non-default value can't leak into other tests.
+        ContentSettings.clear_instance()
+
     def test_content_settings_defaults(self):
         """Test ContentSettings has proper defaults."""
         settings = ContentSettings()
@@ -576,6 +581,11 @@ class TestContentSettings:
         assert settings.auto_delete_files == "yes"
         assert settings.youtube_preferred_languages is not None
         assert len(settings.youtube_preferred_languages) > 0
+
+    def test_content_settings_accepts_crawl4ai_url_engine(self):
+        """crawl4ai is a valid URL processing engine (content-core 2.x)."""
+        settings = ContentSettings(default_content_processing_engine_url="crawl4ai")
+        assert settings.default_content_processing_engine_url == "crawl4ai"
 
 
 # ============================================================================

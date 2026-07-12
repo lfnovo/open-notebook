@@ -1,0 +1,104 @@
+tests/test_domain.py
+  s_7ddc9b6ed4c681::t_e189ed7760cc26 585-589
+  s_7ddc9b6ed4c681::t_af529d7a330dd9 569-573
+  s_7ddc9b6ed4c681::t_c230c6c95f5dc2 590-595
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+CHANGELOG.md
+  s_7ddc9b6ed4c681::t_2b693b92743e82 10,13
+  s_7ddc9b6ed4c681::t_4f0168f6419162 12
+  s_7ddc9b6ed4c681::t_16297f43c03227 11
+frontend/src/app/(dashboard)/settings/components/SettingsForm.tsx
+  s_7ddc9b6ed4c681::t_526e0f6e4d7a07 21
+  s_7ddc9b6ed4c681::t_3615a261d04b29 184
+  s_7ddc9b6ed4c681::t_128978f41d1b1d 67
+  s_7ddc9b6ed4c681::t_7a1bf721b2e187 11
+  s_7ddc9b6ed4c681::t_294295e40e94d2 70
+  s_7ddc9b6ed4c681::t_151b715ae61b9c 24
+  s_7ddc9b6ed4c681::t_082a1674e158d1 144-163
+  s_7ddc9b6ed4c681::t_d4a3d9bb551b89 54
+tests/test_graphs.py
+  s_7ddc9b6ed4c681::t_83c3471dfb039b 384-405,407-422,424
+  s_7ddc9b6ed4c681::t_6dce8c9063158d 406,423
+open_notebook/graphs/source.py
+  s_7ddc9b6ed4c681::t_9520c591b6bc51 67
+  s_7ddc9b6ed4c681::t_1a32e155ae0d60 14
+  s_7ddc9b6ed4c681::t_7ab8754bc1f48e 57,61-66,68-73,76,82
+  s_7ddc9b6ed4c681::t_744374d0ddb48c 77-81
+  s_7ddc9b6ed4c681::t_dadf2a4a951362 74-75
+frontend/src/lib/locales/es-ES/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 758
+  s_7ddc9b6ed4c681::t_4dd207443cc117 771-772
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 758
+  s_7ddc9b6ed4c681::t_4dd207443cc117 771-772
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+open_notebook/domain/content_settings.py
+  s_7ddc9b6ed4c681::t_2fc12a313a6fe3 14
+  s_7ddc9b6ed4c681::t_a4da5adc26a394 22-28
+api/routers/settings.py
+  s_7ddc9b6ed4c681::t_d576887da25ca7 58
+  s_7ddc9b6ed4c681::t_491afff3f3a52e 74-75
+  s_7ddc9b6ed4c681::t_8a92ee5672505f 25
+  s_7ddc9b6ed4c681::t_3c67b13d60dd41 88
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/it-IT/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/en-US/index.ts
+  s_7ddc9b6ed4c681::t_570039190bace3 757
+  s_7ddc9b6ed4c681::t_469363c5478db3 756
+  s_7ddc9b6ed4c681::t_4dd207443cc117 769-770
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+frontend/src/lib/locales/de-DE/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 760
+  s_7ddc9b6ed4c681::t_4dd207443cc117 773-774
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7ddc9b6ed4c681::t_469363c5478db3 757
+  s_7ddc9b6ed4c681::t_4dd207443cc117 770-771
+Dockerfile
+  s_7ddc9b6ed4c681::t_0e6618c09e1f5f 89-96
+pyproject.toml
+  s_7ddc9b6ed4c681::t_3b3a8343ad7e5b 40
+uv.lock
+  s_7ddc9b6ed4c681::t_0ba62d9d45cff5 5-10,42-50,136-155,294-321,476-487,543-547,592-635,841-849,916-945,1071-1098,1125-1137,1153-1161,1191-1193,1237-1245,1497-1505,1880-1888,2215-2239,2322,2369,2579-2597,2704-2734,3044-3055,3079-3091,3329-3340,3524-3539,3566-3627,3641-3667,3695-3703,3940-3951,4031-4053
+frontend/src/lib/types/api.ts
+  s_7ddc9b6ed4c681::t_12ec2eb32311b5 60
+api/models.py
+  s_7ddc9b6ed4c681::t_fee81137b3ae61 280,289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "2a22714bdffadc21437e8952852ec1fc6b85462d",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -396,9 +396,11 @@ function SourceDetailContentInner({
     )
   }
 
-  // Only replace the view when there is no data to show: a failed background
-  // refetch (e.g. on window focus) keeps the cached source rendered.
-  if (!source) {
+  // A definitive 404 always wins, even when React Query still holds stale
+  // data from before the source was deleted (retained data on a failed
+  // refetch). A transient refetch error over good cached data does not
+  // replace the rendered source.
+  if (loadError === 'not-found' || !source) {
     return (
       <ContentUnavailable
         variant={loadError ?? 'error'}

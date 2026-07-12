@@ -1,0 +1,28 @@
+tests/test_graphs.py
+  s_7ddc9b6ed4c681::t_b7934a3b8ae85d 277-379
+  s_7ddc9b6ed4c681::t_05300f440e3864 169-171,181-182,197-198,208-211,226-227,237-238,253-254,264-265
+pyproject.toml
+  s_7ddc9b6ed4c681::t_412ccb74bb8526 40
+open_notebook/graphs/source.py
+  s_7ddc9b6ed4c681::t_e6a238c8a3baff 38,40-44,51-52,60-67,70-75,83-84,97-109
+  s_7ddc9b6ed4c681::t_be38e2e9f7f3f4 2,5-6,20-23
+  s_7ddc9b6ed4c681::t_9fe044963d3b2c 114,121-126,129-130
+uv.lock
+  s_7ddc9b6ed4c681::t_d77421f21c2656 436,443,445,454,456,466,468,720-737,2104,2332-2358,2753-2778
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "b8b3ded7e6c57ea72d344ad0f6387a5c079797ff",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -46,5 +46,7 @@ What this makes easier, what it makes harder, what to watch. (bullets)
 | [ADR-002](ADR-002-external-libraries.md) | Delegate platform/media support to focused external libraries | Accepted |
 | [ADR-003](ADR-003-streamlit-to-nextjs.md) | Migrate the UI from Streamlit to Next.js | Accepted |
 | [ADR-004](ADR-004-background-workers.md) | Long-running work runs on background workers | Accepted |
+| [ADR-005](ADR-005-release-confidence-process.md) | Releases pass a risk-based confidence process, gated on the real image | Accepted |
+| [ADR-006](ADR-006-migration-granularity.md) | Migration granularity follows merge granularity, not release granularity | Accepted |
 | [PDR-001](PDR-001-single-user-first.md) | Single-user first; don't preclude multi-user | Accepted |
 | [PDR-002](PDR-002-provider-agnostic-core.md) | Provider-agnostic core by default | Accepted |

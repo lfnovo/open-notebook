@@ -122,6 +122,7 @@ Step-by-step guides for common types of changes in the Open Notebook codebase. E
 **Important:**
 - Migrations are numbered and run in order
 - They're tracked in the `_sbl_migrations` table — won't re-run
+- One migration per PR that needs one, numbered in merge order; never consolidate after a migration lands on main (dev images apply it immediately) — see [ADR-006](decisions/ADR-006-migration-granularity.md)
 - For destructive changes (DROP FIELD), consider data preservation
 - Test with existing data, not just empty database
 

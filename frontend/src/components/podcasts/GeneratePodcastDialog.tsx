@@ -401,6 +401,19 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       return
     }
 
+    // The generation API takes the speaker profile by name; the episode
+    // profile stores a record ID, so use the API-resolved name. It is null
+    // when the referenced speaker profile no longer exists.
+    const speakerProfileName = selectedEpisodeProfile.speaker_config_name
+    if (!speakerProfileName) {
+      toast({
+        title: t('podcasts.speakerProfileMissing'),
+        description: t('podcasts.speakerProfileMissingDesc'),
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsBuildingContext(true)
     try {
       const content = await buildContentFromSelections()
@@ -415,7 +428,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
       const payload: PodcastGenerationRequest = {
         episode_profile: selectedEpisodeProfile.name,
-        speaker_profile: selectedEpisodeProfile.speaker_config,
+        speaker_profile: speakerProfileName,
         episode_name: episodeName.trim(),
         content,
         briefing_suffix: instructions.trim() ? instructions.trim() : undefined,
@@ -524,8 +537,14 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
                     </Select>
                     {selectedEpisodeProfile && (
                       <p className="text-xs text-muted-foreground">
-                        {t('podcasts.usesSpeakerProfile')}{' '}
-                        <strong>{selectedEpisodeProfile.speaker_config}</strong>
+                        {selectedEpisodeProfile.speaker_config_name ? (
+                          <>
+                            {t('podcasts.usesSpeakerProfile')}{' '}
+                            <strong>{selectedEpisodeProfile.speaker_config_name}</strong>
+                          </>
+                        ) : (
+                          t('podcasts.speakerProfileMissingDesc')
+                        )}
                       </p>
                     )}
                   </div>

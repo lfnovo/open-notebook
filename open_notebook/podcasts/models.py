@@ -42,6 +42,7 @@ class EpisodeProfile(ObjectModel):
     table_name: ClassVar[str] = "episode_profile"
     nullable_fields: ClassVar[set[str]] = {
         "description",
+        "speaker_config",
         "outline_provider",
         "outline_model",
         "transcript_provider",
@@ -54,7 +55,14 @@ class EpisodeProfile(ObjectModel):
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
-    speaker_config: str = Field(..., description="Reference to speaker profile name")
+    speaker_config: Optional[str] = Field(
+        None,
+        description=(
+            "speaker_profile record ID this profile uses. None when the "
+            "referenced speaker profile no longer exists (orphaned by "
+            "migration 20 or a later deletion)."
+        ),
+    )
 
     # Legacy fields (kept for migration, app ignores)
     outline_provider: Optional[str] = Field(
@@ -97,6 +105,8 @@ class EpisodeProfile(ObjectModel):
 
     def _prepare_save_data(self) -> dict:
         data = super()._prepare_save_data()
+        if data.get("speaker_config"):
+            data["speaker_config"] = ensure_record_id(data["speaker_config"])
         if data.get("outline_llm"):
             data["outline_llm"] = ensure_record_id(data["outline_llm"])
         if data.get("transcript_llm"):
@@ -208,6 +218,27 @@ class SpeakerProfile(ObjectModel):
         if result:
             return cls(**result[0])
         return None
+
+    @classmethod
+    async def resolve(
+        cls, ref: Union[str, RecordID]
+    ) -> Optional["SpeakerProfile"]:
+        """Resolve a speaker profile by record ID or by unique name.
+
+        The API contract accepts speaker profiles by NAME (see
+        POST /api/podcasts/generate), while episode_profile.speaker_config
+        stores a record ID (migration 20). This resolves either form and
+        returns None when the reference doesn't match anything.
+        """
+        ref_str = str(ref)
+        if ref_str.startswith(f"{cls.table_name}:"):
+            result = await repo_query(
+                "SELECT * FROM $id", {"id": ensure_record_id(ref_str)}
+            )
+            if result:
+                return cls(**result[0])
+            return None
+        return await cls.get_by_name(ref_str)
 
 
 class PodcastEpisode(ObjectModel):

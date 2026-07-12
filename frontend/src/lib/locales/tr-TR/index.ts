@@ -543,6 +543,8 @@ export const trTR = {
     addContext: "Bağlam ekle",
     addContextDesc: "Bölüme dahil etmek için en az bir kaynak veya not seçin.",
     generationFailed: "Podcast oluşturma başarısız",
+    speakerProfileMissing: "Konuşmacı profili eksik",
+    speakerProfileMissingDesc: "Bu bölüm profili artık mevcut olmayan bir konuşmacı profiline başvuruyor. Profili düzenleyin ve bir konuşmacı profili seçin.",
     speakerProfile: "Konuşmacı Profili",
     usesSpeakerProfile: "Konuşmacı profili kullanır",
     sources: "Kaynaklar",

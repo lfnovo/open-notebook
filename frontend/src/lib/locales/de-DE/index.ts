@@ -546,6 +546,8 @@ export const deDE = {
     addContext: "Kontext hinzufügen",
     addContextDesc: "Wähle mindestens eine Quelle oder Notiz aus, die in die Episode aufgenommen werden soll.",
     generationFailed: "Podcast-Erzeugung fehlgeschlagen",
+    speakerProfileMissing: "Sprecherprofil fehlt",
+    speakerProfileMissingDesc: "Dieses Episodenprofil verweist auf ein Sprecherprofil, das nicht mehr existiert. Bearbeiten Sie das Profil und wählen Sie ein Sprecherprofil aus.",
     speakerProfile: "Sprecherprofil",
     usesSpeakerProfile: "Verwendet Sprecherprofil",
     sources: "Quellen",

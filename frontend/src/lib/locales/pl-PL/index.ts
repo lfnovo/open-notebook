@@ -543,6 +543,8 @@ export const plPL = {
     addContext: "Dodaj kontekst",
     addContextDesc: "Wybierz co najmniej jedno źródło lub notatkę do uwzględnienia w odcinku.",
     generationFailed: "Generowanie podcastu nie powiodło się",
+    speakerProfileMissing: "Brak profilu głosów",
+    speakerProfileMissingDesc: "Ten profil odcinka odwołuje się do profilu głosów, który już nie istnieje. Edytuj profil i wybierz profil głosów.",
     speakerProfile: "Profil mówcy",
     usesSpeakerProfile: "Używa profilu mówcy",
     sources: "Źródła",

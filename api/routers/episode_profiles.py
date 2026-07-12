@@ -1,11 +1,11 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
-from open_notebook.exceptions import OpenNotebookError
-from open_notebook.podcasts.models import EpisodeProfile
+from open_notebook.exceptions import InvalidInputError, OpenNotebookError
+from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
 
 router = APIRouter()
 
@@ -14,7 +14,12 @@ class EpisodeProfileResponse(BaseModel):
     id: str
     name: str
     description: str
-    speaker_config: str
+    speaker_config: Optional[str] = Field(
+        None, description="speaker_profile record ID (null when orphaned)"
+    )
+    speaker_config_name: Optional[str] = Field(
+        None, description="Resolved speaker profile name (for display)"
+    )
     outline_llm: Optional[str] = None
     transcript_llm: Optional[str] = None
     language: Optional[str] = None
@@ -28,12 +33,23 @@ class EpisodeProfileResponse(BaseModel):
     transcript_model: Optional[str] = None
 
 
-def _profile_to_response(profile: EpisodeProfile) -> EpisodeProfileResponse:
+async def _speaker_names_by_id() -> Dict[str, str]:
+    """Map speaker_profile record ID -> name for response serialization."""
+    speakers = await SpeakerProfile.get_all()
+    return {str(speaker.id): speaker.name for speaker in speakers}
+
+
+def _profile_to_response(
+    profile: EpisodeProfile, speaker_names: Dict[str, str]
+) -> EpisodeProfileResponse:
     return EpisodeProfileResponse(
         id=str(profile.id),
         name=profile.name,
         description=profile.description or "",
         speaker_config=profile.speaker_config,
+        speaker_config_name=speaker_names.get(profile.speaker_config)
+        if profile.speaker_config
+        else None,
         outline_llm=profile.outline_llm,
         transcript_llm=profile.transcript_llm,
         language=profile.language,
@@ -47,12 +63,22 @@ def _profile_to_response(profile: EpisodeProfile) -> EpisodeProfileResponse:
     )
 
 
+async def _resolve_speaker_config(value: str) -> str:
+    """Resolve an incoming speaker_config (record ID, or name for backward
+    compatibility) to a speaker_profile record ID."""
+    speaker = await SpeakerProfile.resolve(value)
+    if not speaker:
+        raise InvalidInputError(f"Speaker profile '{value}' not found")
+    return str(speaker.id)
+
+
 @router.get("/episode-profiles", response_model=List[EpisodeProfileResponse])
 async def list_episode_profiles():
     """List all available episode profiles"""
     try:
         profiles = await EpisodeProfile.get_all(order_by="name asc")
-        return [_profile_to_response(p) for p in profiles]
+        speaker_names = await _speaker_names_by_id()
+        return [_profile_to_response(p, speaker_names) for p in profiles]
     except HTTPException:
         raise
     except OpenNotebookError:
@@ -75,7 +101,7 @@ async def get_episode_profile(profile_name: str):
                 status_code=404, detail=f"Episode profile '{profile_name}' not found"
             )
 
-        return _profile_to_response(profile)
+        return _profile_to_response(profile, await _speaker_names_by_id())
 
     except HTTPException:
         raise
@@ -91,7 +117,13 @@ async def get_episode_profile(profile_name: str):
 class EpisodeProfileCreate(BaseModel):
     name: str = Field(..., description="Unique profile name")
     description: str = Field("", description="Profile description")
-    speaker_config: str = Field(..., description="Reference to speaker profile name")
+    speaker_config: str = Field(
+        ...,
+        description=(
+            "speaker_profile record ID (a profile name is also accepted "
+            "for backward compatibility)"
+        ),
+    )
     outline_llm: Optional[str] = Field(None, description="Model record ID for outline")
     transcript_llm: Optional[str] = Field(
         None, description="Model record ID for transcript"
@@ -117,7 +149,7 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
         profile = EpisodeProfile(
             name=profile_data.name,
             description=profile_data.description,
-            speaker_config=profile_data.speaker_config,
+            speaker_config=await _resolve_speaker_config(profile_data.speaker_config),
             outline_llm=profile_data.outline_llm,
             transcript_llm=profile_data.transcript_llm,
             language=profile_data.language,
@@ -131,7 +163,7 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
         )
 
         await profile.save()
-        return _profile_to_response(profile)
+        return _profile_to_response(profile, await _speaker_names_by_id())
 
     except HTTPException:
         raise
@@ -155,11 +187,16 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
                 status_code=404, detail=f"Episode profile '{profile_id}' not found"
             )
 
-        for field, value in profile_data.model_dump(exclude_unset=True).items():
+        update_data = profile_data.model_dump(exclude_unset=True)
+        if "speaker_config" in update_data:
+            update_data["speaker_config"] = await _resolve_speaker_config(
+                update_data["speaker_config"]
+            )
+        for field, value in update_data.items():
             setattr(profile, field, value)
 
         await profile.save()
-        return _profile_to_response(profile)
+        return _profile_to_response(profile, await _speaker_names_by_id())
 
     except HTTPException:
         raise
@@ -228,7 +265,7 @@ async def duplicate_episode_profile(profile_id: str):
         )
 
         await duplicate.save()
-        return _profile_to_response(duplicate)
+        return _profile_to_response(duplicate, await _speaker_names_by_id())
 
     except HTTPException:
         raise

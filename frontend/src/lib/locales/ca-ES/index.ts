@@ -543,6 +543,8 @@ export const caES = {
     addContext: "Afegeix context",
     addContextDesc: "Selecciona almenys una font o nota per incloure a l'episodi.",
     generationFailed: "Ha fallat la generació del podcast",
+    speakerProfileMissing: "Falta el perfil de veus",
+    speakerProfileMissingDesc: "Aquest perfil d'episodi fa referència a un perfil de veus que ja no existeix. Edita el perfil i selecciona un perfil de veus.",
     speakerProfile: "Perfil del locutor",
     usesSpeakerProfile: "Usa el perfil del locutor",
     sources: "Fonts",

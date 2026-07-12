@@ -543,6 +543,8 @@ export const esES = {
     addContext: "Agregar contexto",
     addContextDesc: "Selecciona al menos una fuente o nota para incluir en el episodio.",
     generationFailed: "La generación del podcast falló",
+    speakerProfileMissing: "Falta el perfil de voces",
+    speakerProfileMissingDesc: "Este perfil de episodio hace referencia a un perfil de voces que ya no existe. Edita el perfil y selecciona un perfil de voces.",
     speakerProfile: "Perfil de locutor",
     usesSpeakerProfile: "Usa perfil de locutor",
     sources: "Fuentes",

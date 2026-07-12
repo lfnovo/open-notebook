@@ -39,6 +39,9 @@ def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
 
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
+    # Speaker profile record ID or name (the API boundary resolves the
+    # user-facing name to a record ID before submitting; both are accepted
+    # here for robustness).
     speaker_profile: Optional[str] = None
     episode_name: str
     content: str
@@ -78,13 +81,19 @@ async def generate_podcast_command(
             )
 
         # Honor the explicitly requested speaker profile when provided,
-        # falling back to the episode profile's configured speaker.
-        speaker_profile_name = (
-            input_data.speaker_profile or episode_profile.speaker_config
-        )
-        speaker_profile = await SpeakerProfile.get_by_name(speaker_profile_name)
+        # falling back to the episode profile's configured speaker
+        # (a speaker_profile record ID since migration 20, None when the
+        # referenced profile no longer exists).
+        speaker_ref = input_data.speaker_profile or episode_profile.speaker_config
+        if not speaker_ref:
+            raise ValueError(
+                f"Episode profile '{episode_profile.name}' has no speaker "
+                "profile configured. Please update the profile to select a "
+                "speaker profile."
+            )
+        speaker_profile = await SpeakerProfile.resolve(speaker_ref)
         if not speaker_profile:
-            raise ValueError(f"Speaker profile '{speaker_profile_name}' not found")
+            raise ValueError(f"Speaker profile '{speaker_ref}' not found")
 
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")

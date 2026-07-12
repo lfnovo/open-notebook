@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Renaming a speaker profile no longer breaks the episode profiles that use it: `episode_profile.speaker_config` now stores a `record<speaker_profile>` reference instead of the profile name (migration 20 converts existing rows; references to already-deleted speaker profiles become null and the UI asks you to pick a speaker again). The `POST /api/podcasts/generate` contract is unchanged — it still accepts the speaker profile by name and resolves it at the API boundary (#630)
 - Source insights now get `created`/`updated` timestamps stamped at creation (migration 19 mirrors the defaults used by the other tables), and the insights API returns `null` — instead of the literal string `"None"` — for legacy insights that predate the migration (#1045)
 - `uv sync` alone now provides the full dev toolchain: the legacy `[project.optional-dependencies].dev` list was merged into `[dependency-groups].dev` (mypy included — the documented `uv run python -m mypy .` previously failed on a fresh clone), Jupyter-only packages moved to a separate `notebooks` group, and the CI typecheck job no longer needs `--extra dev` (#1101)
 - Optional model defaults (transformation, tools, large context, TTS, STT) can now be cleared: `PUT /api/models/defaults` honors explicit `null` (field absent still means "keep"; chat and embedding defaults reject `null`), and the default-model selects offer a "None" / "Use fallback (chat default)" option for the optional defaults (#1091)

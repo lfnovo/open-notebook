@@ -543,6 +543,8 @@ export const itIT = {
     addContext: "Aggiungi contesto",
     addContextDesc: "Seleziona almeno una fonte o nota da includere nell'episodio.",
     generationFailed: "Generazione podcast fallita",
+    speakerProfileMissing: "Profilo voci mancante",
+    speakerProfileMissingDesc: "Questo profilo episodio fa riferimento a un profilo voci che non esiste più. Modifica il profilo e seleziona un profilo voci.",
     speakerProfile: "Profilo Speaker",
     usesSpeakerProfile: "Usa profilo speaker",
     sources: "Fonti",

@@ -424,7 +424,9 @@ services:
     image: surrealdb/surrealdb:latest
     command: start --log trace --user root --pass root file:/mydata/database.db
     ports:
-      - "8000:8000"
+      # Localhost only — the database uses default credentials, so never
+      # publish this port on 0.0.0.0
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
 ```

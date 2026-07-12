@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.12.0] - 2026-07-12
 
+### Fixed
+- Setup snippets no longer teach publishing SurrealDB on `0.0.0.0` — the compose and `docker run` examples across the README, quick starts, installation, configuration and development docs, and the `examples/docker-compose-*.yml` files now bind port 8000 to `127.0.0.1` (matching the shipped `docker-compose.yml`), with docs pointing to `docker-compose.override.yml.example` for opt-in remote access behind a firewall or SSH tunnel; the override example itself gained the `!override` tag it needs to actually replace the base port binding instead of colliding with it (#1034)
+
 ### Added
 - Docs: cubic platform mechanics recorded as comments in `cubic.yaml` (agent limits, config precedence, memory/learning) and a "Merging PR Batches" playbook added to the maintainer guide (squash policy, CHANGELOG conflict resolution, fork rebases, competing-PR checks) (#1086)
 - New `GET /api/providers` endpoint returning provider metadata from the registry (name, display name, modalities, docs URL, whether it is configured via environment variables), so clients can enumerate supported providers instead of hardcoding them (#1075)

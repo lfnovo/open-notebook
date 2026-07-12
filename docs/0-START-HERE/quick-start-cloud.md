@@ -26,9 +26,11 @@ Create a new folder `open-notebook` and add this file:
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2
-    command: start --user root --pass password --bind 0.0.0.0:8000 rocksdb:/mydata/mydatabase.db
+    command: start --user root --pass password rocksdb:/mydata/mydatabase.db
     ports:
-      - "8000:8000"
+      # Localhost only — the database uses default credentials, so never
+      # publish this port on 0.0.0.0
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     # Removed the healthcheck because the v2 image is too minimal to run wget/curl

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
@@ -20,6 +21,7 @@ const settingsSchema = z.object({
   default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'crawl4ai', 'simple']).optional(),
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
+  docling_ocr: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -49,6 +51,7 @@ export function SettingsForm() {
       default_content_processing_engine_url: undefined,
       default_embedding_option: undefined,
       auto_delete_files: undefined,
+      docling_ocr: undefined,
     }
   })
 
@@ -64,6 +67,7 @@ export function SettingsForm() {
         default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'crawl4ai' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
+        docling_ocr: settings.docling_ocr ?? true,
       }
       reset(formData)
       setHasResetForm(true)
@@ -137,7 +141,26 @@ export function SettingsForm() {
               </CollapsibleContent>
             </Collapsible>
           </div>
-          
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Controller
+                name="docling_ocr"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="docling_ocr"
+                    checked={field.value ?? true}
+                    onCheckedChange={field.onChange}
+                    disabled={field.disabled || isLoading}
+                  />
+                )}
+              />
+              <Label htmlFor="docling_ocr">{t('settings.ocrEnabled')}</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('settings.ocrHelp')}</p>
+          </div>
+
           <div className="space-y-3">
             <Label htmlFor="url_engine">{t('settings.urlEngine')}</Label>
             <Controller

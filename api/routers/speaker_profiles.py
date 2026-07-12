@@ -16,9 +16,6 @@ class SpeakerProfileResponse(BaseModel):
     description: str
     voice_model: Optional[str] = None
     speakers: List[Dict[str, Any]]
-    # Legacy fields (for display/migration awareness)
-    tts_provider: Optional[str] = None
-    tts_model: Optional[str] = None
 
 
 def _profile_to_response(profile: SpeakerProfile) -> SpeakerProfileResponse:
@@ -28,8 +25,6 @@ def _profile_to_response(profile: SpeakerProfile) -> SpeakerProfileResponse:
         description=profile.description or "",
         voice_model=profile.voice_model,
         speakers=profile.speakers,
-        tts_provider=profile.tts_provider,
-        tts_model=profile.tts_model,
     )
 
 
@@ -81,9 +76,6 @@ class SpeakerProfileCreate(BaseModel):
     speakers: List[Dict[str, Any]] = Field(
         ..., description="Array of speaker configurations"
     )
-    # Legacy fields (accepted but not required)
-    tts_provider: Optional[str] = None
-    tts_model: Optional[str] = None
 
 
 @router.post("/speaker-profiles", response_model=SpeakerProfileResponse)
@@ -95,8 +87,6 @@ async def create_speaker_profile(profile_data: SpeakerProfileCreate):
             description=profile_data.description,
             voice_model=profile_data.voice_model,
             speakers=profile_data.speakers,
-            tts_provider=profile_data.tts_provider,
-            tts_model=profile_data.tts_model,
         )
 
         await profile.save()
@@ -185,8 +175,6 @@ async def duplicate_speaker_profile(profile_id: str):
             description=original.description,
             voice_model=original.voice_model,
             speakers=original.speakers,
-            tts_provider=original.tts_provider,
-            tts_model=original.tts_model,
         )
 
         await duplicate.save()

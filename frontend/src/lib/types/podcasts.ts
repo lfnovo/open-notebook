@@ -21,11 +21,6 @@ export interface EpisodeProfile {
   language?: string | null
   default_briefing: string
   num_segments: number
-  // Legacy fields (app ignores, kept in DB for migration)
-  outline_provider?: string | null
-  outline_model?: string | null
-  transcript_provider?: string | null
-  transcript_model?: string | null
 }
 
 export interface SpeakerVoiceConfig {
@@ -42,7 +37,22 @@ export interface SpeakerProfile {
   description: string
   voice_model?: string | null
   speakers: SpeakerVoiceConfig[]
-  // Legacy fields
+}
+
+/**
+ * Historical profile snapshot stored on an episode at generation time.
+ * Episodes generated before the legacy provider/model strings were dropped
+ * (#1107) may still carry them in the snapshot; newer episodes won't.
+ */
+export interface EpisodeProfileSnapshot extends EpisodeProfile {
+  outline_provider?: string | null
+  outline_model?: string | null
+  transcript_provider?: string | null
+  transcript_model?: string | null
+}
+
+/** See EpisodeProfileSnapshot. */
+export interface SpeakerProfileSnapshot extends SpeakerProfile {
   tts_provider?: string | null
   tts_model?: string | null
 }
@@ -55,8 +65,8 @@ export interface Language {
 export interface PodcastEpisode {
   id: string
   name: string
-  episode_profile: EpisodeProfile
-  speaker_profile: SpeakerProfile
+  episode_profile: EpisodeProfileSnapshot
+  speaker_profile: SpeakerProfileSnapshot
   briefing: string
   audio_file?: string | null
   audio_url?: string | null

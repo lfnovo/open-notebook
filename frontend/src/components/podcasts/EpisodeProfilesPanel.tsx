@@ -206,9 +206,7 @@ export function EpisodeProfilesPanel({
                       <p className="text-foreground">
                         {profile.outline_llm
                           ? (modelNameMap[profile.outline_llm] ?? profile.outline_llm)
-                          : (profile.outline_provider && profile.outline_model
-                            ? `${profile.outline_provider} / ${profile.outline_model}`
-                            : t('podcasts.notConfigured'))}
+                          : t('podcasts.notConfigured')}
                       </p>
                     </div>
                     <div>
@@ -218,9 +216,7 @@ export function EpisodeProfilesPanel({
                       <p className="text-foreground">
                         {profile.transcript_llm
                           ? (modelNameMap[profile.transcript_llm] ?? profile.transcript_llm)
-                          : (profile.transcript_provider && profile.transcript_model
-                            ? `${profile.transcript_provider} / ${profile.transcript_model}`
-                            : t('podcasts.notConfigured'))}
+                          : t('podcasts.notConfigured')}
                       </p>
                     </div>
                     <div>
@@ -251,10 +247,6 @@ export function EpisodeProfilesPanel({
                         {speakerSummary?.voice_model ? (
                           <Badge variant="outline" className="text-xs">
                             {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}
-                          </Badge>
-                        ) : speakerSummary?.tts_provider ? (
-                          <Badge variant="outline" className="text-xs">
-                            {speakerSummary.tts_provider} / {speakerSummary.tts_model}
                           </Badge>
                         ) : null}
                       </div>

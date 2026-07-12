@@ -26,11 +26,6 @@ class EpisodeProfileResponse(BaseModel):
     default_briefing: str
     num_segments: int
     max_tokens: Optional[int] = None
-    # Legacy fields (for display/migration awareness)
-    outline_provider: Optional[str] = None
-    outline_model: Optional[str] = None
-    transcript_provider: Optional[str] = None
-    transcript_model: Optional[str] = None
 
 
 async def _speaker_names_by_id() -> Dict[str, str]:
@@ -65,10 +60,6 @@ def _profile_to_response(
         default_briefing=profile.default_briefing,
         num_segments=profile.num_segments,
         max_tokens=profile.max_tokens,
-        outline_provider=profile.outline_provider,
-        outline_model=profile.outline_model,
-        transcript_provider=profile.transcript_provider,
-        transcript_model=profile.transcript_model,
     )
 
 
@@ -151,11 +142,6 @@ class EpisodeProfileCreate(BaseModel):
         None,
         description="Max output tokens for outline/transcript generation",
     )
-    # Legacy fields (accepted but not required)
-    outline_provider: Optional[str] = None
-    outline_model: Optional[str] = None
-    transcript_provider: Optional[str] = None
-    transcript_model: Optional[str] = None
 
 
 @router.post("/episode-profiles", response_model=EpisodeProfileResponse)
@@ -173,10 +159,6 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
             default_briefing=profile_data.default_briefing,
             num_segments=profile_data.num_segments,
             max_tokens=profile_data.max_tokens,
-            outline_provider=profile_data.outline_provider,
-            outline_model=profile_data.outline_model,
-            transcript_provider=profile_data.transcript_provider,
-            transcript_model=profile_data.transcript_model,
         )
 
         await profile.save()
@@ -278,10 +260,6 @@ async def duplicate_episode_profile(profile_id: str):
             default_briefing=original.default_briefing,
             num_segments=original.num_segments,
             max_tokens=original.max_tokens,
-            outline_provider=original.outline_provider,
-            outline_model=original.outline_model,
-            transcript_provider=original.transcript_provider,
-            transcript_model=original.transcript_model,
         )
 
         await duplicate.save()

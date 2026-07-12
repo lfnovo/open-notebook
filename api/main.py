@@ -198,15 +198,6 @@ async def lifespan(app: FastAPI):
         # Fail fast - don't start the API with an outdated database schema
         raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
 
-    # Run podcast profile data migration (legacy strings -> Model registry)
-    try:
-        from open_notebook.podcasts.migration import migrate_podcast_profiles
-
-        await migrate_podcast_profiles()
-    except Exception as e:
-        logger.warning(f"Podcast profile migration encountered errors: {e}")
-        # Non-fatal: profiles can be migrated manually via UI
-
     logger.success("API initialization completed successfully")
 
     # Yield control to the application

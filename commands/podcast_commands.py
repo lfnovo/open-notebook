@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional
 
 from loguru import logger
-from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.config import DATA_FOLDER
@@ -15,6 +14,7 @@ from open_notebook.podcasts.models import (
     SpeakerProfile,
     _resolve_model_config,
 )
+from open_notebook.utils.model_utils import full_model_dump
 
 try:
     from podcast_creator import configure, create_podcast
@@ -35,17 +35,6 @@ def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
     episode_dir_name = str(uuid.uuid4())
     output_dir = Path(f"{data_folder}/podcasts/episodes/{episode_dir_name}")
     return episode_dir_name, output_dir
-
-
-def full_model_dump(model):
-    if isinstance(model, BaseModel):
-        return model.model_dump()
-    elif isinstance(model, dict):
-        return {k: full_model_dump(v) for k, v in model.items()}
-    elif isinstance(model, list):
-        return [full_model_dump(item) for item in model]
-    else:
-        return model
 
 
 class PodcastGenerationInput(CommandInput):

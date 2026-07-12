@@ -19,7 +19,6 @@ from api.routers import (
     auth,
     chat,
     config,
-    context,
     credentials,
     embedding,
     embedding_rebuild,
@@ -30,6 +29,7 @@ from api.routers import (
     notebooks,
     notes,
     podcasts,
+    providers,
     search,
     settings,
     source_chat,
@@ -381,7 +381,6 @@ app.include_router(
     embedding_rebuild.router, prefix="/api/embeddings", tags=["embeddings"]
 )
 app.include_router(settings.router, prefix="/api", tags=["settings"])
-app.include_router(context.router, prefix="/api", tags=["context"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])
 app.include_router(insights.router, prefix="/api", tags=["insights"])
 app.include_router(commands_router.router, prefix="/api", tags=["commands"])
@@ -391,6 +390,7 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(providers.router, prefix="/api", tags=["providers"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 

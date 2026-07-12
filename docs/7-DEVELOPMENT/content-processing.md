@@ -35,10 +35,11 @@ All embedding is fire-and-forget through the surreal-commands worker — nothing
 
 ## Context building (`utils/context_builder.py`)
 
-`ContextBuilder` assembles LLM context from selected sources/notes/insights under a token budget:
+The single implementation behind both context consumers:
 
-- Each `ContextItem` counts its own tokens on construction; `build()` adds items in priority order (default weights: source 100 > insight 75 > note 50, see `ContextConfig`) and stops once `max_tokens` is exceeded (no prorating).
-- Fetching is lazy (nothing is loaded until `build()`), and every call re-fetches — there is no cache layer.
+- `build_notebook_context()` backs `POST /api/chat/context` (chat panel + podcast generation): it assembles source/note contexts from the inclusion config, whose status strings are matched textually ("not in" skips, "insights" → short context, "full content" → long context). Without a config, every source and note is included with its short context. Per-item failures are logged and skipped.
+- `build_source_context()` backs the source-chat graph: one source's short context plus its insights, truncated to a token budget by dropping insights (last-fetched first).
+- Every call re-fetches — there is no cache layer.
 - Token counting uses `o200k_base` via tiktoken and is an estimate (±5-10% vs. the actual model); `token_count()` falls back to a coarse estimate if tiktoken is unavailable.
 
 ## Encryption (`utils/encryption.py`) {#encryption}

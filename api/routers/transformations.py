@@ -44,6 +44,10 @@ async def get_transformations():
             _transformation_response(transformation)
             for transformation in transformations
         ]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching transformations: {str(e)}")
         raise HTTPException(
@@ -77,6 +81,8 @@ async def create_transformation(transformation_data: TransformationCreate):
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating transformation: {str(e)}")
         raise HTTPException(
@@ -102,9 +108,11 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
             if not model:
                 raise HTTPException(status_code=404, detail="Model not found")
 
-        # Execute the transformation
-        result = await transformation_graph.ainvoke(
-            dict(  # type: ignore[arg-type]
+        # Execute the transformation.
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        result = await transformation_graph.ainvoke(  # type: ignore[call-overload]
+            dict(
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),
@@ -138,6 +146,10 @@ async def get_default_prompt():
             transformation_instructions=default_prompts.transformation_instructions
             or ""
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching default prompt: {str(e)}")
         raise HTTPException(
@@ -159,6 +171,10 @@ async def update_default_prompt(prompt_update: DefaultPromptUpdate):
         return DefaultPromptResponse(
             transformation_instructions=default_prompts.transformation_instructions
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating default prompt: {str(e)}")
         raise HTTPException(
@@ -178,6 +194,8 @@ async def get_transformation(transformation_id: str):
 
         return _transformation_response(transformation)
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching transformation {transformation_id}: {str(e)}")
@@ -224,6 +242,8 @@ async def update_transformation(
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating transformation {transformation_id}: {str(e)}")
         raise HTTPException(
@@ -243,6 +263,8 @@ async def delete_transformation(transformation_id: str):
 
         return {"message": "Transformation deleted successfully"}
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error deleting transformation {transformation_id}: {str(e)}")

@@ -446,26 +446,26 @@ def chunk_text(
     logger.debug(f"Chunking text with content type: {content_type.value}")
 
     # Select appropriate splitter
+    chunks: List[str]
     if content_type == ContentType.HTML:
-        splitter = _get_html_splitter()
+        html_splitter = _get_html_splitter()
         # HTML splitter returns Document objects
-        docs = splitter.split_text(text)
+        docs = html_splitter.split_text(text)
         chunks = [
             doc.page_content if hasattr(doc, "page_content") else str(doc)
             for doc in docs
         ]
     elif content_type == ContentType.MARKDOWN:
-        splitter = _get_markdown_splitter()
+        md_splitter = _get_markdown_splitter()
         # Markdown splitter returns Document objects
-        docs = splitter.split_text(text)
+        docs = md_splitter.split_text(text)
         chunks = [
             doc.page_content if hasattr(doc, "page_content") else str(doc)
             for doc in docs
         ]
     else:
         # Plain text - use recursive splitter directly
-        splitter = _get_plain_splitter()
-        chunks = splitter.split_text(text)
+        chunks = _get_plain_splitter().split_text(text)
 
     # Apply secondary chunking if needed (for HTML/Markdown that may produce large chunks)
     if content_type in (ContentType.HTML, ContentType.MARKDOWN):

@@ -3,7 +3,10 @@ from loguru import logger
 
 from api.models import SettingsResponse, SettingsUpdate
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -21,6 +24,10 @@ async def get_settings():
             auto_delete_files=settings.auto_delete_files,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching settings: {str(e)}")
         raise HTTPException(
@@ -81,6 +88,8 @@ async def update_settings(settings_update: SettingsUpdate):
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating settings: {str(e)}")
         raise HTTPException(

@@ -547,6 +547,8 @@ export const frFR = {
     addContext: "Ajouter du contexte",
     addContextDesc: "Sélectionnez au moins une source ou une note à inclure dans l'épisode.",
     generationFailed: "Échec de la génération du podcast",
+    speakerProfileMissing: "Profil de voix manquant",
+    speakerProfileMissingDesc: "Ce profil d'épisode référence un profil de voix qui n'existe plus. Modifiez le profil et sélectionnez un profil de voix.",
     speakerProfile: "Profil de l'intervenant",
     usesSpeakerProfile: "Utilise le profil de l'intervenant",
     sources: "Sources",

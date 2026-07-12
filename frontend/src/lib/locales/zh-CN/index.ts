@@ -547,6 +547,8 @@ export const zhCN = {
     addContext: "添加上下文",
     addContextDesc: "至少选择一个来源或笔记包含在单集中。",
     generationFailed: "播客生成失败",
+    speakerProfileMissing: "缺少讲述人配置",
+    speakerProfileMissingDesc: "此单集配置引用的讲述人配置已不存在。请编辑该配置并选择一个讲述人配置。",
     speakerProfile: "主持人简介",
     usesSpeakerProfile: "使用主持人简介",
     sources: "来源",

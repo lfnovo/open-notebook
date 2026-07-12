@@ -46,9 +46,13 @@ interface EpisodeProfilesPanelProps {
 
 function findSpeakerSummary(
   speakerProfiles: SpeakerProfile[],
-  speakerName: string
+  speakerId: string | null
 ) {
-  return speakerProfiles.find((profile) => profile.name === speakerName)
+  if (!speakerId) {
+    return undefined
+  }
+  // speaker_config references the speaker profile by record ID
+  return speakerProfiles.find((profile) => profile.id === speakerId)
 }
 
 export function EpisodeProfilesPanel({
@@ -239,7 +243,11 @@ export function EpisodeProfilesPanel({
                       </p>
                       <div className="flex items-center gap-2 text-foreground">
                         <Users className="h-4 w-4" />
-                        <span>{profile.speaker_config}</span>
+                        <span>
+                          {profile.speaker_config_name ??
+                            speakerSummary?.name ??
+                            t('podcasts.notConfigured')}
+                        </span>
                         {speakerSummary?.voice_model ? (
                           <Badge variant="outline" className="text-xs">
                             {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}

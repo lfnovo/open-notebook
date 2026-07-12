@@ -547,6 +547,8 @@ export const jaJP = {
     addContext: "コンテキストを追加",
     addContextDesc: "エピソードに含めるソースまたはノートを少なくとも1つ選択してください。",
     generationFailed: "ポッドキャスト生成に失敗しました",
+    speakerProfileMissing: "スピーカープロファイルがありません",
+    speakerProfileMissingDesc: "このエピソードプロファイルは存在しないスピーカープロファイルを参照しています。プロファイルを編集してスピーカープロファイルを選択してください。",
     speakerProfile: "スピーカープロファイル",
     usesSpeakerProfile: "スピーカープロファイルを使用",
     sources: "ソース",

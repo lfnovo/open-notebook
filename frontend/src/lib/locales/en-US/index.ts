@@ -545,6 +545,8 @@ export const enUS = {
     addContext: "Add context",
     addContextDesc: "Select at least one source or note to include in the episode.",
     generationFailed: "Podcast generation failed",
+    speakerProfileMissing: "Speaker profile missing",
+    speakerProfileMissingDesc: "This episode profile references a speaker profile that no longer exists. Edit the profile and select a speaker profile.",
     speakerProfile: "Speaker Profile",
     usesSpeakerProfile: "Uses speaker profile",
     sources: "Sources",

@@ -8,7 +8,7 @@ that can be tested without database mocking.
 import sys
 import tempfile
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -511,7 +511,13 @@ class TestPodcastService:
                 EpisodeProfile, "get_by_name", new=AsyncMock(return_value=object())
             ),
             patch.object(
-                SpeakerProfile, "get_by_name", new=AsyncMock(return_value=object())
+                SpeakerProfile,
+                "get_by_name",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        id="speaker_profile:speakers", name="Speakers"
+                    )
+                ),
             ),
             patch.object(Notebook, "get", new=AsyncMock(return_value=notebook)),
             patch.object(Notebook, "get_sources", new=fake_get_sources),

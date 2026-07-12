@@ -12,7 +12,10 @@ export interface EpisodeProfile {
   id: string
   name: string
   description: string
-  speaker_config: string
+  /** speaker_profile record ID (null when the referenced profile no longer exists) */
+  speaker_config: string | null
+  /** Resolved speaker profile name, provided by the API for display */
+  speaker_config_name?: string | null
   outline_llm?: string | null
   transcript_llm?: string | null
   language?: string | null
@@ -66,6 +69,7 @@ export interface PodcastEpisode {
 
 export interface PodcastGenerationRequest {
   episode_profile: string
+  /** speaker_profile record ID (the API also accepts a profile name) */
   speaker_profile: string
   episode_name: string
   content?: string
@@ -130,14 +134,19 @@ export function speakerUsageMap(
   }
 
   const usage: Record<string, number> = {}
+  const nameById: Record<string, string> = {}
 
   for (const profile of speakerProfiles) {
     usage[profile.name] = 0
+    nameById[profile.id] = profile.name
   }
 
   for (const episodeProfile of episodeProfiles) {
+    // speaker_config references the speaker profile by record ID
     const key = episodeProfile.speaker_config
-    if (key in usage) {
+      ? nameById[episodeProfile.speaker_config]
+      : undefined
+    if (key !== undefined && key in usage) {
       usage[key] += 1
     }
   }

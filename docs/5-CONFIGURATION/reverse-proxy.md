@@ -128,7 +128,7 @@ API_URL=https://your-domain.com
 
 **Important**: Set `API_URL` to your public URL (with https://).
 
-**Note on HOSTNAME**: The Docker images set `HOSTNAME=0.0.0.0` by default, which ensures Next.js binds to all interfaces and is accessible from reverse proxies. You typically don't need to set this manually.
+**Note on the bind address**: The Docker images bind Next.js to `0.0.0.0` by default, which ensures it listens on all interfaces and is accessible from reverse proxies. You typically don't need to change this; if you do, set `FRONTEND_BIND_HOST` (the `HOSTNAME` variable is unreliable because container runtimes such as Podman override it with the container/pod hostname).
 
 ---
 

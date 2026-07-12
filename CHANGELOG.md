@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The source detail view (dialog and full page) now fetches through the shared `useSource` React Query hook instead of a hand-rolled fetch, matching the insight/note dialogs: caching and the never-retry-404 policy come from React Query, title edits and deletes go through the shared mutation hooks (so source lists refresh and a deleted source can't be served from the cache), and the `key={sourceId}` remount workaround on the parents was removed — the component resets its own per-source UI state (#1106)
+
 ### Fixed
 - Clicking a chat/Ask citation that points at a deleted source, insight, or note now shows a shared, friendly "this content no longer exists" state in all three dialogs (instead of a raw error, a blank dialog, or an empty editable note editor), 404 lookups are no longer retried, and non-404 failures show a distinct "unable to load" message (#455)
 - Source insights now get `created`/`updated` timestamps stamped at creation (migration 19 mirrors the defaults used by the other tables), and the insights API returns `null` — instead of the literal string `"None"` — for legacy insights that predate the migration (#1045)

@@ -859,6 +859,8 @@ export const caES = {
     defaultAssignmentsDesc: "Configura quins models s'usaran per a diferents propòsits a Open Notebook",
     missingRequiredModels: "Falten models obligatoris: {{models}}. Open Notebook pot no funcionar correctament sense aquests.",
     selectModelPlaceholder: "Selecciona un model",
+    noneOption: "Cap",
+    noneFallbackToChat: "Utilitza l'alternativa (xat per defecte)",
     requiredModelPlaceholder: "⚠️ Obligatori - Selecciona un model",
     chatModelLabel: "Model de xat",
     chatModelDesc: "S'usa per a les converses de xat",

@@ -859,6 +859,8 @@ export const ruRU = {
     defaultAssignmentsDesc: "Настройте, какие модели использовать для различных задач в Open Notebook",
     missingRequiredModels: "Отсутствуют необходимые модели: {{models}}. Open Notebook может работать некорректно без них.",
     selectModelPlaceholder: "Выберите модель",
+    noneOption: "Нет",
+    noneFallbackToChat: "Использовать запасной вариант (чат по умолчанию)",
     requiredModelPlaceholder: "⚠️ Обязательно — выберите модель",
     chatModelLabel: "Модель чата",
     chatModelDesc: "Используется для чат-разговоров",

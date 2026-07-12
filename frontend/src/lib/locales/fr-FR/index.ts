@@ -859,6 +859,8 @@ export const frFR = {
     defaultAssignmentsDesc: "Configurez quels modèles utiliser pour les différents usages d'Open Notebook",
     missingRequiredModels: "Modèles requis manquants : {{models}}. Open Notebook pourrait ne pas fonctionner correctement sans eux.",
     selectModelPlaceholder: "Sélectionnez un modèle",
+    noneOption: "Aucun",
+    noneFallbackToChat: "Utiliser le repli (chat par défaut)",
     requiredModelPlaceholder: "⚠️ Requis - Sélectionnez un modèle",
     chatModelLabel: "Modèle de Chat",
     chatModelDesc: "Utilisé pour les conversations",

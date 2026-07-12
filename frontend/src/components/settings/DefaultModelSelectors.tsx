@@ -20,8 +20,13 @@ interface DefaultConfig {
   description: string
   modelType: ModelType
   required?: boolean
+  /** When unset, this default falls back to the chat default (see open_notebook/ai/models.py). */
+  fallsBackToChat?: boolean
   id: string
 }
+
+// Radix Select reserves "" for "no selection", so the clear option needs a sentinel.
+const NONE_VALUE = '__none__'
 
 interface DefaultModelSelectProps {
   config: DefaultConfig
@@ -49,8 +54,8 @@ function DefaultModelSelect({
       </Label>
       <div className="flex gap-1">
         <Select
-          value={currentValue || ""}
-          onValueChange={(v) => onChange(config.key, v)}
+          value={currentValue || (config.required ? "" : NONE_VALUE)}
+          onValueChange={(v) => onChange(config.key, v === NONE_VALUE ? "" : v)}
         >
           <SelectTrigger
             id={config.id}
@@ -63,6 +68,13 @@ function DefaultModelSelect({
             } />
           </SelectTrigger>
           <SelectContent>
+            {!config.required && (
+              <SelectItem value={NONE_VALUE}>
+                <span className="text-muted-foreground">
+                  {config.fallsBackToChat ? t('models.noneFallbackToChat') : t('models.noneOption')}
+                </span>
+              </SelectItem>
+            )}
             {available.sort((a, b) => a.name.localeCompare(b.name)).map(model => (
               <SelectItem key={model.id} value={model.id}>
                 <div className="flex items-center justify-between w-full">
@@ -122,8 +134,8 @@ export function DefaultModelSelectors({
   ]
 
   const advancedConfigs: DefaultConfig[] = [
-    { key: 'default_transformation_model', label: t('models.transformationModelLabel'), description: t('models.transformationModelDesc'), modelType: 'language', required: true, id: `${generatedId}-transform` },
-    { key: 'default_tools_model', label: t('models.toolsModelLabel'), description: t('models.toolsModelDesc'), modelType: 'language', id: `${generatedId}-tools` },
+    { key: 'default_transformation_model', label: t('models.transformationModelLabel'), description: t('models.transformationModelDesc'), modelType: 'language', fallsBackToChat: true, id: `${generatedId}-transform` },
+    { key: 'default_tools_model', label: t('models.toolsModelLabel'), description: t('models.toolsModelDesc'), modelType: 'language', fallsBackToChat: true, id: `${generatedId}-tools` },
     { key: 'large_context_model', label: t('models.largeContextModelLabel'), description: t('models.largeContextModelDesc'), modelType: 'language', id: `${generatedId}-large` },
   ]
 

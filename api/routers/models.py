@@ -330,33 +330,35 @@ async def get_default_models():
         )
 
 
+# Defaults the app cannot function without — they can be reassigned but
+# never cleared (the optional ones fall back to the chat default or are
+# simply skipped when unset).
+REQUIRED_DEFAULTS = {"default_chat_model", "default_embedding_model"}
+
+
 @router.put("/models/defaults", response_model=DefaultModelsResponse)
 async def update_default_models(defaults_data: DefaultModelsResponse):
-    """Update default model assignments."""
+    """Update default model assignments.
+
+    Partial-update semantics keyed on field PRESENCE, not value: a field
+    absent from the payload is left untouched, while an explicit null clears
+    the default (except required ones). `is not None` checks would silently
+    ignore a null sent to clear a default — the old value survived while the
+    client saw success (same anti-pattern fixed for credentials in #1046).
+    """
     try:
         defaults = await DefaultModels.get_instance()
 
-        # Update only provided fields
-        if defaults_data.default_chat_model is not None:
-            defaults.default_chat_model = defaults_data.default_chat_model  # type: ignore[attr-defined]
-        if defaults_data.default_transformation_model is not None:
-            defaults.default_transformation_model = (
-                defaults_data.default_transformation_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.large_context_model is not None:
-            defaults.large_context_model = defaults_data.large_context_model  # type: ignore[attr-defined]
-        if defaults_data.default_text_to_speech_model is not None:
-            defaults.default_text_to_speech_model = (
-                defaults_data.default_text_to_speech_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.default_speech_to_text_model is not None:
-            defaults.default_speech_to_text_model = (
-                defaults_data.default_speech_to_text_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.default_embedding_model is not None:
-            defaults.default_embedding_model = defaults_data.default_embedding_model  # type: ignore[attr-defined]
-        if defaults_data.default_tools_model is not None:
-            defaults.default_tools_model = defaults_data.default_tools_model  # type: ignore[attr-defined]
+        sent = defaults_data.model_fields_set
+        for field in DefaultModelsResponse.model_fields:
+            if field not in sent:
+                continue
+            value = getattr(defaults_data, field)
+            if value is None and field in REQUIRED_DEFAULTS:
+                raise InvalidInputError(
+                    f"{field} is required and cannot be cleared, only reassigned"
+                )
+            setattr(defaults, field, value)
 
         await defaults.update()
 

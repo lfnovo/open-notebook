@@ -859,6 +859,8 @@ export const zhCN = {
     defaultAssignmentsDesc: "配置用于 Open Notebook 不同用途的默认模型",
     missingRequiredModels: "缺少必需的模型：{{models}}。如果没有这些模型，Open Notebook 可能无法正常运行。",
     selectModelPlaceholder: "选择一个模型",
+    noneOption: "无",
+    noneFallbackToChat: "使用回退（聊天默认模型）",
     requiredModelPlaceholder: "⚠️ 必需 - 请选择一个模型",
     chatModelLabel: "聊天模型",
     chatModelDesc: "用于聊天对话",

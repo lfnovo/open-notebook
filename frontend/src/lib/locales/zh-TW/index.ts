@@ -859,6 +859,8 @@ export const zhTW = {
     defaultAssignmentsDesc: "設定用於 Open Notebook 不同用途的預設模型",
     missingRequiredModels: "缺少必需的模型：{{models}}。如果没有這些模型，Open Notebook 可能無法正常運行。",
     selectModelPlaceholder: "選擇一個模型",
+    noneOption: "無",
+    noneFallbackToChat: "使用備用（聊天預設模型）",
     requiredModelPlaceholder: "⚠️ 必需 - 請選擇一個模型",
     chatModelLabel: "聊天模型",
     chatModelDesc: "用於聊天對話",

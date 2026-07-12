@@ -15,7 +15,10 @@ It was redesigned during the v1.11.0 release ([ADR-005](../docs/7-DEVELOPMENT/de
 - Major releases are planned with a milestone when they include breaking
   changes or migrations that need user coordination.
 - Use the `in-dev-build` label for changes available in development images and
-  `released` for shipped work.
+  `released` for shipped work. (The `released` label was recreated during
+  v1.12.0 — it had been dropped from the curated label taxonomy while this
+  document still required it. If a label this document references is missing,
+  recreate it rather than skipping the step.)
 
 ## Normal Flow
 
@@ -137,7 +140,9 @@ accepted improvements immediately — update this document, the scripts under
 
 - **Platforms:** `linux/amd64`, `linux/arm64`
 - **Registries:** Docker Hub + GitHub Container Registry
-- **Image variants:** regular + single-container (`-single`)
+- **Image variants:** regular + single-container (`-single`). Both are built
+  from the same `Dockerfile`: regular is the default/`runtime` target, single
+  is `--target single`
 - **Version source:** `pyproject.toml`
 - Build issues: `docker builder prune`, then `make docker-buildx-reset`
 
@@ -153,3 +158,17 @@ accepted improvements immediately — update this document, the scripts under
   dump — `rc-stack.sh` handles both.
 - **Multiple local SurrealDB instances**: check which one the dev `.env`
   actually points at (`SURREAL_URL`) before exporting data.
+- **Dev-machine ports may belong to other projects**: check who owns
+  3000/5055/8000 (`lsof -nP -iTCP:<port> -sTCP:LISTEN` + the process cwd)
+  before starting or killing anything. The frontend runs fine on an alternate
+  port for smoke testing (`PORT=3001 npm run dev`) — pass the URL to the
+  smoke agent.
+- **Manual error-path checklist items must be validated against the code
+  first**: some "missing configuration" scenarios are deliberate fallbacks,
+  not errors (e.g. transformation and tools defaults fall back to the chat
+  default). Confirm the expected behavior in the provisioning code before
+  putting "should show an error" on the bucket-C checklist.
+- **The test suite runs against the live dev database** when a developer
+  `.env` is loaded. During bucket A, snapshot record counts per table before
+  and after the suite (e.g. credentials count) — a diff means a test is
+  leaking writes (this caught 48 leaked `Test` credentials in v1.12.0).

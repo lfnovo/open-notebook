@@ -2,10 +2,30 @@
 #
 # cubic AI review settings (settings as code).
 # Docs: https://docs.cubic.dev/configure/cubic-yaml
+#
+# Platform mechanics (verified against docs.cubic.dev, Jul 2026):
+# - Max 5 active custom agents (custom_rules) per repo. Each agent's text plus any
+#   file-backed content (file_paths) shares a 10,000-character limit that is truncated
+#   SILENTLY — only link short, stable files.
+# - Config precedence: repo cubic.yaml > org config (`cubic-config` repo) > dashboard UI
+#   > defaults. Schema: https://cubic.dev/schema/cubic-repository-config.schema.json
+# - Replying to a cubic review comment teaches it permanently (team-scoped); manage
+#   learnings under AI review settings → Memory & Learning.
+# - cubic auto-detects context files (AGENTS.md, README, .github/) — those inform the
+#   review; custom agents are what actually enforce rules.
 
 version: 1
 
 reviews:
+  # Skip files with no reviewable logic to preserve the monthly reviewed-line quota:
+  # CHANGELOG entries are prose (and every PR + rebase re-reviews them); lockfiles
+  # are generated.
+  ignore:
+    files:
+      - 'CHANGELOG.md'
+      - 'uv.lock'
+      - 'frontend/package-lock.json'
+
   custom_instructions: |
     This project follows an issue-first workflow for anything non-trivial: features and
     architecture changes must reference an approved, assigned issue and stay scoped to it.

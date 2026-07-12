@@ -21,6 +21,7 @@ def make_ids(n, prefix):
 class TestNotebooksMaxLength:
     def test_accepts_up_to_50_notebooks(self):
         request = SourceCreate(type="text", content="hi", notebooks=make_ids(50, "notebook"))
+        assert request.notebooks is not None
         assert len(request.notebooks) == 50
 
     def test_rejects_51_notebooks(self):
@@ -43,6 +44,7 @@ class TestTransformationsMaxLength:
         request = SourceCreate(
             type="text", content="hi", transformations=make_ids(50, "transformation")
         )
+        assert request.transformations is not None
         assert len(request.transformations) == 50
 
     def test_rejects_51_transformations(self):

@@ -2,7 +2,6 @@ import time
 from typing import Any, Dict, List, Optional
 
 from loguru import logger
-from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.database.repository import ensure_record_id
@@ -16,17 +15,6 @@ try:
 except ImportError as e:
     logger.error(f"Failed to import graphs: {e}")
     raise ValueError("graphs not available")
-
-
-def full_model_dump(model):
-    if isinstance(model, BaseModel):
-        return model.model_dump()
-    elif isinstance(model, dict):
-        return {k: full_model_dump(v) for k, v in model.items()}
-    elif isinstance(model, list):
-        return [full_model_dump(item) for item in model]
-    else:
-        return model
 
 
 class SourceProcessingInput(CommandInput):
@@ -101,9 +89,11 @@ async def process_source_command(
         # 3. Process source with all notebooks
         logger.info(f"Processing source with {len(input_data.notebook_ids)} notebooks")
 
-        # Execute source_graph with all notebooks
-        result = await source_graph.ainvoke(
-            {  # type: ignore[arg-type]
+        # Execute source_graph with all notebooks.
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        result = await source_graph.ainvoke(  # type: ignore[call-overload]
+            {
                 "content_state": input_data.content_state,
                 "notebook_ids": input_data.notebook_ids,  # Use notebook_ids (plural) as expected by SourceState
                 "apply_transformations": transformations,
@@ -228,8 +218,10 @@ async def run_transformation_command(
                 f"Transformation '{input_data.transformation_id}' not found"
             )
 
-        # Run transformation graph (includes LLM call + insight creation)
-        await transform_graph.ainvoke(
+        # Run transformation graph (includes LLM call + insight creation).
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        await transform_graph.ainvoke(  # type: ignore[call-overload]
             input=dict(source=source, transformation=transformation)
         )
 

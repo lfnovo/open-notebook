@@ -2,12 +2,12 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { ChatColumn } from './ChatColumn'
 import { useNotes } from '@/lib/hooks/use-notes'
-import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
+import { useNotebookChat } from '@/lib/hooks/use-notebook-chat'
 
 // Mock the hooks
 vi.mock('@/lib/hooks/use-notes')
-vi.mock('@/lib/hooks/useNotebookChat')
-vi.mock('@/components/source/ChatPanel', () => ({
+vi.mock('@/lib/hooks/use-notebook-chat')
+vi.mock('@/components/sources/ChatPanel', () => ({
   ChatPanel: () => <div data-testid="chat-panel" />
 }))
 

@@ -386,30 +386,6 @@ class SourceListResponse(BaseModel):
     processing_info: Optional[Dict[str, Any]] = None
 
 
-# Context API models
-class ContextConfig(BaseModel):
-    sources: Dict[str, str] = Field(
-        default_factory=dict, description="Source inclusion config {source_id: level}"
-    )
-    notes: Dict[str, str] = Field(
-        default_factory=dict, description="Note inclusion config {note_id: level}"
-    )
-
-
-class ContextRequest(BaseModel):
-    notebook_id: str = Field(..., description="Notebook ID to get context for")
-    context_config: Optional[ContextConfig] = Field(
-        None, description="Context configuration"
-    )
-
-
-class ContextResponse(BaseModel):
-    notebook_id: str
-    sources: List[Dict[str, Any]] = Field(..., description="Source context data")
-    notes: List[Dict[str, Any]] = Field(..., description="Note context data")
-    total_tokens: Optional[int] = Field(None, description="Estimated token count")
-
-
 # Insights API models
 class SourceInsightResponse(BaseModel):
     id: str
@@ -573,10 +549,11 @@ class MigrationResult(BaseModel):
 # Notebook delete cascade models
 # Credential models
 
-# Kept in sync with the frontend's ALL_PROVIDERS
-# (frontend/src/app/(dashboard)/settings/api-keys/page.tsx), TEST_MODELS
-# (open_notebook/ai/connection_tester.py), and PROVIDER_ENV_CONFIG
-# (api/credentials_service.py) - all three independently agree on this set.
+# Kept in sync with the provider registry
+# (open_notebook/ai/provider_registry.py PROVIDERS — the backend source of
+# truth) and the frontend's ALL_PROVIDERS (frontend/src/lib/providers.tsx).
+# A Literal can't be built at runtime, so this is one of the two remaining
+# manual copies; tests/test_credential_provider_validation.py enforces the sync.
 SupportedProvider = Literal[
     "openai",
     "anthropic",
@@ -596,6 +573,22 @@ SupportedProvider = Literal[
     "vertex",
     "openai_compatible",
 ]
+
+
+class ProviderInfoResponse(BaseModel):
+    """Provider metadata from the provider registry."""
+
+    name: str = Field(..., description="Provider identifier (e.g. openai)")
+    display_name: str = Field(..., description="Human-friendly provider name")
+    modalities: List[str] = Field(
+        ..., description="Default modalities supported by the provider"
+    )
+    docs_url: Optional[str] = Field(
+        None, description="Where to get an API key / set the provider up"
+    )
+    env_configured: bool = Field(
+        ..., description="Whether the provider is configured via environment variables"
+    )
 
 
 class CreateCredentialRequest(BaseModel):

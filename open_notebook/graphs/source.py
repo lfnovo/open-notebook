@@ -167,8 +167,10 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     transformation: Transformation = state["transformation"]
 
     logger.debug(f"Applying transformation {transformation.name}")
-    result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
+    # LangGraph accepts a partial state dict at runtime, but its typed
+    # overloads require the full state type (langgraph typing limitation).
+    result = await transform_graph.ainvoke(  # type: ignore[call-overload]
+        dict(input_text=content, transformation=transformation)
     )
     await source.add_insight(transformation.title, result["output"])
     return {

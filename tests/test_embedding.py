@@ -241,7 +241,7 @@ class TestGenerateEmbedding:
     @pytest.mark.asyncio
     async def test_batching(self):
         """Test that large input is split into batches of EMBEDDING_BATCH_SIZE."""
-        from unittest.mock import AsyncMock, MagicMock, call, patch
+        from unittest.mock import AsyncMock, MagicMock, patch
 
         from open_notebook.utils.embedding import EMBEDDING_BATCH_SIZE
 

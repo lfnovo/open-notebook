@@ -139,6 +139,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          target: runtime
           platforms: ${{ steps.tags.outputs.platforms }}
           push: ${{ steps.tags.outputs.push }}
           tags: ${{ steps.tags.outputs.tags }}
@@ -206,7 +207,8 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
-          file: ./Dockerfile.single
+          file: ./Dockerfile
+          target: single
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.tags.outputs.tags }}

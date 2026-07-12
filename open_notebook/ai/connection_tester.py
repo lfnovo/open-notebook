@@ -9,11 +9,19 @@ import io
 import json
 import os
 import struct
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import httpx
+from esperanto import (
+    EmbeddingModel,
+    LanguageModel,
+    SpeechToTextModel,
+    TextToSpeechModel,
+)
+from esperanto.common_types import ChatCompletion
 from loguru import logger
 
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.utils.url_validation import validate_url
 
 
@@ -47,8 +55,9 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
     return isinstance(exc, (OSError, json.JSONDecodeError, GoogleAuthError))
 
 
-# Test models for each provider - uses minimal/cheapest models for testing
-# Format: (model_name, model_type)
+# Test models for each provider - uses minimal/cheapest models for testing.
+# Derived from the provider registry (the source of truth for test models).
+# Format: (model_name, model_type); None model = dynamic (first available).
 #
 # Prefer a provider-maintained floating alias where one exists, so a model
 # retirement doesn't silently break the connection test (see #970: Google
@@ -57,25 +66,8 @@ def _is_vertex_credentials_file_error(exc: Exception) -> bool:
 # its own. The provider test also no longer treats a model-level failure as
 # a connection failure (see `_connection_failure_reason`), so even if an
 # alias ever breaks, the test still reports the credentials correctly.
-TEST_MODELS = {
-    "openai": ("gpt-3.5-turbo", "language"),
-    "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-flash-latest", "language"),
-    "groq": ("llama-3.1-8b-instant", "language"),
-    "mistral": ("mistral-small-latest", "language"),
-    "deepseek": ("deepseek-chat", "language"),
-    "xai": ("grok-beta", "language"),
-    "openrouter": ("openai/gpt-3.5-turbo", "language"),
-    "voyage": ("voyage-3-lite", "embedding"),
-    "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
-    "deepgram": ("aura-2-thalia-en", "text_to_speech"),
-    "ollama": (None, "language"),  # Dynamic - will use first available model
-    # Complex providers with additional configuration
-    "vertex": ("gemini-flash-latest", "language"),  # Uses Google Vertex AI
-    "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
-    "openai_compatible": (None, "language"),  # Dynamic - will use first available model
-    "dashscope": ("qwen-plus", "language"),
-    "minimax": ("MiniMax-M2.5", "language"),
+TEST_MODELS: Dict[str, Tuple[Optional[str], str]] = {
+    name: (spec.test_model, spec.test_model_type) for name, spec in PROVIDERS.items()
 }
 
 
@@ -417,13 +409,20 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return False, "Could not create model instance"
 
         if model.type == "language":
+            if not isinstance(esp_model, LanguageModel):
+                return False, f"Model type mismatch: expected a language model, got {type(esp_model).__name__}"
             response = await esp_model.achat_complete(
                 messages=[{"role": "user", "content": "Hi!"}]
             )
+            if not isinstance(response, ChatCompletion):
+                # Non-streaming call; a streaming response would be a bug upstream.
+                return True, "Connection successful (streaming response)"
             text = response.content[:100] if response.content else "(empty response)"
             return True, f"Response: {text}"
 
         elif model.type == "embedding":
+            if not isinstance(esp_model, EmbeddingModel):
+                return False, f"Model type mismatch: expected an embedding model, got {type(esp_model).__name__}"
             result = await esp_model.aembed(["This is a test."])
             if result and len(result) > 0:
                 dims = len(result[0])
@@ -431,6 +430,8 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return True, "Embedding successful"
 
         elif model.type == "text_to_speech":
+            if not isinstance(esp_model, TextToSpeechModel):
+                return False, f"Model type mismatch: expected a text-to-speech model, got {type(esp_model).__name__}"
             # For ElevenLabs, look up first available voice (API uses voice_id, not name)
             voice = DEFAULT_TEST_VOICES.get(model.provider)
             if not voice and hasattr(esp_model, "available_voices"):
@@ -443,20 +444,26 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             if not voice:
                 voice = "alloy"  # fallback
 
-            result = await esp_model.agenerate_speech(
+            audio = await esp_model.agenerate_speech(
                 text="Hello from Open Notebook", voice=voice
             )
-            if result and hasattr(result, "content"):
-                size = len(result.content)
+            if audio and hasattr(audio, "content"):
+                size = len(audio.content)
                 return True, f"Audio generated: {size} bytes"
             return True, "Speech generation successful"
 
         elif model.type == "speech_to_text":
+            if not isinstance(esp_model, SpeechToTextModel):
+                return False, f"Model type mismatch: expected a speech-to-text model, got {type(esp_model).__name__}"
             audio_file = _get_test_audio()
-            result = await esp_model.atranscribe(
+            transcription = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
             )
-            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
+            text = (
+                str(transcription.text).strip()
+                if hasattr(transcription, "text")
+                else str(transcription).strip()
+            )
             if not text:
                 return True, "Connection successful (test clip produced no transcription)"
             return True, f"Transcription: {text[:100]}"

@@ -132,7 +132,7 @@ export function useAutoAssignDefaults() {
       if (assignedCount > 0) {
         toast({
           title: t('common.success'),
-          description: t('models.autoAssignSuccess').replace('{count}', assignedCount.toString()),
+          description: t('models.autoAssignSuccess', { count: assignedCount }),
         })
       } else if (missingCount > 0) {
         toast({

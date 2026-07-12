@@ -88,18 +88,19 @@ For local development, you can also use:
 ### Option A: Using Docker (Recommended)
 
 ```bash
-# Start SurrealDB in memory
-docker run -d --name surrealdb -p 8000:8000 \
+# Start SurrealDB in memory (publish the port on localhost only — the
+# database uses default credentials, so never publish it on 0.0.0.0)
+docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
   surrealdb/surrealdb:v2 start \
   --user root --pass password \
-  --bind 0.0.0.0:8000 memory
+  memory
 
 # Or with persistent storage
-docker run -d --name surrealdb -p 8000:8000 \
+docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
   -v surrealdb_data:/data \
   surrealdb/surrealdb:v2 start \
   --user root --pass password \
-  --bind 0.0.0.0:8000 file:/data/surreal.db
+  file:/data/surreal.db
 ```
 
 ### Option B: Using Make
@@ -333,7 +334,7 @@ git push origin feature/my-feature -f
 1. Check if SurrealDB is running: `docker ps | grep surrealdb`
 2. Verify URL in `.env`: Should be `ws://localhost:8000/rpc`
 3. Restart SurrealDB: `docker stop surrealdb && docker rm surrealdb`
-4. Then restart with: `docker run -d --name surrealdb -p 8000:8000 surrealdb/surrealdb:v2 start --user root --pass password --bind 0.0.0.0:8000 memory`
+4. Then restart with: `docker run -d --name surrealdb -p 127.0.0.1:8000:8000 surrealdb/surrealdb:v2 start --user root --pass password memory`
 
 ### "Address already in use"
 

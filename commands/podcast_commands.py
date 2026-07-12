@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Optional
 
 from loguru import logger
-from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
 from open_notebook.config import DATA_FOLDER
@@ -15,6 +14,7 @@ from open_notebook.podcasts.models import (
     SpeakerProfile,
     _resolve_model_config,
 )
+from open_notebook.utils.model_utils import full_model_dump
 
 try:
     from podcast_creator import configure, create_podcast
@@ -37,20 +37,9 @@ def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
     return episode_dir_name, output_dir
 
 
-def full_model_dump(model):
-    if isinstance(model, BaseModel):
-        return model.model_dump()
-    elif isinstance(model, dict):
-        return {k: full_model_dump(v) for k, v in model.items()}
-    elif isinstance(model, list):
-        return [full_model_dump(item) for item in model]
-    else:
-        return model
-
-
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
-    speaker_profile: str
+    speaker_profile: Optional[str] = None
     episode_name: str
     content: str
     briefing_suffix: Optional[str] = None
@@ -88,13 +77,14 @@ async def generate_podcast_command(
                 f"Episode profile '{input_data.episode_profile}' not found"
             )
 
-        speaker_profile = await SpeakerProfile.get_by_name(
-            episode_profile.speaker_config
+        # Honor the explicitly requested speaker profile when provided,
+        # falling back to the episode profile's configured speaker.
+        speaker_profile_name = (
+            input_data.speaker_profile or episode_profile.speaker_config
         )
+        speaker_profile = await SpeakerProfile.get_by_name(speaker_profile_name)
         if not speaker_profile:
-            raise ValueError(
-                f"Speaker profile '{episode_profile.speaker_config}' not found"
-            )
+            raise ValueError(f"Speaker profile '{speaker_profile_name}' not found")
 
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")

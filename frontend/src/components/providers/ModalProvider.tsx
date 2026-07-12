@@ -2,8 +2,8 @@
 
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { NoteEditorDialog } from '@/app/(dashboard)/notebooks/components/NoteEditorDialog'
-import { SourceInsightDialog } from '@/components/source/SourceInsightDialog'
-import { SourceDialog } from '@/components/source/SourceDialog'
+import { SourceInsightDialog } from '@/components/sources/SourceInsightDialog'
+import { SourceDialog } from '@/components/sources/SourceDialog'
 
 /**
  * Modal Provider Component

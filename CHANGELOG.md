@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.12.0] - 2026-07-12
 
 ### Added
 - Docs: cubic platform mechanics recorded as comments in `cubic.yaml` (agent limits, config precedence, memory/learning) and a "Merging PR Batches" playbook added to the maintainer guide (squash policy, CHANGELOG conflict resolution, fork rebases, competing-PR checks) (#1086)

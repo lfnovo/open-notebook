@@ -911,6 +911,8 @@ export const bnIN = {
     encryptionRequiredDescription: "ডেটাবেসে API কী সংরক্ষণ করতে OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable যেকোন গোপন স্ট্রিংয়ে সেট করুন।",
     configured: "কনফিগার করা",
     notConfigured: "কনফিগার করা হয়নি",
+    providersLoadFailed: "প্রোভাইডার লোড করতে ব্যর্থ হয়েছে",
+    providersLoadFailedDescription: "API চলছে কিনা নিশ্চিত করুন এবং আবার চেষ্টা করুন।",
     migrationAvailable: "এনভায়রনমেন্ট ভ্যারিয়েবল সনাক্ত করা হয়েছে",
     migrationDescription: "{{count}}টি API কী environment variable এর মাধ্যমে কনফিগার করা আছে এবং সহজ ব্যবস্থাপনার জন্য ডেটাবেসে মাইগ্রেট করা যেতে পারে।",
     migrateToDatabase: "ডেটাবেসে মাইগ্রেট করুন",

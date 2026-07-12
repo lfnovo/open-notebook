@@ -7,20 +7,19 @@ import { Badge } from '@/components/ui/badge'
 import { Plus, Check, X } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { Credential } from '@/lib/api/credentials'
+import { ProviderInfo } from '@/lib/api/providers'
 import { Model, ModelDefaults } from '@/lib/types/models'
 import {
-  PROVIDER_DISPLAY_NAMES,
-  PROVIDER_MODALITIES,
-  TYPE_ICONS,
-  TYPE_COLORS,
+  getTypeIcon,
+  getTypeColor,
+  getTypeLabel,
   TYPE_COLOR_INACTIVE,
-  TYPE_LABELS,
 } from '@/lib/providers'
 import { CredentialFormDialog } from './CredentialFormDialog'
 import { CredentialItem } from './CredentialItem'
 
 interface ProviderSectionProps {
-  provider: string
+  provider: ProviderInfo
   credentials: Credential[]
   models: Model[]
   defaults: ModelDefaults | null
@@ -39,15 +38,15 @@ export function ProviderSection({
   const { t } = useTranslation()
   const [addOpen, setAddOpen] = useState(false)
 
-  const displayName = PROVIDER_DISPLAY_NAMES[provider] || provider
-  const modalities = PROVIDER_MODALITIES[provider] || ['language']
+  const displayName = provider.display_name || provider.name
+  const modalities = provider.modalities.length > 0 ? provider.modalities : ['language']
   const hasCredentials = credentials.length > 0
 
   // Models linked to any credential of this provider
   const providerModels = models.filter(m =>
     credentials.some(c => c.id === m.credential)
   )
-  const activeTypes = new Set(providerModels.map(m => m.type))
+  const activeTypes = new Set<string>(providerModels.map(m => m.type))
 
   return (
     <Card className={!hasCredentials ? 'opacity-80' : undefined}>
@@ -60,10 +59,10 @@ export function ProviderSection({
                 <Badge
                   key={type}
                   variant="secondary"
-                  className={`text-xs gap-1 ${activeTypes.has(type) ? TYPE_COLORS[type] : TYPE_COLOR_INACTIVE}`}
+                  className={`text-xs gap-1 ${activeTypes.has(type) ? getTypeColor(type) : TYPE_COLOR_INACTIVE}`}
                 >
-                  {TYPE_ICONS[type]}
-                  <span className="hidden sm:inline">{TYPE_LABELS[type]}</span>
+                  {getTypeIcon(type)}
+                  <span className="hidden sm:inline">{getTypeLabel(type)}</span>
                 </Badge>
               ))}
             </div>
@@ -110,7 +109,7 @@ export function ProviderSection({
         <CredentialFormDialog
           open={addOpen}
           onOpenChange={setAddOpen}
-          provider={provider}
+          provider={provider.name}
         />
       )}
     </Card>

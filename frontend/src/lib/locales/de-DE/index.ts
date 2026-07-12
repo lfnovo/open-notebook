@@ -913,6 +913,8 @@ export const deDE = {
     encryptionRequiredDescription: "Setze die Umgebungsvariable OPEN_NOTEBOOK_ENCRYPTION_KEY auf eine beliebige geheime Zeichenkette, um API-Schlüssel in der Datenbank speichern zu können.",
     configured: "Konfiguriert",
     notConfigured: "Nicht konfiguriert",
+    providersLoadFailed: "Anbieter konnten nicht geladen werden",
+    providersLoadFailedDescription: "Stellen Sie sicher, dass die API läuft, und versuchen Sie es erneut.",
     migrationAvailable: "Umgebungsvariablen erkannt",
     migrationDescription: "{{count}} API-Schlüssel sind über Umgebungsvariablen konfiguriert und können zur einfacheren Verwaltung in die Datenbank migriert werden.",
     migrateToDatabase: "In Datenbank migrieren",

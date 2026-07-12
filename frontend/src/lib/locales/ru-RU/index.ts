@@ -910,6 +910,8 @@ export const ruRU = {
     encryptionRequiredDescription: "Установите переменную окружения OPEN_NOTEBOOK_ENCRYPTION_KEY в любую секретную строку для хранения API-ключей в базе данных.",
     configured: "Настроено",
     notConfigured: "Не настроено",
+    providersLoadFailed: "Не удалось загрузить список провайдеров",
+    providersLoadFailedDescription: "Убедитесь, что API запущен, и попробуйте снова.",
     migrationAvailable: "Обнаружены переменные окружения",
     migrationDescription: "{{count}} API-ключ(ей) настроено через переменные окружения и может быть перенесено в базу данных для удобного управления.",
     migrateToDatabase: "Перенести в базу данных",

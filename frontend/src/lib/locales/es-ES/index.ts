@@ -911,6 +911,8 @@ export const esES = {
     encryptionRequiredDescription: "Establece la variable de entorno OPEN_NOTEBOOK_ENCRYPTION_KEY con cualquier cadena secreta para habilitar el almacenamiento de claves API en la base de datos.",
     configured: "Configurado",
     notConfigured: "No configurado",
+    providersLoadFailed: "Error al cargar los proveedores",
+    providersLoadFailedDescription: "Asegúrate de que la API esté en ejecución y vuelve a intentarlo.",
     migrationAvailable: "Variables de entorno detectadas",
     migrationDescription: "{{count}} clave(s) API están configuradas vía variables de entorno y pueden migrarse a la base de datos para una gestión más fácil.",
     migrateToDatabase: "Migrar a la base de datos",

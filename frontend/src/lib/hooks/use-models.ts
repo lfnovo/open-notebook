@@ -109,7 +109,10 @@ export function useUpdateModelDefaults() {
   })
 }
 
-export function useProviders() {
+// Availability of providers for model creation (GET /models/providers).
+// Not to be confused with useProviders() (use-providers.ts), which returns
+// the provider registry metadata from GET /api/providers.
+export function useProviderAvailability() {
   return useQuery({
     queryKey: MODEL_QUERY_KEYS.providers,
     queryFn: () => modelsApi.getProviders(),

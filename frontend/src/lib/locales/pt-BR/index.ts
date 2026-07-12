@@ -910,6 +910,8 @@ export const ptBR = {
     encryptionRequiredDescription: "Configure a variável de ambiente OPEN_NOTEBOOK_ENCRYPTION_KEY com qualquer string secreta para armazenar chaves de API no banco de dados.",
     configured: "Configurado",
     notConfigured: "Não configurado",
+    providersLoadFailed: "Falha ao carregar os provedores",
+    providersLoadFailedDescription: "Verifique se a API está em execução e tente novamente.",
     migrationAvailable: "Variáveis de Ambiente Detectadas",
     migrationDescription: "{{count}} chave(s) de API estão configuradas via variáveis de ambiente e podem ser migradas para o banco de dados para facilitar o gerenciamento.",
     migrateToDatabase: "Migrar para Banco de Dados",

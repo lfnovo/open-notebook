@@ -317,6 +317,11 @@ class TestContentProcessDeleteSource:
         assert result["extraction"].content == "extracted text"
         assert not uploaded.exists()  # file removed by the graph
         mock_extract.assert_awaited_once()
+        # The broader YouTube transcript language list is wired into the config
+        # (content-core's own default is only en/es/pt).
+        config = mock_extract.await_args.kwargs["config"]
+        assert "de" in config.youtube_languages
+        assert "ja" in config.youtube_languages
 
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.extract_content")

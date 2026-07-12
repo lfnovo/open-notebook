@@ -15,6 +15,21 @@ from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 
+# Preferred languages for YouTube transcript selection. content-core's own
+# default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
+# always intended so non-English videos still resolve a transcript.
+YOUTUBE_PREFERRED_LANGUAGES = [
+    "en",
+    "pt",
+    "es",
+    "de",
+    "nl",
+    "en-GB",
+    "fr",
+    "hi",
+    "ja",
+]
+
 
 class SourceState(TypedDict):
     # Input describing what to extract: url / file_path / content / delete_source.
@@ -41,7 +56,9 @@ async def content_process(state: SourceState) -> dict:
     # (keyword-only), not inside the input dict. We leave document_engine and
     # url_engine at their "auto" defaults (current behavior) and only override
     # the speech-to-text model when a default is configured.
-    config_kwargs: Dict[str, Any] = {}
+    config_kwargs: Dict[str, Any] = {
+        "youtube_languages": YOUTUBE_PREFERRED_LANGUAGES,
+    }
     try:
         model_manager = ModelManager()
         defaults = await model_manager.get_defaults()

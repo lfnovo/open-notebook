@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The settings frontend now fetches the provider list from `GET /api/providers` (cached for the session) instead of keeping its own hardcoded provider tables, so adding a provider to the backend registry needs zero frontend edits: unknown modalities render with a fallback icon, the backend registry owns the display order, and the regex-based frontend/backend sync test was removed along with the duplicated tables in `frontend/src/lib/providers.tsx` (#1082)
+
 ### Fixed
 - Source insights now get `created`/`updated` timestamps stamped at creation (migration 19 mirrors the defaults used by the other tables), and the insights API returns `null` — instead of the literal string `"None"` — for legacy insights that predate the migration (#1045)
 - `uv sync` alone now provides the full dev toolchain: the legacy `[project.optional-dependencies].dev` list was merged into `[dependency-groups].dev` (mypy included — the documented `uv run python -m mypy .` previously failed on a fresh clone), Jupyter-only packages moved to a separate `notebooks` group, and the CI typecheck job no longer needs `--extra dev` (#1101)

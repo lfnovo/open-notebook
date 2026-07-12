@@ -906,6 +906,8 @@ export const frFR = {
     encryptionRequiredDescription: "Définissez la variable d'environnement OPEN_NOTEBOOK_ENCRYPTION_KEY avec une chaîne secrète pour activer le stockage des clés API dans la base de données.",
     configured: "Configuré",
     notConfigured: "Non configuré",
+    providersLoadFailed: "Échec du chargement des fournisseurs",
+    providersLoadFailedDescription: "Vérifiez que l'API est en cours d'exécution et réessayez.",
     migrationAvailable: "Variables d'environnement détectées",
     migrationDescription: "{{count}} clé(s) API sont configurées via des variables d'environnement et peuvent être migrées vers la base de données pour une gestion plus facile.",
     migrateToDatabase: "Migrer vers la base de données",

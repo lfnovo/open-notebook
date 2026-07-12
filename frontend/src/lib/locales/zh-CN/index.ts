@@ -906,6 +906,8 @@ export const zhCN = {
     encryptionRequiredDescription: "请将 OPEN_NOTEBOOK_ENCRYPTION_KEY 环境变量设置为任意密钥字符串，以启用将 API 密钥存储到数据库。",
     configured: "已配置",
     notConfigured: "未配置",
+    providersLoadFailed: "无法加载提供商列表",
+    providersLoadFailedDescription: "请确保 API 正在运行，然后重试。",
     migrationAvailable: "检测到环境变量",
     migrationDescription: "{{count}} 个 API 密钥通过环境变量配置，可以迁移到数据库以便于管理。",
     migrateToDatabase: "迁移到数据库",

@@ -905,6 +905,8 @@ export const enUS = {
     encryptionRequiredDescription: "Set the OPEN_NOTEBOOK_ENCRYPTION_KEY environment variable to any secret string to enable storing API keys in the database.",
     configured: "Configured",
     notConfigured: "Not configured",
+    providersLoadFailed: "Failed to load providers",
+    providersLoadFailedDescription: "Ensure the API is running and try again.",
     migrationAvailable: "Environment Variables Detected",
     migrationDescription: "{{count}} API key(s) are configured via environment variables and can be migrated to the database for easier management.",
     migrateToDatabase: "Migrate to Database",

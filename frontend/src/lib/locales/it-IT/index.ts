@@ -906,6 +906,8 @@ export const itIT = {
     encryptionRequiredDescription: "Imposta la variabile d'ambiente OPEN_NOTEBOOK_ENCRYPTION_KEY su una stringa segreta qualsiasi per abilitare il salvataggio delle chiavi API nel database.",
     configured: "Configurato",
     notConfigured: "Non configurato",
+    providersLoadFailed: "Impossibile caricare i provider",
+    providersLoadFailedDescription: "Assicurati che l'API sia in esecuzione e riprova.",
     migrationAvailable: "Variabili d'ambiente rilevate",
     migrationDescription: "{{count}} chiave/i API configurata/e tramite variabili d'ambiente. Puoi migrarle nel database per una gestione più semplice.",
     migrateToDatabase: "Migra nel database",

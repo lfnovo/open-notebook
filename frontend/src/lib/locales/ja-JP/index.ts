@@ -906,6 +906,8 @@ export const jaJP = {
     encryptionRequiredDescription: "OPEN_NOTEBOOK_ENCRYPTION_KEY 環境変数に任意の秘密文字列を設定して、データベースへのAPIキーの保存を有効にしてください。",
     configured: "設定済み",
     notConfigured: "未設定",
+    providersLoadFailed: "プロバイダーの読み込みに失敗しました",
+    providersLoadFailedDescription: "APIが起動していることを確認して、もう一度お試しください。",
     migrationAvailable: "環境変数を検出",
     migrationDescription: "{{count}}個のAPIキーが環境変数で設定されています。管理を容易にするためにデータベースに移行できます。",
     migrateToDatabase: "データベースに移行",

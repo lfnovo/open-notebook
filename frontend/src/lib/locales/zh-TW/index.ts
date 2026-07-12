@@ -906,6 +906,8 @@ export const zhTW = {
     encryptionRequiredDescription: "請將 OPEN_NOTEBOOK_ENCRYPTION_KEY 環境變數設定為任意密鑰字串，以啟用將 API 金鑰儲存至資料庫。",
     configured: "已設定",
     notConfigured: "未設定",
+    providersLoadFailed: "無法載入提供者清單",
+    providersLoadFailedDescription: "請確認 API 正在執行，然後再試一次。",
     migrationAvailable: "偵測到環境變數",
     migrationDescription: "{{count}} 個 API 金鑰通過環境變數設定，可以遷移到資料庫以便於管理。",
     migrateToDatabase: "遷移到資料庫",

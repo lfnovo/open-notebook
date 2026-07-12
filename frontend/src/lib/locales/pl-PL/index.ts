@@ -906,6 +906,8 @@ export const plPL = {
     encryptionRequiredDescription: "Ustaw zmienną środowiskową OPEN_NOTEBOOK_ENCRYPTION_KEY na dowolny tajny ciąg, aby umożliwić przechowywanie kluczy API w bazie danych.",
     configured: "Skonfigurowano",
     notConfigured: "Nieskonfigurowano",
+    providersLoadFailed: "Nie udało się załadować dostawców",
+    providersLoadFailedDescription: "Upewnij się, że API działa, i spróbuj ponownie.",
     migrationAvailable: "Wykryto zmienne środowiskowe",
     migrationDescription: "Liczba kluczy API skonfigurowanych przez zmienne środowiskowe, które można przenieść do bazy danych w celu łatwiejszego zarządzania: {{count}}.",
     migrateToDatabase: "Przenieś do bazy danych",

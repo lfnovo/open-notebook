@@ -1,0 +1,114 @@
+open_notebook/AGENTS.md
+  s_7421a04ffabb0b::t_16012d1b229fc5 15
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/providers.tsx
+  s_7421a04ffabb0b::t_5d3056a1eabe17 1-11,15-19,29,41-42,49-60
+  s_7421a04ffabb0b::t_dee14c97cf1fe0 30
+  s_7421a04ffabb0b::t_9d0006a0d266cd 32
+  s_7421a04ffabb0b::t_e2f8fe08889343 43
+  s_7421a04ffabb0b::t_b375156901b6b6 22
+  s_7421a04ffabb0b::t_f9bc1aa7b219c2 31
+open_notebook/ai/provider_registry.py
+  s_7421a04ffabb0b::t_3e716bdb10ce03 14-21
+frontend/src/components/settings/CredentialItem.tsx
+  s_7421a04ffabb0b::t_d272d315bad5ea 59
+  s_7421a04ffabb0b::t_c7d4a380c726ef 162,164-165
+  s_7421a04ffabb0b::t_e6d8869a2bb1d4 156
+  s_7421a04ffabb0b::t_8f28e5adb27a26 24-27
+  s_7421a04ffabb0b::t_251cfda92629b6 90,92-93
+frontend/src/components/settings/CredentialFormDialog.tsx
+  s_7421a04ffabb0b::t_29a0042b7be0bb 132-133
+  s_7421a04ffabb0b::t_9d7deb3dab13ac 78,80-83
+  s_7421a04ffabb0b::t_6bcbd626c1c600 3
+  s_7421a04ffabb0b::t_b62368b98476b6 35,40
+  s_7421a04ffabb0b::t_f7e37f0cf13663 100
+  s_7421a04ffabb0b::t_a8a58f63cb68ce 36-39
+  s_7421a04ffabb0b::t_b15db1a2eeef84 124
+  s_7421a04ffabb0b::t_e0af3a7e62d89a 145
+  s_7421a04ffabb0b::t_4c5e4e127548d9 17
+frontend/src/lib/hooks/use-models.ts
+  s_7421a04ffabb0b::t_0b2c073278c7c9 112-115
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+api/models.py
+  s_7421a04ffabb0b::t_34592b5cf40aea 554-556
+frontend/src/app/(dashboard)/settings/api-keys/page.tsx
+  s_7421a04ffabb0b::t_22925a100c4cc9 7,15,32-36,43-44,53,58,61,64,67,69-71,74,76,123-143
+frontend/src/lib/providers.test.tsx
+  s_7421a04ffabb0b::t_c378e142a6445f 3
+  s_7421a04ffabb0b::t_cbbe5ab92f0679 32
+  s_7421a04ffabb0b::t_5c541f670c9815 1-2,4-31,33-34
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/locales/es-ES/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 910-911
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+tests/test_credential_provider_validation.py
+  s_7421a04ffabb0b::t_b9dd4a1d8cfe91 142-144
+  s_7421a04ffabb0b::t_6ea41cce049d6e 9-11
+  s_7421a04ffabb0b::t_39bf425e9c490f 52-53
+CHANGELOG.md
+  s_7421a04ffabb0b::t_2be4e02fcbaf51 10-12
+frontend/src/lib/locales/en-US/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 908-909
+frontend/src/lib/locales/de-DE/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 912-913
+frontend/src/components/settings/DiscoverModelsDialog.tsx
+  s_7421a04ffabb0b::t_0926ee626b5a05 21-22
+  s_7421a04ffabb0b::t_9e43c4453effe9 39-42
+  s_7421a04ffabb0b::t_cec51d9fa00dd8 38
+  s_7421a04ffabb0b::t_ee8c91e959edef 162
+  s_7421a04ffabb0b::t_897c3c9688a8d8 83
+  s_7421a04ffabb0b::t_a412b20cd6406d 50-51
+  s_7421a04ffabb0b::t_4b8e1cf0abc799 184,189,192-193
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/locales/it-IT/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+docs/7-DEVELOPMENT/credentials.md
+  s_7421a04ffabb0b::t_57b7389f7d4a1c 39
+frontend/src/app/(dashboard)/settings/api-keys/page.test.tsx
+  s_7421a04ffabb0b::t_a67ead13531f7e 1-117
+frontend/src/lib/hooks/use-providers.ts
+  s_7421a04ffabb0b::t_54d619bc6da420 1-20
+frontend/src/components/settings/ProviderSection.tsx
+  s_7421a04ffabb0b::t_57b531f1ad1d20 49
+  s_7421a04ffabb0b::t_4d0bc761b59840 62,64-65
+  s_7421a04ffabb0b::t_98adc78b24403e 41-42
+  s_7421a04ffabb0b::t_91947202cb7e70 112
+  s_7421a04ffabb0b::t_2d85fa1e558381 10,13-15,22
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 910-911
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7421a04ffabb0b::t_831587d7c59be2 909-910
+frontend/src/lib/api/providers.ts
+  s_7421a04ffabb0b::t_138ab97bb0c8e0 1-21
+frontend/src/components/settings/ProviderSection.test.tsx
+  s_7421a04ffabb0b::t_c65e8bc22013a5 1-68
+cubic.yaml
+  s_7421a04ffabb0b::t_28d5b2f4737f5f 61-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "cdec59c01ee23c74aab832c6ef94034ba7c1f9e2",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

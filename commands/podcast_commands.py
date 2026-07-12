@@ -6,8 +6,9 @@ from typing import Optional
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.config import DATA_FOLDER
+from open_notebook.config import PODCASTS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.podcasts.audio_paths import to_relative_audio_path
 from open_notebook.podcasts.models import (
     EpisodeProfile,
     PodcastEpisode,
@@ -23,17 +24,20 @@ except ImportError as e:
     raise ValueError("podcast_creator library not available")
 
 
-def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
+def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[str, Path]:
     """Build a filesystem-safe output directory path for a podcast episode.
 
     Uses a UUID as the directory name so the path is safe regardless of
     what the user typed as episode name (spaces, special chars, etc.).
 
+    Builds under PODCASTS_FOLDER — the same root to_relative_audio_path()
+    validates against at write time (#1030) — so the two can't drift apart.
+
     Returns:
         A tuple of (episode_dir_name, output_dir_path).
     """
     episode_dir_name = str(uuid.uuid4())
-    output_dir = Path(f"{data_folder}/podcasts/episodes/{episode_dir_name}")
+    output_dir = Path(podcasts_folder) / "episodes" / episode_dir_name
     return episode_dir_name, output_dir
 
 
@@ -286,7 +290,7 @@ async def generate_podcast_command(
         logger.info(f"Generated briefing (length: {len(briefing)} chars)")
 
         # 7. Create output directory using UUID for filesystem-safe paths
-        episode_dir_name, output_dir = build_episode_output_dir(DATA_FOLDER)
+        episode_dir_name, output_dir = build_episode_output_dir()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Created output directory: {output_dir}")
@@ -303,14 +307,37 @@ async def generate_podcast_command(
             episode_profile=episode_profile.name,
         )
 
-        episode.audio_file = (
-            str(result.get("final_output_file_path")) if result else None
+        # podcast-creator reports audio-combination failures IN-BAND: on
+        # ffmpeg/clip errors combine_audio_files() returns an "ERROR: ..."
+        # string in final_output_file_path instead of a path. Detect it
+        # before path conversion so the real error surfaces (below, after
+        # the transcript/outline are persisted) instead of a misleading
+        # "outside the podcasts folder" ValueError.
+        raw_audio_path = result.get("final_output_file_path") if result else None
+        audio_error: Optional[str] = None
+        if raw_audio_path is not None and str(raw_audio_path).startswith("ERROR:"):
+            audio_error = str(raw_audio_path)
+            raw_audio_path = None
+
+        # Store the audio path RELATIVE to PODCASTS_FOLDER (#1030). The
+        # validation inside to_relative_audio_path guarantees the DB never
+        # holds an absolute or root-escaping value; a violation raises
+        # ValueError, which marks the job permanently failed (no retry).
+        audio_file_rel = (
+            to_relative_audio_path(raw_audio_path) if raw_audio_path else None
         )
+        episode.audio_file = audio_file_rel
         episode.transcript = {
             "transcript": full_model_dump(result["transcript"]) if result else None
         }
         episode.outline = full_model_dump(result["outline"]) if result else None
         await episode.save()
+
+        if audio_error:
+            # Transcript/outline are saved above; fail the job with the real
+            # audio-combination error instead of reporting a silent success
+            # for an episode with no playable audio.
+            raise RuntimeError(f"Podcast audio generation failed: {audio_error}")
 
         processing_time = time.time() - start_time
         logger.info(
@@ -320,9 +347,7 @@ async def generate_podcast_command(
         return PodcastGenerationOutput(
             success=True,
             episode_id=str(episode.id),
-            audio_file_path=str(result.get("final_output_file_path"))
-            if result
-            else None,
+            audio_file_path=audio_file_rel,
             transcript={"transcript": full_model_dump(result["transcript"])}
             if result.get("transcript")
             else None,

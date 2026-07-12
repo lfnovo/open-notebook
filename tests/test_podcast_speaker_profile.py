@@ -365,15 +365,24 @@ class TestOrphanedProfileDoesNotPoisonConfig:
                 "commands.podcast_commands.create_podcast",
                 new=AsyncMock(
                     return_value={
-                        "final_output_file_path": str(tmp_path / "out.mp3"),
+                        "final_output_file_path": str(
+                            tmp_path / "episodes" / "ep-dir" / "out.mp3"
+                        ),
                         "transcript": {},
                         "outline": {},
                     }
                 ),
             ),
+            # audio_file is stored relative to PODCASTS_FOLDER and validated
+            # at write time (#1030), so the fake output path must live under
+            # the (patched) podcasts root.
+            patch(
+                "open_notebook.podcasts.audio_paths.PODCASTS_FOLDER",
+                str(tmp_path),
+            ),
             patch(
                 "commands.podcast_commands.build_episode_output_dir",
-                new=lambda data_folder: ("ep-dir", tmp_path / "ep-dir"),
+                new=lambda *args: ("ep-dir", tmp_path / "ep-dir"),
             ),
             patch(
                 "open_notebook.podcasts.models.PodcastEpisode.save",
@@ -383,6 +392,8 @@ class TestOrphanedProfileDoesNotPoisonConfig:
             result = await generate_podcast_command(make_input())
 
         assert result.success is True
+        # The stored/reported audio path is relative to PODCASTS_FOLDER (#1030)
+        assert result.audio_file_path == "episodes/ep-dir/out.mp3"
         episode_config = configure_calls["episode_config"]["profiles"]
         # Orphaned profile removed instead of poisoning validation
         assert "Orphaned Profile" not in episode_config

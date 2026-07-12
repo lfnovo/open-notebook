@@ -256,7 +256,13 @@ class PodcastEpisode(ObjectModel):
     briefing: str = Field(..., description="Full briefing used for generation")
     content: str = Field(..., description="Source content")
     audio_file: Optional[str] = Field(
-        default=None, description="Path to generated audio file"
+        default=None,
+        description=(
+            "Path to the generated audio file, relative to PODCASTS_FOLDER "
+            "(see open_notebook/podcasts/audio_paths.py). Absolute values "
+            "are legacy rows migration 21 could not convert and are treated "
+            "as invalid by the API."
+        ),
     )
     transcript: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Generated transcript"

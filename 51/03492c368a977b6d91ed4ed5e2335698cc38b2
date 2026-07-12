@@ -1,0 +1,83 @@
+frontend/src/app/(dashboard)/settings/api-keys/page.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 7,15,32-36,43-44,53,58,61,64,67,69-71,74,76,123-143
+frontend/src/lib/hooks/use-models.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 112-115
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/lib/locales/en-US/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 912-913
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+open_notebook/ai/provider_registry.py
+  s_7421a04ffabb0b::t_fa09ba6bed568f 14-21
+frontend/src/lib/locales/es-ES/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 914-915
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/components/settings/DiscoverModelsDialog.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 21-22,38-42,50-51,83,162,184,189,192-193
+frontend/src/components/settings/ProviderSection.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 10,13-15,22,41-42,49,62,64-65,112
+frontend/src/lib/api/providers.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-21
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+CHANGELOG.md
+  s_7421a04ffabb0b::t_fa09ba6bed568f 12
+frontend/src/lib/hooks/use-providers.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-20
+frontend/src/lib/locales/de-DE/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 916-917
+frontend/src/lib/providers.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-11,15-19,22,29-32,41-43,49-60
+frontend/src/components/settings/CredentialFormDialog.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 3,17,35-40,78,80-83,100,124,132-133,145
+docs/7-DEVELOPMENT/credentials.md
+  s_7421a04ffabb0b::t_fa09ba6bed568f 39
+open_notebook/AGENTS.md
+  s_7421a04ffabb0b::t_fa09ba6bed568f 15
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/components/settings/CredentialItem.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 24-27,59,90,92-93,156,162,164-165
+api/models.py
+  s_7421a04ffabb0b::t_fa09ba6bed568f 554-556
+cubic.yaml
+  s_7421a04ffabb0b::t_fa09ba6bed568f 61-64
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/lib/locales/it-IT/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 913-914
+frontend/src/components/settings/ProviderSection.test.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-68
+frontend/src/app/(dashboard)/settings/api-keys/page.test.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-117
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7421a04ffabb0b::t_fa09ba6bed568f 914-915
+frontend/src/lib/providers.test.tsx
+  s_7421a04ffabb0b::t_fa09ba6bed568f 1-34
+tests/test_credential_provider_validation.py
+  s_7421a04ffabb0b::t_fa09ba6bed568f 9-11,52-53,142-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "5103492c368a977b6d91ed4ed5e2335698cc38b2",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

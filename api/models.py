@@ -551,9 +551,9 @@ class MigrationResult(BaseModel):
 
 # Kept in sync with the provider registry
 # (open_notebook/ai/provider_registry.py PROVIDERS — the backend source of
-# truth) and the frontend's ALL_PROVIDERS (frontend/src/lib/providers.tsx).
-# A Literal can't be built at runtime, so this is one of the two remaining
-# manual copies; tests/test_credential_provider_validation.py enforces the sync.
+# truth). A Literal can't be built at runtime, so this is the one remaining
+# manual copy; tests/test_credential_provider_validation.py enforces the sync.
+# The frontend consumes GET /api/providers at runtime and needs no edit.
 SupportedProvider = Literal[
     "openai",
     "anthropic",

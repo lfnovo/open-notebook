@@ -2,15 +2,18 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { sourcesApi } from '@/lib/api/sources'
+import { QUERY_KEYS } from '@/lib/api/query-client'
+import { useSource, useUpdateSource, useDeleteSource } from '@/lib/hooks/use-sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
 import { transformationsApi } from '@/lib/api/transformations'
 import { embeddingApi } from '@/lib/api/embedding'
 import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { ContentUnavailable } from '@/components/common/ContentUnavailable'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -85,7 +88,15 @@ const safeExternalHref = (url: string | null | undefined): string | null => {
   }
 }
 
-export function SourceDetailContent({
+export function SourceDetailContent(props: SourceDetailContentProps) {
+  // Remount per source so all per-source UI state (active tab, transient
+  // flags, insight selection…) resets on navigation, without parents needing
+  // to key the component. The source data itself is cached by React Query, so
+  // remounting is cheap: a cached source renders immediately.
+  return <SourceDetailContentInner key={props.sourceId} {...props} />
+}
+
+function SourceDetailContentInner({
   sourceId,
   showChatButton = false,
   onChatClick,
@@ -93,14 +104,11 @@ export function SourceDetailContent({
 }: SourceDetailContentProps) {
   const { t, language } = useTranslation()
   const queryClient = useQueryClient()
-  const [source, setSource] = useState<SourceDetailResponse | null>(null)
   const [insights, setInsights] = useState<SourceInsightResponse[]>([])
   const [transformations, setTransformations] = useState<Transformation[]>([])
   const [selectedTransformation, setSelectedTransformation] = useState<string>('')
-  const [loading, setLoading] = useState(true)
   const [loadingInsights, setLoadingInsights] = useState(false)
   const [creatingInsight, setCreatingInsight] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [isEmbedding, setIsEmbedding] = useState(false)
   const [isDownloadingFile, setIsDownloadingFile] = useState(false)
@@ -109,25 +117,19 @@ export function SourceDetailContent({
   const [insightToDelete, setInsightToDelete] = useState<string | null>(null)
   const [deletingInsight, setDeletingInsight] = useState(false)
 
-  const fetchSource = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await sourcesApi.get(sourceId)
-      setSource(data)
-      if (typeof data.file_available === 'boolean') {
-        setFileAvailable(data.file_available)
-      } else if (!data.asset?.file_path) {
-        setFileAvailable(null)
-      } else {
-        setFileAvailable(null)
-      }
-    } catch (err) {
-      console.error('Failed to fetch source:', err)
-      setError(t('sources.loadFailed'))
-    } finally {
-      setLoading(false)
-    }
-  }, [sourceId, t])
+  // A 404 means the source was deleted (e.g. a dangling chat/ask reference) —
+  // handled by the shared "content no longer exists" state. The global query
+  // client never retries 404s, so the not-found state shows immediately.
+  const { data: source, isPending, error: loadQueryError, refetch: refetchSource } = useSource(sourceId)
+  const loadError = loadQueryError ? (isNotFoundError(loadQueryError) ? 'not-found' : 'error') : null
+  const updateSource = useUpdateSource()
+  const deleteSource = useDeleteSource()
+
+  // file_available comes from the source payload; downloads may flip it later,
+  // so keep it as local state synced from the query data.
+  useEffect(() => {
+    setFileAvailable(typeof source?.file_available === 'boolean' ? source.file_available : null)
+  }, [source?.file_available])
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -152,11 +154,10 @@ export function SourceDetailContent({
 
   useEffect(() => {
     if (sourceId) {
-      void fetchSource()
       void fetchInsights()
       void fetchTransformations()
     }
-  }, [fetchInsights, fetchSource, fetchTransformations, sourceId])
+  }, [fetchInsights, fetchTransformations, sourceId])
 
   const createInsight = async () => {
     if (!selectedTransformation) {
@@ -226,13 +227,18 @@ export function SourceDetailContent({
     if (!source || title === source.title) return
 
     try {
-      await sourcesApi.update(sourceId, { title })
-      toast.success(t('common.success'))
-      setSource({ ...source, title })
+      await updateSource.mutateAsync({ id: sourceId, data: { title } })
+      // The mutation invalidates the source queries (list + detail); patch the
+      // detail cache immediately so the title doesn't flash back while the
+      // refetch is in flight.
+      queryClient.setQueryData<SourceDetailResponse>(
+        QUERY_KEYS.source(sourceId),
+        (previous) => (previous ? { ...previous, title } : previous)
+      )
     } catch (err) {
+      // The mutation hook already shows an error toast.
       console.error('Failed to update source title:', err)
-      toast.error(t('common.error'))
-      await fetchSource()
+      await refetchSource()
     }
   }
 
@@ -243,7 +249,7 @@ export function SourceDetailContent({
       setIsEmbedding(true)
       const response = await embeddingApi.embedContent(sourceId, 'source')
       toast.success(response.message || t('common.success'))
-      await fetchSource()
+      await refetchSource()
     } catch (err) {
       console.error('Failed to embed content:', err)
       toast.error(t('common.error'))
@@ -301,7 +307,7 @@ export function SourceDetailContent({
       toast.success(t('common.success'))
     } catch (err) {
       console.error('Failed to download file:', err)
-      if (isAxiosError(err) && err.response?.status === 404) {
+      if (isNotFoundError(err)) {
         setFileAvailable(false)
         toast.error(t('sources.fileUnavailable'))
       } else {
@@ -371,17 +377,18 @@ export function SourceDetailContent({
 
     if (confirm(t('sources.deleteSourceConfirm') || t('common.confirm'))) {
       try {
-        await sourcesApi.delete(source.id)
-        toast.success(t('common.success'))
+        // The mutation hook shows the toasts and invalidates the source
+        // queries, so a reopened dialog can't serve the deleted source from
+        // the cache.
+        await deleteSource.mutateAsync(source.id)
         onClose?.()
       } catch (error) {
         console.error('Failed to delete source:', error)
-        toast.error(t('common.error'))
       }
     }
   }
 
-  if (loading) {
+  if (isPending) {
     return (
       <div className="flex h-full items-center justify-center p-8">
         <LoadingSpinner />
@@ -389,11 +396,16 @@ export function SourceDetailContent({
     )
   }
 
-  if (error || !source) {
+  // A definitive 404 always wins, even when React Query still holds stale
+  // data from before the source was deleted (retained data on a failed
+  // refetch). A transient refetch error over good cached data does not
+  // replace the rendered source.
+  if (loadError === 'not-found' || !source) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <p className="text-red-500">{error || t('sources.notFound')}</p>
-      </div>
+      <ContentUnavailable
+        variant={loadError ?? 'error'}
+        onClose={onClose}
+      />
     )
   }
 
@@ -796,7 +808,7 @@ export function SourceDetailContent({
             <NotebookAssociations
               sourceId={sourceId}
               currentNotebookIds={source.notebooks || []}
-              onSave={fetchSource}
+              onSave={() => void refetchSource()}
             />
           </TabsContent>
         </Tabs>

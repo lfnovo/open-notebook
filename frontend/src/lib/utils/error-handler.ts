@@ -1,3 +1,13 @@
+import { isAxiosError } from 'axios'
+
+/**
+ * Returns true when the error is an HTTP 404 response, i.e. the requested
+ * item was deleted or never existed (as opposed to a transient failure).
+ */
+export function isNotFoundError(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 404
+}
+
 /**
  * Utility to map backend English error messages to i18n keys.
  */

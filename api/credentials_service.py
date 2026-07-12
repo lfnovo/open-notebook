@@ -8,14 +8,19 @@ All functions raise ValueError for business errors (router converts to HTTPExcep
 """
 
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import httpx
 from loguru import logger
 from pydantic import SecretStr
 
 from api.models import CredentialResponse
-from open_notebook.ai.model_discovery import classify_model_type
+from open_notebook.ai.model_discovery import (
+    ANTHROPIC_FALLBACK_MODELS,
+    classify_model_type,
+    fetch_anthropic_model_ids,
+)
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
 from open_notebook.utils.url_validation import validate_url
@@ -24,61 +29,17 @@ from open_notebook.utils.url_validation import validate_url
 # Constants
 # =============================================================================
 
-# Provider environment variable configuration.
+# Provider environment variable configuration, derived from the provider
+# registry (open_notebook/ai/provider_registry.py — the source of truth).
 # - "required": ALL listed env vars must be set for the provider to be considered configured.
 # - "required_any": at least ONE of the listed env vars must be set.
 # - "optional": additional env vars used during migration but not required.
 PROVIDER_ENV_CONFIG: Dict[str, dict] = {
-    "openai": {"required": ["OPENAI_API_KEY"]},
-    "anthropic": {"required": ["ANTHROPIC_API_KEY"]},
-    "google": {"required_any": ["GOOGLE_API_KEY", "GEMINI_API_KEY"]},
-    "groq": {"required": ["GROQ_API_KEY"]},
-    "mistral": {"required": ["MISTRAL_API_KEY"]},
-    "deepseek": {"required": ["DEEPSEEK_API_KEY"]},
-    "xai": {"required": ["XAI_API_KEY"]},
-    "openrouter": {"required": ["OPENROUTER_API_KEY"]},
-    "voyage": {"required": ["VOYAGE_API_KEY"]},
-    "elevenlabs": {"required": ["ELEVENLABS_API_KEY"]},
-    "deepgram": {"required": ["DEEPGRAM_API_KEY"]},
-    "ollama": {"required": ["OLLAMA_API_BASE"]},
-    "vertex": {
-        "required": ["VERTEX_PROJECT", "VERTEX_LOCATION"],
-        "optional": ["GOOGLE_APPLICATION_CREDENTIALS"],
-    },
-    "azure": {
-        "required": ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION"],
-        "optional": [
-            "AZURE_OPENAI_ENDPOINT_LLM",
-            "AZURE_OPENAI_ENDPOINT_EMBEDDING",
-            "AZURE_OPENAI_ENDPOINT_STT",
-            "AZURE_OPENAI_ENDPOINT_TTS",
-        ],
-    },
-    "openai_compatible": {
-        "required_any": ["OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"],
-    },
-    "dashscope": {"required": ["DASHSCOPE_API_KEY"]},
-    "minimax": {"required": ["MINIMAX_API_KEY"]},
+    name: spec.env_config() for name, spec in PROVIDERS.items()
 }
 
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
-    "openai": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "anthropic": ["language"],
-    "google": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "groq": ["language", "speech_to_text"],
-    "mistral": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "deepseek": ["language"],
-    "xai": ["language", "text_to_speech"],
-    "openrouter": ["language", "embedding"],
-    "voyage": ["embedding"],
-    "elevenlabs": ["text_to_speech", "speech_to_text"],
-    "deepgram": ["text_to_speech"],
-    "ollama": ["language", "embedding"],
-    "vertex": ["language", "embedding", "text_to_speech"],
-    "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "dashscope": ["language"],
-    "minimax": ["language"],
+    name: list(spec.modalities) for name, spec in PROVIDERS.items()
 }
 
 
@@ -331,10 +292,10 @@ async def test_credential(credential_id: str) -> dict:
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "embedding":
-            model = AIFactory.create_embedding(
+            embedding_model = AIFactory.create_embedding(
                 model_name=test_model, provider=provider, config=config
             )
-            await model.aembed(["test"])
+            await embedding_model.aembed(["test"])
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "text_to_speech":
@@ -385,15 +346,6 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
-        "anthropic": [
-            "claude-opus-4-20250514",
-            "claude-sonnet-4-20250514",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-        ],
         "voyage": [
             "voyage-3", "voyage-3-lite", "voyage-code-3",
             "voyage-finance-2", "voyage-law-2", "voyage-multilingual-2",
@@ -419,16 +371,23 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             for m in STATIC_MODELS[provider]
         ]
 
-    # API-based discovery URLs (OpenAI-style /models endpoints)
+    if provider == "anthropic":
+        if not api_key:
+            return []
+        try:
+            model_names = await fetch_anthropic_model_ids(api_key)
+        except Exception as e:
+            logger.warning(
+                f"Failed to discover Anthropic models, using static fallback: {e}"
+            )
+            model_names = list(ANTHROPIC_FALLBACK_MODELS)
+        return [{"name": m, "provider": "anthropic"} for m in model_names]
+
+    # API-based discovery URLs (OpenAI-style /models endpoints), from the registry
     url_map = {
-        "openai": "https://api.openai.com/v1/models",
-        "groq": "https://api.groq.com/openai/v1/models",
-        "mistral": "https://api.mistral.ai/v1/models",
-        "deepseek": "https://api.deepseek.com/models",
-        "xai": "https://api.x.ai/v1/models",
-        "openrouter": "https://openrouter.ai/api/v1/models",
-        "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
-        "minimax": "https://api.minimax.io/v1/models",
+        name: spec.openai_compat_discovery_url
+        for name, spec in PROVIDERS.items()
+        if spec.openai_compat_discovery_url
     }
 
     if provider == "ollama":

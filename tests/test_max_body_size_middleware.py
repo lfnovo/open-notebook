@@ -252,5 +252,7 @@ class TestRealAppWiring:
         MaxBodySizeMiddleware - i.e. CORSMiddleware must be added *after* it."""
         from api.main import app
 
-        classes = [m.cls.__name__ for m in app.user_middleware]
+        # getattr: Middleware.cls is typed as a callable protocol without
+        # __name__, but every registered middleware here is a plain class.
+        classes = [getattr(m.cls, "__name__", "") for m in app.user_middleware]
         assert classes.index("CORSMiddleware") < classes.index("MaxBodySizeMiddleware")

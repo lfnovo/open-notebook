@@ -11,6 +11,7 @@ DatabaseOperationError so they propagate to the job-level retry/failure
 handling that already exists in commands/source_commands.py.
 """
 
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -155,7 +156,7 @@ class TestSourceGraphTransformContentPropagatesFailure:
 
     @pytest.mark.asyncio
     async def test_add_insight_failure_propagates_out_of_transform_content(self):
-        from open_notebook.graphs.source import transform_content
+        from open_notebook.graphs.source import TransformationState, transform_content
 
         source = make_source()
         source.full_text = "the source's full text"
@@ -175,7 +176,8 @@ class TestSourceGraphTransformContentPropagatesFailure:
             ) as mock_add_insight,
         ):
             with pytest.raises(DatabaseOperationError):
-                await transform_content(state)
+                # cast: mocks stand in for the real Source/Transformation
+                await transform_content(cast(TransformationState, state))
 
         mock_add_insight.assert_awaited_once()
 

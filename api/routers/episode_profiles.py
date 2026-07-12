@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
 
+from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.models import EpisodeProfile
 
 router = APIRouter()
@@ -52,6 +53,10 @@ async def list_episode_profiles():
     try:
         profiles = await EpisodeProfile.get_all(order_by="name asc")
         return [_profile_to_response(p) for p in profiles]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Failed to fetch episode profiles: {e}")
         raise HTTPException(
@@ -73,6 +78,8 @@ async def get_episode_profile(profile_name: str):
         return _profile_to_response(profile)
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Failed to fetch episode profile '{profile_name}': {e}")
@@ -126,6 +133,10 @@ async def create_episode_profile(profile_data: EpisodeProfileCreate):
         await profile.save()
         return _profile_to_response(profile)
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Failed to create episode profile: {e}")
         raise HTTPException(
@@ -152,6 +163,8 @@ async def update_episode_profile(profile_id: str, profile_data: EpisodeProfileCr
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Failed to update episode profile: {e}")
         raise HTTPException(
@@ -175,6 +188,8 @@ async def delete_episode_profile(profile_id: str):
         return {"message": "Episode profile deleted successfully"}
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Failed to delete episode profile: {e}")
@@ -216,6 +231,8 @@ async def duplicate_episode_profile(profile_id: str):
         return _profile_to_response(duplicate)
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Failed to duplicate episode profile: {e}")

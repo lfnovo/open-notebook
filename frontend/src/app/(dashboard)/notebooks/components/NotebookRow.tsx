@@ -85,10 +85,10 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
         </div>
 
         <div className="hidden sm:block w-40 shrink-0 text-right text-xs text-muted-foreground">
-          {t('common.updated').replace('{time}', formatDistanceToNow(new Date(notebook.updated), {
+          {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), {
             addSuffix: true,
             locale: getDateLocale(language)
-          }))}
+          }) })}
         </div>
 
         <DropdownMenu>

@@ -254,7 +254,7 @@ export function AddExistingSourceDialog({
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground truncate">
-                          {t('sources.added').replace('{date}', formatDate(source.created))}
+                          {t('sources.added', { date: formatDate(source.created) })}
                         </p>
                       </div>
                     </div>
@@ -274,7 +274,7 @@ export function AddExistingSourceDialog({
           {/* Selection Summary */}
           {selectedSourceIds.length > 0 && (
             <div className="text-sm text-muted-foreground">
-              {t('sources.selectedCount').replace('{count}', selectedSourceIds.length.toString())}
+              {t('sources.selectedCount', { count: selectedSourceIds.length })}
             </div>
           )}
         </div>

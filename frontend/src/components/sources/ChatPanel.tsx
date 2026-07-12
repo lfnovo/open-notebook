@@ -16,8 +16,8 @@ import {
 } from '@/lib/types/api'
 import { ModelSelector } from './ModelSelector'
 import { ContextIndicator } from '@/components/common/ContextIndicator'
-import { SessionManager } from '@/components/source/SessionManager'
-import { MessageActions } from '@/components/source/MessageActions'
+import { SessionManager } from '@/components/sources/SessionManager'
+import { MessageActions } from '@/components/sources/MessageActions'
 import { convertReferencesToCompactMarkdown, createCompactReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { toast } from 'sonner'
@@ -129,7 +129,7 @@ export function ChatPanel({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5" />
-            {title || (contextType === 'source' ? t('chat.chatWith').replace('{name}', t('navigation.sources')) : t('chat.chatWith').replace('{name}', t('common.notebook')))}
+            {title || (contextType === 'source' ? t('chat.chatWith', { name: t('navigation.sources') }) : t('chat.chatWith', { name: t('common.notebook') }))}
           </CardTitle>
           {onSelectSession && onCreateSession && onDeleteSession && (
             <Dialog open={sessionManagerOpen} onOpenChange={setSessionManagerOpen}>
@@ -169,7 +169,7 @@ export function ChatPanel({
               <div className="text-center text-muted-foreground py-8">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p className="text-sm">
-                  {t('chat.startConversation').replace('{type}', contextType === 'source' ? t('navigation.sources') : t('common.notebook'))}
+                  {t('chat.startConversation', { type: contextType === 'source' ? t('navigation.sources') : t('common.notebook') })}
                 </p>
                 <p className="text-xs mt-2">{t('chat.askQuestions')}</p>
               </div>
@@ -297,7 +297,7 @@ export function ChatPanel({
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend').replace('{key}', keyHint)})`}
+              placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
               disabled={isStreaming}
               className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
               rows={1}

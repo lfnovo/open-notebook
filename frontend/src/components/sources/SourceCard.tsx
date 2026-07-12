@@ -282,7 +282,7 @@ function SourceCardImpl({
 
               {isCompleted && source.insights_count > 0 && (
                 <Badge variant="outline" className="text-xs">
-                  {t('sources.insightsCount').replace('{count}', source.insights_count.toString())}
+                  {t('sources.insightsCount', { count: source.insights_count })}
                 </Badge>
               )}
               {source.topics && source.topics.length > 0 && isCompleted && (

@@ -166,7 +166,9 @@ class TestSaveSourceTitlePreservation:
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.Source.get")
     async def test_custom_title_preserved(self, mock_get):
-        """User-set title is NOT overwritten by content_state.title."""
+        """User-set title is NOT overwritten by the extracted title."""
+        from content_core.common import ExtractionOutput
+
         from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
@@ -174,15 +176,10 @@ class TestSaveSourceTitlePreservation:
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "video.mp4"
-        content_state.url = "https://example.com"
-        content_state.file_path = None
-        content_state.content = "Some content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": "https://example.com", "file_path": None},
+            "extraction": ExtractionOutput(title="video.mp4", content="Some content"),
             "embed": False,
             "apply_transformations": [],
         }
@@ -197,6 +194,8 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_placeholder_title_replaced(self, mock_get):
         """Placeholder 'Processing...' title IS replaced by extracted title."""
+        from content_core.common import ExtractionOutput
+
         from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
@@ -204,15 +203,12 @@ class TestSaveSourceTitlePreservation:
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Article Title"
-        content_state.url = "https://example.com"
-        content_state.file_path = None
-        content_state.content = "Some content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": "https://example.com", "file_path": None},
+            "extraction": ExtractionOutput(
+                title="Extracted Article Title", content="Some content"
+            ),
             "embed": False,
             "apply_transformations": [],
         }
@@ -227,6 +223,8 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_none_title_replaced(self, mock_get):
         """None title IS replaced by extracted title."""
+        from content_core.common import ExtractionOutput
+
         from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
@@ -234,15 +232,10 @@ class TestSaveSourceTitlePreservation:
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Title"
-        content_state.url = None
-        content_state.file_path = "/tmp/file.pdf"
-        content_state.content = "Content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": None, "file_path": "/tmp/file.pdf"},
+            "extraction": ExtractionOutput(title="Extracted Title", content="Content"),
             "embed": False,
             "apply_transformations": [],
         }
@@ -257,6 +250,8 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_empty_title_replaced(self, mock_get):
         """Empty string title IS replaced by extracted title."""
+        from content_core.common import ExtractionOutput
+
         from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
@@ -264,15 +259,10 @@ class TestSaveSourceTitlePreservation:
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Title"
-        content_state.url = None
-        content_state.file_path = None
-        content_state.content = "Content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": None, "file_path": None},
+            "extraction": ExtractionOutput(title="Extracted Title", content="Content"),
             "embed": False,
             "apply_transformations": [],
         }
@@ -282,6 +272,109 @@ class TestSaveSourceTitlePreservation:
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()
+
+
+# ============================================================================
+# TEST SUITE 5: Source Graph - content_process (content-core 2.x)
+# ============================================================================
+
+
+class TestContentProcessDeleteSource:
+    """content-core 2.x no longer deletes the uploaded file; the graph must."""
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_uploaded_file_deleted_when_flag_set(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        # No STT default configured -> no audio override, no DB access.
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(
+            title="Doc", content="extracted text"
+        )
+
+        uploaded = tmp_path / "upload.pdf"
+        uploaded.write_text("data")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(uploaded), "delete_source": True},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        result = await content_process(cast(SourceState, state))
+
+        assert result["extraction"].content == "extracted text"
+        assert not uploaded.exists()  # file removed by the graph
+        mock_extract.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_uploaded_file_kept_when_flag_not_set(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(title="Doc", content="text")
+
+        uploaded = tmp_path / "upload.pdf"
+        uploaded.write_text("data")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(uploaded), "delete_source": False},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        assert uploaded.exists()  # file preserved
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_empty_extraction_raises_valueerror(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(title="", content="   ")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        with pytest.raises(ValueError):
+            await content_process(cast(SourceState, state))
 
 
 if __name__ == "__main__":

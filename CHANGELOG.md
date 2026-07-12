@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-1.6 embedding job compatibility shims (the `embed_single_item`, `embed_chunk` and `vectorize_source` command handlers) — they existed only so jobs queued by a pre-1.6 version could drain after an upgrade, and any worker restarted on 1.6+ has no such jobs. **Upgrade note:** if you are upgrading from a version older than 1.6 with embedding jobs still queued, drain the queue on a 1.x release before upgrading past this change. Also removed dead tooling config from `pyproject.toml`: the `[tool.mypy]` block (the real config is `mypy.ini`) and Streamlit-era ruff per-file-ignores for files that no longer exist (#1056)
 - Committed QA screenshots (12 files) and a stray debug `history.txt` were removed from the repo root, with `.gitignore` rules added so they can't come back (#1053)
 
+### Fixed
+- Podcast generation now honors the `speaker_profile` parameter of `POST /api/podcasts/generate` — previously it was silently ignored and the speaker was always re-derived from the episode profile's `speaker_config`, which failed when that pointed at a renamed/deleted speaker profile even if the caller supplied a valid one (#1044)
+
 ## [1.11.0] - 2026-07-11
 
 ### Added

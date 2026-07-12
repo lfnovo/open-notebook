@@ -1,0 +1,42 @@
+frontend/src/lib/types/podcasts.ts
+  s_7421a04ffabb0b::t_b6fb57955ef746 68-69
+  s_7421a04ffabb0b::t_f5c3c1799795a4 40-55
+open_notebook/database/async_migrate.py
+  s_7421a04ffabb0b::t_63596e9205def1 142-144
+  s_7421a04ffabb0b::t_b3e609329c480e 210-212
+open_notebook/podcasts/models.py
+  s_7421a04ffabb0b::t_cecc5d2a990028 144
+  s_7421a04ffabb0b::t_f8b7916dbee8ef 63
+docs/7-DEVELOPMENT/podcasts.md
+  s_7421a04ffabb0b::t_2aad6e0261919f 13,15
+CHANGELOG.md
+  s_7421a04ffabb0b::t_c2be06f77ab046 15-17
+open_notebook/database/migrations/22.surrealql
+  s_7421a04ffabb0b::t_94c3568e7757de 1-42
+tests/test_podcast_legacy_field_removal.py
+  s_7421a04ffabb0b::t_d317634883f45d 1-60,64-113
+  s_7421a04ffabb0b::t_f7154e88057b5a 61-63
+open_notebook/database/migrations/22_down.surrealql
+  s_7421a04ffabb0b::t_2ecdf73abc38e2 1-14
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_7421a04ffabb0b::t_dd9b9daa894a59 209
+  s_7421a04ffabb0b::t_6508829e166838 219
+frontend/src/components/podcasts/SpeakerProfilesPanel.tsx
+  s_7421a04ffabb0b::t_12bd2900918a51 119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "b8754cbbe09fcc0a4dc3deea828c98d51c618bf5",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

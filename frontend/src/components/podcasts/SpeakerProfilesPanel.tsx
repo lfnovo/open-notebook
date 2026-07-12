@@ -116,9 +116,7 @@ export function SpeakerProfilesPanel({
                     <Badge variant="outline" className="text-xs">
                       {profile.voice_model
                         ? (modelNameMap[profile.voice_model] ?? profile.voice_model)
-                        : (profile.tts_provider
-                          ? `${profile.tts_provider} / ${profile.tts_model}`
-                          : t('podcasts.notConfigured'))}
+                        : t('podcasts.notConfigured')}
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-2">

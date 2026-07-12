@@ -421,8 +421,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[],
             )
 
@@ -430,8 +428,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[{"name": f"Speaker{i}"} for i in range(5)],
             )
 
@@ -439,8 +435,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[
                     {"name": "Speaker 1"}
                 ],  # Missing voice_id, backstory, personality
@@ -449,8 +443,6 @@ class TestPodcastDomain:
         # Test valid - single speaker with all fields
         profile = SpeakerProfile(
             name="Test",
-            tts_provider="openai",
-            tts_model="tts-1",
             speakers=[
                 {
                     "name": "Host",
@@ -603,10 +595,6 @@ class TestEpisodeProfile:
             EpisodeProfile(
                 name="Test",
                 speaker_config="default",
-                outline_provider="openai",
-                outline_model="gpt-4",
-                transcript_provider="openai",
-                transcript_model="gpt-4",
                 default_briefing="Test briefing",
                 num_segments=2,
             )
@@ -618,10 +606,6 @@ class TestEpisodeProfile:
             EpisodeProfile(
                 name="Test",
                 speaker_config="default",
-                outline_provider="openai",
-                outline_model="gpt-4",
-                transcript_provider="openai",
-                transcript_model="gpt-4",
                 default_briefing="Test briefing",
                 num_segments=21,
             )
@@ -630,10 +614,6 @@ class TestEpisodeProfile:
         profile = EpisodeProfile(
             name="Test",
             speaker_config="default",
-            outline_provider="openai",
-            outline_model="gpt-4",
-            transcript_provider="openai",
-            transcript_model="gpt-4",
             default_briefing="Test briefing",
             num_segments=5,
         )

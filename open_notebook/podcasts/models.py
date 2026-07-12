@@ -43,10 +43,6 @@ class EpisodeProfile(ObjectModel):
     nullable_fields: ClassVar[set[str]] = {
         "description",
         "speaker_config",
-        "outline_provider",
-        "outline_model",
-        "transcript_provider",
-        "transcript_model",
         "outline_llm",
         "transcript_llm",
         "language",
@@ -64,21 +60,7 @@ class EpisodeProfile(ObjectModel):
         ),
     )
 
-    # Legacy fields (kept for migration, app ignores)
-    outline_provider: Optional[str] = Field(
-        None, description="[Legacy] AI provider for outline generation"
-    )
-    outline_model: Optional[str] = Field(
-        None, description="[Legacy] AI model for outline generation"
-    )
-    transcript_provider: Optional[str] = Field(
-        None, description="[Legacy] AI provider for transcript generation"
-    )
-    transcript_model: Optional[str] = Field(
-        None, description="[Legacy] AI model for transcript generation"
-    )
-
-    # New fields: Model registry references
+    # Model registry references
     outline_llm: Optional[str] = Field(
         None, description="Model record ID for outline generation"
     )
@@ -153,21 +135,13 @@ class SpeakerProfile(ObjectModel):
     table_name: ClassVar[str] = "speaker_profile"
     nullable_fields: ClassVar[set[str]] = {
         "description",
-        "tts_provider",
-        "tts_model",
         "voice_model",
     }
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
 
-    # Legacy fields (kept for migration, app ignores)
-    tts_provider: Optional[str] = Field(
-        None, description="[Legacy] TTS provider (openai, elevenlabs, etc.)"
-    )
-    tts_model: Optional[str] = Field(None, description="[Legacy] TTS model name")
-
-    # New field: Model registry reference
+    # Model registry reference
     voice_model: Optional[str] = Field(
         None, description="Model record ID for TTS"
     )

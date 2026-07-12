@@ -566,6 +566,11 @@ class TestTransformationDomain:
 class TestContentSettings:
     """Test suite for ContentSettings defaults."""
 
+    def teardown_method(self):
+        # ContentSettings is a RecordModel singleton; drop any instance these
+        # tests created so a non-default value can't leak into other tests.
+        ContentSettings.clear_instance()
+
     def test_content_settings_defaults(self):
         """Test ContentSettings has proper defaults."""
         settings = ContentSettings()

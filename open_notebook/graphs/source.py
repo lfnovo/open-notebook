@@ -72,7 +72,11 @@ async def content_process(state: SourceState) -> dict:
                 settings.default_content_processing_engine_doc
             )
     except Exception as e:
-        logger.warning(f"Failed to load content settings, using defaults: {e}")
+        # Keep the server-side traceback for diagnosing DB/deserialization
+        # failures while still falling back to defaults (non-fatal).
+        logger.opt(exception=True).warning(
+            f"Failed to load content settings, using defaults: {e}"
+        )
 
     try:
         model_manager = ModelManager()

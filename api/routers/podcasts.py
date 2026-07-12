@@ -10,11 +10,78 @@ from api.podcast_service import (
     PodcastGenerationResponse,
     PodcastService,
 )
+from open_notebook.ai.models import Model
 from open_notebook.exceptions import OpenNotebookError
 from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
 from open_notebook.podcasts.models import PodcastEpisode
 
 router = APIRouter()
+
+# Model reference fields stored in the denormalized profile snapshots on an
+# episode, mapped to the resolved display fields the frontend renders
+# ("provider / name" rows in EpisodeCard). Mirrors the speaker_config ->
+# speaker_config_name precedent in api/routers/episode_profiles.py.
+_EPISODE_PROFILE_MODEL_FIELDS = {
+    "outline_llm": ("outline_model_provider", "outline_model_name"),
+    "transcript_llm": ("transcript_model_provider", "transcript_model_name"),
+}
+_SPEAKER_PROFILE_MODEL_FIELDS = {
+    "voice_model": ("voice_model_provider", "voice_model_name"),
+}
+
+
+def _collect_snapshot_model_ids(episodes: List[PodcastEpisode]) -> List[str]:
+    """Collect the distinct model record IDs referenced by episode snapshots."""
+    ids = set()
+    for episode in episodes:
+        for field in _EPISODE_PROFILE_MODEL_FIELDS:
+            ref = (episode.episode_profile or {}).get(field)
+            if ref:
+                ids.add(str(ref))
+        for field in _SPEAKER_PROFILE_MODEL_FIELDS:
+            ref = (episode.speaker_profile or {}).get(field)
+            if ref:
+                ids.add(str(ref))
+    return sorted(ids)
+
+
+def _with_resolved_model_fields(
+    snapshot: dict,
+    field_map: dict,
+    models_by_id: dict,
+) -> dict:
+    """Return a copy of a profile snapshot with resolved model display fields.
+
+    Only sets the display fields when the reference resolves; unresolvable
+    references (deleted model) and legacy snapshots without references are
+    left untouched so the frontend can fall back to the historical
+    provider/model strings, then to a placeholder.
+    """
+    enriched = dict(snapshot or {})
+    for ref_field, (provider_field, name_field) in field_map.items():
+        ref = enriched.get(ref_field)
+        info = models_by_id.get(str(ref)) if ref else None
+        if info:
+            enriched[provider_field] = info["provider"]
+            enriched[name_field] = info["name"]
+    return enriched
+
+
+async def _resolve_snapshot_models(
+    episodes: List[PodcastEpisode],
+) -> dict:
+    """Batch-resolve every model reference in the episodes' snapshots.
+
+    One query for the whole list (see Model.get_display_info_for_ids) - a
+    failure degrades to no resolved fields rather than failing the request.
+    """
+    try:
+        return await Model.get_display_info_for_ids(
+            _collect_snapshot_model_ids(episodes)
+        )
+    except Exception as e:
+        logger.warning(f"Error batch-resolving snapshot model references: {str(e)}")
+        return {}
 
 
 def _delete_episode_audio(episode: PodcastEpisode, episode_id: str) -> None:
@@ -124,6 +191,11 @@ async def list_podcast_episodes():
             logger.warning(f"Error batch-fetching podcast job statuses: {str(e)}")
             details_by_command = {}
 
+        # Batch-resolve the snapshots' model references (outline_llm,
+        # transcript_llm, voice_model) to display fields in one query
+        # instead of one lookup per episode.
+        models_by_id = await _resolve_snapshot_models(episodes)
+
         response_episodes = []
         for episode in episodes:
             # Skip incomplete episodes without command or audio
@@ -153,8 +225,16 @@ async def list_podcast_episodes():
                 PodcastEpisodeResponse(
                     id=str(episode.id),
                     name=episode.name,
-                    episode_profile=episode.episode_profile,
-                    speaker_profile=episode.speaker_profile,
+                    episode_profile=_with_resolved_model_fields(
+                        episode.episode_profile,
+                        _EPISODE_PROFILE_MODEL_FIELDS,
+                        models_by_id,
+                    ),
+                    speaker_profile=_with_resolved_model_fields(
+                        episode.speaker_profile,
+                        _SPEAKER_PROFILE_MODEL_FIELDS,
+                        models_by_id,
+                    ),
                     briefing=episode.briefing,
                     audio_file=episode.audio_file,
                     audio_url=audio_url,
@@ -204,11 +284,21 @@ async def get_podcast_episode(episode_id: str):
         if audio_path is not None and audio_path.exists():
             audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
+        models_by_id = await _resolve_snapshot_models([episode])
+
         return PodcastEpisodeResponse(
             id=str(episode.id),
             name=episode.name,
-            episode_profile=episode.episode_profile,
-            speaker_profile=episode.speaker_profile,
+            episode_profile=_with_resolved_model_fields(
+                episode.episode_profile,
+                _EPISODE_PROFILE_MODEL_FIELDS,
+                models_by_id,
+            ),
+            speaker_profile=_with_resolved_model_fields(
+                episode.speaker_profile,
+                _SPEAKER_PROFILE_MODEL_FIELDS,
+                models_by_id,
+            ),
             briefing=episode.briefing,
             audio_file=episode.audio_file,
             audio_url=audio_url,

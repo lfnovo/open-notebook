@@ -111,6 +111,12 @@ export const trTR = {
     finalAnswer: "Son Yanıt",
     notebookLabel: "Defter: {{name}}",
     itemNotFound: "Bu {{type}} bulunamadı",
+    contentUnavailable: {
+      notFoundTitle: "Bu içerik artık mevcut değil",
+      notFoundDescription: "Silinmiş olabilir. Eski mesajlardaki bağlantılar, kaldırılmış içeriklere işaret edebilir.",
+      errorTitle: "Bu içerik yüklenemedi",
+      errorDescription: "Yükleme sırasında bir sorun oluştu. Lütfen tekrar deneyin.",
+    },
     accessibility: {
       transformationViews: "Dönüşüm görünümleri",
       searchKB: "Bilgi tabanınızda sor veya ara",
@@ -393,7 +399,6 @@ export const trTR = {
     manageNotebooks: "Defterleri Yönet",
     manageNotebooksDesc: "Bu kaynağı içeren defterleri yönetin",
     noNotebooksAvailable: "Mevcut defter yok",
-    loadFailed: "Kaynak ayrıntıları yüklenemedi",
     removeFromNotebook: "Defterden Kaldır",
     retryProcessing: "İşlemeyi Yeniden Dene",
     refreshContent: "İçeriği yenile",
@@ -421,7 +426,6 @@ export const trTR = {
     embeddingNever: "Gömme devre dışı",
     embeddingNeverDesc: "Ayarlarınız gömmeyi atlamak üzere yapılandırılmış. Bu kaynak için vektör arama kullanılamaz.",
     changeInSettings: "Bunu Ayarlar'dan değiştirebilirsiniz",
-    notFound: "Kaynak bulunamadı",
     noContent: "İçerik mevcut değil",
     insightsDesc: "Model analizinden oluşturulan içgörüler",
     uploadedFile: "Yüklenen dosya",

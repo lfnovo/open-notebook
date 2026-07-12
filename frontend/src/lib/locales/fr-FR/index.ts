@@ -111,6 +111,12 @@ export const frFR = {
     finalAnswer: "Réponse finale",
     notebookLabel: "Carnet : {{name}}",
     itemNotFound: "Ce {{type}} est introuvable",
+    contentUnavailable: {
+      notFoundTitle: "Ce contenu n'existe plus",
+      notFoundDescription: "Il a peut-être été supprimé. Les références dans les anciens messages peuvent pointer vers du contenu qui a depuis été supprimé.",
+      errorTitle: "Impossible de charger ce contenu",
+      errorDescription: "Une erreur s'est produite lors du chargement. Veuillez réessayer.",
+    },
     accessibility: {
       transformationViews: "Vues de transformation",
       searchKB: "Interroger ou fouiller votre base de connaissances",
@@ -393,7 +399,6 @@ export const frFR = {
     manageNotebooks: "Gérer les carnets",
     manageNotebooksDesc: "Gérer quels carnets contiennent cette source",
     noNotebooksAvailable: "Aucun carnet disponible",
-    loadFailed: "Échec du chargement des détails de la source",
     removeFromNotebook: "Retirer du carnet",
     retryProcessing: "Réessayer le traitement",
     refreshContent: "Actualiser le contenu",
@@ -421,7 +426,6 @@ export const frFR = {
     embeddingNever: "Indexation désactivée",
     embeddingNeverDesc: "Vos paramètres sont configurés pour ignorer l'indexation. La recherche vectorielle ne sera pas disponible pour cette source.",
     changeInSettings: "Vous pouvez modifier cela dans les Paramètres",
-    notFound: "Source introuvable",
     noContent: "Aucun contenu disponible",
     insightsDesc: "Aperçus générés par l'analyse du modèle",
     uploadedFile: "Fichier téléchargé",

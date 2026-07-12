@@ -109,6 +109,12 @@ export const enUS = {
     finalAnswer: "Final Answer",
     notebookLabel: "Notebook: {{name}}",
     itemNotFound: "This {{type}} could not be found",
+    contentUnavailable: {
+      notFoundTitle: "This content no longer exists",
+      notFoundDescription: "It may have been deleted. References in older messages can point to content that has since been removed.",
+      errorTitle: "Unable to load this content",
+      errorDescription: "Something went wrong while loading it. Please try again.",
+    },
     accessibility: {
       transformationViews: "Transformation views",
       searchKB: "Ask or search your knowledge base",
@@ -391,7 +397,6 @@ export const enUS = {
     manageNotebooks: "Manage Notebooks",
     manageNotebooksDesc: "Manage which notebooks contain this source",
     noNotebooksAvailable: "No notebooks available",
-    loadFailed: "Failed to load source details",
     removeFromNotebook: "Remove from Notebook",
     retryProcessing: "Retry Processing",
     refreshContent: "Refresh content",
@@ -419,7 +424,6 @@ export const enUS = {
     embeddingNever: "Embedding disabled",
     embeddingNeverDesc: "Your settings are configured to skip embedding. Vector search won't be available for this source.",
     changeInSettings: "You can change this in Settings",
-    notFound: "Source not found",
     noContent: "No content available",
     insightsDesc: "Insights generated from model analysis",
     uploadedFile: "Uploaded file",

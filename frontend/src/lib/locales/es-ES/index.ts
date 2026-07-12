@@ -111,6 +111,12 @@ export const esES = {
     finalAnswer: "Respuesta final",
     notebookLabel: "Cuaderno: {{name}}",
     itemNotFound: "No se pudo encontrar este {{type}}",
+    contentUnavailable: {
+      notFoundTitle: "Este contenido ya no existe",
+      notFoundDescription: "Puede que haya sido eliminado. Las referencias en mensajes antiguos pueden apuntar a contenido que ya fue eliminado.",
+      errorTitle: "No se pudo cargar este contenido",
+      errorDescription: "Algo salió mal al cargarlo. Inténtalo de nuevo.",
+    },
     accessibility: {
       transformationViews: "Vistas de transformación",
       searchKB: "Pregunta o busca en tu base de conocimiento",
@@ -393,7 +399,6 @@ export const esES = {
     manageNotebooks: "Gestionar cuadernos",
     manageNotebooksDesc: "Gestiona qué cuadernos contienen esta fuente",
     noNotebooksAvailable: "No hay cuadernos disponibles",
-    loadFailed: "Error al cargar los detalles de la fuente",
     removeFromNotebook: "Quitar del cuaderno",
     retryProcessing: "Reintentar procesamiento",
     refreshContent: "Actualizar contenido",
@@ -421,7 +426,6 @@ export const esES = {
     embeddingNever: "Embedding deshabilitado",
     embeddingNeverDesc: "Tu configuración está establecida para omitir el embedding. La búsqueda vectorial no estará disponible para esta fuente.",
     changeInSettings: "Puedes cambiar esto en Configuración",
-    notFound: "Fuente no encontrada",
     noContent: "No hay contenido disponible",
     insightsDesc: "Análisis generados a partir del análisis del modelo",
     uploadedFile: "Archivo subido",

@@ -111,6 +111,12 @@ export const zhCN = {
     finalAnswer: "最终回答",
     notebookLabel: "笔记本: {{name}}",
     itemNotFound: "未找到该 {{type}}",
+    contentUnavailable: {
+      notFoundTitle: "该内容已不存在",
+      notFoundDescription: "它可能已被删除。旧消息中的引用可能指向已被移除的内容。",
+      errorTitle: "无法加载该内容",
+      errorDescription: "加载时出现问题，请重试。",
+    },
     accessibility: {
       transformationViews: "转换视图",
       searchKB: "向知识库提问或搜索",
@@ -393,7 +399,6 @@ export const zhCN = {
     manageNotebooks: "管理所属笔记本",
     manageNotebooksDesc: "管理包含此来源的笔记本",
     noNotebooksAvailable: "暂无可用笔记本",
-    loadFailed: "加载来源详情失败",
     removeFromNotebook: "从笔记本移除",
     retryProcessing: "重试处理",
     refreshContent: "刷新内容",
@@ -421,7 +426,6 @@ export const zhCN = {
     embeddingNever: "嵌入已禁用",
     embeddingNeverDesc: "您的设置已配置为跳过嵌入。此来源将无法进行向量搜索。",
     changeInSettings: "您可以在此处更改设置：",
-    notFound: "未找到来源",
     noContent: "暂无内容",
     insightsDesc: "根据模型分析生成的见解",
     uploadedFile: "已上传文件",

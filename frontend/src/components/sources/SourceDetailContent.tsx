@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { isAxiosError } from 'axios'
 import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { sourcesApi } from '@/lib/api/sources'
 import { insightsApi, SourceInsightResponse } from '@/lib/api/insights'
@@ -11,6 +10,8 @@ import { embeddingApi } from '@/lib/api/embedding'
 import { SourceDetailResponse } from '@/lib/types/api'
 import { Transformation } from '@/lib/types/transformations'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
+import { ContentUnavailable } from '@/components/common/ContentUnavailable'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -100,7 +101,7 @@ export function SourceDetailContent({
   const [loading, setLoading] = useState(true)
   const [loadingInsights, setLoadingInsights] = useState(false)
   const [creatingInsight, setCreatingInsight] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<'not-found' | 'error' | null>(null)
   const [copied, setCopied] = useState(false)
   const [isEmbedding, setIsEmbedding] = useState(false)
   const [isDownloadingFile, setIsDownloadingFile] = useState(false)
@@ -112,6 +113,7 @@ export function SourceDetailContent({
   const fetchSource = useCallback(async () => {
     try {
       setLoading(true)
+      setLoadError(null)
       const data = await sourcesApi.get(sourceId)
       setSource(data)
       if (typeof data.file_available === 'boolean') {
@@ -123,11 +125,13 @@ export function SourceDetailContent({
       }
     } catch (err) {
       console.error('Failed to fetch source:', err)
-      setError(t('sources.loadFailed'))
+      // A 404 means the source was deleted (e.g. a dangling chat/ask
+      // reference) — handled by the shared "content no longer exists" state.
+      setLoadError(isNotFoundError(err) ? 'not-found' : 'error')
     } finally {
       setLoading(false)
     }
-  }, [sourceId, t])
+  }, [sourceId])
 
   const fetchInsights = useCallback(async () => {
     try {
@@ -301,7 +305,7 @@ export function SourceDetailContent({
       toast.success(t('common.success'))
     } catch (err) {
       console.error('Failed to download file:', err)
-      if (isAxiosError(err) && err.response?.status === 404) {
+      if (isNotFoundError(err)) {
         setFileAvailable(false)
         toast.error(t('sources.fileUnavailable'))
       } else {
@@ -389,11 +393,12 @@ export function SourceDetailContent({
     )
   }
 
-  if (error || !source) {
+  if (loadError || !source) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
-        <p className="text-red-500">{error || t('sources.notFound')}</p>
-      </div>
+      <ContentUnavailable
+        variant={loadError ?? 'error'}
+        onClose={onClose}
+      />
     )
   }
 

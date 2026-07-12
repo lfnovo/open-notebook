@@ -111,6 +111,12 @@ export const jaJP = {
     finalAnswer: "最終回答",
     notebookLabel: "ノートブック: {{name}}",
     itemNotFound: "この{{type}}は見つかりませんでした",
+    contentUnavailable: {
+      notFoundTitle: "このコンテンツは存在しません",
+      notFoundDescription: "削除された可能性があります。過去のメッセージ内の参照は、すでに削除されたコンテンツを指している場合があります。",
+      errorTitle: "コンテンツを読み込めませんでした",
+      errorDescription: "読み込み中に問題が発生しました。もう一度お試しください。",
+    },
     accessibility: {
       transformationViews: "トランスフォーメーション表示",
       searchKB: "ナレッジベースに質問・検索",
@@ -393,7 +399,6 @@ export const jaJP = {
     manageNotebooks: "ノートブックを管理",
     manageNotebooksDesc: "このソースを含むノートブックを管理",
     noNotebooksAvailable: "利用可能なノートブックがありません",
-    loadFailed: "ソース詳細の読み込みに失敗しました",
     removeFromNotebook: "ノートブックから削除",
     retryProcessing: "処理を再試行",
     refreshContent: "コンテンツを更新",
@@ -421,7 +426,6 @@ export const jaJP = {
     embeddingNever: "Embeddingは無効",
     embeddingNeverDesc: "設定でEmbeddingをスキップするよう構成されています。このソースではベクトル検索は利用できません。",
     changeInSettings: "設定で変更できます",
-    notFound: "ソースが見つかりません",
     noContent: "コンテンツがありません",
     insightsDesc: "モデル分析から生成されたインサイト",
     uploadedFile: "アップロードされたファイル",

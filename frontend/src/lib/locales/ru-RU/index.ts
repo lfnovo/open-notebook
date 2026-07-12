@@ -111,6 +111,12 @@ export const ruRU = {
     finalAnswer: "Итоговый ответ",
     notebookLabel: "Блокнот: {{name}}",
     itemNotFound: "Этот {{type}} не найден",
+    contentUnavailable: {
+      notFoundTitle: "Этот контент больше не существует",
+      notFoundDescription: "Возможно, он был удалён. Ссылки в старых сообщениях могут указывать на уже удалённый контент.",
+      errorTitle: "Не удалось загрузить этот контент",
+      errorDescription: "Что-то пошло не так при загрузке. Попробуйте ещё раз.",
+    },
     accessibility: {
       transformationViews: "Представления трансформаций",
       searchKB: "Спросить или найти в базе знаний",
@@ -393,7 +399,6 @@ export const ruRU = {
     manageNotebooks: "Управление блокнотами",
     manageNotebooksDesc: "Управление блокнотами, содержащими этот источник",
     noNotebooksAvailable: "Нет доступных блокнотов",
-    loadFailed: "Не удалось загрузить детали источника",
     removeFromNotebook: "Удалить из блокнота",
     retryProcessing: "Повторить обработку",
     refreshContent: "Обновить содержимое",
@@ -421,7 +426,6 @@ export const ruRU = {
     embeddingNever: "Эмбеддинг отключён",
     embeddingNeverDesc: "В ваших настройках отключено создание эмбеддинга. Векторный поиск будет недоступен для этого источника.",
     changeInSettings: "Вы можете изменить это в Настройках",
-    notFound: "Источник не найден",
     noContent: "Содержимое недоступно",
     insightsDesc: "Инсайты, сгенерированные анализом модели",
     uploadedFile: "Загруженный файл",

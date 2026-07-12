@@ -111,6 +111,12 @@ export const caES = {
     finalAnswer: "Resposta final",
     notebookLabel: "Quadern: {{name}}",
     itemNotFound: "No s'ha pogut trobar aquest {{type}}",
+    contentUnavailable: {
+      notFoundTitle: "Aquest contingut ja no existeix",
+      notFoundDescription: "Pot haver estat eliminat. Les referències en missatges antics poden apuntar a contingut que ja s'ha eliminat.",
+      errorTitle: "No s'ha pogut carregar aquest contingut",
+      errorDescription: "Alguna cosa ha fallat en carregar-lo. Torna-ho a provar.",
+    },
     accessibility: {
       transformationViews: "Vistes de transformació",
       searchKB: "Pregunta o cerca a la base de coneixement",
@@ -393,7 +399,6 @@ export const caES = {
     manageNotebooks: "Gestiona els quaderns",
     manageNotebooksDesc: "Gestiona quins quaderns contenen aquesta font",
     noNotebooksAvailable: "No hi ha quaderns disponibles",
-    loadFailed: "Ha fallat la càrrega dels detalls de la font",
     removeFromNotebook: "Elimina del quadern",
     retryProcessing: "Torna a processar",
     refreshContent: "Actualitza el contingut",
@@ -421,7 +426,6 @@ export const caES = {
     embeddingNever: "La incrustació està desactivada",
     embeddingNeverDesc: "La configuració actual omet la incrustació. La cerca vectorial no estarà disponible per a aquesta font.",
     changeInSettings: "Pots canviar-ho a la Configuració",
-    notFound: "No s'ha trobat la font",
     noContent: "No hi ha contingut disponible",
     insightsDesc: "Anàlisis generades per l'anàlisi del model",
     uploadedFile: "Fitxer carregat",

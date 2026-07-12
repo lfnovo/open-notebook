@@ -1,0 +1,37 @@
+CHANGELOG.md
+  s_7421a04ffabb0b::t_2cdfcd55063ed4 11
+commands/podcast_commands.py
+  s_7421a04ffabb0b::t_109dd1f754fe4b 153-160,166-188
+  s_7421a04ffabb0b::t_bef9bdaccdb7da 96-102
+api/routers/episode_profiles.py
+  s_7421a04ffabb0b::t_7f5292b7b829dc 75,77,81
+  s_7421a04ffabb0b::t_c7a8d4d20ae0c8 37,42-52,54,61
+  s_7421a04ffabb0b::t_cc3767298f46fc 90-95
+  s_7421a04ffabb0b::t_673349d2f73bae 288-290
+  s_7421a04ffabb0b::t_2457bf7e9fc88c 208,210-212,217-219
+  s_7421a04ffabb0b::t_20a17f56276582 118-120
+  s_7421a04ffabb0b::t_e5f90f564ce967 165,169
+  s_7421a04ffabb0b::t_a8615695bd7752 183
+tests/test_podcast_speaker_profile.py
+  s_7421a04ffabb0b::t_b17ca9f6314c37 339
+  s_7421a04ffabb0b::t_15cd1f6fb77891 277-338,340-393
+  s_7421a04ffabb0b::t_cceea79607a671 89
+open_notebook/database/migrations/20.surrealql
+  s_7421a04ffabb0b::t_ac6344b307a6e5 13-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "8d6b03897c17002df1f1092334bd66c69ca92dc0",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

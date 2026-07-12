@@ -766,6 +766,8 @@ export const enUS = {
     fileManagement: "File Management",
     fileManagementDesc: "Configure file handling and storage options",
     autoDeleteFiles: "Auto Delete Files",
+    ocrEnabled: "Enable OCR",
+    ocrHelp: "Extract text from scanned PDFs and images when using the Docling engine. Slower to process.",
     autoDeletePlaceholder: "Select auto delete option",
     filesHelp: "Once your files are uploaded and processed, they are not required anymore. Most users should allow Open Notebook to delete uploaded files from the upload folder automatically.",
     loadFailed: "Failed to load settings",

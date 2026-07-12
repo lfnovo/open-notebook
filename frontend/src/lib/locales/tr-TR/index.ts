@@ -767,6 +767,8 @@ export const trTR = {
     fileManagement: "Dosya Yönetimi",
     fileManagementDesc: "Dosya işleme ve depolama seçeneklerini yapılandırın",
     autoDeleteFiles: "Dosyaları Otomatik Sil",
+    ocrEnabled: "OCR'yi etkinleştir",
+    ocrHelp: "Docling motoru kullanılırken taranmış PDF'lerden ve görüntülerden metin çıkarır. İşlemesi daha yavaştır.",
     autoDeletePlaceholder: "Otomatik silme seçeneği seçin",
     filesHelp: "Dosyalarınız yüklenip işlendikten sonra artık gerekli değildir. Çoğu kullanıcı Open Notebook'un yüklenen dosyaları yükleme klasöründen otomatik olarak silmesine izin vermelidir.",
     loadFailed: "Ayarlar yüklenemedi",

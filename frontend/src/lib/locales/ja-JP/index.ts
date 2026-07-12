@@ -767,6 +767,8 @@ export const jaJP = {
     fileManagement: "ファイル管理",
     fileManagementDesc: "ファイルの処理とストレージオプションを設定",
     autoDeleteFiles: "ファイル自動削除",
+    ocrEnabled: "OCRを有効にする",
+    ocrHelp: "Doclingエンジン使用時に、スキャンしたPDFや画像からテキストを抽出します。処理が遅くなります。",
     autoDeletePlaceholder: "自動削除オプションを選択",
     filesHelp: "ファイルがアップロードされて処理されると、ファイル自体は不要になります。ほとんどのユーザーはOpen Notebookがアップロードフォルダから自動的にファイルを削除することを許可すべきです。",
     loadFailed: "設定の読み込みに失敗しました",

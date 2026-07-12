@@ -403,6 +403,7 @@ class TestContentProcessDeleteSource:
             return_value=MagicMock(
                 default_content_processing_engine_url="crawl4ai",
                 default_content_processing_engine_doc="docling",
+                docling_ocr=False,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -419,6 +420,7 @@ class TestContentProcessDeleteSource:
         config = mock_extract.await_args.kwargs["config"]
         assert config.url_engine == "crawl4ai"
         assert config.document_engine == "docling"
+        assert config.docling_ocr is False
 
 
 if __name__ == "__main__":

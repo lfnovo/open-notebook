@@ -33,17 +33,18 @@ services:
     image: surrealdb/surrealdb:v2
     # Credentials default to root:root for a zero-config local setup. Before
     # exposing this instance to a network, set SURREAL_USER / SURREAL_PASSWORD
-    # in a .env file — they are applied here and to the open_notebook service
-    # below, so the two always stay in sync.
-    command: start --log info --user ${SURREAL_USER:-root} --pass ${SURREAL_PASSWORD:-root} rocksdb:/mydata/mydatabase.db
+    # in a .env file (see .env.example) — they are applied here and to the
+    # open_notebook service below, so the two always stay in sync.
+    # List (exec) form so each interpolated value stays a single argument —
+    # a password containing spaces would otherwise be split into several.
+    command: ["start", "--log", "info", "--user", "${SURREAL_USER:-root}", "--pass", "${SURREAL_PASSWORD:-root}", "rocksdb:/mydata/mydatabase.db"]
     user: root  # Required for bind mounts on Linux
     ports:
-      # Localhost only: Open Notebook reaches the database over the internal
-      # compose network, so this host port exists purely for local debugging.
-      # The database uses default root credentials, so never publish it on
-      # 0.0.0.0. To reach it from another machine, use the opt-in override in
-      # docker-compose.override.yml.example (repo root) behind a firewall or
-      # SSH tunnel, with real SURREAL_USER / SURREAL_PASSWORD set.
+      # Bound to localhost only: the open_notebook service reaches this over
+      # the internal compose network regardless, so the host port is purely
+      # for local debugging (e.g. Surrealist, `surreal sql`). Exposing this
+      # on 0.0.0.0 would let anyone who can reach the host connect with the
+      # default root:root credentials.
       - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
@@ -59,11 +60,12 @@ services:
       - "5055:5055"  # REST API
     environment:
       # REQUIRED: Change this to your own secret string
+      # This encrypts your API keys in the database
       - OPEN_NOTEBOOK_ENCRYPTION_KEY=change-me-to-a-secret-string
 
-      # Database connection. SURREAL_USER / SURREAL_PASSWORD default to
-      # root:root for local use; override them in a .env file before exposing
-      # the instance (the same values configure the surrealdb service above).
+      # Database connection. SURREAL_USER / SURREAL_PASSWORD default to root:root
+      # for local use; override them in a .env file before exposing the instance
+      # (the same values configure the surrealdb service above).
       - SURREAL_URL=ws://surrealdb:8000/rpc
       - SURREAL_USER=${SURREAL_USER:-root}
       - SURREAL_PASSWORD=${SURREAL_PASSWORD:-root}
@@ -79,6 +81,7 @@ services:
 
 **Edit the file:**
 - Replace `change-me-to-a-secret-string` with your own secret (any string works, e.g., `my-super-secret-key-123`)
+- (Optional) To use database credentials other than the default `root:root`, create a `.env` file next to `docker-compose.yml` with `SURREAL_USER=...` and `SURREAL_PASSWORD=...` — both services pick them up automatically ([.env.example](https://github.com/lfnovo/open-notebook/blob/main/.env.example) shows the full format)
 
 ---
 

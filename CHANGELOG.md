@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- `docker-compose.yml` now uses the YAML list (exec) form for the SurrealDB `command`, so `SURREAL_USER` / `SURREAL_PASSWORD` values containing spaces are passed as single arguments instead of being split; the mirrored snippets in the installation docs and README (which had drifted — no credential interpolation, SurrealDB port published on all interfaces) are back in sync with the shipped file (#1093)
 - zh-CN and zh-TW podcast toast descriptions (speaker/episode profile created/updated/deleted/duplicated) now include the profile name via the `{{name}}` placeholder, matching the other 12 locales (#1084)
 - Docker images now force the Next.js frontend to bind to `0.0.0.0` in the supervisord command itself, so container runtimes that inject `HOSTNAME` (e.g. Podman pods, where it resolves to `127.0.1.1`) can no longer make the UI unreachable. The `HOSTNAME` variable is no longer honored as a frontend bind override — set the new `FRONTEND_BIND_HOST` variable instead (#994)
 

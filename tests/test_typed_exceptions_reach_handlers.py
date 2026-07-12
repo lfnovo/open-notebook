@@ -91,6 +91,28 @@ class TestNotFoundErrorPropagation:
         assert response.json()["detail"] == "Credential not found"
 
 
+class TestUnsupportedTypeErrorPropagation:
+    """UnsupportedTypeException maps to 415 (Unsupported Media Type) via its
+    dedicated global handler, instead of falling through to the base
+    OpenNotebookError handler's 500 (#975)."""
+
+    def test_unsupported_type_maps_to_415(self, client):
+        from open_notebook.exceptions import UnsupportedTypeException
+
+        with patch(
+            "api.routers.sources.repo_query",
+            new=AsyncMock(
+                side_effect=UnsupportedTypeException(
+                    "Unsupported file type: application/zip"
+                )
+            ),
+        ):
+            response = client.get("/api/sources")
+
+        assert response.status_code == 415
+        assert "application/zip" in response.json()["detail"]
+
+
 class TestUntypedExceptionsStillSanitized:
     """The final `except Exception` arm must keep catching untyped errors and
     returning a fixed, sanitized 500 (never the raw exception text)."""

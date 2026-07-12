@@ -48,6 +48,7 @@ from open_notebook.exceptions import (
     NotFoundError,
     OpenNotebookError,
     RateLimitError,
+    UnsupportedTypeException,
 )
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -345,6 +346,17 @@ async def network_error_handler(request: Request, exc: NetworkError):
 async def external_service_error_handler(request: Request, exc: ExternalServiceError):
     return JSONResponse(
         status_code=502,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
+@app.exception_handler(UnsupportedTypeException)
+async def unsupported_type_error_handler(
+    request: Request, exc: UnsupportedTypeException
+):
+    return JSONResponse(
+        status_code=415,
         content={"detail": str(exc)},
         headers=_cors_headers(request),
     )

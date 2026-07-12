@@ -1,0 +1,8 @@
+-- Migration 19: Timestamp source_insight records
+-- source_insight is SCHEMAFULL but never defined created/updated, so new
+-- insights were stored without timestamps (and clients saw "None").
+-- Mirrors the created/updated definitions used by source, note and notebook.
+-- Existing rows are left untouched (no backfill); the API returns null for them.
+
+DEFINE FIELD IF NOT EXISTS created ON source_insight DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON source_insight DEFAULT time::now() VALUE time::now();

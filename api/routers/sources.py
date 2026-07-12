@@ -1042,8 +1042,8 @@ async def get_source_insights(source_id: str):
                 source_id=source_id,
                 insight_type=insight.insight_type,
                 content=insight.content,
-                created=str(insight.created),
-                updated=str(insight.updated),
+                created=insight.created.isoformat() if insight.created else None,
+                updated=insight.updated.isoformat() if insight.updated else None,
             )
             for insight in insights
         ]

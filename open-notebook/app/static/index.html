@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Open Notebook Prototype</title>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 2rem auto; max-width: 880px; padding: 0 1rem; }
+      textarea { width: 100%; min-height: 120px; padding: 0.8rem; font: inherit; }
+      button { margin-top: 0.75rem; padding: 0.7rem 1rem; cursor: pointer; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+      .citation { border-top: 1px solid #eee; padding-top: 0.75rem; margin-top: 0.75rem; }
+      .muted { color: #666; }
+      pre { white-space: pre-wrap; }
+    </style>
+  </head>
+  <body>
+    <h1>Open Notebook Prototype</h1>
+    <p class="muted">Ask a question after ingesting files into the local index.</p>
+    <label for="query">Question</label>
+    <textarea id="query" placeholder="What does the indexed content say about...?"></textarea>
+    <br />
+    <button id="submit">Query</button>
+    <div id="result" class="card" hidden>
+      <h2>Answer</h2>
+      <pre id="answer"></pre>
+      <h3>Citations</h3>
+      <div id="citations"></div>
+    </div>
+    <script src="/static/main.js"></script>
+  </body>
+</html>

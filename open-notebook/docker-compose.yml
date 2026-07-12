@@ -1,0 +1,33 @@
+services:
+  app:
+    build:
+      context: ./app
+    env_file:
+      - .env
+    environment:
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-sentence-transformers}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      MODEL_PROVIDER: ${MODEL_PROVIDER:-local}
+      LOCAL_MODEL_NAME: ${LOCAL_MODEL_NAME:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-haiku-latest}
+      VECTOR_STORE: ${VECTOR_STORE:-faiss}
+      DATA_DIR: /workspace/data
+      INDEX_DIR: /workspace/data/index
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/workspace/data
+      - notebook_index:/workspace/data/index
+  faiss-store:
+    image: alpine:3.20
+    command: ["sh", "-c", "mkdir -p /index && tail -f /dev/null"]
+    volumes:
+      - notebook_index:/index
+
+volumes:
+  notebook_index:

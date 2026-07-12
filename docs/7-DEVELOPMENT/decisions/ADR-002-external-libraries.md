@@ -30,3 +30,7 @@ Applied today:
 - The libraries are independently versioned, testable and swappable; the boundary keeps this repo's scope honest.
 - Debugging sometimes spans two repos; issues whose root cause is upstream get the `upstream` + library labels (`esperanto`, `content-core`, `podcast-creator`).
 - Provider-specific *capabilities* (not just plumbing) remain constrained by [PDR-002](PDR-002-provider-agnostic-core.md).
+
+## Addendum (2026-07): Content Core 2.x
+
+The upgrade to Content Core 2.x (2.0.4) validated the "swappable external library" thesis in practice. New capabilities came straight from upstream — new formats (EPUB, Reddit posts, YouTube `/live/` and `/shorts/`), selectable URL/document engines (`auto`, `firecrawl`, `jina`, `crawl4ai`, `simple` / `docling`), and better licensing — while the only Open Notebook-side work was adapting our single `extract_content()` call site to 2.x's new keyword-only API. Upstream swapped PDF extraction from PyMuPDF (AGPL) to pdfplumber (MIT) and dropped moviepy in favour of direct ffmpeg, so Open Notebook inherited a cleaner license posture and fixed audio bugs for free. Concentrating all extraction behind that one boundary is what kept the blast radius so small.

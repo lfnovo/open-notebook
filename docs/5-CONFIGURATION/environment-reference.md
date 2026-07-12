@@ -105,11 +105,18 @@ CORS_ORIGINS=https://notebook.example.com
 | Variable | Required? | Default | Description |
 |----------|-----------|---------|-------------|
 | `FIRECRAWL_API_KEY` | No | None | Firecrawl API key for advanced web scraping |
+| `FIRECRAWL_API_URL` | No | None | Base URL of a self-hosted Firecrawl instance (use instead of the hosted service) |
+| `CCORE_FIRECRAWL_PROXY` | No | `auto` | Firecrawl proxy mode to bypass anti-bot protection: `basic`, `stealth`, or `auto` |
+| `CCORE_FIRECRAWL_WAIT_FOR` | No | `3000` | Milliseconds Firecrawl waits for JavaScript to render before capturing the page |
 | `JINA_API_KEY` | No | None | Jina AI API key for web extraction |
+| `CRAWL4AI_API_URL` | No | None | Base URL of a remote Crawl4AI server. Leave unset to use the Chromium runtime bundled in the Docker image |
 
 **Setup:**
 - Firecrawl: https://firecrawl.dev/
 - Jina: https://jina.ai/
+- Crawl4AI: https://github.com/unclecode/crawl4ai
+
+The `CCORE_FIRECRAWL_*` variables are passed straight through to the content-core library (its settings are prefixed with `CCORE_`); Open Notebook itself doesn't read them. See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
 
 ---
 

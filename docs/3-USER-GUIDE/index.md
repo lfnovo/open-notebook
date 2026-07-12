@@ -25,6 +25,8 @@ How to bring content into your notebook. Supports PDFs, web links, audio, video,
 - Paste text directly
 - Common mistakes + fixes
 
+**Related:** [Content Processing Engines](content-processing-engines.md) — choose how documents and URLs are extracted (Docling, Firecrawl, Jina, Crawl4AI) and control OCR.
+
 ---
 
 ### 2. [Working with Notes](working-with-notes.md)

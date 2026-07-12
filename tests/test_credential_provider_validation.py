@@ -188,11 +188,25 @@ class TestCreateCredentialEndpointRejectsBadProvider:
     def test_post_credentials_with_valid_provider_passes_validation(
         self, client, monkeypatch
     ):
-        """Doesn't assert overall success (that needs DB/encryption setup,
-        covered elsewhere) - just that a valid provider clears the 422
-        validation gate and reaches actual route logic."""
+        """Doesn't assert overall success - just that a valid provider clears
+        the 422 validation gate and reaches actual route logic.
+
+        The encryption-key gate is forced to fail so the request never reaches
+        the persistence layer: without this, running the suite with a real
+        `.env` (SURREAL_URL + encryption key set) wrote a "Test" credential to
+        the live dev database on every run.
+        """
+        from api.routers import credentials as credentials_router
+
+        def _no_key():
+            raise ValueError("encryption key intentionally absent in tests")
+
+        monkeypatch.setattr(credentials_router, "require_encryption_key", _no_key)
         response = client.post(
             "/api/credentials",
             json={"name": "Test", "provider": "openai", "api_key": "sk-test"},
         )
+        # Provider validation happens before the route body runs; the forced
+        # key failure maps to a non-422 error, proving validation was cleared
+        # without persisting anything.
         assert response.status_code != 422

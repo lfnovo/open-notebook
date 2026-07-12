@@ -859,6 +859,8 @@ export const trTR = {
     defaultAssignmentsDesc: "Open Notebook genelinde farklı amaçlar için hangi modellerin kullanılacağını yapılandırın",
     missingRequiredModels: "Eksik gerekli modeller: {{models}}. Bu modeller olmadan Open Notebook düzgün çalışmayabilir.",
     selectModelPlaceholder: "Model seçin",
+    noneOption: "Yok",
+    noneFallbackToChat: "Yedeği kullan (varsayılan sohbet)",
     requiredModelPlaceholder: "⚠️ Gerekli - Model seçin",
     chatModelLabel: "Sohbet Modeli",
     chatModelDesc: "Sohbet konuşmaları için kullanılır",

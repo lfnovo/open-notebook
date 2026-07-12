@@ -860,6 +860,8 @@ export const bnIN = {
     defaultAssignmentsDesc: "Open Notebook জুড়ে বিভিন্ন কাজের জন্য কোন মডেল ব্যবহার করব তা কনফিগার করুন",
     missingRequiredModels: "প্রয়োজনীয় মডেল অনুপস্থিত: {{models}}। এগুলি ছাড়া Open Notebook সঠিকভাবে কাজ নাও করতে পারে।",
     selectModelPlaceholder: "একটি মডেল নির্বাচন করুন",
+    noneOption: "কোনোটিই নয়",
+    noneFallbackToChat: "ফলব্যাক ব্যবহার করুন (চ্যাট ডিফল্ট)",
     requiredModelPlaceholder: "⚠️ প্রয়োজন - একটি মডেল নির্বাচন করুন",
     chatModelLabel: "চ্যাট মডেল",
     chatModelDesc: "চ্যাট কথোপকথনের জন্য ব্যবহৃত",

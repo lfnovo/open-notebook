@@ -862,6 +862,8 @@ export const deDE = {
     defaultAssignmentsDesc: "Konfiguriere, welche Modelle Open Notebook für verschiedene Zwecke verwendet",
     missingRequiredModels: "Erforderliche Modelle fehlen: {{models}}. Open Notebook funktioniert ohne diese möglicherweise nicht korrekt.",
     selectModelPlaceholder: "Modell auswählen",
+    noneOption: "Keines",
+    noneFallbackToChat: "Fallback verwenden (Chat-Standard)",
     requiredModelPlaceholder: "⚠️ Erforderlich – Modell auswählen",
     chatModelLabel: "Chat-Modell",
     chatModelDesc: "Wird für Chat-Unterhaltungen verwendet",

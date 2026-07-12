@@ -859,6 +859,8 @@ export const plPL = {
     defaultAssignmentsDesc: "Skonfiguruj, których modeli używać do różnych celów w Open Notebook",
     missingRequiredModels: "Brakuje wymaganych modeli: {{models}}. Bez nich Open Notebook może nie działać poprawnie.",
     selectModelPlaceholder: "Wybierz model",
+    noneOption: "Brak",
+    noneFallbackToChat: "Użyj rezerwowego (domyślny czat)",
     requiredModelPlaceholder: "⚠️ Wymagane – wybierz model",
     chatModelLabel: "Model czatu",
     chatModelDesc: "Używany w rozmowach na czacie",

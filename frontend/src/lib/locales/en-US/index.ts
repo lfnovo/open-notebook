@@ -858,6 +858,8 @@ export const enUS = {
     defaultAssignmentsDesc: "Configure which models to use for different purposes across Open Notebook",
     missingRequiredModels: "Missing required models: {{models}}. Open Notebook may not function properly without these.",
     selectModelPlaceholder: "Select a model",
+    noneOption: "None",
+    noneFallbackToChat: "Use fallback (chat default)",
     requiredModelPlaceholder: "⚠️ Required - Select a model",
     chatModelLabel: "Chat Model",
     chatModelDesc: "Used for chat conversations",

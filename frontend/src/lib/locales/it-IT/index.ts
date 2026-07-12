@@ -859,6 +859,8 @@ export const itIT = {
     defaultAssignmentsDesc: "Configura quali modelli usare per diversi scopi in Open Notebook",
     missingRequiredModels: "Modelli richiesti mancanti: {{models}}. Open Notebook potrebbe non funzionare correttamente senza questi.",
     selectModelPlaceholder: "Seleziona un modello",
+    noneOption: "Nessuno",
+    noneFallbackToChat: "Usa il fallback (predefinito chat)",
     requiredModelPlaceholder: "⚠️ Richiesto - Seleziona un modello",
     chatModelLabel: "Modello chat",
     chatModelDesc: "Usato per le conversazioni chat",

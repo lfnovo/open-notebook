@@ -859,6 +859,8 @@ export const jaJP = {
     defaultAssignmentsDesc: "Open Notebook全体で異なる目的に使用するモデルを設定",
     missingRequiredModels: "必須モデルがありません: {{models}}。これらがないとOpen Notebookが正しく機能しない可能性があります。",
     selectModelPlaceholder: "モデルを選択",
+    noneOption: "なし",
+    noneFallbackToChat: "フォールバックを使用（チャットのデフォルト）",
     requiredModelPlaceholder: "⚠️ 必須 - モデルを選択",
     chatModelLabel: "チャットモデル",
     chatModelDesc: "チャット会話に使用",

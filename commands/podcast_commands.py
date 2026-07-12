@@ -39,7 +39,7 @@ def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
 
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
-    speaker_profile: str
+    speaker_profile: Optional[str] = None
     episode_name: str
     content: str
     briefing_suffix: Optional[str] = None
@@ -77,13 +77,14 @@ async def generate_podcast_command(
                 f"Episode profile '{input_data.episode_profile}' not found"
             )
 
-        speaker_profile = await SpeakerProfile.get_by_name(
-            episode_profile.speaker_config
+        # Honor the explicitly requested speaker profile when provided,
+        # falling back to the episode profile's configured speaker.
+        speaker_profile_name = (
+            input_data.speaker_profile or episode_profile.speaker_config
         )
+        speaker_profile = await SpeakerProfile.get_by_name(speaker_profile_name)
         if not speaker_profile:
-            raise ValueError(
-                f"Speaker profile '{episode_profile.speaker_config}' not found"
-            )
+            raise ValueError(f"Speaker profile '{speaker_profile_name}' not found")
 
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")

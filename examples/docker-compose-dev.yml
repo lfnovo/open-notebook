@@ -6,7 +6,9 @@ services:
     environment:
       - SURREAL_EXPERIMENTAL_GRAPHQL=true
     ports:
-      - "8000:8000"
+      # Localhost only — the database uses default credentials, so never
+      # publish this port on 0.0.0.0
+      - "127.0.0.1:8000:8000"
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     pull_policy: always
     user: root

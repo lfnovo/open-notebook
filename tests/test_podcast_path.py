@@ -7,7 +7,7 @@ spaces and special characters (GitHub issue #663).
 """
 
 import uuid
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -21,17 +21,27 @@ class TestBuildEpisodeOutputDir:
     """Test the actual production helper that builds episode output paths."""
 
     def test_directory_name_is_valid_uuid(self):
-        dir_name, _ = build_episode_output_dir("/data")
+        dir_name, _ = build_episode_output_dir("/data/podcasts")
         parsed = uuid.UUID(dir_name)
         assert str(parsed) == dir_name
 
     def test_path_structure(self):
-        dir_name, output_dir = build_episode_output_dir("/data")
+        dir_name, output_dir = build_episode_output_dir("/data/podcasts")
         assert str(output_dir) == f"/data/podcasts/episodes/{dir_name}"
 
+    def test_defaults_to_podcasts_folder(self):
+        """No-arg form builds under PODCASTS_FOLDER - the same root the
+        write-time validation (to_relative_audio_path) checks against."""
+        from open_notebook.config import PODCASTS_FOLDER
+
+        dir_name, output_dir = build_episode_output_dir()
+        assert str(output_dir) == str(
+            Path(PODCASTS_FOLDER) / "episodes" / dir_name
+        )
+
     def test_no_collision_between_calls(self):
-        dir1, _ = build_episode_output_dir("/data")
-        dir2, _ = build_episode_output_dir("/data")
+        dir1, _ = build_episode_output_dir("/data/podcasts")
+        dir2, _ = build_episode_output_dir("/data/podcasts")
         assert dir1 != dir2
 
     def test_path_is_independent_of_episode_name(self):
@@ -50,7 +60,7 @@ class TestBuildEpisodeOutputDir:
             "?*<>|",
         ]
         for name in problematic_names:
-            _, output_dir = build_episode_output_dir("/data")
+            _, output_dir = build_episode_output_dir("/data/podcasts")
             path_str = str(output_dir)
             # The episode name must not appear anywhere in the path
             assert name not in path_str
@@ -61,7 +71,7 @@ class TestBuildEpisodeOutputDir:
             )
 
     def test_path_works_on_posix(self):
-        dir_name, output_dir = build_episode_output_dir("/data")
+        dir_name, output_dir = build_episode_output_dir("/data/podcasts")
         posix = PurePosixPath(str(output_dir))
         assert posix.parts == ("/", "data", "podcasts", "episodes", dir_name)
 

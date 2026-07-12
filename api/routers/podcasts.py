@@ -1,7 +1,4 @@
-import os
-from pathlib import Path
 from typing import List, Optional
-from urllib.parse import unquote, urlparse
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -13,11 +10,33 @@ from api.podcast_service import (
     PodcastGenerationResponse,
     PodcastService,
 )
-from open_notebook.config import PODCASTS_FOLDER
 from open_notebook.exceptions import OpenNotebookError
+from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
 from open_notebook.podcasts.models import PodcastEpisode
 
 router = APIRouter()
+
+
+def _delete_episode_audio(episode: PodcastEpisode, episode_id: str) -> None:
+    """Best-effort unlink of an episode's audio file, refusing invalid paths.
+
+    Shared by the delete and retry endpoints. Legacy/escaping audio_file
+    values (resolve_contained_audio_path -> None) are logged and skipped.
+    """
+    if not episode.audio_file:
+        return
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
+        logger.warning(
+            f"Refusing to delete audio file outside podcasts directory "
+            f"for episode {episode_id}: {episode.audio_file}"
+        )
+    elif audio_path.exists():
+        try:
+            audio_path.unlink()
+            logger.info(f"Deleted audio file: {audio_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete audio file {audio_path}: {e}")
 
 
 class PodcastEpisodeResponse(BaseModel):
@@ -33,28 +52,6 @@ class PodcastEpisodeResponse(BaseModel):
     created: Optional[str] = None
     job_status: Optional[str] = None
     error_message: Optional[str] = None
-
-
-def _resolve_audio_path(audio_file: str) -> Path:
-    if audio_file.startswith("file://"):
-        parsed = urlparse(audio_file)
-        return Path(unquote(parsed.path))
-    return Path(audio_file)
-
-
-def _is_audio_path_contained(audio_path: Path) -> bool:
-    """Verify the resolved audio path stays within the podcasts output root.
-
-    Defense in depth: audio_file is only ever set server-side today from a
-    UUID-named directory under PODCASTS_FOLDER (build_episode_output_dir), so
-    this can't currently be tripped - but any endpoint that streams or
-    deletes the file should still refuse to follow it outside that root, in
-    case a future code path (e.g. importing external audio) sets it to
-    something else.
-    """
-    safe_root = Path(os.path.realpath(PODCASTS_FOLDER))
-    resolved = Path(os.path.realpath(audio_path))
-    return resolved.is_relative_to(safe_root)
 
 
 @router.post("/podcasts/generate", response_model=PodcastGenerationResponse)
@@ -148,10 +145,9 @@ async def list_podcast_episodes():
                 job_status = "completed"
 
             audio_url = None
-            if episode.audio_file:
-                audio_path = _resolve_audio_path(episode.audio_file)
-                if _is_audio_path_contained(audio_path) and audio_path.exists():
-                    audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+            audio_path = resolve_contained_audio_path(episode.audio_file)
+            if audio_path is not None and audio_path.exists():
+                audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
             response_episodes.append(
                 PodcastEpisodeResponse(
@@ -204,10 +200,9 @@ async def get_podcast_episode(episode_id: str):
             job_status = "completed" if episode.audio_file else "unknown"
 
         audio_url = None
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if _is_audio_path_contained(audio_path) and audio_path.exists():
-                audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+        audio_path = resolve_contained_audio_path(episode.audio_file)
+        if audio_path is not None and audio_path.exists():
+            audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
         return PodcastEpisodeResponse(
             id=str(episode.id),
@@ -249,10 +244,11 @@ async def stream_podcast_episode_audio(episode_id: str):
     if not episode.audio_file:
         raise HTTPException(status_code=404, detail="Episode has no audio file")
 
-    audio_path = _resolve_audio_path(episode.audio_file)
-    if not _is_audio_path_contained(audio_path):
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
         logger.warning(
-            f"Blocked audio access outside podcasts directory for episode {episode_id}: {audio_path}"
+            f"Blocked audio access outside podcasts directory for episode "
+            f"{episode_id}: {episode.audio_file}"
         )
         raise HTTPException(status_code=403, detail="Access to file denied")
 
@@ -293,17 +289,7 @@ async def retry_podcast_episode(episode_id: str):
             )
 
         # Delete audio file if any
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if not _is_audio_path_contained(audio_path):
-                logger.warning(
-                    f"Refusing to delete audio file outside podcasts directory for episode {episode_id}: {audio_path}"
-                )
-            elif audio_path.exists():
-                try:
-                    audio_path.unlink()
-                except Exception as e:
-                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+        _delete_episode_audio(episode, episode_id)
 
         # Delete the failed episode
         await episode.delete()
@@ -337,18 +323,7 @@ async def delete_podcast_episode(episode_id: str):
         episode = await PodcastService.get_episode(episode_id)
 
         # Delete the physical audio file if it exists
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if not _is_audio_path_contained(audio_path):
-                logger.warning(
-                    f"Refusing to delete audio file outside podcasts directory for episode {episode_id}: {audio_path}"
-                )
-            elif audio_path.exists():
-                try:
-                    audio_path.unlink()
-                    logger.info(f"Deleted audio file: {audio_path}")
-                except Exception as e:
-                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+        _delete_episode_audio(episode, episode_id)
 
         # Delete the episode from the database
         await episode.delete()

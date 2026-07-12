@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The source detail view (dialog and full page) now fetches through the shared `useSource` React Query hook instead of a hand-rolled fetch, matching the insight/note dialogs: caching and the never-retry-404 policy come from React Query, title edits and deletes go through the shared mutation hooks (so source lists refresh and a deleted source can't be served from the cache), and the `key={sourceId}` remount workaround on the parents was removed — the component resets its own per-source UI state (#1106)
 - The settings frontend now fetches the provider list from `GET /api/providers` (cached for the session) instead of keeping its own hardcoded provider tables, so adding a provider to the backend registry needs zero frontend edits: unknown modalities render with a fallback icon, the backend registry owns the display order, and the regex-based frontend/backend sync test was removed along with the duplicated tables in `frontend/src/lib/providers.tsx` (#1082)
 
 ### Fixed

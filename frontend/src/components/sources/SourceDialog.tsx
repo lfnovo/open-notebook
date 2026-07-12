@@ -48,9 +48,7 @@ export function SourceDialog({ open, onOpenChange, sourceId }: SourceDialogProps
 
         {/* Source detail content */}
         <div className="flex-1 overflow-y-auto min-h-0">
-          {/* Keyed by source so state (loading/not-found) resets per source */}
           <SourceDetailContent
-            key={sourceIdWithPrefix}
             sourceId={sourceIdWithPrefix}
             showChatButton={true}
             onChatClick={handleChatClick}

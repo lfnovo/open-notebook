@@ -69,6 +69,7 @@ export interface PodcastEpisode {
 
 export interface PodcastGenerationRequest {
   episode_profile: string
+  /** speaker_profile record ID (the API also accepts a profile name) */
   speaker_profile: string
   episode_name: string
   content?: string

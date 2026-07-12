@@ -401,11 +401,13 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
       return
     }
 
-    // The generation API takes the speaker profile by name; the episode
-    // profile stores a record ID, so use the API-resolved name. It is null
-    // when the referenced speaker profile no longer exists.
-    const speakerProfileName = selectedEpisodeProfile.speaker_config_name
-    if (!speakerProfileName) {
+    // Submit the stable speaker_profile record ID (the API resolves either
+    // an ID or a name), so a rename while this dialog is open can't break
+    // generation. speaker_config is null when the reference was orphaned by
+    // migration, and speaker_config_name is null when it no longer resolves
+    // (e.g. the speaker profile was deleted) - block both with a clear toast.
+    const speakerProfileRef = selectedEpisodeProfile.speaker_config
+    if (!speakerProfileRef || !selectedEpisodeProfile.speaker_config_name) {
       toast({
         title: t('podcasts.speakerProfileMissing'),
         description: t('podcasts.speakerProfileMissingDesc'),
@@ -428,7 +430,7 @@ export function GeneratePodcastDialog({ open, onOpenChange }: GeneratePodcastDia
 
       const payload: PodcastGenerationRequest = {
         episode_profile: selectedEpisodeProfile.name,
-        speaker_profile: speakerProfileName,
+        speaker_profile: speakerProfileRef,
         episode_name: episodeName.trim(),
         content,
         briefing_suffix: instructions.trim() ? instructions.trim() : undefined,

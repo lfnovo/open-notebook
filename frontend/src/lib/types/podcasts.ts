@@ -43,18 +43,30 @@ export interface SpeakerProfile {
  * Historical profile snapshot stored on an episode at generation time.
  * Episodes generated before the legacy provider/model strings were dropped
  * (#1107) may still carry them in the snapshot; newer episodes won't.
+ *
+ * The `*_model_provider` / `*_model_name` fields are resolved by the API at
+ * serialization time from the snapshot's model record references
+ * (outline_llm / transcript_llm / voice_model), batched per request. They
+ * are absent when the reference is missing or no longer resolves (deleted
+ * model) — fall back to the legacy strings, then to a placeholder.
  */
 export interface EpisodeProfileSnapshot extends EpisodeProfile {
   outline_provider?: string | null
   outline_model?: string | null
   transcript_provider?: string | null
   transcript_model?: string | null
+  outline_model_provider?: string | null
+  outline_model_name?: string | null
+  transcript_model_provider?: string | null
+  transcript_model_name?: string | null
 }
 
 /** See EpisodeProfileSnapshot. */
 export interface SpeakerProfileSnapshot extends SpeakerProfile {
   tts_provider?: string | null
   tts_model?: string | null
+  voice_model_provider?: string | null
+  voice_model_name?: string | null
 }
 
 export interface Language {

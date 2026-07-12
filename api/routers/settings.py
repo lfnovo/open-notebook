@@ -54,7 +54,7 @@ async def update_settings(settings_update: SettingsUpdate):
             from typing import Literal, cast
 
             settings.default_content_processing_engine_url = cast(
-                Literal["auto", "firecrawl", "jina", "simple"],
+                Literal["auto", "firecrawl", "jina", "crawl4ai", "simple"],
                 settings_update.default_content_processing_engine_url,
             )
         if settings_update.default_embedding_option is not None:

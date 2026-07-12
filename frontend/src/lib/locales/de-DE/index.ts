@@ -757,6 +757,7 @@ export const deDE = {
     docHelp: "· Docling ist etwas langsamer, aber genauer, besonders wenn Dokumente Tabellen und Bilder enthalten. · Einfach extrahiert Inhalte aus dem Dokument ohne Formatierung. · Auto (empfohlen) versucht zuerst Docling und fällt bei Bedarf auf Einfach zurück.",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl ist ein kostenpflichtiger Dienst mit kostenlosem Einstiegstarif und sehr leistungsfähig. · Jina ist ebenfalls eine gute Option und bietet auch einen kostenlosen Einstiegstarif. · Einfach nutzt eine grundlegende HTTP-Extraktion und kann Inhalte auf JavaScript-basierten Websites übersehen. · Auto (empfohlen) versucht zuerst Firecrawl, dann Jina und fällt zuletzt auf Einfach zurück.",
     embeddingAndSearch: "Embeddings und Suche",
     embeddingAndSearchDesc: "Konfiguriere Such- und Embedding-Optionen",

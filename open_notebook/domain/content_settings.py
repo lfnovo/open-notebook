@@ -11,7 +11,7 @@ class ContentSettings(RecordModel):
         Literal["auto", "docling", "simple"]
     ] = Field("auto", description="Default Content Processing Engine for Documents")
     default_content_processing_engine_url: Optional[
-        Literal["auto", "firecrawl", "jina", "simple"]
+        Literal["auto", "firecrawl", "jina", "crawl4ai", "simple"]
     ] = Field("auto", description="Default Content Processing Engine for URLs")
     default_embedding_option: Optional[Literal["ask", "always", "never"]] = Field(
         "ask", description="Default Embedding Option for Vector Search"

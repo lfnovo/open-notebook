@@ -754,6 +754,7 @@ export const ptBR = {
     docHelp: "· Docling é um pouco mais lento, mas mais preciso, especialmente se os documentos contêm tabelas e imagens. · Simples extrairá qualquer conteúdo do documento sem formatá-lo. · Auto (recomendado) tentará processar através do docling e usará simples como fallback.",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl é um serviço pago (com tier gratuito), e muito poderoso. · Jina também é uma boa opção e também tem um tier gratuito. · Simples usará extração HTTP básica e perderá conteúdo em sites baseados em javascript. · Auto (recomendado) tentará usar firecrawl, depois Jina, e finalmente fallback para simples.",
     embeddingAndSearch: "Embedding e Busca",
     embeddingAndSearchDesc: "Configure opções de busca e embedding",

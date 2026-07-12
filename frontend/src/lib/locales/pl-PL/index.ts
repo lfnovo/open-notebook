@@ -754,6 +754,7 @@ export const plPL = {
     docHelp: "· Docling jest nieco wolniejszy, ale dokładniejszy, zwłaszcza gdy dokumenty zawierają tabele i obrazy. · Prosty wyodrębni dowolną treść z dokumentu bez jej formatowania. · Automatyczny (zalecany) spróbuje przetworzyć przez Docling i w razie potrzeby przełączy się na prosty.",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl to płatna usługa (z darmowym planem), bardzo wydajna. · Jina również jest dobrym wyborem i także ma darmowy plan. · Prosty używa podstawowej ekstrakcji HTTP i pominie treść na stronach opartych na JavaScript. · Automatyczny (zalecany) spróbuje użyć Firecrawl, następnie Jina, a na końcu przełączy się na prosty.",
     embeddingAndSearch: "Osadzanie i wyszukiwanie",
     embeddingAndSearchDesc: "Skonfiguruj opcje wyszukiwania i osadzania",

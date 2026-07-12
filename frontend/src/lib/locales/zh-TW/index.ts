@@ -754,6 +754,7 @@ export const zhTW = {
     docHelp: "· Docling: 速度稍慢但更準確，特別是包含表格和圖片的文件。 · Simple: 直接提取內容而不進行格式化。 · 自動 (推薦): 優先嘗試 Docling，失敗則回退至 Simple。",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl: 強大的付費服務（有免費額度）。 · Jina: 優秀的備選方案，同樣提供免費額度。 · Simple: 基礎 HTTP 提取，在 JS 渲染的網站上可能會丟失內容。 · 自動 (推薦): 優先嘗試 Firecrawl，其次 Jina，最後回退至 Simple。",
     embeddingAndSearch: "嵌入與搜尋",
     embeddingAndSearchDesc: "設定搜尋和向量嵌入選項",

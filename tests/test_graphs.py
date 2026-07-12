@@ -381,6 +381,45 @@ class TestContentProcessDeleteSource:
         with pytest.raises(ValueError):
             await content_process(cast(SourceState, state))
 
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.ContentSettings")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_persisted_engines_wired_into_config(
+        self, mock_model_manager, mock_extract, mock_settings
+    ):
+        """The persisted content-processing engines reach ContentCoreConfig, so
+        a user-selected engine (e.g. crawl4ai) actually takes effect."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_settings.get_instance = AsyncMock(
+            return_value=MagicMock(
+                default_content_processing_engine_url="crawl4ai",
+                default_content_processing_engine_doc="docling",
+            )
+        )
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        config = mock_extract.await_args.kwargs["config"]
+        assert config.url_engine == "crawl4ai"
+        assert config.document_engine == "docling"
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

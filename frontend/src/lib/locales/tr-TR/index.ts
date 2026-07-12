@@ -754,6 +754,7 @@ export const trTR = {
     docHelp: "· Docling biraz daha yavaştır ancak özellikle tablolar ve görseller içeren belgeler için daha doğrudur. · Basit, belgeden herhangi bir içeriği formatlamadan çıkaracak. · Otomatik (önerilen) docling üzerinden işlemeyi deneyecek ve basit'e geri dönecek.",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl ücretli bir hizmettir (ücretsiz katmanı ile) ve çok güçlüdür. · Jina da iyi bir seçenektir ve ücretsiz katmanı vardır. · Basit, temel HTTP çıkarımını kullanır ve JavaScript tabanlı web sitelerindeki içerikleri kaçırır. · Otomatik (önerilen) önce firecrawl, sonra Jina'yı dener ve son olarak basit'e geri döner.",
     embeddingAndSearch: "Gömme ve Arama",
     embeddingAndSearchDesc: "Arama ve gömme seçeneklerini yapılandırın",

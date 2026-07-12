@@ -111,6 +111,12 @@ export const plPL = {
     finalAnswer: "Ostateczna odpowiedź",
     notebookLabel: "Notatnik: {{name}}",
     itemNotFound: "Nie udało się odnaleźć elementu ({{type}})",
+    contentUnavailable: {
+      notFoundTitle: "Ta treść już nie istnieje",
+      notFoundDescription: "Mogła zostać usunięta. Odnośniki w starszych wiadomościach mogą wskazywać na treści, które zostały już usunięte.",
+      errorTitle: "Nie udało się wczytać tej treści",
+      errorDescription: "Coś poszło nie tak podczas wczytywania. Spróbuj ponownie.",
+    },
     accessibility: {
       transformationViews: "Widoki transformacji",
       searchKB: "Zadaj pytanie lub przeszukaj swoją bazę wiedzy",
@@ -393,7 +399,6 @@ export const plPL = {
     manageNotebooks: "Zarządzaj notatnikami",
     manageNotebooksDesc: "Zarządzaj notatnikami, które zawierają to źródło",
     noNotebooksAvailable: "Brak dostępnych notatników",
-    loadFailed: "Nie udało się załadować szczegółów źródła",
     removeFromNotebook: "Usuń z notatnika",
     retryProcessing: "Ponów przetwarzanie",
     refreshContent: "Odśwież treść",
@@ -421,7 +426,6 @@ export const plPL = {
     embeddingNever: "Osadzanie wyłączone",
     embeddingNeverDesc: "Twoje ustawienia są skonfigurowane tak, aby pomijać osadzanie. Wyszukiwanie wektorowe nie będzie dostępne dla tego źródła.",
     changeInSettings: "Możesz to zmienić w Ustawieniach",
-    notFound: "Nie znaleziono źródła",
     noContent: "Brak dostępnej treści",
     insightsDesc: "Wglądy wygenerowane na podstawie analizy modelu",
     uploadedFile: "Przesłany plik",

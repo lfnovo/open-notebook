@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Clicking a chat/Ask citation that points at a deleted source, insight, or note now shows a shared, friendly "this content no longer exists" state in all three dialogs (instead of a raw error, a blank dialog, or an empty editable note editor), 404 lookups are no longer retried, and non-404 failures show a distinct "unable to load" message (#455)
 - Source insights now get `created`/`updated` timestamps stamped at creation (migration 19 mirrors the defaults used by the other tables), and the insights API returns `null` — instead of the literal string `"None"` — for legacy insights that predate the migration (#1045)
 - `uv sync` alone now provides the full dev toolchain: the legacy `[project.optional-dependencies].dev` list was merged into `[dependency-groups].dev` (mypy included — the documented `uv run python -m mypy .` previously failed on a fresh clone), Jupyter-only packages moved to a separate `notebooks` group, and the CI typecheck job no longer needs `--extra dev` (#1101)
 - Optional model defaults (transformation, tools, large context, TTS, STT) can now be cleared: `PUT /api/models/defaults` honors explicit `null` (field absent still means "keep"; chat and embedding defaults reject `null`), and the default-model selects offer a "None" / "Use fallback (chat default)" option for the optional defaults (#1091)

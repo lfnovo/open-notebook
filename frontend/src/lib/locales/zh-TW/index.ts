@@ -111,6 +111,12 @@ export const zhTW = {
     finalAnswer: "最終回答",
     notebookLabel: "筆記本: {{name}}",
     itemNotFound: "未找到該 {{type}}",
+    contentUnavailable: {
+      notFoundTitle: "該內容已不存在",
+      notFoundDescription: "它可能已被刪除。舊訊息中的引用可能指向已被移除的內容。",
+      errorTitle: "無法載入該內容",
+      errorDescription: "載入時發生問題，請重試。",
+    },
     accessibility: {
       transformationViews: "轉換視圖",
       searchKB: "向知識庫提問或搜尋",
@@ -393,7 +399,6 @@ export const zhTW = {
     manageNotebooks: "管理所屬筆記本",
     manageNotebooksDesc: "管理包含此來源的筆記本",
     noNotebooksAvailable: "暫無可用筆記本",
-    loadFailed: "載入來源詳情失敗",
     removeFromNotebook: "從筆記本移除",
     retryProcessing: "重試處理",
     refreshContent: "重新整理內容",
@@ -421,7 +426,6 @@ export const zhTW = {
     embeddingNever: "嵌入已禁用",
     embeddingNeverDesc: "您的設定已設定為跳過嵌入。此來源將無法進行向量搜尋。",
     changeInSettings: "您可以在此處更改設定：",
-    notFound: "未找到來源",
     noContent: "暫無內容",
     insightsDesc: "根據模型分析生成的見解",
     uploadedFile: "已上傳檔案",

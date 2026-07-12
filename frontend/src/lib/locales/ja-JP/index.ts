@@ -754,6 +754,7 @@ export const jaJP = {
     docHelp: "・Doclingは少し遅いですが、特にテーブルや画像を含むドキュメントでより正確です。・シンプルはフォーマットせずにドキュメントからコンテンツを抽出します。・自動（推奨）はDoclingで処理を試み、失敗した場合はシンプルにフォールバックします。",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "・Firecrawlは有料サービス（無料枠あり）で非常に強力です。・Jinaも良いオプションで無料枠があります。・シンプルは基本的なHTTP抽出を使用し、JavaScriptベースのウェブサイトのコンテンツを取得できない場合があります。・自動（推奨）はFirecrawl、Jina、最後にシンプルの順で試みます。",
     embeddingAndSearch: "Embeddingと検索",
     embeddingAndSearchDesc: "検索とEmbeddingオプションを設定",

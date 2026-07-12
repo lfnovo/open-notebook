@@ -11,6 +11,7 @@ from loguru import logger
 from typing_extensions import Annotated, TypedDict
 
 from open_notebook.ai.models import Model, ModelManager
+from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
@@ -53,12 +54,26 @@ async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]
 
     # content-core 2.x takes engine/model overrides via ContentCoreConfig
-    # (keyword-only), not inside the input dict. We leave document_engine and
-    # url_engine at their "auto" defaults (current behavior) and only override
-    # the speech-to-text model when a default is configured.
+    # (keyword-only), not inside the input dict.
     config_kwargs: Dict[str, Any] = {
         "youtube_languages": YOUTUBE_PREFERRED_LANGUAGES,
     }
+
+    # Honor the persisted content-processing engine choices. content-core
+    # accepts "auto"/"simple"/"firecrawl"/"jina"/"crawl4ai" for URLs and
+    # "auto"/"docling"/"simple" for documents; falling back to "auto" keeps the
+    # previous behavior when settings are unset.
+    try:
+        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        if settings.default_content_processing_engine_url:
+            config_kwargs["url_engine"] = settings.default_content_processing_engine_url
+        if settings.default_content_processing_engine_doc:
+            config_kwargs["document_engine"] = (
+                settings.default_content_processing_engine_doc
+            )
+    except Exception as e:
+        logger.warning(f"Failed to load content settings, using defaults: {e}")
+
     try:
         model_manager = ModelManager()
         defaults = await model_manager.get_defaults()

@@ -755,6 +755,7 @@ export const esES = {
     docHelp: "· Docling es un poco más lento pero más preciso, especialmente si los documentos contienen tablas e imágenes. · Simple extraerá cualquier contenido del documento sin formatearlo. · Auto (recomendado) intentará procesar con Docling y por defecto usará Simple.",
     firecrawl: "Firecrawl",
     jina: "Jina",
+    crawl4ai: "Crawl4AI",
     urlHelp: "· Firecrawl es un servicio de pago (con un nivel gratuito), y muy potente. · Jina es una buena opción también y tiene un nivel gratuito. · Simple usará extracción HTTP básica y perderá contenido en sitios web basados en JavaScript. · Auto (recomendado) intentará usar Firecrawl, luego Jina, y finalmente Simple.",
     embeddingAndSearch: "Embedding y búsqueda",
     embeddingAndSearchDesc: "Configura las opciones de búsqueda y embedding",

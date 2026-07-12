@@ -577,6 +577,11 @@ class TestContentSettings:
         assert settings.youtube_preferred_languages is not None
         assert len(settings.youtube_preferred_languages) > 0
 
+    def test_content_settings_accepts_crawl4ai_url_engine(self):
+        """crawl4ai is a valid URL processing engine (content-core 2.x)."""
+        settings = ContentSettings(default_content_processing_engine_url="crawl4ai")
+        assert settings.default_content_processing_engine_url == "crawl4ai"
+
 
 # ============================================================================
 # TEST SUITE 9: Episode Profile Validation

@@ -9,8 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Optional model defaults (transformation, tools, large context, TTS, STT) can now be cleared: `PUT /api/models/defaults` honors explicit `null` (field absent still means "keep"; chat and embedding defaults reject `null`), and the default-model selects offer a "None" / "Use fallback (chat default)" option for the optional defaults (#1091)
+- zh-CN and zh-TW podcast toast descriptions (speaker/episode profile created/updated/deleted/duplicated) now include the profile name via the `{{name}}` placeholder, matching the other 12 locales (#1084)
+- Docker images now force the Next.js frontend to bind to `0.0.0.0` in the supervisord command itself, so container runtimes that inject `HOSTNAME` (e.g. Podman pods, where it resolves to `127.0.1.1`) can no longer make the UI unreachable. The `HOSTNAME` variable is no longer honored as a frontend bind override — set the new `FRONTEND_BIND_HOST` variable instead (#994)
 
 ## [1.12.0] - 2026-07-12
+
+### Fixed
+- Setup snippets no longer teach publishing SurrealDB on `0.0.0.0` — the compose and `docker run` examples across the README, quick starts, installation, configuration and development docs, and the `examples/docker-compose-*.yml` files now bind port 8000 to `127.0.0.1` (matching the shipped `docker-compose.yml`), with docs pointing to `docker-compose.override.yml.example` for opt-in remote access behind a firewall or SSH tunnel; the override example itself gained the `!override` tag it needs to actually replace the base port binding instead of colliding with it (#1034)
 
 ### Added
 - Docs: cubic platform mechanics recorded as comments in `cubic.yaml` (agent limits, config precedence, memory/learning) and a "Merging PR Batches" playbook added to the maintainer guide (squash policy, CHANGELOG conflict resolution, fork rebases, competing-PR checks) (#1086)
@@ -47,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dead Streamlit-era service layer (~2,000 lines): `api/client.py` (a synchronous HTTP client that called the app's own API) and 13 `api/*_service.py` wrappers that consumed the app's own HTTP API — none were imported by any router, command or test. Also removed the toy `process_text`/`analyze_data` demo commands (`commands/example_commands.py`) from the background worker (#1054)
 - Pre-1.6 embedding job compatibility shims (the `embed_single_item`, `embed_chunk` and `vectorize_source` command handlers) — they existed only so jobs queued by a pre-1.6 version could drain after an upgrade, and any worker restarted on 1.6+ has no such jobs. **Upgrade note:** if you are upgrading from a version older than 1.6 with embedding jobs still queued, drain the queue on a 1.x release before upgrading past this change. Also removed dead tooling config from `pyproject.toml`: the `[tool.mypy]` block (the real config is `mypy.ini`) and Streamlit-era ruff per-file-ignores for files that no longer exist (#1056)
 - Committed QA screenshots (12 files) and a stray debug `history.txt` were removed from the repo root, with `.gitignore` rules added so they can't come back (#1053)
+
+### Fixed
+- Podcast generation now honors the `speaker_profile` parameter of `POST /api/podcasts/generate` — previously it was silently ignored and the speaker was always re-derived from the episode profile's `speaker_config`, which failed when that pointed at a renamed/deleted speaker profile even if the caller supplied a valid one (#1044)
 
 ## [1.11.0] - 2026-07-11
 

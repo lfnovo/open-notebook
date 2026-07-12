@@ -910,6 +910,8 @@ export const caES = {
     encryptionRequiredDescription: "Estableix la variable d'entorn OPEN_NOTEBOOK_ENCRYPTION_KEY a qualsevol cadena secreta per habilitar l'emmagatzematge de claus de l'API a la base de dades.",
     configured: "Configurat",
     notConfigured: "No configurat",
+    providersLoadFailed: "No s'han pogut carregar els proveïdors",
+    providersLoadFailedDescription: "Assegura't que l'API s'està executant i torna-ho a provar.",
     migrationAvailable: "S'han detectat variables d'entorn",
     migrationDescription: "{{count}} clau(s) de l'API estan configurades mitjançant variables d'entorn i es poden migrar a la base de dades per facilitar-ne la gestió.",
     migrateToDatabase: "Migra a la base de dades",

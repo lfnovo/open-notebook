@@ -910,6 +910,8 @@ export const trTR = {
     encryptionRequiredDescription: "Veritabanında API anahtarlarının saklanmasını etkinleştirmek için OPEN_NOTEBOOK_ENCRYPTION_KEY ortam değişkenini herhangi bir gizli dize olarak ayarlayın.",
     configured: "Yapılandırıldı",
     notConfigured: "Yapılandırılmadı",
+    providersLoadFailed: "Sağlayıcılar yüklenemedi",
+    providersLoadFailedDescription: "API'nin çalıştığından emin olun ve tekrar deneyin.",
     migrationAvailable: "Ortam Değişkenleri Tespit Edildi",
     migrationDescription: "{{count}} API anahtarı ortam değişkenleri aracılığıyla yapılandırılmış ve daha kolay yönetim için veritabanına taşınabilir.",
     migrateToDatabase: "Veritabanına Taşı",

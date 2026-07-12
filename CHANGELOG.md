@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The settings frontend now fetches the provider list from `GET /api/providers` (cached for the session) instead of keeping its own hardcoded provider tables, so adding a provider to the backend registry needs zero frontend edits: unknown modalities render with a fallback icon, the backend registry owns the display order, and the regex-based frontend/backend sync test was removed along with the duplicated tables in `frontend/src/lib/providers.tsx` (#1082)
+
 ### Fixed
 - Clicking a chat/Ask citation that points at a deleted source, insight, or note now shows a shared, friendly "this content no longer exists" state in all three dialogs (instead of a raw error, a blank dialog, or an empty editable note editor), 404 lookups are no longer retried, and non-404 failures show a distinct "unable to load" message (#455)
 - Source insights now get `created`/`updated` timestamps stamped at creation (migration 19 mirrors the defaults used by the other tables), and the insights API returns `null` — instead of the literal string `"None"` — for legacy insights that predate the migration (#1045)

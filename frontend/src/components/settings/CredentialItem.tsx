@@ -21,11 +21,11 @@ import { useCredential, useTestCredential } from '@/lib/hooks/use-credentials'
 import { Credential } from '@/lib/api/credentials'
 import { Model, ModelDefaults } from '@/lib/types/models'
 import {
-  ModelType,
-  TYPE_ICONS,
-  TYPE_COLORS,
+  MODEL_TYPES,
+  getTypeIcon,
+  getTypeColor,
+  getTypeLabel,
   TYPE_COLOR_INACTIVE,
-  TYPE_LABELS,
 } from '@/lib/providers'
 import { ModelTestResultDialog } from './ModelTestResultDialog'
 import { CredentialFormDialog } from './CredentialFormDialog'
@@ -56,7 +56,7 @@ export function CredentialItem({
   const { data: fullCredential } = useCredential(editOpen ? credential.id : '')
 
   const linkedModels = models.filter(m => m.credential === credential.id)
-  const activeTypes = new Set(linkedModels.map(m => m.type))
+  const activeTypes = new Set<string>(linkedModels.map(m => m.type))
   const testResult = testResults[credential.id]
 
   // Check which models are defaults
@@ -87,10 +87,10 @@ export function CredentialItem({
                 <Badge
                   key={mod}
                   variant="secondary"
-                  className={`text-[10px] gap-0.5 px-1 py-0 ${activeTypes.has(mod as ModelType) ? (TYPE_COLORS[mod as ModelType] || '') : TYPE_COLOR_INACTIVE}`}
+                  className={`text-[10px] gap-0.5 px-1 py-0 ${activeTypes.has(mod) ? getTypeColor(mod) : TYPE_COLOR_INACTIVE}`}
                 >
-                  {TYPE_ICONS[mod as ModelType]}
-                  <span className="hidden sm:inline">{TYPE_LABELS[mod as ModelType] || mod}</span>
+                  {getTypeIcon(mod)}
+                  <span className="hidden sm:inline">{getTypeLabel(mod)}</span>
                 </Badge>
               ))}
             </div>
@@ -153,16 +153,16 @@ export function CredentialItem({
         {/* Linked models grouped by type */}
         {linkedModels.length > 0 && (
           <div className="space-y-1.5 pt-1">
-            {(['language', 'embedding', 'text_to_speech', 'speech_to_text'] as ModelType[])
+            {MODEL_TYPES
               .filter(type => linkedModels.some(m => m.type === type))
               .map(type => (
                 <div key={type} className="flex items-start gap-1.5">
                   <Badge
                     variant="outline"
-                    className={`text-[10px] gap-0.5 px-1 py-0 shrink-0 mt-0.5 ${TYPE_COLORS[type]}`}
+                    className={`text-[10px] gap-0.5 px-1 py-0 shrink-0 mt-0.5 ${getTypeColor(type)}`}
                   >
-                    {TYPE_ICONS[type]}
-                    {TYPE_LABELS[type]}
+                    {getTypeIcon(type)}
+                    {getTypeLabel(type)}
                   </Badge>
                   <div className="flex flex-wrap gap-1">
                     {linkedModels.filter(m => m.type === type).map(model => {

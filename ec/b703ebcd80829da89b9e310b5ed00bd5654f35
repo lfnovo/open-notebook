@@ -1,0 +1,355 @@
+.github/RELEASE_PROCESS.md
+  s_7421a04ffabb0b::t_f4d02667f3c873 18-21,143-145,161-174
+.github/workflows/build-and-release.yml
+  s_7421a04ffabb0b::t_bea00782971537 133,224-225
+.github/workflows/build-dev.yml
+  s_7421a04ffabb0b::t_0604281fd65509 142,210-211
+.github/workflows/test.yml
+  s_7421a04ffabb0b::t_4699952e78b6b3 44-85,114-159
+CHANGELOG.md
+  s_7421a04ffabb0b::t_253a49e5249483 12-20,23-51,54-59
+Dockerfile
+  s_7421a04ffabb0b::t_4a9cddd56d8a59 1-9,11-24,26-34,38-42,48,54,65-66,68-69,72,78,86-87,89,93-99,109-111,113,116-117,130-146
+Makefile
+  s_7421a04ffabb0b::t_673abcd6c4dd50 93,123
+README.md
+  s_7421a04ffabb0b::t_03f3367ed123e3 117-124,126-131,134-135,137,142-143,145-146,148-151,153-154,162
+api/credentials_service.py
+  s_7421a04ffabb0b::t_9a7faa1f67b1ce 11,18-23,32-33,38,42,295,298,374-386,388-390
+api/main.py
+  s_7421a04ffabb0b::t_e1b79733a3f206 32,393
+api/models.py
+  s_7421a04ffabb0b::t_479656254a8e56 552-556,578-593
+api/routers/_chat_shared.py
+  s_7421a04ffabb0b::t_b524ac5bdd062b 1-94
+api/routers/chat.py
+  s_7421a04ffabb0b::t_aa3fb1b9e6c6b4 10-14,16-17,20,23-24,127-130,169-172,186-187,199,227-230,240-241,274-277,287-288,295-298,308-309,351-354,356-364,371,376-379,400-402,404-405,412-413
+api/routers/commands.py
+  s_7421a04ffabb0b::t_8b3fc3e053a505 9,70-73,88-91,112-115,130-133
+api/routers/credentials.py
+  s_7421a04ffabb0b::t_801c5f13969b78 59-62,85-88,99-102,131-134,150-153,199-202,215-218,291-292,340-344,392-393,433-436,450-453,471-474,487-490
+api/routers/embedding.py
+  s_7421a04ffabb0b::t_9a328eacec2fbd 8-11,121-122
+api/routers/embedding_rebuild.py
+  s_7421a04ffabb0b::t_ed7e87246a2f76 14,116-119,192-193
+api/routers/episode_profiles.py
+  s_7421a04ffabb0b::t_a8a4e5aaf406fe 7,56-59,82-83,136-139,166-167,192-193,235-236
+api/routers/insights.py
+  s_7421a04ffabb0b::t_ca3b46f52e1a98 6-10,36-37,56-57,88-89
+api/routers/models.py
+  s_7421a04ffabb0b::t_e2060b2978d825 26-30,196-199,255-256,275-276,291-292,322-325,333-338,341-348,352-361,378-379,501-504,541-544,574-577,614-617,641-644,679-682,822-825
+api/routers/notebooks.py
+  s_7421a04ffabb0b::t_40fa8207974862 16-20,123-124,154-157,198-201,232-233,273-274,337-338,378-379,410-411,453-454
+api/routers/notes.py
+  s_7421a04ffabb0b::t_fa60820001f6a8 8-12,48-49,65-68,114-115,139-140,182-183,202-203
+api/routers/podcasts.py
+  s_7421a04ffabb0b::t_2e0a58feb85945 17,84-87,102-105,175-178,227-230,243-244,323-324,359-362
+api/routers/providers.py
+  s_7421a04ffabb0b::t_6959b3bb01ea56 1-35
+api/routers/search.py
+  s_7421a04ffabb0b::t_b67fc8e109f407 11-15,60-63,76-79,170-171,211-214,234-235
+api/routers/settings.py
+  s_7421a04ffabb0b::t_33024beeb8f611 6-9,27-30,91-92
+api/routers/source_chat.py
+  s_7421a04ffabb0b::t_f22efa688c81ec 12-18,20,23,92-93,116-119,133-134,176-179,197-199,216,240-243,262-264,289-292,309-311,321-324,362-365,367-372,401,403,415-417,449-450
+api/routers/sources.py
+  s_7421a04ffabb0b::t_6ce8eaa55ecc77 38-42,250-252,259-260,262-276,336-337,343-595,625-626,639-640,642-644,648,652,654-657,661,744-745,759-760,774-775,793-794,855-856,879,884-885,985-986,1003-1004,1023-1024,1052-1053,1107-1108
+api/routers/speaker_profiles.py
+  s_7421a04ffabb0b::t_195585be1169ba 7,42-45,68-69,105-108,135-136,161-162,197-198
+api/routers/transformations.py
+  s_7421a04ffabb0b::t_836ded601f79d8 47-50,84-85,111-115,149-152,174-177,198-199,245-246,267-268
+commands/embedding_commands.py
+  s_7421a04ffabb0b::t_97236c35559e96 2-11,23-37,47-136,219,238-243,246-251,253-258,261,280-285,288-293,295-300,303,325,388,390-395,397-403,406,574-604,667-677
+commands/podcast_commands.py
+  s_7421a04ffabb0b::t_56549e68507ad6 17,42,80-83,85,87
+commands/source_commands.py
+  s_7421a04ffabb0b::t_847ca053eb5797 92-96,221-224
+cubic.yaml
+  s_7421a04ffabb0b::t_84dd294870dfb6 5-15,20-28
+docker-compose.override.yml.example
+  s_7421a04ffabb0b::t_b56bd8e6ef0710 17-22
+docker-compose.yml
+  s_7421a04ffabb0b::t_cde5cef730106c 8-10
+docs/0-START-HERE/quick-start-cloud.md
+  s_7421a04ffabb0b::t_dc76b26cfde3ba 29,31-33
+docs/0-START-HERE/quick-start-external-ollama.md
+  s_7421a04ffabb0b::t_c9ef93e90d3fe3 49,52-54
+docs/0-START-HERE/quick-start-local.md
+  s_7421a04ffabb0b::t_6e9e3a1c513040 36,39-41
+docs/0-START-HERE/quick-start-openai.md
+  s_7421a04ffabb0b::t_26cf9ea6d0cd53 26,28-30
+docs/1-INSTALLATION/docker-compose.md
+  s_7421a04ffabb0b::t_6dd3523aaecc5f 34-40,43-48,63,66-68,70-71,84
+docs/5-CONFIGURATION/advanced.md
+  s_7421a04ffabb0b::t_6bc7c2c0bb6210 167
+docs/5-CONFIGURATION/database.md
+  s_7421a04ffabb0b::t_3d453d9d5cd881 36-37
+docs/5-CONFIGURATION/environment-reference.md
+  s_7421a04ffabb0b::t_32926ac381698c 16
+docs/5-CONFIGURATION/openai-compatible.md
+  s_7421a04ffabb0b::t_223096bf0bf3de 206-209
+docs/5-CONFIGURATION/reverse-proxy.md
+  s_7421a04ffabb0b::t_48786e1382ee79 131,427-429
+docs/7-DEVELOPMENT/api-reference.md
+  s_7421a04ffabb0b::t_1361a9d923884f 63
+docs/7-DEVELOPMENT/content-processing.md
+  s_7421a04ffabb0b::t_f462e50a433581 38,40-42
+docs/7-DEVELOPMENT/credentials.md
+  s_7421a04ffabb0b::t_391c97dee044c6 39
+docs/7-DEVELOPMENT/development-setup.md
+  s_7421a04ffabb0b::t_dd66d52fd75c52 91-93,96,99,103,337
+docs/7-DEVELOPMENT/maintainer-guide.md
+  s_7421a04ffabb0b::t_bd284f2b127fd6 9,228-237
+docs/7-DEVELOPMENT/quick-start.md
+  s_7421a04ffabb0b::t_650aad822fd27b 40
+examples/docker-compose-dev.yml
+  s_7421a04ffabb0b::t_ad9d94b7304865 9-11
+examples/docker-compose-full-local.yml
+  s_7421a04ffabb0b::t_01665b7c0830e0 34-36
+examples/docker-compose-ollama.yml
+  s_7421a04ffabb0b::t_dc7783c5ca0070 19-21
+examples/docker-compose-single.yml
+  s_7421a04ffabb0b::t_fc438f61ea1c61 6-7
+examples/docker-compose-speaches.yml
+  s_7421a04ffabb0b::t_0f4285b45e6aaf 30-32
+frontend/AGENTS.md
+  s_7421a04ffabb0b::t_ce810254679ad2 14,27
+frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx
+  s_7421a04ffabb0b::t_48d3ec9e7c6db4 259,265,303
+frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx
+  s_7421a04ffabb0b::t_d669dff385db2f 69
+frontend/src/app/(dashboard)/notebooks/components/ChatColumn.test.tsx
+  s_7421a04ffabb0b::t_2cda72680d1ac6 5,9-10
+frontend/src/app/(dashboard)/notebooks/components/ChatColumn.tsx
+  s_7421a04ffabb0b::t_bdee82f3135cc2 4,6
+frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx
+  s_7421a04ffabb0b::t_4288241a3156a0 109,112
+frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx
+  s_7421a04ffabb0b::t_07132693fe8d1f 74,94,105,121
+frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx
+  s_7421a04ffabb0b::t_c7134e9b743ab1 113-114
+frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx
+  s_7421a04ffabb0b::t_76868bc952fb72 88,91
+frontend/src/app/(dashboard)/search/page.tsx
+  s_7421a04ffabb0b::t_25ea0d38afa39a 431,439,475
+frontend/src/app/(dashboard)/settings/api-keys/page.tsx
+  s_7421a04ffabb0b::t_4d74923ccd262f 3,7,9,15-21
+frontend/src/app/(dashboard)/sources/[id]/page.tsx
+  s_7421a04ffabb0b::t_928aadada1b635 7-8,10
+frontend/src/app/(dashboard)/sources/page.tsx
+  s_7421a04ffabb0b::t_213ee82b388eac 449
+frontend/src/app/(dashboard)/transformations/components/TransformationsList.test.tsx
+  s_7421a04ffabb0b::t_79d0d20410d54c 1-45
+frontend/src/app/(dashboard)/transformations/components/TransformationsList.tsx
+  s_7421a04ffabb0b::t_cc658452bb6237 38-50,53-66,93
+frontend/src/components/common/CommandPalette.tsx
+  s_7421a04ffabb0b::t_a7250541c4053b 190,198,277,285
+frontend/src/components/layout/SetupBanner.tsx
+  s_7421a04ffabb0b::t_df21a990555585 67
+frontend/src/components/podcasts/ContentSelectionPanel.tsx
+  s_7421a04ffabb0b::t_304f623e65ba17 1-310
+frontend/src/components/podcasts/EpisodeCard.tsx
+  s_7421a04ffabb0b::t_98f78166efa959 8,166-172,198,389
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_7421a04ffabb0b::t_2ba3fb6d87401b 179,185
+frontend/src/components/podcasts/GeneratePodcastDialog.tsx
+  s_7421a04ffabb0b::t_da362197a9445e 3,5,12,30-37,39,204-208,210-211,216,218-222,224,230,233,236-239,247-250,252,254,360,368-371,374,424-425,433-434,487-489
+frontend/src/components/podcasts/SpeakerProfilesPanel.tsx
+  s_7421a04ffabb0b::t_cec5bf7a52cc63 130,219,230
+frontend/src/components/podcasts/forms/SpeakerProfileFormDialog.tsx
+  s_7421a04ffabb0b::t_a44955feb22c63 243,262
+frontend/src/components/podcasts/generate-podcast-selection.ts
+  s_7421a04ffabb0b::t_fa707e1e41e158 1-76,79-89
+frontend/src/components/providers/ModalProvider.tsx
+  s_7421a04ffabb0b::t_d39deb9eb6231f 5-6
+frontend/src/components/search/StreamingResponse.tsx
+  s_7421a04ffabb0b::t_6f642c7d3b3208 48,113
+frontend/src/components/settings/CredentialFormDialog.tsx
+  s_7421a04ffabb0b::t_741c6a51072742 1-270
+frontend/src/components/settings/CredentialItem.tsx
+  s_7421a04ffabb0b::t_29d0f7dfc94809 1-246
+frontend/src/components/settings/DefaultModelSelectors.tsx
+  s_7421a04ffabb0b::t_d8c79030d93356 1-239
+frontend/src/components/settings/DeleteCredentialDialog.tsx
+  s_7421a04ffabb0b::t_9423a127067dc3 1-120
+frontend/src/components/settings/DiscoverModelsDialog.tsx
+  s_7421a04ffabb0b::t_5620f877f4291f 1-280
+frontend/src/components/settings/EmbeddingModelChangeDialog.tsx
+  s_7421a04ffabb0b::t_a0bdb0e15da2a0 65
+frontend/src/components/settings/MigrationBanner.tsx
+  s_7421a04ffabb0b::t_d60690333e4899 29
+frontend/src/components/settings/ProviderSection.tsx
+  s_7421a04ffabb0b::t_8925230f11592f 1-118
+frontend/src/components/settings/index.ts
+  s_7421a04ffabb0b::t_7573bade1f2b9a 4-9
+frontend/src/components/sources/AddExistingSourceDialog.tsx
+  s_7421a04ffabb0b::t_daa2d42e3bf169 257,277
+frontend/src/components/sources/AddSourceDialog.tsx
+  s_7421a04ffabb0b::t_20f7b6c14356ee 397,399,401,468
+frontend/src/components/sources/ChatPanel.tsx
+  s_7421a04ffabb0b::t_834231e0433f80 19-20,132,172,300
+frontend/src/components/sources/ModelSelector.tsx
+  s_7421a04ffabb0b::t_421aa9a99f496b 153
+frontend/src/components/sources/SessionManager.tsx
+  s_7421a04ffabb0b::t_215da0ad7cedbc 234
+frontend/src/components/sources/SourceCard.tsx
+  s_7421a04ffabb0b::t_01f64846a9354c 285
+frontend/src/components/sources/SourceDetailContent.tsx
+  s_7421a04ffabb0b::t_8ab036cc785048 67-68,428
+frontend/src/components/sources/steps/SourceTypeStep.tsx
+  s_7421a04ffabb0b::t_ad75e725c99bb1 194-195,223,243-244,279,345
+frontend/src/lib/api/client.ts
+  s_7421a04ffabb0b::t_c5778eecdd9432 3,38-40
+frontend/src/lib/api/search.ts
+  s_7421a04ffabb0b::t_03cf933a4e80d1 2,15
+frontend/src/lib/api/source-chat.ts
+  s_7421a04ffabb0b::t_7a33a90d5b1c2e 2,52
+frontend/src/lib/auth-token.ts
+  s_7421a04ffabb0b::t_7f86cb87d8361d 1-22
+frontend/src/lib/hooks/use-credentials.ts
+  s_7421a04ffabb0b::t_f410903c3858d0 263,268,305,311,316,358,364,369
+frontend/src/lib/hooks/use-models.ts
+  s_7421a04ffabb0b::t_1a03775cd4e0b1 135
+frontend/src/lib/hooks/use-podcasts.ts
+  s_7421a04ffabb0b::t_5e442dcc6a217c 159,164,190,195,214-216,221,242,247,288,294,320,326,345-347,353,374,378,404
+frontend/src/lib/hooks/use-sources.ts
+  s_7421a04ffabb0b::t_c91913feb5883a 326,337
+frontend/src/lib/hooks/use-version-check.ts
+  s_7421a04ffabb0b::t_efa358c51f17e3 29
+frontend/src/lib/locales/bn-IN/index.ts
+  s_7421a04ffabb0b::t_ffa9fc83af9e50 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,777,799-800,843,861,863-864,881,894,901,911,914-915,922-923,938,950,954
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7421a04ffabb0b::t_f8e705a96f3137 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/de-DE/index.ts
+  s_7421a04ffabb0b::t_e8855afe14ad0d 1-2,69-70,113,115-116,237,239,241-242,310,326,328,334-335,377,386-387,410-411,419,432-434,436,438,448-449,451,458,493-495,502-503,522-524,541,611-612,620,629,632,635,638,645,647,650,653,657,667,676,704,779,801-802,845,863,865-866,883,896,903,913,916-917,924-925,940,952,956
+frontend/src/lib/locales/en-US/index.ts
+  s_7421a04ffabb0b::t_e8a31f0f845832 64-65,108,110-111,232,234,236-237,305,321,323,329-330,372,381-382,405-406,414,427-429,431,433,443-444,446,453,488-490,497-498,517-519,536,606-607,615,624,627,630,633,640,642,645,648,652,662,671,699,775,797-798,841,859,861-862,879,892,899,909,912-913,920-921,936,948,953-957
+frontend/src/lib/locales/es-ES/index.ts
+  s_7421a04ffabb0b::t_baa01cf0837b2f 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,777,799-800,843,861,863-864,881,894,901,911,914-915,922-923,938,950,954
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7421a04ffabb0b::t_14bca85703e8a0 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/index.test.ts
+  s_7421a04ffabb0b::t_c9dbca39c3fae4 58-60,62-64
+frontend/src/lib/locales/interpolation.test.ts
+  s_7421a04ffabb0b::t_16947fb58b32d4 1-46
+frontend/src/lib/locales/it-IT/index.ts
+  s_7421a04ffabb0b::t_517ce77f7f9cbb 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/ja-JP/index.ts
+  s_7421a04ffabb0b::t_e9b808c5835bf9 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/pl-PL/index.ts
+  s_7421a04ffabb0b::t_1504596f54d4e9 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/pt-BR/index.ts
+  s_7421a04ffabb0b::t_85f58406d0d9ac 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/ru-RU/index.ts
+  s_7421a04ffabb0b::t_cd2e8f62bd8147 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/tr-TR/index.ts
+  s_7421a04ffabb0b::t_efc9719d2ed0cb 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/zh-CN/index.ts
+  s_7421a04ffabb0b::t_8a7aefa77e4134 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,638,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/locales/zh-TW/index.ts
+  s_7421a04ffabb0b::t_d7076ba0127cd9 1-2,66-67,110,112-113,234,236,238-239,307,323,325,331-332,374,383-384,407-408,416,429-431,433,435,445-446,448,455,490-492,499-500,519-521,538,608-609,617,626,629,632,635,638,642,644,647,650,654,664,673,701,776,798-799,842,860,862-863,880,893,900,910,913-914,921-922,937,949,953
+frontend/src/lib/providers.tsx
+  s_7421a04ffabb0b::t_84868835b379ee 1-95
+frontend/src/lib/stores/auth-store.ts
+  s_7421a04ffabb0b::t_b6ad3ba8ffa772 1,4,41-42,45,58,78-80,173-174
+mypy.ini
+  s_7421a04ffabb0b::t_be0e9a25edd24c 2-6,16-17
+open_notebook/AGENTS.md
+  s_7421a04ffabb0b::t_2f3526f69ce779 15
+open_notebook/ai/connection_tester.py
+  s_7421a04ffabb0b::t_a8008ad0a2c674 12,15-21,24,58-60,69-70,412-413,417-419,424-425,433-434,447,450-451,456-457,459,462-466
+open_notebook/ai/model_discovery.py
+  s_7421a04ffabb0b::t_26cc8e703a8e51 11,17,55-66,195,197-219,222-250,258,267-281,283,285,290-350,352,357-361,363-372,730
+open_notebook/ai/provider_registry.py
+  s_7421a04ffabb0b::t_b9f85305df39c4 1-247
+open_notebook/domain/credential.py
+  s_7421a04ffabb0b::t_c5b97ba0825fed 229
+open_notebook/domain/notebook.py
+  s_7421a04ffabb0b::t_ae048c6328320b 4
+open_notebook/domain/provider_config.py
+  s_7421a04ffabb0b::t_35fd6562edc18d 13,15,419
+open_notebook/graphs/ask.py
+  s_7421a04ffabb0b::t_9c118eac1d3be3 53-55
+open_notebook/graphs/chat.py
+  s_7421a04ffabb0b::t_21e8fe301e275b 6
+open_notebook/graphs/source.py
+  s_7421a04ffabb0b::t_61fe948665931e 170-173
+open_notebook/graphs/source_chat.py
+  s_7421a04ffabb0b::t_4e60db26b27b2c 6,18,40,61,67-71,194
+open_notebook/utils/__init__.py
+  s_7421a04ffabb0b::t_05cdb49bc15eb0 5,29,70-71
+open_notebook/utils/chunking.py
+  s_7421a04ffabb0b::t_fab4347f796e84 449,451,453,459,461,468
+open_notebook/utils/context_builder.py
+  s_7421a04ffabb0b::t_3c0f2ca2b85b0d 1-10,12-14,19,23-28,34-37,40-44,46-49,51-52,54-56,58-105,107-137,140-143,145-147,149-155,158,161-177,180-187,189,191-192,194,196,199,202,206-208
+open_notebook/utils/embedding.py
+  s_7421a04ffabb0b::t_02e766310f0c6f 15
+open_notebook/utils/model_utils.py
+  s_7421a04ffabb0b::t_0d46902771a2b3 1-15
+prompts/ask/final_answer.jinja
+  s_7421a04ffabb0b::t_5e8d230e7dbe7c 29-32
+prompts/chat/system.jinja
+  s_7421a04ffabb0b::t_90c693c6901275 26-29
+prompts/source_chat/system.jinja
+  s_7421a04ffabb0b::t_03dedc239af950 30-33
+prompts/transformation/execute.jinja
+  s_7421a04ffabb0b::t_1aefac19056d49 3-6
+pyproject.toml
+  s_7421a04ffabb0b::t_7ce7a3f6b74e80 3,20-23,25-36
+supervisord.conf
+  s_7421a04ffabb0b::t_1f98e9d221b389 1-4,20,34-37
+supervisord.surrealdb.conf
+  s_7421a04ffabb0b::t_6b83c981121aca 1-2
+tests/test_add_insight_failure_propagation.py
+  s_7421a04ffabb0b::t_dc7070b5fecd71 14,159,179-180
+tests/test_chat_routers_characterization.py
+  s_7421a04ffabb0b::t_6f6d6596cb6476 1-332
+tests/test_context_endpoint_characterization.py
+  s_7421a04ffabb0b::t_caf334e8f7adfc 1-229
+tests/test_cors_credentials.py
+  s_7421a04ffabb0b::t_62430676ed4d82 13-14,16,88-89,101-102,114-115
+tests/test_credential_provider_validation.py
+  s_7421a04ffabb0b::t_a8e5dd07f02e57 6-11,14-15,21,51-121,124,129,134,143,146,148-162,191-204,209-211
+tests/test_domain.py
+  s_7421a04ffabb0b::t_259e697e54a416 506-507,579
+tests/test_embedding.py
+  s_7421a04ffabb0b::t_97043b6aeaca95 244
+tests/test_graphs.py
+  s_7421a04ffabb0b::t_996b7e674113f5 9,13,36,44,146,170,190-191,200,220-221,230,250-251,260,280-281
+tests/test_max_body_size_middleware.py
+  s_7421a04ffabb0b::t_9525fb06155d7c 255-257
+tests/test_model_discovery.py
+  s_7421a04ffabb0b::t_76c9c11267ab41 1-295
+tests/test_models_api.py
+  s_7421a04ffabb0b::t_a0e79a374d34a8 88,108,392-460
+tests/test_podcast_job_status_batching.py
+  s_7421a04ffabb0b::t_dbd6d6d0ff907f 78-82
+tests/test_podcast_speaker_profile.py
+  s_7421a04ffabb0b::t_c18351d89f52cc 1-91
+tests/test_source_create_array_limits.py
+  s_7421a04ffabb0b::t_25812bb132dfb2 24,47
+tests/test_startup_migration_retry.py
+  s_7421a04ffabb0b::t_f5e7dcf620cfe3 82-84,105-107
+tests/test_typed_exceptions_reach_handlers.py
+  s_7421a04ffabb0b::t_aa44c6fd265700 1-109
+tests/test_utils.py
+  s_7421a04ffabb0b::t_e5dbf2c938bdc8 8-10,22,104-106,110-111,252,256-312,315-339
+uv.lock
+  s_7421a04ffabb0b::t_0f396ddcd3d01c 2043,2054,2060,2106-2116
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "ecb703ebcd80829da89b9e310b5ed00bd5654f35",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

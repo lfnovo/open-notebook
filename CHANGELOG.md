@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- `docker-compose.yml` now uses the YAML list (exec) form for the SurrealDB `command`, so `SURREAL_USER` / `SURREAL_PASSWORD` values containing spaces are passed as single arguments instead of being split; the mirrored snippets in the installation docs and README (which had drifted — no credential interpolation, SurrealDB port published on all interfaces) are back in sync with the shipped file (#1093)
+
 ## [1.12.0] - 2026-07-12
 
 ### Added

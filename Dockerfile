@@ -86,6 +86,14 @@ WORKDIR /app
 # Copy the virtual environment from the backend builder
 COPY --from=backend-builder /app/.venv /app/.venv
 
+# Install the Chromium runtime for the Crawl4AI URL engine so its local,
+# no-API-key mode works out of the box. Uses the playwright bundled in the venv
+# (via content-core[crawl4ai]); --with-deps pulls the required system libraries.
+# Pinned to a fixed path so it is found at runtime and survives volume mounts.
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/pw-browsers
+RUN .venv/bin/python -m playwright install --with-deps chromium \
+    && rm -rf /var/lib/apt/lists/*
+
 # Copy the source code
 COPY . /app
 

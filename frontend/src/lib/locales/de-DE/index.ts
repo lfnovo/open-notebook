@@ -114,6 +114,12 @@ export const deDE = {
     finalAnswer: "Endgültige Antwort",
     notebookLabel: "Notebook: {{name}}",
     itemNotFound: "{{type}} konnte nicht gefunden werden",
+    contentUnavailable: {
+      notFoundTitle: "Dieser Inhalt existiert nicht mehr",
+      notFoundDescription: "Er wurde möglicherweise gelöscht. Verweise in älteren Nachrichten können auf inzwischen entfernte Inhalte zeigen.",
+      errorTitle: "Dieser Inhalt konnte nicht geladen werden",
+      errorDescription: "Beim Laden ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+    },
     accessibility: {
       transformationViews: "Transformationsansichten",
       searchKB: "Wissensbasis fragen oder durchsuchen",
@@ -396,7 +402,6 @@ export const deDE = {
     manageNotebooks: "Notebooks verwalten",
     manageNotebooksDesc: "Verwalte, welche Notebooks diese Quelle enthalten",
     noNotebooksAvailable: "Keine Notebooks verfügbar",
-    loadFailed: "Quellendetails konnten nicht geladen werden",
     removeFromNotebook: "Aus Notebook entfernen",
     retryProcessing: "Verarbeitung erneut versuchen",
     refreshContent: "Inhalt aktualisieren",
@@ -424,7 +429,6 @@ export const deDE = {
     embeddingNever: "Einbettung deaktiviert",
     embeddingNeverDesc: "Deine Einstellungen sind so konfiguriert, dass Einbettung übersprungen wird. Die Vektorsuche ist für diese Quelle nicht verfügbar.",
     changeInSettings: "Du kannst das in den Einstellungen ändern",
-    notFound: "Quelle nicht gefunden",
     noContent: "Kein Inhalt verfügbar",
     insightsDesc: "Erkenntnisse aus der Modellanalyse",
     uploadedFile: "Hochgeladene Datei",

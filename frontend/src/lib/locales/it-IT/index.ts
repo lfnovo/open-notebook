@@ -111,6 +111,12 @@ export const itIT = {
     finalAnswer: "Risposta finale",
     notebookLabel: "Quaderno: {{name}}",
     itemNotFound: "Questo {{type}} non è stato trovato",
+    contentUnavailable: {
+      notFoundTitle: "Questo contenuto non esiste più",
+      notFoundDescription: "Potrebbe essere stato eliminato. I riferimenti nei messaggi meno recenti possono puntare a contenuti ormai rimossi.",
+      errorTitle: "Impossibile caricare questo contenuto",
+      errorDescription: "Si è verificato un errore durante il caricamento. Riprova.",
+    },
     accessibility: {
       transformationViews: "Viste trasformazioni",
       searchKB: "Chiedi o cerca nella tua base di conoscenza",
@@ -393,7 +399,6 @@ export const itIT = {
     manageNotebooks: "Gestisci quaderni",
     manageNotebooksDesc: "Gestisci quali quaderni contengono questa fonte",
     noNotebooksAvailable: "Nessun quaderno disponibile",
-    loadFailed: "Impossibile caricare i dettagli della fonte",
     removeFromNotebook: "Rimuovi dal quaderno",
     retryProcessing: "Riprova elaborazione",
     refreshContent: "Aggiorna contenuto",
@@ -421,7 +426,6 @@ export const itIT = {
     embeddingNever: "Indicizzazione disabilitata",
     embeddingNeverDesc: "Le tue impostazioni sono configurate per saltare l'indicizzazione. La ricerca vettoriale non sarà disponibile per questa fonte.",
     changeInSettings: "Puoi modificare questo nelle Impostazioni",
-    notFound: "Fonte non trovata",
     noContent: "Nessun contenuto disponibile",
     insightsDesc: "Approfondimenti generati dall'analisi del modello",
     uploadedFile: "File caricato",

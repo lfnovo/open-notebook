@@ -44,6 +44,7 @@ export default function SourceDetailPage() {
         {/* Left column - Source detail */}
         <div className="overflow-y-auto px-4 pb-6">
           <SourceDetailContent
+            key={sourceId}
             sourceId={sourceId}
             showChatButton={false}
             onClose={handleBack}

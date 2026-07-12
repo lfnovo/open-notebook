@@ -93,7 +93,13 @@ async def generate_podcast_command(
             )
         speaker_profile = await SpeakerProfile.resolve(speaker_ref)
         if not speaker_profile:
-            raise ValueError(f"Speaker profile '{speaker_ref}' not found")
+            if input_data.speaker_profile:
+                raise ValueError(f"Speaker profile '{speaker_ref}' not found")
+            raise ValueError(
+                f"Episode profile '{episode_profile.name}' references a "
+                "speaker profile that no longer exists. Please update the "
+                "profile to select a speaker profile."
+            )
 
         logger.info(f"Loaded episode profile: {episode_profile.name}")
         logger.info(f"Loaded speaker profile: {speaker_profile.name}")
@@ -144,11 +150,42 @@ async def generate_podcast_command(
             profile["name"]: profile for profile in speaker_profiles
         }
 
+        # Map speaker_profile record ID -> name so podcast-creator keeps
+        # receiving speaker names (its EpisodeProfile.speaker_config is a
+        # required non-empty name string, cross-referenced against the
+        # speakers config keyed by name).
+        speaker_name_by_id = {
+            str(profile["id"]): profile["name"] for profile in speaker_profiles
+        }
+
         # 5. Inject resolved model configs into profile dicts
         # Resolve ALL episode profiles (podcast-creator validates all).
         # Remove profiles that fail resolution to prevent validation errors.
         for ep_name in list(episode_profiles_dict.keys()):
             ep_dict = episode_profiles_dict[ep_name]
+
+            # Since migration 20, speaker_config stores a record ID (and is
+            # None when the referenced speaker profile no longer exists).
+            # Rewrite it back to the speaker name for podcast-creator; drop
+            # profiles whose reference doesn't resolve so a single orphaned
+            # profile can't fail validation for the whole config. The profile
+            # being generated always resolves: its speaker was validated above.
+            speaker_ref = ep_dict.get("speaker_config")
+            speaker_name = (
+                speaker_name_by_id.get(str(speaker_ref)) if speaker_ref else None
+            )
+            if not speaker_name and ep_name == episode_profile.name:
+                speaker_name = speaker_profile.name
+            if not speaker_name:
+                logger.warning(
+                    f"Episode profile '{ep_name}' references a speaker profile "
+                    f"that no longer exists ({speaker_ref!r}), removing from "
+                    "config to prevent validation errors"
+                )
+                del episode_profiles_dict[ep_name]
+                continue
+            ep_dict["speaker_config"] = speaker_name
+
             try:
                 if ep_dict.get("outline_llm"):
                     prov, model, conf = await _resolve_model_config(

@@ -758,7 +758,7 @@ export const deDE = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl ist ein kostenpflichtiger Dienst mit kostenlosem Einstiegstarif und sehr leistungsfähig. · Jina ist ebenfalls eine gute Option und bietet auch einen kostenlosen Einstiegstarif. · Einfach nutzt eine grundlegende HTTP-Extraktion und kann Inhalte auf JavaScript-basierten Websites übersehen. · Auto (empfohlen) versucht zuerst Firecrawl, dann Jina und fällt zuletzt auf Einfach zurück.",
+    urlHelp: "· Firecrawl ist ein kostenpflichtiger Dienst mit kostenlosem Einstiegstarif und sehr leistungsfähig. · Jina ist ebenfalls eine gute Option und bietet auch einen kostenlosen Einstiegstarif. · Crawl4AI rendert JavaScript-Seiten lokal (oder über einen Crawl4AI-Server, wenn CRAWL4AI_API_URL gesetzt ist), ohne API-Schlüssel. · Einfach nutzt eine grundlegende HTTP-Extraktion und kann Inhalte auf JavaScript-basierten Websites übersehen. · Auto (empfohlen) versucht zuerst Firecrawl, dann Jina, dann Crawl4AI und fällt zuletzt auf Einfach zurück.",
     embeddingAndSearch: "Embeddings und Suche",
     embeddingAndSearchDesc: "Konfiguriere Such- und Embedding-Optionen",
     defaultEmbeddingOption: "Standardoption für Embeddings",

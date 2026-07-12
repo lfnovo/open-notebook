@@ -755,7 +755,7 @@ export const jaJP = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "・Firecrawlは有料サービス（無料枠あり）で非常に強力です。・Jinaも良いオプションで無料枠があります。・シンプルは基本的なHTTP抽出を使用し、JavaScriptベースのウェブサイトのコンテンツを取得できない場合があります。・自動（推奨）はFirecrawl、Jina、最後にシンプルの順で試みます。",
+    urlHelp: "・Firecrawlは有料サービス（無料枠あり）で非常に強力です。・Jinaも良いオプションで無料枠があります。・Crawl4AIはAPIキーなしでJavaScriptページをローカルで（またはCRAWL4AI_API_URLを設定した場合はCrawl4AIサーバー経由で）レンダリングします。・シンプルは基本的なHTTP抽出を使用し、JavaScriptベースのウェブサイトのコンテンツを取得できない場合があります。・自動（推奨）はFirecrawl、Jina、Crawl4AI、最後にシンプルの順で試みます。",
     embeddingAndSearch: "Embeddingと検索",
     embeddingAndSearchDesc: "検索とEmbeddingオプションを設定",
     defaultEmbeddingOption: "デフォルトEmbeddingオプション",

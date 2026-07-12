@@ -755,7 +755,7 @@ export const caES = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl és un servei de pagament (amb nivell gratuït) i és molt potent. · Jina és una bona opció i també té un nivell gratuït. · Simple usarà l'extracció HTTP bàsica i no podrà accedir al contingut de llocs web basats en JavaScript. · Automàtic (recomanat) intentarà usar Firecrawl, després Jina i, finalment, usarà simple.",
+    urlHelp: "· Firecrawl és un servei de pagament (amb nivell gratuït) i és molt potent. · Jina és una bona opció i també té un nivell gratuït. · Crawl4AI renderitza pàgines JavaScript localment (o mitjançant un servidor Crawl4AI quan CRAWL4AI_API_URL està definit), sense clau d'API. · Simple usarà l'extracció HTTP bàsica i no podrà accedir al contingut de llocs web basats en JavaScript. · Automàtic (recomanat) intentarà usar Firecrawl, després Jina, després Crawl4AI i, finalment, usarà simple.",
     embeddingAndSearch: "Incrustació i cerca",
     embeddingAndSearchDesc: "Configura les opcions de cerca i incrustació",
     defaultEmbeddingOption: "Opció d'incrustació per defecte",

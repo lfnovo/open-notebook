@@ -755,7 +755,7 @@ export const zhCN = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl: 强大的付费服务（有免费额度）。 · Jina: 优秀的备选方案，同样提供免费额度。 · Simple: 基础 HTTP 提取，在 JS 渲染的网站上可能会丢失内容。 · 自动 (推荐): 优先尝试 Firecrawl，其次 Jina，最后回退至 Simple。",
+    urlHelp: "· Firecrawl: 强大的付费服务（有免费额度）。 · Jina: 优秀的备选方案，同样提供免费额度。 · Crawl4AI: 在本地渲染 JavaScript 页面（或在设置 CRAWL4AI_API_URL 时通过 Crawl4AI 服务器），无需 API 密钥。 · Simple: 基础 HTTP 提取，在 JS 渲染的网站上可能会丢失内容。 · 自动 (推荐): 优先尝试 Firecrawl，其次 Jina，然后 Crawl4AI，最后回退至 Simple。",
     embeddingAndSearch: "嵌入与搜索",
     embeddingAndSearchDesc: "配置搜索和向量嵌入选项",
     defaultEmbeddingOption: "默认嵌入选项",

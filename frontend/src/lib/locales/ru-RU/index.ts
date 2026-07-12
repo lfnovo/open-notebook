@@ -755,7 +755,7 @@ export const ruRU = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl — платный сервис (есть бесплатный уровень), очень мощный. · Jina тоже хороший вариант с бесплатным уровнем. · Simple использует базовое HTTP-извлечение и пропустит контент на JavaScript-сайтах. · Авто (рекомендуется) попробует Firecrawl, затем Jina, затем Simple.",
+    urlHelp: "· Firecrawl — платный сервис (есть бесплатный уровень), очень мощный. · Jina тоже хороший вариант с бесплатным уровнем. · Crawl4AI отображает JavaScript-страницы локально (или через сервер Crawl4AI, если задан CRAWL4AI_API_URL), без ключа API. · Simple использует базовое HTTP-извлечение и пропустит контент на JavaScript-сайтах. · Авто (рекомендуется) попробует Firecrawl, затем Jina, затем Crawl4AI, затем Simple.",
     embeddingAndSearch: "Эмбеддинг и поиск",
     embeddingAndSearchDesc: "Настройте параметры поиска и эмбеддинга",
     defaultEmbeddingOption: "Опция эмбеддинга по умолчанию",

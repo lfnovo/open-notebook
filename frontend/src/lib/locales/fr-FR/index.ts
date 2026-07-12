@@ -755,7 +755,7 @@ export const frFR = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl est un service payant (avec un niveau gratuit), et très puissant. · Jina est également une bonne option et dispose aussi d'un niveau gratuit. · Simple utilisera une extraction HTTP basique et manquera du contenu sur les sites basés sur Javascript. · Auto (recommandé) essaiera d'utiliser Firecrawl puis Jina, et enfin se rabattra sur Simple.",
+    urlHelp: "· Firecrawl est un service payant (avec un niveau gratuit), et très puissant. · Jina est également une bonne option et dispose aussi d'un niveau gratuit. · Crawl4AI affiche les pages JavaScript localement (ou via un serveur Crawl4AI lorsque CRAWL4AI_API_URL est défini), sans clé API. · Simple utilisera une extraction HTTP basique et manquera du contenu sur les sites basés sur Javascript. · Auto (recommandé) essaiera Firecrawl, puis Jina, puis Crawl4AI, et se rabattra enfin sur Simple.",
     embeddingAndSearch: "Indexation (Embedding) et Recherche",
     embeddingAndSearchDesc: "Configurez les options de recherche et d'indexation",
     defaultEmbeddingOption: "Option d'indexation par défaut",

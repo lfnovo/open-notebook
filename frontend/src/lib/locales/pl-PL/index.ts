@@ -755,7 +755,7 @@ export const plPL = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl to płatna usługa (z darmowym planem), bardzo wydajna. · Jina również jest dobrym wyborem i także ma darmowy plan. · Prosty używa podstawowej ekstrakcji HTTP i pominie treść na stronach opartych na JavaScript. · Automatyczny (zalecany) spróbuje użyć Firecrawl, następnie Jina, a na końcu przełączy się na prosty.",
+    urlHelp: "· Firecrawl to płatna usługa (z darmowym planem), bardzo wydajna. · Jina również jest dobrym wyborem i także ma darmowy plan. · Crawl4AI renderuje strony JavaScript lokalnie (lub przez serwer Crawl4AI, gdy ustawiono CRAWL4AI_API_URL), bez klucza API. · Prosty używa podstawowej ekstrakcji HTTP i pominie treść na stronach opartych na JavaScript. · Automatyczny (zalecany) spróbuje użyć Firecrawl, następnie Jina, następnie Crawl4AI, a na końcu przełączy się na prosty.",
     embeddingAndSearch: "Osadzanie i wyszukiwanie",
     embeddingAndSearchDesc: "Skonfiguruj opcje wyszukiwania i osadzania",
     defaultEmbeddingOption: "Domyślna opcja osadzania",

@@ -755,7 +755,7 @@ export const trTR = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl ücretli bir hizmettir (ücretsiz katmanı ile) ve çok güçlüdür. · Jina da iyi bir seçenektir ve ücretsiz katmanı vardır. · Basit, temel HTTP çıkarımını kullanır ve JavaScript tabanlı web sitelerindeki içerikleri kaçırır. · Otomatik (önerilen) önce firecrawl, sonra Jina'yı dener ve son olarak basit'e geri döner.",
+    urlHelp: "· Firecrawl ücretli bir hizmettir (ücretsiz katmanı ile) ve çok güçlüdür. · Jina da iyi bir seçenektir ve ücretsiz katmanı vardır. · Crawl4AI, JavaScript sayfalarını API anahtarı olmadan yerel olarak (veya CRAWL4AI_API_URL ayarlandığında bir Crawl4AI sunucusu aracılığıyla) işler. · Basit, temel HTTP çıkarımını kullanır ve JavaScript tabanlı web sitelerindeki içerikleri kaçırır. · Otomatik (önerilen) önce firecrawl, sonra Jina, sonra Crawl4AI'yi dener ve son olarak basit'e geri döner.",
     embeddingAndSearch: "Gömme ve Arama",
     embeddingAndSearchDesc: "Arama ve gömme seçeneklerini yapılandırın",
     defaultEmbeddingOption: "Varsayılan Gömme Seçeneği",

@@ -755,7 +755,7 @@ export const zhTW = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl: 強大的付費服務（有免費額度）。 · Jina: 優秀的備選方案，同樣提供免費額度。 · Simple: 基礎 HTTP 提取，在 JS 渲染的網站上可能會丟失內容。 · 自動 (推薦): 優先嘗試 Firecrawl，其次 Jina，最後回退至 Simple。",
+    urlHelp: "· Firecrawl: 強大的付費服務（有免費額度）。 · Jina: 優秀的備選方案，同樣提供免費額度。 · Crawl4AI: 在本機算繪 JavaScript 頁面（或在設定 CRAWL4AI_API_URL 時透過 Crawl4AI 伺服器），無需 API 金鑰。 · Simple: 基礎 HTTP 提取，在 JS 渲染的網站上可能會丟失內容。 · 自動 (推薦): 優先嘗試 Firecrawl，其次 Jina，然後 Crawl4AI，最後回退至 Simple。",
     embeddingAndSearch: "嵌入與搜尋",
     embeddingAndSearchDesc: "設定搜尋和向量嵌入選項",
     defaultEmbeddingOption: "預設嵌入選項",

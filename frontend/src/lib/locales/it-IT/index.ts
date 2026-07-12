@@ -755,7 +755,7 @@ export const itIT = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
-    urlHelp: "· Firecrawl è un servizio a pagamento (con piano gratuito), molto potente. · Jina è una buona alternativa con piano gratuito. · Semplice usa estrazione HTTP base e perderà contenuto su siti basati su javascript. · Auto (consigliato) proverà firecrawl poi Jina, infine semplice come fallback.",
+    urlHelp: "· Firecrawl è un servizio a pagamento (con piano gratuito), molto potente. · Jina è una buona alternativa con piano gratuito. · Crawl4AI renderizza le pagine JavaScript localmente (o tramite un server Crawl4AI quando CRAWL4AI_API_URL è impostato), senza chiave API. · Semplice usa estrazione HTTP base e perderà contenuto su siti basati su javascript. · Auto (consigliato) proverà firecrawl, poi Jina, poi Crawl4AI, infine semplice come fallback.",
     embeddingAndSearch: "Indicizzazione e ricerca",
     embeddingAndSearchDesc: "Configura opzioni di ricerca e indicizzazione",
     defaultEmbeddingOption: "Opzione indicizzazione predefinita",

@@ -1,0 +1,63 @@
+tests/test_podcast_audio_containment.py
+  s_7421a04ffabb0b::t_36195fd3be7774 2-9,19,45-46,48,52,54,56-94,97-99,102-104,107,109,111,114-116,118-119,121,123-125,127-129,131,133-136,138,141-142,155-165,167-168,179,185,199-202,220-244,259-262,279,284
+open_notebook/podcasts/audio_paths.py
+  s_7421a04ffabb0b::t_b7d3aaa5af55da 1-87
+tests/test_podcast_speaker_profile.py
+  s_7421a04ffabb0b::t_e7188241616d28 368-370,376-381
+  s_7421a04ffabb0b::t_33ed12811632a0 385
+  s_7421a04ffabb0b::t_a1cbc51c7d11dc 395-396
+  s_7421a04ffabb0b::t_7c3959e92f418e 382
+api/routers/podcasts.py
+  s_7421a04ffabb0b::t_e3d48368dde3da 247-248,250-251
+  s_7421a04ffabb0b::t_70baa19a418c54 292
+  s_7421a04ffabb0b::t_f442e1c5ad5b50 203-205
+  s_7421a04ffabb0b::t_08265ba4b6fbe5 326
+  s_7421a04ffabb0b::t_f8d3553338e23c 148-150
+  s_7421a04ffabb0b::t_5437cec14e7984 14
+  s_7421a04ffabb0b::t_a840d30d2ab943 20-41
+CHANGELOG.md
+  s_7421a04ffabb0b::t_41b468b59c74da 11
+open_notebook/database/migrations/21.surrealql
+  s_7421a04ffabb0b::t_7680f9eacad76a 8-20,27,29
+  s_7421a04ffabb0b::t_1b743491bf907f 1-7,21-26,28
+open_notebook/database/async_migrate.py
+  s_7421a04ffabb0b::t_c95cdc42415fc4 139-141
+  s_7421a04ffabb0b::t_03dda8e025e62d 204-206
+commands/podcast_commands.py
+  s_7421a04ffabb0b::t_1d92cfeb8e352a 322-326,329
+  s_7421a04ffabb0b::t_ad9df669ba9585 310-321,327
+  s_7421a04ffabb0b::t_9629dda0e1aa6e 27,33-35,40
+  s_7421a04ffabb0b::t_1ae2f8248afb5d 9
+  s_7421a04ffabb0b::t_5d68b97d3d892f 336-341
+  s_7421a04ffabb0b::t_bbe73c0126d786 293
+  s_7421a04ffabb0b::t_cb745579b4e1df 350
+  s_7421a04ffabb0b::t_462063345ff5e2 11
+tests/test_podcast_path.py
+  s_7421a04ffabb0b::t_1c7eca19b80b4c 10
+  s_7421a04ffabb0b::t_a098241bec045b 63
+  s_7421a04ffabb0b::t_0c3c7f4160a16a 74
+  s_7421a04ffabb0b::t_5303d7e1b7a170 24,29,32-41,43-44
+tests/test_podcast_audio_paths.py
+  s_7421a04ffabb0b::t_5ee2676fe9bbd0 127,135,140-145
+  s_7421a04ffabb0b::t_41ec116af5d87f 1-126,128-134,136-139
+open_notebook/database/migrations/21_down.surrealql
+  s_7421a04ffabb0b::t_7c69b1dd62fa6b 1-10
+open_notebook/podcasts/models.py
+  s_7421a04ffabb0b::t_6fdb97ac40093c 259-265
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "1ba466b1b840b3f4b3d7860803dacc32532d82fc",
+  "prompts": {},
+  "sessions": {
+    "s_7421a04ffabb0b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "fb412aa1-2bb7-4a12-a60d-f60841b43985",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

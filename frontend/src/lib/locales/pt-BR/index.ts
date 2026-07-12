@@ -767,6 +767,8 @@ export const ptBR = {
     fileManagement: "Gerenciamento de Arquivos",
     fileManagementDesc: "Configure opções de manipulação e armazenamento de arquivos",
     autoDeleteFiles: "Excluir Arquivos Automaticamente",
+    ocrEnabled: "Ativar OCR",
+    ocrHelp: "Extrai texto de PDFs escaneados e imagens ao usar o mecanismo Docling. Mais lento para processar.",
     autoDeletePlaceholder: "Selecione a opção de exclusão automática",
     filesHelp: "Uma vez que seus arquivos são enviados e processados, eles não são mais necessários. A maioria dos usuários deve permitir que o Open Notebook exclua arquivos enviados da pasta de upload automaticamente.",
     loadFailed: "Falha ao carregar configurações",

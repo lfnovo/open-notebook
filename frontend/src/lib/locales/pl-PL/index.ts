@@ -767,6 +767,8 @@ export const plPL = {
     fileManagement: "Zarządzanie plikami",
     fileManagementDesc: "Skonfiguruj opcje obsługi i przechowywania plików",
     autoDeleteFiles: "Automatyczne usuwanie plików",
+    ocrEnabled: "Włącz OCR",
+    ocrHelp: "Wyodrębnia tekst ze zeskanowanych plików PDF i obrazów przy użyciu silnika Docling. Wolniejsze przetwarzanie.",
     autoDeletePlaceholder: "Wybierz opcję automatycznego usuwania",
     filesHelp: "Po przesłaniu i przetworzeniu plików nie są one już potrzebne. Większość użytkowników powinna pozwolić Open Notebook na automatyczne usuwanie przesłanych plików z folderu przesyłania.",
     loadFailed: "Nie udało się załadować ustawień",

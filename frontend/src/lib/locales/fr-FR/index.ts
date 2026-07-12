@@ -767,6 +767,8 @@ export const frFR = {
     fileManagement: "Gestion des fichiers",
     fileManagementDesc: "Configurez les options de manipulation et de stockage des fichiers",
     autoDeleteFiles: "Suppression automatique des fichiers",
+    ocrEnabled: "Activer l'OCR",
+    ocrHelp: "Extrait le texte des PDF numérisés et des images avec le moteur Docling. Traitement plus lent.",
     autoDeletePlaceholder: "Sélectionnez une option de suppression automatique",
     filesHelp: "Une fois vos fichiers téléchargés et traités, ils ne sont plus nécessaires. La plupart des utilisateurs devraient autoriser Open Notebook à supprimer automatiquement les fichiers du dossier de téléchargement.",
     loadFailed: "Échec du chargement des paramètres",

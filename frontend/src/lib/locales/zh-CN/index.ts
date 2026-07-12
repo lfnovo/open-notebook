@@ -767,6 +767,8 @@ export const zhCN = {
     fileManagement: "文件管理",
     fileManagementDesc: "配置文件的处理和存储选项",
     autoDeleteFiles: "自动删除文件",
+    ocrEnabled: "启用 OCR",
+    ocrHelp: "使用 Docling 引擎时，从扫描的 PDF 和图片中提取文本。处理速度较慢。",
     autoDeletePlaceholder: "选择自动删除选项",
     filesHelp: "文件处理完成后，原始件不再需要。建议开启自动删除以节省存储空间。除非您将其作为主要存储位置（不建议），否则请选择“是”。",
     loadFailed: "加载设置失败",

@@ -587,6 +587,12 @@ class TestContentSettings:
         settings = ContentSettings(default_content_processing_engine_url="crawl4ai")
         assert settings.default_content_processing_engine_url == "crawl4ai"
 
+    def test_docling_ocr_defaults_on(self):
+        """OCR is on by default (matches content-core's docling_ocr default)."""
+        settings = ContentSettings()
+        assert settings.docling_ocr is True
+        assert ContentSettings(docling_ocr=False).docling_ocr is False
+
 
 # ============================================================================
 # TEST SUITE 9: Episode Profile Validation

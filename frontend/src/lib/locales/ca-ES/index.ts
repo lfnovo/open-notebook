@@ -767,6 +767,8 @@ export const caES = {
     fileManagement: "Gestió de fitxers",
     fileManagementDesc: "Configura el maneig de fitxers i les opcions d'emmagatzematge",
     autoDeleteFiles: "Supressió automàtica de fitxers",
+    ocrEnabled: "Activa l'OCR",
+    ocrHelp: "Extreu text de PDF escanejats i imatges quan s'utilitza el motor Docling. Processament més lent.",
     autoDeletePlaceholder: "Selecciona l'opció de supressió automàtica",
     filesHelp: "Un cop els fitxers s'han carregat i processat, ja no calen. La majoria d'usuaris haurien de permetre que Open Notebook suprimeixi automàticament els fitxers carregats de la carpeta de càrrega.",
     loadFailed: "Ha fallat la càrrega de la configuració",

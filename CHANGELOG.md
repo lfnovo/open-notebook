@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **OCR toggle** in Settings → Content Processing: a new "Enable OCR" checkbox controls whether the Docling engine runs OCR on scanned PDFs and images. It's on by default (matching content-core's behavior); turn it off to speed up processing of text-native documents. The setting is passed to content-core's `docling_ocr` config, and the label/help are translated across all 14 locales (#1104)
 - **Crawl4AI** is now selectable as a URL processing engine in Settings → Content Processing, alongside Firecrawl, Jina and Simple. It renders JavaScript-heavy pages locally with no API key, or offloads to a Crawl4AI server when `CRAWL4AI_API_URL` is set. The Crawl4AI runtime (and its Chromium browser) is bundled into the Docker image, so local mode works out of the box (~300 MB larger image; no torch/CUDA). As part of this, the persisted document/URL engine choices now actually take effect: the source-processing graph reads the saved Content Settings and passes them to content-core (previously it always ran with hard-coded `auto` engines and silently ignored the selection). New engine label added across all 14 locales (#432)
 
 ### Changed

@@ -770,6 +770,8 @@ export const deDE = {
     fileManagement: "Dateiverwaltung",
     fileManagementDesc: "Konfiguriere Dateiverarbeitung und Speicheroptionen",
     autoDeleteFiles: "Dateien automatisch löschen",
+    ocrEnabled: "OCR aktivieren",
+    ocrHelp: "Extrahiert Text aus gescannten PDFs und Bildern bei Verwendung der Docling-Engine. Langsamere Verarbeitung.",
     autoDeletePlaceholder: "Option für automatisches Löschen auswählen",
     filesHelp: "Nachdem deine Dateien hochgeladen und verarbeitet wurden, werden sie nicht mehr benötigt. Die meisten Nutzer sollten Open Notebook erlauben, hochgeladene Dateien automatisch aus dem Upload-Ordner zu löschen.",
     loadFailed: "Einstellungen konnten nicht geladen werden",

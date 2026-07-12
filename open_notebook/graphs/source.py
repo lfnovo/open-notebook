@@ -71,6 +71,8 @@ async def content_process(state: SourceState) -> dict:
             config_kwargs["document_engine"] = (
                 settings.default_content_processing_engine_doc
             )
+        if settings.docling_ocr is not None:
+            config_kwargs["docling_ocr"] = settings.docling_ocr
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).

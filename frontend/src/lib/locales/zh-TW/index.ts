@@ -767,6 +767,8 @@ export const zhTW = {
     fileManagement: "檔案管理",
     fileManagementDesc: "設定檔案的處理和儲存選項",
     autoDeleteFiles: "自動刪除檔案",
+    ocrEnabled: "啟用 OCR",
+    ocrHelp: "使用 Docling 引擎時，從掃描的 PDF 和圖片中擷取文字。處理速度較慢。",
     autoDeletePlaceholder: "選擇自動刪除選項",
     filesHelp: "檔案處理完成後，原始件不再需要。建議開啟自動刪除以節省儲存空間。除非您將其作為主要儲存位置（不建議），否則請選擇“是”。",
     loadFailed: "載入設定失敗",

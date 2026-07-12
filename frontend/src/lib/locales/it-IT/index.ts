@@ -767,6 +767,8 @@ export const itIT = {
     fileManagement: "Gestione file",
     fileManagementDesc: "Configura opzioni di gestione e archiviazione file",
     autoDeleteFiles: "Elimina file automaticamente",
+    ocrEnabled: "Abilita OCR",
+    ocrHelp: "Estrae il testo da PDF scansionati e immagini quando si usa il motore Docling. Elaborazione più lenta.",
     autoDeletePlaceholder: "Seleziona opzione eliminazione automatica",
     filesHelp: "Una volta caricati ed elaborati, i tuoi file non sono più necessari. La maggior parte degli utenti dovrebbe permettere a Open Notebook di eliminare automaticamente i file caricati dalla cartella upload.",
     loadFailed: "Impossibile caricare le impostazioni",

@@ -78,7 +78,7 @@ jobs:
         run: uv python install
 
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync
 
       - name: Run mypy
         run: uv run python -m mypy .

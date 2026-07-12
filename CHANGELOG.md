@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- Docker images now force the Next.js frontend to bind to `0.0.0.0` in the supervisord command itself, so container runtimes that inject `HOSTNAME` (e.g. Podman pods, where it resolves to `127.0.1.1`) can no longer make the UI unreachable. The `HOSTNAME` variable is no longer honored as a frontend bind override — set the new `FRONTEND_BIND_HOST` variable instead (#994)
+
 ## [1.12.0] - 2026-07-12
 
 ### Added

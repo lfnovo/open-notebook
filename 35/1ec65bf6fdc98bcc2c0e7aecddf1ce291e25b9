@@ -1,0 +1,29 @@
+api/routers/capabilities.py
+  s_7ddc9b6ed4c681::t_40bef3d40bbeb8 16,19,33-34,36-41,50-51,53-55,59-86,91
+tests/test_capabilities_api.py
+  s_7ddc9b6ed4c681::t_b547007d26fb2d 29-32
+  s_7ddc9b6ed4c681::t_18d99e3a9cbc20 73-104
+frontend/src/lib/locales/ca-ES/index.ts
+  s_7ddc9b6ed4c681::t_ff272d666ddb75 758-759
+frontend/src/lib/locales/fr-FR/index.ts
+  s_7ddc9b6ed4c681::t_0aaf6d9d557661 759
+frontend/src/app/(dashboard)/settings/components/SettingsForm.test.tsx
+  s_7ddc9b6ed4c681::t_0812bd195bdd4e 63-66
+  s_7ddc9b6ed4c681::t_e9bcf0eb5f7ea5 79-81,90-92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "351ec65bf6fdc98bcc2c0e7aecddf1ce291e25b9",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

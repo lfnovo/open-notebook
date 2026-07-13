@@ -14,6 +14,7 @@ Endpoints:
 
 import importlib.util
 import os
+import sys
 
 from fastapi import APIRouter
 from loguru import logger
@@ -56,6 +57,16 @@ def _crawl4ai_remote_configured() -> bool:
         return bool(os.environ.get("CRAWL4AI_API_URL"))
 
 
+def _default_playwright_cache() -> str | None:
+    """Playwright's default browser download directory when PLAYWRIGHT_BROWSERS_PATH is unset."""
+    if sys.platform == "darwin":
+        return os.path.expanduser("~/Library/Caches/ms-playwright")
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA")
+        return os.path.join(local, "ms-playwright") if local else None
+    return os.path.expanduser("~/.cache/ms-playwright")  # linux and others
+
+
 def _chromium_browser_present() -> bool:
     """True when a Playwright Chromium browser is installed on disk.
 
@@ -63,16 +74,17 @@ def _chromium_browser_present() -> bool:
     installer downloads them in separate steps and degrades gracefully, so the
     package can be present while the browser download failed — checking the
     browser here keeps this endpoint an honest "usable capability" signal.
+
+    Playwright installs browsers into PLAYWRIGHT_BROWSERS_PATH (Docker) or, when
+    that's unset, its per-user default cache (dev). Resolving the path does not
+    download anything, so we must confirm a chromium build actually exists in
+    whichever directory applies before reporting local Crawl4AI available.
     """
-    base = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
-    if not base:
-        # No managed browser path (non-Docker/dev): trust the package install
-        # and let Playwright resolve its default browser location itself.
-        return True
+    base = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or _default_playwright_cache()
+    if not base or not os.path.isdir(base):
+        return False
     try:
-        return os.path.isdir(base) and any(
-            "chromium" in name for name in os.listdir(base)
-        )
+        return any("chromium" in name for name in os.listdir(base))
     except OSError:
         return False
 

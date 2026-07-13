@@ -50,7 +50,9 @@ class ThreadState(TypedDict):
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
     try:
-        parser = PydanticOutputParser(pydantic_object=Strategy)
+        parser: PydanticOutputParser[Strategy] = PydanticOutputParser(
+            pydantic_object=Strategy
+        )
         system_prompt = Prompter(prompt_template="ask/entry", parser=parser).render(  # type: ignore[arg-type]
             data=state  # type: ignore[arg-type]
         )

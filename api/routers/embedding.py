@@ -5,6 +5,10 @@ from api.command_service import CommandService
 from api.models import EmbedRequest, EmbedResponse
 from open_notebook.ai.models import model_manager
 from open_notebook.domain.notebook import Note, Source
+from open_notebook.exceptions import (
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -78,8 +82,6 @@ async def embed_content(embed_request: EmbedRequest):
             # Get the item and submit embedding job
             if item_type == "source":
                 source_item = await Source.get(item_id)
-                if not source_item:
-                    raise HTTPException(status_code=404, detail="Source not found")
 
                 # Submit embed_source job (returns command_id for tracking)
                 command_id = await source_item.vectorize()
@@ -87,11 +89,19 @@ async def embed_content(embed_request: EmbedRequest):
 
             elif item_type == "note":
                 note_item = await Note.get(item_id)
-                if not note_item:
-                    raise HTTPException(status_code=404, detail="Note not found")
 
-                # Note.save() internally submits embed_note command and returns command_id
+                # Note.save() internally submits embed_note command and
+                # returns command_id. Unlike Source.vectorize(), save()'s
+                # embed submission is best-effort (a hiccup there shouldn't
+                # fail an otherwise-successful note save) - but this
+                # endpoint's whole point is submitting the embedding job,
+                # so a submission failure here (content present, no
+                # command_id) must still surface as a failure.
                 command_id = await note_item.save()
+                if not command_id and note_item.content and note_item.content.strip():
+                    raise HTTPException(
+                        status_code=500, detail="Failed to submit note embedding job"
+                    )
                 message = "Note embedding job submitted"
 
             return EmbedResponse(
@@ -103,6 +113,12 @@ async def embed_content(embed_request: EmbedRequest):
             )
 
     except HTTPException:
+        raise
+    except NotFoundError:
+        raise HTTPException(
+            status_code=404, detail=f"{embed_request.item_type} not found"
+        )
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(

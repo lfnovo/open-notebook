@@ -72,13 +72,15 @@ export function EpisodeProfileFormDialog({
   const { data: languages = [] } = useLanguages()
 
   const getDefaults = useCallback((): EpisodeProfileFormValues => {
-    const firstSpeaker = speakerProfiles[0]?.name ?? ''
+    const firstSpeaker = speakerProfiles[0]?.id ?? ''
 
     if (initialData) {
       return {
         name: initialData.name,
         description: initialData.description ?? '',
-        speaker_config: initialData.speaker_config,
+        // speaker_config is a speaker_profile record ID; it can be null when
+        // the referenced profile was deleted - force the user to pick again.
+        speaker_config: initialData.speaker_config ?? '',
         outline_llm: initialData.outline_llm ?? '',
         transcript_llm: initialData.transcript_llm ?? '',
         language: initialData.language ?? null,
@@ -217,7 +219,7 @@ export function EpisodeProfileFormDialog({
                     </SelectTrigger>
                     <SelectContent title={t('podcasts.speakerProfile')}>
                       {speakerProfiles.map((profile) => (
-                        <SelectItem key={profile.id} value={profile.name}>
+                        <SelectItem key={profile.id} value={profile.id}>
                           {profile.name}
                         </SelectItem>
                       ))}

@@ -1,6 +1,7 @@
 import apiClient from './client'
 import {
   NotebookResponse,
+  RecentlyViewedResponse,
   CreateNotebookRequest,
   UpdateNotebookRequest,
   NotebookDeletePreview,
@@ -10,6 +11,13 @@ import {
 export const notebooksApi = {
   list: async (params?: { archived?: boolean; order_by?: string }) => {
     const response = await apiClient.get<NotebookResponse[]>('/notebooks', { params })
+    return response.data
+  },
+
+  recentlyViewed: async (limit: number = 12) => {
+    const response = await apiClient.get<RecentlyViewedResponse[]>('/recently-viewed', {
+      params: { limit },
+    })
     return response.data
   },
 

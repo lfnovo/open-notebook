@@ -33,6 +33,8 @@ SURREAL_NAMESPACE="open_notebook"
 SURREAL_DATABASE="open_notebook"
 ```
 
+> **Note:** If SurrealDB runs in Docker with its port published on `127.0.0.1` only (the documented default), it won't be reachable at your machine's IP. Re-publish the port deliberately — see `docker-compose.override.yml.example` in the repo root — behind a firewall or SSH tunnel, with real credentials set.
+
 ### Open Notebook and Surreal are running on the same machine
 
 If you are running both services locally or if you are using the deprecated [single container setup](../1-INSTALLATION/single-container.md)

@@ -25,7 +25,9 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
 | uv           | `pip install uv`                 | Yes      |
 | SurrealDB 2.x | Install a local SurrealDB v2 binary | Yes   |
 
-> **Important:** current `main` still uses the same SurrealDB `v2` migration syntax pinned in the repo's Docker files. A native install against SurrealDB `v3` currently fails on startup with `FLEXIBLE must be specified after TYPE`.
+> **Important:** current `main` uses the SurrealDB v2 migration syntax pinned
+> in the repository's Docker configuration. SurrealDB v3 fails during startup
+> because its schema syntax is not yet compatible with these migrations.
 
 ## Quick Start
 
@@ -51,29 +53,61 @@ This guide documents how to install and run [Open Notebook](https://github.com/l
      SURREAL_URL="ws://127.0.0.1:8000/rpc"
      ```
 
-3. **Start SurrealDB 2.x separately**
+3. **Start the four services**, each in its own terminal, from the `open-notebook` folder.
 
-   - Use a local SurrealDB v2 instance that listens on `127.0.0.1:8000`
-   - Keep the credentials aligned with your `.env`
-   - If you installed SurrealDB 3.x, downgrade to 2.x before continuing
-
-4. **Start the API from the repo root:**
+   > Open Notebook does not ship a launcher script — start the services manually as below (or wrap them in your own `.bat`, see [Optional: one-click launcher](#optional-one-click-launcher)).
 
    ```batch
-   uv run --env-file .env uvicorn api.main:app --host 127.0.0.1 --port 5055
+   REM Terminal 1 — SurrealDB
+   surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:data\surrealdb
+
+   REM Terminal 2 — API
+   uv run --env-file .env run_api.py
+
+   REM Terminal 3 — Worker (module form avoids the Windows "canonicalize" error, see Issue 4)
+   set PYTHONPATH=%CD%
+   uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands
+
+   REM Terminal 4 — Frontend
+   cd frontend && npm run dev
    ```
 
-5. **Start the frontend in a second terminal:**
+4. **Open the app:** http://127.0.0.1:3000
 
-   ```batch
-   cd frontend
-   npm run dev
-   ```
+## Directory Structure
 
-6. **Open the app:**
+```
+YourProjectsFolder\
+└── open-notebook\           # Source code (git clone)
+    ├── .venv\               # Python virtual environment (created by uv)
+    ├── frontend\            # Next.js frontend
+    ├── commands\            # Worker command modules
+    ├── .env                 # Your configuration
+    ├── data\                # Native database, uploads, and checkpoints
+    └── start-open-notebook.bat  # Optional launcher you create yourself
+```
 
-   - Frontend: `http://127.0.0.1:3000`
-   - API docs: `http://127.0.0.1:5055/docs`
+## Optional: one-click launcher
+
+Open Notebook does not ship a launcher, but you can save the following as
+`start-open-notebook.bat` (anywhere you like) to start all four services with a
+double-click. Adjust `ROOT` to match your setup.
+
+```batch
+@echo off
+REM --- adjust this path ---
+set ROOT=%USERPROFILE%\Projects\open-notebook
+
+set PYTHONPATH=%ROOT%
+cd /d %ROOT%
+
+start "SurrealDB" surreal start --user root --pass root --bind 127.0.0.1:8000 rocksdb:data\surrealdb
+start "API" cmd /k "uv run --env-file .env run_api.py"
+start "Worker" cmd /k "uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands"
+start "Frontend" cmd /k "cd /d %ROOT%\frontend && npm run dev"
+```
+
+Then open http://127.0.0.1:3000.
 
 ## Critical Windows Fixes
 
@@ -96,7 +130,7 @@ REM Wrong:
 .venv\Scripts\python.exe run_api.py
 
 REM Correct:
-uv run --env-file .env uvicorn api.main:app --host 127.0.0.1 --port 5055
+uv run --env-file .env run_api.py
 ```
 
 ### Issue 2: Database Health Check Timeout
@@ -129,17 +163,44 @@ SURREAL_URL="ws://127.0.0.1:8000/rpc"
 Parse error: FLEXIBLE must be specified after TYPE
 ```
 
-**Cause:** the current migration files still target the SurrealDB 2.x syntax used by the repo's Docker setup.
+**Cause:** The current migration files target the SurrealDB v2 syntax used by
+the repository's Docker setup.
 
-**Solution:** Run Open Notebook against SurrealDB 2.x for now.
+**Solution:** Run Open Notebook against SurrealDB v2 for now.
 
-### Issue 4: `DATA_ROOT` / `DATA_FOLDER` confusion
+### Issue 4: Worker "Failed to canonicalize script path"
 
-**Symptom:** Docs or local notes refer to `DATA_ROOT` or a `.env`-driven `DATA_FOLDER`, but the app still writes to the default repo-local `./data` path.
+**Symptom:**
 
-**Cause:** on current `main`, [`open_notebook/config.py`](../../open_notebook/config.py) sets `DATA_FOLDER = "./data"` directly. There is no supported `DATA_ROOT` environment variable in the source tree.
+```
+Failed to canonicalize script path
+```
 
-**Solution:** Leave the default `./data` location in place unless you are intentionally patching the code yourself.
+**Cause:** The `surreal-commands-worker.exe` can't find the Python `commands` module.
+
+**Solution:** Use Python module invocation with PYTHONPATH:
+
+```batch
+set PYTHONPATH=%ROOT%
+uv run --env-file .env python -m surreal_commands.cli.worker --import-modules commands
+```
+
+### Issue 5: `DATA_ROOT` / `DATA_FOLDER` confusion
+
+**Symptom:**
+
+```
+Docs or local notes refer to `DATA_ROOT` or an environment-driven
+`DATA_FOLDER`, but application files still appear under `./data`.
+```
+
+**Cause:** `open_notebook/config.py` currently sets `DATA_FOLDER = "./data"`
+directly. The application does not read `DATA_ROOT` or `DATA_FOLDER` from the
+environment.
+
+**Solution:** Leave the repository-local `./data` location in place. Do not
+patch `open_notebook/config.py` during installation; a configurable data root
+requires an upstream application change and migration design.
 
 ## Configuration Files
 
@@ -167,7 +228,7 @@ Once running, add models in Settings. Common model names:
 | --------- | ------------------------------------------------------------ |
 | OpenAI    | `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `text-embedding-3-small` |
 | Anthropic | `claude-sonnet-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022` |
-| Google    | `gemini-2.0-flash`, `gemini-1.5-pro`, `gemini-1.5-flash`     |
+| Google    | `gemini-3.5-flash`, `gemini-2.5-flash`, `gemini-2.5-pro`     |
 | DeepSeek  | `deepseek-chat`, `deepseek-reasoner`                         |
 
 ## Upgrading
@@ -202,6 +263,11 @@ Then restart all services. Your `.env` and data are preserved.
 
 - Verify API is running: http://127.0.0.1:5055/docs
 - Check `.env` has `API_URL=http://localhost:5055`
+
+### Worker not processing commands
+
+- Check Worker window for errors
+- Verify PYTHONPATH is set in startup script
 
 ## Contributing
 

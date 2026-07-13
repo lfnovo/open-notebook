@@ -1,7 +1,7 @@
-import asyncio
 import os
+from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, ClassVar, Dict, List, Literal, Optional, Union
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -18,6 +18,7 @@ class Notebook(ObjectModel):
     name: str
     description: str
     archived: Optional[bool] = False
+    last_viewed_at: Optional[datetime] = None
 
     @field_validator("name")
     @classmethod
@@ -26,11 +27,12 @@ class Notebook(ObjectModel):
             raise InvalidInputError("Notebook name cannot be empty")
         return v
 
-    async def get_sources(self) -> List["Source"]:
+    async def get_sources(self, include_full_text: bool = False) -> List["Source"]:
         try:
+            source_projection = "" if include_full_text else " omit source.full_text"
             srcs = await repo_query(
-                """
-                select * omit source.full_text from (
+                f"""
+                select *{source_projection} from (
                 select in as source from reference where out=$id
                 fetch source
             ) order by source.updated desc
@@ -43,11 +45,16 @@ class Notebook(ObjectModel):
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def get_notes(self) -> List["Note"]:
+    async def get_notes(self, include_content: bool = False) -> List["Note"]:
         try:
+            note_projection = (
+                " omit note.embedding"
+                if include_content
+                else " omit note.content, note.embedding"
+            )
             srcs = await repo_query(
-                """
-            select * omit note.content, note.embedding from (
+                f"""
+            select *{note_projection} from (
                 select in as note from artifact where out=$id
                 fetch note
             ) order by note.updated desc
@@ -59,6 +66,72 @@ class Notebook(ObjectModel):
             logger.error(f"Error fetching notes for notebook {self.id}: {str(e)}")
             logger.exception(e)
             raise DatabaseOperationError(e)
+
+    async def get_context(self) -> str:
+        """
+        Build long-form notebook context for podcast and LLM workflows.
+
+        Normal list retrieval omits large source/note bodies, so this method uses
+        opt-in full-content fetches and formats only substantive context blocks.
+        """
+        sources = await self.get_sources(include_full_text=True)
+        notes = await self.get_notes(include_content=True)
+        context_blocks = []
+
+        insights_by_source = await SourceInsight.get_for_sources(
+            [source.id for source in sources if source.id]
+        )
+        for source in sources:
+            source_context = await source.get_context(
+                context_size="long",
+                insights=insights_by_source.get(source.id or "", []),
+            )
+            if isinstance(source_context, dict):
+                title = source_context.get("title") or source.title or "Untitled source"
+                full_text = source_context.get("full_text")
+                insights = source_context.get("insights") or []
+
+                content_parts = []
+                if full_text:
+                    content_parts.append(str(full_text))
+
+                insight_lines = []
+                for insight in insights:
+                    if not isinstance(insight, dict):
+                        continue
+
+                    insight_content = insight.get("content")
+                    if not insight_content:
+                        continue
+
+                    insight_type = insight.get("insight_type") or "Insight"
+                    insight_lines.append(f"- {insight_type}: {insight_content}")
+
+                if insight_lines:
+                    content_parts.append("Insights:\n" + "\n".join(insight_lines))
+
+                content = "\n\n".join(content_parts).strip()
+            else:
+                title = source.title or "Untitled source"
+                content = str(source_context).strip()
+
+            if content:
+                context_blocks.append(f"## Source: {title}\n\n{content}")
+
+        for note in notes:
+            note_context = note.get_context(context_size="long")
+            if isinstance(note_context, dict):
+                title = note_context.get("title") or note.title or "Untitled note"
+                content = note_context.get("content")
+                content = str(content).strip() if content else ""
+            else:
+                title = note.title or "Untitled note"
+                content = str(note_context).strip()
+
+            if content:
+                context_blocks.append(f"## Note: {title}\n\n{content}")
+
+        return "\n\n".join(context_blocks)
 
     async def get_chat_sessions(self) -> List["ChatSession"]:
         try:
@@ -259,6 +332,35 @@ class SourceInsight(ObjectModel):
     insight_type: str
     content: str
 
+    @classmethod
+    async def get_for_sources(
+        cls, source_ids: List[str]
+    ) -> Dict[str, List["SourceInsight"]]:
+        """
+        Batch-fetch insights for many sources in a single query.
+
+        Building notebook/chat context otherwise calls get_insights() once
+        per source - fine for one source, but O(n) round trips (each paying
+        its own connection setup - no pooling in the repository layer) when
+        a caller loops over every source in a notebook.
+        """
+        grouped: Dict[str, List[SourceInsight]] = {sid: [] for sid in source_ids if sid}
+        if not grouped:
+            return grouped
+        try:
+            result = await repo_query(
+                "SELECT * FROM source_insight WHERE source IN $source_ids",
+                {"source_ids": [ensure_record_id(sid) for sid in grouped]},
+            )
+        except Exception as e:
+            logger.error(f"Error batch-fetching insights for sources: {str(e)}")
+            logger.exception(e)
+            raise DatabaseOperationError("Failed to fetch insights for sources")
+        for row in result:
+            key = str(row.get("source"))
+            grouped.setdefault(key, []).append(cls(**row))
+        return grouped
+
     async def get_source(self) -> "Source":
         try:
             src = await repo_query(
@@ -293,6 +395,7 @@ class Source(ObjectModel):
     title: Optional[str] = None
     topics: Optional[List[str]] = Field(default_factory=list)
     full_text: Optional[str] = None
+    last_viewed_at: Optional[datetime] = None
     command: Optional[Union[str, RecordID]] = Field(
         default=None, description="Link to surreal-commands processing job"
     )
@@ -359,10 +462,15 @@ class Source(ObjectModel):
             return None
 
     async def get_context(
-        self, context_size: Literal["short", "long"] = "short"
+        self,
+        context_size: Literal["short", "long"] = "short",
+        insights: Optional[List["SourceInsight"]] = None,
     ) -> Dict[str, Any]:
-        insights_list = await self.get_insights()
-        insights = [insight.model_dump() for insight in insights_list]
+        # Callers looping over many sources can batch-fetch insights up front
+        # via SourceInsight.get_for_sources() and pass them in here, instead
+        # of paying a separate query per source.
+        insight_objects = insights if insights is not None else await self.get_insights()
+        insights = [insight.model_dump() for insight in insight_objects]
         if context_size == "long":
             return dict(
                 id=self.id,
@@ -406,6 +514,7 @@ class Source(ObjectModel):
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
+        await Notebook.get(notebook_id)  # raises NotFoundError if invalid/missing
         return await self.relate("reference", notebook_id)
 
     async def vectorize(self) -> str:
@@ -450,13 +559,11 @@ class Source(ObjectModel):
         except ValueError:
             raise
         except Exception as e:
-            logger.error(
-                f"Failed to submit embed_source job for source {self.id}: {e}"
-            )
+            logger.error(f"Failed to submit embed_source job for source {self.id}: {e}")
             logger.exception(e)
             raise DatabaseOperationError(e)
 
-    async def add_insight(self, insight_type: str, content: str) -> Optional[str]:
+    async def add_insight(self, insight_type: str, content: str) -> str:
         """
         Submit insight creation as an async command (fire-and-forget).
 
@@ -473,10 +580,17 @@ class Source(ObjectModel):
             content: The insight content text
 
         Returns:
-            command_id for optional tracking, or None if submission failed
+            command_id for optional tracking
 
         Raises:
             InvalidInputError: If insight_type or content is empty
+            DatabaseOperationError: If submitting the command fails. Matches
+                vectorize()'s contract - callers (transformation.py, source.py)
+                run inside surreal-commands jobs whose outer exception
+                handling already retries transient failures, so a swallowed
+                submission failure here previously meant a transformation
+                could report success while the insight was silently never
+                persisted.
         """
         if not insight_type or not content:
             raise InvalidInputError("Insight type and content must be provided")
@@ -500,8 +614,8 @@ class Source(ObjectModel):
             return str(command_id)
 
         except Exception as e:
-            logger.error(f"Error submitting create_insight for source {self.id}: {e}")
-            return None
+            logger.exception(f"Error submitting create_insight for source {self.id}: {e}")
+            raise DatabaseOperationError(e)
 
     def _prepare_save_data(self) -> dict:
         """Override to ensure command field is always RecordID format for database"""
@@ -575,26 +689,37 @@ class Note(ObjectModel):
         after saving, instead of inline embedding.
 
         Returns:
-            Optional[str]: The command_id if embedding was submitted, None otherwise
+            Optional[str]: The command_id if embedding was submitted, None
+                otherwise (either no content to embed, or submission failed)
         """
         # Call parent save (without embedding)
         await super().save()
 
-        # Submit embedding command (fire-and-forget) if note has content
+        # Submit embedding command (fire-and-forget) if note has content.
+        # Unlike Source.vectorize()/add_insight() (explicit, dedicated calls
+        # whose whole point is the submission), this runs automatically
+        # inside save() - the note itself is already durably saved above,
+        # so a submission hiccup here shouldn't fail an otherwise-successful
+        # save with a 500. Best-effort: log and move on.
         if self.id and self.content and self.content.strip():
-            command_id = submit_command(
-                "open_notebook",
-                "embed_note",
-                {"note_id": str(self.id)},
-            )
-            logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
-            return command_id
+            try:
+                command_id = submit_command(
+                    "open_notebook",
+                    "embed_note",
+                    {"note_id": str(self.id)},
+                )
+                logger.debug(f"Submitted embed_note command {command_id} for {self.id}")
+                return command_id
+            except Exception as e:
+                logger.error(f"Failed to submit embed_note command for {self.id}: {e}")
+                return None
 
         return None
 
     async def add_to_notebook(self, notebook_id: str) -> Any:
         if not notebook_id:
             raise InvalidInputError("Notebook ID must be provided")
+        await Notebook.get(notebook_id)  # raises NotFoundError if invalid/missing
         return await self.relate("artifact", notebook_id)
 
     def get_context(
@@ -641,6 +766,28 @@ async def text_search(
             {"keyword": keyword, "results": results, "source": source, "note": note},
         )
         return search_results
+    except RuntimeError as e:
+        # SurrealDB's search::highlight can compute a byte position that exceeds the
+        # stored string length on large or multi-byte chunks, aborting the whole query
+        # ("position overflow"). Fall back to vector search so the user still gets
+        # results instead of a 500. See issue #648.
+        if "position overflow" in str(e):
+            logger.warning(
+                f"Highlight position overflow, falling back to vector search: {str(e)}"
+            )
+            try:
+                return await vector_search(keyword, results, source, note)
+            except Exception as ve:
+                # Both search paths failed (e.g. no embedding model configured).
+                # Surface the failure instead of returning [] — an empty list would
+                # be indistinguishable from a legitimate "no matches" and mask a
+                # total search outage from callers.
+                logger.error(f"Vector search fallback also failed: {str(ve)}")
+                logger.exception(ve)
+                raise DatabaseOperationError(ve)
+        logger.error(f"Error performing text search: {str(e)}")
+        logger.exception(e)
+        raise DatabaseOperationError(e)
     except Exception as e:
         logger.error(f"Error performing text search: {str(e)}")
         logger.exception(e)

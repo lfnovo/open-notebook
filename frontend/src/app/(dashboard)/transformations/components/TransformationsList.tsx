@@ -35,19 +35,35 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
     )
   }
 
+  const editorDialog = (
+    <TransformationEditorDialog
+      open={editorOpen}
+      onOpenChange={(open) => {
+        setEditorOpen(open)
+        if (!open) {
+          setEditingTransformation(undefined)
+        }
+      }}
+      transformation={editingTransformation}
+    />
+  )
+
   if (!transformations || transformations.length === 0) {
     return (
-      <EmptyState
-        icon={Wand2}
-        title={t('transformations.noTransformations')}
-        description={t('transformations.createOne')}
-        action={
-          <Button onClick={() => handleOpenEditor()}>
-            <Plus className="h-4 w-4 mr-2" />
-            {t('transformations.createNew')}
-          </Button>
-        }
-      />
+      <>
+        <EmptyState
+          icon={Wand2}
+          title={t('transformations.noTransformations')}
+          description={t('transformations.createOne')}
+          action={
+            <Button onClick={() => handleOpenEditor()}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('transformations.createNew')}
+            </Button>
+          }
+        />
+        {editorDialog}
+      </>
     )
   }
 
@@ -74,16 +90,7 @@ export function TransformationsList({ transformations, isLoading, onPlayground }
         </div>
       </div>
 
-      <TransformationEditorDialog
-        open={editorOpen}
-        onOpenChange={(open) => {
-          setEditorOpen(open)
-          if (!open) {
-            setEditingTransformation(undefined)
-          }
-        }}
-        transformation={editingTransformation}
-      />
+      {editorDialog}
     </>
   )
 }

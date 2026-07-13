@@ -4,10 +4,10 @@ import { useRouter, useParams } from 'next/navigation'
 import { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
-import { useSourceChat } from '@/lib/hooks/useSourceChat'
-import { ChatPanel } from '@/components/source/ChatPanel'
+import { useSourceChat } from '@/lib/hooks/use-source-chat'
+import { ChatPanel } from '@/components/sources/ChatPanel'
 import { useNavigation } from '@/lib/hooks/use-navigation'
-import { SourceDetailContent } from '@/components/source/SourceDetailContent'
+import { SourceDetailContent } from '@/components/sources/SourceDetailContent'
 
 export default function SourceDetailPage() {
   const router = useRouter()

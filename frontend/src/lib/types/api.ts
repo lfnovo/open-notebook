@@ -57,6 +57,7 @@ export interface SettingsResponse {
   default_content_processing_engine_url?: string
   default_embedding_option?: string
   auto_delete_files?: string
+  docling_ocr?: boolean
   youtube_preferred_languages?: string[]
 }
 
@@ -238,4 +239,11 @@ export interface BuildContextResponse {
   }
   token_count: number
   char_count: number
+}
+
+export interface RecentlyViewedResponse {
+  type: 'notebook' | 'source'
+  id: string
+  title: string
+  last_viewed_at: string
 }

@@ -1,5 +1,4 @@
 import asyncio
-import os
 import time
 import tomllib
 from pathlib import Path

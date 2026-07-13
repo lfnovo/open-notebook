@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
+
+@variant dark (&:where(.dark, .dark *));
 
 @theme inline {
   --color-background: var(--background);
@@ -188,5 +191,11 @@
 
   .clickable-card * {
     cursor: pointer !important;
+  }
+
+  /* Remove blockquotes's extra quotes in rendered markdown */
+  .prose blockquote p::before,
+  .prose blockquote p::after {
+    content: none !important;
   }
 }

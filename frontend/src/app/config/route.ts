@@ -1,5 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Basic hostname/IPv4 validation (letters, digits, dots, hyphens) plus a
+// bracketed-IPv6-literal form. Host and X-Forwarded-Proto are client-
+// controlled; behind a reverse proxy that forwards them untrusted, an
+// unvalidated value here could redirect the browser's subsequent API
+// traffic (including the auth bearer token - see lib/api/client.ts) to an
+// attacker-chosen host. Reject anything that isn't syntactically a
+// hostname/IP before it's used to build the URL the client will trust.
+const HOSTNAME_PATTERN = /^[a-zA-Z0-9.-]+$/
+const IPV6_LITERAL_PATTERN = /^\[[0-9a-fA-F:]+\]$/
+
+function isValidHostname(hostname: string): boolean {
+  return (
+    hostname.length > 0 &&
+    hostname.length <= 253 &&
+    (HOSTNAME_PATTERN.test(hostname) || IPV6_LITERAL_PATTERN.test(hostname))
+  )
+}
+
+// Strip the optional port from a Host header, keeping the hostname (with
+// brackets for an IPv6 literal). Deliberately NOT `new URL()`: the URL
+// parser would "helpfully" extract the host from userinfo/path payloads
+// (e.g. `legit@evil.com` -> `evil.com`), defeating the strict validation
+// below. A bracketed IPv6 literal (`[::1]` / `[::1]:5055`) can't be split
+// on the first colon, so it's handled explicitly; everything else is a
+// hostname/IPv4 where the first colon begins the port. Anything malformed
+// returns null and falls back to localhost.
+function extractHostname(hostHeader: string): string | null {
+  if (hostHeader.startsWith('[')) {
+    const end = hostHeader.indexOf(']')
+    if (end === -1) return null
+    const afterBracket = hostHeader.slice(end + 1)
+    // Only an optional `:port` may follow the closing bracket.
+    if (afterBracket !== '' && !/^:\d+$/.test(afterBracket)) return null
+    return hostHeader.slice(0, end + 1) // includes the brackets
+  }
+  return hostHeader.split(':')[0]
+}
+
 /**
  * Runtime Configuration Endpoint
  *
@@ -35,26 +73,35 @@ export async function GET(request: NextRequest) {
   // Priority 2: Auto-detect from request headers
   try {
     // Get the protocol (http or https)
-    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme
-    const proto = request.headers.get('x-forwarded-proto') ||
+    // Check X-Forwarded-Proto first (for reverse proxies), then fallback to request scheme.
+    // Only ever trust "http"/"https" - reject anything else a spoofed or
+    // misconfigured-proxy header might supply.
+    const rawProto = request.headers.get('x-forwarded-proto') ||
                   request.nextUrl.protocol.replace(':', '') ||
                   'http'
+    const proto = rawProto === 'https' ? 'https' : 'http'
 
     // Get the host header (includes port if non-standard)
     const hostHeader = request.headers.get('host')
 
     if (hostHeader) {
-      // Extract just the hostname (remove port if present)
-      const hostname = hostHeader.split(':')[0]
+      // Extract just the hostname (remove port if present), bracket-aware
+      // for IPv6 literals.
+      const hostname = extractHostname(hostHeader)
 
-      // Construct the API URL with port 5055
-      const apiUrl = `${proto}://${hostname}:5055`
+      if (hostname && isValidHostname(hostname)) {
+        // hostname already carries brackets for IPv6 literals, so this
+        // yields e.g. http://[::1]:5055, not a mangled http://::1:5055
+        const apiUrl = `${proto}://${hostname}:5055`
 
-      console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
+        console.log(`[runtime-config] Auto-detected API URL: ${apiUrl} (proto=${proto}, host=${hostHeader})`)
 
-      return NextResponse.json({
-        apiUrl,
-      })
+        return NextResponse.json({
+          apiUrl,
+        })
+      }
+
+      console.warn(`[runtime-config] Rejected malformed Host header, falling back to localhost: ${hostHeader}`)
     }
   } catch (error) {
     console.error('[runtime-config] Auto-detection failed:', error)

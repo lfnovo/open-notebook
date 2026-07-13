@@ -30,7 +30,7 @@ Any string works — it will be securely derived via SHA-256 internally. Use a s
 
 | Setting | Default | Security Level |
 |---------|---------|----------------|
-| Password | `open-notebook-change-me` | Development only |
+| Password | None - auth is fully disabled until `OPEN_NOTEBOOK_PASSWORD` is set | Development only |
 | Encryption Key | **None** (must be configured) | Required for API key storage |
 
 **The encryption key has no default.** You must set `OPEN_NOTEBOOK_ENCRYPTION_KEY` before using the API key configuration feature. Without it, encrypting/decrypting API keys will fail.

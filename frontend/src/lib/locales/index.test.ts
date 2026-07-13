@@ -55,8 +55,13 @@ describe('Unused Key Detection', () => {
         .join('\n')
         .replace(/\?\./g, '.')
 
+      // Plural forms (key_one, key_other, …) are resolved by i18next from the
+      // base key passed to t(), so check the base key instead.
+      const pluralSuffix = /_(zero|one|two|few|many|other)$/
       const leafKeys = getKeys(enUS)
-      const unused = leafKeys.filter(key => !corpus.includes(key))
+      const unused = leafKeys.filter(
+        key => !corpus.includes(key.replace(pluralSuffix, '')),
+      )
 
       expect(
         unused,

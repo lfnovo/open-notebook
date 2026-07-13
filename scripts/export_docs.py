@@ -5,7 +5,8 @@ Export documentation by consolidating markdown files from each docs folder.
 This script:
 1. Scans all subdirectories in the docs/ folder
 2. For each subdirectory, concatenates all .md files (except index.md)
-3. Saves the consolidated content to doc_exports/{folder_name}.md
+3. Generates a Table of Contents for easy navigation
+4. Saves the consolidated content to doc_exports/{folder_name}.md
 """
 
 import logging
@@ -24,7 +25,7 @@ def get_markdown_files(folder: Path) -> List[Path]:
 
 
 def consolidate_folder(folder: Path, output_dir: Path) -> None:
-    """Consolidate all markdown files from a folder into a single file."""
+    """Consolidate all markdown files from a folder into a single file with a TOC."""
     md_files = get_markdown_files(folder)
 
     if not md_files:
@@ -35,11 +36,22 @@ def consolidate_folder(folder: Path, output_dir: Path) -> None:
 
     with output_file.open("w", encoding="utf-8") as outf:
         # Write header
-        outf.write(f"# {folder.name.replace('-', ' ').title()}\n\n")
+        folder_title = folder.name.replace("-", " ").title()
+        outf.write(f"# {folder_title}\n\n")
         outf.write(
             f"This document consolidates all content from the {folder.name} documentation folder.\n\n"
         )
-        outf.write("---\n\n")
+
+        # Generate a Table of Contents dynamically
+        outf.write("## Table of Contents\n\n")
+        for md_file in md_files:
+            section_title = md_file.stem.replace("-", " ").title()
+            # Convert title to a markdown-friendly anchor link
+            # (lowercase, hyphens instead of spaces)
+            anchor = section_title.lower().replace(" ", "-")
+            outf.write(f"* [{section_title}](#{anchor})\n")
+
+        outf.write("\n---\n\n")
 
         # Process each markdown file
         for md_file in md_files:
@@ -88,7 +100,7 @@ def main():
         logger.info(f"Processing {subdir.name}...")
         consolidate_folder(subdir, output_dir)
 
-    logger.info(f"\n✓ Documentation export complete!")
+    logger.info("\n✓ Documentation export complete!")
     logger.info(f"Exported files are in: {output_dir.absolute()}")
 
 

@@ -46,9 +46,13 @@ interface EpisodeProfilesPanelProps {
 
 function findSpeakerSummary(
   speakerProfiles: SpeakerProfile[],
-  speakerName: string
+  speakerId: string | null
 ) {
-  return speakerProfiles.find((profile) => profile.name === speakerName)
+  if (!speakerId) {
+    return undefined
+  }
+  // speaker_config references the speaker profile by record ID
+  return speakerProfiles.find((profile) => profile.id === speakerId)
 }
 
 export function EpisodeProfilesPanel({
@@ -176,13 +180,13 @@ export function EpisodeProfilesPanel({
                         <AlertDialogHeader>
                           <AlertDialogTitle>{t('podcasts.deleteProfileTitle')}</AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t('podcasts.deleteProfileDesc').replace('{name}', profile.name)}
+                            {t('podcasts.deleteProfileDesc', { name: profile.name })}
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteProfile.mutate(profile.id)}
+                            onClick={() => deleteProfile.mutate({ profileId: profile.id, name: profile.name })}
                             disabled={deleteProfile.isPending}
                           >
                             {deleteProfile.isPending ? t('podcasts.deleting') : t('podcasts.delete')}
@@ -202,9 +206,7 @@ export function EpisodeProfilesPanel({
                       <p className="text-foreground">
                         {profile.outline_llm
                           ? (modelNameMap[profile.outline_llm] ?? profile.outline_llm)
-                          : (profile.outline_provider && profile.outline_model
-                            ? `${profile.outline_provider} / ${profile.outline_model}`
-                            : t('podcasts.notConfigured'))}
+                          : t('podcasts.notConfigured')}
                       </p>
                     </div>
                     <div>
@@ -214,9 +216,7 @@ export function EpisodeProfilesPanel({
                       <p className="text-foreground">
                         {profile.transcript_llm
                           ? (modelNameMap[profile.transcript_llm] ?? profile.transcript_llm)
-                          : (profile.transcript_provider && profile.transcript_model
-                            ? `${profile.transcript_provider} / ${profile.transcript_model}`
-                            : t('podcasts.notConfigured'))}
+                          : t('podcasts.notConfigured')}
                       </p>
                     </div>
                     <div>
@@ -239,14 +239,14 @@ export function EpisodeProfilesPanel({
                       </p>
                       <div className="flex items-center gap-2 text-foreground">
                         <Users className="h-4 w-4" />
-                        <span>{profile.speaker_config}</span>
+                        <span>
+                          {profile.speaker_config_name ??
+                            speakerSummary?.name ??
+                            t('podcasts.notConfigured')}
+                        </span>
                         {speakerSummary?.voice_model ? (
                           <Badge variant="outline" className="text-xs">
                             {modelNameMap[speakerSummary.voice_model] ?? speakerSummary.voice_model}
-                          </Badge>
-                        ) : speakerSummary?.tts_provider ? (
-                          <Badge variant="outline" className="text-xs">
-                            {speakerSummary.tts_provider} / {speakerSummary.tts_model}
                           </Badge>
                         ) : null}
                       </div>

@@ -19,7 +19,15 @@ interface ContextToggleProps {
   className?: string
 }
 
-export function ContextToggle({ mode, hasInsights = false, onChange, className }: ContextToggleProps) {
+export function ContextToggle<TMode extends ContextMode = ContextMode>({
+  mode,
+  hasInsights = false,
+  onChange,
+  className
+}: Omit<ContextToggleProps, 'mode' | 'onChange'> & {
+  mode: TMode
+  onChange: (mode: TMode) => void
+}) {
   const { t } = useTranslation()
 
   const MODE_CONFIG = {
@@ -46,9 +54,9 @@ export function ContextToggle({ mode, hasInsights = false, onChange, className }
   const Icon = config.icon
 
   // Determine available modes based on whether item has insights
-  const availableModes: ContextMode[] = hasInsights
+  const availableModes = (hasInsights
     ? ['off', 'insights', 'full']
-    : ['off', 'full']
+    : ['off', 'full']) as TMode[]
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation() // Prevent card click

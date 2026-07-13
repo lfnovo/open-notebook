@@ -6,34 +6,68 @@ by making minimal API calls to each provider, and to test individual model
 configurations end-to-end.
 """
 import io
+import json
 import os
 import struct
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 import httpx
+from esperanto import (
+    EmbeddingModel,
+    LanguageModel,
+    SpeechToTextModel,
+    TextToSpeechModel,
+)
+from esperanto.common_types import ChatCompletion
 from loguru import logger
 
-# Test models for each provider - uses minimal/cheapest models for testing
-# Format: (model_name, model_type)
-TEST_MODELS = {
-    "openai": ("gpt-3.5-turbo", "language"),
-    "anthropic": ("claude-3-haiku-20240307", "language"),
-    "google": ("gemini-2.0-flash", "language"),
-    "groq": ("llama-3.1-8b-instant", "language"),
-    "mistral": ("mistral-small-latest", "language"),
-    "deepseek": ("deepseek-chat", "language"),
-    "xai": ("grok-beta", "language"),
-    "openrouter": ("openai/gpt-3.5-turbo", "language"),
-    "voyage": ("voyage-3-lite", "embedding"),
-    "elevenlabs": ("eleven_multilingual_v2", "text_to_speech"),
-    "deepgram": ("aura-2-thalia-en", "text_to_speech"),
-    "ollama": (None, "language"),  # Dynamic - will use first available model
-    # Complex providers with additional configuration
-    "vertex": ("gemini-2.0-flash", "language"),  # Uses Google Vertex AI
-    "azure": ("gpt-35-turbo", "language"),  # Azure OpenAI deployment name
-    "openai_compatible": (None, "language"),  # Dynamic - will use first available model
-    "dashscope": ("qwen-plus", "language"),
-    "minimax": ("MiniMax-M2.5", "language"),
+from open_notebook.ai.provider_registry import PROVIDERS
+from open_notebook.utils.url_validation import validate_url
+
+
+def _is_vertex_credentials_file_error(exc: Exception) -> bool:
+    """
+    True if `exc` came from loading a Vertex service-account file
+    (credentials_path - free text, no path validation; see
+    open_notebook/ai/key_provider.py).
+
+    Google's auth library raises distinguishable exceptions for "file
+    missing" (FileNotFoundError, an OSError), "not valid JSON"
+    (json.JSONDecodeError), and "valid JSON but wrong shape"
+    (google.auth.exceptions.GoogleAuthError) - confirmed by direct
+    reproduction. Echoing any of these back to an API caller turns
+    credential/model testing into a filesystem oracle: an attacker who can
+    create/test a Vertex credential could probe for the existence and
+    contents-shape of arbitrary files on the server. Callers should catch
+    these and return one generic message instead of the raw exception text.
+
+    Network failures are excluded even though they'd otherwise match
+    (ConnectionError/TimeoutError are OSError subclasses, TransportError a
+    GoogleAuthError subclass): they say nothing about the credentials file,
+    and classifying them here would tell a user with a blocked network to
+    go debug their file path. Letting them fall through reveals only the
+    error's category ("connection error"), which keeps the oracle closed.
+    """
+    from google.auth.exceptions import GoogleAuthError, TransportError
+
+    if isinstance(exc, (ConnectionError, TimeoutError, TransportError)):
+        return False
+    return isinstance(exc, (OSError, json.JSONDecodeError, GoogleAuthError))
+
+
+# Test models for each provider - uses minimal/cheapest models for testing.
+# Derived from the provider registry (the source of truth for test models).
+# Format: (model_name, model_type); None model = dynamic (first available).
+#
+# Prefer a provider-maintained floating alias where one exists, so a model
+# retirement doesn't silently break the connection test (see #970: Google
+# hard-shuts-down Gemini model ids on a schedule). `gemini-flash-latest`
+# is Google's alias for the current stable Flash model and moves forward on
+# its own. The provider test also no longer treats a model-level failure as
+# a connection failure (see `_connection_failure_reason`), so even if an
+# alias ever breaks, the test still reports the credentials correctly.
+TEST_MODELS: Dict[str, Tuple[Optional[str], str]] = {
+    name: (spec.test_model, spec.test_model_type) for name, spec in PROVIDERS.items()
 }
 
 
@@ -61,6 +95,10 @@ async def _test_azure_connection(
     test_endpoint = test_endpoint.rstrip("/")
 
     try:
+        # Re-validate at request time: the endpoint may have been saved
+        # against a hostname that only later resolved to an internal
+        # address (DNS rebinding), so a save-time check alone isn't enough.
+        await validate_url(test_endpoint, "azure")
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(
                 f"{test_endpoint}/openai/models?api-version={test_api_version}",
@@ -86,6 +124,8 @@ async def _test_azure_connection(
             else:
                 return False, f"Azure returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to Azure endpoint. Check the URL."
     except httpx.TimeoutException:
@@ -97,6 +137,8 @@ async def _test_azure_connection(
 async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
     """Test Ollama server connectivity."""
     try:
+        # Re-validate at request time (see _test_azure_connection for why).
+        await validate_url(base_url, "ollama")
         async with httpx.AsyncClient(timeout=10.0) as client:
             # Try /api/tags endpoint (standard Ollama)
             response = await client.get(f"{base_url}/api/tags")
@@ -121,6 +163,8 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
             else:
                 return False, f"Server returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to Ollama. Check if Ollama server is running."
     except httpx.TimeoutException:
@@ -132,6 +176,8 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
 async def _test_openai_compatible_connection(base_url: str, api_key: Optional[str] = None) -> Tuple[bool, str]:
     """Test OpenAI-compatible server connectivity."""
     try:
+        # Re-validate at request time (see _test_azure_connection for why).
+        await validate_url(base_url, "openai_compatible")
         headers = {}
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
@@ -160,6 +206,8 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
             else:
                 return False, f"Server returned status {response.status_code}"
 
+    except ValueError as e:
+        return False, str(e)
     except httpx.ConnectError:
         return False, "Cannot connect to server. Check the URL is correct."
     except httpx.TimeoutException:
@@ -233,24 +281,112 @@ def _get_test_audio() -> io.BytesIO:
         return _generate_test_wav()
 
 
-def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
-    """Normalize common error patterns into user-friendly messages."""
+def _connection_failure_reason(error_msg: str) -> Optional[str]:
+    """Classify whether an error means the provider is genuinely unreachable
+    or the credentials are rejected.
+
+    Returns a user-facing failure message for the only errors that actually
+    disprove a working provider connection — bad key (401), insufficient
+    permissions (403), and network/timeout failures. Returns None for
+    anything the provider itself returned *after* authenticating (a missing
+    or retired model, an unsupported request, a rate limit): reaching the
+    model layer at all proves the credentials and endpoint work, so those
+    are not connection failures. This is what keeps a retired test model
+    (see #970) from being misreported as a broken provider connection.
+    """
     lower = error_msg.lower()
 
     if "401" in error_msg or "unauthorized" in lower:
-        return False, "Invalid API key"
-    elif "403" in error_msg or "forbidden" in lower:
-        return False, "API key lacks required permissions"
-    elif "rate" in lower and "limit" in lower:
+        return "Invalid API key"
+    if "403" in error_msg or "forbidden" in lower:
+        return "API key lacks required permissions"
+    if "timeout" in lower or "timed out" in lower:
+        return "Connection timed out - check network/endpoint"
+    if (
+        "connection" in lower
+        or "network" in lower
+        or "getaddrinfo" in lower
+        or "name resolution" in lower
+        or "failed to establish" in lower
+    ):
+        return "Connection error - check network/endpoint"
+    return None
+
+
+def _is_rate_limit(error_msg: str) -> bool:
+    """True if the error is a throttling/quota response. Being rate-limited
+    proves the request authenticated, so callers treat this as connection-OK.
+    Covers the common phrasings across providers (429, quota, resource
+    exhausted) rather than just the literal words "rate limit"."""
+    lower = error_msg.lower()
+    return (
+        ("rate" in lower and "limit" in lower)
+        or "429" in error_msg
+        or "quota" in lower
+        or "resource has been exhausted" in lower
+        or "resource exhausted" in lower
+    )
+
+
+def _normalize_error_message(error_msg: str) -> Tuple[bool, str]:
+    """Normalize common error patterns into user-friendly messages.
+
+    Used by the *individual model* test, where the user is validating one
+    specific registered model — so a missing model IS a failure (unlike the
+    provider-level test, which only cares that the credentials work).
+    """
+    reason = _connection_failure_reason(error_msg)
+    if reason:
+        return False, reason
+
+    if _is_rate_limit(error_msg):
         return True, "Rate limited - but connection works"
-    elif "not found" in lower and "model" in lower:
+    lower = error_msg.lower()
+    if "not found" in lower and "model" in lower:
         return False, "Model not found on this provider"
-    elif "connection" in lower or "network" in lower:
-        return False, "Connection error - check network/endpoint"
-    elif "timeout" in lower:
-        return False, "Connection timed out - check network/endpoint"
 
     return False, error_msg
+
+
+# Substrings that indicate the provider answered but the *test model* is
+# missing/retired/unsupported - proof the credentials and endpoint work.
+# Only consulted for fixed-endpoint API-key providers (URL-based providers
+# are tested via their own handlers), so a "not found" here is about the
+# model, never a user-supplied base URL.
+_MODEL_UNAVAILABLE_MARKERS = (
+    "not found",
+    "not supported",
+    "does not exist",
+    "deprecated",
+    "unavailable",
+    "no longer available",
+)
+
+
+def classify_provider_test_error(error_msg: str) -> Tuple[bool, str]:
+    """Classify a provider connection-test exception into (success, message).
+
+    The provider test only asks "do these credentials reach a working
+    provider?" - so the sole real failures are a rejected key (401),
+    insufficient permissions (403), and an unreachable endpoint. Anything
+    the provider returned after authenticating - a rate limit, or a
+    missing/retired/unsupported test model - still proves the connection
+    works, so it's reported as success. This is the durable half of the
+    #970 fix: even if the hard-coded test model is retired, a valid key is
+    never misreported as a broken connection.
+    """
+    reason = _connection_failure_reason(error_msg)
+    if reason:
+        return False, reason
+
+    if _is_rate_limit(error_msg):
+        return True, "Rate limited - but connection works"
+    lower = error_msg.lower()
+    if any(marker in lower for marker in _MODEL_UNAVAILABLE_MARKERS):
+        return True, "API key valid (test model unavailable)"
+
+    truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
+    return False, f"Error: {truncated}"
 
 
 async def test_individual_model(model) -> Tuple[bool, str]:
@@ -273,13 +409,20 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return False, "Could not create model instance"
 
         if model.type == "language":
+            if not isinstance(esp_model, LanguageModel):
+                return False, f"Model type mismatch: expected a language model, got {type(esp_model).__name__}"
             response = await esp_model.achat_complete(
                 messages=[{"role": "user", "content": "Hi!"}]
             )
+            if not isinstance(response, ChatCompletion):
+                # Non-streaming call; a streaming response would be a bug upstream.
+                return True, "Connection successful (streaming response)"
             text = response.content[:100] if response.content else "(empty response)"
             return True, f"Response: {text}"
 
         elif model.type == "embedding":
+            if not isinstance(esp_model, EmbeddingModel):
+                return False, f"Model type mismatch: expected an embedding model, got {type(esp_model).__name__}"
             result = await esp_model.aembed(["This is a test."])
             if result and len(result) > 0:
                 dims = len(result[0])
@@ -287,6 +430,8 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return True, "Embedding successful"
 
         elif model.type == "text_to_speech":
+            if not isinstance(esp_model, TextToSpeechModel):
+                return False, f"Model type mismatch: expected a text-to-speech model, got {type(esp_model).__name__}"
             # For ElevenLabs, look up first available voice (API uses voice_id, not name)
             voice = DEFAULT_TEST_VOICES.get(model.provider)
             if not voice and hasattr(esp_model, "available_voices"):
@@ -299,20 +444,26 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             if not voice:
                 voice = "alloy"  # fallback
 
-            result = await esp_model.agenerate_speech(
+            audio = await esp_model.agenerate_speech(
                 text="Hello from Open Notebook", voice=voice
             )
-            if result and hasattr(result, "content"):
-                size = len(result.content)
+            if audio and hasattr(audio, "content"):
+                size = len(audio.content)
                 return True, f"Audio generated: {size} bytes"
             return True, "Speech generation successful"
 
         elif model.type == "speech_to_text":
+            if not isinstance(esp_model, SpeechToTextModel):
+                return False, f"Model type mismatch: expected a speech-to-text model, got {type(esp_model).__name__}"
             audio_file = _get_test_audio()
-            result = await esp_model.atranscribe(
+            transcription = await esp_model.atranscribe(
                 audio_file=audio_file, language="en"
             )
-            text = str(result.text).strip() if hasattr(result, "text") else str(result).strip()
+            text = (
+                str(transcription.text).strip()
+                if hasattr(transcription, "text")
+                else str(transcription).strip()
+            )
             if not text:
                 return True, "Connection successful (test clip produced no transcription)"
             return True, f"Transcription: {text[:100]}"
@@ -321,6 +472,10 @@ async def test_individual_model(model) -> Tuple[bool, str]:
             return False, f"Unsupported model type: {model.type}"
 
     except Exception as e:
+        if model.provider == "vertex" and _is_vertex_credentials_file_error(e):
+            logger.debug(f"Vertex credentials file error for model {model.id}: {e}")
+            return False, "Invalid or inaccessible credentials file"
+
         error_msg = str(e)
         success, normalized = _normalize_error_message(error_msg)
         if success:

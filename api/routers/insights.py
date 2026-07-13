@@ -3,7 +3,11 @@ from loguru import logger
 
 from api.models import NoteResponse, SaveAsNoteRequest, SourceInsightResponse
 from open_notebook.domain.notebook import SourceInsight
-from open_notebook.exceptions import InvalidInputError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -24,10 +28,12 @@ async def get_insight(insight_id: str):
             source_id=source.id or "",
             insight_type=insight.insight_type,
             content=insight.content,
-            created=str(insight.created),
-            updated=str(insight.updated),
+            created=insight.created.isoformat() if insight.created else None,
+            updated=insight.updated.isoformat() if insight.updated else None,
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching insight {insight_id}: {str(e)}")
@@ -46,6 +52,8 @@ async def delete_insight(insight_id: str):
 
         return {"message": "Insight deleted successfully"}
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error deleting insight {insight_id}: {str(e)}")
@@ -73,8 +81,12 @@ async def save_insight_as_note(insight_id: str, request: SaveAsNoteRequest):
         )
     except HTTPException:
         raise
+    except NotFoundError:
+        raise HTTPException(status_code=404, detail="Notebook not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error saving insight {insight_id} as note: {str(e)}")
         raise HTTPException(

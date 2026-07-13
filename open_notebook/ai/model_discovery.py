@@ -8,12 +8,13 @@ AI providers and automatically register them in the database.
 import asyncio
 import os
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 
 import httpx
 from loguru import logger
 
 from open_notebook.ai.models import Model
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
 from open_notebook.domain.credential import Credential
 
@@ -51,18 +52,18 @@ OPENAI_MODEL_TYPES = {
     "text_to_speech": ["tts"],
 }
 
-ANTHROPIC_MODELS = {
-    # Static list since Anthropic doesn't have a model listing API
-    "language": [
-        "claude-opus-4-20250514",
-        "claude-sonnet-4-20250514",
-        "claude-3-5-sonnet-20241022",
-        "claude-3-5-haiku-20241022",
-        "claude-3-opus-20240229",
-        "claude-3-sonnet-20240229",
-        "claude-3-haiku-20240307",
-    ],
-}
+# Fallback list used only when Anthropic's model listing API
+# (GET https://api.anthropic.com/v1/models) is unreachable or errors.
+ANTHROPIC_FALLBACK_MODELS = [
+    "claude-opus-4-8",
+    "claude-opus-4-7",
+    "claude-opus-4-6",
+    "claude-opus-4-5",
+    "claude-sonnet-5",
+    "claude-sonnet-4-6",
+    "claude-sonnet-4-5",
+    "claude-haiku-4-5",
+]
 
 GOOGLE_MODEL_TYPES = {
     "language": ["gemini", "palm", "bison", "chat"],
@@ -191,13 +192,62 @@ def classify_model_type(model_name: str, provider: str) -> str:
 
 
 # =============================================================================
-# Provider-Specific Model Discovery Functions
+# OpenAI-Compatible Provider Discovery (table-driven)
 # =============================================================================
+# All of these providers expose the same endpoint shape:
+#   GET {url} with "Authorization: Bearer {key}" -> {"data": [{"id": ...}, ...]}
+# Only the URL, the env var holding the key, and small per-provider quirks
+# differ, so they share one generic discovery function driven by this table.
 
 
-async def discover_openai_models() -> List[DiscoveredModel]:
-    """Fetch available models from OpenAI API."""
-    api_key = os.environ.get("OPENAI_API_KEY")
+def _classify_mistral(model: dict) -> str:
+    """Mistral quirk: trust the capabilities flag over name-based patterns."""
+    if model.get("capabilities", {}).get("completion_chat"):
+        return "language"
+    return classify_model_type(model.get("id", ""), "mistral")
+
+
+@dataclass(frozen=True)
+class ProviderDiscoverySpec:
+    """Spec for a provider with an OpenAI-compatible /models endpoint."""
+
+    url: str
+    env_var: str
+    # Optional quirk hooks; defaults are classify_model_type(id, provider)
+    # and no description.
+    classify: Optional[Callable[[dict], str]] = None
+    description: Optional[Callable[[dict], Optional[str]]] = None
+
+
+# Per-provider quirk hooks that can't live in the (pure data) registry.
+_COMPAT_CLASSIFY: Dict[str, Callable[[dict], str]] = {
+    "mistral": _classify_mistral,
+    # OpenRouter models are typically language models
+    "openrouter": lambda model: "language",
+}
+_COMPAT_DESCRIPTION: Dict[str, Callable[[dict], Optional[str]]] = {
+    "openrouter": lambda model: model.get("name"),
+}
+
+# Built from the provider registry: every provider with an
+# `openai_compat_discovery_url` gets a discovery spec. The API key env var
+# is the provider's (single) required env var from the registry.
+OPENAI_COMPAT_PROVIDERS: Dict[str, ProviderDiscoverySpec] = {
+    name: ProviderDiscoverySpec(
+        url=spec.openai_compat_discovery_url,
+        env_var=spec.required_env[0],
+        classify=_COMPAT_CLASSIFY.get(name),
+        description=_COMPAT_DESCRIPTION.get(name),
+    )
+    for name, spec in PROVIDERS.items()
+    if spec.openai_compat_discovery_url
+}
+
+
+async def discover_openai_compatible_provider(provider: str) -> List[DiscoveredModel]:
+    """Fetch available models from a provider with an OpenAI-compatible API."""
+    spec = OPENAI_COMPAT_PROVIDERS[provider]
+    api_key = os.environ.get(spec.env_var)
     if not api_key:
         return []
 
@@ -205,7 +255,7 @@ async def discover_openai_models() -> List[DiscoveredModel]:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                "https://api.openai.com/v1/models",
+                spec.url,
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=30.0,
             )
@@ -214,38 +264,112 @@ async def discover_openai_models() -> List[DiscoveredModel]:
 
             for model in data.get("data", []):
                 model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "openai")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="openai",
-                            model_type=model_type,
-                        )
+                if not model_id:
+                    continue
+                if spec.classify is not None:
+                    model_type = spec.classify(model)
+                else:
+                    model_type = classify_model_type(model_id, provider)
+                description = (
+                    spec.description(model) if spec.description is not None else None
+                )
+                models.append(
+                    DiscoveredModel(
+                        name=model_id,
+                        provider=provider,
+                        model_type=model_type,
+                        description=description,
                     )
+                )
     except Exception as e:
-        logger.warning(f"Failed to discover OpenAI models: {e}")
+        logger.warning(f"Failed to discover {provider} models: {e}")
 
     return models
 
 
+def _make_openai_compat_discoverer(
+    provider: str,
+) -> Callable[[], Awaitable[List[DiscoveredModel]]]:
+    async def _discover() -> List[DiscoveredModel]:
+        return await discover_openai_compatible_provider(provider)
+
+    _discover.__name__ = f"discover_{provider}_models"
+    _discover.__doc__ = f"Fetch available models from the {provider} API."
+    return _discover
+
+
+# Kept as module-level names so existing imports/patches keep working.
+discover_openai_models = _make_openai_compat_discoverer("openai")
+discover_groq_models = _make_openai_compat_discoverer("groq")
+discover_mistral_models = _make_openai_compat_discoverer("mistral")
+discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
+discover_xai_models = _make_openai_compat_discoverer("xai")
+discover_openrouter_models = _make_openai_compat_discoverer("openrouter")
+discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
+discover_minimax_models = _make_openai_compat_discoverer("minimax")
+
+
+# =============================================================================
+# Bespoke Provider Discovery Functions
+# =============================================================================
+
+
+async def fetch_anthropic_model_ids(api_key: str) -> List[str]:
+    """
+    Fetch model ids from Anthropic's model listing API.
+
+    Uses GET https://api.anthropic.com/v1/models with pagination
+    (after_id/has_more cursors). Raises on any HTTP or network error —
+    callers decide whether to fall back to ANTHROPIC_FALLBACK_MODELS.
+    """
+    model_ids: List[str] = []
+    params: Dict[str, str] = {"limit": "100"}
+    async with httpx.AsyncClient() as client:
+        # Hard page cap as a safety net against a misbehaving cursor.
+        for _ in range(20):
+            response = await client.get(
+                "https://api.anthropic.com/v1/models",
+                headers={
+                    "x-api-key": api_key,
+                    "anthropic-version": "2023-06-01",
+                },
+                params=params,
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            data = response.json()
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_ids.append(model_id)
+            if not data.get("has_more") or not data.get("last_id"):
+                break
+            params["after_id"] = data["last_id"]
+    return model_ids
+
+
 async def discover_anthropic_models() -> List[DiscoveredModel]:
-    """Return static list of Anthropic models (no discovery API available)."""
+    """Fetch available models from Anthropic's model listing API."""
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         return []
 
-    # Anthropic doesn't have a model listing API, so we use a static list
-    models = []
-    for model_name in ANTHROPIC_MODELS.get("language", []):
-        models.append(
-            DiscoveredModel(
-                name=model_name,
-                provider="anthropic",
-                model_type="language",
-            )
+    try:
+        model_names = await fetch_anthropic_model_ids(api_key)
+    except Exception as e:
+        logger.warning(
+            f"Failed to discover Anthropic models, using static fallback: {e}"
         )
-    return models
+        model_names = list(ANTHROPIC_FALLBACK_MODELS)
+
+    return [
+        DiscoveredModel(
+            name=model_name,
+            provider="anthropic",
+            model_type=classify_model_type(model_name, "anthropic"),
+        )
+        for model_name in model_names
+    ]
 
 
 async def discover_google_models() -> List[DiscoveredModel]:
@@ -265,7 +389,7 @@ async def discover_google_models() -> List[DiscoveredModel]:
             data = response.json()
 
             for model in data.get("models", []):
-                # Google returns full path like "models/gemini-1.5-flash"
+                # Google returns full path like "models/gemini-2.5-flash"
                 model_name = model.get("name", "").replace("models/", "")
                 if model_name:
                     model_type = classify_model_type(model_name, "google")
@@ -320,182 +444,6 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
                     )
     except Exception as e:
         logger.warning(f"Failed to discover Ollama models: {e}")
-
-    return models
-
-
-async def discover_groq_models() -> List[DiscoveredModel]:
-    """Fetch available models from Groq API."""
-    api_key = os.environ.get("GROQ_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.groq.com/openai/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "groq")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="groq",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover Groq models: {e}")
-
-    return models
-
-
-async def discover_mistral_models() -> List[DiscoveredModel]:
-    """Fetch available models from Mistral API."""
-    api_key = os.environ.get("MISTRAL_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.mistral.ai/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "mistral")
-                    # Check capabilities if available
-                    capabilities = model.get("capabilities", {})
-                    if capabilities.get("completion_chat"):
-                        model_type = "language"
-
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="mistral",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover Mistral models: {e}")
-
-    return models
-
-
-async def discover_deepseek_models() -> List[DiscoveredModel]:
-    """Fetch available models from DeepSeek API."""
-    api_key = os.environ.get("DEEPSEEK_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.deepseek.com/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "deepseek")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="deepseek",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover DeepSeek models: {e}")
-
-    return models
-
-
-async def discover_xai_models() -> List[DiscoveredModel]:
-    """Fetch available models from xAI API."""
-    api_key = os.environ.get("XAI_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.x.ai/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "xai")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="xai",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover xAI models: {e}")
-
-    return models
-
-
-async def discover_openrouter_models() -> List[DiscoveredModel]:
-    """Fetch available models from OpenRouter API."""
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://openrouter.ai/api/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    # OpenRouter models are typically language models
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="openrouter",
-                            model_type="language",
-                            description=model.get("name"),
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover OpenRouter models: {e}")
 
     return models
 
@@ -577,74 +525,6 @@ async def discover_deepgram_models() -> List[DiscoveredModel]:
         DiscoveredModel(name=m, provider="deepgram", model_type="text_to_speech")
         for m in deepgram_voices
     ]
-
-
-async def discover_dashscope_models() -> List[DiscoveredModel]:
-    """Fetch available models from DashScope (Qwen) API."""
-    api_key = os.environ.get("DASHSCOPE_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "dashscope")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="dashscope",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover DashScope models: {e}")
-
-    return models
-
-
-async def discover_minimax_models() -> List[DiscoveredModel]:
-    """Fetch available models from MiniMax API."""
-    api_key = os.environ.get("MINIMAX_API_KEY")
-    if not api_key:
-        return []
-
-    models = []
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                "https://api.minimax.io/v1/models",
-                headers={"Authorization": f"Bearer {api_key}"},
-                timeout=30.0,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            for model in data.get("data", []):
-                model_id = model.get("id", "")
-                if model_id:
-                    model_type = classify_model_type(model_id, "minimax")
-                    models.append(
-                        DiscoveredModel(
-                            name=model_id,
-                            provider="minimax",
-                            model_type=model_type,
-                        )
-                    )
-    except Exception as e:
-        logger.warning(f"Failed to discover MiniMax models: {e}")
-
-    return models
 
 
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
@@ -847,7 +727,7 @@ async def sync_all_providers() -> Dict[str, Tuple[int, int, int]]:
     task_results = await asyncio.gather(*tasks, return_exceptions=True)
 
     for provider, result in zip(providers, task_results):
-        if isinstance(result, Exception):
+        if isinstance(result, BaseException):
             logger.error(f"Error syncing {provider}: {result}")
             results[provider] = (0, 0, 0)
         else:

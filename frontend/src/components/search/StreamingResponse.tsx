@@ -6,8 +6,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { CheckCircle, Sparkles, Lightbulb, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
-import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
+import { MarkdownRenderer } from '@/components/ui/markdown-renderer'
 import { convertReferencesToMarkdownLinks, createReferenceLinkComponent } from '@/lib/utils/source-references'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -46,7 +45,7 @@ export function StreamingResponse({
       // This try-catch is here for future enhancements or unexpected errors.
     } catch {
       const typeLabel = type === 'source_insight' ? 'insight' : type
-      toast.error(t('common.itemNotFound').replace('{type}', typeLabel))
+      toast.error(t('common.itemNotFound', { type: typeLabel }))
     }
   }
 
@@ -56,7 +55,7 @@ export function StreamingResponse({
 
   return (
     <div
-      className="space-y-4 mt-6 max-h-[60vh] overflow-y-auto pr-2"
+      className="space-y-4 mt-6"
       role="region"
       aria-label={t('common.accessibility.askResponse')}
       aria-live="polite"
@@ -111,7 +110,7 @@ export function StreamingResponse({
               <CollapsibleTrigger className="flex items-center justify-between w-full hover:opacity-80">
                 <CardTitle className="text-base flex items-center gap-2">
                   <Lightbulb className="h-4 w-4 text-primary" />
-                  {t('common.individualAnswers').replace('{count}', answers.length.toString())}
+                  {t('common.individualAnswers', { count: answers.length })}
                 </CardTitle>
                 <ChevronDown className={`h-4 w-4 transition-transform ${answersOpen ? 'rotate-180' : ''}`} />
               </CollapsibleTrigger>
@@ -173,25 +172,10 @@ function FinalAnswerContent({
   const LinkComponent = createReferenceLinkComponent(onReferenceClick)
 
   return (
-    <div className="prose prose-sm max-w-none dark:prose-invert break-words prose-a:break-all prose-p:leading-relaxed prose-headings:mt-4 prose-headings:mb-2">
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          a: LinkComponent,
-          table: ({ children }) => (
-            <div className="my-4 overflow-x-auto">
-              <table className="min-w-full border-collapse border border-border">{children}</table>
-            </div>
-          ),
-          thead: ({ children }) => <thead className="bg-muted">{children}</thead>,
-          tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => <tr className="border-b border-border">{children}</tr>,
-          th: ({ children }) => <th className="border border-border px-3 py-2 text-left font-semibold">{children}</th>,
-          td: ({ children }) => <td className="border border-border px-3 py-2">{children}</td>,
-        }}
-      >
-        {markdownWithLinks}
-      </ReactMarkdown>
-    </div>
+    <MarkdownRenderer components={{
+      a: LinkComponent
+    }}>
+      {markdownWithLinks}
+    </MarkdownRenderer>
   )
 }

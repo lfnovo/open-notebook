@@ -12,7 +12,7 @@ to ensure consistent behavior and proper handling of large content.
 
 import asyncio
 import os
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
 import numpy as np
 from loguru import logger
@@ -45,11 +45,6 @@ def _get_embedding_batch_size() -> int:
 EMBEDDING_BATCH_SIZE = _get_embedding_batch_size()
 EMBEDDING_MAX_RETRIES = 3
 EMBEDDING_RETRY_DELAY = 2  # seconds
-
-# Lazy import to avoid circular dependency:
-# utils -> embedding -> models -> key_provider -> provider_config -> utils
-if TYPE_CHECKING:
-    from open_notebook.ai.models import ModelManager
 
 
 async def mean_pool_embeddings(embeddings: List[List[float]]) -> List[float]:

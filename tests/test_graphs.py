@@ -6,12 +6,13 @@ without heavy mocking of the actual processing logic.
 """
 
 from datetime import datetime
+from typing import cast
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from langchain_core.runnables import RunnableConfig
 
 from open_notebook.domain.notebook import Source
-
 from open_notebook.graphs.prompt import PatternChainState, graph
 from open_notebook.graphs.tools import get_current_timestamp
 from open_notebook.graphs.transformation import (
@@ -32,7 +33,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_format(self):
         """Test timestamp tool returns correct format."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.invoke({})
 
         assert isinstance(timestamp, str)
         assert len(timestamp) == 14  # YYYYMMDDHHmmss format
@@ -40,7 +41,7 @@ class TestGraphTools:
 
     def test_get_current_timestamp_validity(self):
         """Test timestamp represents valid datetime."""
-        timestamp = get_current_timestamp.func()
+        timestamp = get_current_timestamp.invoke({})
 
         # Parse it back to datetime to verify validity
         year = int(timestamp[0:4])
@@ -142,7 +143,7 @@ class TestTransformationGraph:
             "source": None,
         }
 
-        config = {"configurable": {"model_id": None}}
+        config: RunnableConfig = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
             await run_transformation(state, config)
@@ -165,28 +166,26 @@ class TestSaveSourceTitlePreservation:
     @pytest.mark.asyncio
     @patch("open_notebook.graphs.source.Source.get")
     async def test_custom_title_preserved(self, mock_get):
-        """User-set title is NOT overwritten by content_state.title."""
-        from open_notebook.graphs.source import save_source
+        """User-set title is NOT overwritten by the extracted title."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "My Custom Research Title"
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "video.mp4"
-        content_state.url = "https://example.com"
-        content_state.file_path = None
-        content_state.content = "Some content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": "https://example.com", "file_path": None},
+            "extraction": ExtractionOutput(title="video.mp4", content="Some content"),
             "embed": False,
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "My Custom Research Title"
         mock_source.save.assert_awaited_once()
@@ -195,27 +194,27 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_placeholder_title_replaced(self, mock_get):
         """Placeholder 'Processing...' title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = "Processing..."
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Article Title"
-        content_state.url = "https://example.com"
-        content_state.file_path = None
-        content_state.content = "Some content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": "https://example.com", "file_path": None},
+            "extraction": ExtractionOutput(
+                title="Extracted Article Title", content="Some content"
+            ),
             "embed": False,
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Article Title"
         mock_source.save.assert_awaited_once()
@@ -224,27 +223,25 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_none_title_replaced(self, mock_get):
         """None title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = None
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Title"
-        content_state.url = None
-        content_state.file_path = "/tmp/file.pdf"
-        content_state.content = "Content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": None, "file_path": "/tmp/file.pdf"},
+            "extraction": ExtractionOutput(title="Extracted Title", content="Content"),
             "embed": False,
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()
@@ -253,30 +250,177 @@ class TestSaveSourceTitlePreservation:
     @patch("open_notebook.graphs.source.Source.get")
     async def test_empty_title_replaced(self, mock_get):
         """Empty string title IS replaced by extracted title."""
-        from open_notebook.graphs.source import save_source
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, save_source
 
         mock_source = MagicMock(spec=Source)
         mock_source.title = ""
         mock_source.save = AsyncMock()
         mock_get.return_value = mock_source
 
-        content_state = MagicMock()
-        content_state.title = "Extracted Title"
-        content_state.url = None
-        content_state.file_path = None
-        content_state.content = "Content"
-
         state = {
             "source_id": "source:123",
-            "content_state": content_state,
+            "content_state": {"url": None, "file_path": None},
+            "extraction": ExtractionOutput(title="Extracted Title", content="Content"),
             "embed": False,
             "apply_transformations": [],
         }
 
-        await save_source(state)
+        # cast: the node only reads these keys; SourceState is a total TypedDict
+        await save_source(cast(SourceState, state))
 
         assert mock_source.title == "Extracted Title"
         mock_source.save.assert_awaited_once()
+
+
+# ============================================================================
+# TEST SUITE 5: Source Graph - content_process (content-core 2.x)
+# ============================================================================
+
+
+class TestContentProcessDeleteSource:
+    """content-core 2.x no longer deletes the uploaded file; the graph must."""
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_uploaded_file_deleted_when_flag_set(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        # No STT default configured -> no audio override, no DB access.
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(
+            title="Doc", content="extracted text"
+        )
+
+        uploaded = tmp_path / "upload.pdf"
+        uploaded.write_text("data")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(uploaded), "delete_source": True},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        result = await content_process(cast(SourceState, state))
+
+        assert result["extraction"].content == "extracted text"
+        assert not uploaded.exists()  # file removed by the graph
+        mock_extract.assert_awaited_once()
+        # The broader YouTube transcript language list is wired into the config
+        # (content-core's own default is only en/es/pt).
+        config = mock_extract.await_args.kwargs["config"]
+        assert "de" in config.youtube_languages
+        assert "ja" in config.youtube_languages
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_uploaded_file_kept_when_flag_not_set(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(title="Doc", content="text")
+
+        uploaded = tmp_path / "upload.pdf"
+        uploaded.write_text("data")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"file_path": str(uploaded), "delete_source": False},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        assert uploaded.exists()  # file preserved
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_empty_extraction_raises_valueerror(
+        self, mock_model_manager, mock_extract, tmp_path
+    ):
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_extract.return_value = ExtractionOutput(title="", content="   ")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        with pytest.raises(ValueError):
+            await content_process(cast(SourceState, state))
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.ContentSettings")
+    @patch("open_notebook.graphs.source.extract_content")
+    @patch("open_notebook.graphs.source.ModelManager")
+    async def test_persisted_engines_wired_into_config(
+        self, mock_model_manager, mock_extract, mock_settings
+    ):
+        """The persisted content-processing engines reach ContentCoreConfig, so
+        a user-selected engine (e.g. crawl4ai) actually takes effect."""
+        from content_core.common import ExtractionOutput
+
+        from open_notebook.graphs.source import SourceState, content_process
+
+        mm_instance = MagicMock()
+        mm_instance.get_defaults = AsyncMock(
+            return_value=MagicMock(default_speech_to_text_model=None)
+        )
+        mock_model_manager.return_value = mm_instance
+        mock_settings.get_instance = AsyncMock(
+            return_value=MagicMock(
+                default_content_processing_engine_url="crawl4ai",
+                default_content_processing_engine_doc="docling",
+                docling_ocr=False,
+            )
+        )
+        mock_extract.return_value = ExtractionOutput(title="T", content="body")
+
+        state = {
+            "source_id": "source:123",
+            "content_state": {"url": "https://example.com"},
+            "embed": False,
+            "apply_transformations": [],
+        }
+
+        await content_process(cast(SourceState, state))
+
+        config = mock_extract.await_args.kwargs["config"]
+        assert config.url_engine == "crawl4ai"
+        assert config.document_engine == "docling"
+        assert config.docling_ocr is False
 
 
 if __name__ == "__main__":

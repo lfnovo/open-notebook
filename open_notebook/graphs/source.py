@@ -97,6 +97,22 @@ async def content_process(state: SourceState) -> dict:
 
     config = ContentCoreConfig(**config_kwargs) if config_kwargs else None
 
+    # Log the effective extraction engines so operators can confirm which engine
+    # actually ran (content-core logs its own dispatch only at DEBUG). Absent
+    # overrides fall back to content-core's "auto".
+    if content_state.get("url"):
+        target = "url"
+    elif content_state.get("file_path"):
+        target = "document"
+    else:
+        target = "content"
+    logger.info(
+        f"Extracting {target} via content-core "
+        f"(url_engine={config_kwargs.get('url_engine', 'auto')}, "
+        f"document_engine={config_kwargs.get('document_engine', 'auto')}, "
+        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')})"
+    )
+
     processed = await extract_content(
         url=content_state.get("url"),
         file_path=content_state.get("file_path"),

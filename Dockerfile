@@ -86,14 +86,6 @@ WORKDIR /app
 # Copy the virtual environment from the backend builder
 COPY --from=backend-builder /app/.venv /app/.venv
 
-# Install the Chromium runtime for the Crawl4AI URL engine so its local,
-# no-API-key mode works out of the box. Uses the playwright bundled in the venv
-# (via content-core[crawl4ai]); --with-deps pulls the required system libraries.
-# Pinned to a fixed path so it is found at runtime and survives volume mounts.
-ENV PLAYWRIGHT_BROWSERS_PATH=/app/pw-browsers
-RUN .venv/bin/python -m playwright install --with-deps chromium \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy the source code
 COPY . /app
 
@@ -114,9 +106,18 @@ ENV TIKTOKEN_CACHE_DIR=/app/tiktoken-cache
 # Bind the API to all interfaces (IPv4). Set API_HOST=:: for IPv6 dual-stack environments
 ENV API_HOST=0.0.0.0
 
+# Caches for the opt-in heavy extraction runtimes (Docling, Crawl4AI local).
+# These live UNDER /app/data so the user's volume mount persists them across
+# container restarts and upgrades: wheels (uv), the Chromium browser (playwright)
+# and Docling's ML models (huggingface) are downloaded once, then reused.
+# See scripts/docker-entrypoint.sh and docs/7-DEVELOPMENT/decisions/ADR-007-optin-runtimes.md.
+ENV UV_CACHE_DIR=/app/data/.cache/uv
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/data/.cache/playwright
+ENV HF_HOME=/app/data/.cache/huggingface
+
 # Data directory (volume-mounted by users) and supervisor log directory
 RUN mkdir -p /app/data /var/log/supervisor \
-    && chmod +x /app/scripts/wait-for-api.sh
+    && chmod +x /app/scripts/wait-for-api.sh /app/scripts/docker-entrypoint.sh
 
 # Copy supervisord configuration (shared programs: api, worker, frontend)
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
@@ -134,6 +135,9 @@ EXPOSE 8502 5055
 #
 # Example: docker run -e API_URL=https://your-domain.com/api ...
 
+# The entrypoint installs any opt-in heavy runtimes (Docling, Crawl4AI local)
+# enabled via OPEN_NOTEBOOK_ENABLE_* before handing off to CMD (supervisord).
+ENTRYPOINT ["/app/scripts/docker-entrypoint.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
 
 # Stage 5: Single-container variant (adds SurrealDB on top of the shared runtime)

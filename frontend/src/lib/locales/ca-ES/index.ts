@@ -755,6 +755,8 @@ export const caES = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
+    enableDoclingHint: "Docling és opcional. Activa'l amb OPEN_NOTEBOOK_ENABLE_DOCLING=true — s'instal·la en el primer arrencada (descàrrega gran).",
+    enableCrawl4aiHint: "Crawl4AI local és opcional. Activa'l amb OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true (s'instal·la en el primer arrencada), o defineix CRAWL4AI_API_URL per fer servir un servidor remot.",
     urlHelp: "· Firecrawl és un servei de pagament (amb nivell gratuït) i és molt potent. · Jina és una bona opció i també té un nivell gratuït. · Crawl4AI renderitza pàgines JavaScript localment (o mitjançant un servidor Crawl4AI quan CRAWL4AI_API_URL està definit), sense clau d'API. · Simple usarà l'extracció HTTP bàsica i no podrà accedir al contingut de llocs web basats en JavaScript. · Automàtic (recomanat) intentarà usar Firecrawl, després Jina, després Crawl4AI i, finalment, usarà simple.",
     embeddingAndSearch: "Incrustació i cerca",
     embeddingAndSearchDesc: "Configura les opcions de cerca i incrustació",

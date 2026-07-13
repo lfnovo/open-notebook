@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
+import { useCapabilities } from '@/lib/hooks/use-capabilities'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
@@ -29,7 +30,14 @@ type SettingsFormData = z.infer<typeof settingsSchema>
 export function SettingsForm() {
   const { t } = useTranslation()
   const { data: settings, isLoading, error } = useSettings()
+  const { data: capabilities } = useCapabilities()
   const updateSettings = useUpdateSettings()
+  // Opt-in heavy runtimes are installed on demand at container startup, so an
+  // engine is only offered when the backend probe confirms it's actually
+  // available. Default to available while the probe is loading to avoid a flash
+  // of disabled controls on a correctly-configured install.
+  const doclingAvailable = capabilities?.docling_available ?? true
+  const crawl4aiAvailable = capabilities?.crawl4ai_available ?? true
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     doc: false,
     url: false,
@@ -125,12 +133,15 @@ export function SettingsForm() {
                       </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
-                      <SelectItem value="docling">{t('settings.docling')}</SelectItem>
+                      <SelectItem value="docling" disabled={!doclingAvailable}>{t('settings.docling')}</SelectItem>
                       <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                     </SelectContent>
                   </Select>
               )}
             />
+            {!doclingAvailable && (
+              <p className="text-sm text-muted-foreground">{t('settings.enableDoclingHint')}</p>
+            )}
             <Collapsible open={expandedSections.doc} onOpenChange={() => toggleSection('doc')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.doc ? 'rotate-180' : ''}`} />
@@ -152,7 +163,7 @@ export function SettingsForm() {
                     id="docling_ocr"
                     checked={field.value ?? true}
                     onCheckedChange={field.onChange}
-                    disabled={field.disabled || isLoading}
+                    disabled={field.disabled || isLoading || !doclingAvailable}
                   />
                 )}
               />
@@ -181,12 +192,15 @@ export function SettingsForm() {
                     <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
                     <SelectItem value="firecrawl">{t('settings.firecrawl')}</SelectItem>
                     <SelectItem value="jina">{t('settings.jina')}</SelectItem>
-                    <SelectItem value="crawl4ai">{t('settings.crawl4ai')}</SelectItem>
+                    <SelectItem value="crawl4ai" disabled={!crawl4aiAvailable}>{t('settings.crawl4ai')}</SelectItem>
                     <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
+            {!crawl4aiAvailable && (
+              <p className="text-sm text-muted-foreground">{t('settings.enableCrawl4aiHint')}</p>
+            )}
              <Collapsible open={expandedSections.url} onOpenChange={() => toggleSection('url')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.url ? 'rotate-180' : ''}`} />

@@ -755,6 +755,8 @@ export const ruRU = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
+    enableDoclingHint: "Docling необязателен. Включите его с помощью OPEN_NOTEBOOK_ENABLE_DOCLING=true — он устанавливается при первом запуске (большая загрузка).",
+    enableCrawl4aiHint: "Локальный Crawl4AI необязателен. Включите его с помощью OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true (устанавливается при первом запуске) или задайте CRAWL4AI_API_URL для использования удалённого сервера.",
     urlHelp: "· Firecrawl — платный сервис (есть бесплатный уровень), очень мощный. · Jina тоже хороший вариант с бесплатным уровнем. · Crawl4AI отображает JavaScript-страницы локально (или через сервер Crawl4AI, если задан CRAWL4AI_API_URL), без ключа API. · Simple использует базовое HTTP-извлечение и пропустит контент на JavaScript-сайтах. · Авто (рекомендуется) попробует Firecrawl, затем Jina, затем Crawl4AI, затем Simple.",
     embeddingAndSearch: "Эмбеддинг и поиск",
     embeddingAndSearchDesc: "Настройте параметры поиска и эмбеддинга",

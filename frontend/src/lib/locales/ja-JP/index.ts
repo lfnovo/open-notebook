@@ -755,6 +755,8 @@ export const jaJP = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
+    enableDoclingHint: "Docling は任意です。OPEN_NOTEBOOK_ENABLE_DOCLING=true で有効化すると、初回起動時にインストールされます（大容量のダウンロード）。",
+    enableCrawl4aiHint: "ローカルの Crawl4AI は任意です。OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true で有効化すると初回起動時にインストールされます。リモートサーバーを使う場合は CRAWL4AI_API_URL を設定してください。",
     urlHelp: "・Firecrawlは有料サービス（無料枠あり）で非常に強力です。・Jinaも良いオプションで無料枠があります。・Crawl4AIはAPIキーなしでJavaScriptページをローカルで（またはCRAWL4AI_API_URLを設定した場合はCrawl4AIサーバー経由で）レンダリングします。・シンプルは基本的なHTTP抽出を使用し、JavaScriptベースのウェブサイトのコンテンツを取得できない場合があります。・自動（推奨）はFirecrawl、Jina、Crawl4AI、最後にシンプルの順で試みます。",
     embeddingAndSearch: "Embeddingと検索",
     embeddingAndSearchDesc: "検索とEmbeddingオプションを設定",

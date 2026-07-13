@@ -23,7 +23,8 @@ frontend/out
 frontend/.env*
 frontend/*.log
 
-# Project data
+# Local tooling / agent working dirs (can contain full .venv + node_modules)
+.claude
 .antigravity
 .gemini
 tmp

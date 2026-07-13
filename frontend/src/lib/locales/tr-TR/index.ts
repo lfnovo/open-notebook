@@ -755,6 +755,8 @@ export const trTR = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
+    enableDoclingHint: "Docling isteğe bağlıdır. OPEN_NOTEBOOK_ENABLE_DOCLING=true ile etkinleştirin — ilk açılışta kurulur (büyük indirme).",
+    enableCrawl4aiHint: "Yerel Crawl4AI isteğe bağlıdır. OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true ile etkinleştirin (ilk açılışta kurulur) veya uzak bir sunucu kullanmak için CRAWL4AI_API_URL ayarlayın.",
     urlHelp: "· Firecrawl ücretli bir hizmettir (ücretsiz katmanı ile) ve çok güçlüdür. · Jina da iyi bir seçenektir ve ücretsiz katmanı vardır. · Crawl4AI, JavaScript sayfalarını API anahtarı olmadan yerel olarak (veya CRAWL4AI_API_URL ayarlandığında bir Crawl4AI sunucusu aracılığıyla) işler. · Basit, temel HTTP çıkarımını kullanır ve JavaScript tabanlı web sitelerindeki içerikleri kaçırır. · Otomatik (önerilen) önce firecrawl, sonra Jina, sonra Crawl4AI'yi dener ve son olarak basit'e geri döner.",
     embeddingAndSearch: "Gömme ve Arama",
     embeddingAndSearchDesc: "Arama ve gömme seçeneklerini yapılandırın",

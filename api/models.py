@@ -593,6 +593,29 @@ class ProviderInfoResponse(BaseModel):
     )
 
 
+class CapabilitiesResponse(BaseModel):
+    """Runtime availability of the opt-in heavy extraction engines.
+
+    Reflects what is actually importable/reachable in this container — not merely
+    what the OPEN_NOTEBOOK_ENABLE_* flags request — so the UI can gate engine
+    options honestly (e.g. still show "unavailable" while a first-boot install
+    is in progress). See docs/7-DEVELOPMENT/decisions/ADR-007-optin-runtimes.md.
+    """
+
+    docling_available: bool = Field(
+        ...,
+        description="Docling is installed: the docling document engine, OCR toggle and image sources work.",
+    )
+    crawl4ai_available: bool = Field(
+        ...,
+        description="Crawl4AI is usable: the local package is installed OR a remote server is configured.",
+    )
+    crawl4ai_remote_configured: bool = Field(
+        ...,
+        description="A remote Crawl4AI endpoint is configured via CRAWL4AI_API_URL (no local install needed).",
+    )
+
+
 class CreateCredentialRequest(BaseModel):
     """Request to create a new credential."""
 

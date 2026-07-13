@@ -755,6 +755,8 @@ export const itIT = {
     firecrawl: "Firecrawl",
     jina: "Jina",
     crawl4ai: "Crawl4AI",
+    enableDoclingHint: "Docling è facoltativo. Abilitalo con OPEN_NOTEBOOK_ENABLE_DOCLING=true — viene installato al primo avvio (download di grandi dimensioni).",
+    enableCrawl4aiHint: "Crawl4AI locale è facoltativo. Abilitalo con OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true (installato al primo avvio), oppure imposta CRAWL4AI_API_URL per usare un server remoto.",
     urlHelp: "· Firecrawl è un servizio a pagamento (con piano gratuito), molto potente. · Jina è una buona alternativa con piano gratuito. · Crawl4AI renderizza le pagine JavaScript localmente (o tramite un server Crawl4AI quando CRAWL4AI_API_URL è impostato), senza chiave API. · Semplice usa estrazione HTTP base e perderà contenuto su siti basati su javascript. · Auto (consigliato) proverà firecrawl, poi Jina, poi Crawl4AI, infine semplice come fallback.",
     embeddingAndSearch: "Indicizzazione e ricerca",
     embeddingAndSearchDesc: "Configura opzioni di ricerca e indicizzazione",

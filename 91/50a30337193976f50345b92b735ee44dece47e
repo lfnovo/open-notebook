@@ -1,0 +1,19 @@
+open_notebook/graphs/source.py
+  s_6b3d93d262fda1::t_d1d1ab95e41727 100-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "9150a30337193976f50345b92b735ee44dece47e",
+  "prompts": {},
+  "sessions": {
+    "s_6b3d93d262fda1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d36595df-643a-4441-9e25-63bb41505341",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

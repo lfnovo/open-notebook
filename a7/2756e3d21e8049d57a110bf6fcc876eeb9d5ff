@@ -1,0 +1,22 @@
+frontend/src/app/(dashboard)/settings/components/SettingsForm.tsx
+  s_7ddc9b6ed4c681::t_c7c02f65439b15 33,37-42
+frontend/src/app/(dashboard)/settings/components/SettingsForm.test.tsx
+  s_7ddc9b6ed4c681::t_96f86956ee4956 95-106
+  s_7ddc9b6ed4c681::t_40012eea096bf1 37,45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "a72756e3d21e8049d57a110bf6fcc876eeb9d5ff",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

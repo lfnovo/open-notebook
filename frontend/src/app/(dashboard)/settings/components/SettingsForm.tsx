@@ -30,14 +30,16 @@ type SettingsFormData = z.infer<typeof settingsSchema>
 export function SettingsForm() {
   const { t } = useTranslation()
   const { data: settings, isLoading, error } = useSettings()
-  const { data: capabilities } = useCapabilities()
+  const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
   // Opt-in heavy runtimes are installed on demand at container startup, so an
   // engine is only offered when the backend probe confirms it's actually
-  // available. Default to available while the probe is loading to avoid a flash
-  // of disabled controls on a correctly-configured install.
-  const doclingAvailable = capabilities?.docling_available ?? true
-  const crawl4aiAvailable = capabilities?.crawl4ai_available ?? true
+  // available. While the probe is still loading, default to available to avoid a
+  // flash of disabled controls on a correctly-configured install; but if the
+  // probe *fails*, fail closed (treat as unavailable) rather than advertising an
+  // engine the backend couldn't verify.
+  const doclingAvailable = capabilities?.docling_available ?? !capabilitiesError
+  const crawl4aiAvailable = capabilities?.crawl4ai_available ?? !capabilitiesError
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     doc: false,
     url: false,

@@ -34,7 +34,7 @@ const settingsData = {
   docling_ocr: true,
 }
 
-function mockCapabilities(caps: unknown) {
+function mockCapabilities(caps: unknown, { isError = false } = {}) {
   ;(useSettings as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     data: settingsData,
     isLoading: false,
@@ -42,6 +42,7 @@ function mockCapabilities(caps: unknown) {
   })
   ;(useCapabilities as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
     data: caps,
+    isError,
   })
 }
 
@@ -90,5 +91,17 @@ describe('SettingsForm engine gating', () => {
     expect(
       screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
     ).not.toBeDisabled()
+  })
+
+  it('fails closed when the capability probe errors', () => {
+    mockCapabilities(undefined, { isError: true })
+    render(<SettingsForm />)
+
+    // A failed probe must not advertise engines the backend couldn't verify.
+    expect(screen.getByText('settings.enableDoclingHint')).toBeInTheDocument()
+    expect(screen.getByText('settings.enableCrawl4aiHint')).toBeInTheDocument()
+    expect(
+      screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
+    ).toBeDisabled()
   })
 })

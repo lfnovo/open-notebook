@@ -1,0 +1,22 @@
+tests/test_capabilities_api.py
+  s_7ddc9b6ed4c681::t_2957afa8651439 105-128
+api/routers/capabilities.py
+  s_7ddc9b6ed4c681::t_494281e8e99dca 17
+  s_7ddc9b6ed4c681::t_71af7fa10efa65 60-69,77-81,83-85,87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.12",
+  "base_commit_sha": "259905b9cdf8ac754c841169b7b3244de17b17ad",
+  "prompts": {},
+  "sessions": {
+    "s_7ddc9b6ed4c681": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b2ff6dd0-24fe-49f6-af48-1474a7832501",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

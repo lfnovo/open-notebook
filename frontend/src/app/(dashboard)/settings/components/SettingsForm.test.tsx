@@ -60,8 +60,10 @@ describe('SettingsForm engine gating', () => {
 
     expect(screen.getByText('settings.enableDoclingHint')).toBeInTheDocument()
     expect(screen.getByText('settings.enableCrawl4aiHint')).toBeInTheDocument()
-    // Radix Checkbox renders a button with role="checkbox".
-    expect(screen.getByRole('checkbox')).toBeDisabled()
+    // Target the OCR toggle by its accessible name (from the associated Label).
+    expect(
+      screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
+    ).toBeDisabled()
   })
 
   it('enables OCR and hides the hints when the runtimes are available', () => {
@@ -74,7 +76,9 @@ describe('SettingsForm engine gating', () => {
 
     expect(screen.queryByText('settings.enableDoclingHint')).not.toBeInTheDocument()
     expect(screen.queryByText('settings.enableCrawl4aiHint')).not.toBeInTheDocument()
-    expect(screen.getByRole('checkbox')).not.toBeDisabled()
+    expect(
+      screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
+    ).not.toBeDisabled()
   })
 
   it('treats runtimes as available while the capability probe is still loading', () => {
@@ -83,6 +87,8 @@ describe('SettingsForm engine gating', () => {
 
     // Optimistic default avoids a flash of disabled controls on a working setup.
     expect(screen.queryByText('settings.enableDoclingHint')).not.toBeInTheDocument()
-    expect(screen.getByRole('checkbox')).not.toBeDisabled()
+    expect(
+      screen.getByRole('checkbox', { name: 'settings.ocrEnabled' })
+    ).not.toBeDisabled()
   })
 })

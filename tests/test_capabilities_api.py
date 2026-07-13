@@ -7,8 +7,6 @@ These tests lock the composition rule: crawl4ai_available is true when EITHER a
 local package is installed OR a remote server is configured.
 """
 
-import importlib.util
-
 import pytest
 from fastapi.testclient import TestClient
 
@@ -28,14 +26,10 @@ def _patch_probes(monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote):
         "api.routers.capabilities._crawl4ai_remote_configured",
         lambda: crawl4ai_remote,
     )
-    real_find_spec = importlib.util.find_spec
-
-    def fake_find_spec(name, *args, **kwargs):
-        if name == "crawl4ai":
-            return object() if crawl4ai_local else None
-        return real_find_spec(name, *args, **kwargs)
-
-    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    # Local readiness means package installed AND a Chromium browser present.
+    monkeypatch.setattr(
+        "api.routers.capabilities._crawl4ai_local_ready", lambda: crawl4ai_local
+    )
 
 
 class TestCapabilitiesEndpoint:
@@ -76,3 +70,35 @@ class TestCapabilitiesEndpoint:
         body = client.get("/api/capabilities").json()
         assert body["crawl4ai_available"] is True
         assert body["crawl4ai_remote_configured"] is True
+
+
+class TestCrawl4aiLocalReadiness:
+    """Local Crawl4AI needs the package AND a Chromium browser on disk."""
+
+    def test_not_ready_when_package_missing(self, monkeypatch):
+        import api.routers.capabilities as cap
+
+        monkeypatch.setattr(
+            cap.importlib.util, "find_spec", lambda name, *a, **k: None
+        )
+        assert cap._crawl4ai_local_ready() is False
+
+    def test_not_ready_when_browser_missing(self, monkeypatch, tmp_path):
+        import api.routers.capabilities as cap
+
+        monkeypatch.setattr(
+            cap.importlib.util, "find_spec", lambda name, *a, **k: object()
+        )
+        # PLAYWRIGHT_BROWSERS_PATH set to an empty dir → no chromium installed.
+        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
+        assert cap._crawl4ai_local_ready() is False
+
+    def test_ready_when_browser_present(self, monkeypatch, tmp_path):
+        import api.routers.capabilities as cap
+
+        monkeypatch.setattr(
+            cap.importlib.util, "find_spec", lambda name, *a, **k: object()
+        )
+        (tmp_path / "chromium-1140").mkdir()
+        monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
+        assert cap._crawl4ai_local_ready() is True

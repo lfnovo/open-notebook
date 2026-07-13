@@ -224,6 +224,7 @@ async def get_notebook_delete_preview(notebook_id: str):
             note_count=preview["note_count"],
             exclusive_source_count=preview["exclusive_source_count"],
             shared_source_count=preview["shared_source_count"],
+            chat_session_count=preview["chat_session_count"],
         )
     except HTTPException:
         raise
@@ -429,7 +430,7 @@ async def delete_notebook(
     """
     Delete a notebook with cascade deletion.
 
-    Always deletes all notes associated with the notebook.
+    Always deletes all notes and chat sessions associated with the notebook.
     If delete_exclusive_sources is True, also deletes sources that belong only
     to this notebook (not linked to any other notebooks).
     """
@@ -445,6 +446,7 @@ async def delete_notebook(
             deleted_notes=result["deleted_notes"],
             deleted_sources=result["deleted_sources"],
             unlinked_sources=result["unlinked_sources"],
+            deleted_chat_sessions=result["deleted_chat_sessions"],
         )
     except HTTPException:
         raise

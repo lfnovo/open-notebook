@@ -10,9 +10,9 @@ How podcast generation is modeled and executed: the two-tier profile system, the
 
 ## Model registry references, not strings
 
-Profile fields reference `Model` records instead of raw provider/model strings. At generation time `_resolve_model_config(model_id)` loads the Model, resolves its linked credential (or falls back to `provision_provider_keys()`), and returns `(provider, model_name, config)` for podcast-creator. Legacy string fields (`tts_provider`, `outline_provider`, …) still exist as nullable columns for migration compatibility but are **ignored at runtime**.
+Profile fields reference `Model` records instead of raw provider/model strings. At generation time `_resolve_model_config(model_id)` loads the Model, resolves its linked credential (or falls back to `provision_provider_keys()`), and returns `(provider, model_name, config)` for podcast-creator.
 
-`migration.py` converts legacy profiles on API startup (after SQL migrations): idempotent, skips already-migrated profiles, and auto-creates a Model record when a legacy string has no match but a credential exists for that provider.
+The legacy string fields (`tts_provider`, `outline_provider`, …) that predated the registry were dropped by SQL migration 22 (#1107). The migration best-effort maps any still-unresolved profile to an existing `model` record (provider + name + type) before dropping the columns; profiles with no matching record stay unresolved — the UI already flags them as needing model selection and the user re-picks once. The old startup data migration (`open_notebook/podcasts/migration.py`) is gone.
 
 ## Profile snapshots
 

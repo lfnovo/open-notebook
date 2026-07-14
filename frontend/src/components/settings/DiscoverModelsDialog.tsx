@@ -18,13 +18,8 @@ import { Plus, Loader2, AlertCircle } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useDiscoverModels, useRegisterModels } from '@/lib/hooks/use-credentials'
 import { Credential, DiscoveredModel } from '@/lib/api/credentials'
-import {
-  ModelType,
-  PROVIDER_DISPLAY_NAMES,
-  PROVIDER_MODALITIES,
-  TYPE_ICONS,
-  TYPE_LABELS,
-} from '@/lib/providers'
+import { useProviders } from '@/lib/hooks/use-providers'
+import { getTypeIcon, getTypeLabel } from '@/lib/providers'
 
 interface DiscoverModelsDialogProps {
   open: boolean
@@ -40,6 +35,11 @@ export function DiscoverModelsDialog({
   const { t } = useTranslation()
   const discoverModels = useDiscoverModels()
   const registerModels = useRegisterModels()
+  const { data: providers } = useProviders()
+  const providerInfo = useMemo(
+    () => providers?.find(p => p.name === credential.provider),
+    [providers, credential.provider]
+  )
   const [discoveredModels, setDiscoveredModels] = useState<DiscoveredModel[]>([])
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set())
   const [hasDiscovered, setHasDiscovered] = useState(false)
@@ -47,8 +47,8 @@ export function DiscoverModelsDialog({
   const [searchQuery, setSearchQuery] = useState('')
   const [customModelSelected, setCustomModelSelected] = useState(false)
   // Model type selector - default to credential's first modality
-  const [selectedType, setSelectedType] = useState<ModelType>(
-    (credential.modalities[0] as ModelType) || 'language'
+  const [selectedType, setSelectedType] = useState<string>(
+    credential.modalities[0] || 'language'
   )
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function DiscoverModelsDialog({
       setDiscoveryError(null)
       setSearchQuery('')
       setCustomModelSelected(false)
-      setSelectedType((credential.modalities[0] as ModelType) || 'language')
+      setSelectedType(credential.modalities[0] || 'language')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally only fires on open/close
   }, [open])
@@ -159,7 +159,7 @@ export function DiscoverModelsDialog({
       <DialogContent className="sm:max-w-lg max-h-[85vh] grid-rows-[auto_1fr_auto]">
         <DialogHeader>
           <DialogTitle>
-            {t('models.discoverModels')} - {PROVIDER_DISPLAY_NAMES[credential.provider] || credential.provider}
+            {t('models.discoverModels')} - {providerInfo?.display_name || credential.provider}
           </DialogTitle>
           <DialogDescription>
             {credential.name}
@@ -181,16 +181,16 @@ export function DiscoverModelsDialog({
             {/* Model type selector */}
             <div className="space-y-2">
               <Label>{t('models.modelType')}</Label>
-              <Select value={selectedType} onValueChange={(v) => setSelectedType(v as ModelType)}>
+              <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(PROVIDER_MODALITIES[credential.provider] || credential.modalities as ModelType[]).map(type => (
+                  {(providerInfo?.modalities ?? credential.modalities).map(type => (
                     <SelectItem key={type} value={type}>
                       <div className="flex items-center gap-2">
-                        {TYPE_ICONS[type]}
-                        {TYPE_LABELS[type]}
+                        {getTypeIcon(type)}
+                        {getTypeLabel(type)}
                       </div>
                     </SelectItem>
                   ))}

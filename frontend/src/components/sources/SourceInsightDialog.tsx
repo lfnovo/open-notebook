@@ -9,6 +9,8 @@ import {MarkdownRenderer} from '@/components/ui/markdown-renderer'
 import { useInsight } from '@/lib/hooks/use-insights'
 import { useModalManager } from '@/lib/hooks/use-modal-manager'
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { ContentUnavailable } from '@/components/common/ContentUnavailable'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 
 interface SourceInsightDialogProps {
   open: boolean
@@ -34,13 +36,15 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
     ? (insight.id.includes(':') ? insight.id : `source_insight:${insight.id}`)
     : ''
 
-  const { data: fetchedInsight, isLoading } = useInsight(insightIdWithPrefix, { enabled: open && !!insight?.id })
+  const { data: fetchedInsight, isLoading, isError, error } = useInsight(insightIdWithPrefix, { enabled: open && !!insight?.id })
 
-  // Use fetched data if available, otherwise fall back to passed-in insight
-  const displayInsight = fetchedInsight ?? insight
+  // Use fetched data if available, otherwise fall back to passed-in insight.
+  // On fetch error there is nothing trustworthy to show (the passed-in data
+  // may reference a deleted item), so every derived field goes blank here.
+  const displayInsight = isError ? undefined : (fetchedInsight ?? insight)
 
   // Get source_id from fetched data (preferred) or passed-in insight
-  const sourceId = fetchedInsight?.source_id ?? insight?.source_id
+  const sourceId = displayInsight?.source_id
 
   const handleViewSource = () => {
     if (sourceId) {
@@ -123,6 +127,11 @@ export function SourceInsightDialog({ open, onOpenChange, insight, onDelete }: S
               <div className="flex items-center justify-center py-10">
                 <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
               </div>
+            ) : isError ? (
+              <ContentUnavailable
+                variant={isNotFoundError(error) ? 'not-found' : 'error'}
+                onClose={() => onOpenChange(false)}
+              />
             ) : displayInsight ? (
               <MarkdownRenderer>
                 {displayInsight.content}

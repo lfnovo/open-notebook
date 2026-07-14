@@ -105,11 +105,27 @@ CORS_ORIGINS=https://notebook.example.com
 | Variable | Required? | Default | Description |
 |----------|-----------|---------|-------------|
 | `FIRECRAWL_API_KEY` | No | None | Firecrawl API key for advanced web scraping |
+| `FIRECRAWL_API_URL` | No | None | Base URL of a self-hosted Firecrawl instance (use instead of the hosted service) |
+| `CCORE_FIRECRAWL_PROXY` | No | `auto` | Firecrawl proxy mode to bypass anti-bot protection: `basic`, `stealth`, or `auto` |
+| `CCORE_FIRECRAWL_WAIT_FOR` | No | `3000` | Milliseconds Firecrawl waits for JavaScript to render before capturing the page |
 | `JINA_API_KEY` | No | None | Jina AI API key for web extraction |
+| `CRAWL4AI_API_URL` | No | None | Base URL of a remote Crawl4AI server. Set this to use Crawl4AI without a local install |
+
+### Optional heavy runtimes (installed on first startup)
+
+These are **off by default** to keep the image lean. Setting one to `true` makes the container install that runtime the first time it starts (downloads are cached on the `/app/data` volume, so only the first boot is slow). See [Content Processing Engines → Optional engines](../3-USER-GUIDE/content-processing-engines.md#optional-engines-docling--crawl4ai).
+
+| Variable | Required? | Default | Description |
+|----------|-----------|---------|-------------|
+| `OPEN_NOTEBOOK_ENABLE_DOCLING` | No | `false` | Install Docling on first startup: unlocks the `docling` document engine, the OCR toggle and image sources. Pulls a large ML stack. |
+| `OPEN_NOTEBOOK_ENABLE_CRAWL4AI` | No | `false` | Install the local Crawl4AI runtime + a Chromium browser on first startup: unlocks the `crawl4ai` URL engine. Not needed if `CRAWL4AI_API_URL` is set. |
 
 **Setup:**
 - Firecrawl: https://firecrawl.dev/
 - Jina: https://jina.ai/
+- Crawl4AI: https://github.com/unclecode/crawl4ai
+
+The `CCORE_FIRECRAWL_*` variables are passed straight through to the content-core library (its settings are prefixed with `CCORE_`); Open Notebook itself doesn't read them. See [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md) for how these engines are selected in the UI.
 
 ---
 

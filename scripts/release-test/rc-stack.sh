@@ -4,8 +4,16 @@
 # verification without touching the dev environment.
 #
 # Usage:
-#   rc-stack.sh up <tag> [dump.surql]   # start (imports the dump if given)
-#   rc-stack.sh down <tag>              # stop and remove everything
+#   rc-stack.sh up <tag> [dump.surql] [--with-runtimes]   # start (imports the dump if given)
+#   rc-stack.sh down <tag>                                 # stop and remove everything
+#
+# --with-runtimes enables the opt-in heavy engines (Docling + Crawl4AI) so the
+# published image installs them on first boot — lets you exercise the real
+# opt-in path with real data (the first boot then takes several minutes).
+#
+# `up` docker-pulls the pushed image by default, so you always verify the
+# registry artifact and not a same-named local build shadowing it. A local-only
+# tag (no registry push) still works — the pull failure is a warning, not fatal.
 #
 # To produce a data copy from a running dev SurrealDB (originals untouched):
 #   docker exec <surreal-container> /surreal export \
@@ -16,8 +24,14 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="$(cd "$DIR/../.." && pwd)"
-TAG="${2:?usage: rc-stack.sh <up|down> <tag> [dump.surql]}"
-DUMP="${3:-}"
+TAG="${2:?usage: rc-stack.sh <up|down> <tag> [dump.surql] [--with-runtimes]}"
+
+# Optional flag can appear anywhere after the tag; the remaining positional is the dump.
+WITH_RUNTIMES=""
+DUMP=""
+for arg in "${@:3}"; do
+  if [ "$arg" = "--with-runtimes" ]; then WITH_RUNTIMES="true"; else DUMP="$arg"; fi
+done
 RC_DATA=/tmp/onrel-rc-data
 
 # Reuse the dev encryption key so copied credentials decrypt; the DB name must
@@ -30,6 +44,7 @@ compose() {
   API_PORT=15055 FE_PORT=18502 PROXY_PORT=18080 \
   RC_API_URL="http://localhost:15055" \
   RC_ENCRYPTION_KEY="${KEY:-release-test-key}" RC_SURREAL_DB="${DB:-open_notebook}" \
+  RC_ENABLE_DOCLING="${WITH_RUNTIMES:+true}" RC_ENABLE_CRAWL4AI="${WITH_RUNTIMES:+true}" \
   docker compose -p onrelrc -f "$DIR/docker-compose.release-test.yml" "$@"
 }
 
@@ -40,6 +55,11 @@ case "$1" in
     echo "RC stack removed."
     ;;
   up)
+    # Pull the pushed image so a same-named local build can't shadow the
+    # registry artifact we mean to verify (non-fatal for local-only tags).
+    docker pull "lfnovo/open_notebook:$TAG" || \
+      echo "WARNING: could not pull lfnovo/open_notebook:$TAG — using the local image if present."
+    [ -n "$WITH_RUNTIMES" ] && echo "Opt-in runtimes ENABLED (Docling + Crawl4AI) — first boot will be slow."
     compose down -v >/dev/null 2>&1 || true
     rm -rf "$RC_DATA"; mkdir -p "$RC_DATA/surreal" "$RC_DATA/notebook"
     if [ -n "$DUMP" ]; then

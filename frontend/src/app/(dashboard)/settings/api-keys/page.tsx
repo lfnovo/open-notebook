@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { AppShell } from '@/components/layout/AppShell'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
-import { Key, ShieldAlert } from 'lucide-react'
+import { Key, ShieldAlert, AlertCircle } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { useModels, useModelDefaults } from '@/lib/hooks/use-models'
 import {
@@ -12,8 +12,8 @@ import {
   useCredentialStatus,
   useEnvStatus,
 } from '@/lib/hooks/use-credentials'
+import { useProviders } from '@/lib/hooks/use-providers'
 import { Credential } from '@/lib/api/credentials'
-import { ALL_PROVIDERS } from '@/lib/providers'
 import {
   DefaultModelSelectors,
   MigrationBanner,
@@ -29,14 +29,19 @@ export default function ApiKeysPage() {
   const { data: defaults, isLoading: defaultsLoading } = useModelDefaults()
   const { data: credentialStatus } = useCredentialStatus()
   const { data: envStatus } = useEnvStatus()
+  const {
+    data: providers,
+    isLoading: providersLoading,
+    isError: providersError,
+  } = useProviders()
 
   const encryptionReady = credentialStatus?.encryption_configured ?? true
 
   // Group credentials by provider
   const credentialsByProvider = useMemo(() => {
     const grouped: Record<string, Credential[]> = {}
-    for (const provider of ALL_PROVIDERS) {
-      grouped[provider] = []
+    for (const provider of providers ?? []) {
+      grouped[provider.name] = []
     }
     if (credentials) {
       for (const cred of credentials) {
@@ -45,30 +50,30 @@ export default function ApiKeysPage() {
       }
     }
     return grouped
-  }, [credentials])
+  }, [credentials, providers])
 
   // Providers needing migration
   const providersToMigrate = useMemo(() => {
     if (!envStatus || !credentialStatus) return []
-    const providers: string[] = []
+    const result: string[] = []
     for (const provider in envStatus) {
       if (envStatus[provider] && credentialStatus.source[provider] === 'environment') {
-        providers.push(provider)
+        result.push(provider)
       }
     }
-    return providers
+    return result
   }, [envStatus, credentialStatus])
 
-  // Sort: configured providers first
+  // Sort: configured providers first (the backend registry owns the base order)
   const sortedProviders = useMemo(() => {
-    return [...ALL_PROVIDERS].sort((a, b) => {
-      const aHas = (credentialsByProvider[a]?.length || 0) > 0 ? 1 : 0
-      const bHas = (credentialsByProvider[b]?.length || 0) > 0 ? 1 : 0
+    return [...(providers ?? [])].sort((a, b) => {
+      const aHas = (credentialsByProvider[a.name]?.length || 0) > 0 ? 1 : 0
+      const bHas = (credentialsByProvider[b.name]?.length || 0) > 0 ? 1 : 0
       return bHas - aHas
     })
-  }, [credentialsByProvider])
+  }, [providers, credentialsByProvider])
 
-  const isLoading = credentialsLoading || modelsLoading || defaultsLoading
+  const isLoading = credentialsLoading || modelsLoading || defaultsLoading || providersLoading
 
   if (isLoading) {
     return (
@@ -115,19 +120,27 @@ export default function ApiKeysPage() {
           )}
 
           {/* Provider Cards */}
-          <div className="grid gap-4">
-            {sortedProviders.map(provider => (
-              <ProviderSection
-                key={provider}
-                provider={provider}
-                credentials={credentialsByProvider[provider] || []}
-                models={models || []}
-                defaults={defaults || null}
-                allCredentials={credentials || []}
-                encryptionReady={encryptionReady}
-              />
-            ))}
-          </div>
+          {providersError ? (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>{t('apiKeys.providersLoadFailed')}</AlertTitle>
+              <AlertDescription>{t('apiKeys.providersLoadFailedDescription')}</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="grid gap-4">
+              {sortedProviders.map(provider => (
+                <ProviderSection
+                  key={provider.name}
+                  provider={provider}
+                  credentials={credentialsByProvider[provider.name] || []}
+                  models={models || []}
+                  defaults={defaults || null}
+                  allCredentials={credentials || []}
+                  encryptionReady={encryptionReady}
+                />
+              ))}
+            </div>
+          )}
 
           {/* Help link */}
           <div className="border-t pt-4">

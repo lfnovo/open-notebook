@@ -50,10 +50,13 @@ Sources are the raw materials of your research. This guide covers how to add dif
 - **EPUB** (.epub) — eBook files
 - **Markdown** (.md, .txt) — Plain text formats
 - **HTML** (.html, .htm) — Web page files
+- **Images** (.png, .jpg, .jpeg, .tiff, .bmp) — Text read via OCR (**requires Docling enabled** — see below)
 
 **File size limits:** Up to ~100MB (varies by system)
 
 **Processing time:** 10 seconds - 2 minutes (depending on length and file type)
+
+**OCR (scanned PDFs & images):** Text is read off scanned PDFs and image files using OCR. OCR runs through the **Docling** engine, which is **optional** and installed on first startup when you set `OPEN_NOTEBOOK_ENABLE_DOCLING=true`. Once enabled, OCR is on by default; you can turn it off (or force a more accurate extraction engine) in **Settings → Content Processing** — see [Content Processing Engines](content-processing-engines.md).
 
 ### Audio & Video
 - **Audio**: MP3, WAV, M4A, OGG, FLAC (~30 seconds - 3 minutes per hour)
@@ -65,16 +68,19 @@ Sources are the raw materials of your research. This guide covers how to add dif
 
 ### Web Content
 - **Articles**: Blog posts, news articles, Medium
-- **YouTube**: Full videos or playlists
+- **YouTube**: Full videos, playlists, plus `/live/` and `/shorts/` URLs
+- **Reddit**: Public post URLs (fetched via Reddit's public JSON)
 - **PDFs online**: Direct PDF links
 - **News**: News site articles
 
 **Just paste the URL** in "Web Link" section.
 
+**JavaScript-heavy sites:** How well a URL extracts depends on the URL processing engine. The default (`auto`) tries several engines; enabling Crawl4AI lets it render JavaScript pages locally. If a link comes back empty, see [Content Processing Engines](content-processing-engines.md).
+
 ### What Doesn't Work
 - Paywalled content (WSJ, FT, etc.) — Can't extract
 - Password-protected PDFs — Can't open
-- Pure image files (.jpg, .png) — Except scanned PDFs which have OCR
+- Unsupported formats — Rejected immediately with a clear "unsupported file type" message (no long wait)
 - Very large files (>100MB) — Timeout
 
 ---
@@ -188,6 +194,7 @@ Two ways to add:
 
 Method 1: Direct URL
   1. Copy YouTube URL: https://www.youtube.com/watch?v=...
+     (regular watch, /live/, and /shorts/ URLs all work)
   2. Paste in "Web Link"
   3. Click Add
   4. System extracts captions (if available) + transcript
@@ -357,7 +364,9 @@ Example: "Keep this in notebook but don't use in this conversation"
 
 **"Unsupported file type"**
 - You tried to upload a format not in the list (e.g., `.webp` image)
-- Solution: Convert to supported format (PDF for documents, MP3 for audio)
+- The upload is rejected **immediately** with a message naming the detected type — no long wait or stuck "Processing" state
+- Note: image formats (PNG/JPEG/TIFF/BMP) are only supported when **Docling is enabled** (`OPEN_NOTEBOOK_ENABLE_DOCLING=true`)
+- Solution: Convert to a supported format (PDF for documents, MP3 for audio), or enable Docling for images
 
 **"Processing timeout"**
 - Very large file (>100MB) or very long audio
@@ -369,7 +378,7 @@ Example: "Keep this in notebook but don't use in this conversation"
 
 **"Web link won't extract"**
 - Website blocks automated access or uses JavaScript for content
-- Solution: Copy the article text and paste as "Text" instead
+- Solution: Try a different URL processing engine (see [Content Processing Engines](content-processing-engines.md)) — enabling Crawl4AI renders JavaScript pages — or copy the article text and paste as "Text" instead
 
 ---
 

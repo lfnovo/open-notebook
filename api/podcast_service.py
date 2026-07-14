@@ -49,8 +49,9 @@ class PodcastService:
             if not episode_profile:
                 raise ValueError(f"Episode profile '{episode_profile_name}' not found")
 
-            # Validate speaker profile exists
-            speaker_profile = await SpeakerProfile.get_by_name(speaker_profile_name)
+            # Resolve the user-facing speaker profile name to a record ID at
+            # the API boundary (#630) - everything downstream works with IDs.
+            speaker_profile = await SpeakerProfile.resolve(speaker_profile_name)
             if not speaker_profile:
                 raise ValueError(f"Speaker profile '{speaker_profile_name}' not found")
 
@@ -75,10 +76,10 @@ class PodcastService:
                     "Content is required - provide either content or notebook_id"
                 )
 
-            # Prepare command arguments
+            # Prepare command arguments (speaker profile as record ID)
             command_args = {
                 "episode_profile": episode_profile_name,
-                "speaker_profile": speaker_profile_name,
+                "speaker_profile": str(speaker_profile.id),
                 "episode_name": episode_name,
                 "content": str(content),
                 "briefing_suffix": briefing_suffix,

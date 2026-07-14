@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -14,7 +14,7 @@ import { useTranslation } from '@/lib/hooks/use-translation'
 import { useCreateCredential, useUpdateCredential } from '@/lib/hooks/use-credentials'
 import { Credential, CreateCredentialRequest } from '@/lib/api/credentials'
 import { buildCredentialUpdatePayload } from '@/lib/credential-update-payload'
-import { PROVIDER_DISPLAY_NAMES, PROVIDER_MODALITIES, PROVIDER_DOCS } from '@/lib/providers'
+import { useProviders } from '@/lib/hooks/use-providers'
 
 interface CredentialFormDialogProps {
   open: boolean
@@ -32,6 +32,12 @@ export function CredentialFormDialog({
   const { t } = useTranslation()
   const createCredential = useCreateCredential()
   const updateCredential = useUpdateCredential()
+  const { data: providers } = useProviders()
+  const providerInfo = useMemo(
+    () => providers?.find(p => p.name === provider),
+    [providers, provider]
+  )
+  const providerDisplayName = providerInfo?.display_name || provider
   const isEditing = !!credential
   const isSubmitting = createCredential.isPending || updateCredential.isPending
 
@@ -69,9 +75,12 @@ export function CredentialFormDialog({
       setLocation('')
       setCredentialsPath('')
       setNumCtx('')
-      setModalities(PROVIDER_MODALITIES[provider] || ['language'])
+      setModalities(providerInfo?.modalities ?? ['language'])
     }
-  }, [credential, provider])
+    // providerInfo keeps a stable reference for a given provider (react-query
+    // caches the list for the whole session), so this only re-runs when the
+    // dialog target or the fetched registry actually changes.
+  }, [credential, provider, providerInfo])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -88,7 +97,7 @@ export function CredentialFormDialog({
       updateCredential.mutate({ credentialId: credential.id, data }, { onSuccess })
     } else {
       const data: CreateCredentialRequest = {
-        name: name || `${PROVIDER_DISPLAY_NAMES[provider] || provider} Config`,
+        name: name || `${providerDisplayName} Config`,
         provider,
         modalities,
         api_key: apiKey.trim() || undefined,
@@ -112,7 +121,7 @@ export function CredentialFormDialog({
       ? name.trim() !== '' && project.trim() !== '' && location.trim() !== ''
       : name.trim() !== '' && (!requiresApiKey || apiKey.trim() !== '')
 
-  const docsUrl = PROVIDER_DOCS[provider]
+  const docsUrl = providerInfo?.docs_url ?? undefined
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -120,8 +129,8 @@ export function CredentialFormDialog({
         <DialogHeader>
           <DialogTitle>
             {isEditing
-              ? t('apiKeys.editConfig', { provider: PROVIDER_DISPLAY_NAMES[provider] || provider })
-              : t('apiKeys.addConfig', { provider: PROVIDER_DISPLAY_NAMES[provider] || provider })}
+              ? t('apiKeys.editConfig', { provider: providerDisplayName })
+              : t('apiKeys.addConfig', { provider: providerDisplayName })}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -133,7 +142,7 @@ export function CredentialFormDialog({
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={`${PROVIDER_DISPLAY_NAMES[provider] || provider} Production`}
+              placeholder={`${providerDisplayName} Production`}
               disabled={isSubmitting}
             />
             <p className="text-xs text-muted-foreground">{t('apiKeys.configNameHint')}</p>

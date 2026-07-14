@@ -6,9 +6,9 @@ with a less clear error instead of a clean 422 at the API boundary.
 
 Also the sync-enforcement for the provider registry
 (open_notebook/ai/provider_registry.py): the registry is the backend
-source of truth, and the two remaining manual copies (the
-SupportedProvider Literal and the frontend ALL_PROVIDERS table) must
-match it exactly.
+source of truth, and the one remaining manual copy (the
+SupportedProvider Literal) must match it exactly. The frontend consumes
+GET /api/providers at runtime, so it needs no cross-check.
 """
 
 from typing import get_args
@@ -49,8 +49,8 @@ def client():
 
 
 class TestProviderRegistryIsTheSourceOfTruth:
-    """The registry drives every backend surface; the Literal and the
-    frontend table are the only manual copies and must match it."""
+    """The registry drives every backend surface; the Literal is the only
+    manual copy and must match it."""
 
     def test_literal_matches_registry_keys(self):
         assert set(get_args(SupportedProvider)) == set(PROVIDERS.keys())
@@ -133,27 +133,15 @@ class TestSupportedProviderMatchesOtherSourcesOfTruth:
 
         assert set(get_args(SupportedProvider)) == set(PROVIDER_ENV_CONFIG.keys())
 
-    def test_matches_frontend_all_providers_list(self):
-        """The frontend keeps its own copy (ALL_PROVIDERS) that a Python
-        test can't import, so extract the string literals from the source
-        instead - adding a provider to only one of the lists must fail CI."""
-        import re
-        from pathlib import Path
-
-        page = Path(__file__).parent.parent / "frontend/src/lib/providers.tsx"
-        source = page.read_text()
-        match = re.search(r"const ALL_PROVIDERS = \[(.*?)\]", source, re.DOTALL)
-        assert match, "ALL_PROVIDERS array not found in lib/providers.tsx"
-        frontend_providers = re.findall(r"'([a-z0-9_]+)'", match.group(1))
-        assert set(get_args(SupportedProvider)) == set(frontend_providers)
-
 
 class TestProvidersEndpoint:
     def test_get_providers_returns_registry_metadata(self, client):
         response = client.get("/api/providers")
         assert response.status_code == 200
         data = response.json()
-        assert {p["name"] for p in data} == set(PROVIDERS.keys())
+        # The frontend renders providers in response order, so the endpoint
+        # must preserve the registry declaration order (the display order).
+        assert [p["name"] for p in data] == list(PROVIDERS.keys())
 
         openai = next(p for p in data if p["name"] == "openai")
         assert openai["display_name"] == "OpenAI"

@@ -1,0 +1,42 @@
+-- Migration 22: drop legacy provider/model string fields from podcast profiles (#1107)
+-- Phase 4 of #584. The app has ignored these strings since migration 14
+-- introduced the Model registry references (outline_llm, transcript_llm,
+-- voice_model); their only remaining role was as input to the startup data
+-- migration retry loop (open_notebook/podcasts/migration.py), which this
+-- migration replaces and retires.
+--
+-- Steps:
+-- 1. Best-effort mapping: for profiles whose reference fields are still
+--    empty but whose legacy provider+model strings are set, populate the
+--    reference from a matching `model` record (provider + name + type).
+--    This mirrors the retired Python data migration MINUS the auto-create
+--    path: a migration has no business touching credentials, so profiles
+--    with no matching model record simply stay unresolved. Accepted
+--    trade-off (#1107): those profiles were already non-functional (the app
+--    ignores legacy strings) and the UI already flags them as needing model
+--    selection - the user re-picks models in the profile form once.
+-- 2. Clear the stored legacy values (UNSET while the fields are still
+--    defined, so rows don't keep stale data the schema no longer knows).
+-- 3. Drop the 6 legacy field definitions.
+
+-- Step 1: best-effort mapping (no-op on rows already migrated or with no
+-- legacy strings; a subquery with no match yields NONE, leaving the row
+-- unresolved, which is the accepted outcome).
+UPDATE episode_profile SET outline_llm = (SELECT VALUE id FROM ONLY model WHERE provider = $parent.outline_provider AND name = $parent.outline_model AND type = "language" LIMIT 1) WHERE outline_llm = NONE AND outline_provider != NONE AND outline_provider != "" AND outline_model != NONE AND outline_model != "";
+
+UPDATE episode_profile SET transcript_llm = (SELECT VALUE id FROM ONLY model WHERE provider = $parent.transcript_provider AND name = $parent.transcript_model AND type = "language" LIMIT 1) WHERE transcript_llm = NONE AND transcript_provider != NONE AND transcript_provider != "" AND transcript_model != NONE AND transcript_model != "";
+
+UPDATE speaker_profile SET voice_model = (SELECT VALUE id FROM ONLY model WHERE provider = $parent.tts_provider AND name = $parent.tts_model AND type = "text_to_speech" LIMIT 1) WHERE voice_model = NONE AND tts_provider != NONE AND tts_provider != "" AND tts_model != NONE AND tts_model != "";
+
+-- Step 2: clear stored legacy values before dropping the definitions.
+UPDATE episode_profile UNSET outline_provider, outline_model, transcript_provider, transcript_model;
+
+UPDATE speaker_profile UNSET tts_provider, tts_model;
+
+-- Step 3: drop the legacy field definitions.
+REMOVE FIELD IF EXISTS outline_provider ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS outline_model ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS transcript_provider ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS transcript_model ON TABLE episode_profile;
+REMOVE FIELD IF EXISTS tts_provider ON TABLE speaker_profile;
+REMOVE FIELD IF EXISTS tts_model ON TABLE speaker_profile;

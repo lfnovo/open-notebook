@@ -149,7 +149,7 @@ class TestTransformationGraph:
         config: RunnableConfig = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
-            await try_full_content(state, config)
+            await try_full_content(cast(TransformationState, state), config)
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""
@@ -198,7 +198,9 @@ class TestSynthesizeResults:
         from open_notebook.graphs.transformation import synthesize_results
 
         state = {"output": "direct output"}
-        result = await synthesize_results(state, {"configurable": {}})
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
         assert result == {"output": "direct output"}
 
     @pytest.mark.asyncio
@@ -213,13 +215,15 @@ class TestSynthesizeResults:
             "chunk_results": [],
             "transformation": MagicMock(title="Test"),
         }
-        result = await synthesize_results(state, {"configurable": {}})
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
         assert result == {"output": ""}
 
     @pytest.mark.asyncio
     async def test_single_chunk_result(self):
         """Single chunk result returns its output directly."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
 
         from open_notebook.graphs.transformation import synthesize_results
 
@@ -233,7 +237,9 @@ class TestSynthesizeResults:
             "transformation": MagicMock(title="Test"),
         }
 
-        result = await synthesize_results(state, {"configurable": {}})
+        result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
         assert result == {"output": "single result"}
 
     @pytest.mark.asyncio
@@ -276,7 +282,9 @@ class TestSynthesizeResults:
                 new=AsyncMock(return_value=fake_chain),
             ),
         ):
-            result = await synthesize_results(state, {"configurable": {}})
+            result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
 
         # Should return a single merged output without hanging
         assert result["output"]
@@ -322,7 +330,9 @@ class TestSynthesizeResults:
                 new=AsyncMock(return_value=fake_chain),
             ),
         ):
-            result = await synthesize_results(state, {"configurable": {}})
+            result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
 
         assert result["output"]
         assert isinstance(result["output"], str)
@@ -364,7 +374,9 @@ class TestSynthesizeResults:
                 new=AsyncMock(return_value=fake_chain),
             ),
         ):
-            result = await synthesize_results(state, {"configurable": {}})
+            result = await synthesize_results(
+            cast(TransformationState, state), {"configurable": {}}
+        )
 
         assert result["output"]
         assert isinstance(result["output"], str)

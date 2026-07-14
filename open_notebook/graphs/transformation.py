@@ -18,7 +18,7 @@ from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
 from loguru import logger
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
@@ -62,8 +62,8 @@ class ChunkResult(TypedDict):
 
     index: int
     output: str
-    error_class: Optional[str]  # set when chunk processing failed
-    error_message: Optional[str]  # classified user-facing message
+    error_class: NotRequired[str]  # set when chunk processing failed
+    error_message: NotRequired[str]  # classified user-facing message
 
 
 class TransformationState(TypedDict):
@@ -74,13 +74,13 @@ class TransformationState(TypedDict):
     transformation: Transformation
     output: str
     # Chunking fields — populated only when the full-content path fails
-    chunks: List[str]
-    chunk_results: Annotated[List[ChunkResult], operator.add]
-    total_chunks: int
+    chunks: NotRequired[List[str]]
+    chunk_results: NotRequired[Annotated[List[ChunkResult], operator.add]]
+    total_chunks: NotRequired[int]
     # Parsed model context window (set when chunking is triggered)
-    context_limit: int
+    context_limit: NotRequired[int]
     # Output token budget derived from context_limit (set alongside it)
-    output_budget: int
+    output_budget: NotRequired[int]
 
 
 class ChunkState(TypedDict):

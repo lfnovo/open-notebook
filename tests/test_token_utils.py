@@ -6,19 +6,16 @@ chunk_text_by_tokens edge cases (oversized words, overlap overhead),
 and token counting utilities.
 """
 
-from typing import List
 
 import pytest
 
 from open_notebook.utils.token_utils import (
-    DEFAULT_CONTEXT_LIMIT,
     SAFETY_BUFFER,
     chunk_text_by_tokens,
     parse_context_limit_error,
-    token_count,
     token_cost,
+    token_count,
 )
-
 
 # ============================================================================
 # TEST SUITE 1: Token Counting

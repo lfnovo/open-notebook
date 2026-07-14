@@ -65,7 +65,10 @@ class TestTransformationGraphPropagatesFailure:
 
     @pytest.mark.asyncio
     async def test_add_insight_failure_propagates_out_of_try_full_content(self):
-        from open_notebook.graphs.transformation import try_full_content
+        from open_notebook.graphs.transformation import (
+            TransformationState,
+            try_full_content,
+        )
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -101,13 +104,19 @@ class TestTransformationGraphPropagatesFailure:
             source.full_text = "full text of the source"
 
             with pytest.raises(DatabaseOperationError):
-                await try_full_content(state, config={"configurable": {}})
+                await try_full_content(
+                    cast(TransformationState, state),
+                    config={"configurable": {}},
+                )
 
         mock_add_insight.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_successful_add_insight_returns_output_normally(self):
-        from open_notebook.graphs.transformation import try_full_content
+        from open_notebook.graphs.transformation import (
+            TransformationState,
+            try_full_content,
+        )
 
         source = make_source()
         transformation = MagicMock(title="Summary", prompt="Summarize this")
@@ -140,7 +149,9 @@ class TestTransformationGraphPropagatesFailure:
             mock_prompter_cls.return_value.render.return_value = "rendered prompt"
             source.full_text = "full text of the source"
 
-            result = await try_full_content(state, config={"configurable": {}})
+            result = await try_full_content(
+                cast(TransformationState, state), config={"configurable": {}}
+            )
 
         mock_add_insight.assert_awaited_once()
         assert result["output"] == "the transformation output"

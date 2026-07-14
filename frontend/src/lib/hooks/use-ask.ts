@@ -29,7 +29,7 @@ interface AskState {
 // Safety net: if the stream connection hangs without proper termination
 // (e.g. Docker/standalone proxy doesn't propagate the "done" signal),
 // force the loading state to end after this timeout.
-const STREAM_TIMEOUT_MS = 300_000 // 5 minutes
+const STREAM_TIMEOUT_MS = 75_000 // 75 seconds — prevents permanent hang on dangling connections
 
 export function useAsk() {
   const { t } = useTranslation()

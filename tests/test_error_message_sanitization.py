@@ -211,6 +211,7 @@ class TestTruncateErrorHelper:
         from api.routers.sources import _truncate_error
 
         result = _truncate_error(SECRET + "x" * 500)
+        assert result is not None
         # capped at limit + the single-character ellipsis
         assert len(result) == 201
         assert result.endswith("…")

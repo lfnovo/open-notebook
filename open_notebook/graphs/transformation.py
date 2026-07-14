@@ -406,22 +406,38 @@ async def synthesize_results(
                     merge_idx = i
 
             # If even the smallest adjacent pair exceeds the context
-            # window, concatenate all remaining results directly.
+            # window, re-chunk oversized results so pieces fit in
+            # future merge rounds, instead of returning raw partials.
             overhead = token_count(instructions) + 300
             if min_combined + overhead > context_limit:
+                re_chunk_budget = max(
+                    512,
+                    int((context_limit - overhead) * 0.4),
+                )
                 logger.warning(
                     "No adjacent pair fits the context window (limit={}, "
-                    "smallest pair={} tkn). Concatenating {} remaining texts.",
+                    "smallest pair={} tkn). Re-chunking {} texts at "
+                    "{} tokens each for further synthesis.",
                     context_limit,
                     min_combined,
                     len(texts),
+                    re_chunk_budget,
                 )
-                texts = [
-                    "\n\n---\n\n".join(
-                        f"Part {i + 1}:\n{t}" for i, t in enumerate(texts)
-                    )
-                ]
-                break
+                re_chunked: List[str] = []
+                for chunk_text in texts:
+                    if token_count(chunk_text) > re_chunk_budget:
+                        re_chunked.extend(
+                            chunk_text_by_tokens(
+                                chunk_text,
+                                max_chunk_tokens=re_chunk_budget,
+                                overlap_chars=0,
+                            )
+                        )
+                    else:
+                        re_chunked.append(chunk_text)
+                texts = re_chunked
+                # Continue the loop to merge the re-chunked pieces
+                continue
 
             left = texts[merge_idx]
             right = texts[merge_idx + 1]

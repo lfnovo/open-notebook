@@ -23,7 +23,12 @@ from open_notebook.ai.model_discovery import (
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
-from open_notebook.utils.url_validation import validate_url
+from open_notebook.utils.url_validation import (
+    prepare_pinned_http_target,
+)
+from open_notebook.utils.url_validation import (
+    validate_url as validate_url,  # re-export for routers
+)
 
 # =============================================================================
 # Constants
@@ -393,12 +398,19 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     if provider == "ollama":
         ollama_url = base_url or "http://localhost:11434"
         try:
-            # Re-validate at request time: the base_url may have been saved
-            # against a hostname that only later resolved to an internal
-            # address (DNS rebinding).
-            await validate_url(ollama_url, "ollama")
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
+            target = await prepare_pinned_http_target(
+                f"{ollama_url.rstrip('/')}/api/tags", "ollama"
+            )
+            headers = dict(target.headers)
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"{ollama_url}/api/tags", timeout=10.0)
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=10.0,
+                    extensions=target.extensions,
+                )
                 response.raise_for_status()
                 data = response.json()
                 return [
@@ -418,16 +430,20 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not base_url:
             return []
         try:
-            # Re-validate at request time (see ollama branch above).
-            await validate_url(base_url, "openai_compatible")
-            headers = {}
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
+            target = await prepare_pinned_http_target(
+                models_endpoint(base_url), "openai_compatible"
+            )
+            headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    models_endpoint(base_url),
+                    target.url,
                     headers=headers,
                     timeout=30.0,
+                    extensions=target.extensions,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -446,12 +462,19 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not endpoint or not api_key:
             return []
         try:
-            # Re-validate at request time (see ollama branch above).
-            await validate_url(endpoint, "azure")
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
             url = f"{endpoint.rstrip('/')}/openai/models?api-version={api_version}"
-            headers = {"api-key": api_key}
+            target = await prepare_pinned_http_target(url, "azure")
+            headers = dict(target.headers)
+            headers["api-key"] = api_key
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=headers, timeout=30.0)
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=30.0,
+                    extensions=target.extensions,
+                )
                 response.raise_for_status()
                 data = response.json()
                 return [
@@ -500,17 +523,32 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
+    user_supplied_url = False
     if provider == "openai" and base_url:
         discovery_url = models_endpoint(base_url)
+        user_supplied_url = True
     if not discovery_url or not api_key:
         return []
 
     try:
+        headers = {"Authorization": f"Bearer {api_key}"}
+        if user_supplied_url:
+            # Pin DNS at request time so httpx cannot re-resolve a
+            # user-supplied host to a metadata address after validation
+            # (DNS rebinding TOCTOU) — mirrors the openai_compatible path.
+            target = await prepare_pinned_http_target(discovery_url, provider)
+            request_url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
+        else:
+            request_url = discovery_url
+            extensions = {}
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                discovery_url,
-                headers={"Authorization": f"Bearer {api_key}"},
+                request_url,
+                headers=headers,
                 timeout=30.0,
+                extensions=extensions,
             )
             response.raise_for_status()
             data = response.json()

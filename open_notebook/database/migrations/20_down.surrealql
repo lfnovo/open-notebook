@@ -1,0 +1,12 @@
+-- Migration 20 rollback: restore episode_profile.speaker_config to the speaker profile name
+-- Widen the type first (SCHEMAFULL table), convert record links back to the
+-- linked profile's name, then settle on option<string>. The original type was
+-- a required string, but rows whose reference was orphaned by the up
+-- migration (or whose linked speaker_profile was deleted since) have no name
+-- to restore, so the rollback type must tolerate NONE.
+
+DEFINE FIELD OVERWRITE speaker_config ON TABLE episode_profile TYPE option<string | record<speaker_profile>>;
+
+UPDATE episode_profile SET speaker_config = speaker_config.name WHERE type::is::record(speaker_config);
+
+DEFINE FIELD OVERWRITE speaker_config ON TABLE episode_profile TYPE option<string>;

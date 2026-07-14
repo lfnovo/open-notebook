@@ -22,6 +22,7 @@ async def get_settings():
             default_content_processing_engine_url=settings.default_content_processing_engine_url,
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
+            docling_ocr=settings.docling_ocr,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:
@@ -54,7 +55,7 @@ async def update_settings(settings_update: SettingsUpdate):
             from typing import Literal, cast
 
             settings.default_content_processing_engine_url = cast(
-                Literal["auto", "firecrawl", "jina", "simple"],
+                Literal["auto", "firecrawl", "jina", "crawl4ai", "simple"],
                 settings_update.default_content_processing_engine_url,
             )
         if settings_update.default_embedding_option is not None:
@@ -70,6 +71,8 @@ async def update_settings(settings_update: SettingsUpdate):
             settings.auto_delete_files = cast(
                 Literal["yes", "no"], settings_update.auto_delete_files
             )
+        if settings_update.docling_ocr is not None:
+            settings.docling_ocr = settings_update.docling_ocr
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = (
                 settings_update.youtube_preferred_languages
@@ -82,6 +85,7 @@ async def update_settings(settings_update: SettingsUpdate):
             default_content_processing_engine_url=settings.default_content_processing_engine_url,
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
+            docling_ocr=settings.docling_ocr,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:

@@ -11,12 +11,14 @@ frontend table). Now the backend surfaces are all derived from the
 - `open_notebook/ai/model_discovery.py` `OPENAI_COMPAT_PROVIDERS`
 - `GET /api/providers` (api/routers/providers.py)
 
-Two places still need a manual edit when adding a provider — both are
-enforced by tests (tests/test_credential_provider_validation.py):
+One place still needs a manual edit when adding a provider — enforced by
+tests (tests/test_credential_provider_validation.py): the
+`SupportedProvider` Literal in `api/models.py` (typing can't be built at
+runtime from this dict). The frontend consumes `GET /api/providers` at
+runtime, so it needs no edit.
 
-1. `SupportedProvider` Literal in `api/models.py` (typing can't be built
-   at runtime from this dict).
-2. The frontend table in `frontend/src/lib/providers.tsx`.
+The declaration order below is the display order the frontend renders —
+`GET /api/providers` returns `PROVIDERS.values()` as declared.
 
 This module is pure data: it must not import anything from the rest of
 the project so it stays importable from anywhere without cycles.

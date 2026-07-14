@@ -129,6 +129,20 @@ function extractOutlineSegments(outline: unknown): OutlineSegment[] {
   return []
 }
 
+/**
+ * "provider / name" label for a snapshot model row. Prefers the display
+ * fields the API resolves from the snapshot's model references, falls back
+ * to the legacy snapshot strings (pre-#1107 episodes), then to a dash.
+ */
+function formatModelLabel(
+  provider?: string | null,
+  name?: string | null,
+  legacyProvider?: string | null,
+  legacyName?: string | null
+): string {
+  return `${provider || legacyProvider || '—'} / ${name || legacyName || '—'}`
+}
+
 function extractTranscriptEntries(transcript: unknown): TranscriptEntry[] {
   if (transcript && typeof transcript === 'object' && 'transcript' in transcript) {
     const data = transcript as TranscriptData
@@ -264,17 +278,23 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                               <div>
                                 <p className="text-muted-foreground">{t('podcasts.outlineModel')}</p>
                                 <p>
-                                  {episode.episode_profile?.outline_provider ?? '—'} /
-                                  {' '}
-                                  {episode.episode_profile?.outline_model ?? '—'}
+                                  {formatModelLabel(
+                                    episode.episode_profile?.outline_model_provider,
+                                    episode.episode_profile?.outline_model_name,
+                                    episode.episode_profile?.outline_provider,
+                                    episode.episode_profile?.outline_model
+                                  )}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">{t('podcasts.transcriptModel')}</p>
                                 <p>
-                                  {episode.episode_profile?.transcript_provider ?? '—'} /
-                                  {' '}
-                                  {episode.episode_profile?.transcript_model ?? '—'}
+                                  {formatModelLabel(
+                                    episode.episode_profile?.transcript_model_provider,
+                                    episode.episode_profile?.transcript_model_name,
+                                    episode.episode_profile?.transcript_provider,
+                                    episode.episode_profile?.transcript_model
+                                  )}
                                 </p>
                               </div>
                               <div>
@@ -292,8 +312,12 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                           <section className="space-y-2">
                             <h4 className="text-sm font-semibold text-foreground">{t('podcasts.speakerProfile')}</h4>
                             <p className="text-xs text-muted-foreground">
-                              {episode.speaker_profile?.tts_provider ?? '—'} /{' '}
-                              {episode.speaker_profile?.tts_model ?? '—'}
+                              {formatModelLabel(
+                                episode.speaker_profile?.voice_model_provider,
+                                episode.speaker_profile?.voice_model_name,
+                                episode.speaker_profile?.tts_provider,
+                                episode.speaker_profile?.tts_model
+                              )}
                             </p>
                             {episode.speaker_profile?.speakers?.map((speaker, index) => (
                               <div

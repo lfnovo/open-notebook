@@ -277,6 +277,7 @@ class SettingsResponse(BaseModel):
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
+    docling_ocr: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -285,6 +286,7 @@ class SettingsUpdate(BaseModel):
     default_content_processing_engine_url: Optional[str] = None
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
+    docling_ocr: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -551,9 +553,9 @@ class MigrationResult(BaseModel):
 
 # Kept in sync with the provider registry
 # (open_notebook/ai/provider_registry.py PROVIDERS — the backend source of
-# truth) and the frontend's ALL_PROVIDERS (frontend/src/lib/providers.tsx).
-# A Literal can't be built at runtime, so this is one of the two remaining
-# manual copies; tests/test_credential_provider_validation.py enforces the sync.
+# truth). A Literal can't be built at runtime, so this is the one remaining
+# manual copy; tests/test_credential_provider_validation.py enforces the sync.
+# The frontend consumes GET /api/providers at runtime and needs no edit.
 SupportedProvider = Literal[
     "openai",
     "anthropic",
@@ -588,6 +590,29 @@ class ProviderInfoResponse(BaseModel):
     )
     env_configured: bool = Field(
         ..., description="Whether the provider is configured via environment variables"
+    )
+
+
+class CapabilitiesResponse(BaseModel):
+    """Runtime availability of the opt-in heavy extraction engines.
+
+    Reflects what is actually importable/reachable in this container — not merely
+    what the OPEN_NOTEBOOK_ENABLE_* flags request — so the UI can gate engine
+    options honestly (e.g. still show "unavailable" while a first-boot install
+    is in progress). See docs/7-DEVELOPMENT/decisions/ADR-007-optin-runtimes.md.
+    """
+
+    docling_available: bool = Field(
+        ...,
+        description="Docling is installed: the docling document engine, OCR toggle and image sources work.",
+    )
+    crawl4ai_available: bool = Field(
+        ...,
+        description="Crawl4AI is usable: the local package is installed OR a remote server is configured.",
+    )
+    crawl4ai_remote_configured: bool = Field(
+        ...,
+        description="A remote Crawl4AI endpoint is configured via CRAWL4AI_API_URL (no local install needed).",
     )
 
 

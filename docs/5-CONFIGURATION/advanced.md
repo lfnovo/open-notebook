@@ -250,7 +250,7 @@ Restrict access to your Open Notebook:
 
 ## Web Scraping & Content Extraction
 
-Open Notebook uses multiple services for content extraction:
+Open Notebook uses multiple engines for content extraction. Which one runs is chosen in **Settings → Content Processing** (see the user-guide page on [Content Processing Engines](../3-USER-GUIDE/content-processing-engines.md)); the variables below configure them.
 
 ### Firecrawl
 
@@ -258,6 +258,15 @@ For advanced web scraping:
 
 ```env
 FIRECRAWL_API_KEY=your-key
+
+# Optional: self-hosted Firecrawl instance
+FIRECRAWL_API_URL=https://firecrawl.internal.example.com
+
+# Optional: bypass anti-bot protection (basic | stealth | auto)
+CCORE_FIRECRAWL_PROXY=auto
+
+# Optional: ms to wait for JavaScript to render (default 3000)
+CCORE_FIRECRAWL_WAIT_FOR=3000
 ```
 
 Get key from: https://firecrawl.dev/
@@ -271,6 +280,16 @@ JINA_API_KEY=your-key
 ```
 
 Get key from: https://jina.ai/
+
+### Crawl4AI
+
+Renders JavaScript pages in a local Chromium browser — no API key required. Crawl4AI is **optional**: enable it with `OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true` and it installs on first startup (the Chromium download is cached on your data volume). To offload rendering to a remote Crawl4AI server instead — no local install needed:
+
+```env
+CRAWL4AI_API_URL=http://crawl4ai.example.com:11235
+```
+
+See [Content Processing Engines → Optional engines](../3-USER-GUIDE/content-processing-engines.md#optional-engines-docling--crawl4ai) for details.
 
 ---
 

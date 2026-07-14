@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Dict, Optional, Union
+from typing import Any, ClassVar, Dict, Optional, Sequence, Union
 
 from esperanto import (
     AIFactory,
@@ -8,6 +8,7 @@ from esperanto import (
     TextToSpeechModel,
 )
 from loguru import logger
+from surrealdb import RecordID
 
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
@@ -63,6 +64,45 @@ class Model(ObjectModel):
             "SELECT * FROM model WHERE type=$model_type;", {"model_type": model_type}
         )
         return [Model(**model) for model in models]
+
+    @classmethod
+    async def get_display_info_for_ids(
+        cls, model_ids: Sequence[Union[str, RecordID]]
+    ) -> Dict[str, Dict[str, str]]:
+        """
+        Batch-fetch {provider, name} display info for many model IDs in one
+        query.
+
+        Episode listing resolves the model references stored in the
+        denormalized episode/speaker profile snapshots (outline_llm,
+        transcript_llm, voice_model) into human-readable display fields.
+        Doing that with Model.get() would cost one round trip per reference
+        per episode (no connection pooling in the repository layer) - this
+        collects the distinct IDs and resolves them in a single query,
+        mirroring PodcastEpisode.get_job_details_for_commands().
+
+        Unresolvable IDs (deleted models) are simply absent from the result;
+        a total query failure returns an empty dict so display resolution
+        degrades gracefully instead of breaking the caller.
+        """
+        ids = sorted({str(mid) for mid in model_ids if mid})
+        grouped: Dict[str, Dict[str, str]] = {}
+        if not ids:
+            return grouped
+        try:
+            result = await repo_query(
+                "SELECT id, name, provider FROM model WHERE id IN $model_ids",
+                {"model_ids": [ensure_record_id(mid) for mid in ids]},
+            )
+        except Exception as e:
+            logger.error(f"Error batch-fetching model display info: {e}")
+            return grouped
+        for row in result:
+            grouped[str(row.get("id"))] = {
+                "provider": row.get("provider", ""),
+                "name": row.get("name", ""),
+            }
+        return grouped
 
     @classmethod
     async def get_by_credential(cls, credential_id: str):

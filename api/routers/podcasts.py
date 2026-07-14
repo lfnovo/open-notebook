@@ -63,6 +63,18 @@ def _resolve_file_path(file_path: str) -> Path:
     return _resolve_audio_path(file_path)
 
 
+def _asset_to_response(video, asset: dict) -> dict:
+    response = dict(asset)
+    asset_id = response.get("id")
+    asset_path = response.get("path")
+    if asset_id and asset_path and _resolve_file_path(asset_path).exists():
+        response["file_url"] = (
+            f"/api/podcasts/videos/{quote(str(video.id), safe='')}"
+            f"/assets/{quote(str(asset_id), safe='')}/file"
+        )
+    return response
+
+
 def _video_to_response(video) -> EpisodeVideoResponse:
     video_url = None
     if video.video_file:
@@ -77,7 +89,7 @@ def _video_to_response(video) -> EpisodeVideoResponse:
         video_file=video.video_file,
         video_url=video_url,
         storyboard=video.storyboard,
-        assets=video.assets,
+        assets=[_asset_to_response(video, asset) for asset in video.assets],
         settings=video.settings,
         usage=video.usage,
         error_message=video.error_message,
@@ -111,9 +123,7 @@ async def generate_podcast(request: PodcastGenerationRequest):
 
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to generate podcast"
-        )
+        raise HTTPException(status_code=500, detail="Failed to generate podcast")
 
 
 @router.get("/podcasts/jobs/{job_id}")
@@ -125,9 +135,7 @@ async def get_podcast_job_status(job_id: str):
 
     except Exception as e:
         logger.error(f"Error fetching podcast job status: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to fetch job status"
-        )
+        raise HTTPException(status_code=500, detail="Failed to fetch job status")
 
 
 @router.post(
@@ -186,6 +194,41 @@ async def stream_episode_video_file(video_id: str):
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found on disk")
     return FileResponse(video_path, media_type="video/mp4", filename=video_path.name)
+
+
+@router.get("/podcasts/videos/{video_id}/assets/{asset_id}/file")
+@router.get("/podcasts/videos/{video_id}/assets/{asset_id}")
+async def stream_episode_video_asset_file(video_id: str, asset_id: str):
+    """Stream a generated image asset associated with an episode video."""
+    video = await VideoService.get(video_id)
+    candidate_ids = {asset_id}
+    if asset_id.endswith(".png"):
+        candidate_ids.add(asset_id[:-4])
+
+    def matches_requested_asset(item: dict) -> bool:
+        return (
+            item.get("id") in candidate_ids
+            or Path(item.get("path", "")).name == asset_id
+        )
+
+    asset = next((item for item in video.assets if matches_requested_asset(item)), None)
+    if not asset or not asset.get("path"):
+        raise HTTPException(status_code=404, detail="Video asset not found")
+
+    asset_path = _resolve_file_path(asset["path"])
+    if not asset_path.exists():
+        raise HTTPException(
+            status_code=404, detail="Video asset file not found on disk"
+        )
+
+    suffix = asset_path.suffix.lower()
+    media_type = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }.get(suffix, "application/octet-stream")
+    return FileResponse(asset_path, media_type=media_type, filename=asset_path.name)
 
 
 @router.patch(
@@ -272,9 +315,7 @@ async def list_podcast_episodes():
 
     except Exception as e:
         logger.error(f"Error listing podcast episodes: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to list podcast episodes"
-        )
+        raise HTTPException(status_code=500, detail="Failed to list podcast episodes")
 
 
 @router.get("/podcasts/episodes/{episode_id}", response_model=PodcastEpisodeResponse)
@@ -400,9 +441,7 @@ async def retry_podcast_episode(episode_id: str):
         raise
     except Exception as e:
         logger.error(f"Error retrying podcast episode: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to retry episode"
-        )
+        raise HTTPException(status_code=500, detail="Failed to retry episode")
 
 
 @router.delete("/podcasts/episodes/{episode_id}")
@@ -430,6 +469,4 @@ async def delete_podcast_episode(episode_id: str):
 
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
-        raise HTTPException(
-            status_code=500, detail="Failed to delete episode"
-        )
+        raise HTTPException(status_code=500, detail="Failed to delete episode")

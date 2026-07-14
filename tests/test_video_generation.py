@@ -1,5 +1,9 @@
+from types import SimpleNamespace
+
 import pytest
 
+from api.routers.podcasts import _asset_to_response, stream_episode_video_asset_file
+from api.video_service import VideoService
 from open_notebook.podcasts.models import PodcastEpisode
 from open_notebook.podcasts.video_generation import (
     DEFAULT_CANVAS,
@@ -42,7 +46,10 @@ def test_video_style_presets_are_codex_configurable():
 
     assert preset.image_prompt_template == "image_prompt_whiteboard.jinja"
     assert preset.target_scene_seconds["balanced"] < 25
-    assert any(item["name"] == DEFAULT_VIDEO_STYLE_PRESET for item in list_video_style_presets())
+    assert any(
+        item["name"] == DEFAULT_VIDEO_STYLE_PRESET
+        for item in list_video_style_presets()
+    )
 
 
 @pytest.mark.asyncio
@@ -179,3 +186,76 @@ async def test_patch_storyboard_item_rebuilds_prompt_from_source_fields(monkeypa
     assert "Не спасать" in item["image_prompt"]
     assert "Развивать навык" in item["image_prompt"]
     assert "Новая композиция" in item["image_prompt"]
+
+
+def test_asset_response_exposes_download_url_for_existing_file(tmp_path):
+    asset_path = tmp_path / "scene-001.png"
+    asset_path.write_bytes(b"image")
+    video = SimpleNamespace(id="episode_video:test")
+
+    response = _asset_to_response(
+        video,
+        {
+            "id": "asset-scene-001-v1",
+            "path": str(asset_path),
+        },
+    )
+
+    assert response["file_url"] == (
+        "/api/podcasts/videos/episode_video%3Atest/assets/asset-scene-001-v1/file"
+    )
+
+
+@pytest.mark.asyncio
+async def test_asset_file_endpoint_streams_registered_asset(tmp_path, monkeypatch):
+    asset_path = tmp_path / "scene-001.png"
+    asset_path.write_bytes(b"image")
+    video = SimpleNamespace(
+        assets=[
+            {
+                "id": "asset-scene-001-v1",
+                "path": str(asset_path),
+            }
+        ]
+    )
+
+    async def fake_get(video_id):
+        assert video_id == "episode_video:test"
+        return video
+
+    monkeypatch.setattr("api.routers.podcasts.VideoService.get", fake_get)
+
+    response = await stream_episode_video_asset_file(
+        "episode_video:test", "asset-scene-001-v1"
+    )
+
+    assert response.path == asset_path
+    assert response.media_type == "image/png"
+
+
+@pytest.mark.asyncio
+async def test_completed_job_status_links_generated_video(tmp_path, monkeypatch):
+    video_path = tmp_path / "episode.mp4"
+    video_path.write_bytes(b"video")
+    status = SimpleNamespace(
+        status="completed",
+        result={"video_id": "episode_video:test"},
+        error_message=None,
+    )
+    video = SimpleNamespace(id="episode_video:test", video_file=str(video_path))
+
+    async def fake_get_status(job_id):
+        assert job_id == "command:test"
+        return status
+
+    async def fake_get_video(video_id):
+        assert video_id == "episode_video:test"
+        return video
+
+    monkeypatch.setattr("api.video_service.get_command_status", fake_get_status)
+    monkeypatch.setattr("api.video_service.get_episode_video", fake_get_video)
+
+    response = await VideoService.get_job_status("command:test")
+
+    assert response["episode_video_id"] == "episode_video:test"
+    assert response["video_url"] == ("/api/podcasts/videos/episode_video%3Atest/file")

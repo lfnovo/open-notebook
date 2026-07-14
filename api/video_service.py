@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 from fastapi import HTTPException
 from loguru import logger
@@ -18,6 +19,14 @@ from open_notebook.podcasts.video_presets import (
     DEFAULT_VIDEO_STYLE_PRESET,
     list_video_style_presets,
 )
+
+
+def _video_file_url(video: EpisodeVideo) -> Optional[str]:
+    if not video.video_file:
+        return None
+    if not Path(video.video_file).exists():
+        return None
+    return f"/api/podcasts/videos/{quote(str(video.id), safe='')}/file"
 
 
 class EpisodeVideoGenerationRequest(BaseModel):
@@ -78,7 +87,9 @@ class VideoService:
                 "aspect_ratio": request.aspect_ratio,
                 "scene_density": request.scene_density,
             }
-            job_id = submit_command("open_notebook", "generate_episode_video", command_args)
+            job_id = submit_command(
+                "open_notebook", "generate_episode_video", command_args
+            )
             if not job_id:
                 raise ValueError("Failed to get job_id from submit_command")
             return str(job_id)
@@ -93,10 +104,27 @@ class VideoService:
     async def get_job_status(job_id: str) -> Dict[str, Any]:
         try:
             status = await get_command_status(job_id)
+            result = status.result if status else None
+            episode_video_id = None
+            video_url = None
+            if isinstance(result, dict):
+                episode_video_id = result.get("video_id") or result.get(
+                    "episode_video_id"
+                )
+                if episode_video_id:
+                    try:
+                        video = await get_episode_video(str(episode_video_id))
+                        video_url = _video_file_url(video)
+                    except Exception as video_error:
+                        logger.debug(
+                            f"Could not resolve video artifact for job {job_id}: {video_error}"
+                        )
             return {
                 "job_id": job_id,
                 "status": status.status if status else "unknown",
-                "result": status.result if status else None,
+                "result": result,
+                "episode_video_id": str(episode_video_id) if episode_video_id else None,
+                "video_url": video_url,
                 "error_message": getattr(status, "error_message", None)
                 if status
                 else None,
@@ -158,7 +186,9 @@ class VideoService:
                 image_model_id=video.settings.get("image_model_id"),
             )
             video.assets = [
-                asset for asset in video.assets if asset.get("id") != assets[0].get("id")
+                asset
+                for asset in video.assets
+                if asset.get("id") != assets[0].get("id")
             ] + assets
             video.usage = video.usage or {}
             video.usage.setdefault("image_generation", [])

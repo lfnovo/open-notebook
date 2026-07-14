@@ -172,3 +172,15 @@ accepted improvements immediately — update this document, the scripts under
   `.env` is loaded. During bucket A, snapshot record counts per table before
   and after the suite (e.g. credentials count) — a diff means a test is
   leaking writes (this caught 48 leaked `Test` credentials in v1.12.0).
+- **A local `docker-build-local` tag shadows the pushed image.** Both are
+  `lfnovo/open_notebook:<ver>`, so Phase 6 could verify your own local build
+  instead of the registry artifact. `rc-stack.sh up` now `docker pull`s the tag
+  by default; if you boot the image any other way, pull first (v1.13.0 lesson).
+- **Judge opt-in runtime gating on a clean image, not the dev venv.** A dev
+  venv may have `crawl4ai`/`docling` installed out-of-band (not via the opt-in
+  flag), so `GET /api/capabilities` reports them available and the UI enables
+  the engines — which does NOT reflect the lean default image. Verify the
+  gating on the RC stack (fresh pushed image) where the runtimes are genuinely
+  absent until enabled. To exercise the real install path with your data, use
+  `make release-stack TAG=<ver> DUMP=<dump>` plus `rc-stack.sh ... --with-runtimes`
+  (sets `OPEN_NOTEBOOK_ENABLE_DOCLING`/`_CRAWL4AI`; first boot is slow) (v1.13.0 lesson).

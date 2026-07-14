@@ -1,0 +1,22 @@
+.github/workflows/build-dev.yml
+  s_640d4a1339ef8a::t_975f18b66f9031 75-104,110,116,118
+  s_640d4a1339ef8a::t_8b0a0855402843 105-108,117
+  s_640d4a1339ef8a::t_d26b8eff013b04 131,150,160,179,192
+  s_640d4a1339ef8a::t_bf2d63e9382731 119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "925a3992990f48b68557d0af7dbb06162d92ab3b",
+  "prompts": {},
+  "sessions": {
+    "s_640d4a1339ef8a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ecea49bd-6e06-4fb8-948b-c46a9833200a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

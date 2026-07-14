@@ -1,0 +1,51 @@
+frontend/src/lib/locales/bn-IN/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx
+  s_640d4a1339ef8a::t_3fc1b1222eee97 50-54,94,107,134,199-212
+frontend/src/lib/locales/ru-RU/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/pt-BR/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/zh-TW/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/de-DE/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 672,720-721
+frontend/src/lib/locales/zh-CN/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/ca-ES/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/types/podcasts.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 24
+frontend/src/lib/locales/ja-JP/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/components/podcasts/EpisodeCard.tsx
+  s_640d4a1339ef8a::t_3fc1b1222eee97 304-307
+frontend/src/lib/locales/es-ES/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/fr-FR/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/it-IT/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/en-US/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 667,715-716
+frontend/src/lib/locales/pl-PL/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+frontend/src/lib/locales/tr-TR/index.ts
+  s_640d4a1339ef8a::t_3fc1b1222eee97 669,717-718
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "c7f702e9f524bdee695b108550d427bff1ac1fc0",
+  "prompts": {},
+  "sessions": {
+    "s_640d4a1339ef8a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ecea49bd-6e06-4fb8-948b-c46a9833200a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

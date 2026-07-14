@@ -21,6 +21,7 @@ export interface EpisodeProfile {
   language?: string | null
   default_briefing: string
   num_segments: number
+  max_tokens?: number | null
 }
 
 export interface SpeakerVoiceConfig {

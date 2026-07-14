@@ -301,6 +301,10 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                                 <p className="text-muted-foreground">{t('podcasts.segments')}</p>
                                 <p>{episode.episode_profile?.num_segments ?? '—'}</p>
                               </div>
+                              <div>
+                                <p className="text-muted-foreground">{t('podcasts.maxTokens')}</p>
+                                <p>{episode.episode_profile?.max_tokens ?? '—'}</p>
+                              </div>
                             </div>
                             {episode.episode_profile?.default_briefing ? (
                               <div className="rounded border bg-muted/30 p-3 text-xs whitespace-pre-wrap">

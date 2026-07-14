@@ -1,0 +1,52 @@
+# Pre-commit hooks mirroring the CI gates so local commits fail for the same
+# reasons PRs would. See .github/workflows/test.yml for the CI equivalents.
+#
+# Install: uv run pre-commit install
+# Run on all files: uv run pre-commit run --all-files
+# Update hook versions: uv run pre-commit autoupdate
+
+repos:
+  # ── Basic hygiene ──────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files   # blocks >500 KB binaries
+      - id: check-merge-conflict      # catches unresolved conflict markers
+      - id: check-yaml                # validates YAML syntax
+      - id: check-toml                # validates TOML syntax
+      - id: end-of-file-fixer         # ensures files end with a newline
+      - id: trailing-whitespace       # removes stray trailing whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  # ── Ruff: Python lint & format (mirrors CI backend-lint job) ──────
+  # Version kept in sync with pyproject.toml [dependency-groups] dev.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.13
+    hooks:
+      # `ruff check --fix` — applies safe auto-fixes (e.g. import sorting)
+      # and reports remaining violations. CI runs `ruff check .` without
+      # --fix; the local auto-fix saves iteration with no drift risk.
+      - id: ruff
+        args: [--fix]
+      # `ruff format --check` — fails if files don't match ruff's formatter.
+      # Run `ruff format .` to fix. Not yet gated in CI but uses the exact
+      # same tool config, so there is no drift.
+      - id: ruff-format
+
+  # ── Mypy: Python type check (mirrors CI backend-typecheck job) ────
+  # Uses language: system so mypy runs through `uv` in the project's own
+  # virtualenv (the same way CI and `make lint` run it). Pre-commit's
+  # isolated mirror-mypy would miss errors from missing project deps like
+  # langgraph and langchain — that breaks the "no drift" rule.
+  #
+  # Note: type-checking the full project on every commit is slower than
+  # the per-file hooks above. Skip it with `SKIP=mypy git commit`.
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run python -m mypy .
+        language: system
+        types: [python]
+        pass_filenames: false
+        verbose: true

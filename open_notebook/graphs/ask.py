@@ -24,7 +24,6 @@ class SubGraphState(TypedDict):
     results: dict
     answer: str
     ids: list  # Added for provide_answer function
-    notebook_ids: Optional[list[str]]  # Optional notebook filter
 
 
 class Search(BaseModel):
@@ -92,7 +91,6 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
                 "question": state["question"],
                 "instructions": s.instructions,
                 "term": s.term,
-                "notebook_ids": state.get("notebook_ids"),
                 # "type": s.type,
             },
         )

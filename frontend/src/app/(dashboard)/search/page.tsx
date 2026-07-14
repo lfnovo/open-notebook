@@ -220,11 +220,12 @@ export default function SearchPage() {
 
                 {/* Notebook Filter */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
+                  <Label htmlFor="ask-notebook-filter" className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
                   <NotebookMultiSelect
+                    id="ask-notebook-filter"
                     selectedIds={notebookIds}
                     onChange={setNotebookIds}
-                    disabled={ask.isStreaming}
+                    disabled={ask.isStreaming || searchMutation.isPending}
                   />
                 </div>
 
@@ -374,11 +375,12 @@ export default function SearchPage() {
 
                 {/* Notebook Filter */}
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
+                  <Label htmlFor="search-notebook-filter" className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
                   <NotebookMultiSelect
+                    id="search-notebook-filter"
                     selectedIds={notebookIds}
                     onChange={setNotebookIds}
-                    disabled={searchMutation.isPending}
+                    disabled={searchMutation.isPending || ask.isStreaming}
                   />
                 </div>
 

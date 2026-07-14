@@ -26,12 +26,14 @@ interface NotebookMultiSelectProps {
   selectedIds: string[]
   onChange: (ids: string[]) => void
   disabled?: boolean
+  id?: string
 }
 
 export function NotebookMultiSelect({
   selectedIds,
   onChange,
   disabled = false,
+  id,
 }: NotebookMultiSelectProps) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
@@ -66,6 +68,7 @@ export function NotebookMultiSelect({
           role="combobox"
           aria-expanded={open}
           disabled={disabled || isLoading}
+          id={id}
           className={cn(
             "w-full justify-between h-auto min-h-9 py-1.5",
             !selectedIds.length && "text-muted-foreground"

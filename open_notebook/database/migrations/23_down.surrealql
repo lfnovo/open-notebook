@@ -34,7 +34,7 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
 
     let $source_insight_search =
          IF $sources {(
-             SELECT id, insight_type + " - " + (source.title OR '') as title, search::highlight('`', '`', 1) as content, source.id as parent_id,  math::max(search::score(1)) AS relevance
+             SELECT id, insight_type + " - " + (source.title OR '') as title, search::highlight('`', '`', 1) as content, id as parent_id,  math::max(search::score(1)) AS relevance
             FROM source_insight
             WHERE content @1@ $query_text
             GROUP BY id)}

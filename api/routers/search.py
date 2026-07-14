@@ -91,13 +91,7 @@ async def stream_ask_response(
         # overloads require the full state type (langgraph typing limitation).
         async for chunk in ask_graph.astream(  # type: ignore[call-overload]
             input=dict(question=question),
-            config=dict(
-                configurable=dict(
-                    strategy_model=strategy_model.id,
-                    answer_model=answer_model.id,
-                    final_answer_model=final_answer_model.id,
-                )
-            ),
+            config=dict(configurable=configurable),
             stream_mode="updates",
         ):
             if "agent" in chunk:

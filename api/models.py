@@ -49,6 +49,14 @@ class SearchRequest(BaseModel):
         None, description="Filter results to specific notebooks by ID. None = all."
     )
 
+    @field_validator("notebook_ids", mode="before")
+    @classmethod
+    def normalize_empty_notebook_ids(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Normalize an empty list to None so all endpoints handle it identically."""
+        if v is not None and len(v) == 0:
+            return None
+        return v
+
 
 class SearchResponse(BaseModel):
     results: List[Dict[str, Any]] = Field(..., description="Search results")
@@ -64,6 +72,14 @@ class AskRequest(BaseModel):
     notebook_ids: Optional[List[str]] = Field(
         None, description="Filter results to specific notebooks by ID. None = all."
     )
+
+    @field_validator("notebook_ids", mode="before")
+    @classmethod
+    def normalize_empty_notebook_ids(cls, v: Optional[List[str]]) -> Optional[List[str]]:
+        """Normalize an empty list to None so all endpoints handle it identically."""
+        if v is not None and len(v) == 0:
+            return None
+        return v
 
 
 class AskResponse(BaseModel):

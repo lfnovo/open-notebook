@@ -180,3 +180,43 @@ class TestPodcastServiceDoesNotLeakExceptionText:
         assert exc_info.value.status_code == 500
         assert SECRET not in exc_info.value.detail
         assert exc_info.value.detail == "Failed to submit podcast generation job"
+
+
+class TestTruncateErrorHelper:
+    """`_truncate_error` caps client-facing error text surfaced by the source
+    status and sync-processing paths (#1136)."""
+
+    def test_none_passes_through(self):
+        from api.routers.sources import _truncate_error
+
+        assert _truncate_error(None) is None
+
+    def test_empty_string_passes_through(self):
+        from api.routers.sources import _truncate_error
+
+        assert _truncate_error("") == ""
+
+    def test_short_message_unchanged(self):
+        from api.routers.sources import _truncate_error
+
+        assert _truncate_error("boom") == "boom"
+
+    def test_message_at_limit_unchanged(self):
+        from api.routers.sources import _truncate_error
+
+        msg = "x" * 200
+        assert _truncate_error(msg) == msg
+
+    def test_long_message_truncated_with_ellipsis(self):
+        from api.routers.sources import _truncate_error
+
+        result = _truncate_error(SECRET + "x" * 500)
+        # capped at limit + the single-character ellipsis
+        assert len(result) == 201
+        assert result.endswith("…")
+        assert result.startswith(SECRET[:50])
+
+    def test_custom_limit(self):
+        from api.routers.sources import _truncate_error
+
+        assert _truncate_error("abcdefghij", limit=4) == "abcd…"

@@ -71,6 +71,19 @@ async def _assert_file_supported(file_path: str) -> None:
             detail = f"{detail} (detected type: {support.identified_type})"
         raise UnsupportedTypeException(detail)
 
+
+def _truncate_error(msg: Optional[str], limit: int = 200) -> Optional[str]:
+    """Cap error text surfaced to clients.
+
+    Command/processing failures can carry arbitrary internal exception text;
+    return at most ``limit`` characters so a raw traceback message can't leak
+    to the API response. ``None`` passes through unchanged.
+    """
+    if not msg:
+        return msg
+    return msg if len(msg) <= limit else msg[:limit] + "…"
+
+
 SOURCE_SORT_FIELDS = {
     "created": "created",
     "updated": "updated",
@@ -326,7 +339,7 @@ async def get_sources(
                 processing_info = {
                     "started_at": execution_metadata.get("started_at"),
                     "completed_at": execution_metadata.get("completed_at"),
-                    "error": command.get("error_message"),
+                    "error": _truncate_error(command.get("error_message")),
                 }
             elif command:
                 # Command exists but FETCH failed to resolve it (broken reference)
@@ -603,7 +616,7 @@ async def _create_source_sync_path(
                 pass
             raise HTTPException(
                 status_code=500,
-                detail=f"Processing failed: {result.error_message}",
+                detail=f"Processing failed: {_truncate_error(result.error_message)}",
             )
 
         # Get the processed source

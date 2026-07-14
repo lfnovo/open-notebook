@@ -47,6 +47,11 @@ const episodeProfileSchema = (t: TFunction) => z.object({
     .int(t('podcasts.segmentsInteger') || 'Must be an integer')
     .min(3, t('podcasts.segmentsMin') || 'At least 3 segments')
     .max(20, t('podcasts.segmentsMax') || 'Maximum 20 segments'),
+  max_tokens: z.number()
+    .int(t('podcasts.maxTokensInteger') || 'Must be an integer')
+    .positive(t('podcasts.maxTokensPositive') || 'Must be a positive integer')
+    .nullable()
+    .optional(),
 })
 
 export type EpisodeProfileFormValues = z.infer<ReturnType<typeof episodeProfileSchema>>
@@ -86,6 +91,7 @@ export function EpisodeProfileFormDialog({
         language: initialData.language ?? null,
         default_briefing: initialData.default_briefing,
         num_segments: initialData.num_segments,
+        max_tokens: initialData.max_tokens ?? null,
       }
     }
 
@@ -98,6 +104,7 @@ export function EpisodeProfileFormDialog({
       language: null,
       default_briefing: '',
       num_segments: 5,
+      max_tokens: null,
     }
   }, [initialData, speakerProfiles])
 
@@ -124,6 +131,7 @@ export function EpisodeProfileFormDialog({
       ...values,
       description: values.description ?? '',
       language: values.language || null,
+      max_tokens: values.max_tokens ?? null,
     }
 
     if (mode === 'create') {
@@ -185,6 +193,23 @@ export function EpisodeProfileFormDialog({
               />
               {errors.num_segments ? (
                 <p className="text-xs text-red-600">{errors.num_segments.message}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="max_tokens">{t('podcasts.maxTokens')}</Label>
+              <Input
+                id="max_tokens"
+                type="number"
+                min={1}
+                step={1}
+                {...register('max_tokens', {
+                  setValueAs: (value) => (value === '' ? null : Number(value)),
+                })}
+                autoComplete="off"
+              />
+              {errors.max_tokens ? (
+                <p className="text-xs text-red-600">{errors.max_tokens.message}</p>
               ) : null}
             </div>
 

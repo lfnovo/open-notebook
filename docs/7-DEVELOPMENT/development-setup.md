@@ -256,13 +256,52 @@ cd frontend && npm run dev
 
 ### Pre-commit Hooks (Optional but Recommended)
 
-Install git hooks to automatically check code quality:
+Pre-commit hooks run configured checks automatically before each commit,
+mirroring the CI gates so local commits fail for the same reasons PRs
+would. The config at `.pre-commit-config.yaml` wires up:
+
+| Tool | What it checks | CI equivalent |
+|------|----------------|---------------|
+| **ruff** (lint) | Python lint rules (`E`, `F`, `I`) | `ruff check .` |
+| **ruff** (format) | Python formatting (line-length 88) | Not yet gated |
+| **mypy** | Python type correctness | `python -m mypy .` |
+| **pre-commit-hooks** | Large files, merge conflicts, YAML/TOML syntax, trailing whitespace, EOF newlines | — |
+
+Pre-commit is already included in the project's dev dependencies. Install
+the hooks and they'll run on every `git commit`:
 
 ```bash
 uv run pre-commit install
 ```
 
-Now your commits will be checked before they're made.
+**Running manually:**
+
+```bash
+# Check all files (useful after changing hook config)
+uv run pre-commit run --all-files
+
+# Run a specific hook only
+uv run pre-commit run ruff --all-files
+```
+
+**Skipping hooks temporarily:**
+
+```bash
+# Skip all hooks for a single commit
+git commit --no-verify
+
+# Skip a specific hook (e.g. slow mypy run)
+SKIP=mypy git commit
+```
+
+**Updating hook versions:**
+
+```bash
+uv run pre-commit autoupdate
+```
+
+Keep the `rev:` pins in `.pre-commit-config.yaml` in sync with the
+versions listed in `pyproject.toml` under `[dependency-groups] dev`.
 
 ### Code Quality Commands
 

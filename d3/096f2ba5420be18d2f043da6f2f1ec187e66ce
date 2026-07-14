@@ -1,0 +1,24 @@
+tests/test_credentials_api.py
+  s_640d4a1339ef8a::t_0fa2785cc0058c 204-262
+  s_640d4a1339ef8a::t_66bd0b421ad97c 108,119,133-135,137-139
+api/credentials_service.py
+  s_640d4a1339ef8a::t_a79de73b031f97 526,529,534-545,548-549,551
+open_notebook/utils/url_validation.py
+  s_640d4a1339ef8a::t_7e7e5d48116760 198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "d3096f2ba5420be18d2f043da6f2f1ec187e66ce",
+  "prompts": {},
+  "sessions": {
+    "s_640d4a1339ef8a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ecea49bd-6e06-4fb8-948b-c46a9833200a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

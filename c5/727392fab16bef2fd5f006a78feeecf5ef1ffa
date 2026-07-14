@@ -1,0 +1,25 @@
+.github/RELEASE_PROCESS.md
+  s_6b3d93d262fda1::t_cf31a3fe12289b 175-186
+scripts/release-test/docker-compose.release-test.yml
+  s_6b3d93d262fda1::t_334e0905cec25a 25-29
+scripts/release-test/rc-stack.sh
+  s_6b3d93d262fda1::t_9f08bc05ad9557 7-16,27-34
+  s_6b3d93d262fda1::t_82e7c894ca1139 47
+  s_6b3d93d262fda1::t_dbff3aab176cce 58-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "c5727392fab16bef2fd5f006a78feeecf5ef1ffa",
+  "prompts": {},
+  "sessions": {
+    "s_6b3d93d262fda1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d36595df-643a-4441-9e25-63bb41505341",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

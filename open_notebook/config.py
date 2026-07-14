@@ -12,6 +12,12 @@ LANGGRAPH_CHECKPOINT_FILE = f"{sqlite_folder}/checkpoints.sqlite"
 UPLOADS_FOLDER = f"{DATA_FOLDER}/uploads"
 os.makedirs(UPLOADS_FOLDER, exist_ok=True)
 
+# PODCASTS FOLDER
+# Matches the root that build_episode_output_dir() (commands/podcast_commands.py)
+# creates episode directories under when called with DATA_FOLDER in production.
+PODCASTS_FOLDER = f"{DATA_FOLDER}/podcasts"
+os.makedirs(PODCASTS_FOLDER, exist_ok=True)
+
 # TIKTOKEN CACHE FOLDER
 # Reads TIKTOKEN_CACHE_DIR from the environment so Docker can redirect the cache
 # to a path outside /data/ (which is typically volume-mounted and would hide the

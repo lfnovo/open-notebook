@@ -13,6 +13,8 @@ import { MarkdownEditor } from '@/components/ui/markdown-editor'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { cn } from "@/lib/utils";
 import { useTranslation } from '@/lib/hooks/use-translation'
+import { ContentUnavailable } from '@/components/common/ContentUnavailable'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 
 const createNoteSchema = z.object({
   title: z.string().optional(),
@@ -40,7 +42,16 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
     ? (note.id.includes(':') ? note.id : `note:${note.id}`)
     : ''
 
-  const { data: fetchedNote, isLoading: noteLoading } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
+  const {
+    data: fetchedNote,
+    isLoading: noteLoading,
+    isError: noteError,
+    error: noteFetchError,
+  } = useNote(noteIdWithPrefix, { enabled: open && !!note?.id })
+  // When editing, a failed fetch means we must not render the editor: the
+  // note may have been deleted (dangling chat/ask references) and offering
+  // an empty editor would invite ghost edits.
+  const noteUnavailable = isEditing && noteError
   const isSaving = isEditing ? updateNote.isPending : createNote.isPending
   const {
     handleSubmit,
@@ -120,13 +131,19 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className={cn(
-          "sm:max-w-3xl w-full max-h-[90vh] overflow-hidden p-0",
+          "sm:max-w-3xl w-full h-[90vh] max-h-[90vh] overflow-hidden p-0 flex flex-col",
           isEditorFullscreen && "!max-w-screen !max-h-screen border-none w-screen h-screen"
       )}>
         <DialogTitle className="sr-only">
           {isEditing ? t('sources.editNote') : t('sources.createNote')}
         </DialogTitle>
-        <form onSubmit={handleSubmit(onSubmit)} className="flex h-full flex-col min-w-0">
+        {noteUnavailable ? (
+          <ContentUnavailable
+            variant={isNotFoundError(noteFetchError) ? 'not-found' : 'error'}
+            onClose={handleClose}
+          />
+        ) : (
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 min-h-0 flex-col min-w-0">
           {isEditing && noteLoading ? (
             <div className="flex-1 flex items-center justify-center py-10">
               <span className="text-sm text-muted-foreground">{t('common.loading')}</span>
@@ -147,7 +164,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
               </div>
 
               <div className={cn(
-                  "flex-1 overflow-y-auto",
+                  "flex-1 min-h-0 overflow-y-auto",
                   !isEditorFullscreen && "px-6 py-4")
               }>
                 <Controller
@@ -191,6 +208,7 @@ export function NoteEditorDialog({ open, onOpenChange, notebookId, note }: NoteE
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   )

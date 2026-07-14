@@ -1,0 +1,10 @@
+-- Migration 21 rollback: restore absolute audio_file paths (best effort).
+-- The up migration collapsed several historical prefixes (file://,
+-- /app/data/podcasts/, /data/podcasts/, ./data/podcasts/, data/podcasts/)
+-- into one relative form, so the original spelling of each row is not
+-- recoverable. Rows are restored to the shipped Docker layout, which is
+-- what pre-1030 code resolved them to in the standard deployment. Rows the
+-- up migration left untouched (unknown roots) are already absolute and are
+-- skipped.
+
+UPDATE episode SET audio_file = string::concat("/app/data/podcasts/", audio_file) WHERE type::is::string(audio_file) AND audio_file != "" AND !string::starts_with(audio_file, "/") AND !string::starts_with(audio_file, "file://");

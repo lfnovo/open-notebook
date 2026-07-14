@@ -64,7 +64,7 @@ export function SetupBanner() {
         </AlertTitle>
         <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-amber-700 dark:text-amber-300">
-            {t('setupBanner.migrationDescription').replace('{count}', providersToMigrate.length.toString())}
+            {t('setupBanner.migrationDescription', { count: providersToMigrate.length })}
           </span>
           <Button
             variant="outline"

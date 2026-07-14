@@ -1,0 +1,6 @@
+-- Migration 23 rollback intentionally preserves podcast episode video artifacts.
+-- The table and its records may predate migration 23 because this feature
+-- originally occupied migration slot 19 before upstream v1.13.0 claimed
+-- slots 19-22. Dropping the table here would delete those legacy artifacts.
+
+RETURN true;

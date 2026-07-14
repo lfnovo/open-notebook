@@ -14,11 +14,12 @@ from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from api.auth import PasswordAuthMiddleware
+from api.middleware import MaxBodySizeMiddleware, get_max_upload_size_bytes
 from api.routers import (
     auth,
+    capabilities,
     chat,
     config,
-    context,
     credentials,
     embedding,
     embedding_rebuild,
@@ -29,6 +30,7 @@ from api.routers import (
     notebooks,
     notes,
     podcasts,
+    providers,
     search,
     settings,
     source_chat,
@@ -47,6 +49,7 @@ from open_notebook.exceptions import (
     NotFoundError,
     OpenNotebookError,
     RateLimitError,
+    UnsupportedTypeException,
 )
 from open_notebook.utils.encryption import get_secret_from_env
 
@@ -63,6 +66,14 @@ def _parse_cors_origins(raw: str) -> list[str]:
 _cors_origins_raw = os.getenv("CORS_ORIGINS")
 CORS_ALLOWED_ORIGINS = _parse_cors_origins(_cors_origins_raw or "*")
 CORS_IS_DEFAULT_WILDCARD = _cors_origins_raw is None
+# Keyed on the parsed list, not on whether the env var was set: an operator
+# who explicitly sets CORS_ORIGINS=* must get the same wildcard treatment as
+# the default, or credentials would combine with a wildcard origin - the
+# exact reflect-any-Origin behavior this flag exists to prevent.
+CORS_ALLOW_CREDENTIALS = "*" not in CORS_ALLOWED_ORIGINS
+
+# Parsed once at module load; OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB changes require a restart.
+MAX_UPLOAD_SIZE_BYTES = get_max_upload_size_bytes()
 
 DATABASE_STARTUP_RETRY_ATTEMPTS = 12
 DATABASE_STARTUP_RETRY_INITIAL_DELAY_SECONDS = 1
@@ -82,13 +93,17 @@ def _cors_headers(request: Request) -> dict[str, str]:
     browsers reject `Access-Control-Allow-Origin: *` combined with
     credentials). Omits `Access-Control-Allow-Origin` for disallowed
     origins so the browser blocks the error body from leaking cross-origin.
+    Only claims Access-Control-Allow-Credentials when the real CORSMiddleware
+    would (see its allow_credentials comment above) - otherwise error
+    responses would grant credentialed access the success path doesn't.
     """
     origin = request.headers.get("origin")
     headers: dict[str, str] = {
-        "Access-Control-Allow-Credentials": "true",
         "Access-Control-Allow-Methods": "*",
         "Access-Control-Allow-Headers": "*",
     }
+    if CORS_ALLOW_CREDENTIALS:
+        headers["Access-Control-Allow-Credentials"] = "true"
 
     if origin and ("*" in CORS_ALLOWED_ORIGINS or origin in CORS_ALLOWED_ORIGINS):
         headers["Access-Control-Allow-Origin"] = origin
@@ -187,15 +202,6 @@ async def lifespan(app: FastAPI):
         # Fail fast - don't start the API with an outdated database schema
         raise RuntimeError(f"Failed to run database migrations: {str(e)}") from e
 
-    # Run podcast profile data migration (legacy strings -> Model registry)
-    try:
-        from open_notebook.podcasts.migration import migrate_podcast_profiles
-
-        await migrate_podcast_profiles()
-    except Exception as e:
-        logger.warning(f"Podcast profile migration encountered errors: {e}")
-        # Non-fatal: profiles can be migrated manually via UI
-
     logger.success("API initialization completed successfully")
 
     # Yield control to the application
@@ -236,11 +242,31 @@ app.add_middleware(
     ],
 )
 
-# Add CORS middleware last (so it processes first)
+# Reject oversized request bodies before they reach auth or routing - added
+# after PasswordAuthMiddleware (so it wraps around it) so a too-large request
+# is rejected before spending any work checking credentials.
+logger.info(
+    f"Max request body size: {MAX_UPLOAD_SIZE_BYTES / (1024 * 1024):g}MB "
+    "(set OPEN_NOTEBOOK_MAX_UPLOAD_SIZE_MB to change)"
+)
+app.add_middleware(MaxBodySizeMiddleware, max_body_size=MAX_UPLOAD_SIZE_BYTES)
+
+# Add CORS middleware last (so it processes first, and so it can attach
+# CORS headers to a 413 raised by MaxBodySizeMiddleware)
+#
+# allow_credentials is tied to whether CORS_ORIGINS resolves to specific
+# origins: combining allow_origins=["*"] with allow_credentials=True makes
+# Starlette reflect the request's Origin header verbatim (browsers reject a
+# literal "*" alongside credentials), which defeats the origin allowlist.
+# The frontend never sends credentialed requests (withCredentials: false)
+# and auth is a Bearer header, not a cookie, so this isn't independently
+# exploitable today - but there's no reason to allow it for any wildcard
+# case. Once an operator explicitly scopes CORS_ORIGINS to real origins,
+# credentialed cross-origin requests to those origins are safe to allow.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -328,6 +354,17 @@ async def external_service_error_handler(request: Request, exc: ExternalServiceE
     )
 
 
+@app.exception_handler(UnsupportedTypeException)
+async def unsupported_type_error_handler(
+    request: Request, exc: UnsupportedTypeException
+):
+    return JSONResponse(
+        status_code=415,
+        content={"detail": str(exc)},
+        headers=_cors_headers(request),
+    )
+
+
 @app.exception_handler(OpenNotebookError)
 async def open_notebook_error_handler(request: Request, exc: OpenNotebookError):
     return JSONResponse(
@@ -350,7 +387,6 @@ app.include_router(
     embedding_rebuild.router, prefix="/api/embeddings", tags=["embeddings"]
 )
 app.include_router(settings.router, prefix="/api", tags=["settings"])
-app.include_router(context.router, prefix="/api", tags=["context"])
 app.include_router(sources.router, prefix="/api", tags=["sources"])
 app.include_router(insights.router, prefix="/api", tags=["insights"])
 app.include_router(commands_router.router, prefix="/api", tags=["commands"])
@@ -360,6 +396,8 @@ app.include_router(speaker_profiles.router, prefix="/api", tags=["speaker-profil
 app.include_router(chat.router, prefix="/api", tags=["chat"])
 app.include_router(source_chat.router, prefix="/api", tags=["source-chat"])
 app.include_router(credentials.router, prefix="/api", tags=["credentials"])
+app.include_router(providers.router, prefix="/api", tags=["providers"])
+app.include_router(capabilities.router, prefix="/api", tags=["capabilities"])
 app.include_router(languages.router, prefix="/api", tags=["languages"])
 
 

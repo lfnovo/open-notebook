@@ -1,5 +1,4 @@
--- Migration 19 rollback: Remove podcast episode video artifacts
+-- Migration 19 rollback: Remove source_insight timestamp fields
 
-REMOVE INDEX IF EXISTS idx_episode_video_episode ON TABLE episode_video;
-REMOVE INDEX IF EXISTS idx_episode_video_created ON TABLE episode_video;
-REMOVE TABLE IF EXISTS episode_video;
+REMOVE FIELD IF EXISTS created ON TABLE source_insight;
+REMOVE FIELD IF EXISTS updated ON TABLE source_insight;

@@ -260,14 +260,12 @@ export function useRegisterModels() {
       if (result.created > 0) {
         toast({
           title: t('common.success'),
-          description: t('apiKeys.syncSuccess')
-            .replace('{discovered}', (result.created + result.existing).toString())
-            .replace('{new}', result.created.toString()),
+          description: t('apiKeys.syncSuccess', { discovered: (result.created + result.existing).toString(), new: result.created.toString() }),
         })
       } else {
         toast({
           title: t('common.success'),
-          description: t('apiKeys.syncNoNew').replace('{count}', result.existing.toString()),
+          description: t('apiKeys.syncNoNew', { count: result.existing }),
         })
       }
     },
@@ -304,18 +302,18 @@ export function useMigrateFromEnv() {
       if (errorCount > 0 && migratedCount === 0) {
         toast({
           title: t('common.error'),
-          description: t('apiKeys.migrationErrors').replace('{count}', errorCount.toString()),
+          description: t('apiKeys.migrationErrors', { count: errorCount }),
           variant: 'destructive',
         })
       } else if (migratedCount > 0 && errorCount > 0) {
         toast({
           title: t('common.success'),
-          description: `${t('apiKeys.migrationSuccess').replace('{count}', migratedCount.toString())}. ${t('apiKeys.migrationErrors').replace('{count}', errorCount.toString())}`,
+          description: `${t('apiKeys.migrationSuccess', { count: migratedCount })}. ${t('apiKeys.migrationErrors', { count: errorCount })}`,
         })
       } else if (migratedCount > 0) {
         toast({
           title: t('common.success'),
-          description: t('apiKeys.migrationSuccess').replace('{count}', migratedCount.toString()),
+          description: t('apiKeys.migrationSuccess', { count: migratedCount }),
         })
       } else {
         toast({
@@ -357,18 +355,18 @@ export function useMigrateFromProviderConfig() {
       if (errorCount > 0 && migratedCount === 0) {
         toast({
           title: t('common.error'),
-          description: t('apiKeys.migrationErrors').replace('{count}', errorCount.toString()),
+          description: t('apiKeys.migrationErrors', { count: errorCount }),
           variant: 'destructive',
         })
       } else if (migratedCount > 0 && errorCount > 0) {
         toast({
           title: t('common.success'),
-          description: `${t('apiKeys.migrationSuccess').replace('{count}', migratedCount.toString())}. ${t('apiKeys.migrationErrors').replace('{count}', errorCount.toString())}`,
+          description: `${t('apiKeys.migrationSuccess', { count: migratedCount })}. ${t('apiKeys.migrationErrors', { count: errorCount })}`,
         })
       } else if (migratedCount > 0) {
         toast({
           title: t('common.success'),
-          description: t('apiKeys.migrationSuccess').replace('{count}', migratedCount.toString()),
+          description: t('apiKeys.migrationSuccess', { count: migratedCount }),
         })
       } else {
         toast({

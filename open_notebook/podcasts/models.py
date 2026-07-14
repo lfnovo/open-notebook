@@ -42,10 +42,7 @@ class EpisodeProfile(ObjectModel):
     table_name: ClassVar[str] = "episode_profile"
     nullable_fields: ClassVar[set[str]] = {
         "description",
-        "outline_provider",
-        "outline_model",
-        "transcript_provider",
-        "transcript_model",
+        "speaker_config",
         "outline_llm",
         "transcript_llm",
         "language",
@@ -54,23 +51,16 @@ class EpisodeProfile(ObjectModel):
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
-    speaker_config: str = Field(..., description="Reference to speaker profile name")
-
-    # Legacy fields (kept for migration, app ignores)
-    outline_provider: Optional[str] = Field(
-        None, description="[Legacy] AI provider for outline generation"
-    )
-    outline_model: Optional[str] = Field(
-        None, description="[Legacy] AI model for outline generation"
-    )
-    transcript_provider: Optional[str] = Field(
-        None, description="[Legacy] AI provider for transcript generation"
-    )
-    transcript_model: Optional[str] = Field(
-        None, description="[Legacy] AI model for transcript generation"
+    speaker_config: Optional[str] = Field(
+        None,
+        description=(
+            "speaker_profile record ID this profile uses. None when the "
+            "referenced speaker profile no longer exists (orphaned by "
+            "migration 20 or a later deletion)."
+        ),
     )
 
-    # New fields: Model registry references
+    # Model registry references
     outline_llm: Optional[str] = Field(
         None, description="Model record ID for outline generation"
     )
@@ -97,6 +87,8 @@ class EpisodeProfile(ObjectModel):
 
     def _prepare_save_data(self) -> dict:
         data = super()._prepare_save_data()
+        if data.get("speaker_config"):
+            data["speaker_config"] = ensure_record_id(data["speaker_config"])
         if data.get("outline_llm"):
             data["outline_llm"] = ensure_record_id(data["outline_llm"])
         if data.get("transcript_llm"):
@@ -143,21 +135,13 @@ class SpeakerProfile(ObjectModel):
     table_name: ClassVar[str] = "speaker_profile"
     nullable_fields: ClassVar[set[str]] = {
         "description",
-        "tts_provider",
-        "tts_model",
         "voice_model",
     }
 
     name: str = Field(..., description="Unique profile name")
     description: Optional[str] = Field(None, description="Profile description")
 
-    # Legacy fields (kept for migration, app ignores)
-    tts_provider: Optional[str] = Field(
-        None, description="[Legacy] TTS provider (openai, elevenlabs, etc.)"
-    )
-    tts_model: Optional[str] = Field(None, description="[Legacy] TTS model name")
-
-    # New field: Model registry reference
+    # Model registry reference
     voice_model: Optional[str] = Field(
         None, description="Model record ID for TTS"
     )
@@ -209,6 +193,27 @@ class SpeakerProfile(ObjectModel):
             return cls(**result[0])
         return None
 
+    @classmethod
+    async def resolve(
+        cls, ref: Union[str, RecordID]
+    ) -> Optional["SpeakerProfile"]:
+        """Resolve a speaker profile by record ID or by unique name.
+
+        The API contract accepts speaker profiles by NAME (see
+        POST /api/podcasts/generate), while episode_profile.speaker_config
+        stores a record ID (migration 20). This resolves either form and
+        returns None when the reference doesn't match anything.
+        """
+        ref_str = str(ref)
+        if ref_str.startswith(f"{cls.table_name}:"):
+            result = await repo_query(
+                "SELECT * FROM $id", {"id": ensure_record_id(ref_str)}
+            )
+            if result:
+                return cls(**result[0])
+            return None
+        return await cls.get_by_name(ref_str)
+
 
 class PodcastEpisode(ObjectModel):
     """Enhanced PodcastEpisode with job tracking and metadata"""
@@ -225,7 +230,13 @@ class PodcastEpisode(ObjectModel):
     briefing: str = Field(..., description="Full briefing used for generation")
     content: str = Field(..., description="Source content")
     audio_file: Optional[str] = Field(
-        default=None, description="Path to generated audio file"
+        default=None,
+        description=(
+            "Path to the generated audio file, relative to PODCASTS_FOLDER "
+            "(see open_notebook/podcasts/audio_paths.py). Absolute values "
+            "are legacy rows migration 21 could not convert and are treated "
+            "as invalid by the API."
+        ),
     )
     transcript: Optional[Dict[str, Any]] = Field(
         default_factory=dict, description="Generated transcript"
@@ -269,6 +280,46 @@ class PodcastEpisode(ObjectModel):
             }
         except Exception:
             return {"status": "unknown", "error_message": None}
+
+    @classmethod
+    async def get_job_details_for_commands(
+        cls, command_ids: List[Union[str, RecordID]]
+    ) -> Dict[str, dict]:
+        """
+        Batch-fetch {status, error_message} for many commands in one query.
+
+        Listing episodes otherwise calls get_job_detail() -> surreal_commands
+        .get_command_status() once per episode, each its own round trip
+        against the `command` table (no connection pooling in the repository
+        layer, see docs/7-DEVELOPMENT/architecture.md) - O(n) queries for n
+        episodes. surreal_commands has no batch lookup, but its command table
+        lives in the same database (same SURREAL_* env vars), so this queries
+        it directly in one shot instead of looping through the library's
+        per-command helper.
+
+        CommandStatus is a `str` subclass (`class CommandStatus(str, Enum)`),
+        so returning the raw DB string here is interchangeable with the
+        enum-wrapped value get_job_detail() returns for every comparison
+        this codebase does against it.
+        """
+        ids = [cid for cid in command_ids if cid]
+        grouped: Dict[str, dict] = {}
+        if not ids:
+            return grouped
+        try:
+            result = await repo_query(
+                "SELECT * FROM command WHERE id IN $command_ids",
+                {"command_ids": [ensure_record_id(cid) for cid in ids]},
+            )
+        except Exception as e:
+            logger.error(f"Error batch-fetching command status: {e}")
+            return grouped
+        for row in result:
+            grouped[str(row.get("id"))] = {
+                "status": row.get("status", "unknown"),
+                "error_message": row.get("error_message"),
+            }
+        return grouped
 
     @field_validator("command", mode="before")
     @classmethod

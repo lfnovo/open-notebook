@@ -1,0 +1,28 @@
+-- Migration 23: Podcast episode video artifacts
+-- Stores editable storyboard-based video renders generated from podcast episodes.
+--
+-- Compatibility note: the storyboard branch previously used migration number 19
+-- before upstream v1.13.0 claimed 19-22. Databases that already recorded that
+-- custom migration skip upstream 19, so repeat its idempotent source_insight
+-- field definitions here to converge both upgrade paths.
+
+DEFINE FIELD IF NOT EXISTS created ON source_insight DEFAULT time::now() VALUE $before OR time::now();
+DEFINE FIELD IF NOT EXISTS updated ON source_insight DEFAULT time::now() VALUE time::now();
+
+DEFINE TABLE IF NOT EXISTS episode_video SCHEMALESS;
+
+DEFINE FIELD IF NOT EXISTS name ON TABLE episode_video TYPE string;
+DEFINE FIELD IF NOT EXISTS episode ON TABLE episode_video TYPE record<episode>;
+DEFINE FIELD IF NOT EXISTS command ON TABLE episode_video TYPE option<record<command>>;
+DEFINE FIELD IF NOT EXISTS status ON TABLE episode_video TYPE string;
+DEFINE FIELD IF NOT EXISTS video_file ON TABLE episode_video TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS storyboard ON TABLE episode_video FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS assets ON TABLE episode_video FLEXIBLE TYPE array;
+DEFINE FIELD IF NOT EXISTS settings ON TABLE episode_video FLEXIBLE TYPE object;
+DEFINE FIELD IF NOT EXISTS usage ON TABLE episode_video FLEXIBLE TYPE option<object>;
+DEFINE FIELD IF NOT EXISTS error_message ON TABLE episode_video TYPE option<string>;
+DEFINE FIELD IF NOT EXISTS created ON TABLE episode_video TYPE datetime;
+DEFINE FIELD IF NOT EXISTS updated ON TABLE episode_video TYPE datetime;
+
+DEFINE INDEX IF NOT EXISTS idx_episode_video_episode ON TABLE episode_video FIELDS episode CONCURRENTLY;
+DEFINE INDEX IF NOT EXISTS idx_episode_video_created ON TABLE episode_video FIELDS created CONCURRENTLY;

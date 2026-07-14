@@ -5,10 +5,17 @@ services:
     # exposing this instance to a network, set SURREAL_USER / SURREAL_PASSWORD
     # in a .env file (see .env.example) — they are applied here and to the
     # open_notebook service below, so the two always stay in sync.
-    command: start --log info --user ${SURREAL_USER:-root} --pass ${SURREAL_PASSWORD:-root} rocksdb:/mydata/mydatabase.db
+    # List (exec) form so each interpolated value stays a single argument —
+    # a password containing spaces would otherwise be split into several.
+    command: ["start", "--log", "info", "--user", "${SURREAL_USER:-root}", "--pass", "${SURREAL_PASSWORD:-root}", "rocksdb:/mydata/mydatabase.db"]
     user: root  # Required for bind mounts on Linux
     ports:
-      - "8000:8000"
+      # Bound to localhost only: the open_notebook service reaches this over
+      # the internal compose network regardless, so the host port is purely
+      # for local debugging (e.g. Surrealist, `surreal sql`). Exposing this
+      # on 0.0.0.0 would let anyone who can reach the host connect with the
+      # default root:root credentials.
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:
@@ -34,6 +41,13 @@ services:
       - SURREAL_PASSWORD=${SURREAL_PASSWORD:-root}
       - SURREAL_NAMESPACE=open_notebook
       - SURREAL_DATABASE=open_notebook
+
+      # OPTIONAL: heavy extraction runtimes, installed on first startup when
+      # enabled (downloads are cached on the ./notebook_data volume, so only the
+      # first boot is slow). See docs/5-CONFIGURATION/environment-reference.md.
+      # - OPEN_NOTEBOOK_ENABLE_DOCLING=true    # Docling engine + OCR + image sources (large ML stack)
+      # - OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true   # local Crawl4AI (bundles a Chromium browser)
+      # - CRAWL4AI_API_URL=http://crawl4ai:11235  # use a remote Crawl4AI server instead (no local install)
     volumes:
       - ./notebook_data:/app/data
     depends_on:

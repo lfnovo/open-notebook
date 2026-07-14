@@ -8,7 +8,7 @@ import subprocess
 import textwrap
 import uuid
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Literal, Optional
 
 from jinja2 import Environment, FileSystemLoader
 from langchain_core.messages import BaseMessage
@@ -19,13 +19,16 @@ from open_notebook.ai.models import DefaultModels, Model
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.config import DATA_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
 from open_notebook.podcasts.models import EpisodeVideo, PodcastEpisode
+from open_notebook.podcasts.video_paths import resolve_contained_video_path
 from open_notebook.podcasts.video_presets import (
     DEFAULT_VIDEO_STYLE_PRESET,
     VideoStylePreset,
     get_video_style_preset,
 )
 from open_notebook.utils.text_utils import clean_thinking_content, extract_text_content
+from open_notebook.utils.url_validation import validate_url
 
 DEFAULT_CANVAS = {"width": 1920, "height": 1080, "fps": 30}
 VIDEO_PROMPTS_DIR = Path(__file__).resolve().parents[2] / "prompts" / "podcast" / "video"
@@ -62,29 +65,12 @@ def build_video_output_dir(data_folder: str = DATA_FOLDER) -> tuple[str, Path]:
     return video_dir_name, output_dir
 
 
-def _resolve_path(path: str) -> Path:
-    if path.startswith("file://"):
-        from urllib.parse import unquote, urlparse
-
-        return Path(unquote(urlparse(path).path))
-    resolved = Path(path)
-    if resolved.exists():
-        return resolved
-    app_data_prefix = Path("/app/data")
-    try:
-        relative_to_app_data = resolved.relative_to(app_data_prefix)
-        mapped = Path(DATA_FOLDER) / relative_to_app_data
-        if mapped.exists():
-            return mapped
-    except ValueError:
-        pass
-    return resolved
-
-
 def _episode_base_dir(episode: PodcastEpisode) -> Optional[Path]:
     if not episode.audio_file:
         return None
-    audio_path = _resolve_path(episode.audio_file)
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
+        return None
     if audio_path.parent.name == "audio":
         return audio_path.parent.parent
     return audio_path.parent
@@ -155,7 +141,8 @@ def _entry_durations(episode: PodcastEpisode, entries: List[Dict[str, Any]]) -> 
     if durations and any(duration > 0 for duration in durations):
         return durations
 
-    audio_duration = _probe_duration(_resolve_path(episode.audio_file)) if episode.audio_file else None
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    audio_duration = _probe_duration(audio_path) if audio_path is not None else None
     if not audio_duration or not entries:
         return [30.0 for _ in entries]
     per_entry = audio_duration / len(entries)
@@ -594,7 +581,9 @@ async def generate_google_image(
     }
 
 
-def _openai_image_size(canvas: Dict[str, Any]) -> str:
+def _openai_image_size(
+    canvas: Dict[str, Any],
+) -> Literal["1536x1024", "1024x1536", "1024x1024"]:
     width = int(canvas.get("width", 1920))
     height = int(canvas.get("height", 1080))
     if width > height:
@@ -627,9 +616,9 @@ async def generate_openai_image(
     if not api_key:
         raise ValueError("OpenAI image generation requires an API key")
 
-    client_kwargs = {"api_key": api_key}
-    if config.get("base_url"):
-        client_kwargs["base_url"] = config["base_url"]
+    base_url = config.get("base_url")
+    if base_url:
+        await validate_url(base_url, "openai")
 
     model_candidates = [model.name]
     for candidate in OPENAI_IMAGE_FALLBACK_MODELS:
@@ -637,7 +626,12 @@ async def generate_openai_image(
             model_candidates.append(candidate)
 
     def _generate() -> tuple[bytes, str]:
-        client = OpenAI(timeout=120.0, max_retries=1, **client_kwargs)
+        client = OpenAI(
+            api_key=api_key,
+            base_url=base_url or None,
+            timeout=120.0,
+            max_retries=1,
+        )
         last_error: Optional[Exception] = None
         for model_name in model_candidates:
             try:
@@ -707,7 +701,7 @@ async def generate_scene_assets(
                 "provider": image_model.provider,
                 "requested_model": image_model.name,
                 "fallback": True,
-                "error": str(e),
+                "error": "Image generation failed; fallback placeholder used",
             }
 
         asset = {
@@ -751,7 +745,10 @@ def _contain_image(image: Image.Image, size: tuple[int, int]) -> Image.Image:
 def compose_scene_frame(item: Dict[str, Any], frame_path: Path, canvas: Dict[str, Any]) -> None:
     width = int(canvas.get("width", 1920))
     height = int(canvas.get("height", 1080))
-    composed = _contain_image(Image.open(item["asset_path"]), (width, height))
+    asset_path = resolve_contained_video_path(item.get("asset_path"))
+    if asset_path is None or not asset_path.exists():
+        raise ValueError("Storyboard asset path is invalid or missing")
+    composed = _contain_image(Image.open(asset_path), (width, height))
     frame_path.parent.mkdir(parents=True, exist_ok=True)
     composed.save(frame_path, quality=95)
 
@@ -775,9 +772,11 @@ def render_video_from_storyboard(
 ) -> str:
     if not episode.audio_file:
         raise ValueError("Episode has no audio file")
-    audio_path = _resolve_path(episode.audio_file)
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
+        raise ValueError("Episode audio file path is invalid")
     if not audio_path.exists():
-        raise ValueError(f"Episode audio file does not exist: {audio_path}")
+        raise ValueError("Episode audio file does not exist")
     if not shutil.which("ffmpeg"):
         raise ValueError("ffmpeg is not available")
 

@@ -60,7 +60,7 @@ Instead of memorizing endpoints, use the interactive API docs:
 **Chat** - Conversational AI interface
 - `GET/POST /chat/sessions` - Manage chat sessions
 - `POST /chat/execute` - Send message and get response
-- `POST /chat/context/build` - Prepare context for chat
+- `POST /chat/context` - Prepare context for chat
 
 **Search** - Find content by text or semantic similarity
 - `POST /search` - Full-text or vector search

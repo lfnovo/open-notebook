@@ -110,8 +110,9 @@ export function NotebookHeader({ notebook }: NotebookHeaderProps) {
           />
           
           <div className="text-sm text-muted-foreground">
-            {t('common.created').replace('{time}', formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }))} • 
-            {t('common.updated').replace('{time}', formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }))}
+            {t('common.created', { time: formatDistanceToNow(new Date(notebook.created), { addSuffix: true, locale: dfLocale }) })}
+            {' • '}
+            {t('common.updated', { time: formatDistanceToNow(new Date(notebook.updated), { addSuffix: true, locale: dfLocale }) })}
           </div>
         </div>
       </div>

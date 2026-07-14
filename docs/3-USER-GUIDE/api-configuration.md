@@ -302,7 +302,7 @@ API keys stored in the database are encrypted using Fernet (AES-128-CBC + HMAC-S
 
 | Setting | Default Value | Production Recommendation |
 |---------|---------------|---------------------------|
-| Password | `open-notebook-change-me` | Set `OPEN_NOTEBOOK_PASSWORD` |
+| Password | None - auth is fully disabled until set | Set `OPEN_NOTEBOOK_PASSWORD` |
 | Encryption Key | None (must be set) | Set `OPEN_NOTEBOOK_ENCRYPTION_KEY` to any secret string |
 
 **For production deployments, always set custom credentials.**

@@ -1,6 +1,5 @@
 import json
 import time
-from pathlib import Path
 from typing import Optional
 
 from loguru import logger
@@ -132,17 +131,18 @@ async def generate_episode_video_command(
         return EpisodeVideoGenerationOutput(
             success=True,
             video_id=str(video.id),
-            video_file_path=video_file,
-            storyboard_path=str(storyboard_path),
+            video_file_path=None,
+            storyboard_path=None,
             processing_time=time.time() - start_time,
         )
 
     except Exception as e:
         logger.error(f"Episode video generation failed: {e}")
         logger.exception(e)
+        public_error = "Video generation failed"
         if video:
             video.status = "failed"
-            video.error_message = str(e)
+            video.error_message = public_error
             await video.save()
         return EpisodeVideoGenerationOutput(
             success=False,
@@ -150,5 +150,5 @@ async def generate_episode_video_command(
             video_file_path=None,
             storyboard_path=None,
             processing_time=time.time() - start_time,
-            error_message=str(e),
+            error_message=public_error,
         )

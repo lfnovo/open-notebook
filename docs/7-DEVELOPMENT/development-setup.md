@@ -88,18 +88,19 @@ For local development, you can also use:
 ### Option A: Using Docker (Recommended)
 
 ```bash
-# Start SurrealDB in memory
-docker run -d --name surrealdb -p 8000:8000 \
+# Start SurrealDB in memory (publish the port on localhost only — the
+# database uses default credentials, so never publish it on 0.0.0.0)
+docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
   surrealdb/surrealdb:v2 start \
   --user root --pass password \
-  --bind 0.0.0.0:8000 memory
+  memory
 
 # Or with persistent storage
-docker run -d --name surrealdb -p 8000:8000 \
+docker run -d --name surrealdb -p 127.0.0.1:8000:8000 \
   -v surrealdb_data:/data \
   surrealdb/surrealdb:v2 start \
   --user root --pass password \
-  --bind 0.0.0.0:8000 file:/data/surreal.db
+  file:/data/surreal.db
 ```
 
 ### Option B: Using Make
@@ -200,15 +201,26 @@ After setup, verify everything is working:
 - [ ] **Database**: API logs show migrations completing
 - [ ] **Frontend** (optional): `http://localhost:3000` loads
 
+## Development Workflows: When to Use What?
+
+| Workflow | Use Case | Speed | Production Parity |
+|----------|----------|-------|-------------------|
+| **Local Services** (`make start-all`) | Day-to-day development, fastest iteration | ⚡⚡⚡ Fast | Medium |
+| **Docker Compose** (`make dev`) | Testing containerized setup | ⚡⚡ Medium | High |
+| **Local Docker Build** (`make docker-build-local`) | Testing Dockerfile changes | ⚡ Slow | Very High |
+| **Multi-platform Build** (`make docker-push`) | Publishing releases (see [Release Process](../../.github/RELEASE_PROCESS.md)) | 🐌 Very Slow | Exact |
+
+Local services give hot reload, direct log access and easy debugging; Docker Compose (`examples/docker-compose-dev.yml` via `make dev`, `examples/docker-compose-full-local.yml` via `make full`) is closer to production. Use `make docker-build-local` before touching anything Docker-related in a PR.
+
 ## Starting Services Together
 
 ### Quick Start All Services
 
 ```bash
-make start-all
+make start-all    # SurrealDB + API + worker + frontend
+make status       # see what's running
+make stop-all     # stop everything
 ```
-
-This starts SurrealDB, API, and frontend in one command.
 
 ### Individual Terminals (Recommended for Development)
 
@@ -222,10 +234,23 @@ make database
 make api
 ```
 
-**Terminal 3 - Frontend:**
+**Terminal 3 - Background worker** (required for podcasts, embeddings, source processing):
+```bash
+make worker-start
+```
+
+**Terminal 4 - Frontend:**
 ```bash
 cd frontend && npm run dev
 ```
+
+### Performance Tips
+
+1. Use `make start-all` instead of Docker for daily work
+2. Keep SurrealDB running between sessions (`make database`)
+3. Use `make docker-build-local` only when testing Dockerfile changes
+4. Skip multi-platform builds until ready to publish
+5. Clean caches when things get weird: `make clean-cache`, `docker system prune -a`
 
 ## Development Tools Setup
 
@@ -309,7 +334,7 @@ git push origin feature/my-feature -f
 1. Check if SurrealDB is running: `docker ps | grep surrealdb`
 2. Verify URL in `.env`: Should be `ws://localhost:8000/rpc`
 3. Restart SurrealDB: `docker stop surrealdb && docker rm surrealdb`
-4. Then restart with: `docker run -d --name surrealdb -p 8000:8000 surrealdb/surrealdb:v2 start --user root --pass password --bind 0.0.0.0:8000 memory`
+4. Then restart with: `docker run -d --name surrealdb -p 127.0.0.1:8000:8000 surrealdb/surrealdb:v2 start --user root --pass password memory`
 
 ### "Address already in use"
 

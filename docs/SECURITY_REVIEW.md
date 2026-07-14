@@ -52,7 +52,7 @@ Security review of the API key management implementation for Open Notebook. The 
 | Item | Status | Notes |
 |------|--------|-------|
 | Password protection | PASS | Bearer token authentication |
-| Default password | PASS | "open-notebook-change-me" when not set |
+| Default password | PASS | Auth is fully disabled (not a hardcoded default password) when `OPEN_NOTEBOOK_PASSWORD` is unset |
 | Docker secrets support | PASS | `_FILE` suffix for password |
 | Security warnings | PASS | Logged when using defaults |
 

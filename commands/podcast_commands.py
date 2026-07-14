@@ -4,17 +4,18 @@ from pathlib import Path
 from typing import Optional
 
 from loguru import logger
-from pydantic import BaseModel
 from surreal_commands import CommandInput, CommandOutput, command
 
-from open_notebook.config import DATA_FOLDER
+from open_notebook.config import PODCASTS_FOLDER
 from open_notebook.database.repository import ensure_record_id, repo_query
+from open_notebook.podcasts.audio_paths import to_relative_audio_path
 from open_notebook.podcasts.models import (
     EpisodeProfile,
     PodcastEpisode,
     SpeakerProfile,
     _resolve_model_config,
 )
+from open_notebook.utils.model_utils import full_model_dump
 
 try:
     from podcast_creator import configure, create_podcast
@@ -23,34 +24,29 @@ except ImportError as e:
     raise ValueError("podcast_creator library not available")
 
 
-def build_episode_output_dir(data_folder: str) -> tuple[str, Path]:
+def build_episode_output_dir(podcasts_folder: str = PODCASTS_FOLDER) -> tuple[str, Path]:
     """Build a filesystem-safe output directory path for a podcast episode.
 
     Uses a UUID as the directory name so the path is safe regardless of
     what the user typed as episode name (spaces, special chars, etc.).
 
+    Builds under PODCASTS_FOLDER — the same root to_relative_audio_path()
+    validates against at write time (#1030) — so the two can't drift apart.
+
     Returns:
         A tuple of (episode_dir_name, output_dir_path).
     """
     episode_dir_name = str(uuid.uuid4())
-    output_dir = Path(f"{data_folder}/podcasts/episodes/{episode_dir_name}")
+    output_dir = Path(podcasts_folder) / "episodes" / episode_dir_name
     return episode_dir_name, output_dir
-
-
-def full_model_dump(model):
-    if isinstance(model, BaseModel):
-        return model.model_dump()
-    elif isinstance(model, dict):
-        return {k: full_model_dump(v) for k, v in model.items()}
-    elif isinstance(model, list):
-        return [full_model_dump(item) for item in model]
-    else:
-        return model
 
 
 class PodcastGenerationInput(CommandInput):
     episode_profile: str
-    speaker_profile: str
+    # Speaker profile record ID or name (the API boundary resolves the
+    # user-facing name to a record ID before submitting; both are accepted
+    # here for robustness).
+    speaker_profile: Optional[str] = None
     episode_name: str
     content: str
     briefing_suffix: Optional[str] = None
@@ -88,12 +84,25 @@ async def generate_podcast_command(
                 f"Episode profile '{input_data.episode_profile}' not found"
             )
 
-        speaker_profile = await SpeakerProfile.get_by_name(
-            episode_profile.speaker_config
-        )
-        if not speaker_profile:
+        # Honor the explicitly requested speaker profile when provided,
+        # falling back to the episode profile's configured speaker
+        # (a speaker_profile record ID since migration 20, None when the
+        # referenced profile no longer exists).
+        speaker_ref = input_data.speaker_profile or episode_profile.speaker_config
+        if not speaker_ref:
             raise ValueError(
-                f"Speaker profile '{episode_profile.speaker_config}' not found"
+                f"Episode profile '{episode_profile.name}' has no speaker "
+                "profile configured. Please update the profile to select a "
+                "speaker profile."
+            )
+        speaker_profile = await SpeakerProfile.resolve(speaker_ref)
+        if not speaker_profile:
+            if input_data.speaker_profile:
+                raise ValueError(f"Speaker profile '{speaker_ref}' not found")
+            raise ValueError(
+                f"Episode profile '{episode_profile.name}' references a "
+                "speaker profile that no longer exists. Please update the "
+                "profile to select a speaker profile."
             )
 
         logger.info(f"Loaded episode profile: {episode_profile.name}")
@@ -145,11 +154,42 @@ async def generate_podcast_command(
             profile["name"]: profile for profile in speaker_profiles
         }
 
+        # Map speaker_profile record ID -> name so podcast-creator keeps
+        # receiving speaker names (its EpisodeProfile.speaker_config is a
+        # required non-empty name string, cross-referenced against the
+        # speakers config keyed by name).
+        speaker_name_by_id = {
+            str(profile["id"]): profile["name"] for profile in speaker_profiles
+        }
+
         # 5. Inject resolved model configs into profile dicts
         # Resolve ALL episode profiles (podcast-creator validates all).
         # Remove profiles that fail resolution to prevent validation errors.
         for ep_name in list(episode_profiles_dict.keys()):
             ep_dict = episode_profiles_dict[ep_name]
+
+            # Since migration 20, speaker_config stores a record ID (and is
+            # None when the referenced speaker profile no longer exists).
+            # Rewrite it back to the speaker name for podcast-creator; drop
+            # profiles whose reference doesn't resolve so a single orphaned
+            # profile can't fail validation for the whole config. The profile
+            # being generated always resolves: its speaker was validated above.
+            speaker_ref = ep_dict.get("speaker_config")
+            speaker_name = (
+                speaker_name_by_id.get(str(speaker_ref)) if speaker_ref else None
+            )
+            if not speaker_name and ep_name == episode_profile.name:
+                speaker_name = speaker_profile.name
+            if not speaker_name:
+                logger.warning(
+                    f"Episode profile '{ep_name}' references a speaker profile "
+                    f"that no longer exists ({speaker_ref!r}), removing from "
+                    "config to prevent validation errors"
+                )
+                del episode_profiles_dict[ep_name]
+                continue
+            ep_dict["speaker_config"] = speaker_name
+
             try:
                 if ep_dict.get("outline_llm"):
                     prov, model, conf = await _resolve_model_config(
@@ -230,6 +270,18 @@ async def generate_podcast_command(
         )
         await episode.save()
 
+        # SECURITY NOTE for future work: podcast_creator also supports
+        # configure("templates", {...}), which compiles the given string
+        # directly as Jinja2 template *source* (Prompter(template_text=...)
+        # in podcast_creator/config.py) - the exact SSTI shape already fixed
+        # in open_notebook/graphs/transformation.py (GHSA-f35w-wx37-26q7).
+        # We don't call it today (confirmed: no code path here sets the
+        # "templates" key, so podcast generation always uses the file-based
+        # prompts/podcast/*.jinja templates in this repo). If a "custom
+        # podcast template" feature is ever added, do NOT wire user/profile
+        # text into configure("templates", ...) - render it through a
+        # fixed, developer-authored template with the user text passed in
+        # as a plain variable instead, matching transformation.py's fix.
         configure("speakers_config", {"profiles": speaker_profiles_dict})
         configure("episode_config", {"profiles": episode_profiles_dict})
 
@@ -238,7 +290,7 @@ async def generate_podcast_command(
         logger.info(f"Generated briefing (length: {len(briefing)} chars)")
 
         # 7. Create output directory using UUID for filesystem-safe paths
-        episode_dir_name, output_dir = build_episode_output_dir(DATA_FOLDER)
+        episode_dir_name, output_dir = build_episode_output_dir()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(f"Created output directory: {output_dir}")
@@ -255,14 +307,37 @@ async def generate_podcast_command(
             episode_profile=episode_profile.name,
         )
 
-        episode.audio_file = (
-            str(result.get("final_output_file_path")) if result else None
+        # podcast-creator reports audio-combination failures IN-BAND: on
+        # ffmpeg/clip errors combine_audio_files() returns an "ERROR: ..."
+        # string in final_output_file_path instead of a path. Detect it
+        # before path conversion so the real error surfaces (below, after
+        # the transcript/outline are persisted) instead of a misleading
+        # "outside the podcasts folder" ValueError.
+        raw_audio_path = result.get("final_output_file_path") if result else None
+        audio_error: Optional[str] = None
+        if raw_audio_path is not None and str(raw_audio_path).startswith("ERROR:"):
+            audio_error = str(raw_audio_path)
+            raw_audio_path = None
+
+        # Store the audio path RELATIVE to PODCASTS_FOLDER (#1030). The
+        # validation inside to_relative_audio_path guarantees the DB never
+        # holds an absolute or root-escaping value; a violation raises
+        # ValueError, which marks the job permanently failed (no retry).
+        audio_file_rel = (
+            to_relative_audio_path(raw_audio_path) if raw_audio_path else None
         )
+        episode.audio_file = audio_file_rel
         episode.transcript = {
             "transcript": full_model_dump(result["transcript"]) if result else None
         }
         episode.outline = full_model_dump(result["outline"]) if result else None
         await episode.save()
+
+        if audio_error:
+            # Transcript/outline are saved above; fail the job with the real
+            # audio-combination error instead of reporting a silent success
+            # for an episode with no playable audio.
+            raise RuntimeError(f"Podcast audio generation failed: {audio_error}")
 
         processing_time = time.time() - start_time
         logger.info(
@@ -272,9 +347,7 @@ async def generate_podcast_command(
         return PodcastGenerationOutput(
             success=True,
             episode_id=str(episode.id),
-            audio_file_path=str(result.get("final_output_file_path"))
-            if result
-            else None,
+            audio_file_path=audio_file_rel,
             transcript={"transcript": full_model_dump(result["transcript"])}
             if result.get("transcript")
             else None,

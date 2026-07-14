@@ -71,7 +71,7 @@ export function NotebookDeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>{t('notebooks.deleteNotebook')}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t('notebooks.deleteNotebookDesc').replace('{name}', notebookName)}
+            {t('notebooks.deleteNotebookDesc', { name: notebookName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -91,10 +91,7 @@ export function NotebookDeleteDialog({
               <div className="text-sm">
                 {preview.note_count > 0 ? (
                   <p className="text-destructive font-medium">
-                    {t('notebooks.deleteNotebookNotes').replace(
-                      '{count}',
-                      String(preview.note_count)
-                    )}
+                    {t('notebooks.deleteNotebookNotes', { count: preview.note_count })}
                   </p>
                 ) : (
                   <p className="text-muted-foreground">{t('notebooks.deleteNotebookNoNotes')}</p>
@@ -105,10 +102,7 @@ export function NotebookDeleteDialog({
               {preview.shared_source_count > 0 && (
                 <div className="text-sm">
                   <p className="text-muted-foreground">
-                    {t('notebooks.deleteNotebookSharedSources').replace(
-                      '{count}',
-                      String(preview.shared_source_count)
-                    )}
+                    {t('notebooks.deleteNotebookSharedSources', { count: preview.shared_source_count })}
                   </p>
                 </div>
               )}
@@ -124,10 +118,7 @@ export function NotebookDeleteDialog({
               {preview.exclusive_source_count > 0 && (
                 <div className="pt-3 border-t space-y-3">
                   <p className="text-sm text-destructive font-medium">
-                    {t('notebooks.deleteNotebookExclusiveSources').replace(
-                      '{count}',
-                      String(preview.exclusive_source_count)
-                    )}
+                    {t('notebooks.deleteNotebookExclusiveSources', { count: preview.exclusive_source_count })}
                   </p>
                   <RadioGroup
                     value={sourceAction}

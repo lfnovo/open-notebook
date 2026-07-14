@@ -1,0 +1,14 @@
+-- Migration 22 rollback: re-define the legacy provider/model string fields
+-- (best effort, documented in #1107). The up migration UNSET the stored
+-- values before dropping the definitions, so the legacy strings themselves
+-- are NOT recoverable - this rollback only restores the schema shape that
+-- migration 14 left (optional strings, app-ignored). Profiles keep working
+-- through the Model registry references (outline_llm, transcript_llm,
+-- voice_model), which the up migration only ever populated, never cleared.
+
+DEFINE FIELD OVERWRITE outline_provider ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE outline_model ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE transcript_provider ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE transcript_model ON TABLE episode_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE tts_provider ON TABLE speaker_profile TYPE option<string>;
+DEFINE FIELD OVERWRITE tts_model ON TABLE speaker_profile TYPE option<string>;

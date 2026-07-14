@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
@@ -15,6 +14,7 @@ from open_notebook.podcasts.video_generation import (
     patch_storyboard_item,
     render_video_from_storyboard,
 )
+from open_notebook.podcasts.video_paths import resolve_contained_video_path
 from open_notebook.podcasts.video_presets import (
     DEFAULT_VIDEO_STYLE_PRESET,
     list_video_style_presets,
@@ -24,7 +24,8 @@ from open_notebook.podcasts.video_presets import (
 def _video_file_url(video: EpisodeVideo) -> Optional[str]:
     if not video.video_file:
         return None
-    if not Path(video.video_file).exists():
+    video_path = resolve_contained_video_path(video.video_file)
+    if video_path is None or not video_path.exists():
         return None
     return f"/api/podcasts/videos/{quote(str(video.id), safe='')}/file"
 
@@ -97,7 +98,7 @@ class VideoService:
             logger.error(f"Failed to submit video generation job: {e}")
             raise HTTPException(
                 status_code=500,
-                detail=f"Failed to submit video generation job: {str(e)}",
+                detail="Failed to submit video generation job",
             )
 
     @staticmethod
@@ -105,6 +106,10 @@ class VideoService:
         try:
             status = await get_command_status(job_id)
             result = status.result if status else None
+            public_result = dict(result) if isinstance(result, dict) else result
+            if isinstance(public_result, dict):
+                public_result.pop("video_file_path", None)
+                public_result.pop("storyboard_path", None)
             episode_video_id = None
             video_url = None
             if isinstance(result, dict):
@@ -122,7 +127,7 @@ class VideoService:
             return {
                 "job_id": job_id,
                 "status": status.status if status else "unknown",
-                "result": result,
+                "result": public_result,
                 "episode_video_id": str(episode_video_id) if episode_video_id else None,
                 "video_url": video_url,
                 "error_message": getattr(status, "error_message", None)
@@ -132,7 +137,7 @@ class VideoService:
             }
         except Exception as e:
             logger.error(f"Failed to get video job status: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Failed to get video job status")
 
     @staticmethod
     async def list_for_episode(episode_id: str) -> List[EpisodeVideo]:
@@ -140,7 +145,7 @@ class VideoService:
             return await list_episode_videos(episode_id)
         except Exception as e:
             logger.error(f"Failed to list episode videos: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Failed to list episode videos")
 
     @staticmethod
     async def get(video_id: str) -> EpisodeVideo:
@@ -159,19 +164,20 @@ class VideoService:
                 video_id, item_id, patch.model_dump(exclude_none=True)
             )
         except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+            logger.info(f"Storyboard item not found: {e}")
+            raise HTTPException(status_code=404, detail="Storyboard item not found")
         except Exception as e:
             logger.error(f"Failed to patch storyboard item: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Failed to patch storyboard item")
 
     @staticmethod
     async def regenerate_item(video_id: str, item_id: str) -> EpisodeVideo:
         try:
             video = await get_episode_video(video_id)
             output_dir_raw = video.settings.get("output_dir")
-            output_dir = Path(output_dir_raw) if output_dir_raw else None
+            output_dir = resolve_contained_video_path(output_dir_raw)
             if output_dir is None:
-                video_file = Path(video.video_file) if video.video_file else None
+                video_file = resolve_contained_video_path(video.video_file)
                 output_dir = video_file.parents[1] if video_file else None
             if output_dir is None:
                 raise ValueError("Cannot resolve video output directory")
@@ -200,7 +206,9 @@ class VideoService:
             raise HTTPException(status_code=404, detail="Storyboard item not found")
         except Exception as e:
             logger.error(f"Failed to regenerate storyboard item: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(
+                status_code=500, detail="Failed to regenerate storyboard item"
+            )
 
     @staticmethod
     async def render(video_id: str) -> EpisodeVideo:
@@ -208,9 +216,15 @@ class VideoService:
             video = await get_episode_video(video_id)
             episode = await PodcastEpisode.get(str(video.episode))
             if video.video_file:
-                output_dir = Path(video.video_file).parents[1]
+                video_file = resolve_contained_video_path(video.video_file)
+                if video_file is None:
+                    raise ValueError("Video file path is invalid")
+                output_dir = video_file.parents[1]
             elif video.assets:
-                output_dir = Path(video.assets[0]["path"]).parents[1]
+                asset_path = resolve_contained_video_path(video.assets[0].get("path"))
+                if asset_path is None:
+                    raise ValueError("Video asset path is invalid")
+                output_dir = asset_path.parents[1]
             else:
                 raise ValueError("Video has no assets to render")
             video.video_file = render_video_from_storyboard(
@@ -224,4 +238,4 @@ class VideoService:
             return video
         except Exception as e:
             logger.error(f"Failed to render episode video: {e}")
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail="Failed to render episode video")

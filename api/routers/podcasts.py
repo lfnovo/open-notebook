@@ -1,6 +1,7 @@
+from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional
-from urllib.parse import quote, unquote, urlparse
+from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
@@ -18,8 +19,101 @@ from api.video_service import (
     StoryboardItemPatchRequest,
     VideoService,
 )
+from open_notebook.ai.models import Model
+from open_notebook.exceptions import OpenNotebookError
+from open_notebook.podcasts.audio_paths import resolve_contained_audio_path
+from open_notebook.podcasts.models import PodcastEpisode
+from open_notebook.podcasts.video_paths import resolve_contained_video_path
 
 router = APIRouter()
+
+# Model reference fields stored in the denormalized profile snapshots on an
+# episode, mapped to the resolved display fields the frontend renders
+# ("provider / name" rows in EpisodeCard). Mirrors the speaker_config ->
+# speaker_config_name precedent in api/routers/episode_profiles.py.
+_EPISODE_PROFILE_MODEL_FIELDS = {
+    "outline_llm": ("outline_model_provider", "outline_model_name"),
+    "transcript_llm": ("transcript_model_provider", "transcript_model_name"),
+}
+_SPEAKER_PROFILE_MODEL_FIELDS = {
+    "voice_model": ("voice_model_provider", "voice_model_name"),
+}
+
+
+def _collect_snapshot_model_ids(episodes: List[PodcastEpisode]) -> List[str]:
+    """Collect the distinct model record IDs referenced by episode snapshots."""
+    ids = set()
+    for episode in episodes:
+        for field in _EPISODE_PROFILE_MODEL_FIELDS:
+            ref = (episode.episode_profile or {}).get(field)
+            if ref:
+                ids.add(str(ref))
+        for field in _SPEAKER_PROFILE_MODEL_FIELDS:
+            ref = (episode.speaker_profile or {}).get(field)
+            if ref:
+                ids.add(str(ref))
+    return sorted(ids)
+
+
+def _with_resolved_model_fields(
+    snapshot: dict,
+    field_map: dict,
+    models_by_id: dict,
+) -> dict:
+    """Return a copy of a profile snapshot with resolved model display fields.
+
+    Only sets the display fields when the reference resolves; unresolvable
+    references (deleted model) and legacy snapshots without references are
+    left untouched so the frontend can fall back to the historical
+    provider/model strings, then to a placeholder.
+    """
+    enriched = dict(snapshot or {})
+    for ref_field, (provider_field, name_field) in field_map.items():
+        ref = enriched.get(ref_field)
+        info = models_by_id.get(str(ref)) if ref else None
+        if info:
+            enriched[provider_field] = info["provider"]
+            enriched[name_field] = info["name"]
+    return enriched
+
+
+async def _resolve_snapshot_models(
+    episodes: List[PodcastEpisode],
+) -> dict:
+    """Batch-resolve every model reference in the episodes' snapshots.
+
+    One query for the whole list (see Model.get_display_info_for_ids) - a
+    failure degrades to no resolved fields rather than failing the request.
+    """
+    try:
+        return await Model.get_display_info_for_ids(
+            _collect_snapshot_model_ids(episodes)
+        )
+    except Exception as e:
+        logger.warning(f"Error batch-resolving snapshot model references: {str(e)}")
+        return {}
+
+
+def _delete_episode_audio(episode: PodcastEpisode, episode_id: str) -> None:
+    """Best-effort unlink of an episode's audio file, refusing invalid paths.
+
+    Shared by the delete and retry endpoints. Legacy/escaping audio_file
+    values (resolve_contained_audio_path -> None) are logged and skipped.
+    """
+    if not episode.audio_file:
+        return
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
+        logger.warning(
+            f"Refusing to delete audio file outside podcasts directory "
+            f"for episode {episode_id}: {episode.audio_file}"
+        )
+    elif audio_path.exists():
+        try:
+            audio_path.unlink()
+            logger.info(f"Deleted audio file: {audio_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete audio file {audio_path}: {e}")
 
 
 class PodcastEpisodeResponse(BaseModel):
@@ -52,22 +146,12 @@ class EpisodeVideoResponse(BaseModel):
     created: Optional[str] = None
 
 
-def _resolve_audio_path(audio_file: str) -> Path:
-    if audio_file.startswith("file://"):
-        parsed = urlparse(audio_file)
-        return Path(unquote(parsed.path))
-    return Path(audio_file)
-
-
-def _resolve_file_path(file_path: str) -> Path:
-    return _resolve_audio_path(file_path)
-
-
 def _asset_to_response(video, asset: dict) -> dict:
     response = dict(asset)
+    asset_path = response.pop("path", None)
     asset_id = response.get("id")
-    asset_path = response.get("path")
-    if asset_id and asset_path and _resolve_file_path(asset_path).exists():
+    resolved_path = resolve_contained_video_path(asset_path)
+    if asset_id and resolved_path is not None and resolved_path.exists():
         response["file_url"] = (
             f"/api/podcasts/videos/{quote(str(video.id), safe='')}"
             f"/assets/{quote(str(asset_id), safe='')}/file"
@@ -75,22 +159,36 @@ def _asset_to_response(video, asset: dict) -> dict:
     return response
 
 
+def _public_storyboard(storyboard: Optional[dict]) -> Optional[dict]:
+    if storyboard is None:
+        return None
+    response = deepcopy(storyboard)
+    for item in response.get("items", []):
+        if isinstance(item, dict):
+            item.pop("asset_path", None)
+    return response
+
+
 def _video_to_response(video) -> EpisodeVideoResponse:
     video_url = None
     if video.video_file:
-        video_path = _resolve_file_path(video.video_file)
-        if video_path.exists():
+        video_path = resolve_contained_video_path(video.video_file)
+        if video_path is not None and video_path.exists():
             video_url = f"/api/podcasts/videos/{quote(str(video.id), safe='')}/file"
     return EpisodeVideoResponse(
         id=str(video.id),
         name=video.name,
         episode=str(video.episode),
         status=video.status,
-        video_file=video.video_file,
+        video_file=None,
         video_url=video_url,
-        storyboard=video.storyboard,
+        storyboard=_public_storyboard(video.storyboard),
         assets=[_asset_to_response(video, asset) for asset in video.assets],
-        settings=video.settings,
+        settings={
+            key: value
+            for key, value in (video.settings or {}).items()
+            if key != "output_dir"
+        },
         usage=video.usage,
         error_message=video.error_message,
         created=str(video.created) if video.created else None,
@@ -121,6 +219,10 @@ async def generate_podcast(request: PodcastGenerationRequest):
             episode_name=request.episode_name,
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error generating podcast: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to generate podcast")
@@ -133,6 +235,10 @@ async def get_podcast_job_status(job_id: str):
         status_data = await PodcastService.get_job_status(job_id)
         return status_data
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching podcast job status: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch job status")
@@ -190,7 +296,9 @@ async def stream_episode_video_file(video_id: str):
     video = await VideoService.get(video_id)
     if not video.video_file:
         raise HTTPException(status_code=404, detail="Video has no rendered file")
-    video_path = _resolve_file_path(video.video_file)
+    video_path = resolve_contained_video_path(video.video_file)
+    if video_path is None:
+        raise HTTPException(status_code=403, detail="Access to video file denied")
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video file not found on disk")
     return FileResponse(video_path, media_type="video/mp4", filename=video_path.name)
@@ -215,7 +323,9 @@ async def stream_episode_video_asset_file(video_id: str, asset_id: str):
     if not asset or not asset.get("path"):
         raise HTTPException(status_code=404, detail="Video asset not found")
 
-    asset_path = _resolve_file_path(asset["path"])
+    asset_path = resolve_contained_video_path(asset["path"])
+    if asset_path is None:
+        raise HTTPException(status_code=403, detail="Access to video asset denied")
     if not asset_path.exists():
         raise HTTPException(
             status_code=404, detail="Video asset file not found on disk"
@@ -268,6 +378,22 @@ async def list_podcast_episodes():
     try:
         episodes = await PodcastService.list_episodes()
 
+        # Batch-fetch job status for every episode with a command in one
+        # query instead of one round trip per episode (see
+        # PodcastEpisode.get_job_details_for_commands docstring).
+        try:
+            details_by_command = await PodcastEpisode.get_job_details_for_commands(
+                [episode.command for episode in episodes if episode.command]
+            )
+        except Exception as e:
+            logger.warning(f"Error batch-fetching podcast job statuses: {str(e)}")
+            details_by_command = {}
+
+        # Batch-resolve the snapshots' model references (outline_llm,
+        # transcript_llm, voice_model) to display fields in one query
+        # instead of one lookup per episode.
+        models_by_id = await _resolve_snapshot_models(episodes)
+
         response_episodes = []
         for episode in episodes:
             # Skip incomplete episodes without command or audio
@@ -278,28 +404,35 @@ async def list_podcast_episodes():
             job_status = None
             error_message = None
             if episode.command:
-                try:
-                    detail = await episode.get_job_detail()
+                detail = details_by_command.get(str(episode.command))
+                if detail is not None:
                     job_status = detail["status"]
                     error_message = detail["error_message"]
-                except Exception:
+                else:
                     job_status = "unknown"
             else:
                 # No command but has audio file = completed import
                 job_status = "completed"
 
             audio_url = None
-            if episode.audio_file:
-                audio_path = _resolve_audio_path(episode.audio_file)
-                if audio_path.exists():
-                    audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+            audio_path = resolve_contained_audio_path(episode.audio_file)
+            if audio_path is not None and audio_path.exists():
+                audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
 
             response_episodes.append(
                 PodcastEpisodeResponse(
                     id=str(episode.id),
                     name=episode.name,
-                    episode_profile=episode.episode_profile,
-                    speaker_profile=episode.speaker_profile,
+                    episode_profile=_with_resolved_model_fields(
+                        episode.episode_profile,
+                        _EPISODE_PROFILE_MODEL_FIELDS,
+                        models_by_id,
+                    ),
+                    speaker_profile=_with_resolved_model_fields(
+                        episode.speaker_profile,
+                        _SPEAKER_PROFILE_MODEL_FIELDS,
+                        models_by_id,
+                    ),
                     briefing=episode.briefing,
                     audio_file=episode.audio_file,
                     audio_url=audio_url,
@@ -313,6 +446,10 @@ async def list_podcast_episodes():
 
         return response_episodes
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error listing podcast episodes: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to list podcast episodes")
@@ -339,16 +476,25 @@ async def get_podcast_episode(episode_id: str):
             job_status = "completed" if episode.audio_file else "unknown"
 
         audio_url = None
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
-                audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+        audio_path = resolve_contained_audio_path(episode.audio_file)
+        if audio_path is not None and audio_path.exists():
+            audio_url = f"/api/podcasts/episodes/{episode.id}/audio"
+
+        models_by_id = await _resolve_snapshot_models([episode])
 
         return PodcastEpisodeResponse(
             id=str(episode.id),
             name=episode.name,
-            episode_profile=episode.episode_profile,
-            speaker_profile=episode.speaker_profile,
+            episode_profile=_with_resolved_model_fields(
+                episode.episode_profile,
+                _EPISODE_PROFILE_MODEL_FIELDS,
+                models_by_id,
+            ),
+            speaker_profile=_with_resolved_model_fields(
+                episode.speaker_profile,
+                _SPEAKER_PROFILE_MODEL_FIELDS,
+                models_by_id,
+            ),
             briefing=episode.briefing,
             audio_file=episode.audio_file,
             audio_url=audio_url,
@@ -359,6 +505,10 @@ async def get_podcast_episode(episode_id: str):
             error_message=error_message,
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching podcast episode: {str(e)}")
         raise HTTPException(status_code=404, detail="Episode not found")
@@ -371,6 +521,8 @@ async def stream_podcast_episode_audio(episode_id: str):
         episode = await PodcastService.get_episode(episode_id)
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching podcast episode for audio: {str(e)}")
         raise HTTPException(status_code=404, detail="Episode not found")
@@ -378,7 +530,14 @@ async def stream_podcast_episode_audio(episode_id: str):
     if not episode.audio_file:
         raise HTTPException(status_code=404, detail="Episode has no audio file")
 
-    audio_path = _resolve_audio_path(episode.audio_file)
+    audio_path = resolve_contained_audio_path(episode.audio_file)
+    if audio_path is None:
+        logger.warning(
+            f"Blocked audio access outside podcasts directory for episode "
+            f"{episode_id}: {episode.audio_file}"
+        )
+        raise HTTPException(status_code=403, detail="Access to file denied")
+
     if not audio_path.exists():
         raise HTTPException(status_code=404, detail="Audio file not found on disk")
 
@@ -416,13 +575,7 @@ async def retry_podcast_episode(episode_id: str):
             )
 
         # Delete audio file if any
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
-                try:
-                    audio_path.unlink()
-                except Exception as e:
-                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+        _delete_episode_audio(episode, episode_id)
 
         # Delete the failed episode
         await episode.delete()
@@ -439,6 +592,8 @@ async def retry_podcast_episode(episode_id: str):
 
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error retrying podcast episode: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to retry episode")
@@ -452,14 +607,7 @@ async def delete_podcast_episode(episode_id: str):
         episode = await PodcastService.get_episode(episode_id)
 
         # Delete the physical audio file if it exists
-        if episode.audio_file:
-            audio_path = _resolve_audio_path(episode.audio_file)
-            if audio_path.exists():
-                try:
-                    audio_path.unlink()
-                    logger.info(f"Deleted audio file: {audio_path}")
-                except Exception as e:
-                    logger.warning(f"Failed to delete audio file {audio_path}: {e}")
+        _delete_episode_audio(episode, episode_id)
 
         # Delete the episode from the database
         await episode.delete()
@@ -467,6 +615,10 @@ async def delete_podcast_episode(episode_id: str):
         logger.info(f"Deleted podcast episode: {episode_id}")
         return {"message": "Episode deleted successfully", "episode_id": episode_id}
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting podcast episode: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to delete episode")

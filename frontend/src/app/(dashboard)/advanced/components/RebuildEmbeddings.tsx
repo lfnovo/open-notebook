@@ -256,16 +256,13 @@ export function RebuildEmbeddings() {
                 <div className="flex justify-between text-sm">
                   <span>{t('common.progress')}</span>
                   <span className="font-medium">
-                    {t('advanced.rebuild.itemsProcessed')
-                      .replace('{processed}', processedItems.toString())
-                      .replace('{total}', totalItems.toString())
-                      .replace('{percent}', progressPercent.toFixed(1))}
+                    {t('advanced.rebuild.itemsProcessed', { processed: processedItems.toString(), total: totalItems.toString(), percent: progressPercent.toFixed(1) })}
                   </span>
                 </div>
                 <Progress value={progressPercent} className="h-2" />
                 {failedItems > 0 && (
                   <p className="text-sm text-yellow-600">
-                    ⚠️ {t('advanced.rebuild.failedItems').replace('{count}', failedItems.toString())}
+                    ⚠️ {t('advanced.rebuild.failedItems', { count: failedItems })}
                   </p>
                 )}
               </div>
@@ -303,7 +300,7 @@ export function RebuildEmbeddings() {
 
             {status.started_at && (
               <div className="text-sm text-muted-foreground space-y-1">
-                <p>{t('common.created').replace('{time}', new Date(status.started_at).toLocaleString())}</p>
+                <p>{t('common.created', { time: new Date(status.started_at).toLocaleString() })}</p>
                 {status.completed_at && (
                   <p>{t('notebooks.updated')}: {new Date(status.completed_at).toLocaleString()}</p>
                 )}

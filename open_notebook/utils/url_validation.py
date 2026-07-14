@@ -195,7 +195,7 @@ async def _resolve_safe_ips(hostname: str) -> list[str]:
     resolved_ips = await asyncio.to_thread(socket.getaddrinfo, hostname, None)
     safe: list[str] = []
     for _family, _, _, _, sockaddr in resolved_ips:
-        ip_addr = sockaddr[0]
+        ip_addr = str(sockaddr[0])
         try:
             parsed_ip = ipaddress.ip_address(ip_addr)
             _reject_dangerous_ip(parsed_ip, hostname, resolved=True)

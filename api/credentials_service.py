@@ -523,17 +523,32 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
+    user_supplied_url = False
     if provider == "openai" and base_url:
         discovery_url = models_endpoint(base_url)
+        user_supplied_url = True
     if not discovery_url or not api_key:
         return []
 
     try:
+        headers = {"Authorization": f"Bearer {api_key}"}
+        if user_supplied_url:
+            # Pin DNS at request time so httpx cannot re-resolve a
+            # user-supplied host to a metadata address after validation
+            # (DNS rebinding TOCTOU) — mirrors the openai_compatible path.
+            target = await prepare_pinned_http_target(discovery_url, provider)
+            request_url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
+        else:
+            request_url = discovery_url
+            extensions = {}
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                discovery_url,
-                headers={"Authorization": f"Bearer {api_key}"},
+                request_url,
+                headers=headers,
                 timeout=30.0,
+                extensions=extensions,
             )
             response.raise_for_status()
             data = response.json()

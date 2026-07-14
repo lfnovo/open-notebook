@@ -105,6 +105,7 @@ class TestCredentialModelDiscovery:
     @pytest.mark.asyncio
     async def test_openai_discovery_respects_base_url(self, monkeypatch):
         """OpenAI model discovery should call the configured API base URL."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
 
         requests = []
 
@@ -115,7 +116,7 @@ class TestCredentialModelDiscovery:
             async def __aexit__(self, exc_type, exc, tb):
                 return None
 
-            async def get(self, url, headers=None, timeout=None):
+            async def get(self, url, headers=None, timeout=None, extensions=None):
                 requests.append(
                     {
                         "url": url,
@@ -129,7 +130,13 @@ class TestCredentialModelDiscovery:
                     request=httpx.Request("GET", url, headers=headers or {}),
                 )
 
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
         monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
 
         models = await credentials_service.discover_with_config(
             "openai",
@@ -193,6 +200,65 @@ class TestCredentialModelDiscovery:
         )
 
         assert requests == ["https://llm-gateway.example.com/v1/models"]
+
+    @pytest.mark.asyncio
+    async def test_openai_discovery_pins_user_supplied_base_url(self, monkeypatch):
+        """OpenAI discovery with a custom base_url must go through DNS pinning:
+        the rewritten (IP) URL, Host header and SNI extension reach httpx."""
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        captured = {}
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                captured["url"] = url
+                captured["headers"] = headers
+                captured["extensions"] = extensions
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "model-a"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        pinned_calls = []
+
+        async def fake_prepare_pinned(url, provider):
+            pinned_calls.append((url, provider))
+            return PinnedHttpTarget(
+                url="https://93.184.216.34/v1/models",
+                headers={"Host": "llm-gateway.example.com"},
+                extensions={"sni_hostname": "llm-gateway.example.com"},
+            )
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        await credentials_service.discover_with_config(
+            "openai",
+            {
+                "api_key": "sk-test",
+                "base_url": "https://llm-gateway.example.com/v1",
+            },
+        )
+
+        # The user-supplied URL was pinned...
+        assert pinned_calls == [("https://llm-gateway.example.com/v1/models", "openai")]
+        # ...and the pinned IP URL + Host header + SNI extension reached httpx,
+        # alongside the auth header.
+        assert captured["url"] == "https://93.184.216.34/v1/models"
+        assert captured["headers"] == {
+            "Authorization": "Bearer sk-test",
+            "Host": "llm-gateway.example.com",
+        }
+        assert captured["extensions"] == {"sni_hostname": "llm-gateway.example.com"}
 
 
 class TestCredentialNumCtx:

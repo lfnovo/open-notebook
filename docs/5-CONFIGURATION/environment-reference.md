@@ -45,11 +45,13 @@ Comprehensive list of all environment variables available in Open Notebook.
 
 ---
 
-## Database: Concurrency
+## Worker: Concurrency
 
 | Variable | Required? | Default | Description |
 |----------|-----------|---------|-------------|
-| `SURREAL_COMMANDS_MAX_TASKS` | No | 5 | Maximum concurrent database tasks |
+| `OPEN_NOTEBOOK_WORKER_MAX_TASKS` | No | 5 | Maximum number of background tasks (source processing, embeddings, podcasts) the worker runs concurrently. Passed to the worker as `--max-tasks` at launch. Set to `1` for **sequential processing** on single-GPU or local-LLM setups, where parallel requests overload the model and trigger rate limits. |
+
+> **Read at worker launch, from the process environment.** In Docker this comes from the container environment — set it under `environment:` in `docker-compose.yml` (or your orchestrator). For local `make worker-start` / `dev-init.sh`, export it in your shell (e.g. `export OPEN_NOTEBOOK_WORKER_MAX_TASKS=1`) — it is consumed by the shell before the app loads `.env`, so a value placed only in `.env` will not apply to these local launch paths.
 
 ---
 

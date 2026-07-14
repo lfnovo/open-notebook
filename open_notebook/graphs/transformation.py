@@ -59,6 +59,8 @@ class TransformationState(TypedDict):
     chunks: List[str]
     chunk_results: Annotated[List[ChunkResult], operator.add]
     total_chunks: int
+    # Parsed model context window (set when chunking is triggered)
+    context_limit: int
 
 
 class ChunkState(TypedDict):
@@ -140,6 +142,7 @@ async def _handle_llm_error(exc: Exception, content: str, system_prompt: str) ->
         "output": "",
         "chunks": chunks,
         "total_chunks": len(chunks),
+        "context_limit": context_limit,
     }
 
 
@@ -226,43 +229,47 @@ def fan_out_or_synthesize(
 
 async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
     """Process a single chunk and return its partial result."""
-    chunk_text = state["chunk_text"]
-    transformation: Transformation = state["transformation"]
-    chunk_index = state["chunk_index"]
-    total_chunks = state["total_chunks"]
+    try:
+        chunk_text = state["chunk_text"]
+        transformation: Transformation = state["transformation"]
+        chunk_index = state["chunk_index"]
+        total_chunks = state["total_chunks"]
 
-    instructions = transformation.prompt
+        instructions = transformation.prompt
 
-    default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
-    if default_prompts.transformation_instructions:
-        instructions = (
-            f"{default_prompts.transformation_instructions}\n\n{instructions}"
+        default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
+        if default_prompts.transformation_instructions:
+            instructions = (
+                f"{default_prompts.transformation_instructions}\n\n{instructions}"
+            )
+
+        # Provide a section hint so the LLM knows this is part of a larger doc
+        section_hint = (
+            f"This is section {chunk_index + 1} of {total_chunks} of the source "
+            f"document. Process this section according to the instructions."
         )
 
-    # Provide a section hint so the LLM knows this is part of a larger doc
-    section_hint = (
-        f"This is section {chunk_index + 1} of {total_chunks} of the source "
-        f"document. Process this section according to the instructions."
-    )
+        system_prompt = _build_system_prompt(state, instructions, section_hint=section_hint)
+        content_str = str(chunk_text) if chunk_text else ""
+        payload = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=content_str),
+        ]
 
-    system_prompt = _build_system_prompt(state, instructions, section_hint=section_hint)
-    content_str = str(chunk_text) if chunk_text else ""
-    payload = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=content_str),
-    ]
+        chain = await provision_langchain_model(
+            str(payload),
+            config.get("configurable", {}).get("model_id"),
+            "transformation",
+            max_tokens=FULL_CONTENT_MAX_TOKENS,
+        )
+        response = await chain.ainvoke(payload)
+        cleaned = _extract_response_content(response)
 
-    chain = await provision_langchain_model(
-        str(payload),
-        config.get("configurable", {}).get("model_id"),
-        "transformation",
-        max_tokens=FULL_CONTENT_MAX_TOKENS,
-    )
-    response = await chain.ainvoke(payload)
-    cleaned = _extract_response_content(response)
-
-    logger.debug(f"Processed chunk {chunk_index + 1}/{total_chunks}")
-    return {"chunk_results": [{"index": chunk_index, "output": cleaned}]}
+        logger.debug(f"Processed chunk {chunk_index + 1}/{total_chunks}")
+        return {"chunk_results": [{"index": chunk_index, "output": cleaned}]}
+    except Exception as e:
+        exc_class, message = classify_error(e)
+        raise exc_class(message) from e
 
 
 async def synthesize_results(
@@ -288,11 +295,15 @@ async def synthesize_results(
         return {"output": ""}
 
     if len(chunk_results) == 1:
-        result = chunk_results[0]["output"]
-        source = _get_source(state)
-        if source:
-            await source.add_insight(transformation.title, result)
-        return {"output": result}
+        try:
+            result = chunk_results[0]["output"]
+            source = _get_source(state)
+            if source:
+                await source.add_insight(transformation.title, result)
+            return {"output": result}
+        except Exception as e:
+            exc_class, message = classify_error(e)
+            raise exc_class(message) from e
 
     instructions = transformation.prompt
 
@@ -306,12 +317,33 @@ async def synthesize_results(
     results = sorted(chunk_results, key=lambda r: r["index"])
     texts = [r["output"] for r in results]
 
-    # Hierarchical reduction: repeatedly merge groups within the token
-    # budget until one output remains
-    context_limit = DEFAULT_CONTEXT_LIMIT
+    # Use the model's actual context window (parsed from the error that
+    # triggered chunking), falling back to DEFAULT_CONTEXT_LIMIT.
+    context_limit = state.get("context_limit", DEFAULT_CONTEXT_LIMIT)
     output_budget = int(context_limit * 0.10)
 
+    # Progress guard: in pathological cases where every round produces
+    # only single-item groups, the loop never shrinks texts. Cap at one
+    # iteration per input text (each round MUST reduce count).
+    max_iterations = len(texts)
+    iteration = 0
+
     while len(texts) > 1:
+        iteration += 1
+        if iteration > max_iterations:
+            logger.warning(
+                "Synthesis did not converge after {} rounds ({} texts remain). "
+                "Concatenating remaining results.",
+                iteration,
+                len(texts),
+            )
+            texts = [
+                "\n\n--- Final Merge ---\n\n".join(
+                    f"Part {i + 1}:\n{t}" for i, t in enumerate(texts)
+                )
+            ]
+            break
+
         # Group texts within token budget
         groups: List[List[str]] = []
         current_group: List[str] = []
@@ -334,44 +366,97 @@ async def synthesize_results(
 
         # Merge each group via LLM
         merged: List[str] = []
+        made_progress = False
+
         for group in groups:
             if len(group) == 1:
                 merged.append(group[0])
                 continue
 
-            merge_content = "\n\n---\n\n".join(
-                f"Section {i + 1}:\n{text}" for i, text in enumerate(group)
+            made_progress = True
+
+            try:
+                chain = await provision_langchain_model(
+                    f"Merge {len(group)} results",
+                    config.get("configurable", {}).get("model_id"),
+                    "transformation",
+                    max_tokens=FULL_CONTENT_MAX_TOKENS,
+                )
+                merge_content = "\n\n---\n\n".join(
+                    f"Section {i + 1}:\n{text}" for i, text in enumerate(group)
+                )
+                merge_prompt = (
+                    f"Below are {len(group)} partial results from processing "
+                    f"different sections of a document. Merge them into a single "
+                    f"coherent output following this instruction: "
+                    f"{instructions}\n\n{merge_content}"
+                )
+                response = await chain.ainvoke(
+                    [
+                        SystemMessage(
+                            content="You are merging partial transformation "
+                            "results into a final output."
+                        ),
+                        HumanMessage(content=merge_prompt),
+                    ]
+                )
+                merged.append(_extract_response_content(response))
+            except Exception as e:
+                exc_class, message = classify_error(e)
+                raise exc_class(message) from e
+
+        if not made_progress:
+            # All groups are single-item — the loop would never shrink.
+            # Fall back to merging the two smallest texts unconditionally.
+            logger.warning(
+                "Synthesis stalled: all {} groups are single items within "
+                "the token budget (limit={}). "
+                "Forcing pairwise merge of the two smallest texts.",
+                len(groups),
+                context_limit,
+            )
+            texts.sort(key=token_count)
+            force_content = (
+                f"Part 1:\n{texts[0]}\n\n---\n\nPart 2:\n{texts[1]}"
             )
             merge_prompt = (
-                f"Below are {len(group)} partial results from processing "
-                f"different sections of a document. Merge them into a single "
+                f"Merge the following two partial results into one "
                 f"coherent output following this instruction: "
-                f"{instructions}\n\n{merge_content}"
+                f"{instructions}\n\n{force_content}"
             )
-
-            chain = await provision_langchain_model(
-                merge_prompt,
-                config.get("configurable", {}).get("model_id"),
-                "transformation",
-                max_tokens=FULL_CONTENT_MAX_TOKENS,
-            )
-            response = await chain.ainvoke(
-                [
-                    SystemMessage(
-                        content="You are merging partial transformation "
-                        "results into a final output."
-                    ),
-                    HumanMessage(content=merge_prompt),
-                ]
-            )
-            merged.append(_extract_response_content(response))
+            try:
+                chain = await provision_langchain_model(
+                    merge_prompt,
+                    config.get("configurable", {}).get("model_id"),
+                    "transformation",
+                    max_tokens=FULL_CONTENT_MAX_TOKENS,
+                )
+                response = await chain.ainvoke(
+                    [
+                        SystemMessage(
+                            content="You are merging partial transformation "
+                            "results into a final output."
+                        ),
+                        HumanMessage(content=merge_prompt),
+                    ]
+                )
+                merged_result = _extract_response_content(response)
+                texts = [merged_result] + texts[2:]
+            except Exception as e:
+                exc_class, message = classify_error(e)
+                raise exc_class(message) from e
+            continue
 
         texts = merged
 
     final_output = texts[0] if texts else ""
-    source = _get_source(state)
-    if source:
-        await source.add_insight(transformation.title, final_output)
+    try:
+        source = _get_source(state)
+        if source:
+            await source.add_insight(transformation.title, final_output)
+    except Exception as e:
+        exc_class, message = classify_error(e)
+        raise exc_class(message) from e
 
     return {"output": final_output}
 

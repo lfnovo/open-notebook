@@ -157,6 +157,174 @@ class TestTransformationGraph:
         assert hasattr(transformation_graph, "invoke")
         assert hasattr(transformation_graph, "ainvoke")
 
+    def test_transformation_state_with_chunking_fields(self):
+        """Test TransformationState accepts the new chunking fields."""
+        from unittest.mock import MagicMock
+
+        from open_notebook.domain.notebook import Source
+        from open_notebook.domain.transformation import Transformation
+
+        mock_source = MagicMock(spec=Source)
+        mock_transformation = MagicMock(spec=Transformation)
+
+        state = TransformationState(
+            input_text="Test text",
+            source=mock_source,
+            transformation=mock_transformation,
+            output="",
+            chunks=["chunk1", "chunk2"],
+            chunk_results=[{"index": 0, "output": "result1"}],
+            total_chunks=2,
+            context_limit=8192,
+        )
+
+        assert state["chunks"] == ["chunk1", "chunk2"]
+        assert state["chunk_results"] == [{"index": 0, "output": "result1"}]
+        assert state["total_chunks"] == 2
+        assert state["context_limit"] == 8192
+
+
+# ============================================================================
+# TEST SUITE 4: Synthesize Results (parallel chunking)
+# ============================================================================
+
+
+class TestSynthesizeResults:
+    """Test suite for synthesize_results progress guard and edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_no_chunking_passthrough(self):
+        """When output is already set (no chunking), pass through."""
+        from open_notebook.graphs.transformation import synthesize_results
+
+        state = {"output": "direct output"}
+        result = await synthesize_results(state, {"configurable": {}})
+        assert result == {"output": "direct output"}
+
+    @pytest.mark.asyncio
+    async def test_empty_chunk_results(self):
+        """No chunk results returns empty output."""
+        from unittest.mock import MagicMock
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        state = {
+            "output": "",
+            "chunk_results": [],
+            "transformation": MagicMock(title="Test"),
+        }
+        result = await synthesize_results(state, {"configurable": {}})
+        assert result == {"output": ""}
+
+    @pytest.mark.asyncio
+    async def test_single_chunk_result(self):
+        """Single chunk result returns its output directly."""
+        from unittest.mock import MagicMock, patch
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        mock_source = MagicMock()
+        mock_source.add_insight = AsyncMock()
+
+        state = {
+            "output": "",
+            "chunk_results": [{"index": 0, "output": "single result"}],
+            "source": mock_source,
+            "transformation": MagicMock(title="Test"),
+        }
+
+        result = await synthesize_results(state, {"configurable": {}})
+        assert result == {"output": "single result"}
+
+    @pytest.mark.asyncio
+    async def test_progress_guard_fallback_on_single_item_groups(self):
+        """
+        When every merge round produces only single-item groups (because
+        each chunk result fills the entire token budget), the progress
+        guard should fall back to a pairwise merge instead of looping
+        indefinitely.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        # Create chunk results large enough that only one fits per group
+        # within the DEFAULT_CONTEXT_LIMIT budget.
+        big_text = "Large content. " * 500  # ~2000-3000 tokens each
+        chunk_results = [
+            {"index": i, "output": big_text} for i in range(5)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "merged output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+        ):
+            result = await synthesize_results(state, {"configurable": {}})
+
+        # Should return a single merged output without hanging
+        assert result["output"]
+        assert isinstance(result["output"], str)
+
+    @pytest.mark.asyncio
+    async def test_multiple_chunks_merged(self):
+        """
+        Multiple chunk results that fit in groups should be merged
+        hierarchically into a single output.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        chunk_results = [
+            {"index": i, "output": f"Result for section {i}."}
+            for i in range(3)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "merged final output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+        ):
+            result = await synthesize_results(state, {"configurable": {}})
+
+        assert result["output"]
+        assert isinstance(result["output"], str)
+
 
 # ============================================================================
 # TEST SUITE 4: Source Graph - Title Preservation

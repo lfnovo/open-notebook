@@ -76,27 +76,53 @@ def parse_context_limit_error(error_str: str) -> Optional[Tuple[int, int]]:
 
     Supports Anthropic, OpenAI, Google/Gemini, and generic error formats.
 
+    Each pattern explicitly identifies which captured group is the context
+    limit vs tokens sent, rather than relying on a size heuristic (which
+    is incorrect when the sent tokens outnumber the model's limit, as in
+    Gemini's "X exceeded the limit of Y" format).
+
     Args:
         error_str: The raw error string from the LLM provider.
 
     Returns:
         (context_limit, tokens_sent) if both values can be parsed, else None.
     """
-    # Anthropic: "your request was X tokens ... model's maximum is Y"
-    # OpenAI:    "maximum context length is Y tokens ... you requested X"
-    # Google:    "The number of tokens (X) exceeded the limit (Y)"
-    # Generic:   "context_length_exceeded: X > Y"
-    patterns = [
-        r"(?:you have|sent|used|have|requested|your request was).*?(\d+).*?(?:token|character).*?(?:maximum|limit|context).*?(\d+)",
-        r"(?:maximum|limit|context).*?(\d+).*?(?:token|character).*?requested.*?(\d+)",
-        r"number of tokens.*?(\d+).*?exceeded.*?(\d+)",
-        r"context[_\s]length[_\s]exceeded.*?(\d+).*?(\d+)",
+    # Each entry: (regex, limit_group_num, sent_group_num)
+    #  1 — Anthropic: "your request was X tokens ... model's maximum is Y"
+    #  2 — OpenAI:    "maximum context length is Y tokens ... you requested X"
+    #  3 — Google:    "The number of tokens (X) exceeded the limit (Y)"
+    #  4 — Generic:   "context_length_exceeded: X > Y"
+    patterns: List[Tuple[str, int, int]] = [
+        (
+            r"(?:you have|sent|used|have|requested|your request was).*?"
+            r"(\d+).*?(?:token|character).*?(?:maximum|limit|context).*?(\d+)",
+            2,
+            1,
+        ),
+        (
+            r"(?:maximum|limit|context).*?(\d+).*?(?:token|character).*?"
+            r"requested.*?(\d+)",
+            1,
+            2,
+        ),
+        (
+            r"number of tokens.*?(\d+).*?exceeded.*?(\d+)",
+            2,
+            1,
+        ),
+        (
+            r"context[_\s]length[_\s]exceeded.*?(\d+).*?(\d+)",
+            2,
+            1,
+        ),
     ]
-    for pattern in patterns:
+    for pattern, limit_group, sent_group in patterns:
         match = re.search(pattern, error_str, re.IGNORECASE)
         if match:
-            g1, g2 = int(match.group(1)), int(match.group(2))
-            return (max(g1, g2), min(g1, g2))  # (context_limit, tokens_sent)
+            return (
+                int(match.group(limit_group)),
+                int(match.group(sent_group)),
+            )
     return None
 
 
@@ -186,20 +212,53 @@ def chunk_text_by_tokens(
                             word_chunks.append(" ".join(cur_words))
                             cur_words = []
                             cur_word_tokens = 0
+
+                        # If a single word/string exceeds the token budget,
+                        # split it at character boundaries as a last resort.
+                        # This handles whitespace-free content (e.g. long
+                        # base64/MD5 hashes, minified code, or CJK text
+                        # without spaces) that no sentence/word split can
+                        # break further.
+                        if w_tokens > max_chunk_tokens:
+                            if cur_words:
+                                word_chunks.append(" ".join(cur_words))
+                                cur_words = []
+                                cur_word_tokens = 0
+                            # Proportional character-level split.
+                            # o200k ~0.75 tokens/char for English; we
+                            # overshoot slightly and let the next stage
+                            # of hierarchical splitting clean up.
+                            n_chunks = max(1, w_tokens // max_chunk_tokens + 1)
+                            chunk_len = max(1, len(w) // n_chunks)
+                            for start in range(0, len(w), chunk_len):
+                                piece = w[start : start + chunk_len]
+                                word_chunks.append(piece)
+                            continue
+
                         cur_words.append(w)
                         cur_word_tokens += w_tokens
                     if cur_words:
                         word_chunks.append(" ".join(cur_words))
             final_chunks.extend(word_chunks)
 
-    # Add overlap from previous chunk
+    # Add overlap from previous chunk and re-check token budget.
+    # The overlap + continuation marker can push a chunk over
+    # max_chunk_tokens; gracefully reduce the overlap when that happens.
+    CONTINUATION_MARKER = "\n\n[... continuation from previous section ...]\n\n"
+
     result: List[str] = []
     for i, chunk in enumerate(final_chunks):
         if i > 0 and overlap_chars > 0:
-            overlap = final_chunks[i - 1][-overlap_chars:]
-            chunk = (
-                overlap + "\n\n[... continuation from previous section ...]\n\n" + chunk
-            )
+            base_chunk = chunk  # preserve for retry below
+            # Try progressively smaller overlap sizes
+            chunk_upper_bound = max_chunk_tokens * 1.15
+            for step_chars in [overlap_chars, overlap_chars // 2, overlap_chars // 4, 0]:
+                overlap = final_chunks[i - 1][-step_chars:]
+                chunk = overlap + CONTINUATION_MARKER + base_chunk
+                if token_count(chunk) <= chunk_upper_bound:
+                    break
+                # If we hit zero overlap and still can't fit, accept the
+                # over-budget chunk — it's close enough.
         result.append(chunk)
 
     return result

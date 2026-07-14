@@ -290,7 +290,7 @@ async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
         logger.debug(f"Processed chunk {chunk_index + 1}/{total_chunks}")
         return {"chunk_results": [{"index": chunk_index, "output": cleaned}]}
     except Exception as e:
-        logger.error(
+        logger.opt(exception=True).error(
             "Failed to process chunk {}: {}", chunk_index + 1, e
         )
         # Don't re-raise: one chunk failure should not abort

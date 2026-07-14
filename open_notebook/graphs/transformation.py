@@ -8,6 +8,7 @@ chunks, processes them in parallel via LangGraph Send, and hierarchically
 synthesizes the results — all without any user configuration.
 """
 
+import asyncio
 import operator
 from typing import Annotated, List, Optional, Union
 
@@ -38,6 +39,14 @@ from open_notebook.utils.token_utils import (
 # Token budget for the full-content attempt (matching the original graph).
 FULL_CONTENT_MAX_TOKENS = 8192
 
+# Max concurrent chunk LLM calls. Prevents rate-limit storms when a
+# document is split into many chunks, especially across concurrent
+# worker jobs.
+MAX_CONCURRENT_CHUNKS = 10
+
+# Module-level semaphore shared by all process_chunk invocations.
+_chunk_semaphore = asyncio.Semaphore(MAX_CONCURRENT_CHUNKS)
+
 # ── State types ────────────────────────────────────────────────────────
 
 
@@ -61,6 +70,8 @@ class TransformationState(TypedDict):
     total_chunks: int
     # Parsed model context window (set when chunking is triggered)
     context_limit: int
+    # Output token budget derived from context_limit (set alongside it)
+    output_budget: int
 
 
 class ChunkState(TypedDict):
@@ -72,6 +83,8 @@ class ChunkState(TypedDict):
     chunk_index: int
     chunk_text: str
     total_chunks: int
+    # Output token budget for this model (derived from context_limit)
+    output_budget: int
 
 
 # ── Helpers ────────────────────────────────────────────────────────────
@@ -143,6 +156,7 @@ async def _handle_llm_error(exc: Exception, content: str, system_prompt: str) ->
         "chunks": chunks,
         "total_chunks": len(chunks),
         "context_limit": context_limit,
+        "output_budget": output_budget,
     }
 
 
@@ -209,6 +223,9 @@ def fan_out_or_synthesize(
     chunks = state.get("chunks")
     if chunks:
         total = state.get("total_chunks", len(chunks))
+        output_budget = state.get(
+            "output_budget", FULL_CONTENT_MAX_TOKENS
+        )
         return [
             Send(
                 "process_chunk",
@@ -219,6 +236,7 @@ def fan_out_or_synthesize(
                     "chunk_index": i,
                     "chunk_text": chunk_text,
                     "total_chunks": total,
+                    "output_budget": output_budget,
                 },
             )
             for i, chunk_text in enumerate(chunks)
@@ -256,20 +274,38 @@ async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
             HumanMessage(content=content_str),
         ]
 
-        chain = await provision_langchain_model(
-            str(payload),
-            config.get("configurable", {}).get("model_id"),
-            "transformation",
-            max_tokens=FULL_CONTENT_MAX_TOKENS,
+        chunk_output_budget = state.get(
+            "output_budget", FULL_CONTENT_MAX_TOKENS
         )
-        response = await chain.ainvoke(payload)
+        async with _chunk_semaphore:
+            chain = await provision_langchain_model(
+                str(payload),
+                config.get("configurable", {}).get("model_id"),
+                "transformation",
+                max_tokens=chunk_output_budget,
+            )
+            response = await chain.ainvoke(payload)
         cleaned = _extract_response_content(response)
 
         logger.debug(f"Processed chunk {chunk_index + 1}/{total_chunks}")
         return {"chunk_results": [{"index": chunk_index, "output": cleaned}]}
     except Exception as e:
-        exc_class, message = classify_error(e)
-        raise exc_class(message) from e
+        logger.error(
+            "Failed to process chunk {}: {}", chunk_index + 1, e
+        )
+        # Don't re-raise: one chunk failure should not abort
+        # sibling work. Synthesis will include a placeholder.
+        return {
+            "chunk_results": [
+                {
+                    "index": chunk_index,
+                    "output": (
+                        f"[Error processing section {chunk_index + 1} "
+                        f"of {total_chunks}]"
+                    ),
+                }
+            ]
+        }
 
 
 async def synthesize_results(
@@ -317,10 +353,12 @@ async def synthesize_results(
     results = sorted(chunk_results, key=lambda r: r["index"])
     texts = [r["output"] for r in results]
 
-    # Use the model's actual context window (parsed from the error that
-    # triggered chunking), falling back to DEFAULT_CONTEXT_LIMIT.
+    # Use the model's actual context window and output budget (parsed
+    # from the error that triggered chunking), with safe defaults.
     context_limit = state.get("context_limit", DEFAULT_CONTEXT_LIMIT)
-    output_budget = int(context_limit * 0.10)
+    output_budget = state.get(
+        "output_budget", int(context_limit * 0.10)
+    )
 
     while len(texts) > 1:
         # Group texts within token budget
@@ -359,7 +397,7 @@ async def synthesize_results(
                     f"Merge {len(group)} results",
                     config.get("configurable", {}).get("model_id"),
                     "transformation",
-                    max_tokens=FULL_CONTENT_MAX_TOKENS,
+                    max_tokens=output_budget,
                 )
                 merge_content = "\n\n---\n\n".join(
                     f"Section {i + 1}:\n{text}" for i, text in enumerate(group)
@@ -454,7 +492,7 @@ async def synthesize_results(
                     merge_prompt,
                     config.get("configurable", {}).get("model_id"),
                     "transformation",
-                    max_tokens=FULL_CONTENT_MAX_TOKENS,
+                    max_tokens=output_budget,
                 )
                 response = await chain.ainvoke(
                     [

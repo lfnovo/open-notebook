@@ -240,17 +240,16 @@ class TestSynthesizeResults:
     async def test_progress_guard_fallback_on_single_item_groups(self):
         """
         When every merge round produces only single-item groups (because
-        each chunk result fills the entire token budget), the progress
-        guard should fall back to a pairwise merge instead of looping
-        indefinitely.
+        each chunk result exceeds the grouping threshold), the fallback
+        re-chunks oversized texts and continues merging instead of hanging.
         """
         from unittest.mock import AsyncMock, MagicMock, patch
 
         from open_notebook.graphs.transformation import synthesize_results
 
-        # Create chunk results large enough that only one fits per group
-        # within the DEFAULT_CONTEXT_LIMIT budget.
-        big_text = "Large content. " * 500  # ~2000-3000 tokens each
+        # Each text must exceed the single-group budget (~6873 tokens for
+        # default context_limit=8192) so every group has exactly one item.
+        big_text = "Large content. " * 3000  # ~9000 tokens each
         chunk_results = [
             {"index": i, "output": big_text} for i in range(5)
         ]
@@ -280,6 +279,51 @@ class TestSynthesizeResults:
             result = await synthesize_results(state, {"configurable": {}})
 
         # Should return a single merged output without hanging
+        assert result["output"]
+        assert isinstance(result["output"], str)
+
+    @pytest.mark.asyncio
+    async def test_stalled_synthesis_rechunk_fallback(self):
+        """
+        When even the smallest adjacent pair exceeds the context window,
+        the fallback re-chunks oversized texts and continues merging
+        instead of returning raw partial outputs.
+        """
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from open_notebook.graphs.transformation import synthesize_results
+
+        # Create texts that are each larger than the group budget and
+        # whose combined size also exceeds the context window.
+        extra_large = "Huge content for testing rechunk fallback path. " * 2000
+        chunk_results = [
+            {"index": i, "output": extra_large} for i in range(3)
+        ]
+
+        fake_response = MagicMock()
+        fake_response.content = "synthesized output"
+        fake_chain = AsyncMock()
+        fake_chain.ainvoke = AsyncMock(return_value=fake_response)
+
+        state = {
+            "output": "",
+            "chunk_results": chunk_results,
+            "source": None,
+            "transformation": MagicMock(title="Test", prompt="Summarize"),
+        }
+
+        with (
+            patch(
+                "open_notebook.graphs.transformation.DefaultPrompts",
+                return_value=MagicMock(transformation_instructions=None),
+            ),
+            patch(
+                "open_notebook.graphs.transformation.provision_langchain_model",
+                new=AsyncMock(return_value=fake_chain),
+            ),
+        ):
+            result = await synthesize_results(state, {"configurable": {}})
+
         assert result["output"]
         assert isinstance(result["output"], str)
 

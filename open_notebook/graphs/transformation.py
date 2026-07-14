@@ -472,10 +472,22 @@ async def synthesize_results(
             # window, re-chunk oversized results so pieces fit in
             # future merge rounds, instead of returning raw partials.
             overhead = token_count(instructions) + 300
-            if min_combined + overhead > context_limit:
-                re_chunk_budget = max(
-                    512,
-                    int((context_limit - overhead) * 0.4),
+            available = context_limit - overhead
+
+            # Calculate re-chunk budget: 40% of available so ~2.5 pieces
+            # fit within the context window for merging.
+            re_chunk_budget = max(200, int(available * 0.4))
+
+            # Verify that two re-chunked pieces can actually be merged.
+            # If not, the transformation cannot proceed — fail with a
+            # typed error so the caller can retry or reconfigure.
+            if 2 * re_chunk_budget + overhead > context_limit:
+                raise ConfigurationError(
+                    "The model's context window is too small to "
+                    "synthesize chunk results given the current "
+                    f"instructions (limit={context_limit}). Use a "
+                    "model with a larger context window or provide "
+                    "shorter transformation instructions."
                 )
                 logger.warning(
                     "No adjacent pair fits the context window (limit={}, "

@@ -774,7 +774,7 @@ export const plPL = {
     formulasEnabled: "Włącz wyodrębnianie formuł",
     formulasHelp: "Wyodrębnia formuły matematyczne z dokumentów przy użyciu silnika Docling. Wolniejsze przetwarzanie.",
     visionEnabled: "Włącz wzbogacanie wizji",
-    visionHelp: "Analizuje wykresy, obrazy i diagramy w dokumentach przy użyciu silnika Docling. Znacznie wolniejsze i może wymagać modelu wizji.",
+    visionHelp: "Analizuje wykresy, obrazy i diagramy w dokumentach przy użyciu silnika Docling. Znacznie wolniejsze i może wywołać model wizyjny.",
     autoDeletePlaceholder: "Wybierz opcję automatycznego usuwania",
     filesHelp: "Po przesłaniu i przetworzeniu plików nie są one już potrzebne. Większość użytkowników powinna pozwolić Open Notebook na automatyczne usuwanie przesłanych plików z folderu przesyłania.",
     loadFailed: "Nie udało się załadować ustawień",

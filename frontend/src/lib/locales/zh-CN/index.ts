@@ -773,7 +773,7 @@ export const zhCN = {
     ocrHelp: "使用 Docling 引擎时，从扫描的 PDF 和图片中提取文本。处理速度较慢。",
     formulasEnabled: "启用公式提取",
     formulasHelp: "使用 Docling 引擎时，从文档中提取数学公式。处理速度较慢。",
-    visionEnabled: "启用视觉增强",
+    visionEnabled: "启用视觉富化",
     visionHelp: "使用 Docling 引擎时，分析文档中的图表、图片和示意图。显著变慢，可能调用视觉模型。",
     autoDeletePlaceholder: "选择自动删除选项",
     filesHelp: "文件处理完成后，原始件不再需要。建议开启自动删除以节省存储空间。除非您将其作为主要存储位置（不建议），否则请选择“是”。",

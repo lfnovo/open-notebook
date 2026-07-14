@@ -3,6 +3,15 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+def _normalize_empty_notebook_ids(
+    v: Optional[List[str]],
+) -> Optional[List[str]]:
+    """Normalize an empty list to None so all endpoints handle it identically."""
+    if v is not None and len(v) == 0:
+        return None
+    return v
+
+
 # Notebook models
 class NotebookCreate(BaseModel):
     name: str = Field(..., description="Name of the notebook")
@@ -45,6 +54,16 @@ class SearchRequest(BaseModel):
     minimum_score: float = Field(
         0.2, description="Minimum score for vector search", ge=0, le=1
     )
+<<<<<<< HEAD
+=======
+    notebook_ids: Optional[List[str]] = Field(
+        None, description="Filter results to specific notebooks by ID. None = all."
+    )
+
+    normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
+        _normalize_empty_notebook_ids
+    )
+>>>>>>> c09b0cf (refactor: extract shared _normalize_empty_notebook_ids to eliminate validator duplication across SearchRequest and AskRequest)
 
 
 class SearchResponse(BaseModel):
@@ -58,6 +77,16 @@ class AskRequest(BaseModel):
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")
     final_answer_model: str = Field(..., description="Model ID for final answer")
+<<<<<<< HEAD
+=======
+    notebook_ids: Optional[List[str]] = Field(
+        None, description="Filter results to specific notebooks by ID. None = all."
+    )
+
+    normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
+        _normalize_empty_notebook_ids
+    )
+>>>>>>> c09b0cf (refactor: extract shared _normalize_empty_notebook_ids to eliminate validator duplication across SearchRequest and AskRequest)
 
 
 class AskResponse(BaseModel):

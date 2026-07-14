@@ -22,6 +22,11 @@ services:
       - SURREAL_PASSWORD=root
       - SURREAL_NAMESPACE=${RC_SURREAL_NS:-open_notebook}
       - SURREAL_DATABASE=${RC_SURREAL_DB:-open_notebook}
+      # Opt-in heavy runtimes: empty by default (fresh/upgrade tests stay fast);
+      # rc-stack.sh --with-runtimes sets these to install Docling/Crawl4AI so the
+      # published image's opt-in path can be exercised with real data.
+      - OPEN_NOTEBOOK_ENABLE_DOCLING=${RC_ENABLE_DOCLING:-}
+      - OPEN_NOTEBOOK_ENABLE_CRAWL4AI=${RC_ENABLE_CRAWL4AI:-}
     volumes:
       - ${DATA_DIR}/notebook:/app/data
     # Reach host services (e.g. Ollama on localhost:11434) via

@@ -48,6 +48,11 @@ services:
       # - OPEN_NOTEBOOK_ENABLE_DOCLING=true    # Docling engine + OCR + image sources (large ML stack)
       # - OPEN_NOTEBOOK_ENABLE_CRAWL4AI=true   # local Crawl4AI (bundles a Chromium browser)
       # - CRAWL4AI_API_URL=http://crawl4ai:11235  # use a remote Crawl4AI server instead (no local install)
+
+      # OPTIONAL: max concurrent background tasks the worker processes at once
+      # (default 5). Set to 1 for sequential processing on single-GPU / local
+      # LLM setups to avoid overloading the model with parallel requests.
+      # - OPEN_NOTEBOOK_WORKER_MAX_TASKS=1
     volumes:
       - ./notebook_data:/app/data
     depends_on:

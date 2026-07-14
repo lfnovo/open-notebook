@@ -54,8 +54,6 @@ class SearchRequest(BaseModel):
     minimum_score: float = Field(
         0.2, description="Minimum score for vector search", ge=0, le=1
     )
-<<<<<<< HEAD
-=======
     notebook_ids: Optional[List[str]] = Field(
         None, description="Filter results to specific notebooks by ID. None = all."
     )
@@ -63,7 +61,6 @@ class SearchRequest(BaseModel):
     normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
         _normalize_empty_notebook_ids
     )
->>>>>>> c09b0cf (refactor: extract shared _normalize_empty_notebook_ids to eliminate validator duplication across SearchRequest and AskRequest)
 
 
 class SearchResponse(BaseModel):
@@ -77,8 +74,6 @@ class AskRequest(BaseModel):
     strategy_model: str = Field(..., description="Model ID for query strategy")
     answer_model: str = Field(..., description="Model ID for individual answers")
     final_answer_model: str = Field(..., description="Model ID for final answer")
-<<<<<<< HEAD
-=======
     notebook_ids: Optional[List[str]] = Field(
         None, description="Filter results to specific notebooks by ID. None = all."
     )
@@ -86,7 +81,6 @@ class AskRequest(BaseModel):
     normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
         _normalize_empty_notebook_ids
     )
->>>>>>> c09b0cf (refactor: extract shared _normalize_empty_notebook_ids to eliminate validator duplication across SearchRequest and AskRequest)
 
 
 class AskResponse(BaseModel):

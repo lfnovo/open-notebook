@@ -17,7 +17,7 @@ from open_notebook.graphs.prompt import PatternChainState, graph
 from open_notebook.graphs.tools import get_current_timestamp
 from open_notebook.graphs.transformation import (
     TransformationState,
-    run_transformation,
+    try_full_content,
 )
 from open_notebook.graphs.transformation import (
     graph as transformation_graph,
@@ -121,6 +121,9 @@ class TestTransformationGraph:
             source=mock_source,
             transformation=mock_transformation,
             output="",
+            chunks=[],
+            chunk_results=[],
+            total_chunks=0,
         )
 
         assert state["input_text"] == "Test text"
@@ -129,8 +132,8 @@ class TestTransformationGraph:
         assert state["output"] == ""
 
     @pytest.mark.asyncio
-    async def test_run_transformation_assertion_no_content(self):
-        """Test transformation raises assertion with no content."""
+    async def test_try_full_content_assertion_no_content(self):
+        """Test try_full_content raises assertion with no content."""
         from unittest.mock import MagicMock
 
         from open_notebook.domain.transformation import Transformation
@@ -146,7 +149,7 @@ class TestTransformationGraph:
         config: RunnableConfig = {"configurable": {"model_id": None}}
 
         with pytest.raises(AssertionError, match="No content to transform"):
-            await run_transformation(state, config)
+            await try_full_content(state, config)
 
     def test_transformation_graph_compilation(self):
         """Test that transformation graph compiles correctly."""

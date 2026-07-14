@@ -23,6 +23,13 @@ from typing_extensions import TypedDict
 from open_notebook.ai.provision import provision_langchain_model
 from open_notebook.domain.notebook import Source
 from open_notebook.domain.transformation import DefaultPrompts, Transformation
+from open_notebook.exceptions import (
+    AuthenticationError,
+    ConfigurationError,
+    ExternalServiceError,
+    NetworkError,
+    RateLimitError,
+)
 from open_notebook.utils import clean_thinking_content
 from open_notebook.utils.error_classifier import classify_error
 from open_notebook.utils.text_utils import extract_text_content
@@ -55,6 +62,8 @@ class ChunkResult(TypedDict):
 
     index: int
     output: str
+    error_class: Optional[str]  # set when chunk processing failed
+    error_message: Optional[str]  # classified user-facing message
 
 
 class TransformationState(TypedDict):
@@ -293,16 +302,19 @@ async def process_chunk(state: ChunkState, config: RunnableConfig) -> dict:
         logger.opt(exception=True).error(
             "Failed to process chunk {}: {}", chunk_index + 1, e
         )
-        # Don't re-raise: one chunk failure should not abort
-        # sibling work. Synthesis will include a placeholder.
+        # Classify the error so the retry mechanism gets the right
+        # exception type. Don't re-raise immediately (let sibling
+        # chunks finish), but store the typed error so
+        # synthesize_results can surface an aggregated failure
+        # before saving an incomplete insight.
+        exc_class, exc_msg = classify_error(e)
         return {
             "chunk_results": [
                 {
                     "index": chunk_index,
-                    "output": (
-                        f"[Error processing section {chunk_index + 1} "
-                        f"of {total_chunks}]"
-                    ),
+                    "output": "",
+                    "error_class": exc_class.__name__,
+                    "error_message": exc_msg,
                 }
             ]
         }
@@ -331,6 +343,19 @@ async def synthesize_results(
         return {"output": ""}
 
     if len(chunk_results) == 1:
+        error_class = chunk_results[0].get("error_class")
+        if error_class:
+            _ERROR_CLASSES = {
+                "AuthenticationError": AuthenticationError,
+                "ConfigurationError": ConfigurationError,
+                "ExternalServiceError": ExternalServiceError,
+                "NetworkError": NetworkError,
+                "RateLimitError": RateLimitError,
+            }
+            exc_cls = _ERROR_CLASSES.get(
+                error_class, ExternalServiceError
+            )
+            raise exc_cls(chunk_results[0]["error_message"])
         try:
             result = chunk_results[0]["output"]
             source = _get_source(state)
@@ -518,6 +543,33 @@ async def synthesize_results(
         texts = merged
 
     final_output = texts[0] if texts else ""
+
+    # If any chunk failed, surface an aggregated classified error
+    # before saving an incomplete insight. This preserves the retry
+    # mechanism (transient errors won't be swallowed) while still
+    # allowing sibling chunks to complete.
+    chunk_errors = [
+        r for r in chunk_results if r.get("error_class")
+    ]
+    if chunk_errors:
+        failed_count = len(chunk_errors)
+        first = chunk_errors[0]
+        _ERROR_CLASSES = {
+            "AuthenticationError": AuthenticationError,
+            "ConfigurationError": ConfigurationError,
+            "ExternalServiceError": ExternalServiceError,
+            "NetworkError": NetworkError,
+            "RateLimitError": RateLimitError,
+        }
+        cls_name = first["error_class"] or "ExternalServiceError"
+        exc_cls = _ERROR_CLASSES.get(cls_name, ExternalServiceError)
+        msg = (
+            f"Partial transformation failure: {failed_count} of "
+            f"{len(chunk_results)} section(s) could not be processed. "
+            f"{first['error_message']}"
+        )
+        raise exc_cls(msg)
+
     try:
         source = _get_source(state)
         if source:

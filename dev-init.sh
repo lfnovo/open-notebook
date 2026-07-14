@@ -29,7 +29,7 @@ sleep 3
 
 # Start background worker in background
 echo "Starting background worker..."
-uv run --env-file .env surreal-commands-worker --import-modules commands &
+uv run --env-file .env surreal-commands-worker --import-modules commands --max-tasks "${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}" &
 sleep 2
 
 # Start frontend (foreground)

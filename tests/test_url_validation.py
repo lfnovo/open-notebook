@@ -16,9 +16,13 @@ loop - see open_notebook/utils/url_validation.py), so every test here is
 async too.
 """
 
+import socket
+from unittest.mock import patch
+
 import pytest
 
 from api.credentials_service import validate_url
+from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 pytestmark = pytest.mark.asyncio
 
@@ -135,3 +139,108 @@ class TestUrlValidation:
         """IPv4-mapped IPv6 addresses pointing to private IPs should be allowed."""
         await validate_url("http://[::ffff:192.168.1.1]", "openai")
         # Should not raise - private IPs allowed for self-hosted
+
+    async def test_aws_imds_v6_rejected(self):
+        """AWS IMDSv6 metadata address must be rejected."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254]/", "openai")
+
+    async def test_scoped_aws_imds_v6_rejected(self):
+        """Scoped IMDSv6 (fd00:ec2::254%eth0) must not bypass the sentinel check."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254%eth0]/", "openai")
+
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await validate_url("http://[fd00:ec2::254%25eth0]/", "openai")
+
+
+class TestPinnedHttpTarget:
+    """DNS pinning closes the validate-then-httpx rebinding window."""
+
+    async def test_ip_literal_unchanged(self):
+        target = await prepare_pinned_http_target(
+            "http://127.0.0.1:11434/api/tags", "ollama"
+        )
+        assert target.url == "http://127.0.0.1:11434/api/tags"
+        assert target.headers == {}
+        assert target.extensions == {}
+
+    async def test_link_local_ip_rejected(self):
+        with pytest.raises(ValueError, match="Link-local"):
+            await prepare_pinned_http_target(
+                "http://169.254.169.254/latest/meta-data", "openai_compatible"
+            )
+
+    async def test_scoped_aws_imds_v6_rejected(self):
+        """Scoped IMDSv6 literals must be rejected before pinning returns a target."""
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await prepare_pinned_http_target(
+                "http://[fd00:ec2::254%eth0]/", "openai_compatible"
+            )
+
+        with pytest.raises(ValueError, match="IMDSv6|metadata"):
+            await prepare_pinned_http_target(
+                "http://[fd00:ec2::254%25eth0]/", "openai_compatible"
+            )
+
+    async def test_hostname_pinned_to_resolved_ip(self):
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.50", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "http://ollama.local:11434/api/tags", "ollama"
+            )
+
+        assert target.url == "http://192.168.1.50:11434/api/tags"
+        assert target.headers == {"Host": "ollama.local:11434"}
+        assert target.extensions == {}
+
+    async def test_https_sets_sni_hostname(self):
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "https://api.example.com/v1/models", "openai_compatible"
+            )
+
+        assert target.url == "https://93.184.216.34/v1/models"
+        assert target.headers == {"Host": "api.example.com"}
+        assert target.extensions == {"sni_hostname": "api.example.com"}
+
+    async def test_unicode_hostname_idna_encoded_for_host_and_sni(self):
+        """Internationalized hostnames must use ASCII IDNA for Host and SNI."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "https://bücher.example/v1/models", "openai_compatible"
+            )
+
+        assert target.url == "https://93.184.216.34/v1/models"
+        assert target.headers == {"Host": "xn--bcher-kva.example"}
+        assert target.extensions == {"sni_hostname": "xn--bcher-kva.example"}
+
+    async def test_hostname_resolving_to_link_local_rejected(self):
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("169.254.169.254", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            with pytest.raises(ValueError, match="link-local"):
+                await prepare_pinned_http_target(
+                    "http://evil.example/v1/models", "openai_compatible"
+                )

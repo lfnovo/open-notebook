@@ -3,6 +3,15 @@ from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+def _normalize_empty_notebook_ids(
+    v: Optional[List[str]],
+) -> Optional[List[str]]:
+    """Normalize an empty list to None so all endpoints handle it identically."""
+    if v is not None and len(v) == 0:
+        return None
+    return v
+
+
 # Notebook models
 class NotebookCreate(BaseModel):
     name: str = Field(..., description="Name of the notebook")
@@ -49,13 +58,9 @@ class SearchRequest(BaseModel):
         None, description="Filter results to specific notebooks by ID. None = all."
     )
 
-    @field_validator("notebook_ids", mode="before")
-    @classmethod
-    def normalize_empty_notebook_ids(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        """Normalize an empty list to None so all endpoints handle it identically."""
-        if v is not None and len(v) == 0:
-            return None
-        return v
+    normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
+        _normalize_empty_notebook_ids
+    )
 
 
 class SearchResponse(BaseModel):
@@ -73,13 +78,9 @@ class AskRequest(BaseModel):
         None, description="Filter results to specific notebooks by ID. None = all."
     )
 
-    @field_validator("notebook_ids", mode="before")
-    @classmethod
-    def normalize_empty_notebook_ids(cls, v: Optional[List[str]]) -> Optional[List[str]]:
-        """Normalize an empty list to None so all endpoints handle it identically."""
-        if v is not None and len(v) == 0:
-            return None
-        return v
+    normalize_empty_notebook_ids = field_validator("notebook_ids", mode="before")(
+        _normalize_empty_notebook_ids
+    )
 
 
 class AskResponse(BaseModel):

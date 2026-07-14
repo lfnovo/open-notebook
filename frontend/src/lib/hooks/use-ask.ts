@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
@@ -26,6 +26,11 @@ interface AskState {
   error: string | null
 }
 
+// Safety net: if the stream connection hangs without proper termination
+// (e.g. Docker/standalone proxy doesn't propagate the "done" signal),
+// force the loading state to end after this timeout.
+const STREAM_TIMEOUT_MS = 300_000 // 5 minutes
+
 export function useAsk() {
   const { t } = useTranslation()
   const [state, setState] = useState<AskState>({
@@ -35,6 +40,39 @@ export function useAsk() {
     finalAnswer: null,
     error: null
   })
+  const streamTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+      if (streamTimeoutRef.current) {
+        clearTimeout(streamTimeoutRef.current)
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [])
+
+  const clearStreamTimeout = useCallback(() => {
+    if (streamTimeoutRef.current) {
+      clearTimeout(streamTimeoutRef.current)
+      streamTimeoutRef.current = null
+    }
+  }, [])
+
+  const stopStreaming = useCallback((finalAnswer?: string | null) => {
+    clearStreamTimeout()
+    if (mountedRef.current) {
+      setState(prev => ({
+        ...prev,
+        isStreaming: false,
+        ...(finalAnswer !== undefined ? { finalAnswer } : {})
+      }))
+    }
+  }, [clearStreamTimeout])
 
   const sendAsk = useCallback(async (question: string, models: AskModels) => {
     // Validate inputs
@@ -48,6 +86,13 @@ export function useAsk() {
       return
     }
 
+    // Abort any previous in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
     // Reset state
     setState({
       isStreaming: true,
@@ -57,15 +102,28 @@ export function useAsk() {
       error: null
     })
 
+    // Safety timeout: force loading to end if stream doesn't complete
+    streamTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setState(prev => {
+          if (prev.isStreaming) {
+            return { ...prev, isStreaming: false }
+          }
+          return prev
+        })
+      }
+    }, STREAM_TIMEOUT_MS)
+
     try {
       const response = await searchApi.askKnowledgeBase({
         question,
         strategy_model: models.strategy,
         answer_model: models.answer,
         final_answer_model: models.finalAnswer
-      })
+      }, signal)
 
       if (!response) {
+        stopStreaming()
         throw new Error('No response body received from server')
       }
 
@@ -108,17 +166,11 @@ export function useAsk() {
                   answers: [...prev.answers, data.content || '']
                 }))
               } else if (data.type === 'final_answer') {
-                setState(prev => ({
-                  ...prev,
-                  finalAnswer: data.content || '',
-                  isStreaming: false
-                }))
+                stopStreaming(data.content || '')
               } else if (data.type === 'complete') {
-                setState(prev => ({
-                  ...prev,
-                  isStreaming: false
-                }))
+                stopStreaming(data.final_answer ?? undefined)
               } else if (data.type === 'error') {
+                stopStreaming()
                 throw new Error(data.message || 'Stream error occurred')
               }
             } catch (e) {
@@ -126,6 +178,7 @@ export function useAsk() {
                 console.error('Error parsing SSE data:', e, 'Line:', line)
                 // Don't throw - continue processing other lines
               } else {
+                stopStreaming()
                 throw e
               }
             }
@@ -133,27 +186,39 @@ export function useAsk() {
         }
       }
 
-      // Ensure streaming is stopped
-      setState(prev => ({ ...prev, isStreaming: false }))
+      // Stream ended normally — clear the safety timeout
+      stopStreaming()
 
     } catch (error) {
+      // If aborted by the safety timeout, don't show an error toast
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return
+      }
+
       const err = error as { message?: string }
       const errorMessage = err.message || 'An unexpected error occurred'
       console.error('Ask error:', error)
 
-      setState(prev => ({
-        ...prev,
-        isStreaming: false,
-        error: errorMessage
-      }))
+      if (mountedRef.current) {
+        setState(prev => ({
+          ...prev,
+          isStreaming: false,
+          error: errorMessage
+        }))
+      }
 
       toast.error(t('apiErrors.askFailed'), {
         description: getApiErrorMessage(errorMessage, (key) => t(key))
       })
     }
-  }, [t])
+  }, [t, stopStreaming])
 
   const reset = useCallback(() => {
+    clearStreamTimeout()
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+      abortControllerRef.current = null
+    }
     setState({
       isStreaming: false,
       strategy: null,
@@ -161,7 +226,7 @@ export function useAsk() {
       finalAnswer: null,
       error: null
     })
-  }, [])
+  }, [clearStreamTimeout])
 
   return {
     ...state,

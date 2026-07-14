@@ -322,28 +322,7 @@ async def synthesize_results(
     context_limit = state.get("context_limit", DEFAULT_CONTEXT_LIMIT)
     output_budget = int(context_limit * 0.10)
 
-    # Progress guard: in pathological cases where every round produces
-    # only single-item groups, the loop never shrinks texts. Cap at one
-    # iteration per input text (each round MUST reduce count).
-    max_iterations = len(texts)
-    iteration = 0
-
     while len(texts) > 1:
-        iteration += 1
-        if iteration > max_iterations:
-            logger.warning(
-                "Synthesis did not converge after {} rounds ({} texts remain). "
-                "Concatenating remaining results.",
-                iteration,
-                len(texts),
-            )
-            texts = [
-                "\n\n--- Final Merge ---\n\n".join(
-                    f"Part {i + 1}:\n{t}" for i, t in enumerate(texts)
-                )
-            ]
-            break
-
         # Group texts within token budget
         groups: List[List[str]] = []
         current_group: List[str] = []
@@ -407,17 +386,47 @@ async def synthesize_results(
 
         if not made_progress:
             # All groups are single-item — the loop would never shrink.
-            # Fall back to merging the two smallest texts unconditionally.
+            # Fall back to merging the smallest adjacent pair (preserving
+            # document order so downstream transformations remain coherent).
             logger.warning(
                 "Synthesis stalled: all {} groups are single items within "
                 "the token budget (limit={}). "
-                "Forcing pairwise merge of the two smallest texts.",
+                "Forcing pairwise merge of the smallest adjacent pair.",
                 len(groups),
                 context_limit,
             )
-            texts.sort(key=token_count)
+
+            # Find the adjacent pair with the smallest combined size
+            min_combined = float("inf")
+            merge_idx = 0
+            for i in range(len(texts) - 1):
+                combined = token_count(texts[i]) + token_count(texts[i + 1])
+                if combined < min_combined:
+                    min_combined = combined
+                    merge_idx = i
+
+            # If even the smallest adjacent pair exceeds the context
+            # window, concatenate all remaining results directly.
+            overhead = token_count(instructions) + 300
+            if min_combined + overhead > context_limit:
+                logger.warning(
+                    "No adjacent pair fits the context window (limit={}, "
+                    "smallest pair={} tkn). Concatenating {} remaining texts.",
+                    context_limit,
+                    min_combined,
+                    len(texts),
+                )
+                texts = [
+                    "\n\n---\n\n".join(
+                        f"Part {i + 1}:\n{t}" for i, t in enumerate(texts)
+                    )
+                ]
+                break
+
+            left = texts[merge_idx]
+            right = texts[merge_idx + 1]
             force_content = (
-                f"Part 1:\n{texts[0]}\n\n---\n\nPart 2:\n{texts[1]}"
+                f"Part 1:\n{left}\n\n---\n\nPart 2:\n{right}"
             )
             merge_prompt = (
                 f"Merge the following two partial results into one "
@@ -441,7 +450,12 @@ async def synthesize_results(
                     ]
                 )
                 merged_result = _extract_response_content(response)
-                texts = [merged_result] + texts[2:]
+                # Replace the merged pair with the result, preserving order
+                texts = (
+                    texts[:merge_idx]
+                    + [merged_result]
+                    + texts[merge_idx + 2 :]
+                )
             except Exception as e:
                 exc_class, message = classify_error(e)
                 raise exc_class(message) from e

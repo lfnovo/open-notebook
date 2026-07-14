@@ -252,13 +252,15 @@ def chunk_text_by_tokens(
             base_chunk = chunk  # preserve for retry below
             # Try progressively smaller overlap sizes
             chunk_upper_bound = max_chunk_tokens * 1.15
-            for step_chars in [overlap_chars, overlap_chars // 2, overlap_chars // 4, 0]:
+            for step_chars in [overlap_chars, overlap_chars // 2, overlap_chars // 4]:
                 overlap = final_chunks[i - 1][-step_chars:]
                 chunk = overlap + CONTINUATION_MARKER + base_chunk
                 if token_count(chunk) <= chunk_upper_bound:
                     break
-                # If we hit zero overlap and still can't fit, accept the
-                # over-budget chunk — it's close enough.
+                # Continue with smaller overlap on next iteration
+            else:
+                # All overlap sizes overshoot — use just the continuation marker
+                chunk = CONTINUATION_MARKER + base_chunk
         result.append(chunk)
 
     return result

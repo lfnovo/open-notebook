@@ -514,6 +514,10 @@ export const esES = {
     selectFinalPlaceholder: "Seleccionar modelo de respuesta final",
     saveChanges: "Guardar cambios",
     processingQuestion: "Procesando tu pregunta...",
+    allNotebooks: "All notebooks",
+    filterNotebooks: "Filter by notebook",
+    searchNotebooks: "Search notebooks...",
+    clearFilter: "Clear filter",
   },
   podcasts: {
     generateEpisode: "Generar episodio de podcast",

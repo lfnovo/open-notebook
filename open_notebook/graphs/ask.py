@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 
 from ai_prompter import Prompter
 from langchain_core.output_parsers.pydantic import PydanticOutputParser
@@ -24,6 +24,7 @@ class SubGraphState(TypedDict):
     results: dict
     answer: str
     ids: list  # Added for provide_answer function
+    notebook_ids: Optional[list[str]]  # Optional notebook filter
 
 
 class Search(BaseModel):
@@ -46,6 +47,7 @@ class ThreadState(TypedDict):
     strategy: Strategy
     answers: Annotated[list, operator.add]
     final_answer: str
+    notebook_ids: Optional[list[str]]
 
 
 async def call_model_with_messages(state: ThreadState, config: RunnableConfig) -> dict:
@@ -90,6 +92,7 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
                 "question": state["question"],
                 "instructions": s.instructions,
                 "term": s.term,
+                "notebook_ids": state.get("notebook_ids"),
                 # "type": s.type,
             },
         )
@@ -100,10 +103,14 @@ async def trigger_queries(state: ThreadState, config: RunnableConfig):
 async def provide_answer(state: SubGraphState, config: RunnableConfig) -> dict:
     try:
         payload = state
+        # Extract optional notebook_ids from config
+        notebook_ids = config.get("configurable", {}).get("notebook_ids", None)
         # if state["type"] == "text":
         #     results = text_search(state["term"], 10, True, True)
         # else:
-        results = await vector_search(state["term"], 10, True, True)
+        results = await vector_search(
+            state["term"], 10, True, True, notebook_ids=notebook_ids
+        )
         if len(results) == 0:
             return {"answers": []}
         payload["results"] = results

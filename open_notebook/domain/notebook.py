@@ -753,17 +753,34 @@ class ChatSession(ObjectModel):
 
 
 async def text_search(
-    keyword: str, results: int, source: bool = True, note: bool = True
+    keyword: str,
+    results: int,
+    source: bool = True,
+    note: bool = True,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
+        params: Dict[str, Any] = {
+            "keyword": keyword,
+            "results": results,
+            "source": source,
+            "note": note,
+        }
+        if notebook_ids:
+            params["notebook_ids"] = [
+                ensure_record_id(nid) for nid in notebook_ids
+            ]
+        else:
+            params["notebook_ids"] = None
+
         search_results = await repo_query(
             """
             select *
-            from fn::text_search($keyword, $results, $source, $note)
+            from fn::text_search($keyword, $results, $source, $note, $notebook_ids)
             """,
-            {"keyword": keyword, "results": results, "source": source, "note": note},
+            params,
         )
         return search_results
     except RuntimeError as e:
@@ -776,7 +793,10 @@ async def text_search(
                 f"Highlight position overflow, falling back to vector search: {str(e)}"
             )
             try:
-                return await vector_search(keyword, results, source, note)
+                return await vector_search(
+                    keyword, results, source, note,
+                    notebook_ids=notebook_ids,
+                )
             except Exception as ve:
                 # Both search paths failed (e.g. no embedding model configured).
                 # Surface the failure instead of returning [] — an empty list would
@@ -800,17 +820,28 @@ async def vector_search(
     source: bool = True,
     note: bool = True,
     minimum_score=0.2,
+    notebook_ids: Optional[List[str]] = None,
 ):
     if not keyword:
         raise InvalidInputError("Search keyword cannot be empty")
     try:
         from open_notebook.utils.embedding import generate_embedding
 
+        params: Dict[str, Any] = {
+            "keyword": keyword,
+        }
+        if notebook_ids:
+            params["notebook_ids"] = [
+                ensure_record_id(nid) for nid in notebook_ids
+            ]
+        else:
+            params["notebook_ids"] = None
+
         # Use unified embedding function (handles chunking if query is very long)
         embed = await generate_embedding(keyword)
         search_results = await repo_query(
             """
-            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score);
+            SELECT * FROM fn::vector_search($embed, $results, $source, $note, $minimum_score, $notebook_ids);
             """,
             {
                 "embed": embed,
@@ -818,6 +849,11 @@ async def vector_search(
                 "source": source,
                 "note": note,
                 "minimum_score": minimum_score,
+                "notebook_ids": (
+                    [ensure_record_id(nid) for nid in notebook_ids]
+                    if notebook_ids
+                    else None
+                ),
             },
         )
         return search_results

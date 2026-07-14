@@ -514,6 +514,10 @@ export const ptBR = {
     selectFinalPlaceholder: "Selecione o modelo de resposta final",
     saveChanges: "Salvar Alterações",
     processingQuestion: "Processando sua pergunta...",
+    allNotebooks: "All notebooks",
+    filterNotebooks: "Filter by notebook",
+    searchNotebooks: "Search notebooks...",
+    clearFilter: "Clear filter",
   },
   podcasts: {
     generateEpisode: "Gerar Episódio de Podcast",

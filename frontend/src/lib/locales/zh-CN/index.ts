@@ -514,6 +514,10 @@ export const zhCN = {
     selectFinalPlaceholder: "选择最终回答模型",
     saveChanges: "保存更改",
     processingQuestion: "正在处理您的问题...",
+    allNotebooks: "All notebooks",
+    filterNotebooks: "Filter by notebook",
+    searchNotebooks: "Search notebooks...",
+    clearFilter: "Clear filter",
   },
   podcasts: {
     generateEpisode: "生成播客单集",

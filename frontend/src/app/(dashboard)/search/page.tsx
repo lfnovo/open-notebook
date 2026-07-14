@@ -23,6 +23,8 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { StreamingResponse } from '@/components/search/StreamingResponse'
 import { AdvancedModelsDialog } from '@/components/search/AdvancedModelsDialog'
 import { SaveToNotebooksDialog } from '@/components/search/SaveToNotebooksDialog'
+import { NotebookMultiSelect } from '@/components/search/NotebookMultiSelect'
+import { SearchRequest } from '@/lib/types/search'
 
 export default function SearchPage() {
   const { t } = useTranslation()
@@ -45,6 +47,9 @@ export default function SearchPage() {
 
   // Ask state
   const [askQuestion, setAskQuestion] = useState(urlMode === 'ask' ? urlQuery : '')
+
+  // Notebook filter state
+  const [notebookIds, setNotebookIds] = useState<string[]>([])
 
   // Advanced models dialog
   const [showAdvancedModels, setShowAdvancedModels] = useState(false)
@@ -85,15 +90,20 @@ export default function SearchPage() {
   const handleSearch = useCallback(() => {
     if (!searchQuery.trim()) return
 
-    searchMutation.mutate({
+    const params: SearchRequest = {
       query: searchQuery,
       type: searchType,
       limit: 100,
       search_sources: searchSources,
       search_notes: searchNotes,
       minimum_score: 0.2
-    })
-  }, [searchQuery, searchType, searchSources, searchNotes, searchMutation])
+    }
+    if (notebookIds.length > 0) {
+      params.notebook_ids = notebookIds
+    }
+
+    searchMutation.mutate(params)
+  }, [searchQuery, searchType, searchSources, searchNotes, notebookIds, searchMutation])
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -110,8 +120,8 @@ export default function SearchPage() {
       finalAnswer: modelDefaults.default_chat_model
     }
 
-    ask.sendAsk(askQuestion, models)
-  }, [askQuestion, modelDefaults, customModels, ask])
+    ask.sendAsk(askQuestion, models, notebookIds.length > 0 ? notebookIds : undefined)
+  }, [askQuestion, modelDefaults, customModels, notebookIds, ask])
 
   // Auto-trigger search/ask when arriving with URL params
   useEffect(() => {
@@ -206,6 +216,16 @@ export default function SearchPage() {
                     aria-label={t('common.accessibility.enterQuestion')}
                   />
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSubmit')}</p>
+                </div>
+
+                {/* Notebook Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
+                  <NotebookMultiSelect
+                    selectedIds={notebookIds}
+                    onChange={setNotebookIds}
+                    disabled={ask.isStreaming}
+                  />
                 </div>
 
                 {/* Models Display */}
@@ -350,6 +370,16 @@ export default function SearchPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">{t('searchPage.pressToSearch')}</p>
+                </div>
+
+                {/* Notebook Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('searchPage.filterNotebooks')}</Label>
+                  <NotebookMultiSelect
+                    selectedIds={notebookIds}
+                    onChange={setNotebookIds}
+                    disabled={searchMutation.isPending}
+                  />
                 </div>
 
                 {/* Search Options */}

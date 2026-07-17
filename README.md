@@ -23,6 +23,8 @@
     <br />
     <a href="https://www.open-notebook.ai"><strong>Checkout our website »</strong></a>
     <br />
+    Follow <a href="https://x.com/lfnovo">@lfnovo on X</a> for updates
+    <br />
     <br />
     <a href="docs/0-START-HERE/index.md">📚 Get Started</a>
     ·
@@ -328,6 +330,7 @@ See the [open issues](https://github.com/lfnovo/open-notebook/issues) for a full
 
 ### Join the Community
 - 💬 **[Discord Server](https://discord.gg/37XJPXfz2w)** - Get help, share ideas, and connect with other users
+- 𝕏 **[Follow @lfnovo on X](https://x.com/lfnovo)** - Project updates and news from the maintainer
 - 🐛 **[GitHub Issues](https://github.com/lfnovo/open-notebook/issues)** - Report bugs and request features
 - ⭐ **Star this repo** - Show your support and help others discover Open Notebook
 
@@ -353,6 +356,7 @@ Open Notebook is MIT licensed. See the [LICENSE](LICENSE) file for details.
 
 **Community Support**:
 - 💬 [Discord Server](https://discord.gg/37XJPXfz2w) - Get help, share ideas, and connect with users
+- 𝕏 [Follow @lfnovo on X](https://x.com/lfnovo) - Project updates and news from the maintainer
 - 🐛 [GitHub Issues](https://github.com/lfnovo/open-notebook/issues) - Report bugs and request features
 - 🌐 [Website](https://www.open-notebook.ai) - Learn more about the project
 

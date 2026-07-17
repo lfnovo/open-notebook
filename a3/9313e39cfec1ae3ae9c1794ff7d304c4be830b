@@ -1,0 +1,19 @@
+frontend/src/lib/locales/ja-JP/index.ts
+  s_deea26d3646cda::t_ff02abf1e55d2e 274
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a39313e39cfec1ae3ae9c1794ff7d304c4be830b",
+  "prompts": {},
+  "sessions": {
+    "s_deea26d3646cda": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f1ead5f7-ca81-42ba-ab96-868da743b3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

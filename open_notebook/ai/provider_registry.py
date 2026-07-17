@@ -227,6 +227,20 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             test_model=None,  # Dynamic - uses first available model
             docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md",
         ),
+        ProviderSpec(
+            name="anthropic_compatible",
+            display_name="Anthropic Compatible",
+            modalities=_LANGUAGE_ONLY,
+            required_env=(
+                "ANTHROPIC_COMPATIBLE_BASE_URL",
+                "ANTHROPIC_COMPATIBLE_API_KEY",
+            ),
+            test_model=None,  # Dynamic - uses the endpoint's model list
+            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md",
+            # No openai_compat_discovery_url: anthropic-compatible discovery uses
+            # Anthropic's GET /v1/models with x-api-key + anthropic-version headers
+            # (bespoke), not the OpenAI-compatible GET /models discovery table.
+        ),
 )
 
 

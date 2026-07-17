@@ -218,29 +218,41 @@ async def _provision_azure() -> bool:
     return any_set
 
 
-async def _provision_openai_compatible() -> bool:
-    """
-    Set environment variables for OpenAI-Compatible providers from DB config.
+async def _provision_url_key_compatible(provider: str, env_prefix: str) -> bool:
+    """Set environment variables for base_url + api_key compatible providers
+    (openai_compatible, anthropic_compatible) from DB config.
 
     Returns:
         True if any keys were set from database
     """
     any_set = False
 
-    cred = await _get_default_credential("openai_compatible")
+    cred = await _get_default_credential(provider)
     if not cred:
         return False
 
     if cred.api_key:
-        os.environ["OPENAI_COMPATIBLE_API_KEY"] = cred.api_key.get_secret_value()
-        logger.debug("Set OPENAI_COMPATIBLE_API_KEY from Credential")
+        os.environ[f"{env_prefix}_API_KEY"] = cred.api_key.get_secret_value()
+        logger.debug(f"Set {env_prefix}_API_KEY from Credential")
         any_set = True
     if cred.base_url:
-        os.environ["OPENAI_COMPATIBLE_BASE_URL"] = cred.base_url
-        logger.debug("Set OPENAI_COMPATIBLE_BASE_URL from Credential")
+        os.environ[f"{env_prefix}_BASE_URL"] = cred.base_url
+        logger.debug(f"Set {env_prefix}_BASE_URL from Credential")
         any_set = True
 
     return any_set
+
+
+async def _provision_openai_compatible() -> bool:
+    """Set environment variables for OpenAI-Compatible providers from DB config."""
+    return await _provision_url_key_compatible("openai_compatible", "OPENAI_COMPATIBLE")
+
+
+async def _provision_anthropic_compatible() -> bool:
+    """Set environment variables for Anthropic-compatible providers from DB config."""
+    return await _provision_url_key_compatible(
+        "anthropic_compatible", "ANTHROPIC_COMPATIBLE"
+    )
 
 
 async def provision_provider_keys(provider: str) -> bool:
@@ -275,6 +287,8 @@ async def provision_provider_keys(provider: str) -> bool:
         return await _provision_azure()
     elif provider_lower in ("openai-compatible", "openai_compatible"):
         return await _provision_openai_compatible()
+    elif provider_lower in ("anthropic-compatible", "anthropic_compatible"):
+        return await _provision_anthropic_compatible()
 
     # Handle simple providers
     return await _provision_simple_provider(provider_lower)
@@ -303,5 +317,8 @@ async def provision_all_keys() -> dict[str, bool]:
     results["vertex"] = await provision_provider_keys("vertex")
     results["azure"] = await provision_provider_keys("azure")
     results["openai_compatible"] = await provision_provider_keys("openai_compatible")
+    results["anthropic_compatible"] = await provision_provider_keys(
+        "anthropic_compatible"
+    )
 
     return results

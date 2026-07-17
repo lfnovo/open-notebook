@@ -13,6 +13,7 @@ from typing import Awaitable, Callable, Dict, List, Optional, Tuple
 import httpx
 from loguru import logger
 
+from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.models import Model
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.database.repository import repo_query
@@ -610,6 +611,67 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
+async def discover_anthropic_compatible_models() -> List[DiscoveredModel]:
+    """Fetch available models from an Anthropic-compatible API endpoint."""
+    api_key = None
+    base_url = None
+
+    try:
+        credentials = await Credential.get_by_provider("anthropic_compatible")
+        if credentials:
+            config = credentials[0].to_esperanto_config()
+            api_key = config.get("api_key")
+            base_url = config.get("base_url", "")
+    except Exception as e:
+        logger.warning(f"Failed to read anthropic_compatible config from Credential: {e}")
+
+    if not api_key:
+        api_key = os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY")
+    if not base_url:
+        base_url = os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL", "")
+
+    if not base_url:
+        logger.warning("No base_url configured for anthropic_compatible provider")
+        return []
+
+    models = []
+    try:
+        normalized_base_url = normalize_anthropic_compatible_base_url(base_url)
+        target = await prepare_pinned_http_target(
+            f"{normalized_base_url}/models", "anthropic_compatible"
+        )
+        headers = dict(target.headers)
+        headers["anthropic-version"] = "2023-06-01"
+        if api_key:
+            headers["x-api-key"] = api_key
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                target.url,
+                headers=headers,
+                timeout=30.0,
+                extensions=target.extensions,
+            )
+            response.raise_for_status()
+            for model in response.json().get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="anthropic_compatible",
+                            model_type=classify_model_type(model_id, "anthropic"),
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(
+            f"Failed to discover anthropic_compatible models: HTTP {e.response.status_code}"
+        )
+    except Exception as e:
+        logger.warning(f"Failed to discover anthropic_compatible models: {e}")
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -629,6 +691,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "elevenlabs": discover_elevenlabs_models,
     "deepgram": discover_deepgram_models,
     "openai_compatible": discover_openai_compatible_models,
+    "anthropic_compatible": discover_anthropic_compatible_models,
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)

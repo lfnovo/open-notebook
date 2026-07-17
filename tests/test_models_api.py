@@ -119,6 +119,35 @@ class TestModelCreation:
 class TestModelsProviderAvailability:
     """Test suite for Models Provider Availability endpoint."""
 
+    @patch(
+        "api.routers.models._check_provider_has_credential",
+        new_callable=AsyncMock,
+        return_value=False,
+    )
+    @patch("api.routers.models.os.environ.get")
+    @patch("api.routers.models.AIFactory.get_available_providers")
+    def test_blank_anthropic_compatible_env_vars_are_unavailable(
+        self, mock_esperanto, mock_env, mock_has_credential, client
+    ):
+        def env_side_effect(key):
+            if key in {
+                "ANTHROPIC_COMPATIBLE_BASE_URL",
+                "ANTHROPIC_COMPATIBLE_API_KEY",
+            }:
+                return "   "
+            return None
+
+        mock_env.side_effect = env_side_effect
+        mock_esperanto.return_value = {"language": ["anthropic"]}
+
+        response = client.get("/api/models/providers")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "anthropic_compatible" not in data["available"]
+        assert "anthropic_compatible" in data["unavailable"]
+        assert "anthropic_compatible" not in data["supported_types"]
+
     @patch("api.routers.models.os.environ.get")
     @patch("api.routers.models.AIFactory.get_available_providers")
     def test_generic_env_var_enables_all_modes(self, mock_esperanto, mock_env, client):

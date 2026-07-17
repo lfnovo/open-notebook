@@ -574,6 +574,7 @@ SupportedProvider = Literal[
     "azure",
     "vertex",
     "openai_compatible",
+    "anthropic_compatible",
 ]
 
 
@@ -616,6 +617,26 @@ class CapabilitiesResponse(BaseModel):
     )
 
 
+def validate_url_key_provider_required_fields(
+    provider: Optional[str],
+    base_url: Optional[str],
+    api_key: Optional[str],
+) -> None:
+    """Shared required-field rule for providers that need BOTH a base URL and an
+    API key (currently anthropic_compatible).
+
+    Called from both the create path (CreateCredentialRequest validator, which sees
+    the full request payload) and the update path
+    (credentials_service.ensure_provider_required_fields, which runs against the
+    merged credential). Raises ValueError when a required field is missing.
+    """
+    if (provider or "").lower() == "anthropic_compatible":
+        if not base_url or not str(base_url).strip():
+            raise ValueError("Anthropic-compatible credentials require a base URL")
+        if not api_key or not str(api_key).strip():
+            raise ValueError("Anthropic-compatible credentials require an API key")
+
+
 class CreateCredentialRequest(BaseModel):
     """Request to create a new credential."""
 
@@ -643,6 +664,13 @@ class CreateCredentialRequest(BaseModel):
     num_ctx: Optional[int] = Field(
         None, description="Context window size (Ollama only; defaults to 8192)"
     )
+
+    @model_validator(mode="after")
+    def _validate_provider_required_fields(self):
+        validate_url_key_provider_required_fields(
+            self.provider, self.base_url, self.api_key
+        )
+        return self
 
 
 class UpdateCredentialRequest(BaseModel):

@@ -38,6 +38,7 @@ KNOWN_GOOD_PROVIDERS = [
     "azure",
     "vertex",
     "openai_compatible",
+    "anthropic_compatible",
 ]
 
 
@@ -153,7 +154,14 @@ class TestProvidersEndpoint:
 class TestCreateCredentialRequestValidation:
     @pytest.mark.parametrize("provider", KNOWN_GOOD_PROVIDERS)
     def test_accepts_every_known_provider(self, provider):
-        request = CreateCredentialRequest(name="Test", provider=provider)
+        provider_fields = (
+            {"api_key": "sk-test", "base_url": "https://api.example.com"}
+            if provider == "anthropic_compatible"
+            else {}
+        )
+        request = CreateCredentialRequest(
+            name="Test", provider=provider, **provider_fields
+        )
         assert request.provider == provider
 
     @pytest.mark.parametrize(
@@ -163,6 +171,21 @@ class TestCreateCredentialRequestValidation:
     def test_rejects_unknown_or_malformed_provider(self, bad_provider):
         with pytest.raises(ValidationError):
             CreateCredentialRequest(name="Test", provider=bad_provider)
+
+    @pytest.mark.parametrize(
+        "api_key,base_url",
+        [(None, "https://api.example.com"), ("sk-test", None), (" ", " ")],
+    )
+    def test_anthropic_compatible_requires_api_key_and_base_url(
+        self, api_key, base_url
+    ):
+        with pytest.raises(ValidationError):
+            CreateCredentialRequest(
+                name="Test",
+                provider="anthropic_compatible",
+                api_key=api_key,
+                base_url=base_url,
+            )
 
 
 class TestCreateCredentialEndpointRejectsBadProvider:

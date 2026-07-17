@@ -514,6 +514,10 @@ export const zhTW = {
     selectFinalPlaceholder: "選擇最終回答模型",
     saveChanges: "儲存更改",
     processingQuestion: "正在處理您的問題...",
+    allNotebooks: "所有筆記本",
+    filterNotebooks: "按筆記本篩選",
+    searchNotebooks: "搜尋筆記本...",
+    clearFilter: "清除篩選",
   },
   podcasts: {
     generateEpisode: "生成播客單集",

@@ -512,6 +512,10 @@ export const enUS = {
     selectFinalPlaceholder: "Select final answer model",
     saveChanges: "Save Changes",
     processingQuestion: "Processing your question...",
+    allNotebooks: "All Notebooks",
+    filterNotebooks: "Filter by Notebook",
+    searchNotebooks: "Search Notebooks...",
+    clearFilter: "Clear filter",
   },
   podcasts: {
     generateEpisode: "Generate Podcast Episode",

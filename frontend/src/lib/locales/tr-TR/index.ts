@@ -514,6 +514,10 @@ export const trTR = {
     selectFinalPlaceholder: "Son yanıt modeli seçin",
     saveChanges: "Değişiklikleri Kaydet",
     processingQuestion: "Sorunuz işleniyor...",
+    allNotebooks: "Tüm defterler",
+    filterNotebooks: "Deftere göre filtrele",
+    searchNotebooks: "Defterlerde ara...",
+    clearFilter: "Filtreyi temizle",
   },
   podcasts: {
     generateEpisode: "Podcast Bölümü Oluştur",

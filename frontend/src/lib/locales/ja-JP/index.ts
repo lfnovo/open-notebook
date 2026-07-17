@@ -514,6 +514,10 @@ export const jaJP = {
     selectFinalPlaceholder: "最終回答モデルを選択",
     saveChanges: "変更を保存",
     processingQuestion: "質問を処理中...",
+    allNotebooks: "すべてのノートブック",
+    filterNotebooks: "ノートブックで絞り込む",
+    searchNotebooks: "ノートブックを検索...",
+    clearFilter: "絞り込みを解除",
   },
   podcasts: {
     generateEpisode: "ポッドキャストエピソードを生成",

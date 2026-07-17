@@ -514,6 +514,10 @@ export const bnIN = {
     selectFinalPlaceholder: "চূড়ান্ত উত্তর মডেল নির্বাচন করুন",
     saveChanges: "পরিবর্তন সংরক্ষণ করুন",
     processingQuestion: "আপনার প্রশ্ন প্রক্রিয়া করা হচ্ছে...",
+    allNotebooks: "সমস্ত নোটবুক",
+    filterNotebooks: "নোটবুক অনুসারে ফিল্টার",
+    searchNotebooks: "নোটবুক অনুসন্ধান...",
+    clearFilter: "ফিল্টার মুছুন",
   },
   podcasts: {
     generateEpisode: "পডকাস্ট এপিসোড তৈরি করুন",

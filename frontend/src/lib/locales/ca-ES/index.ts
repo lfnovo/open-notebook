@@ -514,6 +514,10 @@ export const caES = {
     selectFinalPlaceholder: "Selecciona el model de resposta final",
     saveChanges: "Desa els canvis",
     processingQuestion: "S'està processant la teva pregunta...",
+    allNotebooks: "Tots els quaderns",
+    filterNotebooks: "Filtrar per quadern",
+    searchNotebooks: "Cerca quaderns...",
+    clearFilter: "Netejar filtre",
   },
   podcasts: {
     generateEpisode: "Genera un episodi de podcast",

@@ -517,6 +517,10 @@ export const deDE = {
     selectFinalPlaceholder: "Modell für finale Antwort auswählen",
     saveChanges: "Änderungen speichern",
     processingQuestion: "Deine Frage wird verarbeitet...",
+    allNotebooks: "Alle Notizbücher",
+    filterNotebooks: "Nach Notizbuch filtern",
+    searchNotebooks: "Notizbücher durchsuchen...",
+    clearFilter: "Filter löschen",
   },
   podcasts: {
     generateEpisode: "Podcast-Episode erzeugen",

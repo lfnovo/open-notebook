@@ -514,6 +514,10 @@ export const frFR = {
     selectFinalPlaceholder: "Sélectionner le modèle final",
     saveChanges: "Enregistrer les modifications",
     processingQuestion: "Traitement de votre question...",
+    allNotebooks: "Tous les carnets",
+    filterNotebooks: "Filtrer par carnet",
+    searchNotebooks: "Rechercher des carnets...",
+    clearFilter: "Effacer le filtre",
   },
   podcasts: {
     generateEpisode: "Générer un épisode de podcast",

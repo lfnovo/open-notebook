@@ -6,6 +6,7 @@ export interface SearchRequest {
   search_sources: boolean
   search_notes: boolean
   minimum_score: number
+  notebook_ids?: string[]
 }
 
 export interface SearchResult {
@@ -35,6 +36,7 @@ export interface AskRequest {
   strategy_model: string
   answer_model: string
   final_answer_model: string
+  notebook_ids?: string[]
 }
 
 export interface AskResponse {

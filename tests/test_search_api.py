@@ -65,7 +65,7 @@ class TestTextSearchHighlightOverflowFallback:
             result = await notebook_module.text_search("hello", 10)
 
         assert result == [{"id": "source:1"}]
-        mock_vector.assert_awaited_once_with("hello", 10, True, True)
+        mock_vector.assert_awaited_once_with("hello", 10, True, True, notebook_ids=None)
 
     @pytest.mark.asyncio
     async def test_position_overflow_raises_when_vector_also_fails(self):

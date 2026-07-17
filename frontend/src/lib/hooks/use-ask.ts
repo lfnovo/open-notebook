@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
-import { AskStreamEvent } from '@/lib/types/search'
+import { AskRequest, AskStreamEvent } from '@/lib/types/search'
 
 interface AskModels {
   strategy: string
@@ -36,7 +36,7 @@ export function useAsk() {
     error: null
   })
 
-  const sendAsk = useCallback(async (question: string, models: AskModels) => {
+  const sendAsk = useCallback(async (question: string, models: AskModels, notebook_ids?: string[]) => {
     // Validate inputs
     if (!question.trim()) {
       toast.error(t('apiErrors.pleaseEnterQuestion'))
@@ -58,12 +58,17 @@ export function useAsk() {
     })
 
     try {
-      const response = await searchApi.askKnowledgeBase({
+      const askRequest: AskRequest = {
         question,
         strategy_model: models.strategy,
         answer_model: models.answer,
-        final_answer_model: models.finalAnswer
-      })
+        final_answer_model: models.finalAnswer,
+      }
+      if (notebook_ids && notebook_ids.length > 0) {
+        askRequest.notebook_ids = notebook_ids
+      }
+
+      const response = await searchApi.askKnowledgeBase(askRequest)
 
       if (!response) {
         throw new Error('No response body received from server')

@@ -514,6 +514,10 @@ export const ruRU = {
     selectFinalPlaceholder: "Выберите модель итогового ответа",
     saveChanges: "Сохранить изменения",
     processingQuestion: "Обработка вашего вопроса...",
+    allNotebooks: "Все блокноты",
+    filterNotebooks: "Фильтр по блокноту",
+    searchNotebooks: "Поиск блокнотов...",
+    clearFilter: "Очистить фильтр",
   },
   podcasts: {
     generateEpisode: "Сгенерировать эпизод подкаста",

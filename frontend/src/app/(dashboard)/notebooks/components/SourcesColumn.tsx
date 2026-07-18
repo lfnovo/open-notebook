@@ -226,6 +226,7 @@ export function SourcesColumn({
                     onClick={handleSourceClick}
                     onDelete={handleDeleteClick}
                     onRetry={handleRetry}
+                    onRefreshContent={handleRetry}
                     onRemoveFromNotebook={handleRemoveFromNotebook}
                     onRefresh={onRefresh}
                     showRemoveFromNotebook={true}

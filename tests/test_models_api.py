@@ -85,7 +85,7 @@ class TestModelCreation:
         mock_repo_query.return_value = []
 
         # Patch the save method on the Model class
-        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+        with patch.object(Model, "save", new_callable=AsyncMock):
             # Attempt to create same model name with different provider (anthropic)
             response = client.post(
                 "/api/models",
@@ -105,7 +105,7 @@ class TestModelCreation:
         mock_repo_query.return_value = []
 
         # Patch the save method on the Model class
-        with patch.object(Model, "save", new_callable=AsyncMock) as mock_save:
+        with patch.object(Model, "save", new_callable=AsyncMock):
             # Attempt to create same model name with different type (embedding instead of language)
             response = client.post(
                 "/api/models",
@@ -389,3 +389,73 @@ class TestModelsProviderAvailability:
         # Should support only text_to_speech
         supported = data["supported_types"]["openai_compatible"]
         assert supported == ["text_to_speech"]
+
+
+class TestUpdateDefaultModels:
+    """PUT /models/defaults must distinguish 'field absent' (keep) from
+    'field explicitly null' (clear).
+
+    The handler used `is not None` guards, so a null sent to clear a default
+    was silently ignored — the old value survived while the client saw
+    success (#1091, same anti-pattern fixed for credentials in #1046). Now
+    keyed on model_fields_set, with the required defaults (chat, embedding)
+    rejecting explicit nulls.
+    """
+
+    def _mock_defaults(self):
+        from unittest.mock import MagicMock
+
+        defaults = MagicMock()
+        defaults.default_chat_model = "model:chat"
+        defaults.default_transformation_model = "model:transform"
+        defaults.large_context_model = None
+        defaults.default_text_to_speech_model = "model:tts"
+        defaults.default_speech_to_text_model = None
+        defaults.default_vision_model = None
+        defaults.default_embedding_model = "model:embed"
+        defaults.default_tools_model = "model:tools"
+        defaults.update = AsyncMock()
+        return defaults
+
+    def _put(self, client, defaults, body):
+        with patch(
+            "api.routers.models.DefaultModels.get_instance",
+            new=AsyncMock(return_value=defaults),
+        ):
+            return client.put("/api/models/defaults", json=body)
+
+    def test_explicit_null_clears_optional_default(self, client):
+        defaults = self._mock_defaults()
+        response = self._put(client, defaults, {"default_transformation_model": None})
+
+        assert response.status_code == 200
+        assert defaults.default_transformation_model is None
+        defaults.update.assert_awaited_once()
+        assert response.json()["default_transformation_model"] is None
+
+    def test_absent_field_keeps_current_value(self, client):
+        defaults = self._mock_defaults()
+        response = self._put(client, defaults, {"default_tools_model": "model:new-tools"})
+
+        assert response.status_code == 200
+        assert defaults.default_tools_model == "model:new-tools"
+        # Not in the payload -> untouched (JSON null semantics must not leak in)
+        assert defaults.default_transformation_model == "model:transform"
+        assert response.json()["default_transformation_model"] == "model:transform"
+
+    def test_explicit_null_on_required_default_is_rejected(self, client):
+        for field in ("default_chat_model", "default_embedding_model"):
+            defaults = self._mock_defaults()
+            response = self._put(client, defaults, {field: None})
+
+            assert response.status_code == 400, field
+            assert field in response.json()["detail"]
+            defaults.update.assert_not_awaited()
+
+    def test_required_default_can_still_be_reassigned(self, client):
+        defaults = self._mock_defaults()
+        response = self._put(client, defaults, {"default_chat_model": "model:new-chat"})
+
+        assert response.status_code == 200
+        assert defaults.default_chat_model == "model:new-chat"
+        defaults.update.assert_awaited_once()

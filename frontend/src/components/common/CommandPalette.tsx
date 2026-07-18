@@ -187,7 +187,7 @@ export function CommandPalette() {
               forceMount
             >
               <Search className="h-4 w-4" />
-              <span>{t('searchPage.searchResultsFor').replace('{query}', query)}</span>
+              <span>{t('searchPage.searchResultsFor', { query: query })}</span>
             </CommandItem>
             <CommandItem
               value={`__ask__ ${query}`}
@@ -195,7 +195,7 @@ export function CommandPalette() {
               forceMount
             >
               <MessageCircleQuestion className="h-4 w-4" />
-              <span>{t('searchPage.askAbout').replace('{query}', query)}</span>
+              <span>{t('searchPage.askAbout', { query: query })}</span>
             </CommandItem>
           </CommandGroup>
         )}
@@ -274,7 +274,7 @@ export function CommandPalette() {
                 forceMount
               >
                 <Search className="h-4 w-4" />
-                <span>{t('searchPage.searchResultsFor').replace('{query}', query)}</span>
+                <span>{t('searchPage.searchResultsFor', { query: query })}</span>
               </CommandItem>
               <CommandItem
                 value={`__ask__ ${query}`}
@@ -282,7 +282,7 @@ export function CommandPalette() {
                 forceMount
               >
                 <MessageCircleQuestion className="h-4 w-4" />
-                <span>{t('searchPage.askAbout').replace('{query}', query)}</span>
+                <span>{t('searchPage.askAbout', { query: query })}</span>
               </CommandItem>
             </CommandGroup>
           </>

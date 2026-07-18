@@ -1,0 +1,29 @@
+-- Migration 21: store episode.audio_file relative to PODCASTS_FOLDER (#1030)
+-- audio_file used to hold the absolute path returned by podcast-creator
+-- (str(Path.resolve())), sometimes with a legacy file:// prefix. From this
+-- migration on the app stores the path RELATIVE to PODCASTS_FOLDER
+-- (e.g. "episodes/<uuid>/audio/<uuid>.mp3") and resolves + contains it at a
+-- single choke point (open_notebook/podcasts/audio_paths.py).
+--
+-- Conversion is by known-prefix stripping only, in two steps:
+--   1. Normalize plain "file:///" URIs to absolute paths. Only URIs without
+--      percent-encoding are handled (SurrealQL cannot URL-decode) and only
+--      the empty-host "file:///" form (a "file://host/" URI is not a local
+--      path); anything else keeps its scheme and stays legacy-invalid.
+--   2. Strip EXACTLY ONE known root prefix per row (a single IF/ELSE chain,
+--      so a remainder that happens to start with another prefix is never
+--      stripped twice):
+--        "/app/data/podcasts/"  the shipped Docker layout (WORKDIR /app,
+--                               DATA_FOLDER "./data" resolved at write time)
+--        "/data/podcasts/"      older Docker layout with data mounted at /data
+--        "./data/podcasts/"     CWD-relative forms written by source
+--        "data/podcasts/"       checkouts running from the repo root
+--
+-- Rows under any OTHER root (e.g. a source checkout at a custom absolute
+-- path) stay untouched by design (settled in #1030): the resolve helper
+-- treats any non-relative value as legacy-invalid, preserving the 403/404
+-- behavior #1018's guards give those rows today. No nulling, no flags.
+
+UPDATE episode SET audio_file = string::slice(audio_file, 7) WHERE type::is::string(audio_file) AND string::starts_with(audio_file, "file:///") AND !string::contains(audio_file, "%");
+
+UPDATE episode SET audio_file = IF string::starts_with(audio_file, "/app/data/podcasts/") { string::slice(audio_file, 19) } ELSE IF string::starts_with(audio_file, "/data/podcasts/") { string::slice(audio_file, 15) } ELSE IF string::starts_with(audio_file, "./data/podcasts/") { string::slice(audio_file, 16) } ELSE IF string::starts_with(audio_file, "data/podcasts/") { string::slice(audio_file, 14) } ELSE { audio_file } WHERE type::is::string(audio_file);

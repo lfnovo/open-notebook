@@ -20,6 +20,20 @@ from open_notebook.graphs.transformation import graph as transformation_graph
 router = APIRouter()
 
 
+def _transformation_response(transformation: Transformation) -> TransformationResponse:
+    return TransformationResponse(
+        id=transformation.id or "",
+        name=transformation.name,
+        title=transformation.title,
+        description=transformation.description,
+        prompt=transformation.prompt,
+        apply_default=transformation.apply_default,
+        model_id=transformation.model_id,
+        created=str(transformation.created),
+        updated=str(transformation.updated),
+    )
+
+
 @router.get("/transformations", response_model=List[TransformationResponse])
 async def get_transformations():
     """Get all transformations."""
@@ -27,18 +41,13 @@ async def get_transformations():
         transformations = await Transformation.get_all(order_by="name asc")
 
         return [
-            TransformationResponse(
-                id=transformation.id or "",
-                name=transformation.name,
-                title=transformation.title,
-                description=transformation.description,
-                prompt=transformation.prompt,
-                apply_default=transformation.apply_default,
-                created=str(transformation.created),
-                updated=str(transformation.updated),
-            )
+            _transformation_response(transformation)
             for transformation in transformations
         ]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching transformations: {str(e)}")
         raise HTTPException(
@@ -50,27 +59,30 @@ async def get_transformations():
 async def create_transformation(transformation_data: TransformationCreate):
     """Create a new transformation."""
     try:
+        # Reject unknown model references up front (same check as execute);
+        # otherwise an invalid model_id is stored and only fails at run time.
+        if transformation_data.model_id:
+            model = await Model.get(transformation_data.model_id)
+            if not model:
+                raise HTTPException(status_code=404, detail="Model not found")
+
         new_transformation = Transformation(
             name=transformation_data.name,
             title=transformation_data.title,
             description=transformation_data.description,
             prompt=transformation_data.prompt,
             apply_default=transformation_data.apply_default,
+            model_id=transformation_data.model_id,
         )
         await new_transformation.save()
 
-        return TransformationResponse(
-            id=new_transformation.id or "",
-            name=new_transformation.name,
-            title=new_transformation.title,
-            description=new_transformation.description,
-            prompt=new_transformation.prompt,
-            apply_default=new_transformation.apply_default,
-            created=str(new_transformation.created),
-            updated=str(new_transformation.updated),
-        )
+        return _transformation_response(new_transformation)
+    except HTTPException:
+        raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating transformation: {str(e)}")
         raise HTTPException(
@@ -87,24 +99,30 @@ async def execute_transformation(execute_request: TransformationExecuteRequest):
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
 
-        # Validate model exists
-        model = await Model.get(execute_request.model_id)
-        if not model:
-            raise HTTPException(status_code=404, detail="Model not found")
+        model_id = execute_request.model_id or transformation.model_id
 
-        # Execute the transformation
-        result = await transformation_graph.ainvoke(
-            dict(  # type: ignore[arg-type]
+        # Validate explicit or transformation-specific model exists.
+        # None is allowed so the graph can use the configured transformation default.
+        if model_id:
+            model = await Model.get(model_id)
+            if not model:
+                raise HTTPException(status_code=404, detail="Model not found")
+
+        # Execute the transformation.
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        result = await transformation_graph.ainvoke(  # type: ignore[call-overload]
+            dict(
                 input_text=execute_request.input_text,
                 transformation=transformation,
             ),
-            config=dict(configurable={"model_id": execute_request.model_id}),
+            config=dict(configurable={"model_id": model_id}),
         )
 
         return TransformationExecuteResponse(
             output=result["output"],
             transformation_id=execute_request.transformation_id,
-            model_id=execute_request.model_id,
+            model_id=model_id,
         )
 
     except HTTPException:
@@ -128,6 +146,10 @@ async def get_default_prompt():
             transformation_instructions=default_prompts.transformation_instructions
             or ""
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching default prompt: {str(e)}")
         raise HTTPException(
@@ -149,6 +171,10 @@ async def update_default_prompt(prompt_update: DefaultPromptUpdate):
         return DefaultPromptResponse(
             transformation_instructions=default_prompts.transformation_instructions
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating default prompt: {str(e)}")
         raise HTTPException(
@@ -166,17 +192,10 @@ async def get_transformation(transformation_id: str):
         if not transformation:
             raise HTTPException(status_code=404, detail="Transformation not found")
 
-        return TransformationResponse(
-            id=transformation.id or "",
-            name=transformation.name,
-            title=transformation.title,
-            description=transformation.description,
-            prompt=transformation.prompt,
-            apply_default=transformation.apply_default,
-            created=str(transformation.created),
-            updated=str(transformation.updated),
-        )
+        return _transformation_response(transformation)
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching transformation {transformation_id}: {str(e)}")
@@ -208,23 +227,23 @@ async def update_transformation(
             transformation.prompt = transformation_update.prompt
         if transformation_update.apply_default is not None:
             transformation.apply_default = transformation_update.apply_default
+        if "model_id" in transformation_update.model_fields_set:
+            # Validate a newly supplied model reference (allow clearing to None).
+            if transformation_update.model_id:
+                model = await Model.get(transformation_update.model_id)
+                if not model:
+                    raise HTTPException(status_code=404, detail="Model not found")
+            transformation.model_id = transformation_update.model_id
 
         await transformation.save()
 
-        return TransformationResponse(
-            id=transformation.id or "",
-            name=transformation.name,
-            title=transformation.title,
-            description=transformation.description,
-            prompt=transformation.prompt,
-            apply_default=transformation.apply_default,
-            created=str(transformation.created),
-            updated=str(transformation.updated),
-        )
+        return _transformation_response(transformation)
     except HTTPException:
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating transformation {transformation_id}: {str(e)}")
         raise HTTPException(
@@ -244,6 +263,8 @@ async def delete_transformation(transformation_id: str):
 
         return {"message": "Transformation deleted successfully"}
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error deleting transformation {transformation_id}: {str(e)}")

@@ -7,188 +7,45 @@ Extracted from the credentials router to follow the service layer pattern.
 All functions raise ValueError for business errors (router converts to HTTPException).
 """
 
-import ipaddress
 import os
-import socket
-from typing import Dict, List, Optional
-from urllib.parse import urlparse
+from typing import Dict, List
 
 import httpx
 from loguru import logger
 from pydantic import SecretStr
 
 from api.models import CredentialResponse
-from open_notebook.ai.model_discovery import classify_model_type
+from open_notebook.ai.model_discovery import (
+    ANTHROPIC_FALLBACK_MODELS,
+    classify_model_type,
+    fetch_anthropic_model_ids,
+)
+from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
+from open_notebook.utils.url_validation import (
+    prepare_pinned_http_target,
+)
+from open_notebook.utils.url_validation import (
+    validate_url as validate_url,  # re-export for routers
+)
 
 # =============================================================================
 # Constants
 # =============================================================================
 
-# Provider environment variable configuration.
+# Provider environment variable configuration, derived from the provider
+# registry (open_notebook/ai/provider_registry.py — the source of truth).
 # - "required": ALL listed env vars must be set for the provider to be considered configured.
 # - "required_any": at least ONE of the listed env vars must be set.
 # - "optional": additional env vars used during migration but not required.
 PROVIDER_ENV_CONFIG: Dict[str, dict] = {
-    "openai": {"required": ["OPENAI_API_KEY"]},
-    "anthropic": {"required": ["ANTHROPIC_API_KEY"]},
-    "google": {"required_any": ["GOOGLE_API_KEY", "GEMINI_API_KEY"]},
-    "groq": {"required": ["GROQ_API_KEY"]},
-    "mistral": {"required": ["MISTRAL_API_KEY"]},
-    "deepseek": {"required": ["DEEPSEEK_API_KEY"]},
-    "xai": {"required": ["XAI_API_KEY"]},
-    "openrouter": {"required": ["OPENROUTER_API_KEY"]},
-    "voyage": {"required": ["VOYAGE_API_KEY"]},
-    "elevenlabs": {"required": ["ELEVENLABS_API_KEY"]},
-    "deepgram": {"required": ["DEEPGRAM_API_KEY"]},
-    "ollama": {"required": ["OLLAMA_API_BASE"]},
-    "vertex": {
-        "required": ["VERTEX_PROJECT", "VERTEX_LOCATION"],
-        "optional": ["GOOGLE_APPLICATION_CREDENTIALS"],
-    },
-    "azure": {
-        "required": ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_VERSION"],
-        "optional": [
-            "AZURE_OPENAI_ENDPOINT_LLM",
-            "AZURE_OPENAI_ENDPOINT_EMBEDDING",
-            "AZURE_OPENAI_ENDPOINT_STT",
-            "AZURE_OPENAI_ENDPOINT_TTS",
-        ],
-    },
-    "openai_compatible": {
-        "required_any": ["OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"],
-    },
-    "dashscope": {"required": ["DASHSCOPE_API_KEY"]},
-    "minimax": {"required": ["MINIMAX_API_KEY"]},
+    name: spec.env_config() for name, spec in PROVIDERS.items()
 }
 
 PROVIDER_MODALITIES: Dict[str, List[str]] = {
-    "openai": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "anthropic": ["language"],
-    "google": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "groq": ["language", "speech_to_text"],
-    "mistral": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "deepseek": ["language"],
-    "xai": ["language", "text_to_speech"],
-    "openrouter": ["language", "embedding"],
-    "voyage": ["embedding"],
-    "elevenlabs": ["text_to_speech", "speech_to_text"],
-    "deepgram": ["text_to_speech"],
-    "ollama": ["language", "embedding"],
-    "vertex": ["language", "embedding", "text_to_speech"],
-    "azure": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "openai_compatible": ["language", "embedding", "speech_to_text", "text_to_speech"],
-    "dashscope": ["language"],
-    "minimax": ["language"],
+    name: list(spec.modalities) for name, spec in PROVIDERS.items()
 }
-
-
-# =============================================================================
-# URL Validation (SSRF protection)
-# =============================================================================
-
-
-def validate_url(url: str, provider: str) -> None:
-    """
-    Validate URL format for API endpoints.
-
-    This is a self-hosted application, so we allow:
-    - Private IPs (10.x, 172.16-31.x, 192.168.x) for self-hosted services
-    - Localhost for local services (Ollama, LM Studio, etc.)
-
-    We only block:
-    - Invalid schemes (must be http or https)
-    - Malformed URLs
-    - Link-local addresses (169.254.x.x) - used for cloud metadata endpoints
-    - Hostnames that resolve to link-local addresses
-
-    Args:
-        url: The URL to validate
-        provider: The provider name (for logging/context)
-
-    Raises:
-        ValueError: If the URL is invalid
-    """
-    if not url or not url.strip():
-        return  # Empty URLs handled elsewhere
-
-    try:
-        parsed = urlparse(url.strip())
-
-        # Validate scheme - only http/https allowed
-        if parsed.scheme not in ("http", "https"):
-            raise ValueError(
-                f"Invalid URL scheme: '{parsed.scheme}'. Only http and https are allowed."
-            )
-
-        # Extract hostname
-        hostname = parsed.hostname
-        if not hostname:
-            raise ValueError("Invalid URL: hostname could not be determined.")
-
-        # Try to parse as IP address to check for dangerous addresses
-        try:
-            ip = ipaddress.ip_address(hostname)
-
-            # Block link-local addresses (169.254.x.x) - used for cloud metadata
-            # These are dangerous as they can expose cloud instance credentials
-            if ip.is_link_local:
-                raise ValueError(
-                    "Link-local addresses (169.254.x.x) are not allowed for security reasons. "
-                    "These addresses are used for cloud metadata endpoints."
-                )
-
-            # Block IPv4-mapped IPv6 addresses pointing to link-local
-            # e.g. ::ffff:169.254.169.254 bypasses IPv6 is_link_local check
-            if hasattr(ip, "ipv4_mapped") and ip.ipv4_mapped and ip.ipv4_mapped.is_link_local:
-                raise ValueError(
-                    "Link-local addresses (169.254.x.x) are not allowed for security reasons. "
-                    "These addresses are used for cloud metadata endpoints."
-                )
-
-        except ValueError as ve:
-            # Re-raise our own ValueErrors
-            if "Link-local" in str(ve) or "Invalid URL" in str(ve):
-                raise
-            # Not an IP address, it's a hostname - need to resolve and check
-            try:
-                # Resolve hostname to IP address
-                resolved_ips = socket.getaddrinfo(hostname, None)
-                for family, _, _, _, sockaddr in resolved_ips:
-                    ip_addr = sockaddr[0]
-                    try:
-                        parsed_ip = ipaddress.ip_address(ip_addr)
-                        if parsed_ip.is_link_local:
-                            raise ValueError(
-                                f"Hostname '{hostname}' resolves to a link-local address (169.254.x.x) which is not allowed for security reasons. "
-                                "These addresses are used for cloud metadata endpoints."
-                            )
-                        # Block IPv4-mapped IPv6 addresses pointing to link-local
-                        if (
-                            hasattr(parsed_ip, "ipv4_mapped")
-                            and parsed_ip.ipv4_mapped
-                            and parsed_ip.ipv4_mapped.is_link_local
-                        ):
-                            raise ValueError(
-                                f"Hostname '{hostname}' resolves to a link-local address (169.254.x.x) which is not allowed for security reasons. "
-                                "These addresses are used for cloud metadata endpoints."
-                            )
-                    except ValueError as inner_ve:
-                        if "link-local" in str(inner_ve).lower() or "Link-local" in str(inner_ve):
-                            raise
-                        # Skip non-IP addresses (e.g., IPv6 zones)
-                        continue
-            except socket.gaierror:
-                # Could not resolve hostname - allow it since the URL may be
-                # valid in the deployment environment (e.g., Azure endpoints,
-                # internal DNS names). We only block link-local addresses.
-                pass
-
-    except ValueError:
-        raise
-    except Exception:
-        raise ValueError("Invalid URL format. Check server logs for details.")
 
 
 # =============================================================================
@@ -374,9 +231,11 @@ async def test_credential(credential_id: str) -> dict:
         config = cred.to_esperanto_config()
 
         from open_notebook.ai.connection_tester import (
+            _is_vertex_credentials_file_error,
             _test_azure_connection,
             _test_ollama_connection,
             _test_openai_compatible_connection,
+            classify_provider_test_error,
         )
 
         provider = cred.provider.lower()
@@ -438,10 +297,10 @@ async def test_credential(credential_id: str) -> dict:
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "embedding":
-            model = AIFactory.create_embedding(
+            embedding_model = AIFactory.create_embedding(
                 model_name=test_model, provider=provider, config=config
             )
-            await model.aembed(["test"])
+            await embedding_model.aembed(["test"])
             return {"provider": provider, "success": True, "message": "Connection successful"}
 
         elif test_type == "text_to_speech":
@@ -459,19 +318,19 @@ async def test_credential(credential_id: str) -> dict:
         }
 
     except Exception as e:
+        if provider == "vertex" and _is_vertex_credentials_file_error(e):
+            logger.debug(f"Vertex credentials file error for credential {credential_id}: {e}")
+            return {
+                "provider": provider,
+                "success": False,
+                "message": "Invalid or inaccessible credentials file",
+            }
+
         error_msg = str(e)
-        if "401" in error_msg or "unauthorized" in error_msg.lower():
-            return {"provider": provider, "success": False, "message": "Invalid API key"}
-        elif "403" in error_msg or "forbidden" in error_msg.lower():
-            return {"provider": provider, "success": False, "message": "API key lacks required permissions"}
-        elif "rate" in error_msg.lower() and "limit" in error_msg.lower():
-            return {"provider": provider, "success": True, "message": "Rate limited - but connection works"}
-        elif "not found" in error_msg.lower() and "model" in error_msg.lower():
-            return {"provider": provider, "success": True, "message": "API key valid (test model not available)"}
-        else:
+        success, message = classify_provider_test_error(error_msg)
+        if not success:
             logger.debug(f"Test connection error for credential {credential_id}: {e}")
-            truncated = error_msg[:100] + "..." if len(error_msg) > 100 else error_msg
-            return {"provider": provider, "success": False, "message": f"Error: {truncated}"}
+        return {"provider": provider, "success": success, "message": message}
 
 
 async def discover_with_config(provider: str, config: dict) -> List[dict]:
@@ -492,15 +351,6 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Static model lists for providers without a listing API
     STATIC_MODELS: Dict[str, List[str]] = {
-        "anthropic": [
-            "claude-opus-4-20250514",
-            "claude-sonnet-4-20250514",
-            "claude-3-5-sonnet-20241022",
-            "claude-3-5-haiku-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-        ],
         "voyage": [
             "voyage-3", "voyage-3-lite", "voyage-code-3",
             "voyage-finance-2", "voyage-law-2", "voyage-multilingual-2",
@@ -526,23 +376,41 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             for m in STATIC_MODELS[provider]
         ]
 
-    # API-based discovery URLs (OpenAI-style /models endpoints)
+    if provider == "anthropic":
+        if not api_key:
+            return []
+        try:
+            model_names = await fetch_anthropic_model_ids(api_key)
+        except Exception as e:
+            logger.warning(
+                f"Failed to discover Anthropic models, using static fallback: {e}"
+            )
+            model_names = list(ANTHROPIC_FALLBACK_MODELS)
+        return [{"name": m, "provider": "anthropic"} for m in model_names]
+
+    # API-based discovery URLs (OpenAI-style /models endpoints), from the registry
     url_map = {
-        "openai": "https://api.openai.com/v1/models",
-        "groq": "https://api.groq.com/openai/v1/models",
-        "mistral": "https://api.mistral.ai/v1/models",
-        "deepseek": "https://api.deepseek.com/models",
-        "xai": "https://api.x.ai/v1/models",
-        "openrouter": "https://openrouter.ai/api/v1/models",
-        "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
-        "minimax": "https://api.minimax.io/v1/models",
+        name: spec.openai_compat_discovery_url
+        for name, spec in PROVIDERS.items()
+        if spec.openai_compat_discovery_url
     }
 
     if provider == "ollama":
         ollama_url = base_url or "http://localhost:11434"
         try:
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
+            target = await prepare_pinned_http_target(
+                f"{ollama_url.rstrip('/')}/api/tags", "ollama"
+            )
+            headers = dict(target.headers)
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"{ollama_url}/api/tags", timeout=10.0)
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=10.0,
+                    extensions=target.extensions,
+                )
                 response.raise_for_status()
                 data = response.json()
                 return [
@@ -562,14 +430,20 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not base_url:
             return []
         try:
-            headers = {}
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
+            target = await prepare_pinned_http_target(
+                models_endpoint(base_url), "openai_compatible"
+            )
+            headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
             async with httpx.AsyncClient() as client:
                 response = await client.get(
-                    models_endpoint(base_url),
+                    target.url,
                     headers=headers,
                     timeout=30.0,
+                    extensions=target.extensions,
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -588,10 +462,19 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         if not endpoint or not api_key:
             return []
         try:
+            # Pin DNS at request time so httpx cannot re-resolve to a
+            # metadata address after validation (DNS rebinding TOCTOU).
             url = f"{endpoint.rstrip('/')}/openai/models?api-version={api_version}"
-            headers = {"api-key": api_key}
+            target = await prepare_pinned_http_target(url, "azure")
+            headers = dict(target.headers)
+            headers["api-key"] = api_key
             async with httpx.AsyncClient() as client:
-                response = await client.get(url, headers=headers, timeout=30.0)
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=30.0,
+                    extensions=target.extensions,
+                )
                 response.raise_for_status()
                 data = response.json()
                 return [
@@ -607,10 +490,9 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         # Vertex AI requires service-account OAuth2 for model listing.
         # Return a curated static list of well-known Vertex models instead.
         VERTEX_MODELS = [
-            "gemini-2.0-flash",
-            "gemini-2.0-flash-lite",
-            "gemini-1.5-pro",
-            "gemini-1.5-flash",
+            "gemini-3.5-flash",
+            "gemini-2.5-flash",
+            "gemini-2.5-flash-lite",
             "text-embedding-005",
         ]
         return [{"name": m, "provider": "vertex"} for m in VERTEX_MODELS]
@@ -641,17 +523,32 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
 
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
+    user_supplied_url = False
     if provider == "openai" and base_url:
         discovery_url = models_endpoint(base_url)
+        user_supplied_url = True
     if not discovery_url or not api_key:
         return []
 
     try:
+        headers = {"Authorization": f"Bearer {api_key}"}
+        if user_supplied_url:
+            # Pin DNS at request time so httpx cannot re-resolve a
+            # user-supplied host to a metadata address after validation
+            # (DNS rebinding TOCTOU) — mirrors the openai_compatible path.
+            target = await prepare_pinned_http_target(discovery_url, provider)
+            request_url = target.url
+            headers.update(target.headers)
+            extensions = target.extensions
+        else:
+            request_url = discovery_url
+            extensions = {}
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                discovery_url,
-                headers={"Authorization": f"Bearer {api_key}"},
+                request_url,
+                headers=headers,
                 timeout=30.0,
+                extensions=extensions,
             )
             response.raise_for_status()
             data = response.json()

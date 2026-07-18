@@ -8,7 +8,11 @@ from loguru import logger
 from api.models import AskRequest, AskResponse, SearchRequest, SearchResponse
 from open_notebook.ai.models import Model, model_manager
 from open_notebook.domain.notebook import text_search, vector_search
-from open_notebook.exceptions import DatabaseOperationError, InvalidInputError
+from open_notebook.exceptions import (
+    DatabaseOperationError,
+    InvalidInputError,
+    OpenNotebookError,
+)
 from open_notebook.graphs.ask import graph as ask_graph
 
 router = APIRouter()
@@ -53,6 +57,10 @@ async def search_knowledge_base(search_request: SearchRequest):
     except DatabaseOperationError as e:
         logger.error(f"Database error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error during search: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
@@ -65,8 +73,10 @@ async def stream_ask_response(
     try:
         final_answer = None
 
-        async for chunk in ask_graph.astream(
-            input=dict(question=question),  # type: ignore[arg-type]
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        async for chunk in ask_graph.astream(  # type: ignore[call-overload]
+            input=dict(question=question),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -147,10 +157,17 @@ async def ask_knowledge_base(ask_request: AskRequest):
             stream_ask_response(
                 ask_request.question, strategy_model, answer_model, final_answer_model
             ),
-            media_type="text/plain",
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
         )
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error in ask endpoint: {str(e)}")
@@ -191,8 +208,10 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
 
         # Run the ask graph and get final result
         final_answer = None
-        async for chunk in ask_graph.astream(
-            input=dict(question=ask_request.question),  # type: ignore[arg-type]
+        # LangGraph accepts a partial state dict at runtime, but its typed
+        # overloads require the full state type (langgraph typing limitation).
+        async for chunk in ask_graph.astream(  # type: ignore[call-overload]
+            input=dict(question=ask_request.question),
             config=dict(
                 configurable=dict(
                     strategy_model=strategy_model.id,
@@ -211,6 +230,8 @@ async def ask_knowledge_base_simple(ask_request: AskRequest):
         return AskResponse(answer=final_answer, question=ask_request.question)
 
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error in ask simple endpoint: {str(e)}")

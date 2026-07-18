@@ -12,17 +12,16 @@ export interface EpisodeProfile {
   id: string
   name: string
   description: string
-  speaker_config: string
+  /** speaker_profile record ID (null when the referenced profile no longer exists) */
+  speaker_config: string | null
+  /** Resolved speaker profile name, provided by the API for display */
+  speaker_config_name?: string | null
   outline_llm?: string | null
   transcript_llm?: string | null
   language?: string | null
   default_briefing: string
   num_segments: number
-  // Legacy fields (app ignores, kept in DB for migration)
-  outline_provider?: string | null
-  outline_model?: string | null
-  transcript_provider?: string | null
-  transcript_model?: string | null
+  max_tokens?: number | null
 }
 
 export interface SpeakerVoiceConfig {
@@ -39,9 +38,36 @@ export interface SpeakerProfile {
   description: string
   voice_model?: string | null
   speakers: SpeakerVoiceConfig[]
-  // Legacy fields
+}
+
+/**
+ * Historical profile snapshot stored on an episode at generation time.
+ * Episodes generated before the legacy provider/model strings were dropped
+ * (#1107) may still carry them in the snapshot; newer episodes won't.
+ *
+ * The `*_model_provider` / `*_model_name` fields are resolved by the API at
+ * serialization time from the snapshot's model record references
+ * (outline_llm / transcript_llm / voice_model), batched per request. They
+ * are absent when the reference is missing or no longer resolves (deleted
+ * model) — fall back to the legacy strings, then to a placeholder.
+ */
+export interface EpisodeProfileSnapshot extends EpisodeProfile {
+  outline_provider?: string | null
+  outline_model?: string | null
+  transcript_provider?: string | null
+  transcript_model?: string | null
+  outline_model_provider?: string | null
+  outline_model_name?: string | null
+  transcript_model_provider?: string | null
+  transcript_model_name?: string | null
+}
+
+/** See EpisodeProfileSnapshot. */
+export interface SpeakerProfileSnapshot extends SpeakerProfile {
   tts_provider?: string | null
   tts_model?: string | null
+  voice_model_provider?: string | null
+  voice_model_name?: string | null
 }
 
 export interface Language {
@@ -52,8 +78,8 @@ export interface Language {
 export interface PodcastEpisode {
   id: string
   name: string
-  episode_profile: EpisodeProfile
-  speaker_profile: SpeakerProfile
+  episode_profile: EpisodeProfileSnapshot
+  speaker_profile: SpeakerProfileSnapshot
   briefing: string
   audio_file?: string | null
   audio_url?: string | null
@@ -66,6 +92,7 @@ export interface PodcastEpisode {
 
 export interface PodcastGenerationRequest {
   episode_profile: string
+  /** speaker_profile record ID (the API also accepts a profile name) */
   speaker_profile: string
   episode_name: string
   content?: string
@@ -130,14 +157,19 @@ export function speakerUsageMap(
   }
 
   const usage: Record<string, number> = {}
+  const nameById: Record<string, string> = {}
 
   for (const profile of speakerProfiles) {
     usage[profile.name] = 0
+    nameById[profile.id] = profile.name
   }
 
   for (const episodeProfile of episodeProfiles) {
+    // speaker_config references the speaker profile by record ID
     const key = episodeProfile.speaker_config
-    if (key in usage) {
+      ? nameById[episodeProfile.speaker_config]
+      : undefined
+    if (key !== undefined && key in usage) {
       usage[key] += 1
     }
   }

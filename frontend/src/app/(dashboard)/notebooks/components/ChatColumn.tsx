@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo } from 'react'
-import { useNotebookChat } from '@/lib/hooks/useNotebookChat'
+import { useNotebookChat } from '@/lib/hooks/use-notebook-chat'
 import { useNotes } from '@/lib/hooks/use-notes'
-import { ChatPanel } from '@/components/source/ChatPanel'
+import { ChatPanel } from '@/components/sources/ChatPanel'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'

@@ -62,9 +62,7 @@ export function EmbeddingModelChangeDialog({
           <AlertDialogDescription asChild>
             <div className="space-y-3 text-base text-muted-foreground">
               <p>
-                {t('models.embeddingChangeConfirm')
-                  .replace('{from}', oldModelName || '...')
-                  .replace('{to}', newModelName || '...')}
+                {t('models.embeddingChangeConfirm', { from: oldModelName || '...', to: newModelName || '...' })}
               </p>
 
               <div className="bg-muted p-4 rounded-md space-y-2">

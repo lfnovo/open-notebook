@@ -1,3 +1,13 @@
+import { isAxiosError } from 'axios'
+
+/**
+ * Returns true when the error is an HTTP 404 response, i.e. the requested
+ * item was deleted or never existed (as opposed to a transient failure).
+ */
+export function isNotFoundError(error: unknown): boolean {
+  return isAxiosError(error) && error.response?.status === 404
+}
+
 /**
  * Utility to map backend English error messages to i18n keys.
  */
@@ -11,7 +21,7 @@ export const ERROR_MAP: Record<string, string> = {
   "Invalid source type": "apiErrors.invalidSourceType",
   "Processing failed": "apiErrors.processingFailed",
   "Failed to queue processing": "apiErrors.failedToQueue",
-  "sort_by must be 'created' or 'updated'": "apiErrors.invalidSortBy",
+  "sort_by must be one of: type, title, created, updated, insights_count, embedded": "apiErrors.invalidSortBy",
   "sort_order must be 'asc' or 'desc'": "apiErrors.invalidSortOrder",
   "Access to file denied": "apiErrors.accessDenied",
   "File not found on server": "apiErrors.fileNotFoundOnServer",

@@ -1,11 +1,14 @@
 import { QueryClient } from '@tanstack/react-query'
+import { isNotFoundError } from '@/lib/utils/error-handler'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 10 * 60 * 1000, // 10 minutes
-      retry: 2,
+      // Retry transient failures, but never retry 404s: the item was
+      // deleted (or never existed) and retrying cannot change that.
+      retry: (failureCount, error) => !isNotFoundError(error) && failureCount < 2,
       refetchOnWindowFocus: false,
     },
     mutations: {

@@ -27,7 +27,9 @@ services:
     command: start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
     user: root
     ports:
-      - "8000:8000"
+      # Localhost only — the database uses default credentials, so never
+      # publish this port on 0.0.0.0
+      - "127.0.0.1:8000:8000"
     volumes:
       - ./surreal_data:/mydata
     environment:

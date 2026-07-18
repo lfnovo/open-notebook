@@ -172,7 +172,7 @@ Welcome to Open Notebook - a privacy-focused AI research assistant. This documen
 ### Path 3: DevOps/Deployment (1-2 hours)
 1. [1-INSTALLATION](1-INSTALLATION/index.md) — Understand routes
 2. [5-CONFIGURATION](5-CONFIGURATION/index.md) — Reference setup
-3. [7-DEVELOPMENT - Architecture](../7-DEVELOPMENT/architecture.md) — Understand system
+3. [7-DEVELOPMENT - Architecture](7-DEVELOPMENT/architecture.md) — Understand system
 
 **Result:** Ready to deploy to production
 
@@ -209,7 +209,7 @@ A: → [6-TROUBLESHOOTING](6-TROUBLESHOOTING/index.md) — Problem solver
 A: → [2-CORE-CONCEPTS](2-CORE-CONCEPTS/index.md) — Architecture and concepts
 
 **Q: Can I contribute?**
-A: → [7-DEVELOPMENT](../7-DEVELOPMENT/index.md) — Contributing guide
+A: → [7-DEVELOPMENT](7-DEVELOPMENT/index.md) — Contributing guide
 
 ---
 

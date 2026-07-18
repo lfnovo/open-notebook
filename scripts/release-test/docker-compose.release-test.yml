@@ -1,0 +1,48 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2
+    command: start --log info --user root --pass root rocksdb:/mydata/test.db
+    user: root
+    volumes:
+      - ${DATA_DIR:?set DATA_DIR}/surreal:/mydata
+
+  app:
+    image: ${APP_IMAGE:?set APP_IMAGE}
+    ports:
+      - "127.0.0.1:${API_PORT:?set API_PORT}:5055"
+      - "127.0.0.1:${FE_PORT:?set FE_PORT}:8502"
+    environment:
+      # Without an explicit API_URL the frontend's /config points the BROWSER
+      # at host:5055 — on a dev machine that is the development API, not this
+      # stack (silent data crossover between environments!)
+      - API_URL=${RC_API_URL:-}
+      - OPEN_NOTEBOOK_ENCRYPTION_KEY=${RC_ENCRYPTION_KEY:-release-test-key}
+      - SURREAL_URL=ws://surrealdb:8000/rpc
+      - SURREAL_USER=root
+      - SURREAL_PASSWORD=root
+      - SURREAL_NAMESPACE=${RC_SURREAL_NS:-open_notebook}
+      - SURREAL_DATABASE=${RC_SURREAL_DB:-open_notebook}
+      # Opt-in heavy runtimes: empty by default (fresh/upgrade tests stay fast);
+      # rc-stack.sh --with-runtimes sets these to install Docling/Crawl4AI so the
+      # published image's opt-in path can be exercised with real data.
+      - OPEN_NOTEBOOK_ENABLE_DOCLING=${RC_ENABLE_DOCLING:-}
+      - OPEN_NOTEBOOK_ENABLE_CRAWL4AI=${RC_ENABLE_CRAWL4AI:-}
+    volumes:
+      - ${DATA_DIR}/notebook:/app/data
+    # Reach host services (e.g. Ollama on localhost:11434) via
+    # host.docker.internal on Linux too; Docker Desktop resolves it natively.
+    # Credentials pointing at local services must use
+    # http://host.docker.internal:<port> when the app runs in a container.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - surrealdb
+
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "127.0.0.1:${PROXY_PORT:?set PROXY_PORT}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app

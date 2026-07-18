@@ -1,0 +1,3 @@
+-- Migration 17 rollback: Remove per-transformation model selection
+
+REMOVE FIELD IF EXISTS model_id ON TABLE transformation;

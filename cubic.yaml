@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://cubic.dev/schema/cubic-repository-config.schema.json
+#
+# cubic AI review settings (settings as code).
+# Docs: https://docs.cubic.dev/configure/cubic-yaml
+#
+# Platform mechanics (verified against docs.cubic.dev, Jul 2026):
+# - Max 5 active custom agents (custom_rules) per repo. Each agent's text plus any
+#   file-backed content (file_paths) shares a 10,000-character limit that is truncated
+#   SILENTLY — only link short, stable files.
+# - Config precedence: repo cubic.yaml > org config (`cubic-config` repo) > dashboard UI
+#   > defaults. Schema: https://cubic.dev/schema/cubic-repository-config.schema.json
+# - Replying to a cubic review comment teaches it permanently (team-scoped); manage
+#   learnings under AI review settings → Memory & Learning.
+# - cubic auto-detects context files (AGENTS.md, README, .github/) — those inform the
+#   review; custom agents are what actually enforce rules.
+
+version: 1
+
+reviews:
+  # Skip files with no reviewable logic to preserve the monthly reviewed-line quota:
+  # CHANGELOG entries are prose (and every PR + rebase re-reviews them); lockfiles
+  # are generated.
+  ignore:
+    files:
+      - 'CHANGELOG.md'
+      - 'uv.lock'
+      - 'frontend/package-lock.json'
+
+  custom_instructions: |
+    This project follows an issue-first workflow for anything non-trivial: features and
+    architecture changes must reference an approved, assigned issue and stay scoped to it.
+    Small obvious fixes (typos, docs, tiny bugs, i18n completions) are welcome without an
+    issue. A sizeable PR without one should be converted to draft with an issue opened —
+    don't flag small fixes for lacking an issue. Unrelated refactors belong in separate PRs.
+    Test evidence must be real (actual output), especially for bug fixes, which should
+    include a regression test. Many PRs are agent-generated; hold them to the same bar.
+    Normative rules live in AGENTS.md (root, open_notebook/, frontend/); product direction
+    lives in VISION.md; past decisions in docs/7-DEVELOPMENT/decisions/.
+
+  custom_rules:
+    - name: Vision & principles alignment
+      description: |
+        Check the PR against the product identity and current posture defined in the
+        linked VISION.md. Flag:
+        - Features that gratuitously preclude multi-user (hard-coded single-tenancy in
+          schema, auth, or data scoping) — see PDR-001.
+        - Capabilities that only work on one AI provider without a PDR justifying the
+          exclusivity — the core is provider-agnostic by default (PDR-002).
+        - Features that conflict with the "What Open Notebook IS NOT" list.
+        - Structural/architectural decisions introduced without a decision record in
+          docs/7-DEVELOPMENT/decisions/ (half a page, same PR).
+      file_paths:
+        - VISION.md
+
+    - name: Known caveats
+      description: |
+        Enforce this project's recurring mechanical pitfalls (full rules in
+        open_notebook/AGENTS.md and frontend/AGENTS.md):
+        - i18n: every user-visible frontend string goes through t('section.key') and the
+          key must exist in ALL 7 locales (en-US, pt-BR, zh-CN, zh-TW, ja-JP, ru-RU, bn-IN).
+        - Providers: adding/changing a provider = edit the registry
+          (open_notebook/ai/provider_registry.py PROVIDERS) plus the SupportedProvider
+          Literal in api/models.py; everything else (TEST_MODELS, PROVIDER_ENV_CONFIG,
+          the frontend via GET /api/providers) is derived from the registry.
+        - Migrations: a new open_notebook/database/migrations/N.surrealql file must also be
+          registered in AsyncMigrationManager (async_migrate.py) — no auto-discovery.
+        - Graphs: LLM calls in LangGraph nodes must use provision_langchain_model() and wrap
+          errors with classify_error(); model output goes through clean_thinking_content().
+        - Domain: Source.save() does not auto-embed — vectorize() must be called explicitly;
+          RecordModel singletons need clear_instance() in tests.
+        - Async jobs (podcasts, embeddings, source processing) run on the surreal-commands
+          worker; features depending on them must not assume inline execution. Permanent
+          failures raise ValueError (no retry); podcasts use max_attempts=1 by design.
+        - Frontend: FormData nested fields must be JSON.stringify-ed; don't re-add
+          Content-Type; check hasHydrated before rendering persisted Zustand state.
+
+    - name: Security & testability
+      description: |
+        Security:
+        - API endpoints must never return API key or secret values — metadata only.
+        - Every user-supplied URL must pass validate_url() (SSRF protection; private IPs are
+          intentionally allowed for self-hosted services).
+        - No secrets committed, logged, or echoed in error messages; credential fields use
+          SecretStr and Fernet encryption (OPEN_NOTEBOOK_ENCRYPTION_KEY).
+        - Raise typed exceptions from open_notebook.exceptions instead of bare HTTPException
+          or generic 500s.
+        Testability:
+        - Business logic belongs in services/domain, not in routers or React components,
+          so it can be tested directly.
+        - Critical paths (auth, credentials, encryption, migrations, data deletion) need
+          test coverage in the same PR.
+        - Bug fixes should include a test that reproduces the bug.
+
+  auto_ultrareview: custom
+  auto_ultrareview_custom_prompt: |
+    Run an ultrareview when the PR touches authentication, credential storage, encryption,
+    database migrations, or data deletion/cascade logic.
+  auto_ultrareview_file_patterns:
+    - 'open_notebook/database/migrations/**'
+    - '**/credential*'
+    - '**/auth*'
+    - '**/encryption*'

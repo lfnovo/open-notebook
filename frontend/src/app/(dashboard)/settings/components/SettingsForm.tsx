@@ -8,18 +8,21 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert'
 import { useSettings, useUpdateSettings } from '@/lib/hooks/use-settings'
+import { useCapabilities } from '@/lib/hooks/use-capabilities'
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
 import { useTranslation } from '@/lib/hooks/use-translation'
 
 const settingsSchema = z.object({
   default_content_processing_engine_doc: z.enum(['auto', 'docling', 'simple']).optional(),
-  default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'simple']).optional(),
+  default_content_processing_engine_url: z.enum(['auto', 'firecrawl', 'jina', 'crawl4ai', 'simple']).optional(),
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
+  docling_ocr: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -27,7 +30,16 @@ type SettingsFormData = z.infer<typeof settingsSchema>
 export function SettingsForm() {
   const { t } = useTranslation()
   const { data: settings, isLoading, error } = useSettings()
+  const { data: capabilities, isError: capabilitiesError } = useCapabilities()
   const updateSettings = useUpdateSettings()
+  // Opt-in heavy runtimes are installed on demand at container startup, so an
+  // engine is only offered when the backend probe confirms it's actually
+  // available. While the probe is still loading, default to available to avoid a
+  // flash of disabled controls on a correctly-configured install; but if the
+  // probe *fails*, fail closed (treat as unavailable) rather than advertising an
+  // engine the backend couldn't verify.
+  const doclingAvailable = capabilities?.docling_available ?? !capabilitiesError
+  const crawl4aiAvailable = capabilities?.crawl4ai_available ?? !capabilitiesError
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     doc: false,
     url: false,
@@ -49,6 +61,7 @@ export function SettingsForm() {
       default_content_processing_engine_url: undefined,
       default_embedding_option: undefined,
       auto_delete_files: undefined,
+      docling_ocr: undefined,
     }
   })
 
@@ -61,9 +74,10 @@ export function SettingsForm() {
     if (settings && settings.default_content_processing_engine_doc && !hasResetForm) {
       const formData = {
         default_content_processing_engine_doc: settings.default_content_processing_engine_doc as 'auto' | 'docling' | 'simple',
-        default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'simple',
+        default_content_processing_engine_url: settings.default_content_processing_engine_url as 'auto' | 'firecrawl' | 'jina' | 'crawl4ai' | 'simple',
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
+        docling_ocr: settings.docling_ocr ?? true,
       }
       reset(formData)
       setHasResetForm(true)
@@ -121,12 +135,15 @@ export function SettingsForm() {
                       </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
-                      <SelectItem value="docling">{t('settings.docling')}</SelectItem>
+                      <SelectItem value="docling" disabled={!doclingAvailable}>{t('settings.docling')}</SelectItem>
                       <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                     </SelectContent>
                   </Select>
               )}
             />
+            {!doclingAvailable && (
+              <p className="text-sm text-muted-foreground">{t('settings.enableDoclingHint')}</p>
+            )}
             <Collapsible open={expandedSections.doc} onOpenChange={() => toggleSection('doc')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.doc ? 'rotate-180' : ''}`} />
@@ -137,7 +154,26 @@ export function SettingsForm() {
               </CollapsibleContent>
             </Collapsible>
           </div>
-          
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Controller
+                name="docling_ocr"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="docling_ocr"
+                    checked={field.value ?? true}
+                    onCheckedChange={field.onChange}
+                    disabled={field.disabled || isLoading || !doclingAvailable}
+                  />
+                )}
+              />
+              <Label htmlFor="docling_ocr">{t('settings.ocrEnabled')}</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('settings.ocrHelp')}</p>
+          </div>
+
           <div className="space-y-3">
             <Label htmlFor="url_engine">{t('settings.urlEngine')}</Label>
             <Controller
@@ -158,11 +194,15 @@ export function SettingsForm() {
                     <SelectItem value="auto">{t('settings.autoRecommended')}</SelectItem>
                     <SelectItem value="firecrawl">{t('settings.firecrawl')}</SelectItem>
                     <SelectItem value="jina">{t('settings.jina')}</SelectItem>
+                    <SelectItem value="crawl4ai" disabled={!crawl4aiAvailable}>{t('settings.crawl4ai')}</SelectItem>
                     <SelectItem value="simple">{t('settings.simple')}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
+            {!crawl4aiAvailable && (
+              <p className="text-sm text-muted-foreground">{t('settings.enableCrawl4aiHint')}</p>
+            )}
              <Collapsible open={expandedSections.url} onOpenChange={() => toggleSection('url')}>
               <CollapsibleTrigger className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
                 <ChevronDownIcon className={`h-4 w-4 transition-transform ${expandedSections.url ? 'rotate-180' : ''}`} />

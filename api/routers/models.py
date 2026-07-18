@@ -23,7 +23,11 @@ from open_notebook.ai.model_discovery import (
 )
 from open_notebook.ai.models import DefaultModels, Model
 from open_notebook.domain.credential import Credential
-from open_notebook.exceptions import InvalidInputError, NotFoundError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
 
@@ -104,7 +108,7 @@ PROVIDER_PRIORITY = [
 MODEL_PREFERENCES = {
     "openai": ["gpt-4o", "gpt-4", "gpt-3.5-turbo"],
     "anthropic": ["claude-3-5-sonnet", "claude-3-opus", "claude-3-sonnet"],
-    "google": ["gemini-2.0", "gemini-1.5-pro", "gemini-pro"],
+    "google": ["gemini-3.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"],
     "mistral": ["mistral-large", "mixtral"],
     "groq": ["llama-3.3", "llama-3.1", "mixtral"],
     "dashscope": ["qwen-max", "qwen-plus", "qwen-turbo"],
@@ -189,6 +193,10 @@ async def get_models(
             )
             for model in models
         ]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching models: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error fetching models: {str(e)}")
@@ -244,6 +252,8 @@ async def create_model(model_data: ModelCreate):
         raise
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating model: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error creating model: {str(e)}")
@@ -262,6 +272,8 @@ async def delete_model(model_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Model not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting model {model_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error deleting model: {str(e)}")
@@ -275,6 +287,8 @@ async def test_model(model_id: str):
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception:
         raise HTTPException(status_code=404, detail="Model not found")
@@ -306,6 +320,10 @@ async def get_default_models():
             default_embedding_model=defaults.default_embedding_model,  # type: ignore[attr-defined]
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching default models: {str(e)}")
         raise HTTPException(
@@ -313,35 +331,35 @@ async def get_default_models():
         )
 
 
+# Defaults the app cannot function without — they can be reassigned but
+# never cleared (the optional ones fall back to the chat default or are
+# simply skipped when unset).
+REQUIRED_DEFAULTS = {"default_chat_model", "default_embedding_model"}
+
+
 @router.put("/models/defaults", response_model=DefaultModelsResponse)
 async def update_default_models(defaults_data: DefaultModelsResponse):
-    """Update default model assignments."""
+    """Update default model assignments.
+
+    Partial-update semantics keyed on field PRESENCE, not value: a field
+    absent from the payload is left untouched, while an explicit null clears
+    the default (except required ones). `is not None` checks would silently
+    ignore a null sent to clear a default — the old value survived while the
+    client saw success (same anti-pattern fixed for credentials in #1046).
+    """
     try:
         defaults = await DefaultModels.get_instance()
 
-        # Update only provided fields
-        if defaults_data.default_chat_model is not None:
-            defaults.default_chat_model = defaults_data.default_chat_model  # type: ignore[attr-defined]
-        if defaults_data.default_transformation_model is not None:
-            defaults.default_transformation_model = (
-                defaults_data.default_transformation_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.large_context_model is not None:
-            defaults.large_context_model = defaults_data.large_context_model  # type: ignore[attr-defined]
-        if defaults_data.default_text_to_speech_model is not None:
-            defaults.default_text_to_speech_model = (
-                defaults_data.default_text_to_speech_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.default_speech_to_text_model is not None:
-            defaults.default_speech_to_text_model = (
-                defaults_data.default_speech_to_text_model
-            )  # type: ignore[attr-defined]
-        if defaults_data.default_vision_model is not None:
-            defaults.default_vision_model = defaults_data.default_vision_model  # type: ignore[attr-defined]
-        if defaults_data.default_embedding_model is not None:
-            defaults.default_embedding_model = defaults_data.default_embedding_model  # type: ignore[attr-defined]
-        if defaults_data.default_tools_model is not None:
-            defaults.default_tools_model = defaults_data.default_tools_model  # type: ignore[attr-defined]
+        sent = defaults_data.model_fields_set
+        for field in DefaultModelsResponse.model_fields:
+            if field not in sent:
+                continue
+            value = getattr(defaults_data, field)
+            if value is None and field in REQUIRED_DEFAULTS:
+                raise InvalidInputError(
+                    f"{field} is required and cannot be cleared, only reassigned"
+                )
+            setattr(defaults, field, value)
 
         await defaults.update()
 
@@ -358,6 +376,8 @@ async def update_default_models(defaults_data: DefaultModelsResponse):
             default_tools_model=defaults.default_tools_model,  # type: ignore[attr-defined]
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error updating default models: {str(e)}")
@@ -480,6 +500,10 @@ async def get_provider_availability():
             unavailable=unavailable_providers,
             supported_types=supported_types,
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error checking provider availability: {str(e)}")
         raise HTTPException(
@@ -516,6 +540,10 @@ async def discover_models(provider: str):
             )
             for m in discovered
         ]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error discovering models for {provider}: {str(e)}")
         raise HTTPException(
@@ -545,6 +573,10 @@ async def sync_models(provider: str):
             new=new,
             existing=existing,
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error syncing models for {provider}: {str(e)}")
         raise HTTPException(status_code=500, detail="Error syncing models. Check server logs for details.")
@@ -581,6 +613,10 @@ async def sync_all_models():
             total_discovered=total_discovered,
             total_new=total_new,
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error syncing all models: {str(e)}")
         raise HTTPException(
@@ -604,6 +640,10 @@ async def get_model_count(provider: str):
             counts=counts,
             total=total,
         )
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error getting model count for {provider}: {str(e)}")
         raise HTTPException(
@@ -638,6 +678,10 @@ async def get_models_by_provider(provider: str):
             )
             for model in models
         ]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching models for {provider}: {str(e)}")
         raise HTTPException(
@@ -777,6 +821,10 @@ async def auto_assign_defaults():
             missing=missing,
         )
 
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error auto-assigning defaults: {str(e)}")
         raise HTTPException(

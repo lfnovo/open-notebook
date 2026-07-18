@@ -1,0 +1,3 @@
+-- Migration 16 rollback: Remove max_tokens field from episode_profile.
+
+REMOVE FIELD IF EXISTS max_tokens ON TABLE episode_profile;

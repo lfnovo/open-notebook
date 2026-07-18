@@ -2,8 +2,8 @@ import operator
 import os
 from typing import Any, Dict, List, Optional
 
-from content_core import extract_content
-from content_core.common import ProcessSourceState
+from content_core import ContentCoreConfig, extract_content
+from content_core.common import ExtractionOutput
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Send
@@ -16,9 +16,27 @@ from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
 
+# Preferred languages for YouTube transcript selection. content-core's own
+# default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
+# always intended so non-English videos still resolve a transcript.
+YOUTUBE_PREFERRED_LANGUAGES = [
+    "en",
+    "pt",
+    "es",
+    "de",
+    "nl",
+    "en-GB",
+    "fr",
+    "hi",
+    "ja",
+]
+
 
 class SourceState(TypedDict):
-    content_state: ProcessSourceState
+    # Input describing what to extract: url / file_path / content / delete_source.
+    content_state: Dict[str, Any]
+    # Result of content-core extraction (does NOT echo url/file_path back).
+    extraction: ExtractionOutput
     apply_transformations: List[Transformation]
     source_id: str
     notebook_ids: List[str]
@@ -33,35 +51,35 @@ class TransformationState(TypedDict):
 
 
 async def content_process(state: SourceState) -> dict:
-    content_state: Dict[str, Any] = state["content_state"]  # type: ignore[assignment]
+    content_state: Dict[str, Any] = state["content_state"]
 
-    content_settings = ContentSettings(
-        default_content_processing_engine_doc="auto",
-        default_content_processing_engine_url="auto",
-        default_embedding_option="ask",
-        auto_delete_files="yes",
-        youtube_preferred_languages=[
-            "en",
-            "pt",
-            "es",
-            "de",
-            "nl",
-            "en-GB",
-            "fr",
-            "hi",
-            "ja",
-        ],
-    )
+    # content-core 2.x takes engine/model overrides via ContentCoreConfig
+    # (keyword-only), not inside the input dict.
+    config_kwargs: Dict[str, Any] = {
+        "youtube_languages": YOUTUBE_PREFERRED_LANGUAGES,
+    }
 
-    content_state["url_engine"] = (
-        content_settings.default_content_processing_engine_url or "auto"
-    )
-    content_state["document_engine"] = (
-        content_settings.default_content_processing_engine_doc or "auto"
-    )
-    content_state["output_format"] = "markdown"
+    # Honor the persisted content-processing engine choices. content-core
+    # accepts "auto"/"simple"/"firecrawl"/"jina"/"crawl4ai" for URLs and
+    # "auto"/"docling"/"simple" for documents; falling back to "auto" keeps the
+    # previous behavior when settings are unset.
+    try:
+        settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
+        if settings.default_content_processing_engine_url:
+            config_kwargs["url_engine"] = settings.default_content_processing_engine_url
+        if settings.default_content_processing_engine_doc:
+            config_kwargs["document_engine"] = (
+                settings.default_content_processing_engine_doc
+            )
+        if settings.docling_ocr is not None:
+            config_kwargs["docling_ocr"] = settings.docling_ocr
+    except Exception as e:
+        # Keep the server-side traceback for diagnosing DB/deserialization
+        # failures while still falling back to defaults (non-fatal).
+        logger.opt(exception=True).warning(
+            f"Failed to load content settings, using defaults: {e}"
+        )
 
-    # Add model configurations from Default Models
     try:
         model_manager = ModelManager()
         defaults = await model_manager.get_defaults()
@@ -70,12 +88,15 @@ async def content_process(state: SourceState) -> dict:
         if defaults.default_speech_to_text_model:
             stt_model = await Model.get(defaults.default_speech_to_text_model)
             if stt_model:
-                content_state["audio_provider"] = stt_model.provider
-                content_state["audio_model"] = stt_model.name
-                if stt_model.credential:
+                config_kwargs["audio_provider"] = stt_model.provider
+                config_kwargs["audio_model"] = stt_model.name
+                if (
+                    stt_model.credential
+                    and "audio_config" in ContentCoreConfig.model_fields
+                ):
                     cred = await stt_model.get_credential_obj()
                     if cred:
-                        content_state["audio_config"] = cred.to_esperanto_config()
+                        config_kwargs["audio_config"] = cred.to_esperanto_config()
                 logger.debug(
                     f"Using speech-to-text model: {stt_model.provider}/{stt_model.name}"
                 )
@@ -98,14 +119,38 @@ async def content_process(state: SourceState) -> dict:
         logger.warning(f"Failed to retrieve model configuration: {e}")
         # Continue without custom models (content-core will use its defaults)
 
-    processed_state = await extract_content(content_state)
+    config = ContentCoreConfig(**config_kwargs) if config_kwargs else None
+
+    # Log the effective extraction engines so operators can confirm which engine
+    # actually ran (content-core logs its own dispatch only at DEBUG). Absent
+    # overrides fall back to content-core's "auto".
+    if content_state.get("url"):
+        target = "url"
+    elif content_state.get("file_path"):
+        target = "document"
+    else:
+        target = "content"
+    logger.info(
+        f"Extracting {target} via content-core "
+        f"(url_engine={config_kwargs.get('url_engine', 'auto')}, "
+        f"document_engine={config_kwargs.get('document_engine', 'auto')}, "
+        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')})"
+    )
+
+    processed = await extract_content(
+        url=content_state.get("url"),
+        file_path=content_state.get("file_path"),
+        content=content_state.get("content"),
+        config=config,
+    )
 
     # content-core signals a soft extraction failure (e.g. an unreachable or
-    # invalid URL) by returning title="Error" and content prefixed with
-    # "Failed to extract content:" instead of raising. Detect that sentinel and
-    # raise so the job is marked failed and the source becomes retryable, rather
-    # than being saved as a "completed" source whose body is the error string.
-    if processed_state.title == "Error" and (processed_state.content or "").startswith(
+    # invalid URL, via the bs4 fallback) by returning title="Error" and content
+    # prefixed with "Failed to extract content:" instead of raising. Detect that
+    # sentinel and raise so the job is marked failed and the source becomes
+    # retryable, rather than being saved as a "completed" source whose body is
+    # the error string.
+    if processed.title == "Error" and (processed.content or "").startswith(
         "Failed to extract content:"
     ):
         raise ValueError(
@@ -124,19 +169,19 @@ async def content_process(state: SourceState) -> dict:
         content_state.get("file_path") if isinstance(content_state, dict) else None
     )
     if (
-        processed_state.identified_type == "application/pdf"
-        and content_state.get("vision_provider")
+        processed.identified_type == "application/pdf"
+        and config_kwargs.get("vision_provider")
         and pdf_path
         and os.path.exists(pdf_path)
     ):
         try:
-            from content_core.processors.pdf import _extract_text_from_pdf
+            from content_core.processors.document.pdf import _extract_text_from_pdf
 
             raw_text = ((await _extract_text_from_pdf(pdf_path)) or "").strip()
             if len(raw_text) >= 200:
-                processed_state.metadata = dict(processed_state.metadata or {})
-                processed_state.metadata["visual_analysis"] = processed_state.content
-                processed_state.content = raw_text
+                processed.metadata = dict(processed.metadata or {})
+                processed.metadata["visual_analysis"] = processed.content
+                processed.content = raw_text
                 logger.info(
                     f"PDF: using {len(raw_text)} chars of pdfplumber text as primary "
                     "content; vision output preserved as visual_analysis insight"
@@ -146,8 +191,8 @@ async def content_process(state: SourceState) -> dict:
                 f"Raw-text extraction fallback failed; keeping vision-only content: {e}"
             )
 
-    if not processed_state.content or not processed_state.content.strip():
-        url = processed_state.url or ""
+    if not processed.content or not processed.content.strip():
+        url = content_state.get("url") or ""
         if url and ("youtube.com" in url or "youtu.be" in url):
             raise ValueError(
                 "Could not extract content from this YouTube video. "
@@ -160,24 +205,40 @@ async def content_process(state: SourceState) -> dict:
             "The content may be empty, inaccessible, or in an unsupported format."
         )
 
-    return {"content_state": processed_state}
+    # content-core 2.x no longer deletes the uploaded source file after
+    # extraction (the delete_source flag it used to honor is gone). Preserve the
+    # previous auto-delete behavior on our side.
+    if content_state.get("delete_source") and content_state.get("file_path"):
+        file_path = content_state["file_path"]
+        try:
+            os.unlink(file_path)
+        except FileNotFoundError:
+            logger.warning(f"File not found while trying to delete: {file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to delete source file {file_path}: {e}")
+
+    return {"extraction": processed}
 
 
 async def save_source(state: SourceState) -> dict:
     content_state = state["content_state"]
+    extraction = state["extraction"]
 
     # Get existing source using the provided source_id
     source = await Source.get(state["source_id"])
     if not source:
         raise ValueError(f"Source with ID {state['source_id']} not found")
 
-    # Update the source with processed content
-    source.asset = Asset(url=content_state.url, file_path=content_state.file_path)
-    source.full_text = content_state.content
+    # Update the source with processed content. content-core's ExtractionOutput
+    # does not echo url/file_path back, so carry them from the input state.
+    source.asset = Asset(
+        url=content_state.get("url"), file_path=content_state.get("file_path")
+    )
+    source.full_text = extraction.content
 
     # Preserve user-set title; only overwrite placeholder or empty titles
-    if content_state.title and (not source.title or source.title == "Processing..."):
-        source.title = content_state.title
+    if extraction.title and (not source.title or source.title == "Processing..."):
+        source.title = extraction.title
 
     await source.save()
 
@@ -186,7 +247,7 @@ async def save_source(state: SourceState) -> dict:
     # visual analysis as a separate insight. Keeps full_text literal so RAG
     # and chat can cite real document passages, while the visual summary
     # stays accessible to the user via the Insights tab.
-    visual_analysis = (content_state.metadata or {}).get("visual_analysis")
+    visual_analysis = (extraction.metadata or {}).get("visual_analysis")
     if visual_analysis:
         try:
             await source.add_insight("Visual analysis", visual_analysis)
@@ -237,8 +298,10 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     transformation: Transformation = state["transformation"]
 
     logger.debug(f"Applying transformation {transformation.name}")
-    result = await transform_graph.ainvoke(
-        dict(input_text=content, transformation=transformation)  # type: ignore[arg-type]
+    # LangGraph accepts a partial state dict at runtime, but its typed
+    # overloads require the full state type (langgraph typing limitation).
+    result = await transform_graph.ainvoke(  # type: ignore[call-overload]
+        dict(input_text=content, transformation=transformation)
     )
     await source.add_insight(transformation.title, result["output"])
     return {

@@ -1,4 +1,5 @@
 import apiClient from './client'
+import { getAuthToken } from '@/lib/auth-token'
 import { SearchRequest, SearchResponse, AskRequest } from '@/lib/types/search'
 
 export const searchApi = {
@@ -11,20 +12,7 @@ export const searchApi = {
   // Ask with streaming (uses relative URL for Docker compatibility)
   askKnowledgeBase: async (params: AskRequest) => {
     // Get auth token using the same logic as apiClient interceptor
-    let token = null
-    if (typeof window !== 'undefined') {
-      const authStorage = localStorage.getItem('auth-storage')
-      if (authStorage) {
-        try {
-          const { state } = JSON.parse(authStorage)
-          if (state?.token) {
-            token = state.token
-          }
-        } catch (error) {
-          console.error('Error parsing auth storage:', error)
-        }
-      }
-    }
+    const token = getAuthToken()
 
     // Use relative URL to leverage Next.js rewrites
     // This works both in dev (Next.js proxy) and production (Docker network)

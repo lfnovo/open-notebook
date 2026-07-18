@@ -44,14 +44,19 @@ export interface ReferenceData {
  * @returns Array of parsed references
  */
 export function parseSourceReferences(text: string): ParsedReference[] {
-  // Match pattern: (source_insight|note|source):alphanumeric_id
-  // This handles references both inside and outside brackets
-  const pattern = /(source_insight|note|source):([a-zA-Z0-9_]+)/g
+  // Match pattern: (source_insight|insight|note|source):alphanumeric_id
+  // This handles references both inside and outside brackets.
+  // `insight:` is accepted as an alias for `source_insight` — some models emit the
+  // short form — and normalized below so all downstream rendering (icon, link,
+  // click handler) treats it identically. Keep `source_insight` first in the
+  // alternation so it wins over the `insight` alias.
+  const pattern = /(source_insight|insight|note|source):([a-zA-Z0-9_]+)/g
   const matches: ParsedReference[] = []
 
   let match
   while ((match = pattern.exec(text)) !== null) {
-    const type = match[1] as ReferenceType
+    const rawType = match[1]
+    const type = (rawType === 'insight' ? 'source_insight' : rawType) as ReferenceType
     const id = match[2]
 
     matches.push({
@@ -172,20 +177,24 @@ export function convertSourceReferences(
  * @returns Text with references converted to markdown links
  */
 export function convertReferencesToMarkdownLinks(text: string): string {
-  // Step 1: Find ALL references using simple greedy pattern
-  const refPattern = /(source_insight|note|source):([a-zA-Z0-9_]+)/g
+  // Step 1: Find ALL references using simple greedy pattern.
+  // `insight:` is accepted as an alias for `source_insight` and normalized below.
+  const refPattern = /(source_insight|insight|note|source):([a-zA-Z0-9_]+)/g
   const references: Array<{ type: string; id: string; index: number; length: number }> = []
 
   let match
   while ((match = refPattern.exec(text)) !== null) {
-    const type = match[1]
+    const rawType = match[1]
     const id = match[2]
 
     // Validate the reference
-    const validTypes = ['source', 'source_insight', 'note']
-    if (!validTypes.includes(type) || !id || id.length === 0 || id.length > 100) {
+    const validTypes = ['source', 'source_insight', 'insight', 'note']
+    if (!validTypes.includes(rawType) || !id || id.length === 0 || id.length > 100) {
       continue // Skip invalid references
     }
+
+    // Normalize the `insight` alias so the href/display use the canonical type
+    const type = rawType === 'insight' ? 'source_insight' : rawType
 
     references.push({
       type,

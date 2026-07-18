@@ -2,6 +2,10 @@
 
 This folder contains different `docker-compose.yml` configurations for various use cases.
 
+It also includes an [`easypanel`](./easypanel/) template that can be copied into
+the official EasyPanel templates repository and tested in the EasyPanel
+templates playground.
+
 ## 📋 Available Examples
 
 ### `docker-compose-full-local.yml` - 100% Local AI (No Cloud APIs) 🌟

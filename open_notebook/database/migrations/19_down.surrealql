@@ -1,0 +1,4 @@
+-- Migration 19 rollback: Remove source_insight timestamp fields
+
+REMOVE FIELD IF EXISTS created ON TABLE source_insight;
+REMOVE FIELD IF EXISTS updated ON TABLE source_insight;

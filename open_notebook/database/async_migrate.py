@@ -121,6 +121,27 @@ class AsyncMigrationManager:
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/15.surrealql"
             ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/16.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/17.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/18.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/19.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/20.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/21.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/22.surrealql"
+            ),
         ]
         self.down_migrations = [
             AsyncMigration.from_file(
@@ -168,6 +189,27 @@ class AsyncMigrationManager:
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/15_down.surrealql"
             ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/16_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/17_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/18_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/19_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/20_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/21_down.surrealql"
+            ),
+            AsyncMigration.from_file(
+                "open_notebook/database/migrations/22_down.surrealql"
+            ),
         ]
         self.runner = AsyncMigrationRunner(
             up_migrations=self.up_migrations,
@@ -177,6 +219,15 @@ class AsyncMigrationManager:
     async def get_current_version(self) -> int:
         """Get current database version."""
         return await get_latest_version()
+
+    async def ping(self) -> None:
+        """Check whether SurrealDB is reachable for migration startup."""
+        async with db_connection() as connection:
+            await connection.query("RETURN true;")
+
+        # Also exercise the migration version path. get_current_version() already
+        # treats a missing migrations table as version 0 for fresh databases.
+        await self.get_current_version()
 
     async def needs_migration(self) -> bool:
         """Check if migration is needed."""

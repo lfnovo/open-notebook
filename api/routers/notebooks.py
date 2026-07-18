@@ -9,12 +9,53 @@ from api.models import (
     NotebookDeleteResponse,
     NotebookResponse,
     NotebookUpdate,
+    RecentlyViewedResponse,
 )
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.notebook import Notebook, Source
-from open_notebook.exceptions import InvalidInputError, NotFoundError
+from open_notebook.exceptions import (
+    InvalidInputError,
+    NotFoundError,
+    OpenNotebookError,
+)
 
 router = APIRouter()
+
+
+def _last_viewed_sort_key(item: RecentlyViewedResponse) -> str:
+    return item.last_viewed_at
+
+
+async def _stamp_notebook_view(notebook_id: str) -> None:
+    # Best-effort write-on-read: recording the view timestamp must never turn a
+    # successful read into a 500. Log and move on if the stamp update fails.
+    try:
+        await repo_query(
+            "UPDATE $notebook_id SET last_viewed_at = time::now();",
+            {"notebook_id": ensure_record_id(notebook_id)},
+        )
+    except Exception as e:
+        logger.warning(
+            f"Failed to stamp last_viewed_at for notebook {notebook_id}: {e}"
+        )
+
+
+def _recently_viewed_notebook(row: dict) -> RecentlyViewedResponse:
+    return RecentlyViewedResponse(
+        type="notebook",
+        id=str(row.get("id", "")),
+        title=row.get("title") or row.get("name") or "Untitled notebook",
+        last_viewed_at=str(row.get("last_viewed_at", "")),
+    )
+
+
+def _recently_viewed_source(row: dict) -> RecentlyViewedResponse:
+    return RecentlyViewedResponse(
+        type="source",
+        id=str(row.get("id", "")),
+        title=row.get("title") or "Untitled source",
+        last_viewed_at=str(row.get("last_viewed_at", "")),
+    )
 
 
 @router.get("/notebooks", response_model=List[NotebookResponse])
@@ -79,6 +120,8 @@ async def get_notebooks(
         ]
     except HTTPException:
         raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error fetching notebooks: {str(e)}")
         raise HTTPException(
@@ -108,10 +151,60 @@ async def create_notebook(notebook: NotebookCreate):
         )
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error creating notebook: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error creating notebook: {str(e)}"
+        )
+
+
+@router.get("/recently-viewed", response_model=List[RecentlyViewedResponse])
+async def get_recently_viewed(
+    limit: int = Query(12, ge=1, le=50, description="Number of items to return"),
+):
+    """Get recently viewed notebooks and sources, newest first."""
+    try:
+        notebooks = await repo_query(
+            """
+            SELECT id, name AS title, last_viewed_at
+            FROM notebook
+            WHERE last_viewed_at != NONE AND last_viewed_at != NULL
+            ORDER BY last_viewed_at DESC
+            LIMIT $limit
+            """,
+            {"limit": limit},
+        )
+        sources = await repo_query(
+            """
+            SELECT id, title, last_viewed_at
+            FROM source
+            WHERE last_viewed_at != NONE AND last_viewed_at != NULL
+            ORDER BY last_viewed_at DESC
+            LIMIT $limit
+            """,
+            {"limit": limit},
+        )
+
+        items = [
+            *[_recently_viewed_notebook(nb) for nb in notebooks],
+            *[_recently_viewed_source(src) for src in sources],
+        ]
+        items.sort(key=_last_viewed_sort_key, reverse=True)
+        return items[:limit]
+    except HTTPException:
+        raise
+    except OpenNotebookError:
+        raise
+    except Exception as e:
+        # Log full context server-side; return a generic message so internal
+        # details are not leaked to clients.
+        logger.exception(f"Error fetching recently viewed items: {e}")
+        raise HTTPException(
+            status_code=500, detail="Error fetching recently viewed items"
         )
 
 
@@ -136,6 +229,8 @@ async def get_notebook_delete_preview(notebook_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error getting delete preview for notebook {notebook_id}: {e}")
         raise HTTPException(
@@ -160,6 +255,8 @@ async def get_notebook(notebook_id: str):
         if not result:
             raise HTTPException(status_code=404, detail="Notebook not found")
 
+        await _stamp_notebook_view(notebook_id)
+
         nb = result[0]
         return NotebookResponse(
             id=str(nb.get("id", "")),
@@ -172,6 +269,8 @@ async def get_notebook(notebook_id: str):
             note_count=nb.get("note_count", 0),
         )
     except HTTPException:
+        raise
+    except OpenNotebookError:
         raise
     except Exception as e:
         logger.error(f"Error fetching notebook {notebook_id}: {str(e)}")
@@ -235,6 +334,8 @@ async def update_notebook(notebook_id: str, notebook_update: NotebookUpdate):
         raise HTTPException(status_code=404, detail="Notebook not found")
     except InvalidInputError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error updating notebook {notebook_id}: {str(e)}")
         raise HTTPException(
@@ -274,6 +375,8 @@ async def add_source_to_notebook(notebook_id: str, source_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook or source not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(
             f"Error linking source {source_id} to notebook {notebook_id}: {str(e)}"
@@ -304,6 +407,8 @@ async def remove_source_from_notebook(notebook_id: str, source_id: str):
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(
             f"Error removing source {source_id} from notebook {notebook_id}: {str(e)}"
@@ -331,7 +436,9 @@ async def delete_notebook(
     try:
         notebook = await Notebook.get(notebook_id)
 
-        result = await notebook.delete(delete_exclusive_sources=delete_exclusive_sources)
+        result = await notebook.delete(
+            delete_exclusive_sources=delete_exclusive_sources
+        )
 
         return NotebookDeleteResponse(
             message="Notebook deleted successfully",
@@ -343,6 +450,8 @@ async def delete_notebook(
         raise
     except NotFoundError:
         raise HTTPException(status_code=404, detail="Notebook not found")
+    except OpenNotebookError:
+        raise
     except Exception as e:
         logger.error(f"Error deleting notebook {notebook_id}: {str(e)}")
         raise HTTPException(

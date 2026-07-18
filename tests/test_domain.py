@@ -8,7 +8,7 @@ that can be tested without database mocking.
 import sys
 import tempfile
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -18,7 +18,13 @@ from api.podcast_service import PodcastService
 from open_notebook.ai.models import ModelManager
 from open_notebook.domain.base import RecordModel
 from open_notebook.domain.content_settings import ContentSettings
-from open_notebook.domain.notebook import Asset, Note, Notebook, Source
+from open_notebook.domain.notebook import (
+    Asset,
+    Note,
+    Notebook,
+    Source,
+    SourceInsight,
+)
 from open_notebook.domain.transformation import Transformation
 from open_notebook.exceptions import InvalidInputError
 from open_notebook.podcasts.models import EpisodeProfile, SpeakerProfile
@@ -127,13 +133,15 @@ class TestNotebookDomain:
         async def fake_get_notes(self, include_content=False):
             return []
 
-        async def fake_get_insights(self):
-            return []
+        async def fake_get_for_sources(cls, source_ids):
+            return {sid: [] for sid in source_ids}
 
         with (
             patch.object(Notebook, "get_sources", new=fake_get_sources),
             patch.object(Notebook, "get_notes", new=fake_get_notes),
-            patch.object(Source, "get_insights", new=fake_get_insights),
+            patch.object(
+                SourceInsight, "get_for_sources", new=classmethod(fake_get_for_sources)
+            ),
         ):
             context = await notebook.get_context()
 
@@ -203,12 +211,18 @@ class TestNotebookDomain:
         async def fake_get_notes(self, include_content=False):
             return []
 
-        async def fake_get_context(self, context_size="short"):
+        async def fake_get_for_sources(cls, source_ids):
+            return {sid: [] for sid in source_ids}
+
+        async def fake_get_context(self, context_size="short", insights=None):
             raise RuntimeError("source context failed")
 
         with (
             patch.object(Notebook, "get_sources", new=fake_get_sources),
             patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(
+                SourceInsight, "get_for_sources", new=classmethod(fake_get_for_sources)
+            ),
             patch.object(Source, "get_context", new=fake_get_context),
         ):
             with pytest.raises(RuntimeError, match="source context failed"):
@@ -407,8 +421,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[],
             )
 
@@ -416,8 +428,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[{"name": f"Speaker{i}"} for i in range(5)],
             )
 
@@ -425,8 +435,6 @@ class TestPodcastDomain:
         with pytest.raises(ValidationError):
             SpeakerProfile(
                 name="Test",
-                tts_provider="openai",
-                tts_model="tts-1",
                 speakers=[
                     {"name": "Speaker 1"}
                 ],  # Missing voice_id, backstory, personality
@@ -435,8 +443,6 @@ class TestPodcastDomain:
         # Test valid - single speaker with all fields
         profile = SpeakerProfile(
             name="Test",
-            tts_provider="openai",
-            tts_model="tts-1",
             speakers=[
                 {
                     "name": "Host",
@@ -477,8 +483,8 @@ class TestPodcastService:
         async def fake_get_notes(self, include_content=False):
             return []
 
-        async def fake_get_insights(self):
-            return []
+        async def fake_get_for_sources(cls, source_ids):
+            return {sid: [] for sid in source_ids}
 
         def fake_submit_command(app_name, command_name, command_args):
             submitted_args.update(command_args)
@@ -489,19 +495,28 @@ class TestPodcastService:
         # generate_podcast_command` when the package is imported, so the fake
         # submodule must expose that name or the package import fails before the
         # patched submit_command is reached.
-        fake_commands_module.generate_podcast_command = lambda *a, **k: None
+        # setattr: dynamic module attribute mypy can't know about
+        setattr(fake_commands_module, "generate_podcast_command", lambda *a, **k: None)
 
         with (
             patch.object(
                 EpisodeProfile, "get_by_name", new=AsyncMock(return_value=object())
             ),
             patch.object(
-                SpeakerProfile, "get_by_name", new=AsyncMock(return_value=object())
+                SpeakerProfile,
+                "get_by_name",
+                new=AsyncMock(
+                    return_value=SimpleNamespace(
+                        id="speaker_profile:speakers", name="Speakers"
+                    )
+                ),
             ),
             patch.object(Notebook, "get", new=AsyncMock(return_value=notebook)),
             patch.object(Notebook, "get_sources", new=fake_get_sources),
             patch.object(Notebook, "get_notes", new=fake_get_notes),
-            patch.object(Source, "get_insights", new=fake_get_insights),
+            patch.object(
+                SourceInsight, "get_for_sources", new=classmethod(fake_get_for_sources)
+            ),
             patch("api.podcast_service.submit_command", new=fake_submit_command),
             patch.dict(
                 sys.modules, {"commands.podcast_commands": fake_commands_module}
@@ -551,6 +566,11 @@ class TestTransformationDomain:
 class TestContentSettings:
     """Test suite for ContentSettings defaults."""
 
+    def teardown_method(self):
+        # ContentSettings is a RecordModel singleton; drop any instance these
+        # tests created so a non-default value can't leak into other tests.
+        ContentSettings.clear_instance()
+
     def test_content_settings_defaults(self):
         """Test ContentSettings has proper defaults."""
         settings = ContentSettings()
@@ -559,7 +579,19 @@ class TestContentSettings:
         assert settings.default_content_processing_engine_doc == "auto"
         assert settings.default_embedding_option == "ask"
         assert settings.auto_delete_files == "yes"
+        assert settings.youtube_preferred_languages is not None
         assert len(settings.youtube_preferred_languages) > 0
+
+    def test_content_settings_accepts_crawl4ai_url_engine(self):
+        """crawl4ai is a valid URL processing engine (content-core 2.x)."""
+        settings = ContentSettings(default_content_processing_engine_url="crawl4ai")
+        assert settings.default_content_processing_engine_url == "crawl4ai"
+
+    def test_docling_ocr_defaults_on(self):
+        """OCR is on by default (matches content-core's docling_ocr default)."""
+        settings = ContentSettings()
+        assert settings.docling_ocr is True
+        assert ContentSettings(docling_ocr=False).docling_ocr is False
 
 
 # ============================================================================
@@ -579,10 +611,6 @@ class TestEpisodeProfile:
             EpisodeProfile(
                 name="Test",
                 speaker_config="default",
-                outline_provider="openai",
-                outline_model="gpt-4",
-                transcript_provider="openai",
-                transcript_model="gpt-4",
                 default_briefing="Test briefing",
                 num_segments=2,
             )
@@ -594,10 +622,6 @@ class TestEpisodeProfile:
             EpisodeProfile(
                 name="Test",
                 speaker_config="default",
-                outline_provider="openai",
-                outline_model="gpt-4",
-                transcript_provider="openai",
-                transcript_model="gpt-4",
                 default_briefing="Test briefing",
                 num_segments=21,
             )
@@ -606,10 +630,6 @@ class TestEpisodeProfile:
         profile = EpisodeProfile(
             name="Test",
             speaker_config="default",
-            outline_provider="openai",
-            outline_model="gpt-4",
-            transcript_provider="openai",
-            transcript_model="gpt-4",
             default_briefing="Test briefing",
             num_segments=5,
         )

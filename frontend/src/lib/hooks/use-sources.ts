@@ -323,7 +323,7 @@ export function useAddSourcesToNotebook() {
       if (result.failures === 0) {
         toast({
           title: t('common.success'),
-          description: t('sources.sourcesAddedToNotebook').replace('{count}', result.successes.toString()),
+          description: t('sources.sourcesAddedToNotebook', { count: result.successes }),
         })
       } else if (result.successes === 0) {
         toast({
@@ -334,9 +334,7 @@ export function useAddSourcesToNotebook() {
       } else {
         toast({
           title: t('common.success'),
-          description: t('sources.partialAddSuccess')
-            .replace('{success}', result.successes.toString())
-            .replace('{failed}', result.failures.toString()),
+          description: t('sources.partialAddSuccess', { success: result.successes.toString(), failed: result.failures.toString() }),
           variant: 'default',
         })
       }

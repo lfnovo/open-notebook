@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Any, ClassVar, Dict, List, Optional, Type, TypeVar, Union, cast
 
@@ -36,6 +37,39 @@ class ObjectModel(BaseModel):
     updated: Optional[datetime] = None
 
     @classmethod
+    def _validate_order_by(cls, order_by: str) -> str:
+        """Validate and normalize an ORDER BY clause to prevent SurrealQL injection.
+
+        Supports: "field", "field direction", "field1 direction, field2 direction".
+        Any subclass that builds its own query around `order_by` (instead of
+        delegating to `get_all()`) must route through this so the allowlist
+        can't silently drift between call sites.
+        """
+        allowed_field_pattern = re.compile(r"^[a-z_][a-z0-9_]*$")
+        allowed_directions = {"asc", "desc"}
+
+        clauses = [c.strip() for c in order_by.split(",")]
+        validated_clauses = []
+        for clause in clauses:
+            parts = clause.strip().split()
+            if len(parts) == 1:
+                if not allowed_field_pattern.match(parts[0].lower()):
+                    raise InvalidInputError(f"Invalid order_by field: '{parts[0]}'")
+                validated_clauses.append(parts[0].lower())
+            elif len(parts) == 2:
+                if not allowed_field_pattern.match(
+                    parts[0].lower()
+                ) or parts[1].lower() not in allowed_directions:
+                    raise InvalidInputError(
+                        f"Invalid order_by clause: '{clause.strip()}'"
+                    )
+                validated_clauses.append(f"{parts[0].lower()} {parts[1].lower()}")
+            else:
+                raise InvalidInputError(f"Invalid order_by clause: '{clause.strip()}'")
+
+        return ", ".join(validated_clauses)
+
+    @classmethod
     async def get_all(cls: Type[T], order_by=None) -> List[T]:
         try:
             # If called from a specific subclass, use its table_name
@@ -48,39 +82,7 @@ class ObjectModel(BaseModel):
                     "get_all() must be called from a specific model class"
                 )
             if order_by:
-                # Validate order_by to prevent SurrealQL injection
-                # Supports: "field", "field direction", "field1 direction, field2 direction"
-                import re
-
-                allowed_field_pattern = re.compile(r"^[a-z_][a-z0-9_]*$")
-                allowed_directions = {"asc", "desc"}
-
-                clauses = [c.strip() for c in order_by.split(",")]
-                validated_clauses = []
-                for clause in clauses:
-                    parts = clause.strip().split()
-                    if len(parts) == 1:
-                        if not allowed_field_pattern.match(parts[0].lower()):
-                            raise InvalidInputError(
-                                f"Invalid order_by field: '{parts[0]}'"
-                            )
-                        validated_clauses.append(parts[0].lower())
-                    elif len(parts) == 2:
-                        if not allowed_field_pattern.match(
-                            parts[0].lower()
-                        ) or parts[1].lower() not in allowed_directions:
-                            raise InvalidInputError(
-                                f"Invalid order_by clause: '{clause.strip()}'"
-                            )
-                        validated_clauses.append(
-                            f"{parts[0].lower()} {parts[1].lower()}"
-                        )
-                    else:
-                        raise InvalidInputError(
-                            f"Invalid order_by clause: '{clause.strip()}'"
-                        )
-
-                validated_order_by = ", ".join(validated_clauses)
+                validated_order_by = cls._validate_order_by(order_by)
                 query = f"SELECT * FROM {table_name} ORDER BY {validated_order_by}"
             else:
                 query = f"SELECT * FROM {table_name}"

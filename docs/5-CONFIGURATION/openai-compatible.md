@@ -203,7 +203,10 @@ services:
     image: vllm/vllm-openai:latest
     command: --model meta-llama/Llama-3.1-8B-Instruct
     ports:
-      - "8000:8000"
+      # Localhost only (vLLM has no authentication by default), on host port
+      # 8001 because SurrealDB already publishes 8000. Open Notebook reaches
+      # vLLM over the compose network at http://vllm:8000/v1 regardless.
+      - "127.0.0.1:8001:8000"
     volumes:
       - ~/.cache/huggingface:/root/.cache/huggingface
     deploy:

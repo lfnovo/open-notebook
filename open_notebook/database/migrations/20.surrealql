@@ -1,0 +1,24 @@
+-- Migration 20: episode_profile.speaker_config references speaker_profile by record ID (#630)
+-- Previously speaker_config stored the speaker profile NAME (a plain string),
+-- so renaming a speaker profile silently broke every episode profile that
+-- referenced it. This converts the field to a record link.
+--
+-- Steps:
+-- 1. Widen the field type so both the legacy strings and the new record
+--    links are valid during the data conversion (the table is SCHEMAFULL).
+-- 2. Convert existing rows: look up the speaker_profile with a matching
+--    name and store its record ID. Orphan references (a name that no longer
+--    matches any speaker_profile) become NONE - the app treats a missing
+--    speaker as "needs setup" and the UI asks the user to pick one.
+-- 3. Tighten the type to option<record<speaker_profile>> so only
+--    speaker_profile record links (or NONE) can be stored from now on.
+--    Note: SurrealDB record links do NOT prevent dangling references -
+--    deleting a speaker profile still leaves the link in place, so the
+--    app must keep resolving speaker_config defensively (it treats an
+--    unresolvable reference the same as NONE: "needs setup").
+
+DEFINE FIELD OVERWRITE speaker_config ON TABLE episode_profile TYPE option<string | record<speaker_profile>>;
+
+UPDATE episode_profile SET speaker_config = (SELECT VALUE id FROM ONLY speaker_profile WHERE name = $parent.speaker_config LIMIT 1) WHERE type::is::string(speaker_config);
+
+DEFINE FIELD OVERWRITE speaker_config ON TABLE episode_profile TYPE option<record<speaker_profile>>;

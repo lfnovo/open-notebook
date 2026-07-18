@@ -120,13 +120,19 @@ def _extract_response_content(response) -> str:
 
 def _build_system_prompt(state: dict) -> str:
     transformation: Transformation = state["transformation"]
-    template_text = transformation.prompt
+    # transformation.prompt is user-controlled free text. Never compile it as
+    # Jinja template *source* (Prompter(template_text=...)) - pass it as a
+    # plain render variable into a fixed, developer-authored template instead.
+    # See docs/7-DEVELOPMENT/security.md (GHSA-f35w-wx37-26q7).
+    instructions = transformation.prompt
     default_prompts: DefaultPrompts = DefaultPrompts(transformation_instructions=None)
     if default_prompts.transformation_instructions:
-        template_text = (
-            f"{default_prompts.transformation_instructions}\n\n{template_text}"
+        instructions = (
+            f"{default_prompts.transformation_instructions}\n\n{instructions}"
         )
-    return Prompter(template_text=template_text).render(data=state)
+    return Prompter(prompt_template="transformation/execute").render(
+        data={**state, "instructions": instructions}
+    )
 
 
 def _get_content(state: dict) -> str:

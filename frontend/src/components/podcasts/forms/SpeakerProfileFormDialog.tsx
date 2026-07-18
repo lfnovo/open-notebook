@@ -240,7 +240,7 @@ export function SpeakerProfileFormDialog({
               <div key={field.id} className="rounded-lg border p-4 space-y-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold">
-                    {t('podcasts.speakerNumber').replace('{number}', (index + 1).toString())}
+                    {t('podcasts.speakerNumber', { number: (index + 1).toString() })}
                   </p>
                   <Button
                     type="button"
@@ -259,7 +259,7 @@ export function SpeakerProfileFormDialog({
                     <Input
                       id={`speaker-name-${index}`}
                       {...register(`speakers.${index}.name` as const)}
-                      placeholder={t('podcasts.hostPlaceholder').replace('{number}', (index + 1).toString())}
+                      placeholder={t('podcasts.hostPlaceholder', { number: (index + 1).toString() })}
                       autoComplete="off"
                     />
                     {errors.speakers?.[index]?.name ? (

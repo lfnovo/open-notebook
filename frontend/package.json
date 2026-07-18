@@ -9,11 +9,11 @@
     "lint": "eslint src/",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
-    "@monaco-editor/react": "^4.7.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-checkbox": "^1.3.2",
@@ -32,6 +32,7 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/react-query": "^5.83.0",
+    "@types/react-syntax-highlighter": "^15.5.13",
     "@uiw/react-md-editor": "^4.0.8",
     "axios": "^1.16.0",
     "class-variance-authority": "^0.7.1",
@@ -43,13 +44,14 @@
     "katex": "^0.16.47",
     "lucide-react": "^0.525.0",
     "next": "^16.2.6",
-    "next-themes": "^0.4.6",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-hook-form": "^7.60.0",
     "react-i18next": "^16.5.0",
     "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
     "rehype-katex": "^7.0.1",
+    "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "sonner": "^2.0.6",
@@ -67,6 +69,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.8",
     "@vitest/ui": "^4.1.8",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
@@ -75,5 +78,12 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "ws": "8.21.0",
+    "brace-expansion": "1.1.15",
+    "ajv": "6.15.0",
+    "@eslint/plugin-kit": "0.7.2",
+    "postcss": "8.5.10"
   }
 }

@@ -394,11 +394,11 @@ export function AddSourceDialog({
 
         // Show summary toast
         if (results.failed === 0) {
-          toast.success(t('sources.batchSuccess').replace('{count}', results.success.toString()))
+          toast.success(t('sources.batchSuccess', { count: results.success }))
         } else if (results.success === 0) {
-          toast.error(t('sources.batchFailed').replace('{count}', results.failed.toString()))
+          toast.error(t('sources.batchFailed', { count: results.failed }))
         } else {
-          toast.warning(t('sources.batchPartial').replace('{success}', results.success.toString()).replace('{failed}', results.failed.toString()))
+          toast.warning(t('sources.batchPartial', { success: results.success.toString(), failed: results.failed.toString() }))
         }
 
         handleClose()
@@ -465,7 +465,7 @@ export function AddSourceDialog({
             </DialogTitle>
             <DialogDescription>
               {batchProgress
-                ? t('sources.processingBatchSources').replace('{count}', batchProgress.total.toString())
+                ? t('sources.processingBatchSources', { count: batchProgress.total })
                 : t('sources.processingSource')
               }
             </DialogDescription>

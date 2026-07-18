@@ -567,6 +567,7 @@ SupportedProvider = Literal[
     "openrouter",
     "dashscope",
     "minimax",
+    "ppq",
     "voyage",
     "elevenlabs",
     "deepgram",

@@ -542,6 +542,40 @@ async def discover_deepgram_models() -> List[DiscoveredModel]:
     ]
 
 
+# PayPerQ's /v1/models endpoint only lists chat (language) models. Its
+# embedding, STT, and TTS models are documented separately, so append them
+# explicitly (mirrors the curated static lists used for Deepgram/ElevenLabs).
+PPQ_STATIC_MODELS: Tuple[Tuple[str, str], ...] = (
+    ("openai/text-embedding-3-small", "embedding"),
+    ("openai/text-embedding-3-large", "embedding"),
+    ("nova-3", "speech_to_text"),
+    ("nova-2", "speech_to_text"),
+    ("deepgram_aura_2", "text_to_speech"),
+    ("eleven_multilingual_v2", "text_to_speech"),
+    ("eleven_flash_v2_5", "text_to_speech"),
+)
+
+
+async def discover_ppq_models() -> List[DiscoveredModel]:
+    """Discover PayPerQ (PPQ) models across all four modalities.
+
+    Chat models come from PPQ's OpenAI-compatible /v1/models catalog; the
+    embedding/STT/TTS models are appended from PPQ_STATIC_MODELS since the
+    catalog endpoint does not list them.
+    """
+    models = await discover_openai_compatible_provider("ppq")
+
+    discovered_ids = {m.name for m in models}
+    for model_id, model_type in PPQ_STATIC_MODELS:
+        if model_id not in discovered_ids:
+            models.append(
+                DiscoveredModel(
+                    name=model_id, provider="ppq", model_type=model_type
+                )
+            )
+    return models
+
+
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     """
     Fetch available models from an OpenAI-compatible API endpoint.
@@ -631,6 +665,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "openai_compatible": discover_openai_compatible_models,
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
+    "ppq": discover_ppq_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

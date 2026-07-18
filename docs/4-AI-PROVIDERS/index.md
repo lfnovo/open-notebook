@@ -72,6 +72,15 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#minimax)
 
+**PayPerQ (PPQ)**
+- Cost: Pay-as-you-go, per request
+- Speed: Varies by model
+- Quality: Varies by model
+- Best for: Access to hundreds of models (chat, embedding, STT, TTS) with one key
+- Advantage: No subscription — single key spans many labs and all four modalities
+
+→ [Setup Guide](../5-CONFIGURATION/ai-providers.md#payperq-ppq)
+
 ### Local / Self-Hosted (Free)
 
 **Ollama (Recommended for Local)**
@@ -118,6 +127,7 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 | **OpenRouter** | Varies | Varies | Varies | Low | 5 min | Varies |
 | **DashScope** | Fast | $ | Good | Low | 5 min | Varies |
 | **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
+| **PayPerQ (PPQ)** | Varies | $ (pay-per-use) | Varies | Low | 5 min | Varies |
 | **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
 | **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |
 | **Azure** | Very Fast | $$ | Excellent | High | 10 min | 128K |

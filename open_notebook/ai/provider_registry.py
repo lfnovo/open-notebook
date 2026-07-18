@@ -159,6 +159,18 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             openai_compat_discovery_url="https://api.minimax.io/v1/models",
         ),
         ProviderSpec(
+            name="ppq",
+            display_name="PayPerQ (PPQ)",
+            modalities=_ALL_MODALITIES,
+            required_env=("PPQ_API_KEY",),
+            test_model="auto",  # PPQ smart-routing model, always available
+            docs_url="https://ppq.ai/api-docs",
+            # Catalog endpoint lists chat models; embedding/STT/TTS models are
+            # appended by the bespoke discover_ppq_models() (they aren't listed
+            # by /v1/models). See open_notebook/ai/model_discovery.py.
+            openai_compat_discovery_url="https://api.ppq.ai/v1/models",
+        ),
+        ProviderSpec(
             name="voyage",
             display_name="Voyage AI",
             modalities=("embedding",),

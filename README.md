@@ -240,6 +240,7 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | OpenRouter   | ✅          | ✅               | ❌             | ❌             |
 | DashScope (Qwen) | ✅          | ❌               | ❌             | ❌             |
 | MiniMax      | ✅          | ❌               | ❌             | ❌             |
+| PayPerQ (PPQ) | ✅          | ✅               | ✅             | ✅             |
 | OpenAI Compatible* | ✅          | ✅               | ✅             | ✅             |
 
 *Supports LM Studio and any OpenAI-compatible endpoint

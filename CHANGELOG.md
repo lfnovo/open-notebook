@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Newer ElevenLabs models are now offered in model discovery: `eleven_v3`, `eleven_flash_v2_5` and `eleven_flash_v2` for text-to-speech, and `scribe_v2` for speech-to-text — alongside the existing models. Esperanto passes the `model_id` straight through to ElevenLabs, so no provider changes were needed (#1167)
+- PayPerQ (PPQ) provider support via Esperanto — a pay-as-you-go gateway exposing hundreds of models from many labs through one OpenAI-compatible key, covering all four modalities (language, embedding, speech-to-text, text-to-speech). Configure it under Settings → API Keys with a `PPQ_API_KEY`; language models are discovered from PPQ's catalog and embedding/STT/TTS models are added from a documented list
 
 ## [1.13.0] - 2026-07-13
 

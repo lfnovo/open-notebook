@@ -321,6 +321,46 @@ Heavy use: Depends on models chosen
 
 ---
 
+### PayPerQ (PPQ)
+
+**Cost:** Pay-as-you-go, billed per request (no subscription)
+
+PayPerQ is a gateway that exposes hundreds of models from many labs (OpenAI, Anthropic, Google, xAI, Qwen, DeepSeek, Mistral, and more) through one OpenAI-compatible API key — spanning chat, embedding, speech-to-text, and text-to-speech.
+
+**Get Your API Key:**
+1. Go to https://ppq.ai
+2. Create an account (if needed)
+3. Open the API keys section of your account
+4. Create a new API key (starts with `sk-`)
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **PayPerQ (PPQ)**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Available Models:**
+- **Language:** hundreds of chat models — pass any model `id` from the catalog (e.g. `auto`, `claude-sonnet-5`, `gpt-5.4-mini`)
+- **Embedding:** `openai/text-embedding-3-small`, `openai/text-embedding-3-large`
+- **Speech-to-Text:** `nova-3`, `nova-2` (Deepgram Nova)
+- **Text-to-Speech:** `deepgram_aura_2`, `eleven_multilingual_v2`, `eleven_flash_v2_5`
+
+**Recommended:**
+- For language: `auto` (PPQ picks a suitable model automatically) or a specific model like `claude-sonnet-5`
+- For embeddings: `openai/text-embedding-3-small`
+
+**Advantages:**
+- One key spans many providers and all four modalities
+- No subscription — pay only for what you use
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in your PayPerQ account
+- "Model not available" → Re-discover models; embedding/STT/TTS models are added from a documented list since PPQ's catalog endpoint only lists chat models
+
+---
+
 ## Self-Hosted / Local
 
 ### Ollama (Recommended for Local)

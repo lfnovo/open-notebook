@@ -282,29 +282,25 @@ export default function SourcesPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <AppShell>
+  const renderContent = () => {
+    if (loading) {
+      return (
         <div className="flex h-full items-center justify-center">
           <LoadingSpinner />
         </div>
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  if (error) {
-    return (
-      <AppShell>
+    if (error) {
+      return (
         <div className="flex h-full items-center justify-center">
           <p className="text-red-500">{error}</p>
         </div>
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  if (sources.length === 0) {
-    return (
-      <AppShell>
+    if (sources.length === 0) {
+      return (
         <EmptyState
           icon={FileText}
           title={t('sources.noSourcesYet')}
@@ -316,19 +312,10 @@ export default function SourcesPage() {
             </Button>
           }
         />
-        <AddSourceDialog
-          open={sourceDialogOpen}
-          onOpenChange={(open) => {
-            setSourceDialogOpen(open)
-            if (!open) fetchSources(true)
-          }}
-        />
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  return (
-    <AppShell>
+    return (<>
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">{t('sources.allSources')}</h1>
@@ -466,6 +453,12 @@ export default function SourcesPage() {
         confirmVariant="destructive"
         onConfirm={handleDeleteConfirm}
       />
+    </>)
+  }
+
+  return (
+    <AppShell>
+      {renderContent()}
       <AddSourceDialog
         open={sourceDialogOpen}
         onOpenChange={(open) => {

@@ -193,6 +193,18 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             test_model=None,  # Dynamic - uses first available model
         ),
         ProviderSpec(
+            name="omlx",
+            display_name="oMLX",
+            modalities=("language", "embedding"),
+            required_env=("OMLX_API_BASE",),
+            optional_env=("OMLX_API_KEY",),
+            test_model=None,  # Dynamic - uses first available model via /v1/models
+            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/omlx.md",
+            # No openai_compat_discovery_url: base URL is user-supplied (default
+            # http://localhost:11435/v1) and API key is optional — discovery is
+            # handled like openai_compatible, not the fixed-URL OPENAI_COMPAT table.
+        ),
+        ProviderSpec(
             name="azure",
             display_name="Azure OpenAI",
             modalities=_ALL_MODALITIES,

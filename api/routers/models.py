@@ -405,6 +405,7 @@ async def get_provider_availability():
             "elevenlabs": "ELEVENLABS_API_KEY",
             "deepgram": "DEEPGRAM_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "omlx": "OMLX_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
         }

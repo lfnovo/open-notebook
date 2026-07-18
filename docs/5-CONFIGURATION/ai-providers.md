@@ -403,6 +403,32 @@ CPU-only:
 
 ---
 
+### oMLX (Apple Silicon)
+
+**Cost:** Free (electricity only)
+
+**Requirements:** Apple Silicon Mac. oMLX runs on the host (not in Linux containers).
+
+**Setup oMLX:**
+1. Install from [oMLX](https://omlx.ai/) / [jundot/omlx](https://github.com/jundot/omlx)
+2. Run on port **11435** (oMLX’s default `8000` conflicts with SurrealDB):
+   ```bash
+   OMLX_PORT=11435 omlx serve
+   ```
+3. Load models in the oMLX admin UI
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **oMLX**
+4. Base URL defaults to `http://localhost:11435/v1` (use `http://host.docker.internal:11435/v1` if Open Notebook is in Docker)
+5. API key is optional (only if you started oMLX with `--api-key`)
+6. Click **Save**, then **Test Connection** → **Discover Models** → **Register Models**
+
+See [oMLX Setup Guide](omlx.md) for port conflict details and troubleshooting.
+
+---
+
 ### LM Studio (Local Alternative)
 
 **Cost:** Free

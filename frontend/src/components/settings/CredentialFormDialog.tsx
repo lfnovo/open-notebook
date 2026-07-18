@@ -16,6 +16,9 @@ import { Credential, CreateCredentialRequest } from '@/lib/api/credentials'
 import { buildCredentialUpdatePayload } from '@/lib/credential-update-payload'
 import { useProviders } from '@/lib/hooks/use-providers'
 
+/** Default oMLX OpenAI base URL (port 11435 avoids SurrealDB on 8000). */
+const OMLX_DEFAULT_BASE_URL = 'http://localhost:11435/v1'
+
 interface CredentialFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -43,8 +46,10 @@ export function CredentialFormDialog({
 
   const isVertex = provider === 'vertex'
   const isOllama = provider === 'ollama'
+  const isOmlx = provider === 'omlx'
   const isOpenAICompatible = provider === 'openai_compatible'
-  const requiresApiKey = !isVertex && !isOllama && !isOpenAICompatible
+  // oMLX is a local no-auth endpoint by default (optional --api-key).
+  const requiresApiKey = !isVertex && !isOllama && !isOmlx && !isOpenAICompatible
 
   const [name, setName] = useState('')
   const [apiKey, setApiKey] = useState('')
@@ -69,7 +74,8 @@ export function CredentialFormDialog({
       setModalities(credential.modalities || [])
     } else {
       setName('')
-      setBaseUrl('')
+      // Prefill oMLX default (port 11435 avoids SurrealDB on 8000).
+      setBaseUrl(isOmlx ? OMLX_DEFAULT_BASE_URL : '')
       setApiKey('')
       setProject('')
       setLocation('')
@@ -234,7 +240,13 @@ export function CredentialFormDialog({
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 value={baseUrl}
                 onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder={isOllama ? 'http://localhost:11434' : 'https://api.example.com/v1'}
+                placeholder={
+                  isOllama
+                    ? 'http://localhost:11434'
+                    : isOmlx
+                      ? OMLX_DEFAULT_BASE_URL
+                      : 'https://api.example.com/v1'
+                }
                 disabled={isSubmitting}
               />
               <p className="text-xs text-muted-foreground">{t('apiKeys.baseUrlOverrideHint')}</p>

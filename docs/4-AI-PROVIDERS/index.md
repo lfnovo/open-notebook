@@ -84,6 +84,16 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#ollama-recommended-for-local)
 
+**oMLX (Apple Silicon)**
+- Cost: Free (electricity only)
+- Speed: Fast on M-series GPUs (MLX)
+- Quality: Good (bring-your-own MLX models)
+- Setup: 10 minutes
+- Best for: macOS Apple Silicon, private local inference
+- Privacy: 100% local; default URL `http://localhost:11435/v1` (avoids SurrealDB on 8000)
+
+→ [Setup Guide](../5-CONFIGURATION/omlx.md)
+
 **LM Studio (Alternative)**
 - Cost: Free (electricity only)
 - Speed: Depends on hardware
@@ -119,6 +129,7 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 | **DashScope** | Fast | $ | Good | Low | 5 min | Varies |
 | **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
 | **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
+| **oMLX** | Fast (MLX) | Free | Good | Max | 10 min | Varies |
 | **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |
 | **Azure** | Very Fast | $$ | Excellent | High | 10 min | 128K |
 
@@ -137,6 +148,9 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 
 ### I want privacy/offline
 → **Ollama** — Free, local, private
+
+### I have an Apple Silicon Mac
+→ **oMLX** — Free, local MLX inference ([setup](../5-CONFIGURATION/omlx.md))
 
 ### I want a GUI (not CLI)
 → **LM Studio** — Desktop app

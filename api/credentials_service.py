@@ -118,6 +118,15 @@ def create_credential_from_env(provider: str) -> Credential:
             modalities=modalities,
             base_url=os.environ.get("OLLAMA_API_BASE"),
         )
+    elif provider == "omlx":
+        api_key = os.environ.get("OMLX_API_KEY")
+        return Credential(
+            name=name,
+            provider=provider,
+            modalities=modalities,
+            api_key=SecretStr(api_key) if api_key else None,
+            base_url=os.environ.get("OMLX_API_BASE"),
+        )
     elif provider == "vertex":
         return Credential(
             name=name,
@@ -255,6 +264,15 @@ async def test_credential(credential_id: str) -> dict:
                     "success": False,
                     "message": "No base URL configured",
                 }
+            success, message = await _test_openai_compatible_connection(
+                base_url, api_key
+            )
+            return {"provider": provider, "success": success, "message": message}
+
+        if provider == "omlx":
+            # Esperanto oMLX profile default; port 11435 avoids SurrealDB on 8000.
+            base_url = config.get("base_url") or "http://localhost:11435/v1"
+            api_key = config.get("api_key")
             success, message = await _test_openai_compatible_connection(
                 base_url, api_key
             )
@@ -454,6 +472,33 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 ]
         except Exception as e:
             logger.warning(f"Failed to discover openai_compatible models: {e}")
+            return []
+
+    if provider == "omlx":
+        omlx_url = base_url or "http://localhost:11435/v1"
+        try:
+            target = await prepare_pinned_http_target(
+                models_endpoint(omlx_url), "omlx"
+            )
+            headers = dict(target.headers)
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=30.0,
+                    extensions=target.extensions,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return [
+                    {"name": m.get("id", ""), "provider": "omlx"}
+                    for m in data.get("data", [])
+                    if m.get("id")
+                ]
+        except Exception as e:
+            logger.warning(f"Failed to discover omlx models: {e}")
             return []
 
     if provider == "azure":

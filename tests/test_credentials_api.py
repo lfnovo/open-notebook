@@ -261,6 +261,97 @@ class TestCredentialModelDiscovery:
         assert captured["extensions"] == {"sni_hostname": "llm-gateway.example.com"}
 
 
+class TestOmlxDiscovery:
+    """oMLX uses OpenAI-compatible /v1/models with an optional API key."""
+
+    @pytest.mark.asyncio
+    async def test_omlx_discovery_defaults_base_url_and_pins(self, monkeypatch):
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        captured = {}
+        pinned_calls = []
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                captured["url"] = url
+                captured["headers"] = headers
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "mlx-model"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            pinned_calls.append((url, provider))
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        models = await credentials_service.discover_with_config("omlx", {})
+
+        assert models == [{"name": "mlx-model", "provider": "omlx"}]
+        assert pinned_calls == [("http://localhost:11435/v1/models", "omlx")]
+        assert captured["url"] == "http://localhost:11435/v1/models"
+        assert "Authorization" not in (captured["headers"] or {})
+
+    @pytest.mark.asyncio
+    async def test_omlx_discovery_sends_optional_api_key(self, monkeypatch):
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        captured = {}
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                captured["headers"] = headers
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "mlx-model"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        await credentials_service.discover_with_config(
+            "omlx",
+            {
+                "api_key": "secret",
+                "base_url": "http://127.0.0.1:11435/v1",
+            },
+        )
+
+        assert captured["headers"]["Authorization"] == "Bearer secret"
+
+    def test_omlx_registry_modalities_and_env(self):
+        from api.credentials_service import PROVIDER_ENV_CONFIG, PROVIDER_MODALITIES
+        from open_notebook.ai.connection_tester import TEST_MODELS
+
+        assert PROVIDER_MODALITIES["omlx"] == ["language", "embedding"]
+        assert PROVIDER_ENV_CONFIG["omlx"]["required"] == ["OMLX_API_BASE"]
+        assert PROVIDER_ENV_CONFIG["omlx"]["optional"] == ["OMLX_API_KEY"]
+        assert TEST_MODELS["omlx"] == (None, "language")
+
+
 class TestCredentialNumCtx:
     """Tests for the Ollama num_ctx override threaded into esperanto config."""
 

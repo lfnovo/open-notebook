@@ -312,7 +312,7 @@ export default function SourcesPage() {
           action={
             <Button onClick={() => setSourceDialogOpen(true)} variant="outline" className="mt-4">
               <Plus className="h-4 w-4 mr-2" />
-              {t('common.newSource')}
+              {t('sources.newSource')}
             </Button>
           }
         />

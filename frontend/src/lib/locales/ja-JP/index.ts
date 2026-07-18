@@ -277,6 +277,7 @@ export const jaJP = {
     lastViewed: "{{time}}に表示",
   },
   sources: {
+    newSource: "新規ソース",
     bulkContext: "コンテキスト",
     includeAllInContext: "すべてをコンテキストに含める",
     includeAllInsights: "すべて含める（インサイトのみ）",

@@ -277,6 +277,7 @@ export const itIT = {
     lastViewed: "Visto {{time}}",
   },
   sources: {
+    newSource: "Nuova fonte",
     bulkContext: "Contesto",
     includeAllInContext: "Includi tutte nel contesto",
     includeAllInsights: "Includi tutte (solo approfondimenti)",

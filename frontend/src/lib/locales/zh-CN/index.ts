@@ -641,7 +641,7 @@ export const zhCN = {
     speakerDuplicatedDesc: "发言人配置 “{{name}}” 已成功复制。",
     failedToDuplicateSpeaker: "复制发言人配置失败",
     generationStarted: "播客启动生成",
-    generationStartedDesc: "剧集 \"{{name}}\" 正在创建中。",
+    generationStartedDesc: "播客生成已加入队列。",
     failedToStartGeneration: "启动播客生成失败",
     tryAgainMoment: "请稍后再试。",
     deleteProfileTitle: "删除简介？",

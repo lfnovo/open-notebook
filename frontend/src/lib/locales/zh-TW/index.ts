@@ -641,7 +641,7 @@ export const zhTW = {
     speakerDuplicatedDesc: "發言人設定 “{{name}}” 已成功複製。",
     failedToDuplicateSpeaker: "複製發言人設定失敗",
     generationStarted: "播客啟動生成",
-    generationStartedDesc: "劇集 \"{{name}}\" 正在建立中。",
+    generationStartedDesc: "播客生成已加入佇列。",
     failedToStartGeneration: "啟動播客生成失敗",
     tryAgainMoment: "請稍後再試。",
     deleteProfileTitle: "刪除簡介？",

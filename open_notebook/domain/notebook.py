@@ -166,6 +166,7 @@ class Notebook(ObjectModel):
         - note_count: Number of notes that will be deleted
         - exclusive_source_count: Sources only in this notebook (can be deleted)
         - shared_source_count: Sources in other notebooks (will be unlinked only)
+        - chat_session_count: Chat sessions that will be deleted
         """
         try:
             notebook_id = ensure_record_id(self.id)
@@ -176,6 +177,10 @@ class Notebook(ObjectModel):
                 {"notebook_id": notebook_id},
             )
             note_count = note_result[0]["count"] if note_result else 0
+
+            # Count chat sessions linked to this notebook
+            chat_sessions = await self.get_chat_sessions()
+            chat_session_count = len(chat_sessions)
 
             # Get sources with count of references to OTHER notebooks
             # If assigned_others = 0, source is exclusive to this notebook
@@ -202,6 +207,7 @@ class Notebook(ObjectModel):
                 "note_count": note_count,
                 "exclusive_source_count": exclusive_count,
                 "shared_source_count": shared_count,
+                "chat_session_count": chat_session_count,
             }
         except Exception as e:
             logger.error(f"Error getting delete preview for notebook {self.id}: {e}")
@@ -217,7 +223,8 @@ class Notebook(ObjectModel):
                                      only to this notebook. Default is False.
 
         Returns:
-            Dict with counts: deleted_notes, deleted_sources, unlinked_sources
+            Dict with counts: deleted_notes, deleted_sources, unlinked_sources,
+            deleted_chat_sessions
         """
         if self.id is None:
             raise InvalidInputError("Cannot delete notebook without an ID")
@@ -227,6 +234,7 @@ class Notebook(ObjectModel):
             deleted_notes = 0
             deleted_sources = 0
             unlinked_sources = 0
+            deleted_chat_sessions = 0
 
             # 1. Get and delete all notes linked to this notebook
             notes = await self.get_notes()
@@ -287,7 +295,16 @@ class Notebook(ObjectModel):
                 f"exclusive sources for notebook {self.id}"
             )
 
-            # 3. Delete the notebook record itself
+            # 3. Delete chat sessions linked to this notebook
+            chat_sessions = await self.get_chat_sessions()
+            for chat_session in chat_sessions:
+                await chat_session.delete()
+                deleted_chat_sessions += 1
+            logger.info(
+                f"Deleted {deleted_chat_sessions} chat sessions for notebook {self.id}"
+            )
+
+            # 4. Delete the notebook record itself
             await super().delete()
             logger.info(f"Deleted notebook {self.id}")
 
@@ -295,6 +312,7 @@ class Notebook(ObjectModel):
                 "deleted_notes": deleted_notes,
                 "deleted_sources": deleted_sources,
                 "unlinked_sources": unlinked_sources,
+                "deleted_chat_sessions": deleted_chat_sessions,
             }
 
         except Exception as e:

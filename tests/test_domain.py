@@ -228,6 +228,57 @@ class TestNotebookDomain:
             with pytest.raises(RuntimeError, match="source context failed"):
                 await notebook.get_context()
 
+    @pytest.mark.asyncio
+    async def test_notebook_delete_cascades_chat_sessions(self):
+        """Deleting a notebook must also delete its chat sessions (issue #1124)."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+
+        chat_session_one = SimpleNamespace(delete=AsyncMock(return_value=True))
+        chat_session_two = SimpleNamespace(delete=AsyncMock(return_value=True))
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        async def fake_get_chat_sessions(self):
+            return [chat_session_one, chat_session_two]
+
+        with (
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(Notebook, "get_chat_sessions", new=fake_get_chat_sessions),
+            patch(
+                "open_notebook.domain.notebook.repo_query",
+                new=AsyncMock(return_value=[]),
+            ),
+            patch(
+                "open_notebook.domain.base.repo_delete",
+                new=AsyncMock(return_value=True),
+            ),
+        ):
+            result = await notebook.delete()
+
+        chat_session_one.delete.assert_awaited_once()
+        chat_session_two.delete.assert_awaited_once()
+        assert result["deleted_chat_sessions"] == 2
+
+    @pytest.mark.asyncio
+    async def test_notebook_delete_preview_counts_chat_sessions(self):
+        """Delete preview must report chat sessions that will be removed (issue #1124)."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+
+        async def fake_get_chat_sessions(self):
+            return [object(), object(), object()]
+
+        with (
+            patch.object(Notebook, "get_chat_sessions", new=fake_get_chat_sessions),
+            patch(
+                "open_notebook.domain.notebook.repo_query",
+                new=AsyncMock(return_value=[]),
+            ),
+        ):
+            preview = await notebook.get_delete_preview()
+
+        assert preview["chat_session_count"] == 3
+
 
 # ============================================================================
 # TEST SUITE 4: Source Domain

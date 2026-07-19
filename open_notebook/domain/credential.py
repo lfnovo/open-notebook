@@ -125,10 +125,15 @@ class Credential(ObjectModel):
             config["endpoint_stt"] = self.endpoint_stt
         if self.endpoint_tts:
             config["endpoint_tts"] = self.endpoint_tts
+        # Vertex esperanto providers accept `vertex_project`/`vertex_location`,
+        # not the generic `project`/`location` keys (#1151). Emit the Vertex-
+        # specific names so credential-linked (non-env) config actually
+        # configures the provider instead of crashing on unexpected kwargs.
+        is_vertex = bool(self.provider) and self.provider.lower() == "vertex"
         if self.project:
-            config["project"] = self.project
+            config["vertex_project" if is_vertex else "project"] = self.project
         if self.location:
-            config["location"] = self.location
+            config["vertex_location" if is_vertex else "location"] = self.location
         if self.credentials_path:
             config["credentials_path"] = self.credentials_path
         if self.num_ctx is not None:

@@ -174,7 +174,11 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             required_env=("PPQ_API_KEY",),
             test_model="auto",
             docs_url="https://ppq.ai",
-            openai_compat_discovery_url="https://api.ppq.ai/v1/models",
+            # PPQ's bare /models returns only chat/language models; ?type=all is
+            # required to also list embedding, STT and TTS models (PPQ is a
+            # multi-modality gateway). Without it, the non-language modalities
+            # this provider advertises never surface in discovery.
+            openai_compat_discovery_url="https://api.ppq.ai/v1/models?type=all",
         ),
         ProviderSpec(
             name="cohere",

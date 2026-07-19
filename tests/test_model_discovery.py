@@ -341,8 +341,10 @@ class TestNewEsperantoProviders:
     """Issue #1170: Cohere, Deepgram STT, PPQ and Novita wiring."""
 
     def test_ppq_and_novita_use_openai_compat_discovery(self):
+        # PPQ needs ?type=all so non-chat modalities (embedding/STT/TTS) surface.
         assert (
-            OPENAI_COMPAT_PROVIDERS["ppq"].url == "https://api.ppq.ai/v1/models"
+            OPENAI_COMPAT_PROVIDERS["ppq"].url
+            == "https://api.ppq.ai/v1/models?type=all"
         )
         assert (
             OPENAI_COMPAT_PROVIDERS["novita"].url

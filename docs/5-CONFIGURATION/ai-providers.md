@@ -225,6 +225,13 @@ Opus: $10-50+/month
 - DeepSeek: `deepseek/deepseek-chat`
 - And many more...
 
+**Speech Models (Text-to-Speech & Speech-to-Text):**
+OpenRouter also exposes audio models. Discovery seeds working defaults; add any
+other `vendor/model` id manually via the custom-model input.
+- Text-to-Speech: `microsoft/mai-voice-2` (uses Microsoft neural voice names such
+  as `en-US-AvaNeural`, not OpenAI's `alloy`/`nova` set)
+- Speech-to-Text: `openai/whisper-1`, `openai/whisper-large-v3`
+
 **Recommended:**
 - For quality: `anthropic/claude-sonnet-4.5` (best overall)
 - For speed/cost: `google/gemini-2.5-flash` (very fast, cheap)

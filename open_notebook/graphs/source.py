@@ -230,7 +230,8 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     # LangGraph accepts a partial state dict at runtime, but its typed
     # overloads require the full state type (langgraph typing limitation).
     result = await transform_graph.ainvoke(  # type: ignore[call-overload]
-        dict(input_text=content, transformation=transformation)
+        dict(input_text=content, transformation=transformation),
+        config=RunnableConfig(configurable={"model_id": transformation.model_id}),
     )
     await source.add_insight(transformation.title, result["output"])
     return {

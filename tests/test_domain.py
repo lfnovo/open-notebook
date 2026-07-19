@@ -260,25 +260,6 @@ class TestNotebookDomain:
         chat_session_two.delete.assert_awaited_once()
         assert result["deleted_chat_sessions"] == 2
 
-    @pytest.mark.asyncio
-    async def test_notebook_delete_preview_counts_chat_sessions(self):
-        """Delete preview must report chat sessions that will be removed (issue #1124)."""
-        notebook = Notebook(id="notebook:test", name="Test", description="Test")
-
-        async def fake_get_chat_sessions(self):
-            return [object(), object(), object()]
-
-        with (
-            patch.object(Notebook, "get_chat_sessions", new=fake_get_chat_sessions),
-            patch(
-                "open_notebook.domain.notebook.repo_query",
-                new=AsyncMock(return_value=[]),
-            ),
-        ):
-            preview = await notebook.get_delete_preview()
-
-        assert preview["chat_session_count"] == 3
-
 
 # ============================================================================
 # TEST SUITE 4: Source Domain

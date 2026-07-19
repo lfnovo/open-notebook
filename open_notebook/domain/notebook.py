@@ -166,7 +166,6 @@ class Notebook(ObjectModel):
         - note_count: Number of notes that will be deleted
         - exclusive_source_count: Sources only in this notebook (can be deleted)
         - shared_source_count: Sources in other notebooks (will be unlinked only)
-        - chat_session_count: Chat sessions that will be deleted
         """
         try:
             notebook_id = ensure_record_id(self.id)
@@ -177,10 +176,6 @@ class Notebook(ObjectModel):
                 {"notebook_id": notebook_id},
             )
             note_count = note_result[0]["count"] if note_result else 0
-
-            # Count chat sessions linked to this notebook
-            chat_sessions = await self.get_chat_sessions()
-            chat_session_count = len(chat_sessions)
 
             # Get sources with count of references to OTHER notebooks
             # If assigned_others = 0, source is exclusive to this notebook
@@ -207,7 +202,6 @@ class Notebook(ObjectModel):
                 "note_count": note_count,
                 "exclusive_source_count": exclusive_count,
                 "shared_source_count": shared_count,
-                "chat_session_count": chat_session_count,
             }
         except Exception as e:
             logger.error(f"Error getting delete preview for notebook {self.id}: {e}")

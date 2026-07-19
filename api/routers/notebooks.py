@@ -224,7 +224,6 @@ async def get_notebook_delete_preview(notebook_id: str):
             note_count=preview["note_count"],
             exclusive_source_count=preview["exclusive_source_count"],
             shared_source_count=preview["shared_source_count"],
-            chat_session_count=preview["chat_session_count"],
         )
     except HTTPException:
         raise

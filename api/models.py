@@ -746,9 +746,6 @@ class NotebookDeletePreview(BaseModel):
     shared_source_count: int = Field(
         ..., description="Number of sources shared with other notebooks"
     )
-    chat_session_count: int = Field(
-        ..., description="Number of chat sessions that will be deleted"
-    )
 
 
 class NotebookDeleteResponse(BaseModel):

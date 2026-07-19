@@ -563,6 +563,11 @@ async def discover_ppq_models() -> List[DiscoveredModel]:
     embedding/STT/TTS models are appended from PPQ_STATIC_MODELS since the
     catalog endpoint does not list them.
     """
+    # No key configured -> discover nothing (consistent with other providers;
+    # avoids advertising the static models for an unconfigured provider).
+    if not os.environ.get("PPQ_API_KEY"):
+        return []
+
     models = await discover_openai_compatible_provider("ppq")
 
     discovered_ids = {m.name for m in models}

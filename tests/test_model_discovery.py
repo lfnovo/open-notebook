@@ -13,9 +13,11 @@ from open_notebook.ai import model_discovery
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
     OPENAI_COMPAT_PROVIDERS,
+    PPQ_STATIC_MODELS,
     PROVIDER_DISCOVERY_FUNCTIONS,
     discover_anthropic_models,
     discover_openai_compatible_provider,
+    discover_ppq_models,
 )
 
 
@@ -54,6 +56,7 @@ class TestOpenAICompatTable:
             "openrouter",
             "dashscope",
             "minimax",
+            "ppq",
         }
 
     def test_provider_discovery_functions_keys_unchanged(self):
@@ -73,6 +76,7 @@ class TestOpenAICompatTable:
             "openai_compatible",
             "dashscope",
             "minimax",
+            "ppq",
             "azure",
             "vertex",
         }
@@ -85,6 +89,50 @@ class TestOpenAICompatTable:
             func = getattr(model_discovery, f"discover_{provider}_models")
             assert callable(func)
             assert PROVIDER_DISCOVERY_FUNCTIONS[provider] is func
+
+
+class TestPPQDiscovery:
+    """PPQ discovers its chat catalog (language) and appends the documented
+    embedding/STT/TTS models that /v1/models does not list."""
+
+    @pytest.mark.asyncio
+    async def test_appends_static_modality_models(self, monkeypatch):
+        # Catalog is chat-only; include an Amazon "Nova" LLM to guard against
+        # the earlier "nova" -> speech_to_text misclassification regression.
+        def handler(url, headers, params, timeout):
+            return json_response(
+                url,
+                {"data": [{"id": "gpt-5.4-mini"}, {"id": "amazon/nova-pro-v1"}]},
+            )
+
+        monkeypatch.setenv("PPQ_API_KEY", "sk-test")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        models = await discover_ppq_models()
+        by_name = {m.name: m.model_type for m in models}
+
+        # Catalog models are all language (Nova LLM must NOT become STT).
+        assert by_name["gpt-5.4-mini"] == "language"
+        assert by_name["amazon/nova-pro-v1"] == "language"
+
+        # Every documented static model is appended with its declared type.
+        for name, model_type in PPQ_STATIC_MODELS:
+            assert by_name[name] == model_type
+
+        counts = {}
+        for m in models:
+            counts[m.model_type] = counts.get(m.model_type, 0) + 1
+        assert counts["embedding"] == 2
+        assert counts["speech_to_text"] == 2
+        assert counts["text_to_speech"] == 3
+        assert all(m.provider == "ppq" for m in models)
+
+    @pytest.mark.asyncio
+    async def test_missing_key_returns_empty(self, monkeypatch):
+        monkeypatch.delenv("PPQ_API_KEY", raising=False)
+        assert await discover_ppq_models() == []
 
 
 class TestGenericOpenAICompatDiscovery:

@@ -755,3 +755,6 @@ class NotebookDeleteResponse(BaseModel):
     unlinked_sources: int = Field(
         ..., description="Number of sources unlinked from notebook"
     )
+    deleted_chat_sessions: int = Field(
+        ..., description="Number of chat sessions deleted"
+    )

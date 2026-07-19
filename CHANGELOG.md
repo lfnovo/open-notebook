@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Newer ElevenLabs models are now offered in model discovery: `eleven_v3`, `eleven_flash_v2_5` and `eleven_flash_v2` for text-to-speech, and `scribe_v2` for speech-to-text — alongside the existing models. Esperanto passes the `model_id` straight through to ElevenLabs, so no provider changes were needed (#1167)
 
+### Fixed
+- Deleting a notebook now also deletes its chat sessions instead of leaving orphaned `chat_session` records behind. The notebook `delete()` cascade enumerates the notebook's chat sessions (via the existing `refers_to` relation) and deletes each one alongside the notes and exclusive sources it already handled (#1124)
+
 ## [1.13.0] - 2026-07-13
 
 ### Added

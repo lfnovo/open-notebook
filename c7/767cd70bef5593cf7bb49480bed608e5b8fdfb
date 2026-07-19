@@ -1,0 +1,34 @@
+open_notebook/domain/notebook.py
+  s_068a6f20b755a6::t_0bb988bfbf2f64 226-227,237
+  s_068a6f20b755a6::t_dc6a46db60499d 298-307,315
+  s_068a6f20b755a6::t_06650dfb83f8ec 169,181-183
+  s_068a6f20b755a6::t_721bfab656ff0c 210
+  s_068a6f20b755a6::t_4c81acb7bcc760 184
+api/routers/notebooks.py
+  s_068a6f20b755a6::t_b6169b7aefe993 227
+  s_068a6f20b755a6::t_643d5c36d4942c 449
+api/models.py
+  s_068a6f20b755a6::t_808da557abc1aa 761-763
+  s_068a6f20b755a6::t_5c57eae21d109a 749-751
+tests/test_domain.py
+  s_068a6f20b755a6::t_295c8776896a81 263-281
+  s_068a6f20b755a6::t_d06d08b141554d 231-262
+CHANGELOG.md
+  s_068a6f20b755a6::t_7aefc6fbf22f3e 13-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "c7767cd70bef5593cf7bb49480bed608e5b8fdfb",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

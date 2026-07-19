@@ -151,6 +151,9 @@ ELEVENLABS_MODEL_TYPES = {
 }
 
 DEEPGRAM_MODEL_TYPES = {
+    # Aura voices are TTS; Nova/Whisper transcription models are STT. STT is
+    # checked first (specificity), so the "-en" Aura voices stay TTS.
+    "speech_to_text": ["nova", "whisper", "enhanced", "base"],
     "text_to_speech": ["aura"],
 }
 
@@ -160,6 +163,25 @@ DASHSCOPE_MODEL_TYPES = {
 
 MINIMAX_MODEL_TYPES = {
     "language": ["minimax", "abab"],
+}
+
+# PPQ (PayPerQ) is a multi-modality OpenAI-compatible gateway that proxies many
+# upstream providers, so its model ids carry recognisable substrings. Classify
+# by those so discovered models land in sensible slots (default: language).
+PPQ_MODEL_TYPES = {
+    "embedding": ["text-embedding", "embed"],
+    "speech_to_text": ["whisper", "nova-", "scribe"],
+    "text_to_speech": ["aura", "tts", "eleven"],
+}
+
+# OpenRouter added OpenAI-compatible TTS/STT endpoints (esperanto 2.25.0), but
+# its /models listing is dominated by language models and does not reliably tag
+# audio models — so audio discovery is a small static seed of the model ids
+# esperanto ships as working defaults. Users can add any other vendor/model id
+# manually via the custom-model input. Keys are esperanto's default models.
+OPENROUTER_AUDIO_MODELS: Dict[str, List[str]] = {
+    "text_to_speech": ["microsoft/mai-voice-2"],
+    "speech_to_text": ["openai/whisper-1", "openai/whisper-large-v3"],
 }
 
 
@@ -184,6 +206,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
+        "ppq": PPQ_MODEL_TYPES,
     }
 
     mapping = type_mappings.get(provider, {})
@@ -312,9 +335,10 @@ discover_groq_models = _make_openai_compat_discoverer("groq")
 discover_mistral_models = _make_openai_compat_discoverer("mistral")
 discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
 discover_xai_models = _make_openai_compat_discoverer("xai")
-discover_openrouter_models = _make_openai_compat_discoverer("openrouter")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
 discover_minimax_models = _make_openai_compat_discoverer("minimax")
+discover_novita_models = _make_openai_compat_discoverer("novita")
+discover_ppq_models = _make_openai_compat_discoverer("ppq")
 
 
 # =============================================================================
@@ -462,6 +486,39 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
     return models
 
 
+async def discover_openrouter_models() -> List[DiscoveredModel]:
+    """Discover OpenRouter models (language/embedding + a static audio seed).
+
+    OpenRouter's OpenAI-compatible /models endpoint lists language (and some
+    embedding) models but does not reliably surface its TTS/STT catalog, so we
+    combine live API discovery with a small static seed of the audio model ids
+    esperanto ships as defaults (see OPENROUTER_AUDIO_MODELS). Returns [] when
+    live discovery yields nothing (missing key, HTTP/network error), so the
+    audio seed is never registered on top of a failed discovery.
+    """
+    models = await discover_openai_compatible_provider("openrouter")
+
+    # Only seed the static audio models when live discovery actually returned
+    # something. An empty result means the /models call failed (invalid key,
+    # HTTP error, network) — seeding on top of a failed discovery would make it
+    # look successful and auto-register unusable audio models during sync.
+    if not models:
+        return models
+
+    seen = {(m.name, m.model_type) for m in models}
+    for model_type, names in OPENROUTER_AUDIO_MODELS.items():
+        for name in names:
+            if (name, model_type) not in seen:
+                models.append(
+                    DiscoveredModel(
+                        name=name,
+                        provider="openrouter",
+                        model_type=model_type,
+                    )
+                )
+    return models
+
+
 async def discover_voyage_models() -> List[DiscoveredModel]:
     """Return static list of Voyage AI models (embedding only)."""
     api_key = os.environ.get("VOYAGE_API_KEY")
@@ -514,11 +571,12 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
 
 
 async def discover_deepgram_models() -> List[DiscoveredModel]:
-    """Return a curated static list of Deepgram Aura TTS voices.
+    """Return a curated static list of Deepgram Aura TTS voices and Nova STT models.
 
-    Deepgram has no model-listing API and treats each voice as a model id.
-    This is a representative subset of the Aura-2 English catalog; users can
-    add any other voice manually via the custom-model input.
+    Deepgram has no model-listing API and treats each voice/model as an id.
+    The TTS list is a representative subset of the Aura-2 English catalog; the
+    STT list covers the Nova and Whisper transcription models. Users can add any
+    other id manually via the custom-model input.
     """
     api_key = os.environ.get("DEEPGRAM_API_KEY")
     if not api_key:
@@ -537,10 +595,65 @@ async def discover_deepgram_models() -> List[DiscoveredModel]:
         "aura-2-atlas-en",
     ]
 
-    return [
+    # Deepgram transcription (STT) models, e.g. nova-3.
+    deepgram_stt_models = [
+        "nova-3",
+        "nova-2",
+        "whisper-large",
+        "whisper-medium",
+        "whisper-small",
+        "whisper-base",
+        "whisper-tiny",
+    ]
+
+    discovered = [
         DiscoveredModel(name=m, provider="deepgram", model_type="text_to_speech")
         for m in deepgram_voices
     ]
+    discovered.extend(
+        DiscoveredModel(name=m, provider="deepgram", model_type="speech_to_text")
+        for m in deepgram_stt_models
+    )
+    return discovered
+
+
+async def discover_cohere_models() -> List[DiscoveredModel]:
+    """Discover Cohere models via esperanto's static discovery.
+
+    Cohere is not OpenAI-compatible (native /v2 API), so it can't use the
+    generic /models table. esperanto's AIFactory.get_provider_models tags each
+    model with a type from its supported endpoints; we surface only the language
+    and embedding models. Reranking is out of scope (tracked at #1087).
+    """
+    api_key = os.environ.get("COHERE_API_KEY")
+    if not api_key:
+        return []
+
+    try:
+        from esperanto import AIFactory
+
+        # esperanto's discovery is synchronous (httpx.get); run it off the loop.
+        models = await asyncio.to_thread(
+            AIFactory.get_provider_models, "cohere", api_key=api_key
+        )
+    except Exception as e:
+        logger.warning(f"Failed to discover Cohere models: {e}")
+        return []
+
+    discovered: List[DiscoveredModel] = []
+    for model in models:
+        # Only language and embedding are supported modalities here; skip
+        # rerank/None-typed models.
+        if model.type not in ("language", "embedding"):
+            continue
+        discovered.append(
+            DiscoveredModel(
+                name=model.id,
+                provider="cohere",
+                model_type=model.type,
+            )
+        )
+    return discovered
 
 
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
@@ -672,6 +785,71 @@ async def discover_anthropic_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
+_OMLX_DEFAULT_BASE_URL = "http://localhost:11435/v1"
+
+
+async def discover_omlx_models() -> List[DiscoveredModel]:
+    """
+    Fetch available models from a local oMLX server (OpenAI-compatible /v1/models).
+
+    Uses Credential config when present, else OMLX_API_BASE / OMLX_API_KEY.
+    Default base URL is http://localhost:11435/v1 (avoids SurrealDB on 8000).
+    API key is optional (oMLX is a local no-auth endpoint by default).
+    """
+    api_key = None
+    base_url = None
+
+    try:
+        credentials = await Credential.get_by_provider("omlx")
+        if credentials:
+            cred = credentials[0]
+            config = cred.to_esperanto_config()
+            api_key = config.get("api_key")
+            base_url = (config.get("base_url") or "").rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read omlx config from Credential: {e}")
+
+    if not api_key:
+        api_key = os.environ.get("OMLX_API_KEY")
+    if not base_url:
+        base_url = os.environ.get("OMLX_API_BASE", _OMLX_DEFAULT_BASE_URL).rstrip("/")
+
+    models: List[DiscoveredModel] = []
+    try:
+        target = await prepare_pinned_http_target(_models_endpoint(base_url), "omlx")
+        headers = dict(target.headers)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                target.url,
+                headers=headers,
+                timeout=30.0,
+                extensions=target.extensions,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "openai")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="omlx",
+                            model_type=model_type,
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"Failed to discover omlx models: HTTP {e.response.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to discover omlx models: {e}")
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -682,6 +860,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "anthropic": discover_anthropic_models,
     "google": discover_google_models,
     "ollama": discover_ollama_models,
+    "omlx": discover_omlx_models,
     "groq": discover_groq_models,
     "mistral": discover_mistral_models,
     "deepseek": discover_deepseek_models,
@@ -694,6 +873,9 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "anthropic_compatible": discover_anthropic_compatible_models,
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
+    "novita": discover_novita_models,
+    "ppq": discover_ppq_models,
+    "cohere": discover_cohere_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

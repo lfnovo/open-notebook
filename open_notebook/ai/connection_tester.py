@@ -299,7 +299,11 @@ async def _test_anthropic_compatible_connection(
         return False, f"Connection error: {str(e)[:100]}"
 
 # Default voices for TTS testing per provider
-# ElevenLabs and Mistral excluded: voices looked up dynamically via available_voices
+# ElevenLabs, Mistral and OpenRouter excluded: voices looked up dynamically via
+# available_voices. OpenRouter's voices are model-specific (its default model,
+# microsoft/mai-voice-2, uses Microsoft neural voice names like en-US-AvaNeural,
+# not OpenAI's alloy/nova set), so a single hard-coded voice can't fit every
+# OpenRouter TTS model — available_voices supplies a valid one for the default.
 DEFAULT_TEST_VOICES = {
     "openai": "alloy",
     "azure": "alloy",

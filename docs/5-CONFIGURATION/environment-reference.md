@@ -298,6 +298,8 @@ If you have these variables configured from a previous installation, click the *
 | `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
 | `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
 | `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
+| `OMLX_API_BASE` | oMLX | Settings → API Keys → Add oMLX Credential |
+| `OMLX_API_KEY` | oMLX | Optional; only if oMLX was started with `--api-key` |
 | `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |
 | `OPENROUTER_BASE_URL` | OpenRouter | Configure in OpenRouter credential |
 | `VOYAGE_API_KEY` | Voyage AI | Settings → API Keys → Add Voyage AI Credential |
@@ -314,6 +316,9 @@ If you have these variables configured from a previous installation, click the *
 | `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
 | `DASHSCOPE_API_KEY` | DashScope (Qwen) | Settings → API Keys → Add DashScope Credential |
 | `MINIMAX_API_KEY` | MiniMax | Settings → API Keys → Add MiniMax Credential |
+| `NOVITA_API_KEY` | Novita | Settings → API Keys → Add Novita Credential |
+| `PPQ_API_KEY` | PayPerQ (PPQ) | Settings → API Keys → Add PayPerQ Credential |
+| `COHERE_API_KEY` | Cohere | Settings → API Keys → Add Cohere Credential |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → API Keys → Add Azure OpenAI Credential |
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI | Configure in Azure OpenAI credential |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI | Configure in Azure OpenAI credential |

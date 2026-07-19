@@ -18,6 +18,7 @@ from api.models import CredentialResponse, validate_url_key_provider_required_fi
 from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
+    OPENROUTER_AUDIO_MODELS,
     classify_model_type,
     fetch_anthropic_model_ids,
 )
@@ -126,6 +127,15 @@ def create_credential_from_env(provider: str) -> Credential:
             provider=provider,
             modalities=modalities,
             base_url=os.environ.get("OLLAMA_API_BASE"),
+        )
+    elif provider == "omlx":
+        api_key = os.environ.get("OMLX_API_KEY")
+        return Credential(
+            name=name,
+            provider=provider,
+            modalities=modalities,
+            api_key=SecretStr(api_key) if api_key else None,
+            base_url=os.environ.get("OMLX_API_BASE"),
         )
     elif provider == "vertex":
         return Credential(
@@ -285,6 +295,15 @@ async def test_credential(credential_id: str) -> dict:
             )
             return {"provider": provider, "success": success, "message": message}
 
+        if provider == "omlx":
+            # Esperanto oMLX profile default; port 11435 avoids SurrealDB on 8000.
+            base_url = config.get("base_url") or "http://localhost:11435/v1"
+            api_key = config.get("api_key")
+            success, message = await _test_openai_compatible_connection(
+                base_url, api_key
+            )
+            return {"provider": provider, "success": success, "message": message}
+
         if provider == "azure":
             success, message = await _test_azure_connection(
                 endpoint=config.get("endpoint"),
@@ -386,10 +405,14 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             "scribe_v1",  # speech-to-text
         ],
         "deepgram": [
+            # TTS (Aura) voices
             "aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en",
             "aura-2-apollo-en", "aura-2-arcas-en", "aura-2-asteria-en",
             "aura-2-athena-en", "aura-2-hera-en", "aura-2-hermes-en",
             "aura-2-atlas-en",
+            # STT (Nova / Whisper) transcription models
+            "nova-3", "nova-2", "whisper-large", "whisper-medium",
+            "whisper-small", "whisper-base", "whisper-tiny",
         ],
     }
 
@@ -513,6 +536,33 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             logger.warning(f"Failed to discover anthropic_compatible models: {e}")
             return []
 
+    if provider == "omlx":
+        omlx_url = base_url or "http://localhost:11435/v1"
+        try:
+            target = await prepare_pinned_http_target(
+                models_endpoint(omlx_url), "omlx"
+            )
+            headers = dict(target.headers)
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=30.0,
+                    extensions=target.extensions,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return [
+                    {"name": m.get("id", ""), "provider": "omlx"}
+                    for m in data.get("data", [])
+                    if m.get("id")
+                ]
+        except Exception as e:
+            logger.warning(f"Failed to discover omlx models: {e}")
+            return []
+
     if provider == "azure":
         endpoint = config.get("endpoint")
         api_version = config.get("api_version", "2024-10-21")
@@ -578,6 +628,27 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             logger.warning(f"Failed to discover Google models: {e}")
             return []
 
+    if provider == "cohere":
+        # Cohere is not OpenAI-compatible; use esperanto's bespoke discovery.
+        if not api_key:
+            return []
+        try:
+            import asyncio
+
+            from esperanto import AIFactory
+
+            models = await asyncio.to_thread(
+                AIFactory.get_provider_models, "cohere", api_key=api_key
+            )
+            return [
+                {"name": m.id, "provider": "cohere"}
+                for m in models
+                if m.type in ("language", "embedding")
+            ]
+        except Exception as e:
+            logger.warning(f"Failed to discover Cohere models: {e}")
+            return []
+
     # Standard OpenAI-style API discovery
     discovery_url = url_map.get(provider)
     user_supplied_url = False
@@ -610,7 +681,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             response.raise_for_status()
             data = response.json()
 
-            return [
+            discovered = [
                 {
                     "name": m.get("id", ""),
                     "provider": provider,
@@ -619,6 +690,16 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
+            # OpenRouter's /models listing does not reliably surface its TTS/STT
+            # catalog, so seed the audio model ids esperanto ships as defaults.
+            if provider == "openrouter":
+                seen = {m["name"] for m in discovered}
+                for names in OPENROUTER_AUDIO_MODELS.values():
+                    for name in names:
+                        if name not in seen:
+                            discovered.append({"name": name, "provider": provider})
+                            seen.add(name)
+            return discovered
     except Exception as e:
         logger.warning(f"Failed to discover {provider} models: {e}")
         return []

@@ -64,11 +64,26 @@ PROVIDER_CONFIG = {
     "ollama": {
         "env_var": "OLLAMA_API_BASE",
     },
+    # oMLX: Esperanto built-in profile (OMLX_API_KEY / OMLX_API_BASE).
+    # Optional API key; base_url from the credential sets OMLX_API_BASE via
+    # _provision_simple_provider. No OPENAI_COMPATIBLE_* mirroring.
+    "omlx": {
+        "env_var": "OMLX_API_KEY",
+    },
     "dashscope": {
         "env_var": "DASHSCOPE_API_KEY",
     },
     "minimax": {
         "env_var": "MINIMAX_API_KEY",
+    },
+    "novita": {
+        "env_var": "NOVITA_API_KEY",
+    },
+    "ppq": {
+        "env_var": "PPQ_API_KEY",
+    },
+    "cohere": {
+        "env_var": "COHERE_API_KEY",
     },
 }
 

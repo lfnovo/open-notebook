@@ -1,0 +1,22 @@
+frontend/src/lib/hooks/use-modal-manager.ts
+  s_068a6f20b755a6::t_8a61473c0ab13d 22-24,30,35,40
+  s_068a6f20b755a6::t_b5e1368f8dc058 3
+frontend/src/components/sources/ChatPanel.test.tsx
+  s_068a6f20b755a6::t_d7c9b8b77cc683 47-73,85-86,88,90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "44239078dc4684223001b98b8fd7be9d31b97923",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

@@ -353,6 +353,9 @@ class TestAudioProviderWiring:
         assert "text_to_speech" in PROVIDER_MODALITIES["xai"]
         # Deepgram now also does STT (Nova/Whisper), added alongside TTS.
         assert PROVIDER_MODALITIES["deepgram"] == ["text_to_speech", "speech_to_text"]
+        # OpenRouter added TTS/STT in esperanto 2.25.0 (issue #987).
+        assert "speech_to_text" in PROVIDER_MODALITIES["openrouter"]
+        assert "text_to_speech" in PROVIDER_MODALITIES["openrouter"]
 
     def test_deepgram_has_env_and_test_model(self):
         from api.credentials_service import PROVIDER_ENV_CONFIG

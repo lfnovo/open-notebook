@@ -173,6 +173,16 @@ PPQ_MODEL_TYPES = {
     "text_to_speech": ["aura", "tts", "eleven"],
 }
 
+# OpenRouter added OpenAI-compatible TTS/STT endpoints (esperanto 2.25.0), but
+# its /models listing is dominated by language models and does not reliably tag
+# audio models — so audio discovery is a small static seed of the model ids
+# esperanto ships as working defaults. Users can add any other vendor/model id
+# manually via the custom-model input. Keys are esperanto's default models.
+OPENROUTER_AUDIO_MODELS: Dict[str, List[str]] = {
+    "text_to_speech": ["microsoft/mai-voice-2"],
+    "speech_to_text": ["openai/whisper-1", "openai/whisper-large-v3"],
+}
+
 
 def classify_model_type(model_name: str, provider: str) -> str:
     """
@@ -324,7 +334,6 @@ discover_groq_models = _make_openai_compat_discoverer("groq")
 discover_mistral_models = _make_openai_compat_discoverer("mistral")
 discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
 discover_xai_models = _make_openai_compat_discoverer("xai")
-discover_openrouter_models = _make_openai_compat_discoverer("openrouter")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
 discover_minimax_models = _make_openai_compat_discoverer("minimax")
 discover_novita_models = _make_openai_compat_discoverer("novita")
@@ -473,6 +482,39 @@ async def discover_ollama_models() -> List[DiscoveredModel]:
     except Exception as e:
         logger.warning(f"Failed to discover Ollama models: {e}")
 
+    return models
+
+
+async def discover_openrouter_models() -> List[DiscoveredModel]:
+    """Discover OpenRouter models (language/embedding + a static audio seed).
+
+    OpenRouter's OpenAI-compatible /models endpoint lists language (and some
+    embedding) models but does not reliably surface its TTS/STT catalog, so we
+    combine live API discovery with a small static seed of the audio model ids
+    esperanto ships as defaults (see OPENROUTER_AUDIO_MODELS). Returns [] when
+    live discovery yields nothing (missing key, HTTP/network error), so the
+    audio seed is never registered on top of a failed discovery.
+    """
+    models = await discover_openai_compatible_provider("openrouter")
+
+    # Only seed the static audio models when live discovery actually returned
+    # something. An empty result means the /models call failed (invalid key,
+    # HTTP error, network) — seeding on top of a failed discovery would make it
+    # look successful and auto-register unusable audio models during sync.
+    if not models:
+        return models
+
+    seen = {(m.name, m.model_type) for m in models}
+    for model_type, names in OPENROUTER_AUDIO_MODELS.items():
+        for name in names:
+            if (name, model_type) not in seen:
+                models.append(
+                    DiscoveredModel(
+                        name=name,
+                        provider="openrouter",
+                        model_type=model_type,
+                    )
+                )
     return models
 
 

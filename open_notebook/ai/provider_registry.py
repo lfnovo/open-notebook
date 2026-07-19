@@ -134,7 +134,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ProviderSpec(
             name="openrouter",
             display_name="OpenRouter",
-            modalities=("language", "embedding"),
+            modalities=_ALL_MODALITIES,
             required_env=("OPENROUTER_API_KEY",),
             test_model="openai/gpt-3.5-turbo",
             docs_url="https://openrouter.ai/keys",

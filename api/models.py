@@ -574,6 +574,7 @@ SupportedProvider = Literal[
     "elevenlabs",
     "deepgram",
     "ollama",
+    "omlx",
     "azure",
     "vertex",
     "openai_compatible",

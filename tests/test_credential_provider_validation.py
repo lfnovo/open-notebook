@@ -38,6 +38,7 @@ KNOWN_GOOD_PROVIDERS = [
     "elevenlabs",
     "deepgram",
     "ollama",
+    "omlx",
     "azure",
     "vertex",
     "openai_compatible",

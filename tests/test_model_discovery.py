@@ -66,6 +66,7 @@ class TestOpenAICompatTable:
             "anthropic",
             "google",
             "ollama",
+            "omlx",
             "groq",
             "mistral",
             "deepseek",

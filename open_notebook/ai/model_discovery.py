@@ -723,6 +723,71 @@ async def discover_openai_compatible_models() -> List[DiscoveredModel]:
     return models
 
 
+_OMLX_DEFAULT_BASE_URL = "http://localhost:11435/v1"
+
+
+async def discover_omlx_models() -> List[DiscoveredModel]:
+    """
+    Fetch available models from a local oMLX server (OpenAI-compatible /v1/models).
+
+    Uses Credential config when present, else OMLX_API_BASE / OMLX_API_KEY.
+    Default base URL is http://localhost:11435/v1 (avoids SurrealDB on 8000).
+    API key is optional (oMLX is a local no-auth endpoint by default).
+    """
+    api_key = None
+    base_url = None
+
+    try:
+        credentials = await Credential.get_by_provider("omlx")
+        if credentials:
+            cred = credentials[0]
+            config = cred.to_esperanto_config()
+            api_key = config.get("api_key")
+            base_url = (config.get("base_url") or "").rstrip("/")
+    except Exception as e:
+        logger.warning(f"Failed to read omlx config from Credential: {e}")
+
+    if not api_key:
+        api_key = os.environ.get("OMLX_API_KEY")
+    if not base_url:
+        base_url = os.environ.get("OMLX_API_BASE", _OMLX_DEFAULT_BASE_URL).rstrip("/")
+
+    models: List[DiscoveredModel] = []
+    try:
+        target = await prepare_pinned_http_target(_models_endpoint(base_url), "omlx")
+        headers = dict(target.headers)
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                target.url,
+                headers=headers,
+                timeout=30.0,
+                extensions=target.extensions,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            for model in data.get("data", []):
+                model_id = model.get("id", "")
+                if model_id:
+                    model_type = classify_model_type(model_id, "openai")
+                    models.append(
+                        DiscoveredModel(
+                            name=model_id,
+                            provider="omlx",
+                            model_type=model_type,
+                        )
+                    )
+    except httpx.HTTPStatusError as e:
+        logger.warning(f"Failed to discover omlx models: HTTP {e.response.status_code}")
+    except Exception as e:
+        logger.warning(f"Failed to discover omlx models: {e}")
+
+    return models
+
+
 # =============================================================================
 # Main Discovery Functions
 # =============================================================================
@@ -733,6 +798,7 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "anthropic": discover_anthropic_models,
     "google": discover_google_models,
     "ollama": discover_ollama_models,
+    "omlx": discover_omlx_models,
     "groq": discover_groq_models,
     "mistral": discover_mistral_models,
     "deepseek": discover_deepseek_models,

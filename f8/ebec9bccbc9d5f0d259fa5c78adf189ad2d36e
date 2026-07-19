@@ -1,0 +1,39 @@
+open_notebook/ai/provider_registry.py
+  s_068a6f20b755a6::t_dd6db79b159510 137
+docs/5-CONFIGURATION/ai-providers.md
+  s_068a6f20b755a6::t_dd6db79b159510 228-234
+README.md
+  s_068a6f20b755a6::t_dd6db79b159510 241
+tests/test_model_discovery.py
+  s_068a6f20b755a6::t_dd6db79b159510 16,20,190-220
+  s_068a6f20b755a6::t_d3cc921dfa4572 221-222
+CHANGELOG.md
+  s_068a6f20b755a6::t_dd6db79b159510 11
+open_notebook/ai/model_discovery.py
+  s_068a6f20b755a6::t_dd6db79b159510 176-185,488-517
+  s_068a6f20b755a6::t_f43a960108205d 518-520
+open_notebook/ai/connection_tester.py
+  s_068a6f20b755a6::t_dd6db79b159510 237-241
+api/credentials_service.py
+  s_068a6f20b755a6::t_dd6db79b159510 20,582,591-600
+docs/4-AI-PROVIDERS/index.md
+  s_068a6f20b755a6::t_dd6db79b159510 53-54
+tests/test_credentials_api.py
+  s_068a6f20b755a6::t_dd6db79b159510 356-358
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f8ebec9bccbc9d5f0d259fa5c78adf189ad2d36e",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

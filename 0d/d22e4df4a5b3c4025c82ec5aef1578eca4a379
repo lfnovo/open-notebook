@@ -1,0 +1,51 @@
+CHANGELOG.md
+  s_068a6f20b755a6::t_8f91395b3b8bf9 12
+tests/test_anthropic_compatible_provider.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 1-299
+api/routers/models.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 447-453,497-502
+open_notebook/ai/key_provider.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 221-223,230,235-236,239-240,246-257,290-291,320-322
+tests/test_model_discovery.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 74
+docs/5-CONFIGURATION/ai-providers.md
+  s_068a6f20b755a6::t_1ac208c5576ab0 118-131
+tests/test_credential_provider_validation.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 41,157-164,175-188
+open_notebook/ai/models.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 1,14,220-235,239-251,253-257,261,266-268
+open_notebook/ai/provider_registry.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 230-243
+open_notebook/ai/model_discovery.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 16,614-674,694
+tests/test_credentials_api.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 205-249
+open_notebook/ai/connection_tester.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 74-85,248-290
+open_notebook/ai/provision.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 1-2,12-39,91
+api/routers/credentials.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 30,70-71,285-288
+tests/test_models_api.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 122-150
+api/models.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 577,620-639,668-673
+api/credentials_service.py
+  s_068a6f20b755a6::t_1ac208c5576ab0 17-18,110-117,152-154,160,245,274-287,484-514
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0dd22e4df4a5b3c4025c82ec5aef1578eca4a379",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

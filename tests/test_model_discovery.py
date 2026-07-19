@@ -13,9 +13,11 @@ from open_notebook.ai import model_discovery
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
     OPENAI_COMPAT_PROVIDERS,
+    OPENROUTER_AUDIO_MODELS,
     PROVIDER_DISCOVERY_FUNCTIONS,
     discover_anthropic_models,
     discover_openai_compatible_provider,
+    discover_openrouter_models,
 )
 
 
@@ -178,6 +180,39 @@ class TestGenericOpenAICompatDiscovery:
         # OpenRouter models are always registered as language models
         assert models[0].model_type == "language"
         assert models[0].description == "Acme Embedding X"
+
+
+class TestOpenRouterDiscovery:
+    """discover_openrouter_models combines API discovery with an audio seed."""
+
+    @pytest.mark.asyncio
+    async def test_missing_key_returns_empty(self, monkeypatch):
+        monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+        assert await discover_openrouter_models() == []
+
+    @pytest.mark.asyncio
+    async def test_seeds_audio_models_alongside_api_models(self, monkeypatch):
+        def handler(url, headers, params, timeout):
+            return json_response(
+                url,
+                {"data": [{"id": "openai/gpt-4o", "name": "GPT-4o"}]},
+            )
+
+        monkeypatch.setenv("OPENROUTER_API_KEY", "or-test")
+        monkeypatch.setattr(
+            model_discovery.httpx, "AsyncClient", make_fake_client(handler)
+        )
+
+        models = await discover_openrouter_models()
+        by_type = {(m.name, m.model_type) for m in models}
+
+        # Language model from the /models endpoint is preserved.
+        assert ("openai/gpt-4o", "language") in by_type
+        # The esperanto default audio models are seeded.
+        for model_type, names in OPENROUTER_AUDIO_MODELS.items():
+            for name in names:
+                assert (name, model_type) in by_type
+        assert all(m.provider == "openrouter" for m in models)
 
 
 class TestAnthropicDiscovery:

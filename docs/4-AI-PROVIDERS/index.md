@@ -50,7 +50,8 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 - Speed: Varies by model
 - Quality: Varies by model
 - Best for: Model comparison, testing, unified billing
-- Advantage: One API key for 100+ models from different providers
+- Advantage: One API key for 100+ models from different providers, plus
+  text-to-speech and speech-to-text models
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#openrouter)
 

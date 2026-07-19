@@ -17,6 +17,7 @@ from pydantic import SecretStr
 from api.models import CredentialResponse
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
+    OPENROUTER_AUDIO_MODELS,
     classify_model_type,
     fetch_anthropic_model_ids,
 )
@@ -553,7 +554,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             response.raise_for_status()
             data = response.json()
 
-            return [
+            discovered = [
                 {
                     "name": m.get("id", ""),
                     "provider": provider,
@@ -562,6 +563,16 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 for m in data.get("data", [])
                 if m.get("id")
             ]
+            # OpenRouter's /models listing does not reliably surface its TTS/STT
+            # catalog, so seed the audio model ids esperanto ships as defaults.
+            if provider == "openrouter":
+                seen = {m["name"] for m in discovered}
+                for names in OPENROUTER_AUDIO_MODELS.values():
+                    for name in names:
+                        if name not in seen:
+                            discovered.append({"name": name, "provider": provider})
+                            seen.add(name)
+            return discovered
     except Exception as e:
         logger.warning(f"Failed to discover {provider} models: {e}")
         return []

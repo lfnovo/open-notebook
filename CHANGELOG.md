@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **OpenRouter now supports text-to-speech and speech-to-text**, not just LLMs and embeddings (esperanto 2.25.0). The provider's modalities were extended so the Settings UI offers TTS/STT when registering OpenRouter models. Because OpenRouter's `/models` listing does not reliably tag audio models, discovery seeds the working defaults esperanto ships — `microsoft/mai-voice-2` (TTS) and `openai/whisper-1` + `openai/whisper-large-v3` (STT) — alongside the API-discovered language models; any other `vendor/model` id can be added manually. Note that `microsoft/mai-voice-2` uses Microsoft neural voice names (e.g. `en-US-AvaNeural`), not OpenAI's `alloy`/`nova` set (#987)
 - Newer ElevenLabs models are now offered in model discovery: `eleven_v3`, `eleven_flash_v2_5` and `eleven_flash_v2` for text-to-speech, and `scribe_v2` for speech-to-text — alongside the existing models. Esperanto passes the `model_id` straight through to ElevenLabs, so no provider changes were needed (#1167)
 
 ### Fixed

@@ -159,6 +159,35 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             openai_compat_discovery_url="https://api.minimax.io/v1/models",
         ),
         ProviderSpec(
+            name="novita",
+            display_name="Novita",
+            modalities=_LANGUAGE_ONLY,
+            required_env=("NOVITA_API_KEY",),
+            test_model="moonshotai/kimi-k2.5",
+            docs_url="https://novita.ai/settings/key-management",
+            openai_compat_discovery_url="https://api.novita.ai/openai/models",
+        ),
+        ProviderSpec(
+            name="ppq",
+            display_name="PayPerQ",
+            modalities=_ALL_MODALITIES,
+            required_env=("PPQ_API_KEY",),
+            test_model="auto",
+            docs_url="https://ppq.ai",
+            openai_compat_discovery_url="https://api.ppq.ai/v1/models",
+        ),
+        ProviderSpec(
+            name="cohere",
+            display_name="Cohere",
+            # Native v2 API (/v2/chat, /v2/embed) — NOT OpenAI-compatible, so no
+            # openai_compat_discovery_url; discovery is bespoke (esperanto's
+            # AIFactory.get_provider_models). Reranking is out of scope (#1087).
+            modalities=("language", "embedding"),
+            required_env=("COHERE_API_KEY",),
+            test_model="command-a-03-2025",
+            docs_url="https://dashboard.cohere.com/api-keys",
+        ),
+        ProviderSpec(
             name="voyage",
             display_name="Voyage AI",
             modalities=("embedding",),
@@ -179,7 +208,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ProviderSpec(
             name="deepgram",
             display_name="Deepgram",
-            modalities=("text_to_speech",),
+            modalities=("text_to_speech", "speech_to_text"),
             required_env=("DEEPGRAM_API_KEY",),
             test_model="aura-2-thalia-en",
             test_model_type="text_to_speech",

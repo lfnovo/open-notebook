@@ -150,6 +150,9 @@ ELEVENLABS_MODEL_TYPES = {
 }
 
 DEEPGRAM_MODEL_TYPES = {
+    # Aura voices are TTS; Nova/Whisper transcription models are STT. STT is
+    # checked first (specificity), so the "-en" Aura voices stay TTS.
+    "speech_to_text": ["nova", "whisper", "enhanced", "base"],
     "text_to_speech": ["aura"],
 }
 
@@ -159,6 +162,15 @@ DASHSCOPE_MODEL_TYPES = {
 
 MINIMAX_MODEL_TYPES = {
     "language": ["minimax", "abab"],
+}
+
+# PPQ (PayPerQ) is a multi-modality OpenAI-compatible gateway that proxies many
+# upstream providers, so its model ids carry recognisable substrings. Classify
+# by those so discovered models land in sensible slots (default: language).
+PPQ_MODEL_TYPES = {
+    "embedding": ["text-embedding", "embed"],
+    "speech_to_text": ["whisper", "nova-", "scribe"],
+    "text_to_speech": ["aura", "tts", "eleven"],
 }
 
 # OpenRouter added OpenAI-compatible TTS/STT endpoints (esperanto 2.25.0), but
@@ -193,6 +205,7 @@ def classify_model_type(model_name: str, provider: str) -> str:
         "deepgram": DEEPGRAM_MODEL_TYPES,
         "dashscope": DASHSCOPE_MODEL_TYPES,
         "minimax": MINIMAX_MODEL_TYPES,
+        "ppq": PPQ_MODEL_TYPES,
     }
 
     mapping = type_mappings.get(provider, {})
@@ -323,6 +336,8 @@ discover_deepseek_models = _make_openai_compat_discoverer("deepseek")
 discover_xai_models = _make_openai_compat_discoverer("xai")
 discover_dashscope_models = _make_openai_compat_discoverer("dashscope")
 discover_minimax_models = _make_openai_compat_discoverer("minimax")
+discover_novita_models = _make_openai_compat_discoverer("novita")
+discover_ppq_models = _make_openai_compat_discoverer("ppq")
 
 
 # =============================================================================
@@ -555,11 +570,12 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
 
 
 async def discover_deepgram_models() -> List[DiscoveredModel]:
-    """Return a curated static list of Deepgram Aura TTS voices.
+    """Return a curated static list of Deepgram Aura TTS voices and Nova STT models.
 
-    Deepgram has no model-listing API and treats each voice as a model id.
-    This is a representative subset of the Aura-2 English catalog; users can
-    add any other voice manually via the custom-model input.
+    Deepgram has no model-listing API and treats each voice/model as an id.
+    The TTS list is a representative subset of the Aura-2 English catalog; the
+    STT list covers the Nova and Whisper transcription models. Users can add any
+    other id manually via the custom-model input.
     """
     api_key = os.environ.get("DEEPGRAM_API_KEY")
     if not api_key:
@@ -578,10 +594,65 @@ async def discover_deepgram_models() -> List[DiscoveredModel]:
         "aura-2-atlas-en",
     ]
 
-    return [
+    # Deepgram transcription (STT) models, e.g. nova-3.
+    deepgram_stt_models = [
+        "nova-3",
+        "nova-2",
+        "whisper-large",
+        "whisper-medium",
+        "whisper-small",
+        "whisper-base",
+        "whisper-tiny",
+    ]
+
+    discovered = [
         DiscoveredModel(name=m, provider="deepgram", model_type="text_to_speech")
         for m in deepgram_voices
     ]
+    discovered.extend(
+        DiscoveredModel(name=m, provider="deepgram", model_type="speech_to_text")
+        for m in deepgram_stt_models
+    )
+    return discovered
+
+
+async def discover_cohere_models() -> List[DiscoveredModel]:
+    """Discover Cohere models via esperanto's static discovery.
+
+    Cohere is not OpenAI-compatible (native /v2 API), so it can't use the
+    generic /models table. esperanto's AIFactory.get_provider_models tags each
+    model with a type from its supported endpoints; we surface only the language
+    and embedding models. Reranking is out of scope (tracked at #1087).
+    """
+    api_key = os.environ.get("COHERE_API_KEY")
+    if not api_key:
+        return []
+
+    try:
+        from esperanto import AIFactory
+
+        # esperanto's discovery is synchronous (httpx.get); run it off the loop.
+        models = await asyncio.to_thread(
+            AIFactory.get_provider_models, "cohere", api_key=api_key
+        )
+    except Exception as e:
+        logger.warning(f"Failed to discover Cohere models: {e}")
+        return []
+
+    discovered: List[DiscoveredModel] = []
+    for model in models:
+        # Only language and embedding are supported modalities here; skip
+        # rerank/None-typed models.
+        if model.type not in ("language", "embedding"):
+            continue
+        discovered.append(
+            DiscoveredModel(
+                name=model.id,
+                provider="cohere",
+                model_type=model.type,
+            )
+        )
+    return discovered
 
 
 async def discover_openai_compatible_models() -> List[DiscoveredModel]:
@@ -673,6 +744,9 @@ PROVIDER_DISCOVERY_FUNCTIONS = {
     "openai_compatible": discover_openai_compatible_models,
     "dashscope": discover_dashscope_models,
     "minimax": discover_minimax_models,
+    "novita": discover_novita_models,
+    "ppq": discover_ppq_models,
+    "cohere": discover_cohere_models,
     "azure": None,  # Azure requires credential-based discovery (different auth)
     "vertex": None,  # Vertex requires credential-based discovery (service account)
 }

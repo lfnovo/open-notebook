@@ -56,6 +56,8 @@ class TestOpenAICompatTable:
             "openrouter",
             "dashscope",
             "minimax",
+            "novita",
+            "ppq",
         }
 
     def test_provider_discovery_functions_keys_unchanged(self):
@@ -75,6 +77,9 @@ class TestOpenAICompatTable:
             "openai_compatible",
             "dashscope",
             "minimax",
+            "novita",
+            "ppq",
+            "cohere",
             "azure",
             "vertex",
         }
@@ -328,3 +333,77 @@ class TestCredentialServiceAnthropicDiscovery:
 
         models = await credentials_service.discover_with_config("anthropic", {})
         assert models == []
+
+
+class TestNewEsperantoProviders:
+    """Issue #1170: Cohere, Deepgram STT, PPQ and Novita wiring."""
+
+    def test_ppq_and_novita_use_openai_compat_discovery(self):
+        assert (
+            OPENAI_COMPAT_PROVIDERS["ppq"].url == "https://api.ppq.ai/v1/models"
+        )
+        assert (
+            OPENAI_COMPAT_PROVIDERS["novita"].url
+            == "https://api.novita.ai/openai/models"
+        )
+
+    def test_ppq_classification_by_substring(self):
+        from open_notebook.ai.model_discovery import classify_model_type
+
+        assert classify_model_type("openai/text-embedding-3-small", "ppq") == "embedding"
+        assert classify_model_type("nova-3", "ppq") == "speech_to_text"
+        assert classify_model_type("deepgram_aura_2", "ppq") == "text_to_speech"
+        assert classify_model_type("auto", "ppq") == "language"
+
+    @pytest.mark.asyncio
+    async def test_deepgram_discovery_includes_stt(self, monkeypatch):
+        from open_notebook.ai.model_discovery import discover_deepgram_models
+
+        monkeypatch.setenv("DEEPGRAM_API_KEY", "dg-test")
+        models = await discover_deepgram_models()
+        by_type = {m.model_type for m in models}
+        assert "text_to_speech" in by_type
+        assert "speech_to_text" in by_type
+        stt_names = {m.name for m in models if m.model_type == "speech_to_text"}
+        assert "nova-3" in stt_names
+
+    @pytest.mark.asyncio
+    async def test_cohere_discovery_missing_key_returns_empty(self, monkeypatch):
+        from open_notebook.ai.model_discovery import discover_cohere_models
+
+        monkeypatch.delenv("COHERE_API_KEY", raising=False)
+        assert await discover_cohere_models() == []
+
+    @pytest.mark.asyncio
+    async def test_cohere_discovery_filters_to_language_and_embedding(
+        self, monkeypatch
+    ):
+        from types import SimpleNamespace
+
+        from open_notebook.ai import model_discovery as md
+
+        monkeypatch.setenv("COHERE_API_KEY", "co-test")
+
+        fake_models = [
+            SimpleNamespace(id="command-a-03-2025", type="language"),
+            SimpleNamespace(id="embed-v4.0", type="embedding"),
+            SimpleNamespace(id="rerank-v3.5", type="reranker"),
+            SimpleNamespace(id="mystery", type=None),
+        ]
+
+        class FakeFactory:
+            @staticmethod
+            def get_provider_models(provider, api_key=None):
+                assert provider == "cohere"
+                return fake_models
+
+        import esperanto
+
+        monkeypatch.setattr(esperanto, "AIFactory", FakeFactory)
+
+        models = await md.discover_cohere_models()
+        got = {(m.name, m.model_type) for m in models}
+        assert got == {
+            ("command-a-03-2025", "language"),
+            ("embed-v4.0", "embedding"),
+        }

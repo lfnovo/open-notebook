@@ -328,6 +328,90 @@ Heavy use: Depends on models chosen
 
 ---
 
+### Cohere
+
+**Cost:** Usage-based
+
+**Get Your API Key:**
+1. Go to https://dashboard.cohere.com/api-keys
+2. Create an account (if needed)
+3. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **Cohere**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Available Models:**
+- `command-a-03-2025` — Latest Command language model
+- `embed-v4.0` — Latest embedding model (assign the **Embedding** type when registering)
+
+**Notes:**
+- Cohere uses its native v2 API (`/v2/chat`, `/v2/embed`), not an OpenAI-compatible endpoint.
+- Reranking is not yet available in Open Notebook (tracked separately).
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the Cohere dashboard
+- "Model not available" → Re-discover models from the credential
+
+---
+
+### Novita
+
+**Cost:** Pay-per-model (competitive)
+
+**Get Your API Key:**
+1. Go to https://novita.ai/settings/key-management
+2. Create an account (if needed)
+3. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **Novita**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Notes:**
+- Novita is an OpenAI-compatible gateway (`https://api.novita.ai/openai`) for open-weight LLMs.
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the Novita console
+- "Model not available" → Re-discover models from the credential
+
+---
+
+### PayPerQ (PPQ)
+
+**Cost:** Pay-as-you-go across the providers it routes to
+
+**Get Your API Key:**
+1. Go to https://ppq.ai
+2. Create an account (if needed)
+3. Create a new API key
+
+**Configure in Open Notebook:**
+1. Go to **Settings** → **API Keys**
+2. Click **Add Credential**
+3. Select provider: **PayPerQ**
+4. Give it a name, paste your API key
+5. Click **Save**, then **Test Connection**
+6. Click **Discover Models** → **Register Models**
+
+**Notes:**
+- PPQ is a multi-modality OpenAI-compatible gateway (`https://api.ppq.ai/v1`) offering language, embedding, speech-to-text and text-to-speech models.
+- Discovered models are classified by name; adjust the model type when registering if a model lands in the wrong slot.
+
+**Troubleshooting:**
+- "Invalid API key" → Check the key in the PPQ dashboard
+- "Model not available" → Re-discover models from the credential
+
+---
+
 ## Self-Hosted / Local
 
 ### Ollama (Recommended for Local)

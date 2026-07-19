@@ -18,10 +18,13 @@ so the internal websocket is left un-proxied.
 """
 
 import os
+from urllib.parse import urlsplit
 
 # Hosts the DB is reachable at internally. These must never be routed through
 # an external proxy. Covers Docker (host.docker.internal, surrealdb service
-# name) and local (localhost / 127.0.0.1) topologies.
+# name) and local (localhost / 127.0.0.1) topologies. Deployments that point
+# at a custom SurrealDB host/IP have it added dynamically - see
+# _configured_db_host().
 INTERNAL_NO_PROXY_HOSTS = (
     "host.docker.internal",
     "surrealdb",
@@ -39,13 +42,54 @@ def _split_hosts(value: str) -> list[str]:
     return [h.strip() for h in value.split(",") if h.strip()]
 
 
+def _configured_db_host() -> str | None:
+    """Best-effort extraction of the SurrealDB host from the environment.
+
+    Mirrors the resolution order in ``open_notebook.database.repository`` -
+    ``SURREAL_URL`` wins, otherwise the legacy ``SURREAL_ADDRESS``. Returns the
+    bare host (no scheme/port/path), or ``None`` when unset or unparseable.
+
+    Parsed here from the env directly (rather than importing repository) to
+    avoid a circular import - repository imports this module at load time.
+    """
+    candidate = os.environ.get("SURREAL_URL", "").strip()
+    if not candidate:
+        candidate = os.environ.get("SURREAL_ADDRESS", "").strip()
+    if not candidate:
+        return None
+
+    # urlsplit only populates .hostname when a scheme is present; add a dummy
+    # one for bare ``host`` / ``host:port`` values (e.g. SURREAL_ADDRESS).
+    if "://" not in candidate:
+        candidate = "ws://" + candidate
+
+    try:
+        host = urlsplit(candidate).hostname
+    except ValueError:
+        return None
+    return host or None
+
+
+def _internal_hosts() -> list[str]:
+    """The default internal hosts plus the configured SurrealDB host, if any."""
+    hosts = list(INTERNAL_NO_PROXY_HOSTS)
+    db_host = _configured_db_host()
+    if db_host and db_host.lower() not in {h.lower() for h in hosts}:
+        hosts.append(db_host)
+    return hosts
+
+
 def ensure_internal_no_proxy() -> None:
     """Ensure internal DB hosts bypass any configured proxy.
 
-    Merges :data:`INTERNAL_NO_PROXY_HOSTS` into both ``no_proxy`` and
-    ``NO_PROXY`` (preserving existing entries and their order) and writes the
-    combined value back to both env vars. Idempotent - safe to call more than
-    once and from multiple entrypoints (API + worker).
+    Merges the internal hosts (see :func:`_internal_hosts`) into both
+    ``no_proxy`` and ``NO_PROXY`` (preserving existing entries and their order)
+    and writes the combined value back to both env vars. Idempotent - safe to
+    call more than once and from multiple entrypoints (API + worker).
+
+    A wildcard (``*``) already bypasses the proxy for every host, so if the
+    user set ``no_proxy``/``NO_PROXY`` to (or containing) a bare ``*`` we leave
+    their configuration untouched rather than turning it into a finite list.
     """
     # Collect existing entries from whichever variants the user set, de-duped
     # while preserving order.
@@ -53,6 +97,10 @@ def ensure_internal_no_proxy() -> None:
     seen: set[str] = set()
     for var in _NO_PROXY_ENV_VARS:
         for host in _split_hosts(os.environ.get(var, "")):
+            # Wildcard is terminal: it already bypasses everything (including
+            # the internal DB hosts), so don't narrow it to a finite list.
+            if host == "*":
+                return
             key = host.lower()
             if key not in seen:
                 seen.add(key)
@@ -60,7 +108,7 @@ def ensure_internal_no_proxy() -> None:
 
     # Append internal hosts that aren't already present.
     merged = list(existing)
-    for host in INTERNAL_NO_PROXY_HOSTS:
+    for host in _internal_hosts():
         if host.lower() not in seen:
             seen.add(host.lower())
             merged.append(host)

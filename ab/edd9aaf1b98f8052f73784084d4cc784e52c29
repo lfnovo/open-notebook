@@ -1,0 +1,24 @@
+frontend/src/lib/locales/zh-TW/index.ts
+  s_068a6f20b755a6::t_119d425732731c 644
+frontend/src/lib/locales/index.test.ts
+  s_068a6f20b755a6::t_07e86b4ba65f2f 17-49
+  s_068a6f20b755a6::t_2205607d2ee512 69-122
+frontend/src/lib/locales/zh-CN/index.ts
+  s_068a6f20b755a6::t_e66686b672553b 644
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "abedd9aaf1b98f8052f73784084d4cc784e52c29",
+  "prompts": {},
+  "sessions": {
+    "s_068a6f20b755a6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10d0e64f-b7a2-4459-8df7-b4b4f402c43a",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

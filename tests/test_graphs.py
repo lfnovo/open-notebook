@@ -404,6 +404,8 @@ class TestContentProcessDeleteSource:
                 default_content_processing_engine_url="crawl4ai",
                 default_content_processing_engine_doc="docling",
                 docling_ocr=False,
+                docling_formulas=True,
+                docling_vision=True,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -421,6 +423,8 @@ class TestContentProcessDeleteSource:
         assert config.url_engine == "crawl4ai"
         assert config.document_engine == "docling"
         assert config.docling_ocr is False
+        assert config.docling_formulas is True
+        assert config.docling_vision is True
 
 
 # ============================================================================

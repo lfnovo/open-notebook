@@ -625,6 +625,18 @@ class TestContentSettings:
         assert settings.docling_ocr is True
         assert ContentSettings(docling_ocr=False).docling_ocr is False
 
+    def test_docling_formulas_defaults_off(self):
+        """Formula extraction is off by default (matches content-core)."""
+        settings = ContentSettings()
+        assert settings.docling_formulas is False
+        assert ContentSettings(docling_formulas=True).docling_formulas is True
+
+    def test_docling_vision_defaults_off(self):
+        """Image/chart vision is off by default (matches content-core)."""
+        settings = ContentSettings()
+        assert settings.docling_vision is False
+        assert ContentSettings(docling_vision=True).docling_vision is True
+
 
 # ============================================================================
 # TEST SUITE 9: Episode Profile Validation

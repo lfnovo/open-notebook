@@ -71,6 +71,18 @@ TEST_MODELS: Dict[str, Tuple[Optional[str], str]] = {
 }
 
 
+def normalize_anthropic_compatible_base_url(base_url: str) -> str:
+    """Return an Anthropic-compatible API base URL ending in ``/v1``.
+
+    Accepts a bare host, a `/v1` URL, or a `/v1/models` URL and collapses them
+    all to the `/v1` form so callers can append `/models` exactly once.
+    """
+    normalized_url = base_url.strip().rstrip("/")
+    if normalized_url.endswith("/models"):
+        normalized_url = normalized_url.removesuffix("/models").rstrip("/")
+    return normalized_url if normalized_url.endswith("/v1") else f"{normalized_url}/v1"
+
+
 async def _test_azure_connection(
     endpoint: Optional[str] = None,
     api_key: Optional[str] = None,
@@ -223,6 +235,59 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
                 return False, "API key lacks required permissions"
             else:
                 return False, f"Server returned status {response.status_code}"
+
+    except ValueError as e:
+        return False, str(e)
+    except httpx.ConnectError:
+        return False, "Cannot connect to server. Check the URL is correct."
+    except httpx.TimeoutException:
+        return False, "Connection timed out. Check if server is accessible."
+    except Exception as e:
+        return False, f"Connection error: {str(e)[:100]}"
+
+
+async def _test_anthropic_compatible_connection(
+    base_url: str, api_key: Optional[str] = None
+) -> Tuple[bool, str]:
+    """Test Anthropic-compatible server connectivity."""
+    try:
+        normalized_base_url = normalize_anthropic_compatible_base_url(base_url)
+        models_url = f"{normalized_base_url}/models"
+        # Pin DNS at request time (DNS-rebinding TOCTOU), mirroring
+        # _test_openai_compatible_connection.
+        target = await prepare_pinned_http_target(models_url, "anthropic_compatible")
+        headers = dict(target.headers)
+        headers["anthropic-version"] = "2023-06-01"
+        if api_key:
+            headers["x-api-key"] = api_key
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(
+                target.url,
+                headers=headers,
+                extensions=target.extensions,
+            )
+
+            if response.status_code == 200:
+                models = response.json().get("data", [])
+                model_count = len(models)
+                if model_count > 0:
+                    model_names = [m.get("id", "unknown") for m in models[:3]]
+                    model_list = ", ".join(model_names)
+                    if model_count > 3:
+                        model_list += f" (+{model_count - 3} more)"
+                    return True, f"Connected. {model_count} models available: {model_list}"
+                return True, "Connected successfully (no models listed)"
+            if response.status_code == 401:
+                return False, "Invalid API key"
+            if response.status_code == 403:
+                return False, "API key lacks required permissions"
+            if response.status_code in (404, 405):
+                return True, (
+                    f"Connected, but model listing is unsupported "
+                    f"(status {response.status_code}); add models manually."
+                )
+            return False, f"Server returned status {response.status_code}"
 
     except ValueError as e:
         return False, str(e)

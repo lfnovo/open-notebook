@@ -115,6 +115,20 @@ Opus: $10-50+/month
 
 ---
 
+### Anthropic Compatible
+
+Use this provider for services that implement the Anthropic Messages API at a custom URL.
+
+1. Go to **Settings** → **API Keys**
+2. Add an **Anthropic Compatible** credential
+3. Enter the provider's API key and base URL (the API root, with or without a trailing `/v1`)
+4. Save and test the connection
+5. Discover models, or search for and manually register a model if the endpoint does not list them
+
+Only language models are supported for Anthropic-compatible credentials.
+
+---
+
 ### Google Gemini
 
 **Cost:** ~$0.075-0.30 per 1K tokens (competitive with OpenAI)

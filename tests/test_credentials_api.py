@@ -202,6 +202,52 @@ class TestCredentialModelDiscovery:
         assert requests == ["https://llm-gateway.example.com/v1/models"]
 
     @pytest.mark.asyncio
+    async def test_anthropic_compatible_discovery_normalizes_models_path(
+        self, monkeypatch
+    ):
+        from open_notebook.utils.url_validation import PinnedHttpTarget
+
+        requests = []
+
+        class FakeAsyncClient:
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, exc_type, exc, tb):
+                return None
+
+            async def get(self, url, headers=None, timeout=None, extensions=None):
+                requests.append((url, headers))
+                return httpx.Response(
+                    200,
+                    json={"data": [{"id": "model-a"}]},
+                    request=httpx.Request("GET", url, headers=headers or {}),
+                )
+
+        async def fake_prepare_pinned(url, provider):
+            return PinnedHttpTarget(url=url)
+
+        monkeypatch.setattr(credentials_service.httpx, "AsyncClient", FakeAsyncClient)
+        monkeypatch.setattr(
+            credentials_service, "prepare_pinned_http_target", fake_prepare_pinned
+        )
+
+        await credentials_service.discover_with_config(
+            "anthropic_compatible",
+            {
+                "api_key": "sk-test",
+                "base_url": "https://llm-gateway.example.com/models",
+            },
+        )
+
+        assert requests == [
+            (
+                "https://llm-gateway.example.com/v1/models",
+                {"x-api-key": "sk-test", "anthropic-version": "2023-06-01"},
+            )
+        ]
+
+    @pytest.mark.asyncio
     async def test_openai_discovery_pins_user_supplied_base_url(self, monkeypatch):
         """OpenAI discovery with a custom base_url must go through DNS pinning:
         the rewritten (IP) URL, Host header and SNI extension reach httpx."""

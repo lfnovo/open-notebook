@@ -14,7 +14,8 @@ import httpx
 from loguru import logger
 from pydantic import SecretStr
 
-from api.models import CredentialResponse
+from api.models import CredentialResponse, validate_url_key_provider_required_fields
+from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.ai.model_discovery import (
     ANTHROPIC_FALLBACK_MODELS,
     OPENROUTER_AUDIO_MODELS,
@@ -107,6 +108,14 @@ def get_default_modalities(provider: str) -> List[str]:
     return PROVIDER_MODALITIES.get(provider.lower(), ["language"])
 
 
+def ensure_provider_required_fields(cred: Credential) -> None:
+    """Validate provider-specific required fields on a merged credential before
+    save (update path). Delegates to the shared rule in api.models so the create
+    and update paths cannot drift."""
+    api_key = cred.api_key.get_secret_value() if cred.api_key else None
+    validate_url_key_provider_required_fields(cred.provider, cred.base_url, api_key)
+
+
 def create_credential_from_env(provider: str) -> Credential:
     """Create a Credential from environment variables for a given provider."""
     modalities = get_default_modalities(provider)
@@ -150,14 +159,15 @@ def create_credential_from_env(provider: str) -> Credential:
             endpoint_stt=os.environ.get("AZURE_OPENAI_ENDPOINT_STT"),
             endpoint_tts=os.environ.get("AZURE_OPENAI_ENDPOINT_TTS"),
         )
-    elif provider == "openai_compatible":
-        api_key = os.environ.get("OPENAI_COMPATIBLE_API_KEY")
+    elif provider in ("openai_compatible", "anthropic_compatible"):
+        env_prefix = provider.upper()
+        api_key = os.environ.get(f"{env_prefix}_API_KEY")
         return Credential(
             name=name,
             provider=provider,
             modalities=modalities,
             api_key=SecretStr(api_key) if api_key else None,
-            base_url=os.environ.get("OPENAI_COMPATIBLE_BASE_URL"),
+            base_url=os.environ.get(f"{env_prefix}_BASE_URL"),
         )
     elif provider == "google":
         # Support both GOOGLE_API_KEY and GEMINI_API_KEY (fallback)
@@ -242,6 +252,7 @@ async def test_credential(credential_id: str) -> dict:
 
         from open_notebook.ai.connection_tester import (
             _is_vertex_credentials_file_error,
+            _test_anthropic_compatible_connection,
             _test_azure_connection,
             _test_ollama_connection,
             _test_openai_compatible_connection,
@@ -266,6 +277,20 @@ async def test_credential(credential_id: str) -> dict:
                     "message": "No base URL configured",
                 }
             success, message = await _test_openai_compatible_connection(
+                base_url, api_key
+            )
+            return {"provider": provider, "success": success, "message": message}
+
+        if provider == "anthropic_compatible":
+            base_url = config.get("base_url")
+            api_key = config.get("api_key")
+            if not base_url:
+                return {
+                    "provider": provider,
+                    "success": False,
+                    "message": "No base URL configured",
+                }
+            success, message = await _test_anthropic_compatible_connection(
                 base_url, api_key
             )
             return {"provider": provider, "success": success, "message": message}
@@ -477,6 +502,38 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 ]
         except Exception as e:
             logger.warning(f"Failed to discover openai_compatible models: {e}")
+            return []
+
+    if provider == "anthropic_compatible":
+        if not base_url or not api_key:
+            return []
+        try:
+            normalized_base_url = normalize_anthropic_compatible_base_url(base_url)
+            models_url = f"{normalized_base_url}/models"
+            # Pin DNS at request time (DNS-rebinding TOCTOU), mirroring the
+            # openai_compatible discovery path above.
+            target = await prepare_pinned_http_target(
+                models_url, "anthropic_compatible"
+            )
+            headers = dict(target.headers)
+            headers["x-api-key"] = api_key
+            headers["anthropic-version"] = "2023-06-01"
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    target.url,
+                    headers=headers,
+                    timeout=30.0,
+                    extensions=target.extensions,
+                )
+                response.raise_for_status()
+                data = response.json()
+                return [
+                    {"name": m.get("id", ""), "provider": "anthropic_compatible"}
+                    for m in data.get("data", [])
+                    if m.get("id")
+                ]
+        except Exception as e:
+            logger.warning(f"Failed to discover anthropic_compatible models: {e}")
             return []
 
     if provider == "omlx":

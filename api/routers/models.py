@@ -448,6 +448,13 @@ async def get_provider_availability():
             or _check_openai_compatible_support("STT")
             or _check_openai_compatible_support("TTS")
         )
+        provider_status["anthropic_compatible"] = (
+            await _check_provider_has_credential("anthropic_compatible")
+            or (
+                bool((os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL") or "").strip())
+                and bool((os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY") or "").strip())
+            )
+        )
 
         available_providers = [k for k, v in provider_status.items() if v]
         unavailable_providers = [k for k, v in provider_status.items() if not v]
@@ -491,6 +498,12 @@ async def get_provider_availability():
                     ):
                         if has_db_cred or _check_azure_support(mode):
                             supported_types[provider].append(model_type)
+            elif provider == "anthropic_compatible":
+                if (
+                    "language" in esperanto_available
+                    and "anthropic" in esperanto_available["language"]
+                ):
+                    supported_types[provider].append("language")
             else:
                 # Standard provider detection
                 for model_type, providers in esperanto_available.items():

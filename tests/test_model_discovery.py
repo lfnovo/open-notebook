@@ -76,6 +76,7 @@ class TestOpenAICompatTable:
             "elevenlabs",
             "deepgram",
             "openai_compatible",
+            "anthropic_compatible",
             "dashscope",
             "minimax",
             "novita",

@@ -361,10 +361,14 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             "scribe_v1",  # speech-to-text
         ],
         "deepgram": [
+            # TTS (Aura) voices
             "aura-2-thalia-en", "aura-2-andromeda-en", "aura-2-helena-en",
             "aura-2-apollo-en", "aura-2-arcas-en", "aura-2-asteria-en",
             "aura-2-athena-en", "aura-2-hera-en", "aura-2-hermes-en",
             "aura-2-atlas-en",
+            # STT (Nova / Whisper) transcription models
+            "nova-3", "nova-2", "whisper-large", "whisper-medium",
+            "whisper-small", "whisper-base", "whisper-tiny",
         ],
     }
 
@@ -519,6 +523,27 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 ]
         except Exception as e:
             logger.warning(f"Failed to discover Google models: {e}")
+            return []
+
+    if provider == "cohere":
+        # Cohere is not OpenAI-compatible; use esperanto's bespoke discovery.
+        if not api_key:
+            return []
+        try:
+            import asyncio
+
+            from esperanto import AIFactory
+
+            models = await asyncio.to_thread(
+                AIFactory.get_provider_models, "cohere", api_key=api_key
+            )
+            return [
+                {"name": m.id, "provider": "cohere"}
+                for m in models
+                if m.type in ("language", "embedding")
+            ]
+        except Exception as e:
+            logger.warning(f"Failed to discover Cohere models: {e}")
             return []
 
     # Standard OpenAI-style API discovery

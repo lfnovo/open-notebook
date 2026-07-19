@@ -231,15 +231,18 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
-| Deepgram     | ❌          | ❌               | ❌             | ✅             |
+| Deepgram     | ❌          | ❌               | ✅             | ✅             |
 | Azure OpenAI | ✅          | ✅               | ✅             | ✅             |
 | Mistral      | ✅          | ✅               | ✅             | ✅             |
 | DeepSeek     | ✅          | ❌               | ❌             | ❌             |
+| Cohere       | ✅          | ✅               | ❌             | ❌             |
 | Voyage       | ❌          | ✅               | ❌             | ❌             |
 | xAI          | ✅          | ❌               | ❌             | ✅             |
 | OpenRouter   | ✅          | ✅               | ❌             | ❌             |
 | DashScope (Qwen) | ✅          | ❌               | ❌             | ❌             |
 | MiniMax      | ✅          | ❌               | ❌             | ❌             |
+| Novita       | ✅          | ❌               | ❌             | ❌             |
+| PayPerQ (PPQ) | ✅          | ✅               | ✅             | ✅             |
 | OpenAI Compatible* | ✅          | ✅               | ✅             | ✅             |
 
 *Supports LM Studio and any OpenAI-compatible endpoint

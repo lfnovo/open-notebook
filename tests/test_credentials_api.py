@@ -311,7 +311,8 @@ class TestAudioProviderWiring:
         assert "speech_to_text" in PROVIDER_MODALITIES["mistral"]
         assert "text_to_speech" in PROVIDER_MODALITIES["mistral"]
         assert "text_to_speech" in PROVIDER_MODALITIES["xai"]
-        assert PROVIDER_MODALITIES["deepgram"] == ["text_to_speech"]
+        # Deepgram now also does STT (Nova/Whisper), added alongside TTS.
+        assert PROVIDER_MODALITIES["deepgram"] == ["text_to_speech", "speech_to_text"]
 
     def test_deepgram_has_env_and_test_model(self):
         from api.credentials_service import PROVIDER_ENV_CONFIG

@@ -44,7 +44,10 @@ describe('ChatPanel composer', () => {
     expect(textarea.value).toBe('')
   })
 
-  it('sends on Ctrl/Cmd+Enter', () => {
+  it('sends on Cmd+Enter on macOS', () => {
+    const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)'
+    )
     const onSendMessage = vi.fn()
     render(
       <ChatPanel
@@ -56,11 +59,35 @@ describe('ChatPanel composer', () => {
     )
 
     const textarea = getTextarea()
-    fireEvent.change(textarea, { target: { value: 'via shortcut' } })
-    fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true, metaKey: true })
+    fireEvent.change(textarea, { target: { value: 'via cmd' } })
+    fireEvent.keyDown(textarea, { key: 'Enter', metaKey: true, ctrlKey: false })
 
-    expect(onSendMessage).toHaveBeenCalledWith('via shortcut', undefined)
+    expect(onSendMessage).toHaveBeenCalledWith('via cmd', undefined)
     expect(textarea.value).toBe('')
+    uaSpy.mockRestore()
+  })
+
+  it('sends on Ctrl+Enter on non-macOS', () => {
+    const uaSpy = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+    )
+    const onSendMessage = vi.fn()
+    render(
+      <ChatPanel
+        messages={[]}
+        isStreaming={false}
+        contextIndicators={null}
+        onSendMessage={onSendMessage}
+      />
+    )
+
+    const textarea = getTextarea()
+    fireEvent.change(textarea, { target: { value: 'via ctrl' } })
+    fireEvent.keyDown(textarea, { key: 'Enter', ctrlKey: true, metaKey: false })
+
+    expect(onSendMessage).toHaveBeenCalledWith('via ctrl', undefined)
+    expect(textarea.value).toBe('')
+    uaSpy.mockRestore()
   })
 
   it('does not send while streaming', () => {

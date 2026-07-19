@@ -599,6 +599,7 @@ class TestGetDefaultModelFallback:
 
         assert result == "chat-model-obj"
         mock_get_model.assert_awaited_once()
+        assert mock_get_model.await_args is not None
         assert mock_get_model.await_args.args[0] == "model:chat"
 
     @pytest.mark.asyncio

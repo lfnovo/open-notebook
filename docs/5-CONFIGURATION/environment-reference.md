@@ -137,9 +137,11 @@ The `CCORE_FIRECRAWL_*` variables are passed straight through to the content-cor
 |----------|-----------|---------|-------------|
 | `HTTP_PROXY` | No | None | HTTP proxy URL for outbound HTTP requests |
 | `HTTPS_PROXY` | No | None | HTTPS proxy URL for outbound HTTPS requests |
-| `NO_PROXY` | No | None | Comma-separated list of hosts to bypass proxy |
+| `NO_PROXY` | No | None | Comma-separated list of hosts to bypass proxy (must include the internal DB hosts — see below) |
 
 Route all outbound HTTP requests through a proxy server. Useful for corporate/firewalled environments.
+
+> **Important:** `NO_PROXY` must list the internal SurrealDB hosts — `host.docker.internal` (Docker) and `surrealdb` (the compose service name). The SurrealDB SDK connects over a websocket, and `websockets` 15.0+ tunnels even `ws://` connections through a configured proxy, which then rejects the internal host with **HTTP 403** and prevents the API and worker from starting. Open Notebook injects `host.docker.internal,surrealdb,localhost,127.0.0.1` into `NO_PROXY` automatically at startup as a safety net, but you should still set them explicitly.
 
 The underlying libraries (esperanto, content-core, podcast-creator) automatically detect proxy settings from these standard environment variables.
 
@@ -160,8 +162,8 @@ HTTPS_PROXY=http://proxy.corp.com:8080
 HTTP_PROXY=http://user:password@proxy.corp.com:8080
 HTTPS_PROXY=http://user:password@proxy.corp.com:8080
 
-# Bypass proxy for local hosts
-NO_PROXY=localhost,127.0.0.1,.local
+# Bypass proxy for local hosts (include the internal DB hosts!)
+NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 ```
 
 ---
@@ -212,7 +214,7 @@ API_URL=https://mynotebook.example.com
 OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 HTTP_PROXY=http://proxy.corp.com:8080
 HTTPS_PROXY=http://proxy.corp.com:8080
-NO_PROXY=localhost,127.0.0.1
+NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 ```
 
 ### High-Performance Deployment

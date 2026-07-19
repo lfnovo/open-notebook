@@ -489,8 +489,11 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
     if not api_key:
         return []
 
-    # ElevenLabs TTS models + the Scribe STT model
+    # ElevenLabs TTS models + the Scribe STT models
     elevenlabs_models = [
+        "eleven_v3",
+        "eleven_flash_v2_5",
+        "eleven_flash_v2",
         "eleven_multilingual_v2",
         "eleven_turbo_v2_5",
         "eleven_turbo_v2",
@@ -502,10 +505,9 @@ async def discover_elevenlabs_models() -> List[DiscoveredModel]:
         DiscoveredModel(name=m, provider="elevenlabs", model_type="text_to_speech")
         for m in elevenlabs_models
     ]
-    discovered.append(
-        DiscoveredModel(
-            name="scribe_v1", provider="elevenlabs", model_type="speech_to_text"
-        )
+    discovered.extend(
+        DiscoveredModel(name=m, provider="elevenlabs", model_type="speech_to_text")
+        for m in ("scribe_v2", "scribe_v1")
     )
     return discovered
 

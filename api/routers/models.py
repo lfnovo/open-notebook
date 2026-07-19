@@ -789,21 +789,22 @@ async def auto_assign_defaults():
                 models_by_type[model_type].append(model)
 
         # Define slot configuration: (slot_name, model_type, current_value)
-        slot_configs = [
+        #
+        # Only REQUIRED slots are auto-assigned. Optional slots
+        # (transformation, tools, large_context, TTS, STT) are intentionally
+        # left untouched: they fall back to the chat model when empty, so an
+        # empty optional slot may be a deliberate user choice (see #1097/#1098).
+        # Re-populating them here would silently undo that intent.
+        required_slot_configs = [
             ("default_chat_model", "language", defaults.default_chat_model),  # type: ignore[attr-defined]
-            ("default_transformation_model", "language", defaults.default_transformation_model),  # type: ignore[attr-defined]
-            ("default_tools_model", "language", defaults.default_tools_model),  # type: ignore[attr-defined]
-            ("large_context_model", "language", defaults.large_context_model),  # type: ignore[attr-defined]
             ("default_embedding_model", "embedding", defaults.default_embedding_model),  # type: ignore[attr-defined]
-            ("default_text_to_speech_model", "text_to_speech", defaults.default_text_to_speech_model),  # type: ignore[attr-defined]
-            ("default_speech_to_text_model", "speech_to_text", defaults.default_speech_to_text_model),  # type: ignore[attr-defined]
         ]
 
         assigned: Dict[str, str] = {}
         skipped: List[str] = []
         missing: List[str] = []
 
-        for slot_name, model_type, current_value in slot_configs:
+        for slot_name, model_type, current_value in required_slot_configs:
             if current_value:
                 # Slot already has a value
                 skipped.append(slot_name)

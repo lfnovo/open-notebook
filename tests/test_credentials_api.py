@@ -289,6 +289,46 @@ class TestCredentialNumCtx:
         assert "num_ctx" not in cred.to_esperanto_config()
 
 
+class TestCredentialVertexConfig:
+    """Tests for #1151 - Vertex credentials must emit vertex_project/vertex_location."""
+
+    def test_vertex_emits_vertex_prefixed_keys(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Vertex",
+            provider="vertex",
+            modalities=["text_to_speech"],
+            project="my-gcp-project",
+            location="us-central1",
+            credentials_path="/secrets/sa.json",
+        )
+        config = cred.to_esperanto_config()
+        # esperanto's Vertex providers accept vertex_project/vertex_location
+        assert config["vertex_project"] == "my-gcp-project"
+        assert config["vertex_location"] == "us-central1"
+        # The generic keys must NOT be emitted for vertex
+        assert "project" not in config
+        assert "location" not in config
+        # credentials_path is passed through unchanged
+        assert config["credentials_path"] == "/secrets/sa.json"
+
+    def test_non_vertex_provider_keeps_generic_keys(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(
+            name="Other",
+            provider="openai",
+            project="my-project",
+            location="us-central1",
+        )
+        config = cred.to_esperanto_config()
+        assert config["project"] == "my-project"
+        assert config["location"] == "us-central1"
+        assert "vertex_project" not in config
+        assert "vertex_location" not in config
+
+
 class TestAudioProviderWiring:
     """Tests for the new audio providers (Mistral STT/TTS, Deepgram TTS, xAI TTS)."""
 

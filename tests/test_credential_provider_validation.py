@@ -31,6 +31,9 @@ KNOWN_GOOD_PROVIDERS = [
     "openrouter",
     "dashscope",
     "minimax",
+    "novita",
+    "ppq",
+    "cohere",
     "voyage",
     "elevenlabs",
     "deepgram",
@@ -109,6 +112,8 @@ class TestProviderRegistryIsTheSourceOfTruth:
             "openrouter": "https://openrouter.ai/api/v1/models",
             "dashscope": "https://dashscope.aliyuncs.com/compatible-mode/v1/models",
             "minimax": "https://api.minimax.io/v1/models",
+            "novita": "https://api.novita.ai/openai/models",
+            "ppq": "https://api.ppq.ai/v1/models",
         }
         assert {
             name: spec.openai_compat_discovery_url

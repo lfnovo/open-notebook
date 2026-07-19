@@ -408,6 +408,9 @@ async def get_provider_availability():
             "omlx": "OMLX_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
+            "novita": "NOVITA_API_KEY",
+            "ppq": "PPQ_API_KEY",
+            "cohere": "COHERE_API_KEY",
         }
 
         provider_status = {}

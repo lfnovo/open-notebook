@@ -50,7 +50,8 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 - Speed: Varies by model
 - Quality: Varies by model
 - Best for: Model comparison, testing, unified billing
-- Advantage: One API key for 100+ models from different providers
+- Advantage: One API key for 100+ models from different providers, plus
+  text-to-speech and speech-to-text models
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#openrouter)
 
@@ -71,6 +72,27 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 - Advantage: Very long context window
 
 → [Setup Guide](../5-CONFIGURATION/ai-providers.md#minimax)
+
+**Cohere**
+- Cost: Usage-based
+- Speed: Fast
+- Quality: Good (Command family)
+- Best for: Enterprise RAG, multilingual embeddings
+- Advantage: Language **and** embedding models from one key (`embed-v4.0`); reranking is not yet wired in
+
+**Novita**
+- Cost: Pay-per-model (competitive)
+- Speed: Fast
+- Quality: Varies by model
+- Best for: Open-weight LLMs behind one OpenAI-compatible key
+- Advantage: Broad open-model catalog
+
+**PayPerQ (PPQ)**
+- Cost: Pay-as-you-go across providers
+- Speed: Varies by routed model
+- Quality: Varies by routed model
+- Best for: One key spanning language, embedding, speech-to-text and text-to-speech
+- Advantage: Multi-modality OpenAI-compatible gateway (`https://api.ppq.ai/v1`)
 
 ### Local / Self-Hosted (Free)
 
@@ -128,6 +150,9 @@ Open Notebook supports 17+ AI providers. This guide helps you **choose the right
 | **OpenRouter** | Varies | Varies | Varies | Low | 5 min | Varies |
 | **DashScope** | Fast | $ | Good | Low | 5 min | Varies |
 | **MiniMax** | Fast | $$ | Good | Low | 5 min | 204K |
+| **Cohere** | Fast | $$ | Good | Low | 5 min | 128K |
+| **Novita** | Fast | $ | Varies | Low | 5 min | Varies |
+| **PayPerQ (PPQ)** | Varies | Varies | Varies | Low | 5 min | Varies |
 | **Ollama** | Slow-Medium | Free | Good | Max | 10 min | Varies |
 | **oMLX** | Fast (MLX) | Free | Good | Max | 10 min | Varies |
 | **LM Studio** | Slow-Medium | Free | Good | Max | 15 min | Varies |

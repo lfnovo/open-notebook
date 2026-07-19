@@ -76,6 +76,15 @@ PROVIDER_CONFIG = {
     "minimax": {
         "env_var": "MINIMAX_API_KEY",
     },
+    "novita": {
+        "env_var": "NOVITA_API_KEY",
+    },
+    "ppq": {
+        "env_var": "PPQ_API_KEY",
+    },
+    "cohere": {
+        "env_var": "COHERE_API_KEY",
+    },
 }
 
 

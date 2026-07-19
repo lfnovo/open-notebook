@@ -278,6 +278,8 @@ class SettingsResponse(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -287,6 +289,8 @@ class SettingsUpdate(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 

@@ -26,6 +26,21 @@ class ContentSettings(RecordModel):
             "them. Disable for faster processing of text-native documents."
         ),
     )
+    docling_formulas: Optional[bool] = Field(
+        False,
+        description=(
+            "Extract mathematical formulas as structured markup when the Docling "
+            "engine handles a document. Adds processing time."
+        ),
+    )
+    docling_vision: Optional[bool] = Field(
+        False,
+        description=(
+            "Describe images and charts using a vision model when the Docling "
+            "engine handles a document. Significantly slower and may invoke a "
+            "vision model."
+        ),
+    )
     youtube_preferred_languages: Optional[List[str]] = Field(
         ["en", "pt", "es", "de", "nl", "en-GB", "fr", "de", "hi", "ja"],
         description="Preferred languages for YouTube transcripts",

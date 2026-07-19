@@ -1,7 +1,7 @@
 """Wiring tests for Anthropic-compatible credentials."""
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -165,7 +165,6 @@ async def test_model_manager_maps_normalized_url_to_anthropic_factory(
         provider="anthropic",
         config={"api_key": "sk-test", "base_url": expected_base_url},
     )
-    assert getattr(result, "_open_notebook_provider") == "anthropic_compatible"
 
 
 @pytest.mark.asyncio
@@ -276,24 +275,25 @@ async def test_model_manager_rejects_missing_compatible_endpoint():
 
 
 def test_langchain_bridge_forwards_base_url():
-    from open_notebook.ai.provision import _to_langchain
+    """An anthropic-compatible model must reach its custom base URL via the
+    native esperanto ``to_langchain()`` path (no Open Notebook shim), NOT the
+    official ``api.anthropic.com`` endpoint.
+    """
+    from esperanto import AIFactory
 
-    esperanto_model = MagicMock()
-    esperanto_model._open_notebook_provider = "anthropic_compatible"
-    esperanto_model.base_url = "https://api.example.com/v1"
-    esperanto_model.api_key = "sk-test"
-    esperanto_model.max_tokens = 850
-    esperanto_model.temperature = 0.5
-    esperanto_model.top_p = 0.9
-    esperanto_model.get_model_name.return_value = "compatible-model"
-
-    with patch("langchain_anthropic.ChatAnthropic") as chat_anthropic:
-        _to_langchain(esperanto_model)
-
-    chat_anthropic.assert_called_once_with(
-        model="compatible-model",
-        max_tokens=850,
-        api_key="sk-test",
-        base_url="https://api.example.com",
-        temperature=0.5,
+    esperanto_model = AIFactory.create_language(
+        model_name="compatible-model",
+        provider="anthropic",
+        config={
+            "api_key": "sk-test",
+            "base_url": "https://api.example.com/v1",
+            "max_tokens": 850,
+            "temperature": 0.5,
+        },
     )
+
+    langchain_model = esperanto_model.to_langchain()
+
+    # ChatAnthropic exposes the endpoint as ``anthropic_api_url`` (alias base_url).
+    assert langchain_model.anthropic_api_url == "https://api.example.com"
+    assert "api.anthropic.com" not in (langchain_model.anthropic_api_url or "")

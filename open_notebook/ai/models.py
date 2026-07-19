@@ -258,14 +258,11 @@ class ModelManager:
 
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
-            language_model = AIFactory.create_language(
+            return AIFactory.create_language(
                 model_name=model.name,
                 provider=provider,
                 config=config,
             )
-            if model.provider == "anthropic_compatible":
-                setattr(language_model, "_open_notebook_provider", model.provider)
-            return language_model
         elif model.type == "embedding":
             return AIFactory.create_embedding(
                 model_name=model.name,

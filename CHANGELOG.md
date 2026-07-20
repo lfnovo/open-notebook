@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.14.0] - 2026-07-20
 
 ### Added
 - **Docling formula & vision enrichment toggles** in Settings → Content Processing. Two new opt-in checkboxes surface content-core 2.x's `docling_formulas` (extract mathematical formulas as structured markup) and `docling_vision` (describe images and extract chart data with a vision model) enrichment flags, mirroring the existing OCR toggle. Both default off; the vision help text warns it is significantly slower and may call a vision model. Like OCR, the toggles only take effect through the Docling engine, so they are gated on Docling availability. The settings persist via `GET`/`PUT /api/settings` and are threaded into content-core extraction alongside `docling_ocr` (migration 23 backfills the new fields); labels and help are translated across all 14 locales (#1131)

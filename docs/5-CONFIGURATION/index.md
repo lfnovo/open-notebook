@@ -29,14 +29,15 @@ Setup: Get API key → Add credential in Settings UI → Done
 
 ### Option 2: Local (Free & Private)
 - **Ollama** (open-source models, on your machine)
+- **oMLX** (Apple Silicon / MLX inference server)
 
-→ Go to **[Ollama Setup](ollama.md)**
+→ Go to **[Ollama Setup](ollama.md)** or **[oMLX Setup](omlx.md)**
 
 ### Option 3: OpenAI-Compatible
 - **LM Studio** (local)
 - **Custom endpoints**
 
-→ Go to **[OpenAI-Compatible Guide](openai-compatible.md)**
+→ Go to **[OpenAI-Compatible Guide](openai-compatible.md)** (for oMLX, prefer the native [oMLX](omlx.md) provider)
 
 ---
 
@@ -218,6 +219,9 @@ OPEN_NOTEBOOK_ENCRYPTION_KEY=my-secret-key
 
 ### [Ollama](ollama.md)
 - Setting up and pointing to an Ollama server
+
+### [oMLX](omlx.md)
+- Apple Silicon MLX server (default `http://localhost:11435/v1`, SurrealDB port note)
 - Downloading models
 - Using embedding
 

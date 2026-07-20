@@ -1,6 +1,7 @@
 import time
 from typing import Any, Dict, List, Optional
 
+from langchain_core.runnables import RunnableConfig
 from loguru import logger
 from surreal_commands import CommandInput, CommandOutput, command
 
@@ -222,7 +223,8 @@ async def run_transformation_command(
         # LangGraph accepts a partial state dict at runtime, but its typed
         # overloads require the full state type (langgraph typing limitation).
         await transform_graph.ainvoke(  # type: ignore[call-overload]
-            input=dict(source=source, transformation=transformation)
+            input=dict(source=source, transformation=transformation),
+            config=RunnableConfig(configurable={"model_id": transformation.model_id}),
         )
 
         processing_time = time.time() - start_time

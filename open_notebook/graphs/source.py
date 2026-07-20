@@ -73,6 +73,10 @@ async def content_process(state: SourceState) -> dict:
             )
         if settings.docling_ocr is not None:
             config_kwargs["docling_ocr"] = settings.docling_ocr
+        if settings.docling_formulas is not None:
+            config_kwargs["docling_formulas"] = settings.docling_formulas
+        if settings.docling_vision is not None:
+            config_kwargs["docling_vision"] = settings.docling_vision
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).
@@ -134,7 +138,9 @@ async def content_process(state: SourceState) -> dict:
         f"Extracting {target} via content-core "
         f"(url_engine={config_kwargs.get('url_engine', 'auto')}, "
         f"document_engine={config_kwargs.get('document_engine', 'auto')}, "
-        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')})"
+        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')}, "
+        f"docling_formulas={config_kwargs.get('docling_formulas', 'auto')}, "
+        f"docling_vision={config_kwargs.get('docling_vision', 'auto')})"
     )
 
     processed = await extract_content(
@@ -301,7 +307,8 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     # LangGraph accepts a partial state dict at runtime, but its typed
     # overloads require the full state type (langgraph typing limitation).
     result = await transform_graph.ainvoke(  # type: ignore[call-overload]
-        dict(input_text=content, transformation=transformation)
+        dict(input_text=content, transformation=transformation),
+        config=RunnableConfig(configurable={"model_id": transformation.model_id}),
     )
     await source.add_insight(transformation.title, result["output"])
     return {

@@ -217,7 +217,8 @@ class Notebook(ObjectModel):
                                      only to this notebook. Default is False.
 
         Returns:
-            Dict with counts: deleted_notes, deleted_sources, unlinked_sources
+            Dict with counts: deleted_notes, deleted_sources, unlinked_sources,
+            deleted_chat_sessions
         """
         if self.id is None:
             raise InvalidInputError("Cannot delete notebook without an ID")
@@ -227,6 +228,7 @@ class Notebook(ObjectModel):
             deleted_notes = 0
             deleted_sources = 0
             unlinked_sources = 0
+            deleted_chat_sessions = 0
 
             # 1. Get and delete all notes linked to this notebook
             notes = await self.get_notes()
@@ -287,7 +289,16 @@ class Notebook(ObjectModel):
                 f"exclusive sources for notebook {self.id}"
             )
 
-            # 3. Delete the notebook record itself
+            # 3. Delete chat sessions linked to this notebook
+            chat_sessions = await self.get_chat_sessions()
+            for chat_session in chat_sessions:
+                await chat_session.delete()
+                deleted_chat_sessions += 1
+            logger.info(
+                f"Deleted {deleted_chat_sessions} chat sessions for notebook {self.id}"
+            )
+
+            # 4. Delete the notebook record itself
             await super().delete()
             logger.info(f"Deleted notebook {self.id}")
 
@@ -295,6 +306,7 @@ class Notebook(ObjectModel):
                 "deleted_notes": deleted_notes,
                 "deleted_sources": deleted_sources,
                 "unlinked_sources": unlinked_sources,
+                "deleted_chat_sessions": deleted_chat_sessions,
             }
 
         except Exception as e:

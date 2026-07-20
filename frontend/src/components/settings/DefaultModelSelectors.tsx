@@ -34,6 +34,8 @@ interface DefaultModelSelectProps {
   currentValue?: string
   onChange: (key: keyof ModelDefaults, value: string) => void
   showDescription?: boolean
+  /** Name of the currently selected chat model, used for the fallback hint. */
+  chatModelName?: string
 }
 
 function DefaultModelSelect({
@@ -42,9 +44,24 @@ function DefaultModelSelect({
   currentValue,
   onChange,
   showDescription,
+  chatModelName,
 }: DefaultModelSelectProps) {
   const { t } = useTranslation()
   const isValid = currentValue && available.some(m => m.id === currentValue)
+
+  // Hint shown when an optional slot is left empty, clarifying the effective
+  // behavior (chat-model fallback vs. feature unavailable) — see #1098.
+  const emptyOptionalHint = (() => {
+    if (config.required || currentValue) return null
+    if (config.fallsBackToChat) {
+      return chatModelName
+        ? t('models.usingChatModelHint', { model: chatModelName })
+        : null
+    }
+    if (config.modelType === 'text_to_speech') return t('models.ttsUnsetHint')
+    if (config.modelType === 'speech_to_text') return t('models.sttUnsetHint')
+    return null
+  })()
 
   return (
     <div className="space-y-1">
@@ -91,6 +108,9 @@ function DefaultModelSelect({
           </Button>
         )}
       </div>
+      {emptyOptionalHint && (
+        <p className="text-[10px] text-muted-foreground leading-tight italic">{emptyOptionalHint}</p>
+      )}
       {showDescription && (
         <p className="text-[10px] text-muted-foreground leading-tight">{config.description}</p>
       )}
@@ -137,7 +157,7 @@ export function DefaultModelSelectors({
   const advancedConfigs: DefaultConfig[] = [
     { key: 'default_transformation_model', label: t('models.transformationModelLabel'), description: t('models.transformationModelDesc'), modelType: 'language', fallsBackToChat: true, id: `${generatedId}-transform` },
     { key: 'default_tools_model', label: t('models.toolsModelLabel'), description: t('models.toolsModelDesc'), modelType: 'language', fallsBackToChat: true, id: `${generatedId}-tools` },
-    { key: 'large_context_model', label: t('models.largeContextModelLabel'), description: t('models.largeContextModelDesc'), modelType: 'language', id: `${generatedId}-large` },
+    { key: 'large_context_model', label: t('models.largeContextModelLabel'), description: t('models.largeContextModelDesc'), modelType: 'language', fallsBackToChat: true, id: `${generatedId}-large` },
   ]
 
   const defaultConfigs = [...primaryConfigs, ...advancedConfigs]
@@ -162,6 +182,8 @@ export function DefaultModelSelectors({
   }
 
   const getModelsForType = (type: ModelType) => models.filter(m => m.type === type)
+
+  const chatModelName = models.find(m => m.id === watch('default_chat_model'))?.name
 
   const missingRequired = defaultConfigs
     .filter(c => {
@@ -206,6 +228,7 @@ export function DefaultModelSelectors({
               available={getModelsForType(config.modelType)}
               currentValue={watch(config.key) || undefined}
               onChange={handleChange}
+              chatModelName={chatModelName}
             />
           ))}
         </div>
@@ -222,6 +245,7 @@ export function DefaultModelSelectors({
                   currentValue={watch(config.key) || undefined}
                   onChange={handleChange}
                   showDescription
+                  chatModelName={chatModelName}
                 />
               ))}
             </div>

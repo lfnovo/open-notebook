@@ -23,6 +23,8 @@ async def get_settings():
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             docling_ocr=settings.docling_ocr,
+            docling_formulas=settings.docling_formulas,
+            docling_vision=settings.docling_vision,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:
@@ -73,6 +75,10 @@ async def update_settings(settings_update: SettingsUpdate):
             )
         if settings_update.docling_ocr is not None:
             settings.docling_ocr = settings_update.docling_ocr
+        if settings_update.docling_formulas is not None:
+            settings.docling_formulas = settings_update.docling_formulas
+        if settings_update.docling_vision is not None:
+            settings.docling_vision = settings_update.docling_vision
         if settings_update.youtube_preferred_languages is not None:
             settings.youtube_preferred_languages = (
                 settings_update.youtube_preferred_languages
@@ -86,6 +92,8 @@ async def update_settings(settings_update: SettingsUpdate):
             default_embedding_option=settings.default_embedding_option,
             auto_delete_files=settings.auto_delete_files,
             docling_ocr=settings.docling_ocr,
+            docling_formulas=settings.docling_formulas,
+            docling_vision=settings.docling_vision,
             youtube_preferred_languages=settings.youtube_preferred_languages,
         )
     except HTTPException:

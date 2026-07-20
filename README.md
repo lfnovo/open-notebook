@@ -229,20 +229,24 @@ Thanks to the [Esperanto](https://github.com/lfnovo/esperanto) library, we suppo
 | Google (GenAI) | ✅          | ✅               | ✅             | ✅             |
 | Vertex AI    | ✅          | ✅               | ❌             | ✅             |
 | Ollama       | ✅          | ✅               | ❌             | ❌             |
+| oMLX         | ✅          | ✅               | ❌             | ❌             |
 | Perplexity   | ✅          | ❌               | ❌             | ❌             |
 | ElevenLabs   | ❌          | ❌               | ✅             | ✅             |
-| Deepgram     | ❌          | ❌               | ❌             | ✅             |
+| Deepgram     | ❌          | ❌               | ✅             | ✅             |
 | Azure OpenAI | ✅          | ✅               | ✅             | ✅             |
 | Mistral      | ✅          | ✅               | ✅             | ✅             |
 | DeepSeek     | ✅          | ❌               | ❌             | ❌             |
+| Cohere       | ✅          | ✅               | ❌             | ❌             |
 | Voyage       | ❌          | ✅               | ❌             | ❌             |
 | xAI          | ✅          | ❌               | ❌             | ✅             |
-| OpenRouter   | ✅          | ✅               | ❌             | ❌             |
+| OpenRouter   | ✅          | ✅               | ✅             | ✅             |
 | DashScope (Qwen) | ✅          | ❌               | ❌             | ❌             |
 | MiniMax      | ✅          | ❌               | ❌             | ❌             |
+| Novita       | ✅          | ❌               | ❌             | ❌             |
+| PayPerQ (PPQ) | ✅          | ✅               | ✅             | ✅             |
 | OpenAI Compatible* | ✅          | ✅               | ✅             | ✅             |
 
-*Supports LM Studio and any OpenAI-compatible endpoint
+*Supports LM Studio and any OpenAI-compatible endpoint. Prefer the native **oMLX** provider for [oMLX](https://omlx.ai/) (Apple Silicon); see [docs/5-CONFIGURATION/omlx.md](docs/5-CONFIGURATION/omlx.md).
 
 ## ✨ Key Features
 

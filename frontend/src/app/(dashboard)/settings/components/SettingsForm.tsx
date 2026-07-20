@@ -23,6 +23,8 @@ const settingsSchema = z.object({
   default_embedding_option: z.enum(['ask', 'always', 'never']).optional(),
   auto_delete_files: z.enum(['yes', 'no']).optional(),
   docling_ocr: z.boolean().optional(),
+  docling_formulas: z.boolean().optional(),
+  docling_vision: z.boolean().optional(),
 })
 
 type SettingsFormData = z.infer<typeof settingsSchema>
@@ -62,6 +64,8 @@ export function SettingsForm() {
       default_embedding_option: undefined,
       auto_delete_files: undefined,
       docling_ocr: undefined,
+      docling_formulas: undefined,
+      docling_vision: undefined,
     }
   })
 
@@ -78,6 +82,8 @@ export function SettingsForm() {
         default_embedding_option: settings.default_embedding_option as 'ask' | 'always' | 'never',
         auto_delete_files: settings.auto_delete_files as 'yes' | 'no',
         docling_ocr: settings.docling_ocr ?? true,
+        docling_formulas: settings.docling_formulas ?? false,
+        docling_vision: settings.docling_vision ?? false,
       }
       reset(formData)
       setHasResetForm(true)
@@ -172,6 +178,44 @@ export function SettingsForm() {
               <Label htmlFor="docling_ocr">{t('settings.ocrEnabled')}</Label>
             </div>
             <p className="text-sm text-muted-foreground">{t('settings.ocrHelp')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Controller
+                name="docling_formulas"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="docling_formulas"
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                    disabled={field.disabled || isLoading || !doclingAvailable}
+                  />
+                )}
+              />
+              <Label htmlFor="docling_formulas">{t('settings.formulasEnabled')}</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('settings.formulasHelp')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Controller
+                name="docling_vision"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="docling_vision"
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                    disabled={field.disabled || isLoading || !doclingAvailable}
+                  />
+                )}
+              />
+              <Label htmlFor="docling_vision">{t('settings.visionEnabled')}</Label>
+            </div>
+            <p className="text-sm text-muted-foreground">{t('settings.visionHelp')}</p>
           </div>
 
           <div className="space-y-3">

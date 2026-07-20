@@ -20,15 +20,15 @@ def client():
 
 def _patch_probes(monkeypatch, *, docling, crawl4ai_local, crawl4ai_remote):
     monkeypatch.setattr(
-        "api.routers.capabilities._docling_available", lambda: docling
+        "api.routers.capabilities.docling_available", lambda: docling
     )
     monkeypatch.setattr(
-        "api.routers.capabilities._crawl4ai_remote_configured",
+        "api.routers.capabilities.crawl4ai_remote_configured",
         lambda: crawl4ai_remote,
     )
     # Local readiness means package installed AND a Chromium browser present.
     monkeypatch.setattr(
-        "api.routers.capabilities._crawl4ai_local_ready", lambda: crawl4ai_local
+        "api.routers.capabilities.crawl4ai_local_ready", lambda: crawl4ai_local
     )
 
 
@@ -76,48 +76,48 @@ class TestCrawl4aiLocalReadiness:
     """Local Crawl4AI needs the package AND a Chromium browser on disk."""
 
     def test_not_ready_when_package_missing(self, monkeypatch):
-        import api.routers.capabilities as cap
+        import open_notebook.utils.runtime_capabilities as cap
 
         monkeypatch.setattr(
             cap.importlib.util, "find_spec", lambda name, *a, **k: None
         )
-        assert cap._crawl4ai_local_ready() is False
+        assert cap.crawl4ai_local_ready() is False
 
     def test_not_ready_when_browser_missing(self, monkeypatch, tmp_path):
-        import api.routers.capabilities as cap
+        import open_notebook.utils.runtime_capabilities as cap
 
         monkeypatch.setattr(
             cap.importlib.util, "find_spec", lambda name, *a, **k: object()
         )
         # PLAYWRIGHT_BROWSERS_PATH set to an empty dir → no chromium installed.
         monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
-        assert cap._crawl4ai_local_ready() is False
+        assert cap.crawl4ai_local_ready() is False
 
     def test_ready_when_browser_present(self, monkeypatch, tmp_path):
-        import api.routers.capabilities as cap
+        import open_notebook.utils.runtime_capabilities as cap
 
         monkeypatch.setattr(
             cap.importlib.util, "find_spec", lambda name, *a, **k: object()
         )
         (tmp_path / "chromium-1140").mkdir()
         monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str(tmp_path))
-        assert cap._crawl4ai_local_ready() is True
+        assert cap.crawl4ai_local_ready() is True
 
     def test_dev_default_cache_without_browser_is_not_ready(
         self, monkeypatch, tmp_path
     ):
         """No PLAYWRIGHT_BROWSERS_PATH: fall back to the default cache, fail closed if empty."""
-        import api.routers.capabilities as cap
+        import open_notebook.utils.runtime_capabilities as cap
 
         monkeypatch.setattr(
             cap.importlib.util, "find_spec", lambda name, *a, **k: object()
         )
         monkeypatch.delenv("PLAYWRIGHT_BROWSERS_PATH", raising=False)
         monkeypatch.setattr(cap, "_default_playwright_cache", lambda: str(tmp_path))
-        assert cap._crawl4ai_local_ready() is False
+        assert cap.crawl4ai_local_ready() is False
 
     def test_dev_default_cache_with_browser_is_ready(self, monkeypatch, tmp_path):
-        import api.routers.capabilities as cap
+        import open_notebook.utils.runtime_capabilities as cap
 
         monkeypatch.setattr(
             cap.importlib.util, "find_spec", lambda name, *a, **k: object()
@@ -125,4 +125,4 @@ class TestCrawl4aiLocalReadiness:
         monkeypatch.delenv("PLAYWRIGHT_BROWSERS_PATH", raising=False)
         (tmp_path / "chromium-1140").mkdir()
         monkeypatch.setattr(cap, "_default_playwright_cache", lambda: str(tmp_path))
-        assert cap._crawl4ai_local_ready() is True
+        assert cap.crawl4ai_local_ready() is True

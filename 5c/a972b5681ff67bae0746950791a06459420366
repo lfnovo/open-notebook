@@ -1,0 +1,41 @@
+open_notebook/utils/runtime_capabilities.py
+  s_4e49aa2b4d2aeb::t_a763d01ec2deb3 1-122
+tests/test_graphs.py
+  s_4e49aa2b4d2aeb::t_4fec934ae57276 386-387,391,433-487,490-527
+  s_4e49aa2b4d2aeb::t_3093d1fe86524e 431-432
+  s_4e49aa2b4d2aeb::t_58e3b6dac2d682 488-489
+  s_4e49aa2b4d2aeb::t_fd2586244ee40a 528
+open_notebook/graphs/source.py
+  s_4e49aa2b4d2aeb::t_f8420f2f1d2b12 54-74
+  s_4e49aa2b4d2aeb::t_801d65da375f40 91-93,95-96
+  s_4e49aa2b4d2aeb::t_b13f84b3acc65a 18
+tests/test_runtime_capabilities.py
+  s_4e49aa2b4d2aeb::t_18b9cc2a26e698 1-78
+pyproject.toml
+  s_4e49aa2b4d2aeb::t_45ada369022a5a 3
+CHANGELOG.md
+  s_4e49aa2b4d2aeb::t_45ada369022a5a 8
+api/routers/capabilities.py
+  s_4e49aa2b4d2aeb::t_2dd561a349fcd7 11-14,22-26,34-35,37
+tests/test_capabilities_api.py
+  s_4e49aa2b4d2aeb::t_e71a6544a1fa23 23,26,31,79,87,97,110,120
+  s_4e49aa2b4d2aeb::t_649d8eaeb7cd0e 84,94,104,117,128
+uv.lock
+  s_4e49aa2b4d2aeb::t_a5d55555a484e4 2055
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "5ca972b5681ff67bae0746950791a06459420366",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

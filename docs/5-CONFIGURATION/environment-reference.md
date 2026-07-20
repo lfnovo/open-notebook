@@ -137,9 +137,11 @@ The `CCORE_FIRECRAWL_*` variables are passed straight through to the content-cor
 |----------|-----------|---------|-------------|
 | `HTTP_PROXY` | No | None | HTTP proxy URL for outbound HTTP requests |
 | `HTTPS_PROXY` | No | None | HTTPS proxy URL for outbound HTTPS requests |
-| `NO_PROXY` | No | None | Comma-separated list of hosts to bypass proxy |
+| `NO_PROXY` | No | None | Comma-separated list of hosts to bypass proxy (must include the internal DB hosts — see below) |
 
 Route all outbound HTTP requests through a proxy server. Useful for corporate/firewalled environments.
+
+> **Important:** `NO_PROXY` must list the internal SurrealDB hosts — `host.docker.internal` (Docker) and `surrealdb` (the compose service name). The SurrealDB SDK connects over a websocket, and `websockets` 15.0+ tunnels even `ws://` connections through a configured proxy, which then rejects the internal host with **HTTP 403** and prevents the API and worker from starting. Open Notebook injects `host.docker.internal,surrealdb,localhost,127.0.0.1` into `NO_PROXY` automatically at startup as a safety net, but you should still set them explicitly.
 
 The underlying libraries (esperanto, content-core, podcast-creator) automatically detect proxy settings from these standard environment variables.
 
@@ -160,8 +162,8 @@ HTTPS_PROXY=http://proxy.corp.com:8080
 HTTP_PROXY=http://user:password@proxy.corp.com:8080
 HTTPS_PROXY=http://user:password@proxy.corp.com:8080
 
-# Bypass proxy for local hosts
-NO_PROXY=localhost,127.0.0.1,.local
+# Bypass proxy for local hosts (include the internal DB hosts!)
+NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 ```
 
 ---
@@ -212,7 +214,7 @@ API_URL=https://mynotebook.example.com
 OPEN_NOTEBOOK_ENCRYPTION_KEY=your-secret-key
 HTTP_PROXY=http://proxy.corp.com:8080
 HTTPS_PROXY=http://proxy.corp.com:8080
-NO_PROXY=localhost,127.0.0.1
+NO_PROXY=localhost,127.0.0.1,host.docker.internal,surrealdb,.local
 ```
 
 ### High-Performance Deployment
@@ -298,6 +300,8 @@ If you have these variables configured from a previous installation, click the *
 | `DEEPSEEK_API_KEY` | DeepSeek | Settings → API Keys → Add DeepSeek Credential |
 | `XAI_API_KEY` | xAI | Settings → API Keys → Add xAI Credential |
 | `OLLAMA_API_BASE` | Ollama | Settings → API Keys → Add Ollama Credential |
+| `OMLX_API_BASE` | oMLX | Settings → API Keys → Add oMLX Credential |
+| `OMLX_API_KEY` | oMLX | Optional; only if oMLX was started with `--api-key` |
 | `OPENROUTER_API_KEY` | OpenRouter | Settings → API Keys → Add OpenRouter Credential |
 | `OPENROUTER_BASE_URL` | OpenRouter | Configure in OpenRouter credential |
 | `VOYAGE_API_KEY` | Voyage AI | Settings → API Keys → Add Voyage AI Credential |
@@ -314,6 +318,9 @@ If you have these variables configured from a previous installation, click the *
 | `OPENAI_COMPATIBLE_API_KEY_TTS` | OpenAI-Compatible | Configure per-service key in credential |
 | `DASHSCOPE_API_KEY` | DashScope (Qwen) | Settings → API Keys → Add DashScope Credential |
 | `MINIMAX_API_KEY` | MiniMax | Settings → API Keys → Add MiniMax Credential |
+| `NOVITA_API_KEY` | Novita | Settings → API Keys → Add Novita Credential |
+| `PPQ_API_KEY` | PayPerQ (PPQ) | Settings → API Keys → Add PayPerQ Credential |
+| `COHERE_API_KEY` | Cohere | Settings → API Keys → Add Cohere Credential |
 | `AZURE_OPENAI_API_KEY` | Azure OpenAI | Settings → API Keys → Add Azure OpenAI Credential |
 | `AZURE_OPENAI_ENDPOINT` | Azure OpenAI | Configure in Azure OpenAI credential |
 | `AZURE_OPENAI_API_VERSION` | Azure OpenAI | Configure in Azure OpenAI credential |

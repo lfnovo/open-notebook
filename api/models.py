@@ -278,6 +278,8 @@ class SettingsResponse(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -287,6 +289,8 @@ class SettingsUpdate(BaseModel):
     default_embedding_option: Optional[str] = None
     auto_delete_files: Optional[str] = None
     docling_ocr: Optional[bool] = None
+    docling_formulas: Optional[bool] = None
+    docling_vision: Optional[bool] = None
     youtube_preferred_languages: Optional[List[str]] = None
 
 
@@ -567,13 +571,18 @@ SupportedProvider = Literal[
     "openrouter",
     "dashscope",
     "minimax",
+    "novita",
+    "ppq",
+    "cohere",
     "voyage",
     "elevenlabs",
     "deepgram",
     "ollama",
+    "omlx",
     "azure",
     "vertex",
     "openai_compatible",
+    "anthropic_compatible",
 ]
 
 
@@ -616,6 +625,26 @@ class CapabilitiesResponse(BaseModel):
     )
 
 
+def validate_url_key_provider_required_fields(
+    provider: Optional[str],
+    base_url: Optional[str],
+    api_key: Optional[str],
+) -> None:
+    """Shared required-field rule for providers that need BOTH a base URL and an
+    API key (currently anthropic_compatible).
+
+    Called from both the create path (CreateCredentialRequest validator, which sees
+    the full request payload) and the update path
+    (credentials_service.ensure_provider_required_fields, which runs against the
+    merged credential). Raises ValueError when a required field is missing.
+    """
+    if (provider or "").lower() == "anthropic_compatible":
+        if not base_url or not str(base_url).strip():
+            raise ValueError("Anthropic-compatible credentials require a base URL")
+        if not api_key or not str(api_key).strip():
+            raise ValueError("Anthropic-compatible credentials require an API key")
+
+
 class CreateCredentialRequest(BaseModel):
     """Request to create a new credential."""
 
@@ -643,6 +672,13 @@ class CreateCredentialRequest(BaseModel):
     num_ctx: Optional[int] = Field(
         None, description="Context window size (Ollama only; defaults to 8192)"
     )
+
+    @model_validator(mode="after")
+    def _validate_provider_required_fields(self):
+        validate_url_key_provider_required_fields(
+            self.provider, self.base_url, self.api_key
+        )
+        return self
 
 
 class UpdateCredentialRequest(BaseModel):
@@ -754,4 +790,7 @@ class NotebookDeleteResponse(BaseModel):
     deleted_sources: int = Field(..., description="Number of exclusive sources deleted")
     unlinked_sources: int = Field(
         ..., description="Number of sources unlinked from notebook"
+    )
+    deleted_chat_sessions: int = Field(
+        ..., description="Number of chat sessions deleted"
     )

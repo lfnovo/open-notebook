@@ -404,6 +404,8 @@ class TestContentProcessDeleteSource:
                 default_content_processing_engine_url="crawl4ai",
                 default_content_processing_engine_doc="docling",
                 docling_ocr=False,
+                docling_formulas=True,
+                docling_vision=True,
             )
         )
         mock_extract.return_value = ExtractionOutput(title="T", content="body")
@@ -421,6 +423,102 @@ class TestContentProcessDeleteSource:
         assert config.url_engine == "crawl4ai"
         assert config.document_engine == "docling"
         assert config.docling_ocr is False
+        assert config.docling_formulas is True
+        assert config.docling_vision is True
+
+
+# ============================================================================
+# TEST SUITE 6: Per-transformation model_id forwarding (#1137)
+# ============================================================================
+
+
+class TestTransformationModelIdForwarding:
+    """Both call sites must forward transformation.model_id into the graph via
+    config.configurable so per-transformation model selection is honored (#1137).
+    """
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.transform_graph.ainvoke", new_callable=AsyncMock)
+    async def test_source_graph_forwards_model_id(self, mock_ainvoke):
+        """open_notebook.graphs.source.transform_content forwards model_id."""
+        from open_notebook.domain.transformation import Transformation
+        from open_notebook.graphs.source import transform_content
+
+        mock_ainvoke.return_value = {"output": "result"}
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.full_text = "some content"
+        mock_source.add_insight = AsyncMock()
+
+        transformation = MagicMock(spec=Transformation)
+        transformation.name = "summary"
+        transformation.title = "Summary"
+        transformation.model_id = "model:custom"
+
+        state = {"source": mock_source, "transformation": transformation}
+
+        await transform_content(state)  # type: ignore[arg-type]
+
+        mock_ainvoke.assert_awaited_once()
+        config = mock_ainvoke.await_args.kwargs["config"]
+        assert config["configurable"]["model_id"] == "model:custom"
+
+    @pytest.mark.asyncio
+    @patch("open_notebook.graphs.source.transform_graph.ainvoke", new_callable=AsyncMock)
+    async def test_source_graph_forwards_none_model_id(self, mock_ainvoke):
+        """When model_id is unset (None), None is forwarded (falls back to default)."""
+        from open_notebook.domain.transformation import Transformation
+        from open_notebook.graphs.source import transform_content
+
+        mock_ainvoke.return_value = {"output": "result"}
+
+        mock_source = MagicMock(spec=Source)
+        mock_source.full_text = "some content"
+        mock_source.add_insight = AsyncMock()
+
+        transformation = MagicMock(spec=Transformation)
+        transformation.name = "summary"
+        transformation.title = "Summary"
+        transformation.model_id = None
+
+        state = {"source": mock_source, "transformation": transformation}
+
+        await transform_content(state)  # type: ignore[arg-type]
+
+        config = mock_ainvoke.await_args.kwargs["config"]
+        assert config["configurable"]["model_id"] is None
+
+    @pytest.mark.asyncio
+    @patch("commands.source_commands.transform_graph.ainvoke", new_callable=AsyncMock)
+    @patch("commands.source_commands.Transformation.get", new_callable=AsyncMock)
+    @patch("commands.source_commands.Source.get", new_callable=AsyncMock)
+    async def test_command_forwards_model_id(
+        self, mock_source_get, mock_transformation_get, mock_ainvoke
+    ):
+        """commands.source_commands.run_transformation_command forwards model_id."""
+        from commands.source_commands import (
+            RunTransformationInput,
+            run_transformation_command,
+        )
+        from open_notebook.domain.transformation import Transformation
+
+        mock_source_get.return_value = MagicMock(spec=Source)
+
+        transformation = MagicMock(spec=Transformation)
+        transformation.model_id = "model:custom"
+        mock_transformation_get.return_value = transformation
+
+        mock_ainvoke.return_value = {"output": "result"}
+
+        input_data = RunTransformationInput(
+            source_id="source:123", transformation_id="transformation:456"
+        )
+
+        await run_transformation_command(input_data)
+
+        mock_ainvoke.assert_awaited_once()
+        config = mock_ainvoke.await_args.kwargs["config"]
+        assert config["configurable"]["model_id"] == "model:custom"
 
 
 if __name__ == "__main__":

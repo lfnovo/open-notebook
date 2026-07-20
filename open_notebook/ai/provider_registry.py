@@ -134,7 +134,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ProviderSpec(
             name="openrouter",
             display_name="OpenRouter",
-            modalities=("language", "embedding"),
+            modalities=_ALL_MODALITIES,
             required_env=("OPENROUTER_API_KEY",),
             test_model="openai/gpt-3.5-turbo",
             docs_url="https://openrouter.ai/keys",
@@ -159,6 +159,39 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             openai_compat_discovery_url="https://api.minimax.io/v1/models",
         ),
         ProviderSpec(
+            name="novita",
+            display_name="Novita",
+            modalities=_LANGUAGE_ONLY,
+            required_env=("NOVITA_API_KEY",),
+            test_model="moonshotai/kimi-k2.5",
+            docs_url="https://novita.ai/settings/key-management",
+            openai_compat_discovery_url="https://api.novita.ai/openai/models",
+        ),
+        ProviderSpec(
+            name="ppq",
+            display_name="PayPerQ",
+            modalities=_ALL_MODALITIES,
+            required_env=("PPQ_API_KEY",),
+            test_model="auto",
+            docs_url="https://ppq.ai",
+            # PPQ's bare /models returns only chat/language models; ?type=all is
+            # required to also list embedding, STT and TTS models (PPQ is a
+            # multi-modality gateway). Without it, the non-language modalities
+            # this provider advertises never surface in discovery.
+            openai_compat_discovery_url="https://api.ppq.ai/v1/models?type=all",
+        ),
+        ProviderSpec(
+            name="cohere",
+            display_name="Cohere",
+            # Native v2 API (/v2/chat, /v2/embed) — NOT OpenAI-compatible, so no
+            # openai_compat_discovery_url; discovery is bespoke (esperanto's
+            # AIFactory.get_provider_models). Reranking is out of scope (#1087).
+            modalities=("language", "embedding"),
+            required_env=("COHERE_API_KEY",),
+            test_model="command-a-03-2025",
+            docs_url="https://dashboard.cohere.com/api-keys",
+        ),
+        ProviderSpec(
             name="voyage",
             display_name="Voyage AI",
             modalities=("embedding",),
@@ -179,7 +212,7 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
         ProviderSpec(
             name="deepgram",
             display_name="Deepgram",
-            modalities=("text_to_speech",),
+            modalities=("text_to_speech", "speech_to_text"),
             required_env=("DEEPGRAM_API_KEY",),
             test_model="aura-2-thalia-en",
             test_model_type="text_to_speech",
@@ -191,6 +224,18 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             modalities=("language", "embedding"),
             required_env=("OLLAMA_API_BASE",),
             test_model=None,  # Dynamic - uses first available model
+        ),
+        ProviderSpec(
+            name="omlx",
+            display_name="oMLX",
+            modalities=("language", "embedding"),
+            required_env=("OMLX_API_BASE",),
+            optional_env=("OMLX_API_KEY",),
+            test_model=None,  # Dynamic - uses first available model via /v1/models
+            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/omlx.md",
+            # No openai_compat_discovery_url: base URL is user-supplied (default
+            # http://localhost:11435/v1) and API key is optional — discovery is
+            # handled like openai_compatible, not the fixed-URL OPENAI_COMPAT table.
         ),
         ProviderSpec(
             name="azure",
@@ -226,6 +271,20 @@ _PROVIDER_SPECS: Tuple[ProviderSpec, ...] = (
             required_any_env=("OPENAI_COMPATIBLE_BASE_URL", "OPENAI_COMPATIBLE_API_KEY"),
             test_model=None,  # Dynamic - uses first available model
             docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/openai-compatible.md",
+        ),
+        ProviderSpec(
+            name="anthropic_compatible",
+            display_name="Anthropic Compatible",
+            modalities=_LANGUAGE_ONLY,
+            required_env=(
+                "ANTHROPIC_COMPATIBLE_BASE_URL",
+                "ANTHROPIC_COMPATIBLE_API_KEY",
+            ),
+            test_model=None,  # Dynamic - uses the endpoint's model list
+            docs_url="https://github.com/lfnovo/open-notebook/blob/main/docs/5-CONFIGURATION/ai-providers.md",
+            # No openai_compat_discovery_url: anthropic-compatible discovery uses
+            # Anthropic's GET /v1/models with x-api-key + anthropic-version headers
+            # (bespoke), not the OpenAI-compatible GET /models discovery table.
         ),
 )
 

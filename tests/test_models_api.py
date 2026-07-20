@@ -119,6 +119,35 @@ class TestModelCreation:
 class TestModelsProviderAvailability:
     """Test suite for Models Provider Availability endpoint."""
 
+    @patch(
+        "api.routers.models._check_provider_has_credential",
+        new_callable=AsyncMock,
+        return_value=False,
+    )
+    @patch("api.routers.models.os.environ.get")
+    @patch("api.routers.models.AIFactory.get_available_providers")
+    def test_blank_anthropic_compatible_env_vars_are_unavailable(
+        self, mock_esperanto, mock_env, mock_has_credential, client
+    ):
+        def env_side_effect(key):
+            if key in {
+                "ANTHROPIC_COMPATIBLE_BASE_URL",
+                "ANTHROPIC_COMPATIBLE_API_KEY",
+            }:
+                return "   "
+            return None
+
+        mock_env.side_effect = env_side_effect
+        mock_esperanto.return_value = {"language": ["anthropic"]}
+
+        response = client.get("/api/models/providers")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "anthropic_compatible" not in data["available"]
+        assert "anthropic_compatible" in data["unavailable"]
+        assert "anthropic_compatible" not in data["supported_types"]
+
     @patch("api.routers.models.os.environ.get")
     @patch("api.routers.models.AIFactory.get_available_providers")
     def test_generic_env_var_enables_all_modes(self, mock_esperanto, mock_env, client):
@@ -458,3 +487,134 @@ class TestUpdateDefaultModels:
         assert response.status_code == 200
         assert defaults.default_chat_model == "model:new-chat"
         defaults.update.assert_awaited_once()
+
+
+class TestAutoAssignDefaults:
+    """POST /models/auto-assign must only fill the two REQUIRED slots
+    (chat, embedding). Optional slots that a user deliberately cleared must
+    stay empty so auto-assign doesn't silently undo that intent (#1098).
+    """
+
+    def _mock_defaults(self):
+        from unittest.mock import MagicMock
+
+        defaults = MagicMock()
+        # Everything empty, including the optional slots a user may have cleared.
+        defaults.default_chat_model = None
+        defaults.default_embedding_model = None
+        defaults.default_transformation_model = None
+        defaults.default_tools_model = None
+        defaults.large_context_model = None
+        defaults.default_text_to_speech_model = None
+        defaults.default_speech_to_text_model = None
+        defaults.update = AsyncMock()
+        return defaults
+
+    def _models(self):
+        return [
+            {"id": "model:lang", "provider": "openai", "name": "gpt-4o", "type": "language"},
+            {"id": "model:embed", "provider": "openai", "name": "text-embedding-3", "type": "embedding"},
+            {"id": "model:tts", "provider": "openai", "name": "tts-1", "type": "text_to_speech"},
+            {"id": "model:stt", "provider": "openai", "name": "whisper-1", "type": "speech_to_text"},
+        ]
+
+    def _post(self, client, defaults):
+        with patch(
+            "api.routers.models.DefaultModels.get_instance",
+            new=AsyncMock(return_value=defaults),
+        ), patch(
+            "open_notebook.database.repository.repo_query",
+            new=AsyncMock(return_value=self._models()),
+        ):
+            return client.post("/api/models/auto-assign")
+
+    def test_fills_only_required_slots(self, client):
+        defaults = self._mock_defaults()
+        response = self._post(client, defaults)
+
+        assert response.status_code == 200
+        body = response.json()
+        # Required slots got filled.
+        assert body["assigned"]["default_chat_model"] == "model:lang"
+        assert body["assigned"]["default_embedding_model"] == "model:embed"
+        assert defaults.default_chat_model == "model:lang"
+        assert defaults.default_embedding_model == "model:embed"
+        # Optional slots must NOT be assigned even though models exist.
+        for slot in (
+            "default_transformation_model",
+            "default_tools_model",
+            "large_context_model",
+            "default_text_to_speech_model",
+            "default_speech_to_text_model",
+        ):
+            assert slot not in body["assigned"]
+        assert defaults.default_transformation_model is None
+        assert defaults.large_context_model is None
+        assert defaults.default_text_to_speech_model is None
+        defaults.update.assert_awaited_once()
+
+    def test_skips_already_filled_required_slot(self, client):
+        defaults = self._mock_defaults()
+        defaults.default_chat_model = "model:existing-chat"
+        response = self._post(client, defaults)
+
+        assert response.status_code == 200
+        body = response.json()
+        assert "default_chat_model" in body["skipped"]
+        assert body["assigned"]["default_embedding_model"] == "model:embed"
+
+
+class TestGetDefaultModelFallback:
+    """get_default_model must fall back to the chat model for the three text
+    optional slots (transformation, tools, large_context) when unset (#1098).
+    """
+
+    def _defaults(self):
+        from unittest.mock import MagicMock
+
+        defaults = MagicMock()
+        defaults.default_chat_model = "model:chat"
+        defaults.default_transformation_model = None
+        defaults.default_tools_model = None
+        defaults.large_context_model = None
+        defaults.default_text_to_speech_model = None
+        defaults.default_speech_to_text_model = None
+        defaults.default_embedding_model = "model:embed"
+        return defaults
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "model_type", ["transformation", "tools", "large_context"]
+    )
+    async def test_text_optional_slots_fall_back_to_chat(self, model_type):
+        from open_notebook.ai.models import model_manager
+
+        defaults = self._defaults()
+        with patch.object(
+            model_manager, "get_defaults", new=AsyncMock(return_value=defaults)
+        ), patch.object(
+            model_manager, "get_model", new=AsyncMock(return_value="chat-model-obj")
+        ) as mock_get_model:
+            result = await model_manager.get_default_model(model_type)
+
+        assert result == "chat-model-obj"
+        mock_get_model.assert_awaited_once()
+        assert mock_get_model.await_args is not None
+        assert mock_get_model.await_args.args[0] == "model:chat"
+
+    @pytest.mark.asyncio
+    async def test_audio_slots_do_not_fall_back(self):
+        from open_notebook.ai.models import model_manager
+
+        defaults = self._defaults()
+        with patch.object(
+            model_manager, "get_defaults", new=AsyncMock(return_value=defaults)
+        ), patch.object(
+            model_manager, "get_model", new=AsyncMock(return_value="obj")
+        ) as mock_get_model:
+            tts = await model_manager.get_default_model("text_to_speech")
+            stt = await model_manager.get_default_model("speech_to_text")
+
+        assert tts is None
+        assert stt is None
+        mock_get_model.assert_not_awaited()

@@ -58,6 +58,8 @@ export interface SettingsResponse {
   default_embedding_option?: string
   auto_delete_files?: string
   docling_ocr?: boolean
+  docling_formulas?: boolean
+  docling_vision?: boolean
   youtube_preferred_languages?: string[]
 }
 

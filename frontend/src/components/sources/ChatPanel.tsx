@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useId } from 'react'
+import { memo, useCallback, useState, useRef, useEffect, useId } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -75,14 +75,15 @@ export function ChatPanel({
   notebookId
 }: ChatPanelProps) {
   const { t } = useTranslation()
-  const chatInputId = useId()
-  const [input, setInput] = useState('')
   const [sessionManagerOpen, setSessionManagerOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { openModal } = useModalManager()
 
-  const handleReferenceClick = (type: string, id: string) => {
+  // Stable reference-click handler so memoized messages don't re-render on
+  // composer keystrokes (which no longer re-render this component at all, since
+  // the input state lives in the ChatComposer child).
+  const handleReferenceClick = useCallback((type: string, id: string) => {
     const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
     try {
@@ -93,34 +94,12 @@ export function ChatPanel({
     } catch {
       toast.error(t('common.noResults'))
     }
-  }
+  }, [openModal, t])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  const handleSend = () => {
-    if (input.trim() && !isStreaming) {
-      onSendMessage(input.trim(), modelOverride)
-      setInput('')
-    }
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Detect platform for correct modifier key
-    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
-
-    if (e.key === 'Enter' && isModifierPressed) {
-      e.preventDefault()
-      handleSend()
-    }
-  }
-
-  // Detect platform for placeholder text
-  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
 
   return (
     <>
@@ -175,51 +154,12 @@ export function ChatPanel({
               </div>
             ) : (
               messages.map((message) => (
-                <div
+                <ChatMessage
                   key={message.id}
-                  className={`flex gap-3 ${
-                    message.type === 'human' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.type === 'ai' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex flex-col gap-2 max-w-[80%]">
-                    <div
-                      className={`rounded-lg px-4 py-2 ${
-                        message.type === 'human'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
-                    >
-                      {message.type === 'ai' ? (
-                        <AIMessageContent
-                          content={message.content}
-                          onReferenceClick={handleReferenceClick}
-                        />
-                      ) : (
-                        <p className="text-sm break-all">{message.content}</p>
-                      )}
-                    </div>
-                    {message.type === 'ai' && (
-                      <MessageActions
-                        content={message.content}
-                        notebookId={notebookId}
-                      />
-                    )}
-                  </div>
-                  {message.type === 'human' && (
-                    <div className="flex-shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
-                        <User className="h-4 w-4 text-primary-foreground" />
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  message={message}
+                  notebookId={notebookId}
+                  onReferenceClick={handleReferenceClick}
+                />
               ))
             )}
             {isStreaming && (
@@ -276,52 +216,164 @@ export function ChatPanel({
         )}
 
         {/* Input Area */}
-        <div className="flex-shrink-0 p-4 space-y-3 border-t">
-          {/* Model selector */}
-          {onModelChange && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
-              <ModelSelector
-                currentModel={modelOverride}
-                onModelChange={onModelChange}
-                disabled={isStreaming}
-              />
-            </div>
-          )}
-
-          <div className="flex gap-2 items-end min-w-0">
-            <Textarea
-              id={chatInputId}
-              name="chat-message"
-              autoComplete="off"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
-              disabled={isStreaming}
-              className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
-              rows={1}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim() || isStreaming}
-              size="icon"
-              className="h-[40px] w-[40px] flex-shrink-0"
-            >
-              {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
+        <ChatComposer
+          onSendMessage={onSendMessage}
+          isStreaming={isStreaming}
+          modelOverride={modelOverride}
+          onModelChange={onModelChange}
+        />
       </CardContent>
     </Card>
 
     </>
   )
 }
+
+// Composer owns the input state so keystrokes (including IME composition) only
+// re-render this small component instead of the whole message history.
+interface ChatComposerProps {
+  onSendMessage: (message: string, modelOverride?: string) => void
+  isStreaming: boolean
+  modelOverride?: string
+  onModelChange?: (model?: string) => void
+}
+
+function ChatComposer({
+  onSendMessage,
+  isStreaming,
+  modelOverride,
+  onModelChange
+}: ChatComposerProps) {
+  const { t } = useTranslation()
+  const chatInputId = useId()
+  const [input, setInput] = useState('')
+
+  const handleSend = () => {
+    if (input.trim() && !isStreaming) {
+      onSendMessage(input.trim(), modelOverride)
+      setInput('')
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Detect platform for correct modifier key
+    const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+    const isModifierPressed = isMac ? e.metaKey : e.ctrlKey
+
+    if (e.key === 'Enter' && isModifierPressed) {
+      e.preventDefault()
+      handleSend()
+    }
+  }
+
+  // Detect platform for placeholder text
+  const isMac = typeof navigator !== 'undefined' && navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
+  const keyHint = isMac ? '⌘+Enter' : 'Ctrl+Enter'
+
+  return (
+    <div className="flex-shrink-0 p-4 space-y-3 border-t">
+      {/* Model selector */}
+      {onModelChange && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">{t('chat.model')}</span>
+          <ModelSelector
+            currentModel={modelOverride}
+            onModelChange={onModelChange}
+            disabled={isStreaming}
+          />
+        </div>
+      )}
+
+      <div className="flex gap-2 items-end min-w-0">
+        <Textarea
+          id={chatInputId}
+          name="chat-message"
+          autoComplete="off"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={`${t('chat.sendPlaceholder')} (${t('chat.pressToSend', { key: keyHint })})`}
+          disabled={isStreaming}
+          className="flex-1 min-h-[40px] max-h-[100px] resize-none py-2 px-3 min-w-0"
+          rows={1}
+        />
+        <Button
+          onClick={handleSend}
+          disabled={!input.trim() || isStreaming}
+          size="icon"
+          className="h-[40px] w-[40px] flex-shrink-0"
+        >
+          {isStreaming ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// Single chat message row. Memoized so historical messages don't re-render when
+// unrelated state (e.g. the composer input) changes.
+interface ChatMessageProps {
+  message: SourceChatMessage
+  notebookId?: string
+  onReferenceClick: (type: string, id: string) => void
+}
+
+const ChatMessage = memo(function ChatMessage({
+  message,
+  notebookId,
+  onReferenceClick
+}: ChatMessageProps) {
+  return (
+    <div
+      className={`flex gap-3 ${
+        message.type === 'human' ? 'justify-end' : 'justify-start'
+      }`}
+    >
+      {message.type === 'ai' && (
+        <div className="flex-shrink-0">
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="h-4 w-4" />
+          </div>
+        </div>
+      )}
+      <div className="flex flex-col gap-2 max-w-[80%]">
+        <div
+          className={`rounded-lg px-4 py-2 ${
+            message.type === 'human'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-muted'
+          }`}
+        >
+          {message.type === 'ai' ? (
+            <AIMessageContent
+              content={message.content}
+              onReferenceClick={onReferenceClick}
+            />
+          ) : (
+            <p className="text-sm break-all">{message.content}</p>
+          )}
+        </div>
+        {message.type === 'ai' && (
+          <MessageActions
+            content={message.content}
+            notebookId={notebookId}
+          />
+        )}
+      </div>
+      {message.type === 'human' && (
+        <div className="flex-shrink-0">
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+            <User className="h-4 w-4 text-primary-foreground" />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+})
 
 // Helper component to render AI messages with clickable references
 function AIMessageContent({

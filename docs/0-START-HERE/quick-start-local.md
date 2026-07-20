@@ -60,7 +60,7 @@ services:
       - SURREAL_DATABASE=open_notebook
 
       # Ollama (required when running Ollama via Docker, as in this compose file)
-      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_API_BASE=http://ollama:11434
     volumes:
       - ./notebook_data:/app/data
     depends_on:

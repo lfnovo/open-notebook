@@ -445,6 +445,7 @@ async def delete_notebook(
             deleted_notes=result["deleted_notes"],
             deleted_sources=result["deleted_sources"],
             unlinked_sources=result["unlinked_sources"],
+            deleted_chat_sessions=result["deleted_chat_sessions"],
         )
     except HTTPException:
         raise

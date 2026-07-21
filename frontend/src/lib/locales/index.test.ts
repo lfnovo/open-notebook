@@ -155,6 +155,16 @@ describe('Unused Key Detection', () => {
         `Found ${unused.length} unused i18n key(s):\n${unused.join('\n')}`,
       ).toEqual([])
     },
-    30_000,
+    // This walks the whole src tree and greps every file, so it is I/O-bound
+    // rather than slow logic, and its runtime depends almost entirely on
+    // filesystem speed. Measured on Windows/NTFS: ~16s with a warm cache but
+    // over 180s cold, because per-file syscalls are far more expensive there.
+    // On Linux CI it finishes in seconds.
+    //
+    // The original 30s failed on any Windows run; 120s still failed cold.
+    // Set well above the slowest observed cold run so a dev box does not see
+    // spurious failures. It remains a hard ceiling rather than no timeout at
+    // all, so a genuine hang is still caught -- just not quickly.
+    300_000,
   )
 })

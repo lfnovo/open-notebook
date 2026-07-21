@@ -6,6 +6,7 @@ instead of raw episode names, preventing filesystem issues with
 spaces and special characters (GitHub issue #663).
 """
 
+import os
 import uuid
 from pathlib import Path, PurePosixPath
 from types import SimpleNamespace
@@ -26,8 +27,12 @@ class TestBuildEpisodeOutputDir:
         assert str(parsed) == dir_name
 
     def test_path_structure(self):
+        # Compared as a Path, not a hard-coded "/"-joined string: the separator
+        # is platform-specific, and the invariant under test is the structure
+        # (<base>/episodes/<uuid>), not the separator. Same style as
+        # test_defaults_to_podcasts_folder below.
         dir_name, output_dir = build_episode_output_dir("/data/podcasts")
-        assert str(output_dir) == f"/data/podcasts/episodes/{dir_name}"
+        assert Path(output_dir) == Path("/data/podcasts") / "episodes" / dir_name
 
     def test_defaults_to_podcasts_folder(self):
         """No-arg form builds under PODCASTS_FOLDER - the same root the
@@ -70,6 +75,16 @@ class TestBuildEpisodeOutputDir:
                 f"Unexpected chars in directory name: {dir_component}"
             )
 
+    @pytest.mark.skipif(
+        os.name == "nt",
+        reason=(
+            "Asserts POSIX path semantics. On Windows, Path('/data/podcasts') "
+            "renders with backslashes and no root component, so PurePosixPath "
+            "cannot parse it into these parts. The platform-neutral structural "
+            "check lives in test_path_structure; this one exists to pin the "
+            "POSIX rendering that the shipped Linux container actually uses."
+        ),
+    )
     def test_path_works_on_posix(self):
         dir_name, output_dir = build_episode_output_dir("/data/podcasts")
         posix = PurePosixPath(str(output_dir))

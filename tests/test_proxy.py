@@ -53,6 +53,15 @@ def test_lowercase_and_uppercase_kept_in_sync(monkeypatch):
     assert os.environ["no_proxy"] == os.environ["NO_PROXY"]
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason=(
+        "Windows environment variables are case-INSENSITIVE, so 'no_proxy' and "
+        "'NO_PROXY' are the same variable and cannot hold the two distinct "
+        "values this test sets up. The merge behaviour under test only exists "
+        "on POSIX, which is what the shipped container runs."
+    ),
+)
 def test_merges_both_case_variants(monkeypatch):
     monkeypatch.setenv("no_proxy", "lower.example.com")
     monkeypatch.setenv("NO_PROXY", "UPPER.example.com")

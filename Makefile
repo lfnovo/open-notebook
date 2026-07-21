@@ -162,7 +162,7 @@ worker: worker-start
 
 worker-start:
 	@echo "Starting surreal-commands worker..."
-	uv run --env-file .env surreal-commands-worker --import-modules commands --max-tasks "$${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}"
+	PYTHONIOENCODING=utf-8 uv run --env-file .env surreal-commands-worker --import-modules commands --max-tasks "$${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}"
 
 worker-stop:
 	@echo "Stopping surreal-commands worker..."
@@ -176,13 +176,13 @@ worker-restart: worker-stop
 start-all:
 	@echo "🚀 Starting Open Notebook (Database + API + Worker + Frontend)..."
 	@echo "📊 Starting SurrealDB..."
-	@docker compose -f docker-compose.dev.yml up -d surrealdb
+	@docker compose up -d surrealdb
 	@sleep 3
 	@echo "🔧 Starting API backend..."
-	@uv run run_api.py &
+	@uv run --env-file .env run_api.py &
 	@sleep 3
 	@echo "⚙️ Starting background worker..."
-	@uv run --env-file .env surreal-commands-worker --import-modules commands --max-tasks "$${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}" &
+	@PYTHONIOENCODING=utf-8 uv run --env-file .env surreal-commands-worker --import-modules commands --max-tasks "$${OPEN_NOTEBOOK_WORKER_MAX_TASKS:-5}" &
 	@sleep 2
 	@echo "🌐 Starting Next.js frontend..."
 	@echo "✅ All services started!"

@@ -9,10 +9,31 @@ legacy rows migration 21 could not convert - they are treated as invalid,
 preserving the 403/404 behavior #1018's guards gave them.
 """
 
+import tempfile
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
+
+
+def _symlinks_supported() -> bool:
+    """Whether this process can actually create a symlink.
+
+    Windows only permits it for administrators or with Developer Mode enabled,
+    so this probes the real capability rather than assuming from os.name --
+    a Windows box with Developer Mode on still runs the test.
+    """
+    with tempfile.TemporaryDirectory() as d:
+        target = Path(d) / "target"
+        target.write_bytes(b"")
+        try:
+            (Path(d) / "link").symlink_to(target)
+        except (OSError, NotImplementedError):
+            return False
+        return True
+
+
+SYMLINKS_SUPPORTED = _symlinks_supported()
 from fastapi.testclient import TestClient
 
 from open_notebook.config import PODCASTS_FOLDER
@@ -108,6 +129,10 @@ class TestResolveContainedAudioPath:
 
         assert resolve_contained_audio_path("../podcasts_evil/secret.mp3") is None
 
+    @pytest.mark.skipif(
+        not SYMLINKS_SUPPORTED,
+        reason="Creating a symlink requires admin rights or Developer Mode on Windows",
+    )
     def test_symlink_escape_is_rejected(self, tmp_path, monkeypatch):
         root = tmp_path / "podcasts"
         root.mkdir()

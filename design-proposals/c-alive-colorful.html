@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Notebook — Direction C: Alive &amp; Colorful</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DIRECTION C — ALIVE & COLORFUL
+   Color as protagonist. Each content type owns a hue:
+   Sources → coral · Notes → gold · Chat/AI → teal.
+   Warm paper neutrals do the heavy lifting; hue does identity.
+   ============================================================ */
+
+:root {
+  /* — neutrals (warm paper, never gray-on-white) — */
+  --bg: #F7F2E9;
+  --bg-deep: #F1EADD;
+  --surface: #FFFDF8;
+  --surface-raised: #FFFFFF;
+  --ink: #23202B;
+  --ink-soft: #5B5462;
+  --ink-faint: #8B8391;
+  --line: #E5DCCC;
+  --line-strong: #23202B;
+
+  /* — owned hues — */
+  --coral: #E8503A;          /* sources */
+  --coral-deep: #C03A26;
+  --coral-tint: #FCE9E4;
+  --coral-wash: #FBF1EB;
+  --gold: #E9A511;           /* notes */
+  --gold-deep: #8A6200;
+  --gold-tint: #FAEECF;
+  --gold-wash: #FAF2DE;
+  --teal: #12897E;           /* chat / AI */
+  --teal-deep: #0A6A61;
+  --teal-tint: #DDF0EC;
+  --teal-wash: #E9F4F0;
+  --plum: #6D4FA3;           /* rare seasoning: model chip, kbd */
+  --plum-tint: #EEE8F8;
+
+  /* — action — */
+  --primary: #CE3D28;
+  --primary-hover: #B5341F;
+  --on-primary: #FFF7F0;
+
+  /* — depth — */
+  --shadow-soft: 0 1px 2px rgba(35,32,43,.05), 0 8px 24px -12px rgba(35,32,43,.18);
+  --shadow-lift: 0 2px 4px rgba(35,32,43,.06), 0 16px 32px -12px rgba(35,32,43,.22);
+  --offset-coral: 5px 5px 0 var(--coral-tint);
+  --offset-gold: 5px 5px 0 var(--gold-tint);
+  --offset-teal: 5px 5px 0 var(--teal-tint);
+
+  /* — shape — */
+  --r-xl: 22px;
+  --r-lg: 16px;
+  --r-md: 12px;
+  --r-sm: 8px;
+  --r-pill: 999px;
+
+  /* — type — */
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Trebuchet MS", sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --fs-hero: 30px;
+  --fs-title: 17px;
+  --fs-body: 13.5px;
+  --fs-small: 12px;
+  --fs-micro: 10.5px;
+
+  /* — space — */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px;
+}
+
+.dark {
+  --bg: #17141E;
+  --bg-deep: #120F19;
+  --surface: #201C2A;
+  --surface-raised: #272233;
+  --ink: #F2EDE4;
+  --ink-soft: #B4ACBD;
+  --ink-faint: #7E7689;
+  --line: #332D40;
+  --line-strong: #F2EDE4;
+
+  --coral: #FF7A5F;
+  --coral-deep: #FF9B85;
+  --coral-tint: #3B231F;
+  --coral-wash: #2A1F22;
+  --gold: #F2BD3F;
+  --gold-deep: #F7CF6E;
+  --gold-tint: #38301A;
+  --gold-wash: #2A2620;
+  --teal: #3ECFBE;
+  --teal-deep: #6BDDCF;
+  --teal-tint: #163531;
+  --teal-wash: #1D2C2A;
+  --plum: #B79CE8;
+  --plum-tint: #2C2440;
+
+  --primary: #E85B42;
+  --primary-hover: #F26B52;
+  --on-primary: #FFF4EE;
+
+  --shadow-soft: 0 1px 2px rgba(0,0,0,.35), 0 10px 28px -12px rgba(0,0,0,.55);
+  --shadow-lift: 0 2px 4px rgba(0,0,0,.4), 0 18px 36px -12px rgba(0,0,0,.6);
+  --offset-coral: 5px 5px 0 var(--coral-tint);
+  --offset-gold: 5px 5px 0 var(--gold-tint);
+  --offset-teal: 5px 5px 0 var(--teal-tint);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  transition: background .25s ease, color .25s ease;
+}
+
+::selection { background: var(--gold-tint); color: var(--ink); }
+
+/* ---------- direction banner ---------- */
+.tile-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: var(--fs-micro);
+  letter-spacing: .04em;
+  flex-shrink: 0;
+}
+.dark .tile-banner { background: #0D0B12; color: var(--ink-soft); }
+.tile-banner .dots { display: flex; gap: 4px; }
+.tile-banner .dots i { width: 8px; height: 8px; border-radius: 50%; display: block; }
+.tile-banner .dots i:nth-child(1) { background: var(--coral); }
+.tile-banner .dots i:nth-child(2) { background: var(--gold); }
+.tile-banner .dots i:nth-child(3) { background: var(--teal); }
+.tile-banner strong { font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.tile-banner span { opacity: .75; }
+
+/* ---------- app frame ---------- */
+.app {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 0;
+}
+
+/* ---------- sidebar ---------- */
+.sidebar {
+  background: var(--bg-deep);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: var(--sp-5) var(--sp-4);
+  gap: var(--sp-5);
+  overflow-y: auto;
+}
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 4px;
+}
+.wordmark .mark {
+  width: 34px; height: 34px;
+  border-radius: 11px;
+  background: var(--ink);
+  display: grid;
+  place-items: center;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.dark .wordmark .mark { background: var(--surface-raised); }
+.wordmark .mark::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 6px 6px 2px 2px;
+  background:
+    linear-gradient(to bottom,
+      var(--coral) 0 33%,
+      var(--gold) 33% 66%,
+      var(--teal) 66% 100%);
+}
+.wordmark h1 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  line-height: 1.05;
+}
+.wordmark h1 span { color: var(--coral); }
+
+.btn-new {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .01em;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: none;
+  border-radius: var(--r-md);
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--coral-tint);
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn-new:hover {
+  background: var(--primary-hover);
+  transform: translate(-1px,-1px);
+  box-shadow: 5px 5px 0 var(--coral-tint);
+}
+.btn-new:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--coral-tint); }
+.btn-new svg { width: 14px; height: 14px; }
+
+.nav { display: flex; flex-direction: column; gap: var(--sp-5); flex: 1; }
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-label {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 0 10px 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.nav-label::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: var(--line);
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 13px;
+  text-decoration: none;
+  position: relative;
+  transition: background .12s ease, color .12s ease;
+}
+.nav-item svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .85; }
+.nav-item:hover { background: var(--surface); color: var(--ink); }
+.nav-item.active {
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-soft);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -3px;
+  top: 7px;
+  bottom: 7px;
+  width: 4px;
+  border-radius: 4px;
+  background: var(--coral);
+}
+/* nav groups pick up their hue on the icon */
+.g-collect .nav-item svg { color: var(--coral); }
+.g-process .nav-item svg { color: var(--teal); }
+.g-create .nav-item svg { color: var(--gold); }
+.g-manage .nav-item svg { color: var(--ink-faint); }
+
+.sidebar-foot {
+  border-top: 1px solid var(--line);
+  padding-top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.foot-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 500;
+  background: none;
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background .12s ease, color .12s ease;
+}
+.foot-item:hover { background: var(--surface); color: var(--ink); }
+.foot-item svg { width: 14px; height: 14px; opacity: .8; }
+.foot-item .grow { flex: 1; }
+kbd {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--plum-tint);
+  color: var(--plum);
+  border-radius: 5px;
+  padding: 2px 6px;
+  letter-spacing: .03em;
+}
+
+/* ---------- main ---------- */
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.nb-header {
+  padding: var(--sp-6) var(--sp-7) var(--sp-5);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  flex-shrink: 0;
+}
+.nb-head-left { min-width: 0; }
+.breadcrumb {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.breadcrumb a { color: var(--teal); text-decoration: none; font-weight: 600; }
+.breadcrumb a:hover { text-decoration: underline; }
+.nb-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-hero);
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.1;
+  display: inline-block;
+  position: relative;
+}
+/* signature flourish: hand-drawn tri-color underline */
+.nb-title .squiggle {
+  position: absolute;
+  left: 2px;
+  right: -6px;
+  bottom: -7px;
+  height: 8px;
+  overflow: visible;
+}
+.nb-desc {
+  margin-top: 12px;
+  color: var(--ink-soft);
+  font-size: 13.5px;
+  max-width: 60ch;
+  border-bottom: 1.5px dashed var(--line);
+  padding-bottom: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: text;
+}
+.nb-desc:hover { border-bottom-color: var(--gold); }
+.nb-desc svg { width: 12px; height: 12px; color: var(--ink-faint); flex-shrink: 0; }
+.nb-meta {
+  margin-top: 8px;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+}
+.nb-meta b { color: var(--ink-soft); font-weight: 600; }
+
+.nb-actions { display: flex; gap: 8px; flex-shrink: 0; padding-top: 22px; }
+.btn-ghost {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all .12s ease;
+}
+.btn-ghost svg { width: 13px; height: 13px; }
+.btn-ghost:hover { border-color: var(--ink-soft); color: var(--ink); }
+.btn-ghost.danger:hover { border-color: var(--coral); color: var(--coral-deep); background: var(--coral-wash); }
+
+/* ---------- workspace ---------- */
+.workspace {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 330px) minmax(250px, 1fr) minmax(340px, 1.25fr);
+  gap: var(--sp-4);
+  padding: 0 var(--sp-7) var(--sp-6);
+  min-height: 0;
+}
+
+.panel {
+  border-radius: var(--r-xl);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.panel-sources { background: var(--coral-wash); border-color: color-mix(in srgb, var(--coral) 22%, var(--line)); }
+.panel-notes   { background: var(--gold-wash);  border-color: color-mix(in srgb, var(--gold) 26%, var(--line)); }
+.panel-chat    { background: var(--teal-wash);  border-color: color-mix(in srgb, var(--teal) 24%, var(--line)); }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  flex-shrink: 0;
+}
+.panel-head .p-icon {
+  width: 28px; height: 28px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.panel-head .p-icon svg { width: 14px; height: 14px; }
+.panel-sources .p-icon { background: var(--coral); color: #FFF6F2; }
+.panel-notes   .p-icon { background: var(--gold);  color: #2B2107; }
+.panel-chat    .p-icon { background: var(--teal);  color: #EFFCF9; }
+.dark .panel-sources .p-icon { color: #23100C; }
+.dark .panel-chat .p-icon { color: #0B211E; }
+
+.panel-head h2 {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -.01em;
+  flex: 1;
+}
+.panel-count {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+}
+.panel-sources .panel-count { background: var(--coral-tint); color: var(--coral-deep); }
+.panel-notes   .panel-count { background: var(--gold-tint);  color: var(--gold-deep); }
+
+.panel-action {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--r-pill);
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: transform .12s ease, filter .12s ease;
+}
+.panel-action svg { width: 12px; height: 12px; }
+.panel-action:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.panel-sources .panel-action { background: var(--coral); color: #FFF6F2; }
+.panel-notes   .panel-action { background: var(--gold);  color: #2B2107; }
+.dark .panel-sources .panel-action { color: #23100C; }
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-1) var(--sp-4) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+/* ---------- source cards ---------- */
+.src-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--coral);
+  border-radius: var(--r-md);
+  padding: 11px 12px 10px;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.src-card:hover {
+  transform: translate(-2px,-2px);
+  box-shadow: var(--offset-coral);
+  border-color: color-mix(in srgb, var(--coral) 35%, var(--line));
+  border-left-color: var(--coral);
+}
+.src-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.src-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--coral-deep);
+  background: var(--coral-tint);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.src-type svg { width: 10px; height: 10px; }
+.src-type.t-pdf   { color: var(--gold-deep);  background: var(--gold-tint); }
+.src-type.t-web   { color: var(--teal-deep);  background: var(--teal-tint); }
+.src-type.t-audio { color: var(--plum);       background: var(--plum-tint); }
+.src-type.t-paper { color: var(--ink-soft);   background: var(--bg-deep); }
+.insight-chip.empty {
+  background: transparent;
+  border: 1px dashed var(--line);
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+.src-title {
+  font-weight: 600;
+  font-size: 12.8px;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.src-foot {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.insight-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--gold-deep);
+  background: var(--gold-tint);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  transition: filter .12s ease;
+}
+.insight-chip:hover { filter: brightness(.96); }
+.insight-chip svg { width: 11px; height: 11px; }
+.src-more {
+  color: var(--ink-faint);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 3px;
+  display: grid;
+  place-items: center;
+}
+.src-more:hover { background: var(--coral-tint); color: var(--coral-deep); }
+.src-more svg { width: 14px; height: 14px; }
+
+/* ---------- notes panel ---------- */
+.note-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 13px;
+  cursor: pointer;
+  position: relative;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.note-card:hover {
+  transform: translate(-2px,-2px);
+  box-shadow: var(--offset-gold);
+  border-color: color-mix(in srgb, var(--gold) 40%, var(--line));
+}
+.note-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+  background: var(--gold-tint);
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-bottom: 7px;
+}
+.note-badge svg { width: 10px; height: 10px; }
+.note-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  line-height: 1.3;
+  letter-spacing: -.005em;
+}
+.note-meta { margin-top: 7px; font-size: 11px; color: var(--ink-faint); }
+
+/* the designed empty state — hero of this direction */
+.notes-empty {
+  flex: 1;
+  border: 2px dashed color-mix(in srgb, var(--gold) 45%, var(--line));
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--sp-6) var(--sp-5);
+  gap: 6px;
+  min-height: 220px;
+  position: relative;
+  overflow: hidden;
+}
+.notes-empty .burst {
+  width: 74px;
+  height: 74px;
+  margin-bottom: 8px;
+  animation: float 5s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-6px) rotate(3deg); }
+}
+.notes-empty h3 {
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.notes-empty p {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  line-height: 1.55;
+  max-width: 34ch;
+}
+.notes-empty .hints {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.hint-pill {
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--r-pill);
+  padding: 4px 11px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: transform .12s ease, border-color .12s ease;
+}
+.hint-pill:hover { transform: translateY(-1px); }
+.hint-pill.h-coral { background: var(--coral-tint); color: var(--coral-deep); }
+.hint-pill.h-coral:hover { border-color: var(--coral); }
+.hint-pill.h-teal { background: var(--teal-tint); color: var(--teal-deep); }
+.hint-pill.h-teal:hover { border-color: var(--teal); }
+.hint-pill.h-gold { background: var(--gold-tint); color: var(--gold-deep); }
+.hint-pill.h-gold:hover { border-color: var(--gold); }
+
+/* ---------- chat panel ---------- */
+.panel-chat .panel-head { border-bottom: 1px solid color-mix(in srgb, var(--teal) 18%, transparent); padding-bottom: var(--sp-3); }
+.model-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--plum);
+  background: var(--plum-tint);
+  border-radius: var(--r-pill);
+  padding: 4px 11px;
+  cursor: pointer;
+  transition: filter .12s ease;
+}
+.model-chip:hover { filter: brightness(.97); }
+.model-chip .pulse {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--plum);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .45; transform: scale(.75); }
+}
+
+.chat-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+}
+.msg { display: flex; gap: 10px; max-width: 92%; }
+.msg.user { align-self: flex-end; flex-direction: row-reverse; max-width: 80%; }
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 9px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+}
+.avatar.ai { background: var(--teal); color: #EFFCF9; }
+.dark .avatar.ai { color: #0B211E; }
+.avatar.me { background: var(--ink); color: var(--bg); }
+.dark .avatar.me { background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line); }
+.bubble {
+  border-radius: var(--r-lg);
+  padding: 11px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.msg.user .bubble {
+  background: var(--ink);
+  color: var(--bg);
+  border-bottom-right-radius: 5px;
+}
+.dark .msg.user .bubble { background: var(--surface-raised); color: var(--ink); border: 1px solid var(--line); }
+.msg.ai .bubble {
+  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--teal) 22%, var(--line));
+  border-bottom-left-radius: 5px;
+  box-shadow: var(--shadow-soft);
+}
+.msg.ai .bubble p + p { margin-top: 9px; }
+.msg.ai .bubble strong { font-weight: 700; }
+.msg.ai .bubble .hl-coral { background: var(--coral-tint); color: var(--coral-deep); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.msg.ai .bubble .hl-teal { background: var(--teal-tint); color: var(--teal-deep); border-radius: 4px; padding: 0 4px; font-weight: 600; }
+.msg-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.msg:hover .msg-actions { opacity: 1; }
+.msg-act {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--teal-deep);
+  background: var(--teal-tint);
+  border: none;
+  border-radius: 6px;
+  padding: 3px 9px;
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.msg-act svg { width: 10px; height: 10px; }
+.msg-act:hover { filter: brightness(.95); }
+
+.chat-foot {
+  flex-shrink: 0;
+  padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.context-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  flex-wrap: wrap;
+}
+.ctx-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+}
+.ctx-chip i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+.ctx-chip.c-src { background: var(--coral-tint); color: var(--coral-deep); }
+.ctx-chip.c-src i { background: var(--coral); }
+.ctx-chip.c-note { background: var(--gold-tint); color: var(--gold-deep); }
+.ctx-chip.c-note i { background: var(--gold); }
+.ctx-chip.c-tok { background: var(--surface-raised); border: 1px solid var(--line); color: var(--ink-soft); }
+.ctx-label { margin-right: 2px; color: var(--ink-faint); font-weight: 500; }
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-raised);
+  border: 1.5px solid color-mix(in srgb, var(--teal) 30%, var(--line));
+  border-radius: var(--r-lg);
+  padding: 6px 6px 6px 16px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.composer:focus-within {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px var(--teal-tint);
+}
+.composer input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  min-width: 0;
+}
+.composer input::placeholder { color: var(--ink-faint); }
+.btn-send {
+  width: 36px; height: 36px;
+  border-radius: 12px;
+  border: none;
+  background: var(--teal);
+  color: #EFFCF9;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform .12s ease, filter .12s ease;
+}
+.dark .btn-send { color: #0B211E; }
+.btn-send:hover { transform: translateY(-1px) rotate(-6deg); filter: brightness(1.08); }
+.btn-send svg { width: 15px; height: 15px; }
+
+/* ---------- scrollbars ---------- */
+.panel-body::-webkit-scrollbar, .chat-scroll::-webkit-scrollbar { width: 8px; }
+.panel-body::-webkit-scrollbar-thumb, .chat-scroll::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 8px;
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1180px) {
+  .workspace { grid-template-columns: minmax(250px, 290px) minmax(220px, 1fr) minmax(300px, 1.2fr); padding: 0 var(--sp-5) var(--sp-5); }
+  .nb-header { padding: var(--sp-5) var(--sp-5) var(--sp-4); }
+}
+@media (max-width: 1040px) {
+  .app { grid-template-columns: 200px 1fr; }
+  .workspace { gap: var(--sp-3); }
+  .nb-desc { max-width: 44ch; }
+}
+</style>
+</head>
+<body>
+
+<div class="tile-banner">
+  <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+  <strong>Direction C — Alive &amp; Colorful</strong>
+  <span>Color as protagonist: each content type owns a hue, warm paper neutrals keep it readable.</span>
+</div>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="wordmark">
+      <div class="mark" aria-hidden="true"></div>
+      <h1>Open<br>Notebook<span>.</span></h1>
+    </div>
+
+    <button class="btn-new">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      New
+    </button>
+
+    <nav class="nav">
+      <div class="nav-group g-collect">
+        <div class="nav-label">Collect</div>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+          Sources
+        </a>
+      </div>
+      <div class="nav-group g-process">
+        <div class="nav-label">Process</div>
+        <a class="nav-item active" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg>
+          Notebooks
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          Ask
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Search
+        </a>
+      </div>
+      <div class="nav-group g-create">
+        <div class="nav-label">Create</div>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+          Podcasts
+        </a>
+      </div>
+      <div class="nav-group g-manage">
+        <div class="nav-label">Manage</div>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Models
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h6l2-8 4 16 2-8h6"/></svg>
+          Transformations
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </a>
+        <a class="nav-item" href="#">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          Advanced
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="foot-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="grow">Quick actions</span>
+        <kbd>⌘K</kbd>
+      </button>
+      <button class="foot-item" id="themeToggle">
+        <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        <span class="grow" id="themeLabel">Dark mode</span>
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span class="grow">English</span>
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span class="grow">Sign Out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <header class="nb-header">
+      <div class="nb-head-left">
+        <div class="breadcrumb"><a href="#">Notebooks</a> <span>/</span></div>
+        <h1 class="nb-title">
+          The Attention Economy
+          <svg class="squiggle" viewBox="0 0 200 8" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M2 5 Q 18 1, 34 5 T 66 5" fill="none" stroke="var(--coral)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M70 5 Q 86 1, 102 5 T 134 5" fill="none" stroke="var(--gold)" stroke-width="3" stroke-linecap="round"/>
+            <path d="M138 5 Q 154 1, 170 5 T 198 5" fill="none" stroke="var(--teal)" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </h1>
+        <div class="nb-desc" role="button" tabindex="0">
+          Research for an essay on focus, distraction and what technology does to both.
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5z"/></svg>
+        </div>
+        <div class="nb-meta">Created <b>3 days ago</b> · Updated <b>2 days ago</b></div>
+      </div>
+      <div class="nb-actions">
+        <button class="btn-ghost">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+          Archive
+        </button>
+        <button class="btn-ghost danger">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+          Delete
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- ===== SOURCES ===== -->
+      <section class="panel panel-sources" aria-label="Sources">
+        <div class="panel-head">
+          <div class="p-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>
+          </div>
+          <h2>Sources</h2>
+          <span class="panel-count">5</span>
+          <button class="panel-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add Source
+          </button>
+        </div>
+        <div class="panel-body">
+
+          <article class="src-card">
+            <div class="src-top">
+              <span class="src-type"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Video</span>
+            </div>
+            <h3 class="src-title">How Your Attention Is Sold</h3>
+            <div class="src-foot">
+              <span class="insight-chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 13.9 8.1 20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>1 insight</span>
+              <button class="src-more" aria-label="Source options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+          </article>
+
+          <article class="src-card">
+            <div class="src-top">
+              <span class="src-type t-pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>PDF</span>
+            </div>
+            <h3 class="src-title">Stolen Focus — Johann Hari (chapter notes)</h3>
+            <div class="src-foot">
+              <span class="insight-chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 13.9 8.1 20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>2 insights</span>
+              <button class="src-more" aria-label="Source options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+          </article>
+
+          <article class="src-card">
+            <div class="src-top">
+              <span class="src-type t-web"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Web</span>
+            </div>
+            <h3 class="src-title">The Cost of Context Switching — Cal Newport</h3>
+            <div class="src-foot">
+              <span class="insight-chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 13.9 8.1 20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>1 insight</span>
+              <button class="src-more" aria-label="Source options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+          </article>
+
+          <article class="src-card">
+            <div class="src-top">
+              <span class="src-type t-audio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>Audio</span>
+            </div>
+            <h3 class="src-title">Deep Questions #312: Rebuilding Concentration</h3>
+            <div class="src-foot">
+              <span class="insight-chip empty">No insights yet</span>
+              <button class="src-more" aria-label="Source options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+          </article>
+
+          <article class="src-card">
+            <div class="src-top">
+              <span class="src-type t-paper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15z"/></svg>Paper</span>
+            </div>
+            <h3 class="src-title">Attention Is All You Need</h3>
+            <div class="src-foot">
+              <span class="insight-chip"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 13.9 8.1 20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>1 insight</span>
+              <button class="src-more" aria-label="Source options"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            </div>
+          </article>
+
+        </div>
+      </section>
+
+      <!-- ===== NOTES ===== -->
+      <section class="panel panel-notes" aria-label="Notes">
+        <div class="panel-head">
+          <div class="p-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>
+          </div>
+          <h2>Notes</h2>
+          <span class="panel-count">1</span>
+          <button class="panel-action">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Write Note
+          </button>
+        </div>
+        <div class="panel-body">
+
+          <article class="note-card">
+            <span class="note-badge"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 13.9 8.1 20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9z"/></svg>AI Generated</span>
+            <h3 class="note-title">Key levers for reclaiming focus</h3>
+            <div class="note-meta">3 days ago</div>
+          </article>
+
+          <div class="notes-empty">
+            <svg class="burst" viewBox="0 0 80 80" aria-hidden="true">
+              <path d="M40 8 44.5 31.5 66 22 49 40 66 58 44.5 48.5 40 72 35.5 48.5 14 58 31 40 14 22 35.5 31.5z" fill="var(--gold)"/>
+              <circle cx="40" cy="40" r="8.5" fill="var(--surface-raised)"/>
+              <circle cx="40" cy="40" r="4" fill="var(--coral)"/>
+            </svg>
+            <h3>This is where thinking sticks</h3>
+            <p>Notes hold what you keep — answers worth saving, your own drafts, insights distilled from sources.</p>
+            <div class="hints">
+              <span class="hint-pill h-coral">Summarize a source</span>
+              <span class="hint-pill h-teal">Save a chat answer</span>
+              <span class="hint-pill h-gold">Draft an idea</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ===== CHAT ===== -->
+      <section class="panel panel-chat" aria-label="Chat with Notebook">
+        <div class="panel-head">
+          <div class="p-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <h2>Chat with Notebook</h2>
+          <button class="model-chip"><span class="pulse" aria-hidden="true"></span>gpt-5.6-terra</button>
+        </div>
+
+        <div class="chat-scroll">
+          <div class="msg user">
+            <div class="avatar me" aria-hidden="true">LN</div>
+            <div>
+              <div class="bubble">What do my sources agree on about rebuilding focus?</div>
+            </div>
+          </div>
+
+          <div class="msg ai">
+            <div class="avatar ai" aria-hidden="true">ON</div>
+            <div>
+              <div class="bubble">
+                <p>Across all five, one idea keeps surfacing: attention is a <strong>finite, trainable resource</strong> — not a fixed personality trait. Hari's strongest claim is that <span class="hl-coral">environment beats willpower</span>: you don't out-discipline a feed engineered against you, you redesign the room. The video makes the same point from the supply side — as long as your attention is the product being sold, the defaults will never be on your side.</p>
+                <p>Newport puts numbers on the damage: every context switch leaves <span class="hl-teal">attention residue</span> that degrades the next block of work, which is why his fix — and the podcast's rebuilding protocol — is long, scheduled stretches of single focus rather than scattered "productive" minutes. Even the arXiv paper rhymes: <span class="hl-coral">selective attention is the whole mechanism</span> — what you attend to determines what gets processed at all.</p>
+              </div>
+              <div class="msg-actions">
+                <button class="msg-act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Save as note</button>
+                <button class="msg-act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-foot">
+          <div class="context-bar">
+            <span class="ctx-label">Context</span>
+            <span class="ctx-chip c-src"><i></i>5 sources</span>
+            <span class="ctx-chip c-note"><i></i>1 note</span>
+            <span class="ctx-chip c-tok">4.9K tokens</span>
+          </div>
+          <div class="composer">
+            <input type="text" placeholder="Ask anything about your sources…" aria-label="Message">
+            <button class="btn-send" aria-label="Send message">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('themeToggle');
+    var label = document.getElementById('themeLabel');
+    var icon = document.getElementById('iconSun');
+    var moon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    var sun = '<circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>';
+    btn.addEventListener('click', function () {
+      var dark = root.classList.toggle('dark');
+      label.textContent = dark ? 'Light mode' : 'Dark mode';
+      icon.innerHTML = dark ? moon : sun;
+    });
+  })();
+</script>
+
+</body>
+</html>

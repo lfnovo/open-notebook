@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Open Notebook — Direction B: Refined Technical Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DIRECTION B — REFINED TECHNICAL TOOL
+   Warm graphite · amber signature · Schibsted Grotesk + JetBrains Mono
+   ============================================================ */
+
+:root {
+  /* ---- type ---- */
+  --font-ui: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --fs-2xs: 10px;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 15px;
+  --fs-xl: 19px;
+
+  /* ---- spacing (4px grid) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;
+  --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+
+  /* ---- radii: tight ---- */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 7px;
+
+  /* ---- LIGHT theme (hand-tuned, warm paper-graphite) ---- */
+  --bg-app: #edebe7;          /* app canvas */
+  --bg-shell: #e6e4df;        /* sidebar */
+  --bg-panel: #f7f6f3;        /* panels */
+  --bg-raised: #fdfdfb;       /* cards */
+  --bg-inset: #ecebe6;        /* inputs, wells */
+  --bg-hover: rgba(30, 27, 22, 0.05);
+  --bg-active: rgba(30, 27, 22, 0.08);
+
+  --fg: #201d18;
+  --fg-mid: #57534a;
+  --fg-dim: #8a857a;
+  --fg-faint: #b3ada0;
+
+  --line: rgba(32, 29, 24, 0.13);
+  --line-strong: rgba(32, 29, 24, 0.22);
+
+  --accent: #b45f06;          /* burnt amber on light */
+  --accent-fg: #9a5205;
+  --accent-contrast: #fff;
+  --accent-soft: rgba(180, 95, 6, 0.09);
+  --accent-line: rgba(180, 95, 6, 0.35);
+  --accent-glow: 0 0 0 3px rgba(180, 95, 6, 0.14);
+
+  --ok: #2f7d4f;
+  --video: #a3372e;           /* content-type: video */
+  --note-ai: #21697d;         /* content-type: AI note */
+  --t-video: #a3372e;         /* content-type palette (light) */
+  --t-pdf: #a53252;
+  --t-web: #21697d;
+  --t-audio: #2f7d4f;
+  --t-paper: #6d7a2a;
+
+  --focus-ring: 0 0 0 1px var(--bg-panel), 0 0 0 3px var(--accent-line);
+  --card-shadow: 0 1px 0 rgba(32,29,24,0.04);
+  --scroll-thumb: rgba(32,29,24,0.18);
+}
+
+.dark {
+  /* ---- DARK theme (hero) — warm graphite, committed temperature ---- */
+  --bg-app: #131110;          /* deepest: app canvas */
+  --bg-shell: #161413;        /* sidebar */
+  --bg-panel: #1a1816;        /* panels */
+  --bg-raised: #201d1b;       /* cards */
+  --bg-inset: #0f0e0d;        /* inputs, wells */
+  --bg-hover: rgba(237, 227, 213, 0.045);
+  --bg-active: rgba(237, 227, 213, 0.08);
+
+  --fg: #ece7df;
+  --fg-mid: #a9a299;
+  --fg-dim: #746e66;
+  --fg-faint: #514c46;
+
+  --line: rgba(236, 231, 223, 0.08);
+  --line-strong: rgba(236, 231, 223, 0.16);
+
+  --accent: #ffb224;          /* electric amber */
+  --accent-fg: #ffb224;
+  --accent-contrast: #1a1000;
+  --accent-soft: rgba(255, 178, 36, 0.08);
+  --accent-line: rgba(255, 178, 36, 0.35);
+  --accent-glow: 0 0 0 3px rgba(255, 178, 36, 0.13), 0 0 18px rgba(255, 178, 36, 0.10);
+
+  --ok: #4ade80;
+  --video: #f0705a;
+  --note-ai: #56c2e0;
+  --t-video: #f0705a;         /* content-type palette (dark) */
+  --t-pdf: #e8618c;
+  --t-web: #56c2e0;
+  --t-audio: #5ad4a6;
+  --t-paper: #c3d160;
+
+  --focus-ring: 0 0 0 1px var(--bg-panel), 0 0 0 3px var(--accent-line);
+  --card-shadow: none;
+  --scroll-thumb: rgba(236,231,223,0.14);
+}
+
+/* ---- base ---- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.45;
+  color: var(--fg);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+button:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 4px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.mono { font-family: var(--font-mono); }
+
+/* micro-label: mono uppercase, the direction's signature typographic device */
+.microlabel {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+
+kbd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--fg-dim);
+  background: var(--bg-inset);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-xs);
+  padding: 1px 5px 2px;
+  line-height: 1;
+  box-shadow: inset 0 -1px 0 var(--line);
+}
+
+/* ============ DIRECTION BANNER ============ */
+.tile-banner {
+  flex: none;
+  display: flex; align-items: baseline; gap: var(--sp-3);
+  padding: 5px var(--sp-4);
+  background: var(--bg-inset);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.06em;
+  color: var(--fg-dim);
+  white-space: nowrap; overflow: hidden;
+}
+.tile-banner b { color: var(--accent-fg); font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+.tile-banner span { text-overflow: ellipsis; overflow: hidden; }
+
+/* ============ APP FRAME ============ */
+.app {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 224px 1fr;
+  min-height: 0;
+}
+
+/* ============ SIDEBAR ============ */
+.sidebar {
+  background: var(--bg-shell);
+  border-right: 1px solid var(--line);
+  display: flex; flex-direction: column;
+  min-height: 0;
+  padding: var(--sp-3) 0;
+}
+.brand {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-4) var(--sp-3);
+}
+.brand-mark {
+  width: 20px; height: 20px; border-radius: var(--r-sm);
+  background: linear-gradient(145deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #000));
+  display: grid; place-items: center;
+  color: var(--accent-contrast);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+  box-shadow: 0 0 12px rgba(255,178,36,0.25);
+}
+html:not(.dark) .brand-mark { box-shadow: none; }
+.brand-name { font-weight: 600; font-size: var(--fs-md); letter-spacing: -0.01em; }
+.brand-ver { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-faint); margin-left: auto; }
+
+.btn-new {
+  margin: 0 var(--sp-3) var(--sp-3);
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 6px var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600; font-size: var(--fs-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000);
+  transition: box-shadow 120ms ease, filter 120ms ease;
+}
+.btn-new:hover { filter: brightness(1.06); box-shadow: var(--accent-glow); }
+.btn-new .plus { font-family: var(--font-mono); font-weight: 600; }
+.btn-new kbd { margin-left: auto; background: rgba(0,0,0,0.18); border-color: rgba(0,0,0,0.25); color: inherit; box-shadow: none; }
+
+.nav { flex: 1; overflow-y: auto; padding: 0 var(--sp-2); min-height: 0; }
+.nav-group { margin-bottom: var(--sp-3); }
+.nav-group > .microlabel { display: block; padding: var(--sp-2) var(--sp-2) var(--sp-1); }
+.nav-item {
+  width: 100%;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--fg-mid);
+  font-size: var(--fs-sm); font-weight: 500;
+  border: 1px solid transparent;
+  text-align: left;
+  transition: background 100ms ease, color 100ms ease;
+}
+.nav-item:hover { background: var(--bg-hover); color: var(--fg); }
+.nav-item.active {
+  background: var(--bg-active);
+  color: var(--fg);
+  border-color: var(--line);
+  position: relative;
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute; left: -8px; top: 5px; bottom: 5px; width: 2px;
+  background: var(--accent);
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(255,178,36,0.5);
+}
+html:not(.dark) .nav-item.active::before { box-shadow: none; }
+.nav-item svg { width: 14px; height: 14px; flex: none; stroke: currentColor; opacity: 0.75; }
+.nav-item .count { margin-left: auto; font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-dim); }
+
+.sidebar-foot { flex: none; border-top: 1px solid var(--line); padding: var(--sp-2) var(--sp-2) 0; }
+.foot-item {
+  width: 100%;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--fg-mid); font-size: var(--fs-sm); font-weight: 500;
+}
+.foot-item:hover { background: var(--bg-hover); color: var(--fg); }
+.foot-item svg { width: 14px; height: 14px; stroke: currentColor; opacity: 0.75; }
+.foot-item .hint { margin-left: auto; display: flex; gap: 3px; }
+.worker-status {
+  display: flex; align-items: center; gap: 6px;
+  margin: var(--sp-2);
+  padding: 5px var(--sp-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-inset);
+  font-family: var(--font-mono); font-size: var(--fs-2xs); letter-spacing: 0.05em;
+  color: var(--fg-dim);
+}
+.dot-ok {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--ok) 70%, transparent);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.55; } }
+.worker-status .lat { margin-left: auto; color: var(--fg-faint); }
+
+/* ============ MAIN ============ */
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+.nb-header {
+  flex: none;
+  display: flex; align-items: center; gap: var(--sp-4);
+  padding: var(--sp-3) var(--sp-5);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-app);
+}
+.nb-id { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.nb-crumb { display: flex; align-items: center; gap: var(--sp-2); }
+.nb-title { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+.nb-desc {
+  font-size: var(--fs-sm); color: var(--fg-dim);
+  border: 1px dashed transparent; border-radius: var(--r-xs);
+  padding: 1px 4px; margin-left: -4px;
+  cursor: text; max-width: 52ch;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nb-desc:hover { border-color: var(--line-strong); color: var(--fg-mid); }
+.nb-meta {
+  margin-left: auto;
+  display: flex; align-items: center; gap: var(--sp-4);
+  flex: none;
+}
+.nb-dates { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-dim); text-align: right; line-height: 1.7; letter-spacing: 0.03em; }
+.nb-dates b { color: var(--fg-mid); font-weight: 500; }
+.nb-actions { display: flex; gap: var(--sp-2); }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  font-size: var(--fs-sm); font-weight: 500;
+  color: var(--fg-mid);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg-panel);
+  transition: background 100ms ease, color 100ms ease, border-color 100ms ease;
+}
+.btn-ghost:hover { background: var(--bg-hover); color: var(--fg); }
+.btn-ghost.danger:hover { color: var(--video); border-color: color-mix(in srgb, var(--video) 45%, transparent); }
+.btn-ghost svg { width: 13px; height: 13px; stroke: currentColor; }
+
+/* ============ WORKSPACE ============ */
+.workspace {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(250px, 300px) minmax(380px, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border-top: none;
+}
+.panel {
+  background: var(--bg-panel);
+  display: flex; flex-direction: column;
+  min-width: 0; min-height: 0;
+}
+.panel-head {
+  flex: none;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  min-height: 36px;
+}
+.panel-head .microlabel { color: var(--fg-mid); }
+.panel-count { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-faint); }
+.panel-action {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px;
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--accent-fg);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  transition: box-shadow 120ms ease;
+}
+.panel-action:hover { box-shadow: var(--accent-glow); }
+.panel-body { flex: 1; overflow-y: auto; padding: var(--sp-2); min-height: 0; }
+
+/* ---- source cards ---- */
+.src-card {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  cursor: default;
+  transition: background 100ms ease, border-color 100ms ease;
+  animation: rise 300ms ease backwards;
+}
+.src-card:nth-child(1) { animation-delay: 20ms; }
+.src-card:nth-child(2) { animation-delay: 60ms; }
+.src-card:nth-child(3) { animation-delay: 100ms; }
+.src-card:nth-child(4) { animation-delay: 140ms; }
+.src-card:nth-child(5) { animation-delay: 180ms; }
+@keyframes rise { from { opacity: 0; transform: translateY(4px); } }
+.src-card:hover { background: var(--bg-raised); border-color: var(--line); }
+.src-icon {
+  width: 26px; height: 26px; border-radius: var(--r-sm);
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  display: grid; place-items: center;
+}
+.src-icon.t-video { color: var(--t-video); }
+.src-icon.t-pdf   { color: var(--t-pdf); }
+.src-icon.t-web   { color: var(--t-web); }
+.src-icon.t-audio { color: var(--t-audio); }
+.src-icon.t-paper { color: var(--t-paper); }
+.src-icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; }
+.src-icon svg .fill { fill: currentColor; stroke: none; }
+.src-meta .no-insight { color: var(--fg-faint); }
+.src-title {
+  font-size: var(--fs-sm); font-weight: 500; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.src-meta {
+  margin-top: 3px;
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-dim);
+  letter-spacing: 0.03em;
+}
+.src-meta .sep { color: var(--fg-faint); }
+.insight-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 6px 2px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-inset);
+  color: var(--fg-mid);
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  cursor: pointer;
+  transition: border-color 100ms ease, color 100ms ease;
+}
+.insight-chip:hover { border-color: var(--accent-line); color: var(--accent-fg); }
+.insight-chip::before { content: "◆"; font-size: 7px; color: var(--accent); }
+
+/* ---- notes ---- */
+.note-card {
+  padding: var(--sp-2) var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-raised);
+  box-shadow: var(--card-shadow);
+  cursor: default;
+}
+.note-card:hover { border-color: var(--line-strong); }
+.note-kind {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--note-ai);
+  margin-bottom: 5px;
+}
+.note-kind::before { content: "✦"; font-size: 9px; }
+.note-title { font-size: var(--fs-sm); font-weight: 600; line-height: 1.35; }
+.note-time { margin-top: 5px; font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-dim); letter-spacing: 0.03em; }
+
+.notes-empty {
+  margin-top: var(--sp-3);
+  padding: var(--sp-4) var(--sp-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+.notes-empty .glyph {
+  font-family: var(--font-mono); font-size: var(--fs-sm);
+  color: var(--fg-faint); letter-spacing: 0.2em;
+  display: block; margin-bottom: var(--sp-2);
+}
+.notes-empty p { font-size: var(--fs-xs); color: var(--fg-dim); line-height: 1.5; max-width: 24ch; margin: 0 auto; }
+.notes-empty .microlabel { display: block; margin-top: var(--sp-3); color: var(--fg-faint); }
+.notes-empty kbd { margin: 0 1px; }
+
+/* ---- chat ---- */
+.chat { background: var(--bg-app); }
+.chat .panel-head { background: var(--bg-panel); }
+.model-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg-inset);
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--fg-mid); letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.model-chip:hover { border-color: var(--accent-line); }
+.model-chip::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 5px var(--accent-line); }
+.model-chip .caret { color: var(--fg-faint); }
+
+.chat-scroll { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-5); min-height: 0; display: flex; flex-direction: column; gap: var(--sp-4); }
+
+.msg { max-width: 68ch; }
+.msg-head {
+  display: flex; align-items: baseline; gap: var(--sp-2);
+  margin-bottom: 5px;
+}
+.msg-role {
+  font-family: var(--font-mono); font-size: var(--fs-2xs); font-weight: 600;
+  letter-spacing: 0.09em; text-transform: uppercase;
+}
+.msg.user { align-self: flex-end; }
+.msg.user .msg-head { justify-content: flex-end; }
+.msg.user .msg-role { color: var(--fg-dim); }
+.msg.assistant .msg-role { color: var(--accent-fg); }
+.msg-time { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--fg-faint); }
+.msg-body {
+  font-size: var(--fs-md); line-height: 1.55;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-md);
+}
+.msg.user .msg-body {
+  background: var(--bg-active);
+  border: 1px solid var(--line);
+  color: var(--fg);
+}
+.msg.assistant .msg-body {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-line);
+}
+.msg-body p + p { margin-top: var(--sp-3); }
+.msg-body .cite {
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--accent-fg);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-xs);
+  padding: 0 4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.context-bar {
+  flex: none;
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-5);
+  border-top: 1px solid var(--line);
+  background: var(--bg-panel);
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--fg-dim); letter-spacing: 0.04em;
+  flex-wrap: wrap;
+}
+.context-bar .ctx { display: inline-flex; align-items: center; gap: 5px; }
+.context-bar .ctx b { color: var(--fg-mid); font-weight: 500; }
+.context-bar .sep { color: var(--fg-faint); }
+.ctx-meter {
+  width: 64px; height: 3px; border-radius: 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.ctx-meter i {
+  display: block; height: 100%; width: 4%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-line);
+}
+.context-bar .spacer { flex: 1; }
+
+.composer { flex: none; padding: var(--sp-3) var(--sp-5) var(--sp-4); background: var(--bg-panel); }
+.composer-box {
+  display: flex; align-items: center; gap: var(--sp-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--bg-inset);
+  padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.composer-box:focus-within { border-color: var(--accent-line); box-shadow: var(--accent-glow); }
+.composer-box input {
+  flex: 1; background: none; border: none; color: var(--fg);
+  font: inherit; font-size: var(--fs-md);
+}
+.composer-box input::placeholder { color: var(--fg-dim); }
+.composer-box input:focus { outline: none; box-shadow: none; }
+.composer-box kbd { flex: none; }
+.btn-send {
+  flex: none;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border: 1px solid color-mix(in srgb, var(--accent) 70%, #000);
+  transition: box-shadow 120ms ease, filter 120ms ease;
+}
+.btn-send:hover { filter: brightness(1.07); box-shadow: var(--accent-glow); }
+.btn-send svg { width: 13px; height: 13px; stroke: currentColor; }
+
+/* ============ responsive ============ */
+@media (max-width: 1180px) {
+  .workspace { grid-template-columns: minmax(250px, 300px) minmax(220px, 260px) minmax(340px, 1fr); }
+  .nb-desc { max-width: 34ch; }
+}
+@media (max-width: 1020px) {
+  .app { grid-template-columns: 196px 1fr; }
+  .workspace { grid-template-columns: minmax(230px, 270px) minmax(200px, 240px) minmax(300px, 1fr); }
+  .chat-scroll, .composer, .context-bar { padding-left: var(--sp-4); padding-right: var(--sp-4); }
+  .nb-dates { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- direction banner -->
+<div class="tile-banner">
+  <b>Direction B — Refined Technical Tool</b>
+  <span>Precision-instrument workspace for the self-hoster: warm graphite, one electric-amber accent, mono doing real work, density on a strict 4px grid.</span>
+</div>
+
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">on</div>
+      <div class="brand-name">Open Notebook</div>
+      <div class="brand-ver">v1.14</div>
+    </div>
+
+    <button class="btn-new"><span class="plus">+</span> New <kbd>N</kbd></button>
+
+    <nav class="nav">
+      <div class="nav-group">
+        <span class="microlabel">Collect</span>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M3 2.5h10v11H3z"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3"/></svg>
+          Sources <span class="count">128</span>
+        </button>
+      </div>
+      <div class="nav-group">
+        <span class="microlabel">Process</span>
+        <button class="nav-item active">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M2.5 3.5h11v9h-11z"/><path d="M6 3.5v9"/></svg>
+          Notebooks <span class="count">12</span>
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M8 13.5A5.5 5.5 0 1 0 2.5 8c0 1.2.4 2.4 1 3.3L2.8 13.6l2.5-.6c.8.3 1.7.5 2.7.5z"/></svg>
+          Ask
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>
+          Search
+        </button>
+      </div>
+      <div class="nav-group">
+        <span class="microlabel">Create</span>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><rect x="6" y="2" width="4" height="8" rx="2"/><path d="M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V15"/></svg>
+          Podcasts
+        </button>
+      </div>
+      <div class="nav-group">
+        <span class="microlabel">Manage</span>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/><circle cx="5.5" cy="4.5" r="1.4" fill="var(--bg-shell)"/><circle cx="10" cy="8" r="1.4" fill="var(--bg-shell)"/><circle cx="6.5" cy="11.5" r="1.4" fill="var(--bg-shell)"/></svg>
+          Models
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M2.5 8h4M9.5 8h4M6.5 5.5 9.5 8l-3 2.5z"/></svg>
+          Transformations
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><circle cx="8" cy="8" r="2.2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M12.2 3.8l-1.4 1.4M5.2 10.8l-1.4 1.4"/></svg>
+          Settings
+        </button>
+        <button class="nav-item">
+          <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M4 12.5 8 3l4 9.5M5.5 9.5h5"/></svg>
+          Advanced
+        </button>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="worker-status"><span class="dot-ok"></span>worker: online<span class="lat">2ms</span></div>
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="M5 9.5h6M5 6.5h2"/></svg>
+        Quick actions <span class="hint"><kbd>⌘</kbd><kbd>K</kbd></span>
+      </button>
+      <button class="foot-item" id="themeToggle">
+        <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M13 9.5A5.5 5.5 0 1 1 6.5 3 4.3 4.3 0 0 0 13 9.5z"/></svg>
+        Theme <span class="hint mono" id="themeName" style="font-size:10px;color:var(--fg-faint)">dark</span>
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-3.5 3.5-3.5 7.5 0 11M8 2.5c3.5 3.5 3.5 7.5 0 11"/></svg>
+        Language <span class="hint mono" style="font-size:10px;color:var(--fg-faint)">pt-BR</span>
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M6 13.5H3.5v-11H6M10 11l3-3-3-3M13 8H6.5"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <header class="nb-header">
+      <div class="nb-id">
+        <div class="nb-crumb">
+          <h1 class="nb-title">The Attention Economy</h1>
+          <span class="mono" style="font-size:10px;color:var(--fg-faint);letter-spacing:0.05em">notebook:0kx4…f2ka</span>
+        </div>
+        <div class="nb-desc" title="Click to edit description">Research for an essay on focus, distraction and what technology does to both.</div>
+      </div>
+      <div class="nb-meta">
+        <div class="nb-dates">created <b>3d ago</b><br>updated <b>2d ago</b></div>
+        <div class="nb-actions">
+          <button class="btn-ghost">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M2.5 3h11v3h-11zM4 6v7h8V6M6.5 8.5h3"/></svg>
+            Archive
+          </button>
+          <button class="btn-ghost danger">
+            <svg viewBox="0 0 16 16" fill="none" stroke-width="1.4"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.7 9h5.6l.7-9"/></svg>
+            Delete
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- ===== SOURCES ===== -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="microlabel">Sources</span>
+          <span class="panel-count">5</span>
+          <button class="panel-action">+ Add Source</button>
+        </div>
+        <div class="panel-body">
+          <div class="src-card" tabindex="0">
+            <div class="src-icon t-video"><svg viewBox="0 0 16 16"><path class="fill" d="M6 4.5v7l6-3.5z"/></svg></div>
+            <div>
+              <div class="src-title">How Your Attention Is Sold</div>
+              <div class="src-meta">video<span class="sep">·</span>yt<span class="sep">·</span><span class="insight-chip">1 insight</span></div>
+            </div>
+          </div>
+          <div class="src-card" tabindex="0">
+            <div class="src-icon t-pdf"><svg viewBox="0 0 16 16"><path d="M4 2.5h5.5L12 5v8.5H4z"/><path d="M9.5 2.5V5H12"/><path d="M5.8 8h4.4M5.8 10.5h4.4"/></svg></div>
+            <div>
+              <div class="src-title">Stolen Focus — Johann Hari (chapter notes)</div>
+              <div class="src-meta">pdf<span class="sep">·</span><span class="insight-chip">2 insights</span></div>
+            </div>
+          </div>
+          <div class="src-card" tabindex="0">
+            <div class="src-icon t-web"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c-3.4 3.5-3.4 7.5 0 11M8 2.5c3.4 3.5 3.4 7.5 0 11"/></svg></div>
+            <div>
+              <div class="src-title">The Cost of Context Switching — Cal Newport</div>
+              <div class="src-meta">web<span class="sep">·</span><span class="insight-chip">1 insight</span></div>
+            </div>
+          </div>
+          <div class="src-card" tabindex="0">
+            <div class="src-icon t-audio"><svg viewBox="0 0 16 16"><path d="M3 6.5v3M5.5 4.5v7M8 3v10M10.5 5.5v5M13 7v2"/></svg></div>
+            <div>
+              <div class="src-title">Deep Questions #312: Rebuilding Concentration</div>
+              <div class="src-meta">audio<span class="sep">·</span><span class="no-insight">no insights yet</span></div>
+            </div>
+          </div>
+          <div class="src-card" tabindex="0">
+            <div class="src-icon t-paper"><svg viewBox="0 0 16 16"><path d="M3.5 2.5h9v11h-9z"/><path d="M5.5 5h5M5.5 7.2h5M5.5 9.4h5M5.5 11.6h3"/></svg></div>
+            <div>
+              <div class="src-title">Attention Is All You Need</div>
+              <div class="src-meta">paper<span class="sep">·</span>arxiv<span class="sep">·</span><span class="insight-chip">1 insight</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== NOTES ===== -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="microlabel">Notes</span>
+          <span class="panel-count">1</span>
+          <button class="panel-action">+ Write Note</button>
+        </div>
+        <div class="panel-body">
+          <div class="note-card" tabindex="0">
+            <span class="note-kind">ai generated</span>
+            <div class="note-title">Key levers for reclaiming focus</div>
+            <div class="note-time">3d ago</div>
+          </div>
+          <div class="notes-empty">
+            <span class="glyph">[ · · · ]</span>
+            <p>Notes capture what you learn — save an answer from chat, or write your own synthesis.</p>
+            <span class="microlabel"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>N</kbd>&nbsp; new note</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== CHAT ===== -->
+      <section class="panel chat">
+        <div class="panel-head">
+          <span class="microlabel">Chat with Notebook</span>
+          <button class="model-chip" style="margin-left:auto">gpt-5.6-terra <span class="caret">▾</span></button>
+        </div>
+
+        <div class="chat-scroll">
+          <div class="msg user">
+            <div class="msg-head"><span class="msg-time">14:02</span><span class="msg-role">you</span></div>
+            <div class="msg-body">What do my sources agree on about rebuilding focus?</div>
+          </div>
+
+          <div class="msg assistant">
+            <div class="msg-head"><span class="msg-role">assistant</span><span class="msg-time">14:02 · 3.1s</span></div>
+            <div class="msg-body">
+              <p>Across all five sources there is one clear point of convergence: attention is a <strong>finite, trainable resource</strong> — not a fixed personality trait. Hari's argument is that environment beats willpower: as long as the inputs around you are engineered to interrupt, no amount of discipline compensates <span class="cite">[src:2]</span>. Newport quantifies the same mechanism from the cost side, showing that each context switch leaves a residue that degrades the next block of work <span class="cite">[src:3]</span>.</p>
+              <p>The video closes the loop on incentives: the distraction isn't accidental, it's the business model — your focus is the inventory being sold <span class="cite">[src:1]</span>. Where the sources diverge is remedy, not diagnosis: Hari argues for changing the environment, Newport for scheduling depth deliberately. Both converge on the same practical lever — protect long, uninterrupted blocks first, and treat concentration as something you rebuild through repetition.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="context-bar">
+          <span class="ctx"><b>5</b> sources</span><span class="sep">·</span>
+          <span class="ctx"><b>1</b> note</span><span class="sep">·</span>
+          <span class="ctx"><b>4.9K</b> tokens</span>
+          <span class="ctx"><span class="ctx-meter"><i></i></span>4%&nbsp;of&nbsp;128K</span>
+          <span class="spacer"></span>
+          <span class="ctx" style="color:var(--fg-faint)">ctx rebuilt 2s ago</span>
+        </div>
+
+        <div class="composer">
+          <div class="composer-box">
+            <input type="text" placeholder="Ask anything about your sources…" aria-label="Message">
+            <kbd>↵</kbd>
+            <button class="btn-send" aria-label="Send">
+              <svg viewBox="0 0 16 16" fill="none" stroke-width="1.6"><path d="M2.5 8h10M9 4.5 13.5 8 9 11.5"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  const root = document.documentElement;
+  const nameEl = document.getElementById('themeName');
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    root.classList.toggle('dark');
+    nameEl.textContent = root.classList.contains('dark') ? 'dark' : 'light';
+  });
+  // focus composer with "/" — small precision-tool nicety
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+      e.preventDefault();
+      document.querySelector('.composer-box input').focus();
+    }
+  });
+</script>
+</body>
+</html>

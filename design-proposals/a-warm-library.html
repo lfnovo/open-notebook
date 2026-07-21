@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Notebook — Direction A: Warm Library / Editorial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,340;0,9..144,420;0,9..144,560;0,9..144,640;1,9..144,380;1,9..144,460&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DIRECTION A — WARM LIBRARY / EDITORIAL
+   Paper & ink. A private research library that is also a tool.
+   ============================================================ */
+
+:root {
+  /* -- color · light = paper -- */
+  --page:        #ece4d2;   /* the desk */
+  --panel:       #f4eedf;   /* the sheet */
+  --card:        #fbf7ec;   /* the card on the sheet */
+  --card-raised: #fffdf6;
+  --ink:         #2b2318;
+  --ink-strong:  #1d1710;
+  --ink-soft:    #6d5f4b;
+  --ink-faint:   #97896f;
+  --hairline:       rgba(59, 47, 30, 0.14);
+  --hairline-faint: rgba(59, 47, 30, 0.08);
+
+  --accent:        #7c2d1e;  /* oxblood */
+  --accent-deep:   #631f13;
+  --accent-wash:   rgba(124, 45, 30, 0.08);
+  --accent-wash-2: rgba(124, 45, 30, 0.14);
+  --on-accent:     #f8f0e2;
+
+  --gold:      #9a6a1f;      /* marginalia amber, used sparingly */
+  --gold-wash: rgba(154, 106, 31, 0.12);
+
+  --video:      #8a4a1f;     /* content-type: video (muted sienna) */
+  --video-wash: rgba(138, 74, 31, 0.10);
+  --pdf:        #7c2d1e;     /* content-type: pdf (oxblood) */
+  --pdf-wash:   rgba(124, 45, 30, 0.09);
+  --web:        #3f5a3c;     /* content-type: web (forest) */
+  --web-wash:   rgba(63, 90, 60, 0.10);
+  --audio:      #9a6a1f;     /* content-type: audio (amber) */
+  --audio-wash: rgba(154, 106, 31, 0.11);
+  --paper-src:      #4c4636; /* content-type: paper (graphite-olive) */
+  --paper-src-wash: rgba(76, 70, 54, 0.10);
+
+  --shadow-card:  0 1px 2px rgba(59, 43, 22, 0.06), 0 3px 10px rgba(59, 43, 22, 0.05);
+  --shadow-panel: 0 1px 3px rgba(59, 43, 22, 0.05), 0 10px 30px rgba(59, 43, 22, 0.06);
+  --shadow-pop:   0 2px 6px rgba(59, 43, 22, 0.12), 0 12px 32px rgba(59, 43, 22, 0.14);
+
+  /* -- type -- */
+  --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --sans:  "Alegreya Sans", "Gill Sans", "Segoe UI", Seravek, Candara, Optima, sans-serif;
+
+  --fs-hairline: 0.6875rem;  /* 11 — labels, small caps */
+  --fs-small:    0.8125rem;  /* 13 — meta */
+  --fs-body:     0.9375rem;  /* 15 — UI body */
+  --fs-reading:  1.0625rem;  /* 17 — chat prose */
+  --fs-cardtitle:1.0rem;     /* 16 — serif card titles */
+  --fs-h3:       1.1875rem;  /* 19 */
+  --fs-h1:       2.125rem;   /* 34 — notebook title */
+
+  /* -- shape & rhythm -- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --r-pill: 999px;
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 44px;
+
+  --grain-opacity: 0.35;
+}
+
+.dark {
+  /* -- color · dark = warm ink, candlelit -- */
+  --page:        #171009;
+  --panel:       #211810;
+  --card:        #2b2016;
+  --card-raised: #33271b;
+  --ink:         #e9ddc7;
+  --ink-strong:  #f6efdd;
+  --ink-soft:    #ab9a7d;
+  --ink-faint:   #7d6e56;
+  --hairline:       rgba(233, 221, 199, 0.13);
+  --hairline-faint: rgba(233, 221, 199, 0.07);
+
+  --accent:        #c8875f;  /* ember — oxblood lit by a candle */
+  --accent-deep:   #dd9e73;
+  --accent-wash:   rgba(200, 135, 95, 0.13);
+  --accent-wash-2: rgba(200, 135, 95, 0.20);
+  --on-accent:     #21140a;
+
+  --gold:      #cfa254;
+  --gold-wash: rgba(207, 162, 84, 0.14);
+
+  --video:      #c98d54;
+  --video-wash: rgba(201, 141, 84, 0.13);
+  --pdf:        #c8875f;
+  --pdf-wash:   rgba(200, 135, 95, 0.12);
+  --web:        #92ad84;
+  --web-wash:   rgba(146, 173, 132, 0.12);
+  --audio:      #cfa254;
+  --audio-wash: rgba(207, 162, 84, 0.13);
+  --paper-src:      #b0a68c;
+  --paper-src-wash: rgba(176, 166, 140, 0.12);
+
+  --shadow-card:  0 1px 2px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.28);
+  --shadow-panel: 0 1px 3px rgba(0,0,0,0.4), 0 12px 34px rgba(0,0,0,0.35);
+  --shadow-pop:   0 2px 8px rgba(0,0,0,0.5), 0 16px 40px rgba(0,0,0,0.5);
+
+  --grain-opacity: 0.5;
+}
+
+/* ============ base ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { height: 100%; }
+body {
+  font-family: var(--sans);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--page);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 1000px;
+  -webkit-font-smoothing: antialiased;
+}
+/* paper grain — one fixed layer over the desk */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+input { font: inherit; color: inherit; }
+::placeholder { color: var(--ink-faint); opacity: 1; }
+::selection { background: var(--accent-wash-2); }
+
+/* thin warm scrollbars */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+.smallcaps {
+  font-size: var(--fs-hairline);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* ============ direction banner ============ */
+.tile-banner {
+  position: relative; z-index: 5;
+  display: flex; align-items: baseline; gap: var(--sp-3);
+  padding: 7px var(--sp-6);
+  background: var(--ink-strong);
+  color: #d8cbb2;
+  font-size: var(--fs-small);
+  flex: none;
+}
+.dark .tile-banner { background: #0d0804; color: #b3a184; box-shadow: 0 1px 0 var(--hairline); }
+.tile-banner strong {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 460;
+  font-size: 0.875rem;
+  color: #f0e6d2;
+  letter-spacing: 0.01em;
+}
+.dark .tile-banner strong { color: #e9ddc7; }
+.tile-banner span { opacity: 0.75; }
+
+/* ============ app frame ============ */
+.app {
+  position: relative; z-index: 1;
+  flex: 1; min-height: 0;
+  display: flex;
+}
+
+/* ============ sidebar ============ */
+.sidebar {
+  width: 232px; flex: none;
+  display: flex; flex-direction: column;
+  padding: var(--sp-6) var(--sp-4) var(--sp-4);
+  border-right: 1px solid var(--hairline-faint);
+}
+.wordmark {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 var(--sp-2);
+  margin-bottom: var(--sp-6);
+}
+.wordmark .mark {
+  width: 30px; height: 30px; flex: none;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid; place-items: center;
+  font-family: var(--serif);
+  font-weight: 640;
+  font-size: 1.05rem;
+  box-shadow: var(--shadow-card);
+}
+.wordmark .name {
+  font-family: var(--serif);
+  font-size: 1.125rem;
+  font-weight: 560;
+  letter-spacing: 0.005em;
+  color: var(--ink-strong);
+  line-height: 1.1;
+}
+.wordmark .name em { font-style: italic; font-weight: 420; }
+
+.btn-new {
+  display: flex; align-items: center; justify-content: center; gap: var(--sp-2);
+  margin: 0 var(--sp-2) var(--sp-6);
+  padding: 9px var(--sp-4);
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-card);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.btn-new:hover { background: var(--accent-deep); }
+.btn-new:active { transform: translateY(1px); }
+.btn-new svg { flex: none; }
+
+.nav { flex: 1; min-height: 0; overflow-y: auto; }
+.nav-group { margin-bottom: var(--sp-5); }
+.nav-group-label {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0 var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+.nav-group-label::after {
+  content: ""; flex: 1; height: 1px;
+  background: var(--hairline-faint);
+}
+.nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.nav a:hover { background: var(--hairline-faint); color: var(--ink); }
+.nav a svg { flex: none; opacity: 0.75; }
+.nav a.active {
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-weight: 700;
+  position: relative;
+}
+.dark .nav a.active { color: var(--accent-deep); }
+.nav a.active::before {
+  content: ""; position: absolute; left: -3px; top: 7px; bottom: 7px;
+  width: 2px; border-radius: 2px; background: var(--accent);
+}
+.nav a.active svg { opacity: 1; }
+
+.sidebar-foot {
+  border-top: 1px solid var(--hairline-faint);
+  padding-top: var(--sp-3);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.foot-row {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 6px var(--sp-2);
+  border-radius: var(--r-sm);
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: var(--fs-small);
+  text-align: left;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.foot-row:hover { background: var(--hairline-faint); color: var(--ink); }
+.foot-row svg { flex: none; opacity: 0.7; }
+.foot-row .spacer { flex: 1; }
+.kbd {
+  font-family: var(--sans);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  border: 1px solid var(--hairline);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 6px;
+  background: var(--card);
+}
+
+/* ============ main ============ */
+.main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  padding: var(--sp-6) var(--sp-7) var(--sp-5) var(--sp-6);
+  gap: var(--sp-5);
+}
+
+/* -- notebook header -- */
+.nb-header { display: flex; align-items: flex-end; gap: var(--sp-6); flex: none; }
+.nb-header .heading { flex: 1; min-width: 0; }
+.nb-breadcrumb { margin-bottom: 6px; display: flex; align-items: center; gap: var(--sp-2); }
+.nb-breadcrumb .sep { color: var(--ink-faint); }
+.nb-title {
+  font-family: var(--serif);
+  font-size: var(--fs-h1);
+  font-weight: 560;
+  font-variation-settings: "opsz" 60;
+  letter-spacing: -0.005em;
+  color: var(--ink-strong);
+  line-height: 1.1;
+}
+.nb-desc {
+  margin-top: 7px;
+  display: inline-flex; align-items: center; gap: var(--sp-2);
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 420;
+  font-size: 1.0rem;
+  color: var(--ink-soft);
+  border-bottom: 1px dashed transparent;
+  cursor: text;
+  transition: border-color 0.15s ease;
+}
+.nb-desc:hover { border-bottom-color: var(--hairline); }
+.nb-desc svg { opacity: 0; transition: opacity 0.15s ease; }
+.nb-desc:hover svg { opacity: 0.55; }
+.nb-meta { margin-top: 7px; font-size: var(--fs-small); color: var(--ink-faint); }
+.nb-meta b { font-weight: 500; color: var(--ink-soft); }
+
+.nb-actions { display: flex; gap: var(--sp-2); flex: none; padding-bottom: 3px; }
+.btn-quiet {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--hairline);
+  color: var(--ink-soft);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: transparent;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.btn-quiet:hover { background: var(--card); color: var(--ink); }
+.btn-quiet.danger:hover { color: var(--accent); border-color: var(--accent-wash-2); background: var(--accent-wash); }
+.dark .btn-quiet.danger:hover { color: var(--accent-deep); }
+
+/* ============ workspace ============ */
+.workspace {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 21rem) minmax(240px, 1fr) minmax(360px, 29rem);
+  gap: var(--sp-4);
+}
+.panel {
+  min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  background: var(--panel);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-panel);
+  overflow: hidden;
+}
+.panel-head {
+  flex: none;
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5) var(--sp-3);
+}
+.panel-head h2 {
+  font-family: var(--serif);
+  font-size: var(--fs-h3);
+  font-weight: 560;
+  color: var(--ink-strong);
+  letter-spacing: 0.002em;
+}
+.panel-head .count {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 420;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  margin-left: 2px;
+}
+.panel-head .spacer { flex: 1; }
+.panel-rule { flex: none; height: 1px; margin: 0 var(--sp-5); background: var(--hairline-faint); }
+.panel-body { flex: 1; min-height: 0; overflow-y: auto; padding: var(--sp-4) var(--sp-4) var(--sp-5); }
+
+.btn-panel {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: var(--accent-wash);
+  color: var(--accent);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: background 0.12s ease;
+}
+.dark .btn-panel { color: var(--accent-deep); }
+.btn-panel:hover { background: var(--accent-wash-2); }
+.icon-ghost {
+  display: grid; place-items: center;
+  width: 28px; height: 28px;
+  border-radius: var(--r-sm);
+  color: var(--ink-faint);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.icon-ghost:hover { background: var(--hairline-faint); color: var(--ink); }
+
+/* -- source cards -- */
+.source-card {
+  position: relative;
+  display: block; width: 100%; text-align: left;
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) 18px;
+  margin-bottom: var(--sp-2);
+  box-shadow: var(--shadow-card);
+  transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  overflow: hidden;
+}
+.source-card::before {           /* the spine */
+  content: "";
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--src, var(--video));
+  opacity: 0.55;
+  transition: opacity 0.12s ease;
+}
+.source-card:hover { background: var(--card-raised); transform: translateY(-1px); box-shadow: var(--shadow-pop); }
+.source-card:hover::before { opacity: 1; }
+.source-title {
+  font-family: var(--serif);
+  font-size: var(--fs-cardtitle);
+  font-weight: 460;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.source-meta {
+  margin-top: 7px;
+  display: flex; align-items: center; gap: var(--sp-2);
+  font-size: var(--fs-small);
+}
+.chip-type {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--src-wash, var(--video-wash));
+  color: var(--src, var(--video));
+  font-size: var(--fs-hairline);
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.t-video { --src: var(--video); --src-wash: var(--video-wash); }
+.t-pdf   { --src: var(--pdf);   --src-wash: var(--pdf-wash); }
+.t-web   { --src: var(--web);   --src-wash: var(--web-wash); }
+.t-audio { --src: var(--audio); --src-wash: var(--audio-wash); }
+.t-paper { --src: var(--paper-src); --src-wash: var(--paper-src-wash); }
+.insight-none {
+  margin-left: auto;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 420;
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  padding: 1px 6px;
+}
+.insight-link {
+  display: inline-flex; align-items: center; gap: 5px;
+  color: var(--gold);
+  font-weight: 700;
+  font-size: var(--fs-small);
+  border-radius: var(--r-sm);
+  padding: 1px 6px;
+  margin-left: auto;
+  transition: background 0.12s ease;
+}
+.insight-link:hover { background: var(--gold-wash); }
+
+/* -- notes -- */
+.note-card {
+  display: block; width: 100%; text-align: left;
+  background: var(--card);
+  border-radius: var(--r-md);
+  padding: var(--sp-4) var(--sp-4) var(--sp-3);
+  box-shadow: var(--shadow-card);
+  transition: background 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+.note-card:hover { background: var(--card-raised); transform: translateY(-1px); box-shadow: var(--shadow-pop); }
+.note-kicker {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--gold);
+  font-size: var(--fs-hairline);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+.note-title {
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  font-weight: 520;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.note-excerpt {
+  margin-top: 6px;
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+  line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-meta { margin-top: 10px; font-size: var(--fs-small); color: var(--ink-faint); }
+
+/* -- notes empty state: the blank page -- */
+.notes-empty {
+  margin-top: var(--sp-5);
+  padding: var(--sp-6) var(--sp-5) var(--sp-6);
+  text-align: center;
+  border: 1px dashed var(--hairline);
+  border-radius: var(--r-md);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 27px,
+      var(--hairline-faint) 27px, var(--hairline-faint) 28px
+    );
+}
+.notes-empty .fleuron {
+  font-family: var(--serif);
+  font-size: 1.5rem;
+  color: var(--accent);
+  opacity: 0.7;
+  line-height: 1;
+  margin-bottom: var(--sp-3);
+}
+.notes-empty h3 {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 460;
+  font-size: 1.0625rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.notes-empty p {
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  line-height: 1.55;
+  max-width: 26ch;
+  margin: 0 auto var(--sp-4);
+}
+.notes-empty .btn-quiet { background: var(--card); }
+
+/* -- chat -- */
+.chat-body { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-4) var(--sp-5) var(--sp-4); }
+.msg-user { align-self: flex-end; max-width: 82%; }
+.msg-user .bubble {
+  background: var(--accent-wash);
+  border-radius: var(--r-md) var(--r-md) 4px var(--r-md);
+  padding: 10px 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.msg-user .who { text-align: right; margin-bottom: 4px; }
+.msg-assistant { max-width: 94%; }
+.msg-assistant .who { margin-bottom: 6px; display: flex; align-items: center; gap: var(--sp-2); }
+.who .name-tag {
+  font-size: var(--fs-hairline);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.who .rule { flex: 1; height: 1px; background: var(--hairline-faint); }
+.msg-assistant .prose {
+  font-family: var(--serif);
+  font-size: var(--fs-reading);
+  font-weight: 400;
+  line-height: 1.62;
+  color: var(--ink);
+  padding-left: 14px;
+  border-left: 2px solid var(--accent-wash-2);
+}
+.msg-assistant .prose p + p { margin-top: 0.8em; }
+.msg-assistant .prose strong { font-weight: 640; }
+.msg-assistant .prose .dropcap::first-letter {
+  font-size: 2.6em;
+  font-weight: 560;
+  float: left;
+  line-height: 0.82;
+  padding: 3px 7px 0 0;
+  color: var(--accent);
+}
+.dark .msg-assistant .prose .dropcap::first-letter { color: var(--accent-deep); }
+.cite {
+  display: inline-grid; place-items: center;
+  min-width: 17px; height: 17px;
+  padding: 0 4px;
+  border-radius: 5px;
+  background: var(--gold-wash);
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 0.65rem;
+  font-weight: 700;
+  vertical-align: 2px;
+  cursor: pointer;
+}
+
+.chat-foot { flex: none; padding: 0 var(--sp-4) var(--sp-4); }
+.context-bar {
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 7px var(--sp-3);
+  margin-bottom: var(--sp-2);
+  font-size: var(--fs-small);
+  color: var(--ink-soft);
+}
+.context-bar .dot { color: var(--ink-faint); }
+.context-bar .spacer { flex: 1; }
+.model-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 11px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--hairline);
+  background: var(--card);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-soft);
+  letter-spacing: 0.01em;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.model-chip:hover { background: var(--card-raised); color: var(--ink); }
+.model-chip .flame { color: var(--gold); }
+.composer {
+  display: flex; align-items: center; gap: var(--sp-2);
+  background: var(--card-raised);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 6px 6px 6px 16px;
+  box-shadow: var(--shadow-card);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash), var(--shadow-card);
+}
+.composer input {
+  flex: 1; min-width: 0;
+  background: none; border: none; outline: none;
+  font-size: var(--fs-body);
+  padding: 7px 0;
+}
+.btn-send {
+  flex: none;
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border-radius: var(--r-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+.btn-send:hover { background: var(--accent-deep); }
+.btn-send:active { transform: scale(0.94); }
+
+/* ============ responsive ~1000px ============ */
+@media (max-width: 1180px) {
+  .main { padding: var(--sp-5) var(--sp-5) var(--sp-4); }
+  .workspace { grid-template-columns: minmax(250px, 19rem) minmax(220px, 1fr) minmax(320px, 25rem); gap: var(--sp-3); }
+  .sidebar { width: 208px; }
+  .nb-title { font-size: 1.75rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="tile-banner">
+  <strong>Direction A — Warm Library / Editorial</strong>
+  <span>Paper &amp; ink: a calm private-library studio — serif voice, oxblood accent, warmth over chrome.</span>
+</div>
+
+<div class="app">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="wordmark">
+      <div class="mark">N</div>
+      <div class="name">Open <em>Notebook</em></div>
+    </div>
+
+    <button class="btn-new">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5v11M1.5 7h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      New
+    </button>
+
+    <nav class="nav">
+      <div class="nav-group">
+        <div class="nav-group-label"><span class="smallcaps">Collect</span></div>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 2.5h4v10h-4zM8.5 2.5h4v10h-4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          Sources
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label"><span class="smallcaps">Process</span></div>
+        <a href="#" class="active">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M3 2h8.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H3z" stroke="currentColor" stroke-width="1.3"/><path d="M3 2v11M5.5 5h4.5M5.5 7.5h4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Notebooks
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M12.5 7a5 5 0 1 0-1.9 3.9L13 12l-.5-2.3A4.98 4.98 0 0 0 12.5 7z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          Ask
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="6.5" cy="6.5" r="4" stroke="currentColor" stroke-width="1.3"/><path d="M9.5 9.5 13 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Search
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label"><span class="smallcaps">Create</span></div>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><rect x="5.2" y="1.8" width="4.6" height="7.4" rx="2.3" stroke="currentColor" stroke-width="1.3"/><path d="M3 7.5a4.5 4.5 0 0 0 9 0M7.5 12v1.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Podcasts
+        </a>
+      </div>
+      <div class="nav-group">
+        <div class="nav-group-label"><span class="smallcaps">Manage</span></div>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 4.5h10M2.5 7.5h10M2.5 10.5h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Models
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M4.5 2.5 2 7.5l2.5 5M10.5 2.5 13 7.5l-2.5 5M8.5 2 6.5 13" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Transformations
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><circle cx="7.5" cy="7.5" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7.5 1.8v1.7M7.5 11.5v1.7M1.8 7.5h1.7M11.5 7.5h1.7M3.5 3.5l1.2 1.2M10.3 10.3l1.2 1.2M11.5 3.5l-1.2 1.2M4.7 10.3l-1.2 1.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          Settings
+        </a>
+        <a href="#">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2.5 12.5c1.5-4 3.5-6 5-6s3.5 2 5 6M7.5 2.5v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Advanced
+        </a>
+      </div>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="foot-row">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M8 1.5 3 8h3l-.5 4.5L11 6H8z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Quick actions
+        <span class="spacer"></span>
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="foot-row" id="theme-toggle" aria-pressed="false">
+        <svg id="icon-moon" width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.5 8.7A5 5 0 0 1 5.3 2.5 5 5 0 1 0 11.5 8.7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        <span id="theme-label">Dark reading room</span>
+      </button>
+      <button class="foot-row">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M1.5 7h11M7 1.5c1.7 1.5 2.5 3.4 2.5 5.5S8.7 11 7 12.5C5.3 11 4.5 9.1 4.5 7S5.3 3 7 1.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+        English
+      </button>
+      <button class="foot-row">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M9.5 4.5v-2h-7v9h7v-2M6 7h6.5M10.5 5l2 2-2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <header class="nb-header">
+      <div class="heading">
+        <div class="nb-breadcrumb smallcaps">Notebooks <span class="sep">/</span> <span style="color: var(--accent); ">The Attention Economy</span></div>
+        <h1 class="nb-title">The Attention Economy</h1>
+        <span class="nb-desc" role="textbox" tabindex="0" title="Edit description">
+          Research for an essay on focus, distraction and what technology does to both.
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M8.5 1.5 10.5 3.5 4 10H2V8z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+        </span>
+        <div class="nb-meta">Created <b>3 days ago</b> &nbsp;·&nbsp; Updated <b>2 days ago</b></div>
+      </div>
+      <div class="nb-actions">
+        <button class="btn-quiet">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M1.5 3.5h10v2h-10zM2.5 5.5v5h8v-5M5 8h3" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          Archive
+        </button>
+        <button class="btn-quiet danger">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 3.5h9M5 3.5V2h3v1.5M3.5 3.5l.5 8h5l.5-8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Delete
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- ========== SOURCES ========== -->
+      <section class="panel" aria-label="Sources">
+        <div class="panel-head">
+          <h2>Sources</h2><span class="count">five</span>
+          <span class="spacer"></span>
+          <button class="btn-panel">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            Add Source
+          </button>
+        </div>
+        <div class="panel-rule"></div>
+        <div class="panel-body">
+
+          <button class="source-card t-video">
+            <div class="source-title">How Your Attention Is Sold</div>
+            <div class="source-meta">
+              <span class="chip-type">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="currentColor"><path d="M2 1.2v6.6L7.5 4.5z"/></svg>
+                Video
+              </span>
+              <span class="insight-link">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v1.3M5.5 8.7V10M1 5.5h1.3M8.7 5.5H10M5.5 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                1 insight
+              </span>
+            </div>
+          </button>
+
+          <button class="source-card t-pdf">
+            <div class="source-title">Stolen Focus — Johann Hari (chapter notes)</div>
+            <div class="source-meta">
+              <span class="chip-type">
+                <svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M1.5.8h4L7.5 2.8v6.4h-6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M5.5.8v2h2" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/></svg>
+                PDF
+              </span>
+              <span class="insight-link">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v1.3M5.5 8.7V10M1 5.5h1.3M8.7 5.5H10M5.5 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                2 insights
+              </span>
+            </div>
+          </button>
+
+          <button class="source-card t-web">
+            <div class="source-title">The Cost of Context Switching — Cal Newport</div>
+            <div class="source-meta">
+              <span class="chip-type">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.1"/><path d="M1 5h8M5 1c1.2 1.1 1.8 2.4 1.8 4S6.2 7.9 5 9C3.8 7.9 3.2 6.6 3.2 5S3.8 2.1 5 1z" stroke="currentColor" stroke-width="1.1"/></svg>
+                Web
+              </span>
+              <span class="insight-link">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v1.3M5.5 8.7V10M1 5.5h1.3M8.7 5.5H10M5.5 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                1 insight
+              </span>
+            </div>
+          </button>
+
+          <button class="source-card t-audio">
+            <div class="source-title">Deep Questions #312: Rebuilding Concentration</div>
+            <div class="source-meta">
+              <span class="chip-type">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 4v2M3.5 2.5v5M5.5 1v8M7.5 3v4M9 4.2v1.6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                Audio
+              </span>
+              <span class="insight-none">no insights yet</span>
+            </div>
+          </button>
+
+          <button class="source-card t-paper">
+            <div class="source-title">Attention Is All You Need</div>
+            <div class="source-meta">
+              <span class="chip-type">
+                <svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M1.5 1h6v8h-6z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/><path d="M3 3.2h3M3 5h3M3 6.8h2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                Paper
+              </span>
+              <span class="insight-link">
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v1.3M5.5 8.7V10M1 5.5h1.3M8.7 5.5H10M5.5 3.2a2.3 2.3 0 1 1 0 4.6 2.3 2.3 0 0 1 0-4.6z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+                1 insight
+              </span>
+            </div>
+          </button>
+
+        </div>
+      </section>
+
+      <!-- ========== NOTES ========== -->
+      <section class="panel" aria-label="Notes">
+        <div class="panel-head">
+          <h2>Notes</h2><span class="count">one</span>
+          <span class="spacer"></span>
+          <button class="btn-panel">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M8 1.5 9.5 3 3.5 9H2V7.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Write Note
+          </button>
+        </div>
+        <div class="panel-rule"></div>
+        <div class="panel-body">
+
+          <button class="note-card">
+            <span class="note-kicker">
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M5 .8 6.1 3.9 9.2 5 6.1 6.1 5 9.2 3.9 6.1.8 5l3.1-1.1z" fill="currentColor"/></svg>
+              AI Generated
+            </span>
+            <div class="note-title">Key levers for reclaiming focus</div>
+            <div class="note-excerpt">Three levers recur across the sources: design the environment before trusting willpower, batch communication to cut switching costs, and treat attention as a finite budget…</div>
+            <div class="note-meta">3 days ago</div>
+          </button>
+
+          <div class="notes-empty">
+            <div class="fleuron">❧</div>
+            <h3>The rest of this page is yours</h3>
+            <p>Notes hold what you conclude — save an insight from a source, or write your own synthesis in the margin.</p>
+            <button class="btn-quiet">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M9.5 1.5 11.5 3.5 4 11H2V9z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+              Write your first note
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ========== CHAT ========== -->
+      <section class="panel" aria-label="Chat">
+        <div class="panel-head">
+          <h2>Chat with Notebook</h2>
+          <span class="spacer"></span>
+          <button class="icon-ghost" title="Conversation history">
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 4.5v3.2l2.2 1.3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M2.2 6.2a5.5 5.5 0 1 1-.2 2.4M2 4.5v2.5h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="panel-rule"></div>
+
+        <div class="panel-body chat-body">
+
+          <div class="msg-user">
+            <div class="who smallcaps">You</div>
+            <div class="bubble">What do my sources agree on about rebuilding focus?</div>
+          </div>
+
+          <div class="msg-assistant">
+            <div class="who"><span class="name-tag">Notebook</span><span class="rule"></span></div>
+            <div class="prose">
+              <p class="dropcap">All five sources converge on one premise: attention is a <strong>finite, trainable resource</strong> — not a character trait. Hari argues the decisive move is environmental, not heroic: change what surrounds you before asking more of your willpower <span class="cite">2</span>, and Newport puts a number on the damage, showing that each context switch leaves a residue that taxes the next block of work <span class="cite">3</span>.</p>
+              <p>The video closes the loop from the supply side: the feeds you return to are engineered by a business model that profits precisely from those interruptions <span class="cite">1</span>. Where they agree in practice — protect long, unbroken blocks, and treat rebuilding concentration as training, done in deliberate, repeated sessions.</p>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="chat-foot">
+          <div class="context-bar">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style="color: var(--ink-faint);"><path d="M2 3.5h9M2 6.5h9M2 9.5h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <span><b style="font-weight:700;">5</b> sources</span><span class="dot">·</span>
+            <span><b style="font-weight:700;">1</b> note</span><span class="dot">·</span>
+            <span>4.9K tokens</span>
+            <span class="spacer"></span>
+            <button class="model-chip">
+              <span class="flame">
+                <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor"><path d="M5 .5C5.6 2.3 8.5 3.8 8.5 7A3.5 3.5 0 0 1 5 10.5 3.5 3.5 0 0 1 1.5 7c0-1.5.8-2.4 1.6-3.3C3.9 2.8 4.7 1.9 5 .5z"/></svg>
+              </span>
+              gpt-5.6-terra
+            </button>
+          </div>
+          <div class="composer">
+            <input type="text" id="chat-input" placeholder="Ask anything about your sources…" aria-label="Message">
+            <button class="btn-send" id="send-btn" title="Send">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M2 7.5h10M8.5 3.5l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var toggle = document.getElementById('theme-toggle');
+    var label = document.getElementById('theme-label');
+    toggle.addEventListener('click', function () {
+      var dark = root.classList.toggle('dark');
+      toggle.setAttribute('aria-pressed', String(dark));
+      label.textContent = dark ? 'Light reading room' : 'Dark reading room';
+    });
+
+    /* small nicety: send button pulses the composer when input is empty */
+    var input = document.getElementById('chat-input');
+    var send = document.getElementById('send-btn');
+    send.addEventListener('click', function () {
+      if (!input.value.trim()) {
+        input.focus();
+      } else {
+        input.value = '';
+        input.placeholder = 'Consulting your sources…';
+        setTimeout(function () { input.placeholder = 'Ask anything about your sources…'; }, 1600);
+      }
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') send.click();
+    });
+  })();
+</script>
+
+</body>
+</html>

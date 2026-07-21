@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direction D — Calm Clean / Soft Neutral · Open Notebook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,400&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DIRECTION D — CALM CLEAN / SOFT NEUTRAL
+   Warm-greige canvas · fern-green primary · pebble motif
+   ============================================================ */
+
+:root {
+  /* ---- Canvas & surfaces (warm neutral, committed) ---- */
+  --canvas:        #F1EEE8;   /* warm greige, not white, not zinc */
+  --canvas-tint:   #EAE6DE;   /* deeper greige for the top wash */
+  --surface:       #FBFAF7;   /* floating panel */
+  --surface-2:     #F5F3EE;   /* inset / wells on panels */
+  --surface-3:     #EDEAE3;   /* hover wells */
+  --hairline:      rgba(62, 56, 45, 0.08);
+  --hairline-soft: rgba(62, 56, 45, 0.05);
+
+  /* ---- Ink ---- */
+  --ink:        #292522;      /* warm near-black */
+  --ink-2:      #5C564D;      /* secondary */
+  --ink-3:      #8B847A;      /* tertiary / metadata */
+  --ink-faint:  #ADA69B;
+
+  /* ---- Primary: fern green (calm, confident, not Google) ---- */
+  --primary:        #3E6B58;
+  --primary-hover:  #34594A;
+  --primary-ink:    #F4F7F3;  /* text on primary */
+  --primary-soft:   #DEE8E0;  /* tinted wells */
+  --primary-soft-2: #ECF1EB;
+
+  /* ---- Functional pastels (content-type coding) ---- */
+  --c-video:      #C2705F;  --c-video-soft:   #F3E1DB;  /* clay rose · video */
+  --c-note:       #A8823C;  --c-note-soft:    #F1E7D2;  /* honey · notes & PDFs */
+  --c-insight:    #6E6FA8;  --c-insight-soft: #E5E4F1;  /* periwinkle · insights */
+  --c-ai:         #4E7D6C;  --c-ai-soft:      #DFEAE2;  /* sage · AI & web */
+  --c-audio:      #9A6B8F;  --c-audio-soft:   #EFE2EC;  /* mauve · audio */
+  --c-paper:      #5F7E9E;  --c-paper-soft:   #E0E8EE;  /* slate · papers */
+
+  /* ---- Elevation (soft, layered, no hard borders) ---- */
+  --shadow-panel:
+    0 1px 2px rgba(48, 42, 32, 0.04),
+    0 4px 14px rgba(48, 42, 32, 0.05),
+    0 14px 38px rgba(48, 42, 32, 0.06);
+  --shadow-card:
+    0 1px 2px rgba(48, 42, 32, 0.05),
+    0 3px 9px rgba(48, 42, 32, 0.05);
+  --shadow-pill:
+    0 1px 2px rgba(38, 66, 54, 0.25),
+    0 5px 14px rgba(38, 66, 54, 0.22);
+
+  /* ---- Radii (generous, consistent) ---- */
+  --r-panel: 22px;
+  --r-card:  14px;
+  --r-ctl:   10px;
+  --r-pill:  999px;
+
+  /* ---- Type ---- */
+  --font-sans: "Hanken Grotesk", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Spline Sans Mono", "SF Mono", "Cascadia Mono", monospace;
+  --fs-micro: 0.6875rem;  /* 11 */
+  --fs-meta:  0.75rem;    /* 12 */
+  --fs-body:  0.875rem;   /* 14 */
+  --fs-md:    0.9375rem;  /* 15 */
+  --fs-title: 1.375rem;   /* 22 */
+
+  /* ---- Spacing scale ---- */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px;
+
+  --focus-ring: 0 0 0 3px rgba(62, 107, 88, 0.28);
+}
+
+.dark {
+  --canvas:        #1D1B18;   /* deep warm charcoal, not black */
+  --canvas-tint:   #191714;
+  --surface:       #26231F;
+  --surface-2:     #2D2A25;
+  --surface-3:     #34302A;
+  --hairline:      rgba(235, 226, 210, 0.07);
+  --hairline-soft: rgba(235, 226, 210, 0.045);
+
+  --ink:        #EDE8DF;
+  --ink-2:      #B3ACA0;
+  --ink-3:      #837C71;
+  --ink-faint:  #5F594F;
+
+  --primary:        #6FA98F;
+  --primary-hover:  #83B9A0;
+  --primary-ink:    #14211B;
+  --primary-soft:   #2C3B33;
+  --primary-soft-2: #26312B;
+
+  /* pastels glow gently, stay desaturated */
+  --c-video:      #D89484;  --c-video-soft:   #3A2C27;
+  --c-note:       #CBA45E;  --c-note-soft:    #383023;
+  --c-insight:    #9C9DCF;  --c-insight-soft: #2E2E3D;
+  --c-ai:         #86B4A0;  --c-ai-soft:      #263630;
+  --c-audio:      #C595B8;  --c-audio-soft:   #362B33;
+  --c-paper:      #8FB0C9;  --c-paper-soft:   #26313A;
+
+  --shadow-panel:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    0 6px 18px rgba(0, 0, 0, 0.30),
+    0 18px 48px rgba(0, 0, 0, 0.32);
+  --shadow-card:
+    0 1px 2px rgba(0, 0, 0, 0.30),
+    0 3px 10px rgba(0, 0, 0, 0.26);
+  --shadow-pill:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 5px 16px rgba(111, 169, 143, 0.18);
+
+  --focus-ring: 0 0 0 3px rgba(111, 169, 143, 0.32);
+}
+
+/* ============ base ============ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 420px at 62% -140px, var(--canvas-tint), transparent 70%),
+    var(--canvas);
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  flex-direction: column;
+  min-width: 1000px;
+  transition: background-color .35s ease, color .35s ease;
+}
+button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+input { font: inherit; color: inherit; }
+::placeholder { color: var(--ink-faint); }
+
+/* pebble — the signature squircle dot, used everywhere */
+.pebble {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 42%;
+  flex: none;
+}
+
+/* ============ tile banner ============ */
+.tile-banner {
+  display: flex; align-items: baseline; gap: var(--sp-3);
+  padding: 7px var(--sp-6);
+  font-size: var(--fs-meta);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+  flex: none;
+}
+.tile-banner strong { color: var(--ink); font-weight: 700; letter-spacing: .01em; }
+.tile-banner span { color: var(--ink-3); }
+
+/* ============ shell ============ */
+.shell { flex: 1; display: flex; min-height: 0; }
+
+/* ============ sidebar ============ */
+.sidebar {
+  width: 232px; flex: none;
+  display: flex; flex-direction: column;
+  padding: var(--sp-6) var(--sp-4) var(--sp-4);
+  gap: var(--sp-2);
+}
+.wordmark {
+  display: flex; align-items: center; gap: 10px;
+  padding: 2px var(--sp-2) var(--sp-5);
+  font-weight: 700; font-size: var(--fs-md); letter-spacing: -0.01em;
+}
+.logo-pebbles { display: flex; gap: 3px; align-items: center; }
+.logo-pebbles .pebble { width: 11px; height: 11px; }
+.logo-pebbles .pebble:first-child { background: var(--primary); }
+.logo-pebbles .pebble:last-child  { background: var(--c-video); width: 8px; height: 8px; }
+
+.btn-new {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; margin: 0 var(--sp-2) var(--sp-4);
+  border-radius: var(--r-pill);
+  background: var(--primary); color: var(--primary-ink);
+  font-weight: 650; font-size: var(--fs-body); letter-spacing: .01em;
+  box-shadow: var(--shadow-pill);
+  transition: background .18s ease, transform .18s ease;
+}
+.btn-new:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-new svg { width: 15px; height: 15px; }
+
+.nav-group { margin-bottom: var(--sp-3); }
+.nav-label {
+  padding: var(--sp-2) var(--sp-3) 5px;
+  font-size: var(--fs-micro); font-weight: 650;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 8px var(--sp-3);
+  border-radius: var(--r-ctl);
+  color: var(--ink-2); font-weight: 500; font-size: var(--fs-body);
+  transition: background .15s ease, color .15s ease;
+  text-align: left;
+}
+.nav-item svg { width: 16px; height: 16px; flex: none; opacity: .72; }
+.nav-item:hover { background: var(--surface-3); color: var(--ink); }
+.nav-item.active {
+  background: var(--surface);
+  color: var(--ink); font-weight: 650;
+  box-shadow: var(--shadow-card);
+}
+.nav-item.active::before {
+  content: ""; width: 7px; height: 7px; border-radius: 42%;
+  background: var(--primary); margin-left: -2px; margin-right: -1px;
+}
+
+.sidebar-foot {
+  margin-top: auto; padding-top: var(--sp-4);
+  border-top: 1px solid var(--hairline);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.foot-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px var(--sp-3); border-radius: var(--r-ctl);
+  color: var(--ink-3); font-size: var(--fs-meta); font-weight: 500;
+  transition: background .15s ease, color .15s ease;
+  width: 100%; text-align: left;
+}
+.foot-item:hover { background: var(--surface-3); color: var(--ink); }
+.foot-item svg { width: 15px; height: 15px; opacity: .75; }
+.kbd {
+  margin-left: auto;
+  font-family: var(--font-mono); font-size: 10px;
+  padding: 2px 6px; border-radius: 6px;
+  background: var(--surface); box-shadow: inset 0 0 0 1px var(--hairline);
+  color: var(--ink-3);
+}
+
+/* ============ main ============ */
+.main {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+  padding: var(--sp-6) var(--sp-6) var(--sp-5) var(--sp-2);
+  gap: var(--sp-5);
+}
+
+/* notebook header */
+.nb-header { display: flex; align-items: flex-start; gap: var(--sp-5); padding: 0 var(--sp-2); }
+.nb-id { flex: 1; min-width: 0; }
+.nb-crumb {
+  font-size: var(--fs-meta); color: var(--ink-3); font-weight: 500;
+  display: flex; align-items: center; gap: 7px; margin-bottom: 6px;
+}
+.nb-crumb .pebble { background: var(--primary); width: 6px; height: 6px; }
+.nb-title {
+  font-size: var(--fs-title); font-weight: 750; letter-spacing: -0.022em;
+  line-height: 1.15;
+}
+.nb-desc {
+  margin-top: 5px; font-size: var(--fs-body); color: var(--ink-2);
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: 8px; padding: 3px 8px; margin-left: -8px;
+  cursor: text; transition: background .15s ease;
+}
+.nb-desc:hover { background: var(--surface-3); }
+.nb-desc svg { width: 12px; height: 12px; opacity: 0; transition: opacity .15s ease; }
+.nb-desc:hover svg { opacity: .55; }
+.nb-meta {
+  margin-top: 7px; font-size: var(--fs-meta); color: var(--ink-3);
+  display: flex; gap: 8px; align-items: center;
+}
+.nb-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); }
+.nb-actions { display: flex; gap: var(--sp-2); padding-top: 6px; }
+.btn-ghost {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: var(--r-pill);
+  font-size: var(--fs-meta); font-weight: 600; color: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  transition: background .15s ease, color .15s ease;
+}
+.btn-ghost:hover { background: var(--surface); color: var(--ink); }
+.btn-ghost.danger:hover { color: var(--c-video); }
+.btn-ghost svg { width: 13px; height: 13px; }
+
+/* ============ workspace ============ */
+.workspace {
+  flex: 1; min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(280px, 21rem) minmax(260px, 19rem) minmax(340px, 1fr);
+  gap: var(--sp-4);
+}
+.panel {
+  background: var(--surface);
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-panel);
+  display: flex; flex-direction: column;
+  min-height: 0; overflow: hidden;
+  transition: background-color .35s ease;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 9px;
+  padding: var(--sp-4) var(--sp-5) var(--sp-3);
+  flex: none;
+}
+.panel-title {
+  font-size: var(--fs-micro); font-weight: 700;
+  letter-spacing: .13em; text-transform: uppercase;
+  color: var(--ink-2);
+}
+.panel-count {
+  font-family: var(--font-mono); font-size: 10.5px;
+  color: var(--ink-3);
+  background: var(--surface-2); border-radius: 7px; padding: 2px 7px;
+}
+.panel-head .spacer { flex: 1; }
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--ink-3);
+  transition: background .15s ease, color .15s ease;
+}
+.icon-btn:hover { background: var(--surface-3); color: var(--ink); }
+.icon-btn svg { width: 14px; height: 14px; }
+.panel-body { flex: 1; overflow-y: auto; padding: 0 var(--sp-3) var(--sp-3); min-height: 0; }
+.panel-body::-webkit-scrollbar { width: 8px; }
+.panel-body::-webkit-scrollbar-thumb { background: var(--hairline); border-radius: 4px; }
+
+.panel-action {
+  margin: 0 var(--sp-3) var(--sp-4);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 36px; border-radius: var(--r-pill); flex: none;
+  font-size: var(--fs-meta); font-weight: 650; color: var(--primary);
+  background: var(--primary-soft-2);
+  transition: background .15s ease;
+}
+.panel-action:hover { background: var(--primary-soft); }
+.panel-action svg { width: 14px; height: 14px; }
+
+/* ---- source rows ---- */
+.src-row {
+  display: flex; align-items: flex-start; gap: 11px;
+  width: 100%; text-align: left;
+  padding: 11px 12px; border-radius: var(--r-card);
+  transition: background .15s ease, box-shadow .15s ease;
+}
+.src-row:hover { background: var(--surface-2); }
+.src-type {
+  width: 26px; height: 26px; border-radius: 9px; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-video-soft); color: var(--c-video);
+  margin-top: 1px;
+}
+.src-type svg { width: 12px; height: 12px; }
+.src-type.t-pdf   { background: var(--c-note-soft);    color: var(--c-note); }
+.src-type.t-web   { background: var(--c-ai-soft);      color: var(--c-ai); }
+.src-type.t-audio { background: var(--c-audio-soft);   color: var(--c-audio); }
+.src-type.t-paper { background: var(--c-paper-soft);   color: var(--c-paper); }
+.src-none { color: var(--ink-faint); font-weight: 500; }
+.src-main { min-width: 0; flex: 1; }
+.src-title {
+  font-size: var(--fs-body); font-weight: 550; line-height: 1.35;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.src-meta {
+  margin-top: 4px; display: flex; align-items: center; gap: 7px;
+  font-size: var(--fs-micro); color: var(--ink-3);
+}
+.insight-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 1.5px 8px; border-radius: var(--r-pill);
+  background: var(--c-insight-soft); color: var(--c-insight);
+  font-weight: 650; font-size: var(--fs-micro);
+  transition: filter .15s ease;
+}
+.src-row:hover .insight-chip { filter: brightness(0.97); }
+.insight-chip .pebble { width: 5px; height: 5px; background: var(--c-insight); }
+
+/* ---- notes ---- */
+.note-card {
+  display: block; width: 100%; text-align: left;
+  padding: 14px 15px; border-radius: var(--r-card);
+  background: var(--surface-2);
+  transition: background .15s ease, transform .15s ease;
+}
+.note-card:hover { background: var(--surface-3); }
+.note-kind {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--c-ai);
+  margin-bottom: 8px;
+}
+.note-kind .pebble { background: var(--c-ai); width: 6px; height: 6px; }
+.note-title { font-size: var(--fs-body); font-weight: 650; line-height: 1.35; }
+.note-excerpt {
+  margin-top: 6px; font-size: var(--fs-meta); color: var(--ink-2); line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.note-time { margin-top: 9px; font-size: var(--fs-micro); color: var(--ink-3); }
+
+.notes-empty {
+  margin-top: var(--sp-3);
+  padding: var(--sp-5) var(--sp-4);
+  border-radius: var(--r-card);
+  border: 1.5px dashed var(--hairline);
+  text-align: center;
+}
+.notes-empty .pebble-trio {
+  display: flex; justify-content: center; gap: 5px; margin-bottom: 10px;
+}
+.notes-empty .pebble-trio .pebble { width: 9px; height: 9px; }
+.notes-empty .pebble-trio .pebble:nth-child(1) { background: var(--c-note); opacity: .8; }
+.notes-empty .pebble-trio .pebble:nth-child(2) { background: var(--c-ai); opacity: .8; }
+.notes-empty .pebble-trio .pebble:nth-child(3) { background: var(--c-insight); opacity: .8; }
+.notes-empty p { font-size: var(--fs-meta); color: var(--ink-3); line-height: 1.55; }
+.notes-empty p strong { color: var(--ink-2); font-weight: 650; display: block; margin-bottom: 3px; }
+
+/* ---- chat ---- */
+.chat { display: flex; flex-direction: column; }
+.chat-body { display: flex; flex-direction: column; gap: var(--sp-4); padding: var(--sp-2) var(--sp-5) var(--sp-4); }
+.msg { max-width: 88%; }
+.msg.user { align-self: flex-end; }
+.msg.user .bubble {
+  background: var(--primary-soft);
+  color: var(--ink);
+  border-radius: 16px 16px 5px 16px;
+  padding: 10px 15px; font-size: var(--fs-body); line-height: 1.5;
+}
+.msg.ai { align-self: flex-start; }
+.msg-agent {
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--fs-micro); font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--c-ai); margin-bottom: 7px;
+}
+.msg-agent .pebble { background: var(--c-ai); width: 6px; height: 6px; }
+.msg.ai .bubble {
+  background: var(--surface-2);
+  border-radius: 5px 16px 16px 16px;
+  padding: 13px 16px;
+  font-size: var(--fs-body); line-height: 1.58; color: var(--ink);
+}
+.msg.ai .bubble p + p { margin-top: 10px; }
+.msg.ai .bubble em { font-style: normal; font-weight: 650; color: var(--primary); }
+.cite {
+  display: inline-flex; align-items: center; gap: 4px;
+  vertical-align: 1px; margin: 0 1px;
+  padding: 0.5px 7px; border-radius: var(--r-pill);
+  background: var(--c-insight-soft); color: var(--c-insight);
+  font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+  white-space: nowrap; cursor: pointer;
+  transition: filter .15s ease;
+}
+.cite:hover { filter: brightness(0.95); }
+.cite .pebble { width: 4px; height: 4px; background: var(--c-insight); }
+
+.context-bar {
+  flex: none;
+  margin: 0 var(--sp-4) var(--sp-3);
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+}
+.context-bar .sep { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-faint); }
+.context-bar b { color: var(--ink-2); font-weight: 500; }
+.model-chip {
+  margin-left: auto;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px; border-radius: var(--r-pill);
+  background: var(--c-ai-soft); color: var(--c-ai);
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+  white-space: nowrap;
+}
+.model-chip .pebble { width: 6px; height: 6px; background: var(--c-ai); }
+
+.composer {
+  flex: none;
+  margin: 0 var(--sp-4) var(--sp-4);
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 6px 6px 18px;
+  border-radius: var(--r-pill);
+  background: var(--canvas);
+  box-shadow: inset 0 1px 3px rgba(48, 42, 32, 0.06), inset 0 0 0 1px var(--hairline-soft);
+  transition: box-shadow .18s ease;
+}
+.composer:focus-within { box-shadow: inset 0 0 0 1.5px var(--primary), inset 0 1px 3px rgba(48,42,32,0.04); }
+.dark .composer { box-shadow: inset 0 1px 3px rgba(0,0,0,0.35), inset 0 0 0 1px var(--hairline); }
+.dark .composer:focus-within { box-shadow: inset 0 0 0 1.5px var(--primary); }
+.composer input {
+  flex: 1; min-width: 0; background: none; border: none;
+  font-size: var(--fs-body); padding: 8px 0;
+}
+.composer input:focus-visible { box-shadow: none; }
+.btn-send {
+  width: 36px; height: 36px; border-radius: 50%; flex: none;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--primary); color: var(--primary-ink);
+  box-shadow: var(--shadow-pill);
+  transition: background .18s ease, transform .18s ease;
+}
+.btn-send:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-send svg { width: 15px; height: 15px; }
+
+/* ---- theme transition niceties ---- */
+.panel, .sidebar, .nav-item, .note-card, .composer, .context-bar,
+.src-row, .btn-ghost, .tile-banner { transition-property: background-color, color, box-shadow; transition-duration: .35s; }
+
+/* ---- narrow (~1000px) ---- */
+@media (max-width: 1180px) {
+  .sidebar { width: 200px; }
+  .workspace { grid-template-columns: minmax(250px, 19rem) minmax(230px, 17rem) minmax(300px, 1fr); }
+  .msg { max-width: 96%; }
+  .context-bar { flex-wrap: wrap; row-gap: 4px; }
+}
+</style>
+</head>
+<body>
+
+<div class="tile-banner">
+  <strong>Direction D — Calm Clean / Soft Neutral</strong>
+  <span>A warm-greige canvas where panels float on soft light; one fern-green accent, quiet pastel coding, and nothing shouting.</span>
+</div>
+
+<div class="shell">
+
+  <!-- ================= SIDEBAR ================= -->
+  <aside class="sidebar">
+    <div class="wordmark">
+      <span class="logo-pebbles"><span class="pebble"></span><span class="pebble"></span></span>
+      Open Notebook
+    </div>
+
+    <button class="btn-new">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+      New
+    </button>
+
+    <nav class="nav-group">
+      <div class="nav-label">Collect</div>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2.5" y="2.5" width="11" height="11" rx="2.5"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/></svg>
+        Sources
+      </button>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Process</div>
+      <button class="nav-item active">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 3.5A1.5 1.5 0 0 1 4.5 2H8v12H4.5A1.5 1.5 0 0 1 3 12.5v-9zM13 3.5A1.5 1.5 0 0 0 11.5 2H8v12h3.5a1.5 1.5 0 0 0 1.5-1.5v-9z"/></svg>
+        Notebooks
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13.5 8a5.5 5.5 0 1 0-2.2 4.4L13.5 13l-.5-2.2A5.47 5.47 0 0 0 13.5 8z"/><path d="M6 7h4M6 9.3h2.5"/></svg>
+        Ask
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/></svg>
+        Search
+      </button>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Create</div>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="6" y="2" width="4" height="8" rx="2"/><path d="M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14"/></svg>
+        Podcasts
+      </button>
+    </nav>
+
+    <nav class="nav-group">
+      <div class="nav-label">Manage</div>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5.5 8 2.5l5.5 3L8 8.5zM2.5 8.2 8 11.2l5.5-3M2.5 10.9 8 13.9l5.5-3"/></svg>
+        Models
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 5h7M12.5 5h.5M3 11h.5M6 11h7"/><circle cx="11" cy="5" r="1.6"/><circle cx="4.7" cy="11" r="1.6"/></svg>
+        Transformations
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="2.2"/><path d="M8 2v1.6M8 12.4V14M2 8h1.6M12.4 8H14M3.8 3.8l1.1 1.1M11.1 11.1l1.1 1.1M12.2 3.8l-1.1 1.1M4.9 11.1l-1.1 1.1"/></svg>
+        Settings
+      </button>
+      <button class="nav-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4-3 4 3 4M10 4l3 4-3 4"/></svg>
+        Advanced
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m8 2 1.4 3.3L13 6l-3.6.7L8 10 6.6 6.7 3 6l3.6-.7z"/><path d="m12.5 10.5.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg>
+        Quick actions
+        <span class="kbd">⌘K</span>
+      </button>
+      <button class="foot-item" id="theme-toggle" aria-pressed="false">
+        <svg id="icon-moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M13 9.5A5.5 5.5 0 0 1 6.5 3 5.5 5.5 0 1 0 13 9.5z"/></svg>
+        <svg id="icon-sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="display:none"><circle cx="8" cy="8" r="3"/><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M12.6 3.4l-1 1M4.4 11.6l-1 1"/></svg>
+        <span id="theme-label">Dark theme</span>
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c1.8 1.7 2.6 3.8 2.6 6S9.8 12.3 8 14C6.2 12.3 5.4 10.2 5.4 8S6.2 3.7 8 2z"/></svg>
+        English
+      </button>
+      <button class="foot-item">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6.5 2h-3A1.5 1.5 0 0 0 2 3.5v9A1.5 1.5 0 0 0 3.5 14h3M10.5 11 14 8l-3.5-3M14 8H6"/></svg>
+        Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+
+    <header class="nb-header">
+      <div class="nb-id">
+        <div class="nb-crumb"><span class="pebble"></span>Notebooks</div>
+        <h1 class="nb-title">The Attention Economy</h1>
+        <div class="nb-desc" role="button" tabindex="0">
+          Research for an essay on focus, distraction and what technology does to both.
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m11.3 2.7 2 2L5.5 12.5l-2.8.8.8-2.8z"/></svg>
+        </div>
+        <div class="nb-meta">
+          Created 3 days ago <span class="dot"></span> Updated 2 days ago
+        </div>
+      </div>
+      <div class="nb-actions">
+        <button class="btn-ghost">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2.5 5h11M3.5 5v7A1.5 1.5 0 0 0 5 13.5h6A1.5 1.5 0 0 0 12.5 12V5M6 5V3.5A1 1 0 0 1 7 2.5h2a1 1 0 0 1 1 1V5"/></svg>
+          Archive
+        </button>
+        <button class="btn-ghost danger">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+          Delete
+        </button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- SOURCES -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Sources</span>
+          <span class="panel-count">5</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" title="Collapse panel">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m10 4-4 4 4 4"/></svg>
+          </button>
+        </div>
+        <div class="panel-body">
+          <button class="src-row">
+            <span class="src-type"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M6 4.5v7l6-3.5z"/></svg></span>
+            <span class="src-main">
+              <span class="src-title">How Your Attention Is Sold</span>
+              <span class="src-meta">Video <span class="insight-chip"><span class="pebble"></span>1 insight</span></span>
+            </span>
+          </button>
+          <button class="src-row">
+            <span class="src-type t-pdf"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h5L12.5 6v7A1.5 1.5 0 0 1 11 14.5H4A1.5 1.5 0 0 1 2.5 13V4A1.5 1.5 0 0 1 4 2.5z"/><path d="M9 2.5V6h3.5"/></svg></span>
+            <span class="src-main">
+              <span class="src-title">Stolen Focus — Johann Hari (chapter notes)</span>
+              <span class="src-meta">PDF <span class="insight-chip"><span class="pebble"></span>2 insights</span></span>
+            </span>
+          </button>
+          <button class="src-row">
+            <span class="src-type t-web"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M2.5 8h11M8 2.5c1.7 1.6 2.5 3.5 2.5 5.5S9.7 11.9 8 13.5C6.3 11.9 5.5 10 5.5 8S6.3 4.1 8 2.5z"/></svg></span>
+            <span class="src-main">
+              <span class="src-title">The Cost of Context Switching — Cal Newport</span>
+              <span class="src-meta">Web <span class="insight-chip"><span class="pebble"></span>1 insight</span></span>
+            </span>
+          </button>
+          <button class="src-row">
+            <span class="src-type t-audio"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 6.5v3M5.5 4.5v7M8 3v10M10.5 5.5v5M13 7v2"/></svg></span>
+            <span class="src-main">
+              <span class="src-title">Deep Questions #312: Rebuilding Concentration</span>
+              <span class="src-meta">Audio <span class="src-none">No insights yet</span></span>
+            </span>
+          </button>
+          <button class="src-row">
+            <span class="src-type t-paper"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3.5 2.5h9v11h-9z"/><path d="M5.5 5h5M5.5 7.3h5M5.5 9.6h3"/></svg></span>
+            <span class="src-main">
+              <span class="src-title">Attention Is All You Need</span>
+              <span class="src-meta">Paper · arXiv <span class="insight-chip"><span class="pebble"></span>1 insight</span></span>
+            </span>
+          </button>
+        </div>
+        <button class="panel-action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 3.5v9M3.5 8h9"/></svg>
+          Add Source
+        </button>
+      </section>
+
+      <!-- NOTES -->
+      <section class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Notes</span>
+          <span class="panel-count">1</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" title="Collapse panel">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m10 4-4 4 4 4"/></svg>
+          </button>
+        </div>
+        <div class="panel-body">
+          <button class="note-card">
+            <span class="note-kind"><span class="pebble"></span>AI Generated</span>
+            <span class="note-title">Key levers for reclaiming focus</span>
+            <span class="note-excerpt">Environment design over willpower, single-tasking blocks, and treating attention as a finite budget you spend deliberately.</span>
+            <span class="note-time">3 days ago</span>
+          </button>
+
+          <div class="notes-empty">
+            <div class="pebble-trio"><span class="pebble"></span><span class="pebble"></span><span class="pebble"></span></div>
+            <p>
+              <strong>Notes hold what you keep.</strong>
+              Save chat answers, capture insights from sources, or draft your own thinking — everything stays inside this notebook.
+            </p>
+          </div>
+        </div>
+        <button class="panel-action">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m11.3 2.7 2 2L5.5 12.5l-2.8.8.8-2.8z"/></svg>
+          Write Note
+        </button>
+      </section>
+
+      <!-- CHAT -->
+      <section class="panel chat">
+        <div class="panel-head">
+          <span class="panel-title">Chat with Notebook</span>
+          <span class="spacer"></span>
+          <button class="icon-btn" title="New chat">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M8 3.5v9M3.5 8h9"/></svg>
+          </button>
+          <button class="icon-btn" title="Expand panel">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M9.5 2.5h4v4M13.5 2.5 9 7M6.5 13.5h-4v-4M2.5 13.5 7 9"/></svg>
+          </button>
+        </div>
+
+        <div class="panel-body chat-body">
+          <div class="msg user">
+            <div class="bubble">What do my sources agree on about rebuilding focus?</div>
+          </div>
+          <div class="msg ai">
+            <div class="msg-agent"><span class="pebble"></span>Notebook</div>
+            <div class="bubble">
+              <p>All five sources converge on one premise: attention is a <em>trainable, finite resource</em> — not a fixed trait. Hari argues that environment beats willpower, so the first lever is removing frictionless distraction rather than resisting it <span class="cite"><span class="pebble"></span>Stolen Focus</span>. Newport quantifies why: every context switch leaves an "attention residue" that taxes the next task, which is what makes fragmented work so expensive <span class="cite"><span class="pebble"></span>Newport</span>.</p>
+              <p>The video completes the picture from the supply side — the distraction isn't accidental, it's a business model optimized against your focus <span class="cite"><span class="pebble"></span>How Your Attention Is Sold</span>. The practical agreement: design your environment, protect long single-task blocks, and treat concentration as a capacity you rebuild through deliberate practice.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="context-bar">
+          <b>5 sources</b><span class="sep"></span><b>1 note</b><span class="sep"></span>4.9K tokens
+          <span class="model-chip"><span class="pebble"></span>gpt-5.6-terra</span>
+        </div>
+
+        <div class="composer">
+          <input type="text" placeholder="Ask anything about your sources…" aria-label="Message">
+          <button class="btn-send" title="Send">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 12.5v-9M4 7.5l4-4 4 4"/></svg>
+          </button>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var btn = document.getElementById('theme-toggle');
+  var moon = document.getElementById('icon-moon');
+  var sun = document.getElementById('icon-sun');
+  var label = document.getElementById('theme-label');
+
+  btn.addEventListener('click', function () {
+    var dark = root.classList.toggle('dark');
+    btn.setAttribute('aria-pressed', String(dark));
+    moon.style.display = dark ? 'none' : '';
+    sun.style.display = dark ? '' : 'none';
+    label.textContent = dark ? 'Light theme' : 'Dark theme';
+  });
+
+  // small nicety: composer send clears the field with a soft pulse
+  var input = document.querySelector('.composer input');
+  var send = document.querySelector('.btn-send');
+  send.addEventListener('click', function () {
+    if (!input.value.trim()) return;
+    input.value = '';
+    send.animate(
+      [{ transform: 'scale(1)' }, { transform: 'scale(0.86)' }, { transform: 'scale(1)' }],
+      { duration: 220, easing: 'ease-out' }
+    );
+    input.focus();
+  });
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') send.click();
+  });
+})();
+</script>
+</body>
+</html>

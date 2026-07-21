@@ -1,0 +1,49 @@
+frontend/src/lib/locales/bn-IN/index.ts
+  s_4e49aa2b4d2aeb::t_6f514badc577d4 670-671
+frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx
+  s_4e49aa2b4d2aeb::t_8e3a759cb3aa1d 206,208-217,221
+frontend/src/lib/locales/zh-CN/index.ts
+  s_4e49aa2b4d2aeb::t_6d0b98b80eec22 670-671
+CHANGELOG.md
+  s_4e49aa2b4d2aeb::t_8fe1e76873ef5b 18
+frontend/src/lib/locales/pl-PL/index.ts
+  s_4e49aa2b4d2aeb::t_98b5be58ff24f4 670-671
+frontend/src/lib/locales/tr-TR/index.ts
+  s_4e49aa2b4d2aeb::t_aa9b21f83e9af2 670-671
+frontend/src/lib/locales/fr-FR/index.ts
+  s_4e49aa2b4d2aeb::t_a38b5ff2256ac4 670-671
+frontend/src/lib/locales/ja-JP/index.ts
+  s_4e49aa2b4d2aeb::t_a623a0e1d9cc82 670-671
+frontend/src/lib/locales/pt-BR/index.ts
+  s_4e49aa2b4d2aeb::t_98788b59b37c4c 670-671
+frontend/src/lib/locales/de-DE/index.ts
+  s_4e49aa2b4d2aeb::t_d31c11ef2212bd 673-674
+frontend/src/lib/locales/it-IT/index.ts
+  s_4e49aa2b4d2aeb::t_2ff533963a3e8a 670-671
+frontend/src/lib/locales/ca-ES/index.ts
+  s_4e49aa2b4d2aeb::t_b79e9936d7663c 670-671
+frontend/src/lib/locales/es-ES/index.ts
+  s_4e49aa2b4d2aeb::t_52fb1f7275970e 670-671
+frontend/src/lib/locales/ru-RU/index.ts
+  s_4e49aa2b4d2aeb::t_c1b1b47c33010b 670-671
+frontend/src/lib/locales/zh-TW/index.ts
+  s_4e49aa2b4d2aeb::t_507459ede11ad5 670-671
+frontend/src/lib/locales/en-US/index.ts
+  s_4e49aa2b4d2aeb::t_5991884ddfcf49 668-669
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "97b917fdbabeb87e36c82183342263585f08538b",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

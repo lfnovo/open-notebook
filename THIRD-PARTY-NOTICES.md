@@ -14,6 +14,14 @@ permissive licenses across the stack in one place.
 > Last generated: 2026-07-21 against the locked dependency tree.
 > Entries that have no package metadata (SurrealDB) are maintained in
 > `MANUAL_ENTRIES` in that script.
+>
+> **Must be generated on Linux.** The dependency tree is platform-specific —
+> a Windows machine resolves `pywin32`, `win32_setctime`,
+> `@img/sharp-win32-x64` and `@next/swc-win32-x64-msvc`, none of which ship in
+> our Linux container, while omitting the Linux binaries that do. Since what we
+> distribute is the Linux image, generating this file anywhere else produces an
+> inaccurate notice. CI verifies it with `--check` on Linux; see
+> `docs/LICENSE_COMPLIANCE.md` for how to regenerate from a Windows host.
 
 The "Copyright" column reports each package's declared author or maintainer,
 which is the copyright holder that package metadata exposes. Where a project

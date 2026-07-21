@@ -57,7 +57,7 @@ SURREAL_DATABASE=development
 OPEN_NOTEBOOK_ENCRYPTION_KEY=my-dev-secret-key
 
 # Application
-APP_PASSWORD=  # Optional password protection
+OPEN_NOTEBOOK_PASSWORD=  # Optional password protection
 DEBUG=true
 LOG_LEVEL=DEBUG
 ```

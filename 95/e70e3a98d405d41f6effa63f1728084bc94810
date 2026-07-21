@@ -1,0 +1,26 @@
+frontend/src/lib/api/client.ts
+  s_7b3428ae87ada8::t_dde9bae6c4b79d 22-25
+frontend/src/lib/hooks/use-ask.ts
+  s_7b3428ae87ada8::t_4c97968b4175b7 30-39
+  s_7b3428ae87ada8::t_182fb347885efb 8
+  s_7b3428ae87ada8::t_6fa6847e68bab1 73-87
+  s_7b3428ae87ada8::t_a24d944a8d233a 127-128
+  s_7b3428ae87ada8::t_3077b15ff6e7e6 230
+  s_7b3428ae87ada8::t_64becb85a23fe4 154-156
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "95e70e3a98d405d41f6effa63f1728084bc94810",
+  "prompts": {},
+  "sessions": {
+    "s_7b3428ae87ada8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2b8e1db2-3afc-4824-b7da-f35fe098681d",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

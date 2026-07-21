@@ -78,13 +78,17 @@ ALLOWED: dict[str, Allowance] = {
     ),
     "asciidoc": Allowance(
         "asciidoc",
-        "GPLv2+, pulled in transitively by content-core. FLAGGED FOR WP1 LEGAL "
-        "REVIEW: this is the one strong-copyleft runtime dependency inherited "
-        "from upstream. It is invoked as a separate document-conversion tool "
-        "rather than imported as a library, which is the usual basis for "
-        "treating it as an aggregate rather than a derived work -- but that "
-        "position needs sign-off, or content-core needs to be configured to "
-        "drop it, before commercial distribution.",
+        "GPLv2+, pulled in transitively by content-core, which declares it as a "
+        "hard dependency but never imports it (verified: zero references in "
+        "content-core's source, and extraction output is byte-identical without "
+        "it across every supported format). It is therefore present in the "
+        "development and CI virtualenv -- which this scan sees -- but is PURGED "
+        "from every shipped artifact by the Dockerfile, so nothing "
+        "strong-copyleft is ever redistributed. GPL obligations attach on "
+        "distribution, and we do not distribute it. "
+        "`TestAsciidocStaysUnused` in tests/test_license_check.py fails if a "
+        "future content-core starts using it, which would invalidate the purge. "
+        "Remove this entry once content-core makes asciidoc an optional extra.",
     ),
     # --- Frontend ---
     # sharp ships a per-platform binary package (@img/sharp-<platform>-<arch>),

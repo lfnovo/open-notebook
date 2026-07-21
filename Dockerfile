@@ -54,6 +54,30 @@ COPY open_notebook/__init__.py ./open_notebook/__init__.py
 # Install dependencies (this layer is cached unless dependencies change)
 RUN uv sync --frozen --no-dev
 
+# Remove asciidoc (GPLv2+) from the shipped image.
+#
+# content-core declares asciidoc as a hard dependency but never imports it --
+# there is not a single reference to it anywhere in content-core's source.
+# Verified empirically across every supported format (txt, md, csv, docx,
+# pptx, xlsx, epub, pdf, inline HTML): extraction output is byte-identical
+# with and without it, including a 55k-character real-world PDF.
+#
+# Keeping it would mean redistributing a strong-copyleft (GPL) program inside
+# a commercial artifact, with the source-availability obligations that carries,
+# in exchange for nothing. Every other package in the extraction stack is
+# MIT or Apache-2.0.
+#
+# This is a stopgap: the real fix is upstream, making asciidoc an optional
+# extra of content-core. Until that ships, purge it here.
+#
+# Self-verifying on purpose -- if a future content-core version actually starts
+# importing asciidoc, this build FAILS loudly rather than silently shipping a
+# broken image.
+RUN uv pip uninstall --python /app/.venv/bin/python asciidoc && \
+    /app/.venv/bin/python -c "import importlib.util, content_core; \
+assert importlib.util.find_spec('asciidoc') is None, 'asciidoc survived the purge'; \
+print('asciidoc purged from image; content_core imports OK')"
+
 # Pre-download tiktoken encoding so the app works offline (issue #264).
 # /app/tiktoken-cache is intentionally outside /app/data/ so that volume mounts
 # of /app/data (for user data persistence) do not hide the pre-baked encoding.

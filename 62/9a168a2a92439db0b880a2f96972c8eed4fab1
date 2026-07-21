@@ -1,0 +1,25 @@
+design-proposals/d-calm-clean.html
+  s_29e4db9e94e63e::t_8798bef4420054 1-811
+design-proposals/a-warm-library.html
+  s_29e4db9e94e63e::t_8798bef4420054 1-1011
+design-proposals/c-alive-colorful.html
+  s_29e4db9e94e63e::t_8798bef4420054 1-1196
+design-proposals/b-technical-tool.html
+  s_29e4db9e94e63e::t_8798bef4420054 1-835
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "629a168a2a92439db0b880a2f96972c8eed4fab1",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

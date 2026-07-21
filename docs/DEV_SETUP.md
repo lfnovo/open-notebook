@@ -186,9 +186,13 @@ justification in its PR.
 ## 8. Known-failing tests on Windows
 
 These **six** failures are pre-existing at `upstream-base` and are caused by
-the tests' own platform assumptions, not by broken application code. All six
-pass on Linux, which is what CI runs. **They were deliberately not "fixed"** —
-WP0 forbids changing application behavior.
+the tests' own platform assumptions, not by broken application code. **They
+were deliberately not "fixed"** — WP0 forbids changing application behavior.
+
+All six are **confirmed passing on Linux CI**, not merely assumed to: the
+first CI run of this branch reported `737 passed` for the backend (the 732
+that pass on Windows, plus these 5) and `23 passed (23)` test files for the
+frontend (the 22 that pass on Windows, plus the locale test).
 
 | Test | Why it fails on Windows |
 |---|---|

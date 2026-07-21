@@ -169,6 +169,13 @@ jobs:
       - name: Check for unreviewed GPL/AGPL dependencies
         run: uv run python scripts/check_licenses.py
 
+      # Attribution has to track the real dependency tree: a stale
+      # THIRD-PARTY-NOTICES.md is a compliance defect, not a cosmetic one.
+      # This must run on Linux -- dependency resolution is platform-specific
+      # and the Linux container is what we distribute.
+      - name: Check THIRD-PARTY-NOTICES.md is up to date
+        run: uv run python scripts/generate_notices.py --check
+
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest

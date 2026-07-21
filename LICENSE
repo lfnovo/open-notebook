@@ -1,5 +1,16 @@
 MIT License
+
+Copyright (c) 2026 DataFabricX Pvt Ltd
 Copyright (c) 2024 Luis Novo
+
+This product is a derivative work of Open Notebook (https://github.com/lfnovo/open-notebook),
+originally created by Luis Novo and licensed under the MIT License. The original
+copyright notice above is retained as the MIT License requires, and must not be
+removed. Modifications made by DataFabricX Pvt Ltd are likewise licensed under
+the terms below.
+
+Third-party dependency licenses are enumerated in THIRD-PARTY-NOTICES.md.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

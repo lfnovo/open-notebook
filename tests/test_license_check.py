@@ -131,6 +131,49 @@ class TestMultiLicensedPackages:
         assert classify("mystery-lib", "GPL-3.0-only") is not None
 
 
+class TestAsciidocStaysUnused:
+    """The Dockerfile purges asciidoc (GPLv2+) from the shipped image, which is
+    only safe while content-core continues not to use it.
+
+    content-core declares asciidoc as a hard dependency but never imports it.
+    If a future version starts actually using it, the purge would ship a broken
+    image -- so fail here, at test time, instead of at runtime in a customer's
+    deployment. See the purge step in the Dockerfile.
+    """
+
+    def _content_core_root(self) -> Path:
+        spec = importlib.util.find_spec("content_core")
+        assert spec and spec.origin, "content_core is not installed"
+        return Path(spec.origin).parent
+
+    def test_content_core_does_not_reference_asciidoc(self):
+        root = self._content_core_root()
+        offenders = []
+        for path in root.rglob("*.py"):
+            try:
+                text = path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            if "asciidoc" in text.lower():
+                offenders.append(str(path.relative_to(root)))
+
+        assert not offenders, (
+            "content-core now references asciidoc in: "
+            + ", ".join(offenders)
+            + ". The Dockerfile purges asciidoc from the shipped image, which is "
+            "no longer safe. Either drop the purge and re-add asciidoc to the "
+            "licence allowlist (accepting the GPL redistribution obligation), or "
+            "pin content-core to a version that does not use it."
+        )
+
+    def test_extraction_entry_points_import_without_asciidoc(self):
+        """The API surface this project actually calls must not depend on it."""
+        import content_core
+
+        assert hasattr(content_core, "extract_content")
+        assert hasattr(content_core, "check_file_support")
+
+
 class TestNoFalsePositives:
     @pytest.mark.parametrize(
         "license_text",

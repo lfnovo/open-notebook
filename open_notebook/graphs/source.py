@@ -15,6 +15,7 @@ from open_notebook.domain.content_settings import ContentSettings
 from open_notebook.domain.notebook import Asset, Source
 from open_notebook.domain.transformation import Transformation
 from open_notebook.graphs.transformation import graph as transform_graph
+from open_notebook.utils.runtime_capabilities import engine_runtime_missing
 
 # Preferred languages for YouTube transcript selection. content-core's own
 # default is only ["en", "es", "pt"]; we keep the broader list Open Notebook has
@@ -50,6 +51,27 @@ class TransformationState(TypedDict):
     transformation: Transformation
 
 
+def _usable_engine(engine: str, kind: str) -> str:
+    """Return ``engine``, or "auto" when its opt-in runtime is not installed.
+
+    The engine choice is persisted in the database; runtime availability comes
+    from environment flags that are re-evaluated on every boot. A redeploy that
+    drops OPEN_NOTEBOOK_ENABLE_CRAWL4AI/_DOCLING (or a failed on-demand install)
+    therefore leaves a stored selection pointing at an absent runtime, and
+    passing it through fails every extraction with no usable diagnostic. Falling
+    back to content-core's "auto" chain keeps ingestion working, loudly.
+    """
+    missing_env_var = engine_runtime_missing(engine)
+    if missing_env_var is None:
+        return engine
+    logger.warning(
+        f"Configured {kind} engine '{engine}' is selected in Content Settings but "
+        f"its runtime is not available in this container; falling back to 'auto'. "
+        f"Set {missing_env_var}=true to enable it (see ADR-007)."
+    )
+    return "auto"
+
+
 async def content_process(state: SourceState) -> dict:
     content_state: Dict[str, Any] = state["content_state"]
 
@@ -66,13 +88,19 @@ async def content_process(state: SourceState) -> dict:
     try:
         settings: ContentSettings = await ContentSettings.get_instance()  # type: ignore[assignment]
         if settings.default_content_processing_engine_url:
-            config_kwargs["url_engine"] = settings.default_content_processing_engine_url
+            config_kwargs["url_engine"] = _usable_engine(
+                settings.default_content_processing_engine_url, "url"
+            )
         if settings.default_content_processing_engine_doc:
-            config_kwargs["document_engine"] = (
-                settings.default_content_processing_engine_doc
+            config_kwargs["document_engine"] = _usable_engine(
+                settings.default_content_processing_engine_doc, "document"
             )
         if settings.docling_ocr is not None:
             config_kwargs["docling_ocr"] = settings.docling_ocr
+        if settings.docling_formulas is not None:
+            config_kwargs["docling_formulas"] = settings.docling_formulas
+        if settings.docling_vision is not None:
+            config_kwargs["docling_vision"] = settings.docling_vision
     except Exception as e:
         # Keep the server-side traceback for diagnosing DB/deserialization
         # failures while still falling back to defaults (non-fatal).
@@ -110,7 +138,9 @@ async def content_process(state: SourceState) -> dict:
         f"Extracting {target} via content-core "
         f"(url_engine={config_kwargs.get('url_engine', 'auto')}, "
         f"document_engine={config_kwargs.get('document_engine', 'auto')}, "
-        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')})"
+        f"docling_ocr={config_kwargs.get('docling_ocr', 'auto')}, "
+        f"docling_formulas={config_kwargs.get('docling_formulas', 'auto')}, "
+        f"docling_vision={config_kwargs.get('docling_vision', 'auto')})"
     )
 
     processed = await extract_content(
@@ -230,7 +260,8 @@ async def transform_content(state: TransformationState) -> Optional[dict]:
     # LangGraph accepts a partial state dict at runtime, but its typed
     # overloads require the full state type (langgraph typing limitation).
     result = await transform_graph.ainvoke(  # type: ignore[call-overload]
-        dict(input_text=content, transformation=transformation)
+        dict(input_text=content, transformation=transformation),
+        config=RunnableConfig(configurable={"model_id": transformation.model_id}),
     )
     await source.add_insight(transformation.title, result["output"])
     return {

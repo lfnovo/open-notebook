@@ -412,7 +412,7 @@ function SourceDetailContentInner({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="pb-4 px-2">
+      <div className="pb-4 px-2 pr-12">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <InlineEdit

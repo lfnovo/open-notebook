@@ -1,3 +1,4 @@
+import os
 from typing import Any, ClassVar, Dict, Optional, Sequence, Union
 
 from esperanto import (
@@ -10,6 +11,7 @@ from esperanto import (
 from loguru import logger
 from surrealdb import RecordID
 
+from open_notebook.ai.connection_tester import normalize_anthropic_compatible_base_url
 from open_notebook.database.repository import ensure_record_id, repo_query
 from open_notebook.domain.base import ObjectModel, RecordModel
 from open_notebook.exceptions import ConfigurationError
@@ -215,11 +217,44 @@ class ModelManager:
 
             await provision_provider_keys(model.provider)
 
+        # anthropic_compatible: esperanto has no such provider name; it maps to
+        # the anthropic provider with a custom base_url. Pull config from env when
+        # no credential is linked. This runs BEFORE kwargs are merged so that a
+        # kwarg like temperature does not make `config` truthy and suppress the
+        # env-var fallback for an unlinked model.
+        if model.provider == "anthropic_compatible" and not config:
+            api_key = os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY")
+            base_url = os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL")
+            if api_key:
+                config["api_key"] = api_key
+            if base_url:
+                config["base_url"] = base_url
+                # A base_url from a provisioned DB credential needs the same
+                # request-time re-validation the credential-linked path gets.
+                await _revalidate_config_urls(config, model.provider)
+
         # Merge any additional kwargs (e.g. temperature)
         config.update(kwargs)
 
+        # Require base_url + api_key and normalize the URL for anthropic_compatible.
+        if model.provider == "anthropic_compatible" and (
+            not str(config.get("api_key", "")).strip()
+            or not str(config.get("base_url", "")).strip()
+        ):
+            raise ConfigurationError(
+                "Anthropic-compatible models require a base URL and API key"
+            )
+        if model.provider == "anthropic_compatible":
+            config["base_url"] = normalize_anthropic_compatible_base_url(
+                str(config["base_url"])
+            )
+
         # Normalize provider name: DB stores underscores but Esperanto expects hyphens
-        provider = model.provider.replace("_", "-")
+        provider = (
+            "anthropic"
+            if model.provider == "anthropic_compatible"
+            else model.provider.replace("_", "-")
+        )
 
         # Create model based on type (Esperanto will cache the instance)
         if model.type == "language":
@@ -318,7 +353,7 @@ class ModelManager:
         elif model_type == "speech_to_text":
             model_id = defaults.default_speech_to_text_model
         elif model_type == "large_context":
-            model_id = defaults.large_context_model
+            model_id = defaults.large_context_model or defaults.default_chat_model
 
         if not model_id:
             logger.warning(

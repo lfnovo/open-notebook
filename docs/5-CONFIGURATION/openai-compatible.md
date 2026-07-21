@@ -26,6 +26,7 @@ Open Notebook can connect to any server using this format.
 | **Text Generation WebUI** | Full-featured local inference | https://github.com/oobabooga/text-generation-webui |
 | **vLLM** | High-performance serving | https://github.com/vllm-project/vllm |
 | **Ollama** | Simple local models | (Use native Ollama provider instead) |
+| **oMLX** | Apple Silicon / MLX | (Use native [oMLX](omlx.md) provider instead) |
 | **LocalAI** | Local AI inference | https://github.com/mudler/LocalAI |
 | **llama.cpp server** | Lightweight inference | https://github.com/ggerganov/llama.cpp |
 
@@ -403,3 +404,4 @@ Use OpenAI-compatible when:
 - **[Local STT Setup](local-stt.md)** - Speech-to-text with Speaches
 - **[AI Providers](ai-providers.md)** - All provider options
 - **[Ollama Setup](ollama.md)** - Native Ollama integration
+- **[oMLX Setup](omlx.md)** - Native oMLX (Apple Silicon) integration

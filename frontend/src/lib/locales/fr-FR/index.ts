@@ -277,6 +277,7 @@ export const frFR = {
     lastViewed: "Consulté {{time}}",
   },
   sources: {
+    newSource: "Nouvelle Source",
     bulkContext: "Contexte",
     includeAllInContext: "Tout inclure dans le contexte",
     includeAllInsights: "Tout inclure (aperçus uniquement)",

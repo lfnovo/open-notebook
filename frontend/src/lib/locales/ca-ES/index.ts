@@ -277,6 +277,7 @@ export const caES = {
     lastViewed: "Vist {{time}}",
   },
   sources: {
+    newSource: "Font nova",
     bulkContext: "Context",
     includeAllInContext: "Inclou-les totes al context",
     includeAllInsights: "Inclou-les totes (només informacions)",

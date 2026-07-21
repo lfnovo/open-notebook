@@ -277,6 +277,7 @@ export const zhCN = {
     lastViewed: "查看于{{time}}",
   },
   sources: {
+    newSource: "新建来源",
     bulkContext: "上下文",
     includeAllInContext: "全部加入上下文",
     includeAllInsights: "全部加入（仅见解）",

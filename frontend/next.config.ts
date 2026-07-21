@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   // Enable standalone output for optimized Docker deployment
   output: "standalone",
 
-  ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
+  ...(allowedDevOrigins && allowedDevOrigins.length > 0 ? { allowedDevOrigins } : {}),
 
   // Experimental features
   // Type assertion needed: proxyClientMaxBodySize is valid in Next.js 15 but types lag behind

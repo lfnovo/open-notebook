@@ -135,6 +135,40 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+  licenses:
+    name: License Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Install Python dependencies
+        run: uv sync
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The frontend scan reads node_modules, so production deps must be
+      # installed before check_licenses.py runs.
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Check for unreviewed GPL/AGPL dependencies
+        run: uv run python scripts/check_licenses.py
+
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest

@@ -244,3 +244,130 @@ class TestPinnedHttpTarget:
                 await prepare_pinned_http_target(
                     "http://evil.example/v1/models", "openai_compatible"
                 )
+
+
+class TestPinnedHttpTargetSelfHostedUse:
+    """The pinning guard must not break the self-hosted setups it protects.
+
+    TestPinnedHttpTarget above proves the guard blocks what it should. These
+    are the inverse assertions: every deployment shape a self-hoster actually
+    runs must survive pinning and reach its endpoint. A regression here means
+    users with a local Ollama, an LM Studio box on the LAN, a containerized
+    app talking to the host, or a Tailscale-hosted endpoint lose their
+    provider with no obvious cause.
+    """
+
+    async def test_localhost_ollama_survives_pinning(self):
+        """The single most common self-hosted setup: Ollama on localhost."""
+        fake_addrs = [
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("::1", 0, 0, 0)),
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "http://localhost:11434/api/tags", "ollama"
+            )
+
+        # IPv4 is preferred when both families resolve.
+        assert target.url == "http://127.0.0.1:11434/api/tags"
+        assert target.headers == {"Host": "localhost:11434"}
+        assert target.extensions == {}
+
+    async def test_host_docker_internal_survives_pinning(self):
+        """Containerized app reaching a service on the host."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.65.2", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "http://host.docker.internal:11434/v1/models", "ollama"
+            )
+
+        assert target.url == "http://192.168.65.2:11434/v1/models"
+        assert target.headers == {"Host": "host.docker.internal:11434"}
+
+    async def test_private_lan_ip_literal_survives_pinning(self):
+        """LM Studio (or any box) addressed by private IP literal on the LAN."""
+        target = await prepare_pinned_http_target(
+            "http://192.168.1.50:1234/v1/models", "openai_compatible"
+        )
+        assert target.url == "http://192.168.1.50:1234/v1/models"
+        assert target.headers == {}
+
+    async def test_private_lan_hostname_survives_pinning(self):
+        """A LAN hostname resolving into RFC1918 space stays reachable."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.1.20", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "http://llm.lan/v1/models", "openai_compatible"
+            )
+
+        assert target.url == "http://10.0.1.20/v1/models"
+        # No port in the source URL means no port in the Host header.
+        assert target.headers == {"Host": "llm.lan"}
+
+    async def test_ipv6_loopback_literal_survives_pinning(self):
+        target = await prepare_pinned_http_target(
+            "http://[::1]:11434/api/tags", "ollama"
+        )
+        assert target.url == "http://[::1]:11434/api/tags"
+        assert target.headers == {}
+
+    async def test_tailscale_cgnat_address_survives_pinning(self):
+        """Tailscale hands out 100.64.0.0/10 — shared space, not link-local."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("100.101.102.103", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "http://ollama.tail1234.ts.net:11434/api/tags", "ollama"
+            )
+
+        assert target.url == "http://100.101.102.103:11434/api/tags"
+        assert target.headers == {"Host": "ollama.tail1234.ts.net:11434"}
+
+    async def test_ipv6_only_host_pinned_with_brackets(self):
+        """An AAAA-only endpoint must produce a bracketed, parseable URL."""
+        fake_addrs = [
+            (socket.AF_INET6, socket.SOCK_STREAM, 6, "", ("2606:4700::1111", 0, 0, 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "https://v6.example.com/v1/models", "openai_compatible"
+            )
+
+        assert target.url == "https://[2606:4700::1111]/v1/models"
+        assert target.headers == {"Host": "v6.example.com"}
+        assert target.extensions == {"sni_hostname": "v6.example.com"}
+
+    async def test_query_string_and_path_preserved(self):
+        """PPQ-style discovery URLs carry a query string that must survive."""
+        fake_addrs = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0)),
+        ]
+        with patch(
+            "open_notebook.utils.url_validation.socket.getaddrinfo",
+            return_value=fake_addrs,
+        ):
+            target = await prepare_pinned_http_target(
+                "https://api.ppq.ai/v1/models?type=all", "openai_compatible"
+            )
+
+        assert target.url == "https://93.184.216.34/v1/models?type=all"

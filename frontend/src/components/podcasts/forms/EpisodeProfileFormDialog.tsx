@@ -203,11 +203,22 @@ export function EpisodeProfileFormDialog({
                 type="number"
                 min={1}
                 step={1}
+                placeholder={t('podcasts.maxTokensPlaceholder')}
                 {...register('max_tokens', {
-                  setValueAs: (value) => (value === '' ? null : Number(value)),
+                  // Empty and transient/invalid number-input states (which yield
+                  // NaN) both mean "unset" for this optional override; map them to
+                  // null so an empty field never trips the positive-integer rule.
+                  setValueAs: (value) => {
+                    if (value === '' || value === null || value === undefined) {
+                      return null
+                    }
+                    const parsed = Number(value)
+                    return Number.isNaN(parsed) ? null : parsed
+                  },
                 })}
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">{t('podcasts.maxTokensHelp')}</p>
               {errors.max_tokens ? (
                 <p className="text-xs text-red-600">{errors.max_tokens.message}</p>
               ) : null}

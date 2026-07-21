@@ -668,6 +668,8 @@ export const frFR = {
     transcriptModel: "Modèle de transcription",
     segments: "Segments",
     maxTokens: "Jetons de sortie maximum",
+    maxTokensPlaceholder: "Laisser vide pour les valeurs par défaut",
+    maxTokensHelp: "Facultatif. Limite le nombre de jetons que chaque étape de génération peut produire — le plan et la transcription complète —, ce n'est pas une limite par tour de parole ni par conversation. Laisser vide pour utiliser les valeurs par défaut intégrées (3000 pour le plan, 5000 pour la transcription). Augmentez-la pour des épisodes plus longs ; une valeur trop basse peut tronquer la transcription.",
     defaultBriefingTitle: "Briefing par défaut",
     created: "Créé à {{time}}",
     details: "Détails",

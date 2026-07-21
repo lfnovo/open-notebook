@@ -668,6 +668,8 @@ export const zhCN = {
     transcriptModel: "脚本模型",
     segments: "分段数量",
     maxTokens: "最大输出令牌数",
+    maxTokensPlaceholder: "留空以使用默认值",
+    maxTokensHelp: "可选。限制每个生成步骤（大纲和完整文稿）可生成的令牌数，而不是每轮对话或整段对话的限制。留空则使用内置默认值（大纲为3000，文稿为5000）。制作较长的节目时可调高；数值过低可能会导致文稿被截断。",
     defaultBriefingTitle: "默认简报",
     created: "创建于 {{time}}",
     details: "详情",

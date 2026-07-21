@@ -668,6 +668,8 @@ export const jaJP = {
     transcriptModel: "トランスクリプトモデル",
     segments: "セグメント",
     maxTokens: "最大出力トークン数",
+    maxTokensPlaceholder: "デフォルト値を使う場合は空欄のまま",
+    maxTokensHelp: "任意。各生成ステップ（アウトラインと台本全文）が生成できるトークン数の上限を設定します。発言ごとや会話全体の制限ではありません。空欄にすると組み込みのデフォルト値（アウトラインは3000、台本は5000）が使われます。長いエピソードには値を上げてください。低すぎると台本が途中で切れることがあります。",
     defaultBriefingTitle: "デフォルトブリーフィング",
     created: "{{time}}に作成",
     details: "詳細",

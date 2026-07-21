@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- Release image gate gained a `probe` scenario (`make release-test` runs it as part of `all`): container-level checks that a Python test suite can't cover because they depend on the shipped image's process supervision — `OPEN_NOTEBOOK_WORKER_MAX_TASKS` reaching the in-image worker (the supervisord `sh -c` expansion), and the worker surviving startup with `HTTP_PROXY` set while a user's `NO_PROXY` value is preserved (the internal SurrealDB websocket not being tunneled). Both were manual probes during the v1.14.0 release; they now run automatically. Release-process docs gained the post-tag re-cut sequence and a note on never leaving the version bump uncommitted (v1.14.0 retro)
+
 ## [1.14.0] - 2026-07-20
 
 ### Added

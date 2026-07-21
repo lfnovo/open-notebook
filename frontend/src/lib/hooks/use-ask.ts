@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
+import { API_TIMEOUT_MS } from '@/lib/api/client'
 import { AskStreamEvent } from '@/lib/types/search'
 
 interface AskModels {
@@ -26,10 +27,16 @@ interface AskState {
   error: string | null
 }
 
-// Safety net: if the stream connection hangs without proper termination
-// (e.g. Docker/standalone proxy doesn't propagate the "done" signal),
-// force the loading state to end after this timeout.
-const STREAM_TIMEOUT_MS = 75_000 // 75 seconds — prevents permanent hang on dangling connections
+// Idle watchdog for the SSE stream: if no bytes arrive for this long, treat the
+// connection as dangling (e.g. a Docker/standalone proxy that doesn't propagate
+// the "done" signal), abort the socket and end the loading state.
+//
+// This is an *idle* timeout — it is re-armed on every received chunk — not a
+// wall-clock cap, so a slow-but-healthy stream never trips it. The window is
+// aligned to the same budget as the API client (NEXT_PUBLIC_API_TIMEOUT_MS,
+// default 10 min; 0 disables the timeout) so slow local models (Ollama, LM
+// Studio) that legitimately take a while between events aren't cut off mid-stream.
+const STREAM_IDLE_TIMEOUT_MS = API_TIMEOUT_MS
 
 export function useAsk() {
   const { t } = useTranslation()
@@ -62,6 +69,21 @@ export function useAsk() {
       streamTimeoutRef.current = null
     }
   }, [])
+
+  // (Re)arm the idle watchdog. Called at stream start and on every received
+  // chunk, so the timer only fires when the connection goes genuinely silent.
+  // On fire it aborts the in-flight request (freeing the socket/reader — the
+  // `catch` swallows the resulting AbortError) and clears the loading state.
+  const armStreamTimeout = useCallback(() => {
+    clearStreamTimeout()
+    if (STREAM_IDLE_TIMEOUT_MS <= 0) return // 0 = watchdog disabled
+    streamTimeoutRef.current = setTimeout(() => {
+      abortControllerRef.current?.abort()
+      if (mountedRef.current) {
+        setState(prev => (prev.isStreaming ? { ...prev, isStreaming: false } : prev))
+      }
+    }, STREAM_IDLE_TIMEOUT_MS)
+  }, [clearStreamTimeout])
 
   const stopStreaming = useCallback((finalAnswer?: string | null) => {
     clearStreamTimeout()
@@ -102,17 +124,8 @@ export function useAsk() {
       error: null
     })
 
-    // Safety timeout: force loading to end if stream doesn't complete
-    streamTimeoutRef.current = setTimeout(() => {
-      if (mountedRef.current) {
-        setState(prev => {
-          if (prev.isStreaming) {
-            return { ...prev, isStreaming: false }
-          }
-          return prev
-        })
-      }
-    }, STREAM_TIMEOUT_MS)
+    // Arm the idle watchdog; it is re-armed on every received chunk below.
+    armStreamTimeout()
 
     try {
       const response = await searchApi.askKnowledgeBase({
@@ -137,6 +150,9 @@ export function useAsk() {
         if (done) {
           break
         }
+
+        // Activity on the connection — reset the idle watchdog.
+        armStreamTimeout()
 
         buffer += decoder.decode(value, { stream: true })
         const lines = buffer.split('\n')
@@ -211,7 +227,7 @@ export function useAsk() {
         description: getApiErrorMessage(errorMessage, (key) => t(key))
       })
     }
-  }, [t, stopStreaming])
+  }, [t, stopStreaming, armStreamTimeout])
 
   const reset = useCallback(() => {
     clearStreamTimeout()

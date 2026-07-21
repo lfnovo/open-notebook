@@ -19,6 +19,10 @@ const apiTimeout = Number.isFinite(parsedTimeout) && parsedTimeout >= 0
   ? parsedTimeout
   : DEFAULT_API_TIMEOUT_MS
 
+// Resolved request budget in milliseconds (0 = disabled). Exported so streaming
+// consumers can align their own idle watchdogs to the same configurable budget.
+export const API_TIMEOUT_MS = apiTimeout
+
 export const apiClient = axios.create({
   timeout: apiTimeout,
   headers: {

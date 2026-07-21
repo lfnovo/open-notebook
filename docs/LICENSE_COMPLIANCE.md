@@ -123,14 +123,37 @@ Business Source License 1.1, not OSI open source.
 | Path | Artifact | Redistributes BSL code? | Obligation |
 |---|---|---|---|
 | **Default (chosen)** | `docker-compose.yml` pulls the official `surrealdb/surrealdb:v2` image as a separate container | **No** — it is a dependency, not redistribution | None |
-| **Single-container** | `Dockerfile --target single` copies the SurrealDB binary into our image | **Yes** | **BSL licence text must be inside that image** |
+| **Single-container** | `Dockerfile --target single` copies the SurrealDB binary into our image | **Yes** | BSL licence text must be inside that image — **satisfied**, see below |
 
-**⚠️ The single-container variant genuinely redistributes BSL-licensed code.**
-Before shipping any artifact built from `--target single`, the BSL licence text
-must be included in the image. The default multi-container path carries no such
-obligation and is the recommended deployment.
+**The single-container variant genuinely redistributes BSL-licensed code, and
+carries the licence accordingly.** The `single` target copies
+`licenses/SURREALDB-BSL-1.1.txt` to `/app/licenses/` in the image, so the
+licence travels with the binary as BSL requires. The default multi-container
+path carries no such obligation and remains the recommended deployment.
 
-**⚠️ legal review:** confirm the BSL position for our specific business model.
+Two things to know if you touch this:
+
+- **The licence text is vendored here, not copied from the official image.** The
+  `surrealdb/surrealdb` image ships no licence file of its own — verified by
+  exporting its filesystem (1400 files, none a licence) — so there is nothing to
+  copy from it.
+- **BSL parameters are per-release.** `licenses/SURREALDB-BSL-1.1.txt` is taken
+  verbatim from the **`v2.6.5`** tag, matching the exact binary in
+  `surrealdb/surrealdb:v2`. The `main` branch currently carries SurrealDB 3.0
+  terms with a different Change Date (2030-01-01) that do **not** apply to our
+  binary. **If the pinned SurrealDB version changes, re-fetch the licence from
+  the matching tag:**
+
+  ```bash
+  curl -sSL -o licenses/SURREALDB-BSL-1.1.txt \
+    https://raw.githubusercontent.com/surrealdb/surrealdb/<TAG>/LICENSE
+  ```
+
+Our version converts to **Apache 2.0 on 2029-09-17** (the Change Date stated in
+the v2.6.5 licence).
+
+The BSL position is recorded as an accepted business decision in
+[LEGAL_DECISIONS.md](LEGAL_DECISIONS.md) §1.
 
 ## 7. Encryption key management
 
@@ -218,11 +241,27 @@ MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd -W):/src" node:22-slim bash -c '
   cp /build/THIRD-PARTY-NOTICES.md /src/THIRD-PARTY-NOTICES.md'
 ```
 
-## 11. Outstanding items for legal review
+## 11. Status of the licensing items
+
+Decisions and their reasoning are recorded in
+[LEGAL_DECISIONS.md](LEGAL_DECISIONS.md).
 
 | # | Item | Status |
 |---|---|---|
-| 1 | SurrealDB BSL 1.1 position for our business model | ⚠️ needs sign-off |
-| 2 | BSL text inclusion **if** shipping the single-container image | ⚠️ needed before that artifact ships |
-| 3 | Per-provider commercial terms — see [PROVIDER_TERMS.md](PROVIDER_TERMS.md) | ⚠️ needs review |
-| 4 | Rebranding before launch (WP3) | Inventoried, not yet done |
+| 1 | SurrealDB BSL 1.1 position | ✅ Accepted — keep SurrealDB |
+| 2 | BSL text in the single-container image | ✅ **Fixed in code** — ships at `/app/licenses/` |
+| 3 | PRC-jurisdiction providers (DeepSeek, DashScope, MiniMax) | ✅ Assigned to client — ⚠️ product action: make opt-in |
+| 4 | ElevenLabs commercial audio rights | ✅ Accepted — conditional on clients using own keys |
+| 5 | Local model weight licences (Ollama, oMLX) | ✅ Assigned to client — ToS wording needed |
+| 6 | Customer-configured "compatible" endpoints | ✅ Assigned to client — ToS wording needed |
+| 7 | Rebranding before launch (WP3) | Inventoried, not yet done |
+
+**These are business decisions by DataFabricX, not a legal opinion.** The
+engineering diligence behind each is documented and verifiable; the conclusions
+drawn from it are the company's own.
+
+> **The condition everything in rows 3–6 rests on:** clients operate their own
+> instances and supply their own AI provider credentials (see
+> [TENANCY.md](TENANCY.md) — Model A). **If DataFabricX ever hosts instances or
+> supplies its own provider keys, those four items revert to DataFabricX and
+> must be re-decided.**

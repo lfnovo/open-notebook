@@ -1,0 +1,25 @@
+CHANGELOG.md
+  s_4e49aa2b4d2aeb::t_32b464d2feba57 8-12
+scripts/release-test/release-image-test.sh
+  s_4e49aa2b4d2aeb::t_c365c095ebffc6 150-223,227-228
+  s_4e49aa2b4d2aeb::t_c6cfdf3b9ae304 4,7-12
+  s_4e49aa2b4d2aeb::t_c4e3044858e790 13
+.github/RELEASE_PROCESS.md
+  s_4e49aa2b4d2aeb::t_daedb6ff864fa6 151-164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "8270464f831f57cfa46fe3a8532b4231c8018600",
+  "prompts": {},
+  "sessions": {
+    "s_4e49aa2b4d2aeb": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4f84118f-d31a-4941-a308-71a2d3ca2179",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

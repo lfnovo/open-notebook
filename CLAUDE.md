@@ -9,7 +9,8 @@ Rules:
 - One branch per work package (wp-<n>-<slug>). Never mix packages.
 - A package is done only when its acceptance criteria pass AND tests are green.
 - Stop and report at the end of each package for human review. Do not roll on.
-- Current work package: **WP0 COMPLETE** (merged in #1). Next: WP1 (Licensing).
+- Current work package: **WP1 (Licensing & Compliance)** — implementation
+  complete, awaiting review. WP0 complete (merged in #1).
 
 WP0 landed: `upstream-base` tag at the fork point (upstream `30c7e2a`, v1.14.0
 — not v1.10.0 as the plan states), verified build steps + baselines in
@@ -29,12 +30,27 @@ disabled.
 Baselines to beat (see [docs/DEV_SETUP.md](docs/DEV_SETUP.md)): backend
 coverage 56%, frontend 35.79% statements. Coverage may only go up.
 
-Open items carried into WP1:
-- `asciidoc` (GPLv2+) is a transitive runtime dependency of `content-core`.
-  It is purged from the shipped image on branch `wp-1-purge-asciidoc`, and
-  removal is proposed upstream in lfnovo/content-core#58. Once that merges and
-  content-core is bumped, drop both the Dockerfile purge and the allowlist
-  entry in `scripts/check_licenses.py` so its return becomes a CI failure.
+WP1 landed: [LICENSE](LICENSE) carries our copyright above Luis Novo's
+(retained, never replace it), generated [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md),
+[docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md) (the standing rules),
+[docs/PROVIDER_TERMS.md](docs/PROVIDER_TERMS.md) (all 22 providers), and a
+pycountry integrity guard.
+
+**Licensing rules — read [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md)
+before adding any dependency.** Never GPL/AGPL; never PyMuPDF (AGPL) or poppler
+(GPL); never modify or vendor `pycountry`. `THIRD-PARTY-NOTICES.md` is
+generated and **must be regenerated on Linux** — CI fails if it drifts.
+
+Open items carried forward:
+- **⚠️ Needs legal sign-off:** SurrealDB BSL position; BSL text inclusion *if*
+  the single-container image ships; per-provider terms (esp. the three
+  PRC-jurisdiction providers, ElevenLabs commercial audio rights, and model
+  weight licences for local inference).
+- `asciidoc` (GPLv2+) is purged from the shipped image pending
+  lfnovo/content-core#58. When that merges and content-core is bumped, drop the
+  Dockerfile purge and the allowlist entry together.
+- Rebranding is **WP3**, not done here — the inventory of where brand
+  strings/assets live is in LICENSE_COMPLIANCE.md §8.
 - Product gap found while testing extraction (not licensing): uploaded `.html`
   files are rejected — only *inline* HTML content is processed — as are
   `.json` and `.png` without Docling enabled.

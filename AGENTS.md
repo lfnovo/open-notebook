@@ -23,13 +23,16 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 - Python lint/typecheck: `ruff check . --fix` · `uv run python -m mypy .`
 - Frontend (inside `frontend/`): `npm run lint` · `npm run test` · `npm run build`
 - License drift guard: `uv run python scripts/check_licenses.py`
+- Regenerate attribution: `uv run python scripts/generate_notices.py` (**Linux only** — see [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md))
 - Docker release: `make docker-release` (see `.github/RELEASE_PROCESS.md`)
 
 ## Hard rules
 
 - **Async-first**: every DB query, graph invocation and AI call is `await`-ed. No sync DB access.
 - **Never commit secrets.** Credentials are encrypted at rest and require `OPEN_NOTEBOOK_ENCRYPTION_KEY` to be set.
-- **Never add a GPL/AGPL dependency.** CI fails on any copyleft package not on the reviewed allowlist in `scripts/check_licenses.py`; AGPL can never be allowlisted. This fork ships commercially.
+- **Never add a GPL/AGPL dependency.** CI fails on any copyleft package not on the reviewed allowlist in `scripts/check_licenses.py`; AGPL can never be allowlisted. This fork ships commercially. Never adopt **PyMuPDF/`fitz`** (AGPL) or **poppler** (GPL) — for better PDF fidelity enable Docling (MIT). Full rules: [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md).
+- **Never modify or vendor `pycountry`** (LGPL-2.1). It must stay an unmodified external dependency; `tests/test_pycountry_unmodified.py` hashes it against its own RECORD manifest and fails if a single byte changes.
+- **Adding an AI provider?** Add it to [docs/PROVIDER_TERMS.md](docs/PROVIDER_TERMS.md) too — a provider the product can call but legal has never reviewed is exactly the gap that file closes.
 - **`tests/characterization/` captures current behavior deliberately.** If a change there is intentional, update the test in the same commit and say so in the message; an unexplained diff means an accidental regression.
 - CORS is wide-open and auth is a simple password middleware — **dev defaults, not production hardening**. Don't build features that assume otherwise.
 - Product direction questions (does this feature fit?) → [VISION.md](VISION.md). Past decisions ("why is it like this?") → [docs/7-DEVELOPMENT/decisions/](docs/7-DEVELOPMENT/decisions/). Structural decisions made while coding should produce a new decision record there.
@@ -41,6 +44,7 @@ Or all at once: `make start-all` (status: `make status`, stop: `make stop-all`).
 | Architecture (3 tiers, workflows, data model) | [docs/7-DEVELOPMENT/architecture.md](docs/7-DEVELOPMENT/architecture.md) |
 | Step-by-step recipes (add endpoint, migration, i18n…) | [docs/7-DEVELOPMENT/change-playbooks.md](docs/7-DEVELOPMENT/change-playbooks.md) |
 | Verified build steps, baselines, known Windows failures | [docs/DEV_SETUP.md](docs/DEV_SETUP.md) |
+| Licensing rules, SurrealDB BSL, encryption keys | [docs/LICENSE_COMPLIANCE.md](docs/LICENSE_COMPLIANCE.md) · [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) |
 | Dev environment setup (background) | [docs/7-DEVELOPMENT/development-setup.md](docs/7-DEVELOPMENT/development-setup.md) |
 | Code standards & testing | [docs/7-DEVELOPMENT/code-standards.md](docs/7-DEVELOPMENT/code-standards.md) · [testing.md](docs/7-DEVELOPMENT/testing.md) |
 | Product identity & current posture | [VISION.md](VISION.md) |

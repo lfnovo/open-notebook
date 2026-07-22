@@ -1,0 +1,45 @@
+.github/ISSUE_TEMPLATE/bug_report.yml
+  s_72bb59886c138d::t_55f49342490ce0 11-22
+README.md
+  s_72bb59886c138d::t_35a4b6545b5f38 322,338-339,365-366
+docs/6-TROUBLESHOOTING/faq.md
+  s_72bb59886c138d::t_b2dd335095efa7 232-233,249-250
+docs/7-DEVELOPMENT/index.md
+  s_72bb59886c138d::t_b2dd335095efa7 15,69,105-106
+AGENTS.md
+  s_72bb59886c138d::t_b2dd335095efa7 44
+.github/pull_request_template.md
+  s_72bb59886c138d::t_86a57e2e2fa449 9-10,104
+.github/ISSUE_TEMPLATE/config.yml
+  s_72bb59886c138d::t_55f49342490ce0 3-8,11
+CONTRIBUTING.md
+  s_72bb59886c138d::t_b2dd335095efa7 22,24-27
+.github/DISCUSSION_TEMPLATE/ideas.yml
+  s_72bb59886c138d::t_55f49342490ce0 1-2,7-20,23,25-27,32,34-36,41,43-44,49,51-52,57,59-60,62-65,67-68,70-73
+docs/7-DEVELOPMENT/contributing.md
+  s_72bb59886c138d::t_b2dd335095efa7 5,7,9-11,13-20,25,29,32,40,61-66,70,96,107,211-212
+docs/7-DEVELOPMENT/maintainer-guide.md
+  s_72bb59886c138d::t_7b85d76c143582 7,14-46,48-55,58,60,62-63,66,68-73,81,85-90,94-95,97,108-109,119,121-124,126-127,134-135,139,142-147,149,186,190,193
+  s_72bb59886c138d::t_b0b3a85639d48b 313,327-330,335,480,496
+  s_72bb59886c138d::t_f06478bde5dc7a 47
+  s_72bb59886c138d::t_d213b830118909 201,208
+  s_72bb59886c138d::t_35a4b6545b5f38 319
+CHANGELOG.md
+  s_72bb59886c138d::t_6f2de453c60382 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "903b748068baafbc817f691e2366904fa56ad926",
+  "prompts": {},
+  "sessions": {
+    "s_72bb59886c138d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f8638-00c2-7662-b175-3a5876a406bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

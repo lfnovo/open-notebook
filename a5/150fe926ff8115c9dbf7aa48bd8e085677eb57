@@ -1,0 +1,19 @@
+.github/pull_request_template.md
+  s_72bb59886c138d::t_f5e4da9a278b14 7,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "a5150fe926ff8115c9dbf7aa48bd8e085677eb57",
+  "prompts": {},
+  "sessions": {
+    "s_72bb59886c138d": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f8638-00c2-7662-b175-3a5876a406bb",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

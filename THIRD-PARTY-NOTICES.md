@@ -95,34 +95,50 @@ was read from the package's own license file rather than inferred.
 
 ### SurrealDB (database engine)
 
-- **Version:** v2 (see `docker-compose.yml`)
+- **Version:** 2.6.5 — the exact build in `surrealdb/surrealdb:v2`, the tag
+  pinned by `docker-compose.yml` and the `Dockerfile` `single` target
 - **License:** Business Source License 1.1 (BSL 1.1) — *source-available, not
   OSI-approved open source*
-- **Copyright:** SurrealDB Ltd
+- **Copyright:** (c) 2024 SurrealDB Ltd.
 - **Project:** <https://github.com/surrealdb/surrealdb>
-- **License text:** <https://github.com/surrealdb/surrealdb/blob/main/LICENSE>
+- **License text:** bundled at `licenses/SURREALDB-BSL-1.1.txt`, taken verbatim
+  from the `v2.6.5` tag
+  (<https://github.com/surrealdb/surrealdb/blob/v2.6.5/LICENSE>)
+
+> **The version-pinned link matters.** BSL parameters are set per release, so
+> they differ between versions: `main` currently carries the SurrealDB 3.0
+> terms with a Change Date of 2030-01-01, which do **not** apply to the v2
+> binary we ship. Always cite the tag, never `main`.
 
 SurrealDB is the one non-permissive component in the stack, and it is a
-deliberate, reviewed choice. Its terms:
+deliberate, reviewed choice. Its terms, as stated in the v2.6.5 license:
 
-- **Commercial embedding is permitted and free.** We may embed it in the
-  product, ship that product to customers, and run it as a hosted service at
-  any scale. **No license purchase is required for our model.**
-- **The one prohibition:** offering SurrealDB *itself* as a managed
-  database-as-a-service. We do not do this.
-- **Automatic conversion:** each release becomes Apache 2.0 four years after
-  its release date.
+- **Commercial embedding is permitted and free.** The Additional Use Grant lets
+  us embed it in the product, ship that product to customers, and run it as a
+  hosted service at any scale. **No license purchase is required for our model.**
+- **The one prohibition:** offering SurrealDB *itself* as a "Database Service" —
+  letting third parties create or manage tables whose schemas they control. We
+  do not do this.
+- **Automatic conversion:** on the **Change Date of 2029-09-17**, this version
+  converts to the **Apache License, Version 2.0**.
 
-**How we distribute it — dependency, not redistribution.** We pull the official
-`surrealdb/surrealdb:v2` image from Docker Hub as a separate container
-(`docker-compose.yml`). We do **not** bundle the SurrealDB binary into our own
-image in the default deployment, so we redistribute no BSL-licensed code.
+**How we distribute it — dependency, not redistribution.** The default
+deployment pulls the official `surrealdb/surrealdb:v2` image from Docker Hub as
+a separate container (`docker-compose.yml`). Depending on software is not
+redistributing it, so in that path we redistribute no BSL-licensed code and owe
+nothing.
 
-**⚠️ The single-container variant is the exception.** `Dockerfile` target
-`single` copies the SurrealDB binary in (`COPY --from=surreal-binary /surreal`).
-That image **does** redistribute BSL-licensed code, so **the BSL license text
-must be included inside any artifact built from that target** before it is
-shipped to a customer. See `docs/LICENSE_COMPLIANCE.md`.
+**The single-container variant redistributes it, and carries the license.**
+`Dockerfile` target `single` copies the SurrealDB binary into our own image
+(`COPY --from=surreal-binary /surreal`), which **is** redistribution. That
+target therefore also copies `licenses/SURREALDB-BSL-1.1.txt` to
+`/app/licenses/` inside the image, so the license travels with the binary as
+BSL requires.
+
+> Note: the official `surrealdb/surrealdb` image ships **no license file of its
+> own** (verified by exporting its filesystem — 1400 files, none of them a
+> license). The text therefore cannot be copied out of that image and is
+> vendored in this repository instead.
 
 
 ---

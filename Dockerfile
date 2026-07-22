@@ -171,6 +171,18 @@ FROM runtime-base AS single
 # Install SurrealDB (copied from pinned v2 image to match docker-compose.yml)
 COPY --from=surreal-binary /surreal /usr/local/bin/surreal
 
+# SurrealDB is BSL 1.1 (source-available). Copying its binary into our image is
+# REDISTRIBUTION -- unlike the default multi-container deployment, which merely
+# pulls the official image alongside ours and owes nothing. BSL requires the
+# license to travel with the redistributed work, so it ships inside the image.
+#
+# The text is vendored in this repo rather than copied from the surreal-binary
+# stage because the official surrealdb image contains no license file at all
+# (verified by exporting its filesystem). It is taken verbatim from the v2.6.5
+# tag, matching the exact binary above -- BSL parameters are per-release, and
+# the v3 terms on `main` do not apply to this version.
+COPY licenses/SURREALDB-BSL-1.1.txt /app/licenses/SURREALDB-BSL-1.1.txt
+
 # SurrealDB data directory (volume-mounted by users)
 RUN mkdir -p /mydata
 

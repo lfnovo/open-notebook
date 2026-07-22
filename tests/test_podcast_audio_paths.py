@@ -9,6 +9,7 @@ bad value. Migration 21 rewrites historical absolute/`file://` rows to the
 same form.
 """
 
+import os
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,16 @@ class TestToRelativeAudioPath:
 
         assert to_relative_audio_path(audio) == "episodes/uuid-2/a.mp3"
 
+    @pytest.mark.skipif(
+        os.name == "nt",
+        reason=(
+            "Builds a POSIX file:// URI. On Windows tmp_path is 'C:\\...', so "
+            "f'file://{tmp_path}' yields 'file://C:\\...' -- a malformed URI "
+            "whose drive letter urlparse reads as the netloc, dropping it from "
+            "the path. The shipped artifact is a Linux container, where the "
+            "three-slash form this builds is correct."
+        ),
+    )
     def test_file_uri_under_root_becomes_relative(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
             "open_notebook.podcasts.audio_paths.PODCASTS_FOLDER", str(tmp_path)

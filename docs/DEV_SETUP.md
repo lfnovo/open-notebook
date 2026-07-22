@@ -66,7 +66,7 @@ fail outright if it does not exist. `.env` is gitignored — never commit it.
 
 ```bash
 cat > .env <<'EOF'
-SURREAL_URL=ws://localhost:8000/rpc
+SURREAL_URL=ws://127.0.0.1:8000/rpc
 SURREAL_USER=root
 SURREAL_PASSWORD=root
 SURREAL_NAMESPACE=open_notebook
@@ -74,6 +74,15 @@ SURREAL_DATABASE=open_notebook
 OPEN_NOTEBOOK_ENCRYPTION_KEY=dev-only-local-key-not-for-production
 EOF
 ```
+
+**Use `127.0.0.1`, not `localhost`, in `SURREAL_URL`.** The compose file binds
+SurrealDB to `127.0.0.1:8000` (IPv4). On Windows, `localhost` resolves to IPv6
+`::1` first, which nothing is listening on, so every DB connection wastes ~2s
+failing over to IPv4 before it succeeds. The app still runs, but the 2-second
+database health check in `/api/config` times out and the UI reports "database
+offline" even though it isn't — and every query silently pays the tax.
+`127.0.0.1` forces IPv4 and connects in ~50 ms. It is also correct on Linux, so
+there is no reason to prefer `localhost` here.
 
 `OPEN_NOTEBOOK_ENCRYPTION_KEY` is required for credential storage and has no
 default. The value above is fine for local development only — production keys
@@ -232,8 +241,21 @@ Both run with `--env-file .env`. Create it (step 4). It is gitignored.
 **API starts but every request 500s on the database**
 
 SurrealDB is not up, or `SURREAL_URL` points at the wrong host. From the host
-machine use `ws://localhost:8000/rpc`; from inside a compose service use
+machine use `ws://127.0.0.1:8000/rpc`; from inside a compose service use
 `ws://surrealdb:8000/rpc`.
+
+**UI says "database offline" but the DB is up and migrations ran**
+
+The classic symptom of `SURREAL_URL=ws://localhost:8000/rpc` on Windows. The API
+connects at startup (slowly — watch for a multi-second gap before "Current
+database version"), but the 2-second health check in `/api/config` times out on
+the IPv6→IPv4 failover and reports the database offline. Change `localhost` to
+`127.0.0.1` in `.env` (step 4) and restart the API and worker. Verify with:
+
+```bash
+# ~50 ms healthy; ~2000 ms means you are still on localhost
+uv run --env-file .env python -c "import asyncio,time; from open_notebook.database.repository import repo_query; t=time.perf_counter(); asyncio.run(repo_query('RETURN 1')); print(f'{(time.perf_counter()-t)*1000:.0f} ms')"
+```
 
 **Background jobs never finish**
 

@@ -4,9 +4,9 @@
 
 ## Related Issue
 
-<!-- Non-trivial PRs (features, architecture changes) must link an approved issue.
+<!-- Non-trivial PRs (features, architecture changes) must link an approved Issue.
      Small obvious fixes (typo, docs, tiny bug) don't need one — write "N/A (small fix)" below.
-     Sizeable change without an approved issue? Mark this PR as draft. Start a Discussion for an
+     Sizeable change without an approved Issue? Mark this PR as draft. Start a Discussion for an
      idea/feature or open an Issue for a reproducible bug, then wait for the work to be approved. -->
 
 Fixes #<!-- issue number, or "N/A (small fix)" -->

@@ -8,7 +8,18 @@ body:
       value: |
         Thanks for reporting a bug! Please fill out the information below to help us understand and fix the issue.
 
-        **Note**: If you're having installation or setup issues, please use the "Installation Issue" template instead.
+        Issues are for **reproducible bugs** and maintainer-created work items. Feature requests, ideas, behavior changes, product/design/architecture proposals, and contribution proposals belong in [Discussions](https://github.com/lfnovo/open-notebook/discussions/new?category=ideas).
+
+        **Installation or setup problem?** Use the "Installation Issue" template instead.
+
+  - type: checkboxes
+    id: bug-confirmation
+    attributes:
+      label: Is this a reproducible bug?
+      description: Ideas and feature requests belong in Discussions and may be converted there if opened as Issues.
+      options:
+        - label: I confirm this is a reproducible bug, not a feature request, idea, question, or contribution proposal.
+          required: true
 
   - type: textarea
     id: what-happened

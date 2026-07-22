@@ -19,11 +19,12 @@ All contribution guidelines have been consolidated into the new development docu
 
 ---
 
-## The Issue-First Workflow
+## The Contribution Workflow
 
-**TL;DR**: For anything non-trivial — features, architecture changes — create an issue first, get
-it assigned, THEN code. Small obvious fixes (typos, docs, tiny bugs) can go straight to a PR.
-Already coded something bigger? Mark the PR as draft and open the issue — triage takes 1–2 days.
+**TL;DR**: Feature requests, product/design/architecture proposals, and other non-trivial ideas
+start in [GitHub Discussions](https://github.com/lfnovo/open-notebook/discussions/new?category=ideas).
+Reproducible bugs start in Issues. Coding starts from an approved and assigned Issue. Small obvious
+fixes (typos, docs, tiny bugs) can still go straight to a PR.
 
 This prevents wasted effort and ensures your work aligns with the project. [See details →](docs/7-DEVELOPMENT/contributing.md)
 

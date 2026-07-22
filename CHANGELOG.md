@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- Community contribution intake now separates exploration from execution: feature requests, product/design/architecture ideas and contribution proposals start in GitHub Discussions, while Issues are reserved for reproducible bugs and maintainer-approved work items. The Issue chooser routes contributors accordingly, a structured Ideas Discussion form starts from user goals and outcomes, and the contributor/maintainer docs plus PR template now describe the Discussion → Issue → PR graduation path (#1204).
 - Release image gate gained a `probe` scenario (`make release-test` runs it as part of `all`): container-level checks that a Python test suite can't cover because they depend on the shipped image's process supervision — `OPEN_NOTEBOOK_WORKER_MAX_TASKS` reaching the in-image worker (the supervisord `sh -c` expansion), and the worker surviving startup with `HTTP_PROXY` set while a user's `NO_PROXY` value is preserved (the internal SurrealDB websocket not being tunneled). Both were manual probes during the v1.14.0 release; they now run automatically. Release-process docs gained the post-tag re-cut sequence and a note on never leaving the version bump uncommitted (v1.14.0 retro)
 
 ## [1.14.0] - 2026-07-20

@@ -277,6 +277,7 @@ export const plPL = {
     lastViewed: "Wyświetlono {{time}}",
   },
   sources: {
+    newSource: "Nowe źródło",
     bulkContext: "Kontekst",
     includeAllInContext: "Uwzględnij wszystkie w kontekście",
     includeAllInsights: "Uwzględnij wszystkie (tylko wnioski)",
@@ -667,6 +668,8 @@ export const plPL = {
     transcriptModel: "Model transkrypcji",
     segments: "Segmenty",
     maxTokens: "Maksymalna liczba tokenów wyjściowych",
+    maxTokensPlaceholder: "Pozostaw puste, aby użyć wartości domyślnych",
+    maxTokensHelp: "Opcjonalne. Ogranicza liczbę tokenów, które może wygenerować każdy krok generowania — konspekt i pełny transkrypt —, a nie jest to limit na pojedynczą wypowiedź ani na całą rozmowę. Pozostaw puste, aby użyć wbudowanych wartości domyślnych (3000 dla konspektu, 5000 dla transkryptu). Zwiększ dla dłuższych odcinków; zbyt niska wartość może uciąć transkrypt.",
     defaultBriefingTitle: "Domyślny briefing",
     created: "Utworzono {{time}}",
     details: "Szczegóły",

@@ -277,6 +277,7 @@ export const ptBR = {
     lastViewed: "Visto {{time}}",
   },
   sources: {
+    newSource: "Nova Fonte",
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas no contexto",
     includeAllInsights: "Incluir todas (apenas insights)",
@@ -667,6 +668,8 @@ export const ptBR = {
     transcriptModel: "Modelo de transcrição",
     segments: "Segmentos",
     maxTokens: "Máximo de tokens de saída",
+    maxTokensPlaceholder: "Deixe em branco para usar os padrões",
+    maxTokensHelp: "Opcional. Limita quantos tokens cada etapa de geração pode produzir — o roteiro e a transcrição completa —, não é um limite por fala nem por conversa. Deixe em branco para usar os padrões integrados (3000 para o roteiro, 5000 para a transcrição). Aumente para episódios mais longos; um valor baixo demais pode cortar a transcrição.",
     defaultBriefingTitle: "Briefing padrão",
     created: "Criado em {{time}}",
     details: "Detalhes",

@@ -277,6 +277,7 @@ export const zhTW = {
     lastViewed: "檢視於{{time}}",
   },
   sources: {
+    newSource: "新增來源",
     bulkContext: "上下文",
     includeAllInContext: "全部加入上下文",
     includeAllInsights: "全部加入（僅見解）",
@@ -667,6 +668,8 @@ export const zhTW = {
     transcriptModel: "腳本模型",
     segments: "分段數量",
     maxTokens: "最大輸出權杖數",
+    maxTokensPlaceholder: "留空以使用預設值",
+    maxTokensHelp: "選填。限制每個生成步驟（大綱與完整逐字稿）可生成的權杖數，而非每輪對話或整段對話的限制。留空則使用內建預設值（大綱為3000，逐字稿為5000）。製作較長的節目時可調高；數值過低可能會使逐字稿被截斷。",
     defaultBriefingTitle: "預設簡報",
     created: "建立於 {{time}}",
     details: "詳情",

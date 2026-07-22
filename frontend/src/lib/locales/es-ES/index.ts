@@ -277,6 +277,7 @@ export const esES = {
     lastViewed: "Visto {{time}}",
   },
   sources: {
+    newSource: "Nueva fuente",
     bulkContext: "Contexto",
     includeAllInContext: "Incluir todas en el contexto",
     includeAllInsights: "Incluir todas (solo insights)",
@@ -667,6 +668,8 @@ export const esES = {
     transcriptModel: "Modelo de transcripción",
     segments: "Segmentos",
     maxTokens: "Tokens máximos de salida",
+    maxTokensPlaceholder: "Déjalo en blanco para usar los valores predeterminados",
+    maxTokensHelp: "Opcional. Limita cuántos tokens puede generar cada paso de generación — el esquema y la transcripción completa —, no es un límite por turno ni por conversación. Déjalo en blanco para usar los valores predeterminados integrados (3000 para el esquema, 5000 para la transcripción). Auméntalo para episodios más largos; un valor demasiado bajo puede cortar la transcripción.",
     defaultBriefingTitle: "Briefing predeterminado",
     created: "Creado el {{time}}",
     details: "Detalles",

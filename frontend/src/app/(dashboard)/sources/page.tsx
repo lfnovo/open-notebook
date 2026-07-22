@@ -8,7 +8,7 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
+import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowDown, ArrowUp, ArrowUpDown, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,9 +17,11 @@ import { getDateLocale } from '@/lib/utils/date-locale'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { getApiErrorKey } from '@/lib/utils/error-handler'
+import { AddSourceDialog } from '@/components/sources/AddSourceDialog'
 
 export default function SourcesPage() {
   const { t, language } = useTranslation()
+  const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
   const failedToLoadMessage = t('sources.failedToLoad')
   const [sources, setSources] = useState<SourceListResponse[]>([])
   const [loading, setLoading] = useState(true)
@@ -280,40 +282,40 @@ export default function SourcesPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <AppShell>
+  const renderContent = () => {
+    if (loading) {
+      return (
         <div className="flex h-full items-center justify-center">
           <LoadingSpinner />
         </div>
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  if (error) {
-    return (
-      <AppShell>
+    if (error) {
+      return (
         <div className="flex h-full items-center justify-center">
           <p className="text-red-500">{error}</p>
         </div>
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  if (sources.length === 0) {
-    return (
-      <AppShell>
+    if (sources.length === 0) {
+      return (
         <EmptyState
           icon={FileText}
           title={t('sources.noSourcesYet')}
           description={t('sources.allSourcesDescShort')}
+          action={
+            <Button onClick={() => setSourceDialogOpen(true)} variant="outline" className="mt-4">
+              <Plus className="h-4 w-4 mr-2" />
+              {t('sources.newSource')}
+            </Button>
+          }
         />
-      </AppShell>
-    )
-  }
+      )
+    }
 
-  return (
-    <AppShell>
+    return (<>
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
         <div className="mb-6 flex-shrink-0">
           <h1 className="text-3xl font-bold">{t('sources.allSources')}</h1>
@@ -450,6 +452,19 @@ export default function SourcesPage() {
         confirmText={t('common.delete')}
         confirmVariant="destructive"
         onConfirm={handleDeleteConfirm}
+      />
+    </>)
+  }
+
+  return (
+    <AppShell>
+      {renderContent()}
+      <AddSourceDialog
+        open={sourceDialogOpen}
+        onOpenChange={(open) => {
+          setSourceDialogOpen(open)
+          if (!open) fetchSources(true)
+        }}
       />
     </AppShell>
   )

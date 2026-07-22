@@ -277,6 +277,7 @@ export const trTR = {
     lastViewed: "{{time}} görüntülendi",
   },
   sources: {
+    newSource: "Yeni Kaynak",
     bulkContext: "Bağlam",
     includeAllInContext: "Tümünü bağlama dahil et",
     includeAllInsights: "Tümünü dahil et (yalnızca içgörüler)",
@@ -667,6 +668,8 @@ export const trTR = {
     transcriptModel: "Transkript modeli",
     segments: "Segmentler",
     maxTokens: "Maksimum çıktı token sayısı",
+    maxTokensPlaceholder: "Varsayılanlar için boş bırakın",
+    maxTokensHelp: "İsteğe bağlı. Her üretim adımının — taslak ve tam transkript — üretebileceği token sayısını sınırlar; her konuşma sırası veya sohbet başına bir sınır değildir. Yerleşik varsayılanları kullanmak için boş bırakın (taslak için 3000, transkript için 5000). Daha uzun bölümler için artırın; çok düşük bir değer transkripti yarıda kesebilir.",
     defaultBriefingTitle: "Varsayılan brifing",
     created: "{{time}} tarihinde oluşturuldu",
     details: "Ayrıntılar",

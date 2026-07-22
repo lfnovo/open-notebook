@@ -280,6 +280,7 @@ export const deDE = {
     lastViewed: "Angesehen {{time}}",
   },
   sources: {
+    newSource: "Neue Quelle",
     bulkContext: "Kontext",
     includeAllInContext: "Alle in den Kontext aufnehmen",
     includeAllInsights: "Alle aufnehmen (nur Erkenntnisse)",
@@ -670,6 +671,8 @@ export const deDE = {
     transcriptModel: "Transkriptmodell",
     segments: "Segmente",
     maxTokens: "Maximale Ausgabe-Tokens",
+    maxTokensPlaceholder: "Für Standardwerte leer lassen",
+    maxTokensHelp: "Optional. Begrenzt, wie viele Tokens jeder Generierungsschritt erzeugen kann — die Gliederung und das vollständige Transkript —, kein Limit pro Gesprächsrunde oder Unterhaltung. Leer lassen, um die eingebauten Standardwerte zu verwenden (3000 für die Gliederung, 5000 für das Transkript). Für längere Episoden erhöhen; ein zu niedriger Wert kann das Transkript abschneiden.",
     defaultBriefingTitle: "Standard-Briefing",
     created: "Erstellt am {{time}}",
     details: "Details",

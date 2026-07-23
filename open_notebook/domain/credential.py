@@ -98,13 +98,56 @@ class Credential(ObjectModel):
                     data[key] = config[key]
         return data
 
-    def to_esperanto_config(self) -> Dict[str, Any]:
+    def _azure_stt_config(self) -> Dict[str, Any]:
+        """Azure speech-to-text config, nested under `config`.
+
+        Esperanto's `AzureSpeechToTextModel` is a plain `@dataclass` whose only
+        fields are model_name/api_key/base_url/config/timeout, and it defines no
+        `__init__(**kwargs)`. Passing our usual flat keys (`endpoint`,
+        `api_version`) therefore raises
+        `TypeError: __init__() got an unexpected keyword argument 'endpoint'`.
+        It reads its settings from `self._config`, which the dataclass
+        `__post_init__` populates from the nested `config` field — so that is
+        where they have to go.
+
+        This is per-modality on purpose: Azure language/embedding/text_to_speech
+        each define their own `__init__(**kwargs)`, read the FLAT keys, and break
+        if given the nested form instead. There is no single shape that satisfies
+        all four (verified against esperanto 2.25.1).
+
+        Same class of bug as the Vertex key mismatch fixed in #1151.
+        """
+        config: Dict[str, Any] = {}
+        if self.api_key:
+            config["api_key"] = self.api_key.get_secret_value()
+        # An STT-specific endpoint wins, then the shared one, then base_url.
+        endpoint = self.endpoint_stt or self.endpoint or self.base_url
+        if endpoint:
+            config["azure_endpoint"] = endpoint
+        if self.api_version:
+            config["api_version"] = self.api_version
+        return {"config": config}
+
+    def to_esperanto_config(
+        self, model_type: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Build config dict for AIFactory.create_*() calls.
 
         Returns a dict that can be passed as the 'config' parameter to
         Esperanto's AIFactory methods, overriding env var lookup.
+
+        `model_type` is the model's modality ("language", "embedding",
+        "speech_to_text", "text_to_speech"). It only changes the shape for
+        Azure speech-to-text — see `_azure_stt_config` for why.
         """
+        if (
+            self.provider
+            and self.provider.lower() == "azure"
+            and model_type == "speech_to_text"
+        ):
+            return self._azure_stt_config()
+
         config: Dict[str, Any] = {}
         if self.api_key:
             config["api_key"] = self.api_key.get_secret_value()

@@ -284,8 +284,12 @@ class TestBuildSourceContext:
 
         mock_get.assert_awaited_once_with("source:123")  # bare id gets prefixed
         # Long context is used so full_text is always included — a source
-        # with no insights would otherwise leave the LLM with only the title.
-        source.get_context.assert_awaited_once_with(context_size="long")
+        # with no insights would otherwise leave the LLM with only the
+        # title. insights=[] avoids get_context() double-fetching/counting
+        # insights that this function already fetches separately below.
+        source.get_context.assert_awaited_once_with(
+            context_size="long", insights=[]
+        )
         assert result["sources"] == [
             {"id": "source:123", "title": "T", "full_text": "body"}
         ]

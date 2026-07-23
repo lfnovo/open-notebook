@@ -166,7 +166,13 @@ async def build_source_context(
             source = None
 
         if source:
-            source_context = await source.get_context(context_size="long")
+            # Pass insights=[] so get_context() doesn't fetch and embed them
+            # itself — this function fetches and represents insights
+            # separately below. Fetching them here too would hit the DB
+            # twice and double-count their tokens toward the budget.
+            source_context = await source.get_context(
+                context_size="long", insights=[]
+            )
             sources.append(source_context)
             item_tokens.append(token_count(str(source_context)))
 

@@ -140,11 +140,16 @@ async def build_notebook_context(
 async def build_source_context(
     source_id: str, max_tokens: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Assemble a single source's short context plus its insights.
+    """Assemble a single source's full content plus its insights.
 
-    Used by the source-chat graph. If `max_tokens` is given, insights are
-    dropped (last-fetched first) until the total fits — the source itself is
-    always kept.
+    Used by the source-chat graph. Uses the "long" context so the source's
+    full text is always included — a source with no insights/transformations
+    would otherwise leave the LLM with only the title. If `max_tokens` is
+    given, insights are dropped (last-fetched first) until the total fits.
+    The source itself is never dropped — a large full_text can alone exceed
+    the budget, and dropping it would leave an empty context; the caller
+    (source-chat's prompt formatter) already caps full_text at a fixed size
+    before it reaches the LLM.
 
     Returns a dict with "sources", "notes" (always empty), "insights",
     "total_tokens", "total_items" and per-type counts in "metadata".
@@ -161,7 +166,13 @@ async def build_source_context(
             source = None
 
         if source:
-            source_context = await source.get_context(context_size="short")
+            # Pass insights=[] so get_context() doesn't fetch and embed them
+            # itself — this function fetches and represents insights
+            # separately below. Fetching them here too would hit the DB
+            # twice and double-count their tokens toward the budget.
+            source_context = await source.get_context(
+                context_size="long", insights=[]
+            )
             sources.append(source_context)
             item_tokens.append(token_count(str(source_context)))
 
@@ -177,16 +188,23 @@ async def build_source_context(
         else:
             logger.warning(f"Source {source_id} not found")
 
-        # Truncate to the token budget: drop insights from the end (the
-        # source, added first, is dropped only if it alone exceeds the budget).
+        # Truncate to the token budget: drop insights from the end. The
+        # source is never dropped, even if it alone exceeds the budget —
+        # an empty context is worse than a source whose full_text gets
+        # capped later by the prompt formatter (see docstring). If the
+        # source alone already exceeds the budget, trimming insights can't
+        # bring the total under it anyway, so keep them all instead of
+        # discarding useful context for nothing.
         total_tokens = sum(item_tokens)
-        if max_tokens:
-            while total_tokens > max_tokens and item_tokens:
+        source_tokens = item_tokens[0] if sources else 0
+        if max_tokens is not None:
+            while (
+                total_tokens > max_tokens
+                and insights
+                and source_tokens <= max_tokens
+            ):
                 total_tokens -= item_tokens.pop()
-                if insights:
-                    insights.pop()
-                else:
-                    sources.pop()
+                insights.pop()
 
         total_items = len(sources) + len(insights)
         logger.info(f"Built context with {total_items} items, {total_tokens} tokens")

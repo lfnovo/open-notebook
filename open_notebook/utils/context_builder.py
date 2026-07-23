@@ -185,10 +185,18 @@ async def build_source_context(
         # Truncate to the token budget: drop insights from the end. The
         # source is never dropped, even if it alone exceeds the budget —
         # an empty context is worse than a source whose full_text gets
-        # capped later by the prompt formatter (see docstring).
+        # capped later by the prompt formatter (see docstring). If the
+        # source alone already exceeds the budget, trimming insights can't
+        # bring the total under it anyway, so keep them all instead of
+        # discarding useful context for nothing.
         total_tokens = sum(item_tokens)
-        if max_tokens:
-            while total_tokens > max_tokens and insights:
+        source_tokens = item_tokens[0] if sources else 0
+        if max_tokens is not None:
+            while (
+                total_tokens > max_tokens
+                and insights
+                and source_tokens <= max_tokens
+            ):
                 total_tokens -= item_tokens.pop()
                 insights.pop()
 

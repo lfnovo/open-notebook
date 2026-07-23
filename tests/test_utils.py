@@ -329,13 +329,18 @@ class TestBuildSourceContext:
     async def test_keeps_source_when_it_alone_exceeds_budget(self):
         """A source whose full_text alone exceeds max_tokens is still
         returned (not dropped) — an empty context is worse than one over
-        budget, and the prompt formatter caps full_text length downstream."""
+        budget, and the prompt formatter caps full_text length downstream.
+        Its insights are kept too: trimming them can't bring the total
+        under budget anyway (the source alone already exceeds it), so
+        dropping them would lose context for no benefit."""
         source = SimpleNamespace(id="source:123")
         big_text = "word " * 20000  # far bigger than the token budget below
         source.get_context = AsyncMock(
             return_value={"id": "source:123", "title": "T", "full_text": big_text}
         )
-        source.get_insights = AsyncMock(return_value=[])
+        source.get_insights = AsyncMock(
+            return_value=[_insight("source_insight:1"), _insight("source_insight:2")]
+        )
 
         with patch(
             "open_notebook.utils.context_builder.Source.get",
@@ -345,6 +350,10 @@ class TestBuildSourceContext:
 
         assert len(result["sources"]) == 1
         assert result["sources"][0]["full_text"] == big_text
+        assert [i["id"] for i in result["insights"]] == [
+            "source_insight:1",
+            "source_insight:2",
+        ]
         assert result["total_tokens"] > 600
 
     @pytest.mark.asyncio

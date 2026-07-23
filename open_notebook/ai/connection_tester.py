@@ -22,6 +22,7 @@ from esperanto.common_types import ChatCompletion
 from loguru import logger
 
 from open_notebook.ai.provider_registry import PROVIDERS
+from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import prepare_pinned_http_target
 
 
@@ -114,7 +115,7 @@ async def _test_azure_connection(
         target = await prepare_pinned_http_target(models_url, "azure")
         headers = dict(target.headers)
         headers["api-key"] = test_api_key
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
             response = await client.get(
                 target.url,
                 headers=headers,
@@ -157,7 +158,7 @@ async def _test_ollama_connection(base_url: str) -> Tuple[bool, str]:
         target = await prepare_pinned_http_target(
             f"{base_url.rstrip('/')}/api/tags", "ollama"
         )
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
             # Try /api/tags endpoint (standard Ollama)
             response = await client.get(
                 target.url,
@@ -208,7 +209,7 @@ async def _test_openai_compatible_connection(base_url: str, api_key: Optional[st
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
             # Try /models endpoint (standard OpenAI-compatible)
             response = await client.get(
                 target.url,
@@ -261,7 +262,7 @@ async def _test_anthropic_compatible_connection(
         if api_key:
             headers["x-api-key"] = api_key
 
-        async with httpx.AsyncClient(timeout=10.0) as client:
+        async with httpx.AsyncClient(timeout=10.0, verify=httpx_verify_setting()) as client:
             response = await client.get(
                 target.url,
                 headers=headers,

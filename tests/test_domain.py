@@ -792,3 +792,99 @@ class TestCredentialConfigBag:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+class TestAzureSpeechToTextConfigShape:
+    """Azure STT needs its settings nested under `config`, unlike the other
+    three Azure modalities (#esperanto Azure STT is a plain @dataclass with no
+    **kwargs, so any unexpected top-level key raises TypeError)."""
+
+    def _cred(self):
+        from open_notebook.domain.credential import Credential
+
+        return Credential(
+            name="Azure",
+            provider="azure",
+            api_key="sk-test",
+            base_url="https://res.openai.azure.com/",
+            api_version="2025-04-01-preview",
+        )
+
+    def test_stt_config_is_nested_and_has_no_stray_top_level_keys(self):
+        cfg = self._cred().to_esperanto_config(model_type="speech_to_text")
+
+        # Only `config` may be present: esperanto's AzureSpeechToTextModel is a
+        # dataclass whose fields do not include endpoint/api_version.
+        assert set(cfg.keys()) == {"config"}
+        inner = cfg["config"]
+        assert inner["api_key"] == "sk-test"
+        assert inner["azure_endpoint"] == "https://res.openai.azure.com/"
+        assert inner["api_version"] == "2025-04-01-preview"
+
+    def test_stt_prefers_the_stt_specific_endpoint(self):
+        cred = self._cred()
+        cred.endpoint_stt = "https://stt.openai.azure.com/"
+
+        inner = cred.to_esperanto_config(model_type="speech_to_text")["config"]
+
+        assert inner["azure_endpoint"] == "https://stt.openai.azure.com/"
+
+    def test_other_azure_modalities_keep_the_flat_shape(self):
+        """language/embedding/text_to_speech read the flat keys and would break
+        if given the nested form - so they must be left untouched."""
+        cred = self._cred()
+        for model_type in ("language", "embedding", "text_to_speech", None):
+            cfg = cred.to_esperanto_config(model_type=model_type)
+            assert cfg["api_key"] == "sk-test"
+            assert cfg["endpoint"] == "https://res.openai.azure.com/"
+            assert cfg["api_version"] == "2025-04-01-preview"
+            assert "config" not in cfg
+
+    def test_non_azure_provider_is_unaffected_by_model_type(self):
+        from open_notebook.domain.credential import Credential
+
+        cred = Credential(name="OpenAI", provider="openai", api_key="sk-x")
+
+        assert cred.to_esperanto_config(model_type="speech_to_text") == {
+            "api_key": "sk-x"
+        }
+
+
+class TestAzureSttUrlRevalidation:
+    """The nested Azure STT endpoint must still get SSRF re-validation.
+
+    _revalidate_config_urls originally walked only top-level keys; the nested
+    shape would have skipped it, silently reopening the DNS-rebinding window.
+    """
+
+    @pytest.mark.asyncio
+    async def test_nested_azure_endpoint_is_revalidated(self):
+        from unittest.mock import AsyncMock, patch
+
+        from open_notebook.ai.models import _revalidate_config_urls
+
+        cfg = {"config": {"azure_endpoint": "https://res.openai.azure.com/"}}
+
+        with patch(
+            "open_notebook.ai.models.validate_url", new_callable=AsyncMock
+        ) as mock_validate:
+            await _revalidate_config_urls(cfg, "azure")
+
+        mock_validate.assert_awaited_once_with(
+            "https://res.openai.azure.com/", "azure"
+        )
+
+    @pytest.mark.asyncio
+    async def test_nested_bad_endpoint_is_rejected(self):
+        from unittest.mock import AsyncMock, patch
+
+        from open_notebook.ai.models import _revalidate_config_urls
+        from open_notebook.exceptions import ConfigurationError
+
+        cfg = {"config": {"azure_endpoint": "http://169.254.169.254/"}}
+
+        with patch(
+            "open_notebook.ai.models.validate_url", new_callable=AsyncMock
+        ) as mock_validate:
+            mock_validate.side_effect = ValueError("private address")
+            with pytest.raises(ConfigurationError):
+                await _revalidate_config_urls(cfg, "azure")

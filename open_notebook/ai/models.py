@@ -28,6 +28,9 @@ _URL_CONFIG_KEYS = (
     "endpoint_embedding",
     "endpoint_stt",
     "endpoint_tts",
+    # Azure speech-to-text nests its endpoint under `config` (see
+    # Credential._azure_stt_config); this is that key's name there.
+    "azure_endpoint",
 )
 
 
@@ -43,13 +46,22 @@ async def _revalidate_config_urls(config: dict, provider: str) -> None:
     connection. Re-checking here narrows that window to "this call", instead
     of "any time after the credential was saved".
     """
-    for key in _URL_CONFIG_KEYS:
-        value = config.get(key)
-        if value:
-            try:
-                await validate_url(value, provider)
-            except ValueError as e:
-                raise ConfigurationError(str(e)) from e
+    # Azure speech-to-text nests its settings one level down under `config`
+    # (Credential._azure_stt_config). Walk that too, or its endpoint would skip
+    # re-validation entirely and reopen the rebinding window this guards.
+    scopes = [config]
+    nested = config.get("config")
+    if isinstance(nested, dict):
+        scopes.append(nested)
+
+    for scope in scopes:
+        for key in _URL_CONFIG_KEYS:
+            value = scope.get(key)
+            if value:
+                try:
+                    await validate_url(value, provider)
+                except ValueError as e:
+                    raise ConfigurationError(str(e)) from e
 
 
 class Model(ObjectModel):
@@ -197,7 +209,7 @@ class ModelManager:
         if model.credential:
             credential = await model.get_credential_obj()
             if credential:
-                config = credential.to_esperanto_config()
+                config = credential.to_esperanto_config(model_type=model.type)
                 await _revalidate_config_urls(config, model.provider)
                 logger.debug(
                     f"Using credential '{credential.name}' for model {model.name}"

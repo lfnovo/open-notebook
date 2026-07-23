@@ -273,7 +273,7 @@ class TestBuildSourceContext:
 
     @pytest.mark.asyncio
     async def test_source_and_insights_shape(self):
-        """The response carries the source's short context and its insights."""
+        """The response carries the source's full-text context and its insights."""
         source = _mock_source([_insight("source_insight:1")])
 
         with patch(
@@ -283,7 +283,9 @@ class TestBuildSourceContext:
             result = await build_source_context("123")
 
         mock_get.assert_awaited_once_with("source:123")  # bare id gets prefixed
-        source.get_context.assert_awaited_once_with(context_size="short")
+        # Long context is used so full_text is always included — a source
+        # with no insights would otherwise leave the LLM with only the title.
+        source.get_context.assert_awaited_once_with(context_size="long")
         assert result["sources"] == [
             {"id": "source:123", "title": "T", "full_text": "body"}
         ]
@@ -322,6 +324,28 @@ class TestBuildSourceContext:
         assert len(result["sources"]) == 1
         assert [i["id"] for i in result["insights"]] == ["source_insight:1"]
         assert result["total_tokens"] <= 600
+
+    @pytest.mark.asyncio
+    async def test_keeps_source_when_it_alone_exceeds_budget(self):
+        """A source whose full_text alone exceeds max_tokens is still
+        returned (not dropped) — an empty context is worse than one over
+        budget, and the prompt formatter caps full_text length downstream."""
+        source = SimpleNamespace(id="source:123")
+        big_text = "word " * 20000  # far bigger than the token budget below
+        source.get_context = AsyncMock(
+            return_value={"id": "source:123", "title": "T", "full_text": big_text}
+        )
+        source.get_insights = AsyncMock(return_value=[])
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            result = await build_source_context("source:123", max_tokens=600)
+
+        assert len(result["sources"]) == 1
+        assert result["sources"][0]["full_text"] == big_text
+        assert result["total_tokens"] > 600
 
     @pytest.mark.asyncio
     async def test_missing_source_yields_empty_context(self):

@@ -6,6 +6,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 
 import { useThemeStore } from '@/lib/stores/theme-store'
+import { KATEX_OPTIONS } from '@/lib/utils/katex-options'
 import { oneDark as darkTheme } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import { oneLight as lightTheme } from 'react-syntax-highlighter/dist/esm/styles/prism'
 // PrismLight with an explicit language set instead of the full Prism build:
@@ -63,7 +64,7 @@ export function MarkdownRenderer({ children, components = {}}: { children: React
     <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none break-words prose-headings:font-semibold prose-a:text-blue-600 prose-a:break-all prose-code:before:content-none prose-code:after:content-none prose-pre:p-0 prose-pre:bg-transparent prose-p:mb-4 prose-p:leading-7 prose-li:mb-2">
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
+          rehypePlugins={[[rehypeKatex, KATEX_OPTIONS]]}
           components={{...{
             p: ({ children }) => <p className="mb-4">{children}</p>,
             h1: ({ children }) => <h1 className="mb-4 mt-6">{children}</h1>,

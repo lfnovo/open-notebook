@@ -1,6 +1,5 @@
 """Tests for ESPERANTO_SSL_* → httpx verify mapping."""
 
-import os
 from pathlib import Path
 
 import pytest
@@ -34,9 +33,11 @@ def test_ca_bundle_takes_priority_over_verify_false(
     assert httpx_verify_setting() == str(ca)
 
 
-def test_missing_ca_bundle_falls_back_to_verify_env(
+def test_missing_ca_bundle_raises_instead_of_falling_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """Misconfigured CA must not silently honor ESPERANTO_SSL_VERIFY=false."""
     monkeypatch.setenv("ESPERANTO_SSL_CA_BUNDLE", "/no/such/ca.pem")
     monkeypatch.setenv("ESPERANTO_SSL_VERIFY", "false")
-    assert httpx_verify_setting() is False
+    with pytest.raises(ValueError, match="CA bundle file not found"):
+        httpx_verify_setting()

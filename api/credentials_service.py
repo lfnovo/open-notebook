@@ -25,6 +25,7 @@ from open_notebook.ai.model_discovery import (
 from open_notebook.ai.provider_registry import PROVIDERS
 from open_notebook.domain.credential import Credential
 from open_notebook.utils.encryption import get_secret_from_env
+from open_notebook.utils.ssl_config import httpx_verify_setting
 from open_notebook.utils.url_validation import (
     prepare_pinned_http_target,
 )
@@ -452,7 +453,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
                 f"{ollama_url.rstrip('/')}/api/tags", "ollama"
             )
             headers = dict(target.headers)
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     target.url,
                     headers=headers,
@@ -486,7 +487,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     target.url,
                     headers=headers,
@@ -518,7 +519,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             headers = dict(target.headers)
             headers["x-api-key"] = api_key
             headers["anthropic-version"] = "2023-06-01"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     target.url,
                     headers=headers,
@@ -545,7 +546,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             headers = dict(target.headers)
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     target.url,
                     headers=headers,
@@ -575,7 +576,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
             target = await prepare_pinned_http_target(url, "azure")
             headers = dict(target.headers)
             headers["api-key"] = api_key
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     target.url,
                     headers=headers,
@@ -607,7 +608,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
     if provider == "google":
         try:
             headers = {"X-Goog-Api-Key": api_key} if api_key else {}
-            async with httpx.AsyncClient() as client:
+            async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
                 response = await client.get(
                     "https://generativelanguage.googleapis.com/v1/models",
                     headers=headers,
@@ -671,7 +672,7 @@ async def discover_with_config(provider: str, config: dict) -> List[dict]:
         else:
             request_url = discovery_url
             extensions = {}
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(verify=httpx_verify_setting()) as client:
             response = await client.get(
                 request_url,
                 headers=headers,

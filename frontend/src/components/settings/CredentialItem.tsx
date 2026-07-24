@@ -171,7 +171,7 @@ export function CredentialItem({
                         <Badge
                           key={model.id}
                           variant={defaultSlot ? 'default' : 'secondary'}
-                          className="text-xs gap-1 pr-0.5 group/model"
+                          className="font-mono text-[11px] gap-1 pr-0.5 group/model"
                         >
                           {model.name}
                           {defaultSlot && <span className="ml-0.5 opacity-75">({defaultSlot})</span>}

@@ -8,9 +8,8 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AppShell } from '@/components/layout/AppShell'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { FileText, Link as LinkIcon, Upload, AlignLeft, Trash2, ArrowDown, ArrowUp, ArrowUpDown, Plus } from 'lucide-react'
+import { FileText, Trash2, ArrowDown, ArrowUp, ArrowUpDown, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useTranslation } from '@/lib/hooks/use-translation'
 import { getDateLocale } from '@/lib/utils/date-locale'
@@ -244,10 +243,11 @@ export default function SourcesPage() {
     )
   }
 
-  const getSourceIcon = (source: SourceListResponse) => {
-    if (source.asset?.url) return <LinkIcon className="h-4 w-4" />
-    if (source.asset?.file_path) return <Upload className="h-4 w-4" />
-    return <AlignLeft className="h-4 w-4" />
+  // Content-type pebble — type hues live in dots, never washes
+  const getSourceTypeDotClass = (source: SourceListResponse) => {
+    if (source.asset?.url) return 'bg-type-web'
+    if (source.asset?.file_path) return 'bg-type-pdf'
+    return 'bg-type-note'
   }
 
   const getSourceType = (source: SourceListResponse) => {
@@ -318,7 +318,7 @@ export default function SourcesPage() {
     return (<>
       <div className="flex flex-col h-full w-full max-w-none px-6 py-6">
         <div className="mb-6 flex-shrink-0">
-          <h1 className="text-3xl font-bold">{t('sources.allSources')}</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight">{t('sources.allSources')}</h1>
           <p className="mt-2 text-muted-foreground">
             {t('sources.allSourcesDesc')}
           </p>
@@ -340,7 +340,7 @@ export default function SourcesPage() {
               <col className="w-[100px]" />
             </colgroup>
             <thead className="sticky top-0 bg-background z-10">
-              <tr className="border-b bg-muted/50">
+              <tr className="border-b">
                 <th className="h-12 px-4 text-left align-middle font-medium text-muted-foreground">
                   {renderSortableHeader('type', t('common.type'))}
                 </th>
@@ -374,15 +374,18 @@ export default function SourcesPage() {
                     "border-b transition-colors cursor-pointer",
                     selectedIndex === index
                       ? "bg-accent"
-                      : "hover:bg-muted/50"
+                      : "hover:bg-[var(--surface-raised)]"
                   )}
                 >
                   <td className="h-12 px-4">
                     <div className="flex items-center gap-2">
-                      {getSourceIcon(source)}
-                      <Badge variant="secondary" className="text-xs">
+                      <span
+                        aria-hidden
+                        className={cn('h-2 w-2 shrink-0 rounded-full', getSourceTypeDotClass(source))}
+                      />
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                         {getSourceType(source)}
-                      </Badge>
+                      </span>
                     </div>
                   </td>
                   <td className="h-12 px-4">
@@ -413,9 +416,16 @@ export default function SourcesPage() {
                     <span className="text-sm font-medium">{source.insights_count || 0}</span>
                   </td>
                   <td className="h-12 px-4 text-center hidden lg:table-cell">
-                    <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
+                    <span
+                      className={cn(
+                        "inline-flex items-center rounded-sm px-2 py-0.5 text-xs font-medium",
+                        source.embedded
+                          ? "bg-fern-tint text-fern-deep dark:text-fern"
+                          : "bg-muted text-muted-foreground"
+                      )}
+                    >
                       {source.embedded ? t('sources.yes') : t('sources.no')}
-                    </Badge>
+                    </span>
                   </td>
                   <td className="h-12 px-4 text-right">
                     <Button

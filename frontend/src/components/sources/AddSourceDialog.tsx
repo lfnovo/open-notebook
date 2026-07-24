@@ -585,7 +585,7 @@ export function AddSourceDialog({
           </WizardContainer>
 
           {/* Navigation */}
-          <div className="flex justify-between items-center px-6 py-4 border-t border-border bg-muted">
+          <div className="flex justify-between items-center px-6 py-4 border-t border-border">
             <Button 
               type="button" 
               variant="outline" 

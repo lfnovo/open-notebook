@@ -159,7 +159,7 @@ export default function SearchPage() {
   return (
     <AppShell>
       <div className="flex-1 overflow-y-auto p-4 md:p-6">
-        <h1 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
+        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight mb-4 md:mb-6">{t('searchPage.askAndSearch')}</h1>
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'ask' | 'search')} className="w-full space-y-6">
           <div className="space-y-2">
@@ -233,13 +233,13 @@ export default function SearchPage() {
                         </Button>
                       </div>
                       <div className="flex gap-2 text-xs flex-wrap">
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.strategy')}: {resolveModelName(customModels?.strategy || modelDefaults?.default_chat_model)}
                         </Badge>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.answer')}: {resolveModelName(customModels?.answer || modelDefaults?.default_chat_model)}
                         </Badge>
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="font-mono text-[11px]">
                           {t('searchPage.final')}: {resolveModelName(customModels?.finalAnswer || modelDefaults?.default_chat_model)}
                         </Badge>
                       </div>
@@ -452,7 +452,7 @@ export default function SearchPage() {
                           const modalType = type === 'source_insight' ? 'insight' : type as 'source' | 'note' | 'insight'
 
                           return (
-                          <Card key={index}>
+                          <Card key={index} className="transition-shadow hover:shadow-lift">
                             <CardContent className="pt-4">
                               <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
@@ -462,7 +462,7 @@ export default function SearchPage() {
                                   >
                                     {result.title}
                                   </button>
-                                  <Badge variant="secondary" className="ml-2">
+                                  <Badge variant="secondary" className="ml-2 font-mono text-[11px]">
                                     {result.final_score.toFixed(2)}
                                   </Badge>
                                 </div>

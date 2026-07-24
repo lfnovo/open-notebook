@@ -91,8 +91,8 @@ export default function ApiKeysPage() {
         <div className="p-6 space-y-6">
           {/* Header */}
           <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Key className="h-6 w-6" />
+            <h1 className="font-display text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Key className="h-5 w-5 text-muted-foreground" />
               {t('apiKeys.title')}
             </h1>
             <p className="text-muted-foreground mt-1">{t('apiKeys.description')}</p>

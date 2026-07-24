@@ -34,7 +34,7 @@ export function SystemInfo() {
     return (
       <Card className="p-6">
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">{t('advanced.systemInfo')}</h2>
+          <h2 className="font-display text-xl font-semibold tracking-tight">{t('advanced.systemInfo')}</h2>
           <div className="text-sm text-muted-foreground">{t('common.loading')}</div>
         </div>
       </Card>
@@ -44,20 +44,20 @@ export function SystemInfo() {
   return (
     <Card className="p-6">
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">{t('advanced.systemInfo')}</h2>
+        <h2 className="font-display text-xl font-semibold tracking-tight">{t('advanced.systemInfo')}</h2>
 
         <div className="space-y-3">
           {/* Current Version */}
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{t('advanced.currentVersion')}</span>
-            <Badge variant="outline">{config?.version || t('advanced.unknown')}</Badge>
+            <Badge variant="outline" className="font-mono text-[11px]">{config?.version || t('advanced.unknown')}</Badge>
           </div>
 
           {/* Latest Version */}
           {config?.latestVersion && (
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{t('advanced.latestVersion')}</span>
-              <Badge variant="outline">{config.latestVersion}</Badge>
+              <Badge variant="outline" className="font-mono text-[11px]">{config.latestVersion}</Badge>
             </div>
           )}
 
@@ -65,7 +65,7 @@ export function SystemInfo() {
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">{t('advanced.status')}</span>
             {config?.hasUpdate ? (
-              <Badge variant="destructive">
+              <Badge variant="outline" className="border-transparent bg-warn-tint text-warn">
                 {t('advanced.updateAvailable', { version: config.latestVersion || '' })}
               </Badge>
             ) : config?.latestVersion ? (

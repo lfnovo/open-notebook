@@ -149,7 +149,7 @@ export function NotebookDeleteDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isDeleting || isLoadingPreview}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-destructive text-white hover:bg-destructive/90"
           >
             {isDeleting ? (
               <>

@@ -226,10 +226,10 @@ export function RebuildEmbeddings() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {status.status === 'queued' && <Clock className="h-5 w-5 text-yellow-500" />}
-                {status.status === 'running' && <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />}
-                {status.status === 'completed' && <CheckCircle2 className="h-5 w-5 text-green-500" />}
-                {status.status === 'failed' && <XCircle className="h-5 w-5 text-red-500" />}
+                {status.status === 'queued' && <Clock className="h-5 w-5 text-warn" />}
+                {status.status === 'running' && <Loader2 className="h-5 w-5 text-teal animate-spin" />}
+                {status.status === 'completed' && <CheckCircle2 className="h-5 w-5 text-fern" />}
+                {status.status === 'failed' && <XCircle className="h-5 w-5 text-destructive" />}
                 <div className="flex flex-col">
                   <span className="font-medium">
                     {status.status === 'queued' && t('advanced.rebuild.queued')}
@@ -261,7 +261,7 @@ export function RebuildEmbeddings() {
                 </div>
                 <Progress value={progressPercent} className="h-2" />
                 {failedItems > 0 && (
-                  <p className="text-sm text-yellow-600">
+                  <p className="text-sm text-warn">
                     ⚠️ {t('advanced.rebuild.failedItems', { count: failedItems })}
                   </p>
                 )}

@@ -55,41 +55,41 @@ const SOURCE_TYPE_ICONS = {
 const getStatusConfig = (t: TFunction) => ({
   new: {
     icon: Clock,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-teal',
+    bgColor: 'bg-teal-tint',
+    borderColor: 'border-teal/30',
     label: t('sources.statusProcessing'),
     description: t('sources.statusPreparingDesc')
   },
   queued: {
     icon: Clock,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-teal',
+    bgColor: 'bg-teal-tint',
+    borderColor: 'border-teal/30',
     label: t('sources.statusQueued'),
     description: t('sources.statusQueuedDesc')
   },
   running: {
     icon: Loader2,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-teal',
+    bgColor: 'bg-teal-tint',
+    borderColor: 'border-teal/30',
     label: t('sources.statusProcessing'),
     description: t('sources.statusProcessingDesc')
   },
   completed: {
     icon: CheckCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
+    color: 'text-fern',
+    bgColor: 'bg-fern-tint',
+    borderColor: 'border-fern/30',
     label: t('sources.statusCompleted'),
     description: t('sources.statusCompletedDesc')
   },
   failed: {
     icon: AlertTriangle,
-    color: 'text-red-600',
-    bgColor: 'bg-red-50',
-    borderColor: 'border-red-200',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive-tint',
+    borderColor: 'border-destructive/30',
     label: t('sources.statusFailed'),
     description: t('sources.statusFailedDesc')
   }
@@ -379,7 +379,7 @@ function SourceCardImpl({
                   handleDelete()
                 }}
                 disabled={!onDelete}
-                className="text-red-600 focus:text-red-600"
+                className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t('sources.deleteSource')}
@@ -419,7 +419,7 @@ function SourceCardImpl({
             </div>
             <div className="w-full bg-gray-200 rounded-full h-1.5">
               <div
-                className="bg-blue-600 h-1.5 rounded-full transition-all duration-300"
+                className="bg-teal h-1.5 rounded-full transition-all duration-300"
                 style={{ width: `${statusData.processing_info.progress as number}%` }}
               />
             </div>

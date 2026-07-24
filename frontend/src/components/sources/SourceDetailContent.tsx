@@ -510,7 +510,7 @@ function SourceDetailContentInner({
                       href={externalHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="hover:underline text-blue-600"
+                      className="hover:underline text-primary"
                     >
                       {source.asset?.url}
                     </a>

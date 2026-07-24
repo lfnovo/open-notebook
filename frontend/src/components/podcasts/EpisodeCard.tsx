@@ -50,31 +50,31 @@ const getSTATUS_META = (t: TFunction): Record<
 > => ({
   running: {
     label: t('podcasts.processingLabel'),
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    className: 'bg-warn-tint text-warn border-warn/30',
   },
   processing: {
     label: t('podcasts.processingLabel'),
-    className: 'bg-amber-100 text-amber-800 border-amber-200',
+    className: 'bg-warn-tint text-warn border-warn/30',
   },
   completed: {
     label: t('podcasts.completedLabel'),
-    className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    className: 'bg-fern-tint text-fern border-fern/30',
   },
   failed: {
     label: t('podcasts.failedLabel'),
-    className: 'bg-red-100 text-red-800 border-red-200',
+    className: 'bg-destructive-tint text-destructive border-destructive/30',
   },
   error: {
     label: t('podcasts.failedLabel'),
-    className: 'bg-red-100 text-red-800 border-red-200',
+    className: 'bg-destructive-tint text-destructive border-destructive/30',
   },
   pending: {
     label: t('podcasts.pendingLabel'),
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
+    className: 'bg-teal-tint text-teal border-teal/30',
   },
   submitted: {
     label: t('podcasts.pendingLabel'),
-    className: 'bg-sky-100 text-sky-800 border-sky-200',
+    className: 'bg-teal-tint text-teal border-teal/30',
   },
   unknown: {
     label: t('common.unknown'),
@@ -435,9 +435,9 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         ) : null}
 
         {isFailed && episode.error_message ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
-            <p className="text-xs font-medium text-red-800 dark:text-red-300">{t('podcasts.errorDetails')}</p>
-            <p className="mt-1 text-xs whitespace-pre-wrap text-red-700 dark:text-red-400">{episode.error_message}</p>
+          <div className="rounded-md border border-destructive/30 bg-destructive-tint p-3">
+            <p className="text-xs font-medium text-destructive">{t('podcasts.errorDetails')}</p>
+            <p className="mt-1 text-xs whitespace-pre-wrap text-destructive">{episode.error_message}</p>
           </div>
         ) : null}
       </CardContent>

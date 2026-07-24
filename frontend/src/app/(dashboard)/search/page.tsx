@@ -210,7 +210,7 @@ export default function SearchPage() {
 
                 {/* Models Display */}
                 {!hasEmbeddingModel ? (
-                  <div className="flex items-center gap-2 p-3 text-sm text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/20 rounded-md">
+                  <div className="flex items-center gap-2 p-3 text-sm text-warn bg-warn-tint rounded-md">
                     <AlertCircle className="h-4 w-4" />
                     <span>{t('searchPage.noEmbeddingModel')}</span>
                   </div>
@@ -358,7 +358,7 @@ export default function SearchPage() {
                   <div className="space-y-2" role="group" aria-labelledby="search-type-label">
                     <span id="search-type-label" className="text-sm font-medium leading-none">{t('searchPage.searchType')}</span>
                     {!hasEmbeddingModel && (
-                      <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-500">
+                      <div className="flex items-center gap-2 text-sm text-warn">
                         <AlertCircle className="h-4 w-4" />
                         <span>{t('searchPage.vectorSearchWarning')}</span>
                       </div>

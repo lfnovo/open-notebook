@@ -294,7 +294,7 @@ export default function SourcesPage() {
     if (error) {
       return (
         <div className="flex h-full items-center justify-center">
-          <p className="text-red-500">{error}</p>
+          <p className="text-destructive">{error}</p>
         </div>
       )
     }

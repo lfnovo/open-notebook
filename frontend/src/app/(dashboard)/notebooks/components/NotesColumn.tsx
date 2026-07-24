@@ -190,7 +190,7 @@ export function NotesColumn({
                                 e.stopPropagation()
                                 handleDeleteClick(note.id)
                               }}
-                              className="text-red-600 focus:text-red-600"
+                              className="text-destructive focus:text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               {t('notebooks.deleteNote')}

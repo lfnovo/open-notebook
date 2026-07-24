@@ -491,7 +491,7 @@ export function AddSourceDialog({
 
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1.5 text-green-600">
+                    <span className="flex items-center gap-1.5 text-fern">
                       <CheckCircleIcon className="h-4 w-4" />
                       {batchProgress.completed} {t('common.completed')}
                     </span>

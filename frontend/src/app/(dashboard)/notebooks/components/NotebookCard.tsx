@@ -90,7 +90,7 @@ export function NotebookCard({ notebook }: NotebookCardProps) {
                       e.stopPropagation()
                       setShowDeleteDialog(true)
                     }}
-                    className="text-red-600"
+                    className="text-destructive"
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     {t('common.delete')}

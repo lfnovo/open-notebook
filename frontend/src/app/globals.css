@@ -289,7 +289,7 @@
   --sidebar-foreground: var(--ink);
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: var(--on-primary);
-  --sidebar-accent: var(--fern-tint);
+  --sidebar-accent: var(--surface);
   --sidebar-accent-foreground: var(--ink);
   --sidebar-border: var(--line);
   --sidebar-ring: var(--teal);

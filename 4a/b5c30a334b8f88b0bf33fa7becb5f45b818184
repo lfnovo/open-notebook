@@ -1,0 +1,26 @@
+frontend/src/components/layout/AppSidebar.tsx
+  s_29e4db9e94e63e::t_a97faf8ab1274e 133,145-147
+  s_29e4db9e94e63e::t_809b3d0f06985d 254,263,265-267,271
+  s_29e4db9e94e63e::t_53ea26763fcdef 49,55-56,62,68-71,76-85
+  s_29e4db9e94e63e::t_318ec3f22f1a82 185
+  s_29e4db9e94e63e::t_b0dea96345bc51 200
+  s_29e4db9e94e63e::t_e21c1a218d59d1 86
+frontend/src/app/globals.css
+  s_29e4db9e94e63e::t_a1e5135f0a43c1 292
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "4ab5c30a334b8f88b0bf33fa7becb5f45b818184",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

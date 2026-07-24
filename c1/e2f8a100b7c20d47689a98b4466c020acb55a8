@@ -1,0 +1,102 @@
+frontend/src/app/(dashboard)/transformations/components/TransformationCard.tsx
+  s_29e4db9e94e63e::t_1c9556bff137de 73
+frontend/src/components/podcasts/EpisodeCard.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 53,57,61,65,69,73,77,438-440
+frontend/src/components/settings/EmbeddingModelChangeDialog.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 59
+frontend/src/app/(dashboard)/notebooks/components/NotebookDeleteDialog.tsx
+  s_29e4db9e94e63e::t_59ba00a455e557 152
+frontend/src/app/(dashboard)/settings/api-keys/page.tsx
+  s_29e4db9e94e63e::t_b493abaa09a808 103-107
+frontend/src/components/settings/MigrationBanner.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 22-24,28,36
+frontend/src/app/(dashboard)/notebooks/components/NotebookRow.tsx
+  s_29e4db9e94e63e::t_0ad2480fcb9f2d 125
+frontend/src/components/settings/ProviderSection.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 72
+frontend/src/components/sources/NotebookAssociations.tsx
+  s_29e4db9e94e63e::t_71c19e5996bde6 185
+frontend/src/components/settings/CredentialItem.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 107,144-147
+frontend/src/app/(dashboard)/notebooks/components/NotebookCard.tsx
+  s_29e4db9e94e63e::t_c1940a22379a4d 93
+frontend/src/components/sources/AddSourceDialog.tsx
+  s_29e4db9e94e63e::t_ab2639569b65d4 494
+frontend/src/components/podcasts/forms/EpisodeProfileFormDialog.tsx
+  s_29e4db9e94e63e::t_bcdef94fd94b10 166
+  s_29e4db9e94e63e::t_dba935a40b49be 180,195,223,265,294,323,374
+frontend/src/components/sources/SourceDetailContent.tsx
+  s_29e4db9e94e63e::t_119e5448e60bef 513
+frontend/src/components/podcasts/forms/SpeakerProfileFormDialog.tsx
+  s_29e4db9e94e63e::t_dba935a40b49be 173,208,266,280,296,311,335
+frontend/src/components/auth/LoginForm.tsx
+  s_29e4db9e94e63e::t_dba935a40b49be 93,162
+frontend/src/lib/providers.tsx
+  s_29e4db9e94e63e::t_ecef995053dc9a 33-36
+frontend/src/app/(dashboard)/advanced/components/RebuildEmbeddings.tsx
+  s_29e4db9e94e63e::t_c0b456d4d8247d 229-232
+  s_29e4db9e94e63e::t_720c3dc5c7e02a 264
+frontend/src/components/common/ContextToggle.tsx
+  s_29e4db9e94e63e::t_600fc4e15fe073 43-44
+  s_29e4db9e94e63e::t_ae92fdf0477045 49-50
+frontend/src/components/settings/ModelTestResultDialog.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 36
+frontend/src/app/(dashboard)/notebooks/components/NotesColumn.tsx
+  s_29e4db9e94e63e::t_4ac680fedec8dd 193
+frontend/src/components/sources/MessageActions.tsx
+  s_29e4db9e94e63e::t_e26242d018d072 106
+frontend/src/components/ui/markdown-renderer.tsx
+  s_29e4db9e94e63e::t_fd3fe5d8fbb540 63
+frontend/src/components/common/ConfirmDialog.tsx
+  s_29e4db9e94e63e::t_40a7dcf05646c5 52
+frontend/src/app/(dashboard)/advanced/components/SystemInfo.tsx
+  s_29e4db9e94e63e::t_de21444723e83e 72
+frontend/src/components/sources/steps/SourceTypeStep.tsx
+  s_29e4db9e94e63e::t_619bc91b92b40a 289-290
+frontend/src/components/common/ContextIndicator.tsx
+  s_29e4db9e94e63e::t_4e4c7dc2496c8e 69,88
+  s_29e4db9e94e63e::t_b2f17306cfe296 55
+frontend/src/app/(dashboard)/notebooks/components/NotebookHeader.tsx
+  s_29e4db9e94e63e::t_aef4e6085f3f26 92
+frontend/src/app/(dashboard)/notebooks/components/NoteEditorDialog.tsx
+  s_29e4db9e94e63e::t_53e57e41971676 189
+frontend/src/app/(dashboard)/podcasts/page.tsx
+  s_29e4db9e94e63e::t_a901cab04e415e 39
+frontend/src/app/(dashboard)/search/page.tsx
+  s_29e4db9e94e63e::t_3e9ec62144e74d 361
+  s_29e4db9e94e63e::t_6859d6807311de 213
+frontend/src/components/sources/SourceCard.tsx
+  s_29e4db9e94e63e::t_d97d7c8de48537 422
+  s_29e4db9e94e63e::t_ad5bbda014d68d 90-92
+  s_29e4db9e94e63e::t_04f4b8be0ea3d2 58-60,66-68,74-76
+  s_29e4db9e94e63e::t_372ecad5d196fb 382
+  s_29e4db9e94e63e::t_bac0d359251e72 82-84
+frontend/src/components/layout/SetupBanner.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 36-38,41,47,60-62,66,73
+frontend/src/components/podcasts/EpisodeProfilesPanel.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 101,128
+frontend/src/app/(dashboard)/transformations/components/TransformationEditorDialog.tsx
+  s_29e4db9e94e63e::t_1dd33b6a50b22e 183,298
+frontend/src/app/(dashboard)/sources/page.tsx
+  s_29e4db9e94e63e::t_1ab8190b7ffd63 297
+frontend/src/components/podcasts/SpeakerProfilesPanel.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 106
+frontend/src/components/common/ErrorBoundary.tsx
+  s_29e4db9e94e63e::t_ed47d012b06993 59-60,62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "c1e2f8a100b7c20d47689a98b4466c020acb55a8",
+  "prompts": {},
+  "sessions": {
+    "s_29e4db9e94e63e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "751e15f7-997c-4119-9276-c45c2cade437",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

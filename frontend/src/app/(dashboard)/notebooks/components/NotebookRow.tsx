@@ -56,7 +56,7 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
             <Link
               href={`/notebooks/${encodeURIComponent(notebook.id)}`}
               onClick={(e) => e.stopPropagation()}
-              className="font-medium truncate rounded-sm outline-none group-hover:text-primary transition-colors focus-visible:ring-2 focus-visible:ring-ring"
+              className="font-medium truncate rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {notebook.name}
             </Link>
@@ -73,15 +73,15 @@ export function NotebookRow({ notebook }: NotebookRowProps) {
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
+        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
             <FileText className="h-3 w-3" />
             <span>{notebook.source_count}</span>
-          </Badge>
-          <Badge variant="outline" className="text-xs flex items-center gap-1 px-1.5 py-0.5 text-primary border-primary/50">
+          </span>
+          <span className="flex items-center gap-1">
             <StickyNote className="h-3 w-3" />
             <span>{notebook.note_count}</span>
-          </Badge>
+          </span>
         </div>
 
         <div className="hidden sm:block w-40 shrink-0 text-right text-xs text-muted-foreground">

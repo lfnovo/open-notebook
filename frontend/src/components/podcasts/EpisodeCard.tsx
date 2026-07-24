@@ -225,7 +225,7 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
   const isFailed = FAILED_EPISODE_STATUSES.includes(episode.job_status as EpisodeStatus)
 
   return (
-    <Card className="shadow-sm">
+    <Card>
       <CardContent className="space-y-4 p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -257,7 +257,9 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
                 </DialogHeader>
                 <div className="space-y-4 overflow-hidden">
                   {audioSrc ? (
-                    <audio controls preload="none" src={audioSrc} className="w-full" />
+                    <div className="rounded-md border bg-card p-2">
+                      <audio controls preload="none" src={audioSrc} className="w-full" />
+                    </div>
                   ) : audioError ? (
                     <p className="text-sm text-destructive">{audioError}</p>
                   ) : null}
@@ -429,7 +431,9 @@ export function EpisodeCard({ episode, onDelete, deleting, onRetry, retrying }: 
         </div>
 
         {audioSrc ? (
-          <audio controls preload="none" src={audioSrc} className="w-full" />
+          <div className="rounded-md border bg-card p-2">
+            <audio controls preload="none" src={audioSrc} className="w-full" />
+          </div>
         ) : audioError ? (
           <p className="text-sm text-destructive">{audioError}</p>
         ) : null}

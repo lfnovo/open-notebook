@@ -49,11 +49,11 @@ export function ProviderSection({
   const activeTypes = new Set<string>(providerModels.map(m => m.type))
 
   return (
-    <Card className={!hasCredentials ? 'opacity-80' : undefined}>
+    <Card className={hasCredentials ? 'border-l-2 border-l-fern' : undefined}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-wrap">
-            <CardTitle className="text-lg capitalize">{displayName}</CardTitle>
+            <CardTitle className={`text-lg capitalize ${hasCredentials ? '' : 'text-muted-foreground'}`}>{displayName}</CardTitle>
             <div className="flex items-center gap-1">
               {modalities.map((type) => (
                 <Badge
@@ -69,15 +69,15 @@ export function ProviderSection({
           </div>
           <div className="flex items-center gap-2">
             {hasCredentials ? (
-              <Badge className="bg-fern-tint text-fern hover:bg-fern-tint">
-                <Check className="mr-1 h-3 w-3" />
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fern">
+                <Check className="h-3 w-3" />
                 {t('apiKeys.configured')}
-              </Badge>
+              </span>
             ) : (
-              <Badge variant="outline" className="text-muted-foreground border-dashed">
-                <X className="mr-1 h-3 w-3" />
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <X className="h-3 w-3" />
                 {t('apiKeys.notConfigured')}
-              </Badge>
+              </span>
             )}
           </div>
         </div>

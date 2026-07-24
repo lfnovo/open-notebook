@@ -87,7 +87,7 @@ export function EpisodeProfilesPanel({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold">{t('podcasts.episodeProfilesTitle')}</h2>
+          <h2 className="font-display text-lg font-semibold tracking-tight">{t('podcasts.episodeProfilesTitle')}</h2>
           <p className="text-sm text-muted-foreground">
             {t('podcasts.episodeProfilesDesc')}
           </p>
@@ -104,7 +104,7 @@ export function EpisodeProfilesPanel({
       ) : null}
 
       {sortedProfiles.length === 0 ? (
-        <div className="rounded-lg border border-dashed bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-md border border-dashed p-10 text-center text-sm text-muted-foreground">
           {t('podcasts.noEpisodeProfiles')}
         </div>
       ) : (
@@ -117,7 +117,7 @@ export function EpisodeProfilesPanel({
             const unconfigured = needsModelSetup(profile)
 
             return (
-              <Card key={profile.id} className="shadow-sm">
+              <Card key={profile.id}>
                 <CardHeader className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">

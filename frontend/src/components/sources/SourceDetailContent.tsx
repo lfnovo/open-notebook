@@ -16,7 +16,6 @@ import { ContentUnavailable } from '@/components/common/ContentUnavailable'
 import { isNotFoundError } from '@/lib/utils/error-handler'
 import { InlineEdit } from '@/components/common/InlineEdit'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -53,7 +52,6 @@ import {
   Download,
   Copy,
   CheckCircle,
-  Youtube,
   MoreVertical,
   Trash2,
   Sparkles,
@@ -412,7 +410,7 @@ function SourceDetailContentInner({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="pb-4 px-2 pr-12">
+      <div className="pb-5 pr-10">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <InlineEdit
@@ -423,7 +421,7 @@ function SourceDetailContentInner({
               placeholder={t('sources.titlePlaceholder')}
               emptyText={t('sources.untitledSource')}
             />
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
               {t('sources.id')}: {source.id}
             </p>
           </div>
@@ -486,9 +484,9 @@ function SourceDetailContentInner({
       </div>
 
       {/* Tabs Content */}
-      <div className="flex-1 overflow-y-auto px-2">
+      <div className="flex-1 overflow-y-auto">
         <Tabs defaultValue="content" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 sticky top-0 z-10">
+          <TabsList className="w-full sticky top-0 z-10 bg-card">
             <TabsTrigger value="content">{t('sources.content')}</TabsTrigger>
             <TabsTrigger value="insights">
               {t('common.insights')} {insights.length > 0 && `(${insights.length})`}
@@ -496,175 +494,161 @@ function SourceDetailContentInner({
             <TabsTrigger value="details">{t('sources.details')}</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="content" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  {isYouTubeUrl && <Youtube className="h-5 w-5" />}
-                  {t('sources.content')}
-                </CardTitle>
-                {externalHref && !isYouTubeUrl && (
-                  <CardDescription className="flex items-center gap-2">
-                    <LinkIcon className="h-4 w-4" />
-                    <a
-                      href={externalHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:underline text-primary"
-                    >
-                      {source.asset?.url}
-                    </a>
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent>
-                {isYouTubeUrl && youTubeVideoId && (
-                  <div className="mb-6">
-                    <div className="aspect-video rounded-lg overflow-hidden bg-black">
-                      <iframe
-                        src={`https://www.youtube.com/embed/${youTubeVideoId}`}
-                        title={t('common.accessibility.ytVideo')}
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    </div>
-                    {externalHref && (
-                      <div className="mt-2">
-                        <a
-                          href={externalHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
-                        >
-                          <ExternalLink className="h-3 w-3" />
-                          {t('sources.openOnYoutube')}
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-                <MarkdownRenderer>
-                  {source.full_text || t('sources.noContent')}
-                </MarkdownRenderer>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="insights" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span className="flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5" />
-                    {t('common.insights')}
-                  </span>
-                  <Badge variant="secondary">{insights.length}</Badge>
-                </CardTitle>
-                <CardDescription>
-                  {t('sources.insightsDesc')}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Create New Insight */}
-                <div className="rounded-lg border bg-muted/30 p-4">
-                  <Label 
-                    htmlFor="transformation-select"
-                    className="mb-3 text-sm font-semibold flex items-center gap-2"
+          <TabsContent value="content" className="mt-5">
+            <section>
+              {externalHref && !isYouTubeUrl && (
+                <p className="mb-4 flex items-center gap-2 text-xs text-muted-foreground">
+                  <LinkIcon className="h-3.5 w-3.5 shrink-0" />
+                  <a
+                    href={externalHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate font-mono hover:underline"
                   >
-                    <Sparkles className="h-4 w-4" />
-                    {t('sources.generateNewInsight')}
-                  </Label>
-                  <div className="flex gap-2">
-                    <Select
-                      name="transformation"
-                      value={selectedTransformation}
-                      onValueChange={setSelectedTransformation}
-                      disabled={creatingInsight}
-                    >
-                      <SelectTrigger id="transformation-select" className="flex-1">
-                        <SelectValue placeholder={t('sources.selectTransformation')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {transformations.map((trans) => (
-                          <SelectItem key={trans.id} value={trans.id}>
-                            {trans.title || trans.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      size="sm"
-                      onClick={createInsight}
-                      disabled={!selectedTransformation || creatingInsight}
-                    >
-                      {creatingInsight ? (
-                        <>
-                          <LoadingSpinner className="mr-2 h-3 w-3" />
-                          {t('common.creating')}
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-4 w-4" />
-                          {t('common.create')}
-                        </>
-                      )}
-                    </Button>
+                    {source.asset?.url}
+                  </a>
+                </p>
+              )}
+              {isYouTubeUrl && youTubeVideoId && (
+                <div className="mb-6">
+                  <div className="aspect-video rounded-md overflow-hidden bg-black">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${youTubeVideoId}`}
+                      title={t('common.accessibility.ytVideo')}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
                   </div>
+                  {externalHref && (
+                    <div className="mt-2">
+                      <a
+                        href={externalHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {t('sources.openOnYoutube')}
+                      </a>
+                    </div>
+                  )}
                 </div>
-
-                {/* Insights List */}
-                {loadingInsights ? (
-                  <div className="flex items-center justify-center py-8">
-                    <LoadingSpinner />
-                  </div>
-                ) : insights.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p className="text-sm">{t('sources.noInsightsYet')}</p>
-                    <p className="text-xs mt-1">{t('sources.createFirstInsight')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {insights.map((insight) => (
-                      <div key={insight.id} className="rounded-lg border bg-background p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs uppercase">
-                              {insight.insight_type}
-                            </Badge>
-                          </div>
-                        </div>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
-                        </p>
-                        <div className="mt-3 flex justify-end gap-2">
-                          <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>
-                            {t('sources.viewInsight')}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setInsightToDelete(insight.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+              )}
+              <MarkdownRenderer>
+                {source.full_text || t('sources.noContent')}
+              </MarkdownRenderer>
+            </section>
           </TabsContent>
 
-          <TabsContent value="details" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('sources.details')}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          <TabsContent value="insights" className="mt-5">
+            <section>
+              <div className="flex items-center justify-between">
+                <h3 className="flex items-center gap-2 text-[15.5px] font-medium">
+                  <Lightbulb className="h-4 w-4 text-teal" />
+                  {t('common.insights')}
+                  <span className="font-mono text-xs text-muted-foreground">{insights.length}</span>
+                </h3>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {t('sources.insightsDesc')}
+              </p>
+
+              {/* Create New Insight */}
+              <div className="mt-5 border-b border-border pb-5">
+                <Label
+                  htmlFor="transformation-select"
+                  className="mb-3 text-sm font-medium flex items-center gap-2"
+                >
+                  <Sparkles className="h-4 w-4 text-teal" />
+                  {t('sources.generateNewInsight')}
+                </Label>
+                <div className="flex gap-2">
+                  <Select
+                    name="transformation"
+                    value={selectedTransformation}
+                    onValueChange={setSelectedTransformation}
+                    disabled={creatingInsight}
+                  >
+                    <SelectTrigger id="transformation-select" className="flex-1">
+                      <SelectValue placeholder={t('sources.selectTransformation')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {transformations.map((trans) => (
+                        <SelectItem key={trans.id} value={trans.id}>
+                          {trans.title || trans.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size="sm"
+                    onClick={createInsight}
+                    disabled={!selectedTransformation || creatingInsight}
+                  >
+                    {creatingInsight ? (
+                      <>
+                        <LoadingSpinner className="mr-2 h-3 w-3" />
+                        {t('common.creating')}
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {t('common.create')}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Insights List */}
+              {loadingInsights ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              ) : insights.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">{t('sources.noInsightsYet')}</p>
+                  <p className="text-xs mt-1">{t('sources.createFirstInsight')}</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {insights.map((insight) => (
+                    <div key={insight.id} className="py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal" aria-hidden="true" />
+                        <span className="text-xs font-medium uppercase tracking-wide text-teal">
+                          {insight.insight_type}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {insight.content.slice(0, 180)}{insight.content.length > 180 ? '…' : ''}
+                      </p>
+                      <div className="mt-3 flex justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => setSelectedInsight(insight)}>
+                          {t('sources.viewInsight')}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setInsightToDelete(insight.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          <TabsContent value="details" className="mt-5">
+            <section className="space-y-5">
+              <h3 className="text-[15.5px] font-medium">{t('sources.details')}</h3>
+              <div className="space-y-5">
                 {/* Embedding Alert */}
                 {!source.embedded && (
                   <Alert>
@@ -692,7 +676,7 @@ function SourceDetailContentInner({
                 <div className="space-y-4">
                   {source.asset?.url && (
                     <div>
-                      <h3 className="mb-2 text-sm font-semibold">{t('common.url')}</h3>
+                      <h3 className="mb-2 text-sm font-medium">{t('common.url')}</h3>
                       <div className="flex items-center gap-2">
                         <code className="flex-1 rounded bg-muted px-2 py-1 text-sm">
                           {source.asset.url}
@@ -722,7 +706,7 @@ function SourceDetailContentInner({
 
                   {source.asset?.file_path && (
                     <div className="space-y-2">
-                      <h3 className="text-sm font-semibold">{t('sources.uploadedFile')}</h3>
+                      <h3 className="text-sm font-medium">{t('sources.uploadedFile')}</h3>
                       <div className="flex flex-wrap items-center gap-2">
                         <code className="rounded bg-muted px-2 py-1 text-sm">
                           {source.asset.file_path}
@@ -751,7 +735,7 @@ function SourceDetailContentInner({
 
                   {source.topics && source.topics.length > 0 && (
                     <div>
-                      <h3 className="mb-2 text-sm font-semibold">{t('sources.topics')}</h3>
+                      <h3 className="mb-2 text-sm font-medium">{t('sources.topics')}</h3>
                       <div className="flex flex-wrap gap-2">
                         {source.topics.map((topic, idx) => (
                           <Badge key={idx} variant="outline">
@@ -764,9 +748,9 @@ function SourceDetailContentInner({
                 </div>
 
                 {/* Metadata */}
-                <div>
+                <div className="border-t border-border pt-5">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold">{t('sources.metadata')}</h3>
+                    <h3 className="text-sm font-medium">{t('sources.metadata')}</h3>
                     <div className="flex items-center gap-2">
                       <Database className="h-3.5 w-3.5 text-muted-foreground" />
                       <Badge variant={source.embedded ? "default" : "secondary"} className="text-xs">
@@ -801,8 +785,8 @@ function SourceDetailContentInner({
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </section>
 
             {/* Notebook Associations */}
             <NotebookAssociations

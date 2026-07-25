@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Open Notebook — tri-hue pebble mark: fern acts, gold notes, teal speaks -->
+  <rect x="2"  y="11" width="8" height="10" rx="2.5" fill="#2E6B4F"/>
+  <rect x="12" y="11" width="8" height="10" rx="2.5" fill="#A97B12"/>
+  <rect x="22" y="11" width="8" height="10" rx="2.5" fill="#0E7268"/>
+</svg>

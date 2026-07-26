@@ -36,6 +36,7 @@ Start with **[Contributing Guide](contributing.md)** for the workflow, then chec
 For deeper dives into specific subsystems:
 - **[Credentials](credentials.md)** - Provider credential storage, encryption, provisioning
 - **[Content Processing](content-processing.md)** - Chunking, embedding, context building, encryption
+- **[Research Runtime Baseline](research-runtime-baseline.md)** - Notebook Chat, Source Chat, and ASK topology and contracts
 - **[Podcasts](podcasts.md)** - Profile system, model registry, job lifecycle
 - **[Prompts](prompts.md)** - Prompt engineering patterns
 - **[Frontend](frontend.md)** - Next.js layers and data flows
@@ -72,6 +73,7 @@ repo root, `open_notebook/`, and `frontend/`.
 | [Architecture](architecture.md) | Understanding system | System design, tech stack, workflows |
 | [Credentials](credentials.md) | Understanding system | Provider credential subsystem |
 | [Content Processing](content-processing.md) | Understanding system | Chunking, embedding, context building |
+| [Research Runtime Baseline](research-runtime-baseline.md) | Understanding system | Notebook Chat, Source Chat, and ASK behavior |
 | [Podcasts](podcasts.md) | Understanding system | Podcast profiles and job lifecycle |
 | [Prompts](prompts.md) | Understanding system | Prompt engineering patterns |
 | [Frontend](frontend.md) | Understanding system | Next.js architecture and data flows |

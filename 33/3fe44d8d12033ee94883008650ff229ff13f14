@@ -1,0 +1,26 @@
+docs/7-DEVELOPMENT/index.md
+  s_24e49d1ac29b03::t_bb86050ad1e98c 39,76
+tests/test_research_runtime_characterization.py
+  s_24e49d1ac29b03::t_ec5f09add3185c 32,92,224,300,379,392,445,459
+  s_24e49d1ac29b03::t_2ef71e16dbe890 240-270
+  s_24e49d1ac29b03::t_5407be2abcdc0b 1-31,33-91,93-122,128-223,225-239,271-299,301-378,380-391,393-444,446-458,460-480
+  s_24e49d1ac29b03::t_3c574d3512c8cb 123-127
+docs/7-DEVELOPMENT/research-runtime-baseline.md
+  s_24e49d1ac29b03::t_bb86050ad1e98c 1-309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "333fe44d8d12033ee94883008650ff229ff13f14",
+  "prompts": {},
+  "sessions": {
+    "s_24e49d1ac29b03": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f9f23-9c9a-7a81-976d-aa9a62fe5c0b",
+        "model": "gpt-5.6-sol"
+      },
+      "human_author": "Luis Novo <lfnovo@gmail.com>"
+    }
+  }
+}

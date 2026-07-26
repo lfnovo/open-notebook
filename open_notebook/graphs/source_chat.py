@@ -30,6 +30,18 @@ class SourceChatState(TypedDict):
     context_indicators: Optional[Dict[str, List[str]]]
 
 
+def _source_content_is_available(
+    source_info: Dict,
+    context_data: Dict,
+) -> bool:
+    """Return whether source text, including a truncated prefix, is available."""
+    status = context_data.get("metadata", {}).get("source_text_status")
+    if status is not None:
+        return status in {"available", "truncated"}
+    full_text = source_info.get("full_text")
+    return isinstance(full_text, str) and bool(full_text.strip())
+
+
 def call_model_with_source_context(
     state: SourceChatState, config: RunnableConfig
 ) -> dict:
@@ -100,7 +112,12 @@ def _call_model_with_source_context_inner(
     if context_data.get("sources"):
         source_info = context_data["sources"][0]  # First source
         source = Source(**source_info) if isinstance(source_info, dict) else source_info
-        context_indicators["sources"].append(source.id)
+        if (
+            isinstance(source_info, dict)
+            and _source_content_is_available(source_info, context_data)
+            and source.id
+        ):
+            context_indicators["sources"].append(source.id)
 
     if context_data.get("insights"):
         for insight_data in context_data["insights"]:
@@ -205,12 +222,13 @@ def _format_source_context(context_data: Dict) -> str:
             if isinstance(source, dict):
                 context_parts.append(f"**Source ID:** {source.get('id', 'Unknown')}")
                 context_parts.append(f"**Title:** {source.get('title', 'No title')}")
-                if source.get("full_text"):
-                    # Truncate full text if too long
-                    full_text = source["full_text"]
-                    if len(full_text) > 5000:
-                        full_text = full_text[:5000] + "...\n[Content truncated]"
+                full_text = source.get("full_text")
+                if isinstance(full_text, str) and full_text.strip():
                     context_parts.append(f"**Content:**\n{full_text}")
+                else:
+                    context_parts.append(
+                        "**Content:**\n[Source text is unavailable in this context.]"
+                    )
                 context_parts.append("")  # Empty line for separation
 
     # Add insights
@@ -233,6 +251,9 @@ def _format_source_context(context_data: Dict) -> str:
         context_parts.append("## CONTEXT METADATA")
         context_parts.append(f"- Source count: {metadata.get('source_count', 0)}")
         context_parts.append(f"- Insight count: {metadata.get('insight_count', 0)}")
+        context_parts.append(
+            f"- Source text status: {metadata.get('source_text_status', 'unknown')}"
+        )
         context_parts.append(f"- Total tokens: {context_data.get('total_tokens', 0)}")
         context_parts.append("")
 

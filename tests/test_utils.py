@@ -10,6 +10,11 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from open_notebook.domain.notebook import Source
+from open_notebook.graphs.source_chat import (
+    _format_source_context,
+    _source_content_is_available,
+)
 from open_notebook.utils import (
     clean_thinking_content,
     compare_versions,
@@ -19,7 +24,10 @@ from open_notebook.utils import (
     remove_non_printable,
     token_count,
 )
-from open_notebook.utils.context_builder import build_source_context
+from open_notebook.utils.context_builder import (
+    SOURCE_TRUNCATION_NOTICE,
+    build_source_context,
+)
 
 # ============================================================================
 # TEST SUITE 1: Text Utilities
@@ -263,9 +271,7 @@ def _mock_source(insights):
 
 
 def _insight(insight_id, content="insight content"):
-    return SimpleNamespace(
-        id=insight_id, insight_type="summary", content=content
-    )
+    return SimpleNamespace(id=insight_id, insight_type="summary", content=content)
 
 
 class TestBuildSourceContext:
@@ -273,7 +279,7 @@ class TestBuildSourceContext:
 
     @pytest.mark.asyncio
     async def test_source_and_insights_shape(self):
-        """The response carries the source's short context and its insights."""
+        """The response carries the source's full context and its insights."""
         source = _mock_source([_insight("source_insight:1")])
 
         with patch(
@@ -283,9 +289,17 @@ class TestBuildSourceContext:
             result = await build_source_context("123")
 
         mock_get.assert_awaited_once_with("source:123")  # bare id gets prefixed
-        source.get_context.assert_awaited_once_with(context_size="short")
+        source.get_context.assert_awaited_once_with(
+            context_size="long",
+            insights=source.get_insights.return_value,
+        )
         assert result["sources"] == [
-            {"id": "source:123", "title": "T", "full_text": "body"}
+            {
+                "id": "source:123",
+                "title": "T",
+                "full_text": "body",
+                "insights": [],
+            }
         ]
         assert result["insights"] == [
             {
@@ -302,11 +316,13 @@ class TestBuildSourceContext:
             "source_count": 1,
             "note_count": 0,
             "insight_count": 1,
+            "source_text_status": "available",
+            "source_truncated": False,
         }
 
     @pytest.mark.asyncio
-    async def test_truncates_insights_to_token_budget(self):
-        """Insights are dropped (last first) when over the token budget."""
+    async def test_preserves_insights_that_fit_token_budget(self):
+        """Insights are retained in order while they fit the token budget."""
         big = "word " * 500
         source = _mock_source(
             [_insight("source_insight:1", big), _insight("source_insight:2", big)]
@@ -324,6 +340,96 @@ class TestBuildSourceContext:
         assert result["total_tokens"] <= 600
 
     @pytest.mark.asyncio
+    async def test_real_source_full_text_reaches_formatted_prompt(self):
+        """Source.get_context(long) carries persisted full text into the prompt."""
+        full_text = "Complete source text that must reach Source Chat."
+        source = Source(id="source:123", title="T", full_text=full_text)
+        mock_get_insights = AsyncMock(return_value=[])
+
+        with (
+            patch(
+                "open_notebook.utils.context_builder.Source.get",
+                new=AsyncMock(return_value=source),
+            ),
+            patch.object(Source, "get_insights", new=mock_get_insights),
+        ):
+            result = await build_source_context("source:123", max_tokens=500)
+
+        formatted = _format_source_context(result)
+        assert full_text in formatted
+        assert SOURCE_TRUNCATION_NOTICE not in formatted
+        assert result["metadata"]["source_text_status"] == "available"
+        assert result["metadata"]["source_truncated"] is False
+        mock_get_insights.assert_awaited_once_with()
+
+    @pytest.mark.asyncio
+    async def test_large_source_is_deterministically_and_explicitly_truncated(self):
+        """An oversized source keeps a marked prefix instead of disappearing."""
+        full_text = "evidence " * 1000
+        source = _mock_source([])
+        source.get_context.return_value["full_text"] = full_text
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            first = await build_source_context("source:123", max_tokens=120)
+            second = await build_source_context("source:123", max_tokens=120)
+
+        first_text = first["sources"][0]["full_text"]
+        assert first_text == second["sources"][0]["full_text"]
+        assert first_text.endswith(SOURCE_TRUNCATION_NOTICE)
+        assert len(first_text) < len(full_text)
+        assert first["total_tokens"] <= 120
+        assert first["metadata"]["source_text_status"] == "truncated"
+        assert first["metadata"]["source_truncated"] is True
+
+    def test_formatter_does_not_apply_a_second_character_limit(self):
+        """Formatting preserves text already accepted by the token budget."""
+        full_text = "x" * 6000
+        formatted = _format_source_context(
+            {
+                "sources": [
+                    {
+                        "id": "source:123",
+                        "title": "T",
+                        "full_text": full_text,
+                    }
+                ],
+                "insights": [],
+                "total_tokens": token_count(full_text),
+                "metadata": {
+                    "source_count": 1,
+                    "insight_count": 0,
+                    "source_text_status": "available",
+                },
+            }
+        )
+
+        assert full_text in formatted
+        formatted_content = formatted.split("**Content:**\n", maxsplit=1)[1]
+        assert formatted_content.startswith(f"{full_text}\n\n")
+        assert "[Content truncated]" not in formatted
+
+    @pytest.mark.asyncio
+    async def test_missing_source_text_is_reported_honestly(self):
+        """A source without text is identified without a content indicator."""
+        source = _mock_source([_insight("source_insight:1")])
+        source.get_context.return_value["full_text"] = None
+
+        with patch(
+            "open_notebook.utils.context_builder.Source.get",
+            new=AsyncMock(return_value=source),
+        ):
+            result = await build_source_context("source:123", max_tokens=500)
+
+        formatted = _format_source_context(result)
+        assert "[Source text is unavailable in this context.]" in formatted
+        assert result["metadata"]["source_text_status"] == "missing"
+        assert not _source_content_is_available(result["sources"][0], result)
+        assert result["metadata"]["insight_count"] == 1
+
+    @pytest.mark.asyncio
     async def test_missing_source_yields_empty_context(self):
         """A missing source produces an empty context, not an error."""
         from open_notebook.exceptions import NotFoundError
@@ -337,6 +443,7 @@ class TestBuildSourceContext:
         assert result["sources"] == []
         assert result["insights"] == []
         assert result["total_tokens"] == 0
+        assert result["metadata"]["source_text_status"] == "not_found"
 
 
 if __name__ == "__main__":

@@ -30,11 +30,66 @@ from open_notebook.exceptions import DatabaseOperationError, NotFoundError
 
 from .token_utils import token_count
 
+SOURCE_TRUNCATION_NOTICE = (
+    "\n\n[Source content truncated to fit the context token budget.]"
+)
+
 
 def _ensure_prefix(table: str, record_id: str) -> str:
     """Ensure a record ID carries its table prefix (`table:id`)."""
     prefix = f"{table}:"
     return record_id if record_id.startswith(prefix) else f"{prefix}{record_id}"
+
+
+def _truncate_source_to_token_budget(
+    source_context: Dict[str, Any],
+    max_tokens: int,
+) -> tuple[Dict[str, Any], bool]:
+    """Truncate source text to a token budget while retaining source metadata.
+
+    The longest deterministic character prefix whose serialized source context
+    fits the budget is retained. The truncation notice is part of the budget so
+    downstream formatters never need a second size policy.
+
+    Args:
+        source_context: Long source context containing ``full_text``.
+        max_tokens: Maximum tokens available for the serialized source context.
+
+    Returns:
+        The budgeted source context and whether its text was truncated.
+    """
+    full_text = source_context.get("full_text")
+    if not isinstance(full_text, str) or not full_text.strip():
+        return source_context, False
+
+    if token_count(str(source_context)) <= max_tokens:
+        return source_context, False
+
+    def candidate(prefix_length: int) -> Dict[str, Any]:
+        return {
+            **source_context,
+            "full_text": full_text[:prefix_length] + SOURCE_TRUNCATION_NOTICE,
+        }
+
+    # A very small budget may not even fit source metadata plus the notice.
+    # Keep the explicit reason rather than silently returning title-only context.
+    notice_only = candidate(0)
+    if token_count(str(notice_only)) > max_tokens:
+        return notice_only, True
+
+    low = 0
+    high = len(full_text)
+    best = notice_only
+    while low <= high:
+        midpoint = (low + high) // 2
+        truncated = candidate(midpoint)
+        if token_count(str(truncated)) <= max_tokens:
+            best = truncated
+            low = midpoint + 1
+        else:
+            high = midpoint - 1
+
+    return best, True
 
 
 async def build_notebook_context(
@@ -140,11 +195,12 @@ async def build_notebook_context(
 async def build_source_context(
     source_id: str, max_tokens: Optional[int] = None
 ) -> Dict[str, Any]:
-    """Assemble a single source's short context plus its insights.
+    """Assemble a single source's full text plus its insights.
 
-    Used by the source-chat graph. If `max_tokens` is given, insights are
-    dropped (last-fetched first) until the total fits — the source itself is
-    always kept.
+    Used by the source-chat graph. If ``max_tokens`` is given, the source text
+    is kept in full when it fits, then insights are retained in fetch order
+    while space remains. A source that exceeds the budget is truncated with an
+    explicit notice instead of being dropped.
 
     Returns a dict with "sources", "notes" (always empty), "insights",
     "total_tokens", "total_items" and per-type counts in "metadata".
@@ -152,7 +208,8 @@ async def build_source_context(
     try:
         sources: list = []
         insights: list = []
-        item_tokens: list[int] = []
+        source_truncated = False
+        source_text_status = "not_found"
 
         try:
             full_source_id = _ensure_prefix("source", source_id)
@@ -161,32 +218,49 @@ async def build_source_context(
             source = None
 
         if source:
-            source_context = await source.get_context(context_size="short")
-            sources.append(source_context)
-            item_tokens.append(token_count(str(source_context)))
+            insight_objects = await source.get_insights()
+            source_context = await source.get_context(
+                context_size="long",
+                insights=insight_objects,
+            )
+            # Insights have their own budgeted items below. Keeping the nested
+            # copy would double-count them while the formatter ignores it.
+            source_context = {**source_context, "insights": []}
 
-            for insight in await source.get_insights():
+            if max_tokens is not None:
+                source_context, source_truncated = _truncate_source_to_token_budget(
+                    source_context,
+                    max_tokens,
+                )
+
+            sources.append(source_context)
+            source_tokens = token_count(str(source_context))
+
+            full_text = source_context.get("full_text")
+            if isinstance(full_text, str) and full_text.strip():
+                source_text_status = "truncated" if source_truncated else "available"
+            else:
+                source_text_status = "missing"
+
+            total_tokens = source_tokens
+            for insight in insight_objects:
                 insight_content = {
                     "id": insight.id,
                     "source_id": source.id,
                     "insight_type": insight.insight_type,
                     "content": insight.content,
                 }
+                insight_tokens = token_count(str(insight_content))
+                if (
+                    max_tokens is not None
+                    and total_tokens + insight_tokens > max_tokens
+                ):
+                    break
                 insights.append(insight_content)
-                item_tokens.append(token_count(str(insight_content)))
+                total_tokens += insight_tokens
         else:
             logger.warning(f"Source {source_id} not found")
-
-        # Truncate to the token budget: drop insights from the end (the
-        # source, added first, is dropped only if it alone exceeds the budget).
-        total_tokens = sum(item_tokens)
-        if max_tokens:
-            while total_tokens > max_tokens and item_tokens:
-                total_tokens -= item_tokens.pop()
-                if insights:
-                    insights.pop()
-                else:
-                    sources.pop()
+            total_tokens = 0
 
         total_items = len(sources) + len(insights)
         logger.info(f"Built context with {total_items} items, {total_tokens} tokens")
@@ -201,6 +275,8 @@ async def build_source_context(
                 "source_count": len(sources),
                 "note_count": 0,
                 "insight_count": len(insights),
+                "source_text_status": source_text_status,
+                "source_truncated": source_truncated,
             },
         }
     except Exception as e:

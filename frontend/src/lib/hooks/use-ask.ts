@@ -139,9 +139,7 @@ export function useAsk() {
         askRequest.notebook_ids = notebook_ids
       }
 
-      const response = await searchApi.askKnowledgeBase(askRequest)
-        final_answer_model: models.finalAnswer
-      }, signal)
+      const response = await searchApi.askKnowledgeBase(askRequest, signal)
 
       if (!response) {
         stopStreaming()

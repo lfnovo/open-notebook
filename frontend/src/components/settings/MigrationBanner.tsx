@@ -19,13 +19,13 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
   }
 
   return (
-    <Alert className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
-      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-      <AlertTitle className="text-amber-800 dark:text-amber-200">
+    <Alert className="border-warn/30 bg-warn-tint">
+      <AlertTriangle className="h-4 w-4 text-warn" />
+      <AlertTitle className="text-warn">
         {t('apiKeys.migrationAvailable')}
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-amber-700 dark:text-amber-300">
+        <span className="text-warn">
           {t('apiKeys.migrationDescription', { count: providersToMigrate.length })}
         </span>
         <Button
@@ -33,7 +33,7 @@ export function MigrationBanner({ providersToMigrate }: MigrationBannerProps) {
           size="sm"
           onClick={() => migrate.mutate()}
           disabled={migrate.isPending}
-          className="shrink-0 border-amber-500 text-amber-700 hover:bg-amber-100 dark:border-amber-400 dark:text-amber-300 dark:hover:bg-amber-900/30"
+          className="shrink-0 border-warn text-warn hover:bg-warn-tint"
         >
           {migrate.isPending ? (
             <>

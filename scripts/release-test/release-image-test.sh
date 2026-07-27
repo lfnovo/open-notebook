@@ -1,8 +1,15 @@
 #!/bin/bash
 # Release image gate: fresh-install and upgrade tests against built Docker images.
 #
-# Usage: release-image-test.sh <fresh|upgrade|all> <new-image> [old-image]
+# Usage: release-image-test.sh <fresh|upgrade|probe|all> <new-image> [old-image]
 #   e.g. release-image-test.sh all lfnovo/open_notebook:1.12.0 lfnovo/open_notebook:1.11.0
+#
+# Scenarios:
+#   fresh   - empty DB -> migrations on boot -> worker processes a source
+#   upgrade - boot old image, seed, swap to new image on the same volume
+#   probe   - container-level checks for image-specific behavior (worker
+#             concurrency env expansion, HTTP proxy / no_proxy handling)
+#   all     - all of the above
 #
 # IMPORTANT: `make docker-build-local` tags the build with the CURRENT pyproject
 # version. If that version matches a published release, `docker pull` the
@@ -140,10 +147,85 @@ print('yes' if any(n.get('name')=='release-probe' for n in nbs) else 'no')" 2>/d
   echo
 }
 
+# Container-level probes for release changes that a repo test suite cannot cover
+# because they depend on the shipped image's process supervision and env
+# handling (supervisord, entrypoint), not on Python. Each is self-contained
+# (standalone `docker run`, own cleanup) so a failure here can never leak state
+# into the fresh/upgrade scenarios.
+probe_test() {
+  echo "═══ CONTAINER PROBES — $NEW_IMAGE"
+
+  # #1141: OPEN_NOTEBOOK_WORKER_MAX_TASKS must reach the worker. supervisord's
+  # command= does not run through a shell, so the value is only honored if the
+  # command is wrapped in `sh -c`. Boot with the var set and a dead DB (the
+  # worker logs its configured concurrency before it ever connects), then read
+  # the value back from its startup log.
+  local CID
+  CID=$(docker run -d --rm \
+    -e OPEN_NOTEBOOK_WORKER_MAX_TASKS=2 \
+    -e SURREAL_URL=ws://127.0.0.1:9/rpc \
+    -e OPEN_NOTEBOOK_ENCRYPTION_KEY=probe \
+    "$NEW_IMAGE" 2>/dev/null)
+  if [ -z "$CID" ]; then
+    bad "worker-concurrency probe: container did not start"
+  else
+    local CONC=""
+    for i in $(seq 1 20); do
+      CONC=$(docker logs "$CID" 2>&1 | grep -oiE "up to [0-9]+ concurrent tasks" | grep -oE "[0-9]+" | head -1)
+      [ -n "$CONC" ] && break
+      sleep 3
+    done
+    check "OPEN_NOTEBOOK_WORKER_MAX_TASKS honored by the in-image worker" "2" "$CONC"
+    docker rm -f "$CID" >/dev/null 2>&1
+  fi
+
+  # #1160: with HTTP_PROXY set, the internal SurrealDB websocket must NOT be
+  # tunneled through the proxy (websockets 15 auto-detects proxy env even for
+  # ws://). The app injects the internal hosts into NO_PROXY at startup. Boot
+  # with a dead proxy set plus a user NO_PROXY value, against a real DB, and
+  # assert the worker reaches RUNNING and the user's NO_PROXY value survives.
+  local NET=onrelprobe-net
+  docker network create "$NET" >/dev/null 2>&1
+  docker run -d --rm --network "$NET" --name onrelprobe-surreal \
+    surrealdb/surrealdb:v2 start --user root --pass root --bind 0.0.0.0:8000 memory >/dev/null 2>&1
+  sleep 6
+  local APP
+  APP=$(docker run -d --rm --network "$NET" --name onrelprobe-app \
+    -e SURREAL_URL=ws://onrelprobe-surreal:8000/rpc -e SURREAL_USER=root -e SURREAL_PASS=root \
+    -e SURREAL_NAMESPACE=open_notebook -e SURREAL_DATABASE=probe \
+    -e OPEN_NOTEBOOK_ENCRYPTION_KEY=probe \
+    -e HTTP_PROXY=http://127.0.0.1:9 -e HTTPS_PROXY=http://127.0.0.1:9 \
+    -e NO_PROXY=my-corp.example \
+    "$NEW_IMAGE" 2>/dev/null)
+  if [ -z "$APP" ]; then
+    bad "no_proxy probe: container did not start"
+  else
+    local RUNNING="" MERGED=""
+    for i in $(seq 1 20); do
+      RUNNING=$(docker logs "$APP" 2>&1 | grep -c "worker entered RUNNING state")
+      [ "$RUNNING" != "0" ] && break
+      sleep 3
+    done
+    if [ "$RUNNING" != "0" ]; then ok "worker starts with HTTP_PROXY set (internal ws not tunneled)"; else
+      bad "worker did not reach RUNNING with HTTP_PROXY set"; docker logs "$APP" 2>&1 | tail -8 | sed 's/^/    /'
+    fi
+    local REJECT
+    REJECT=$(docker logs "$APP" 2>&1 | grep -ciE "403|proxy.*reject")
+    check "no proxy-rejection (403) in worker/API startup" "0" "$REJECT"
+    MERGED=$(docker exec "$APP" sh -c 'python -c "import os;print(\"my-corp.example\" in (os.environ.get(\"NO_PROXY\") or \"\"))"' 2>/dev/null)
+    check "user NO_PROXY value preserved (not clobbered)" "True" "$MERGED"
+    docker rm -f "$APP" >/dev/null 2>&1
+  fi
+  docker rm -f onrelprobe-surreal >/dev/null 2>&1
+  docker network rm "$NET" >/dev/null 2>&1
+  echo
+}
+
 case "${1:-all}" in
   fresh)   fresh_test ;;
   upgrade) upgrade_test ;;
-  all)     fresh_test; upgrade_test ;;
+  probe)   probe_test ;;
+  all)     fresh_test; upgrade_test; probe_test ;;
 esac
 
 echo "═══ RESULT: $PASS passed, $FAIL failed"

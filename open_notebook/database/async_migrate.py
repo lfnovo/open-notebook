@@ -144,6 +144,7 @@ class AsyncMigrationManager:
             ),
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/24.surrealql"
+                "open_notebook/database/migrations/23.surrealql"
             ),
         ]
         self.down_migrations = [
@@ -215,6 +216,7 @@ class AsyncMigrationManager:
             ),
             AsyncMigration.from_file(
                 "open_notebook/database/migrations/24_down.surrealql"
+                "open_notebook/database/migrations/23_down.surrealql"
             ),
         ]
         self.runner = AsyncMigrationRunner(

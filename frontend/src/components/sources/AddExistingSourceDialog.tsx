@@ -229,8 +229,8 @@ export function AddExistingSourceDialog({
                   return (
                     <div
                       key={source.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors min-w-0 ${
-                        isSelected ? 'bg-accent border-accent-foreground/20' : 'hover:bg-accent/50'
+                      className={`flex items-start gap-3 p-3 rounded-md transition-colors min-w-0 ${
+                        isSelected ? 'bg-accent' : 'hover:bg-accent/50'
                       }`}
                     >
                       <Checkbox
@@ -266,9 +266,9 @@ export function AddExistingSourceDialog({
 
           {/* Truncation Warning */}
           {allSources.length >= 100 && !debouncedSearchQuery && (
-            <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+            <p className="text-xs text-muted-foreground">
               {t('sources.showingFirst100')}
-            </div>
+            </p>
           )}
 
           {/* Selection Summary */}

@@ -163,7 +163,7 @@ export function EpisodeProfileFormDialog({
         </DialogHeader>
 
         {speakerProfiles.length === 0 ? (
-          <Alert className="bg-amber-50 text-amber-900 border-amber-200">
+          <Alert className="bg-warn-tint text-warn border-warn/30">
             <AlertTitle>{t('podcasts.noSpeakerProfilesAvailable')}</AlertTitle>
             <AlertDescription>
               {t('podcasts.noSpeakerProfilesDesc')}
@@ -177,7 +177,7 @@ export function EpisodeProfileFormDialog({
               <Label htmlFor="name">{t('podcasts.profileName')} *</Label>
               <Input id="name" placeholder={t('podcasts.profileNamePlaceholder')} {...register('name')} />
               {errors.name ? (
-                <p className="text-xs text-red-600">{errors.name.message}</p>
+                <p className="text-xs text-destructive">{errors.name.message}</p>
               ) : null}
             </div>
 
@@ -192,7 +192,7 @@ export function EpisodeProfileFormDialog({
                 autoComplete="off"
               />
               {errors.num_segments ? (
-                <p className="text-xs text-red-600">{errors.num_segments.message}</p>
+                <p className="text-xs text-destructive">{errors.num_segments.message}</p>
               ) : null}
             </div>
 
@@ -203,13 +203,24 @@ export function EpisodeProfileFormDialog({
                 type="number"
                 min={1}
                 step={1}
+                placeholder={t('podcasts.maxTokensPlaceholder')}
                 {...register('max_tokens', {
-                  setValueAs: (value) => (value === '' ? null : Number(value)),
+                  // Empty and transient/invalid number-input states (which yield
+                  // NaN) both mean "unset" for this optional override; map them to
+                  // null so an empty field never trips the positive-integer rule.
+                  setValueAs: (value) => {
+                    if (value === '' || value === null || value === undefined) {
+                      return null
+                    }
+                    const parsed = Number(value)
+                    return Number.isNaN(parsed) ? null : parsed
+                  },
                 })}
                 autoComplete="off"
               />
+              <p className="text-xs text-muted-foreground">{t('podcasts.maxTokensHelp')}</p>
               {errors.max_tokens ? (
-                <p className="text-xs text-red-600">{errors.max_tokens.message}</p>
+                <p className="text-xs text-destructive">{errors.max_tokens.message}</p>
               ) : null}
             </div>
 
@@ -251,7 +262,7 @@ export function EpisodeProfileFormDialog({
                     </SelectContent>
                   </Select>
                   {errors.speaker_config ? (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-destructive">
                       {errors.speaker_config.message}
                     </p>
                   ) : null}
@@ -280,7 +291,7 @@ export function EpisodeProfileFormDialog({
                     placeholder={t('podcasts.selectOutlineModel')}
                   />
                   {errors.outline_llm ? (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {errors.outline_llm.message}
                     </p>
                   ) : null}
@@ -309,7 +320,7 @@ export function EpisodeProfileFormDialog({
                     placeholder={t('podcasts.selectTranscriptModel')}
                   />
                   {errors.transcript_llm ? (
-                    <p className="text-xs text-red-600 mt-1">
+                    <p className="text-xs text-destructive mt-1">
                       {errors.transcript_llm.message}
                     </p>
                   ) : null}
@@ -360,7 +371,7 @@ export function EpisodeProfileFormDialog({
               {...register('default_briefing')}
             />
             {errors.default_briefing ? (
-              <p className="text-xs text-red-600">
+              <p className="text-xs text-destructive">
                 {errors.default_briefing.message}
               </p>
             ) : null}

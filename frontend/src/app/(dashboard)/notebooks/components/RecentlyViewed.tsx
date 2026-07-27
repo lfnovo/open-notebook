@@ -7,7 +7,6 @@ import { formatDistanceToNow } from 'date-fns'
 import type { Locale } from 'date-fns/locale'
 import { BookOpen, ChevronDown, ChevronRight, FileText } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Collapsible,
@@ -74,7 +73,7 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
             </span>
           </Button>
         </CollapsibleTrigger>
-        <h2 className="text-lg font-semibold">
+        <h2 className="font-display text-lg font-semibold tracking-tight">
           {t('notebooks.recentlyViewed', { defaultValue: 'Recently Viewed' })}
         </h2>
         <span className="text-sm text-muted-foreground">({items.length})</span>
@@ -97,19 +96,23 @@ export function RecentlyViewed({ limit = 12 }: RecentlyViewedProps) {
               <Link
                 key={`${item.type}-${item.id}`}
                 href={getItemHref(item)}
-                className="group flex min-h-20 items-center gap-3 rounded-md border border-border/60 p-3 transition-colors hover:border-primary/40 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="group flex items-center gap-3 rounded-md border bg-card px-3 py-2 card-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground transition-colors group-hover:text-primary">
-                  <Icon className="h-4 w-4" />
+                <div
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted ${
+                    item.type === 'notebook' ? 'text-teal' : 'text-sage'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
                     <p className="truncate text-sm font-medium">{item.title}</p>
-                    <Badge variant="outline" className="shrink-0 text-[11px]">
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       {typeLabel}
-                    </Badge>
+                    </span>
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">
                     {t('notebooks.lastViewed', {
                       time: formatViewedAt(item.last_viewed_at, locale),
                       defaultValue: 'Viewed {{time}}',

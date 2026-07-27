@@ -27,6 +27,7 @@ from pydantic import SecretStr
 from api.credentials_service import (
     credential_to_response,
     discover_with_config,
+    ensure_provider_required_fields,
     get_provider_status,
     register_models,
     require_encryption_key,
@@ -66,7 +67,8 @@ router = APIRouter(prefix="/credentials", tags=["credentials"])
 
 def _handle_value_error(e: ValueError, status_code: int = 400) -> HTTPException:
     """Convert a ValueError from the service layer to an HTTPException."""
-    return HTTPException(status_code=status_code, detail=str(e))
+    # Truncate so upstream validation messages can't leak unbounded internals.
+    return HTTPException(status_code=status_code, detail=str(e)[:200])
 
 
 # =============================================================================
@@ -279,6 +281,11 @@ async def update_credential(credential_id: str, request: UpdateCredentialRequest
         if "num_ctx" in sent:
             # 0/null/falsy clears the override and falls back to esperanto's default
             cred.num_ctx = request.num_ctx or None
+
+        try:
+            ensure_provider_required_fields(cred)
+        except ValueError as e:
+            raise _handle_value_error(e)
 
         await cred.save()
         models = await cred.get_linked_models()

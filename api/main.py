@@ -3,6 +3,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Keep the internal SurrealDB websocket out of any configured HTTP proxy
+# (issue #1160). Must run after load_dotenv() (so a proxy set in .env is
+# already visible) and before the DB is touched.
+from open_notebook.utils.proxy import ensure_internal_no_proxy
+
+ensure_internal_no_proxy()
+
 import asyncio
 import os
 from contextlib import asynccontextmanager

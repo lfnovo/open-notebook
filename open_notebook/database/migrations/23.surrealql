@@ -1,0 +1,9 @@
+-- Migration 23: Expose Docling formula & vision enrichment toggles (#1131)
+-- content_settings lives on the SCHEMALESS `open_notebook` table, so the new
+-- fields need no DEFINE FIELD. Backfill explicit defaults on the existing
+-- settings record so operators inspect the toggles' current (disabled) state
+-- instead of a missing key. On fresh installs the record does not exist yet and
+-- the Pydantic ContentSettings defaults (both False) apply on first read.
+
+UPDATE open_notebook:content_settings SET docling_formulas = false WHERE docling_formulas = NONE;
+UPDATE open_notebook:content_settings SET docling_vision = false WHERE docling_vision = NONE;

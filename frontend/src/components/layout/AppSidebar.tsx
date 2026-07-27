@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 
 import { cn } from '@/lib/utils'
@@ -47,32 +46,43 @@ const getNavigation = (t: TFunction) => [
   {
     title: t('navigation.collect'),
     items: [
-      { name: t('navigation.sources'), href: '/sources', icon: FileText },
+      { name: t('navigation.sources'), href: '/sources', icon: FileText, iconClass: 'text-sage' },
     ],
   },
   {
     title: t('navigation.process'),
     items: [
-      { name: t('navigation.notebooks'), href: '/notebooks', icon: Book },
-      { name: t('navigation.askAndSearch'), href: '/search', icon: Search },
+      { name: t('navigation.notebooks'), href: '/notebooks', icon: Book, iconClass: 'text-teal' },
+      { name: t('navigation.askAndSearch'), href: '/search', icon: Search, iconClass: undefined },
     ],
   },
   {
     title: t('navigation.create'),
     items: [
-      { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic },
+      { name: t('navigation.podcasts'), href: '/podcasts', icon: Mic, iconClass: 'text-mauve' },
     ],
   },
   {
     title: t('navigation.manage'),
     items: [
-      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot },
-      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle },
-      { name: t('navigation.settings'), href: '/settings', icon: Settings },
-      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench },
+      { name: t('navigation.models'), href: '/settings/api-keys', icon: Bot, iconClass: undefined },
+      { name: t('navigation.transformations'), href: '/transformations', icon: Shuffle, iconClass: undefined },
+      { name: t('navigation.settings'), href: '/settings', icon: Settings, iconClass: undefined },
+      { name: t('navigation.advanced'), href: '/advanced', icon: Wrench, iconClass: undefined },
     ],
   },
 ] as const
+
+// The tri-hue mark recomposed in the owned palette: fern / gold / teal.
+function LogoPebbles({ className }: { className?: string }) {
+  return (
+    <span className={cn('flex items-center gap-[3px]', className)} aria-hidden="true">
+      <span className="size-[9px] rounded-[3px] bg-fern" />
+      <span className="size-[9px] rounded-[3px] bg-gold" />
+      <span className="size-[9px] rounded-[3px] bg-teal" />
+    </span>
+  )
+}
 
 type CreateTarget = 'source' | 'notebook' | 'podcast'
 
@@ -120,13 +130,7 @@ export function AppSidebar() {
         >
           {isCollapsed ? (
             <div className="relative flex items-center justify-center w-full">
-              <Image
-                src="/logo.svg"
-                alt="Open Notebook"
-                width={32}
-                height={32}
-                className="transition-opacity group-hover:opacity-0"
-              />
+              <LogoPebbles className="flex-col gap-[3px] transition-opacity group-hover:opacity-0" />
               <Button
                 variant="ghost"
                 size="sm"
@@ -138,9 +142,9 @@ export function AppSidebar() {
             </div>
           ) : (
             <>
-              <div className="flex items-center gap-2">
-                <Image src="/logo.svg" alt={t('common.appName')} width={32} height={32} />
-                <span className="text-base font-medium text-sidebar-foreground">
+              <div className="flex items-center gap-2.5">
+                <LogoPebbles />
+                <span className="font-display text-[15px] font-bold tracking-tight text-sidebar-foreground">
                   {t('common.appName')}
                 </span>
               </div>
@@ -178,7 +182,7 @@ export function AppSidebar() {
                         onClick={() => setCreateMenuOpen(true)}
                         variant="default"
                         size="sm"
-                        className="w-full justify-center px-2 bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                        className="w-full justify-center px-2 font-display font-bold"
                         aria-label={t('common.create')}
                       >
                         <Plus className="h-4 w-4" />
@@ -193,7 +197,7 @@ export function AppSidebar() {
                     onClick={() => setCreateMenuOpen(true)}
                     variant="default"
                     size="sm"
-                    className="w-full justify-start bg-primary hover:bg-primary/90 text-primary-foreground border-0"
+                    className="w-full justify-start font-display font-bold"
                    >
                     <Plus className="h-4 w-4 mr-2" />
                     {t('common.create')}
@@ -247,7 +251,7 @@ export function AppSidebar() {
               )}
               <div className="space-y-1">
                 {!isCollapsed && (
-                  <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/60">
+                  <h3 className="mb-1.5 px-3 text-[10.5px] font-bold uppercase tracking-[0.14em] text-sidebar-foreground/40">
                     {section.title}
                   </h3>
                 )}
@@ -256,14 +260,15 @@ export function AppSidebar() {
                   const isActive = pathname?.startsWith(item.href) || false
                   const button = (
                     <Button
-                      variant={isActive ? 'secondary' : 'ghost'}
+                      variant="ghost"
                       className={cn(
-                        'w-full gap-3 text-sidebar-foreground sidebar-menu-item',
-                        isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+                        'w-full gap-2.5 text-[13px] font-medium text-sidebar-foreground/80 sidebar-menu-item relative',
+                        isActive &&
+                          'bg-popover font-semibold text-sidebar-foreground ring-1 ring-inset ring-border before:absolute before:-left-1.5 before:top-[7px] before:bottom-[7px] before:w-[3px] before:rounded-[2px] before:bg-fern',
                         isCollapsed ? 'justify-center px-2' : 'justify-start'
                       )}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className={cn('h-4 w-4 opacity-85', item.iconClass)} />
                       {!isCollapsed && <span>{item.name}</span>}
                     </Button>
                   )

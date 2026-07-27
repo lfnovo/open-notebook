@@ -405,8 +405,12 @@ async def get_provider_availability():
             "elevenlabs": "ELEVENLABS_API_KEY",
             "deepgram": "DEEPGRAM_API_KEY",
             "ollama": "OLLAMA_API_BASE",
+            "omlx": "OMLX_API_BASE",
             "dashscope": "DASHSCOPE_API_KEY",
             "minimax": "MINIMAX_API_KEY",
+            "novita": "NOVITA_API_KEY",
+            "ppq": "PPQ_API_KEY",
+            "cohere": "COHERE_API_KEY",
         }
 
         provider_status = {}
@@ -443,6 +447,13 @@ async def get_provider_availability():
             or _check_openai_compatible_support("EMBEDDING")
             or _check_openai_compatible_support("STT")
             or _check_openai_compatible_support("TTS")
+        )
+        provider_status["anthropic_compatible"] = (
+            await _check_provider_has_credential("anthropic_compatible")
+            or (
+                bool((os.environ.get("ANTHROPIC_COMPATIBLE_BASE_URL") or "").strip())
+                and bool((os.environ.get("ANTHROPIC_COMPATIBLE_API_KEY") or "").strip())
+            )
         )
 
         available_providers = [k for k, v in provider_status.items() if v]
@@ -487,6 +498,12 @@ async def get_provider_availability():
                     ):
                         if has_db_cred or _check_azure_support(mode):
                             supported_types[provider].append(model_type)
+            elif provider == "anthropic_compatible":
+                if (
+                    "language" in esperanto_available
+                    and "anthropic" in esperanto_available["language"]
+                ):
+                    supported_types[provider].append("language")
             else:
                 # Standard provider detection
                 for model_type, providers in esperanto_available.items():
@@ -772,21 +789,22 @@ async def auto_assign_defaults():
                 models_by_type[model_type].append(model)
 
         # Define slot configuration: (slot_name, model_type, current_value)
-        slot_configs = [
+        #
+        # Only REQUIRED slots are auto-assigned. Optional slots
+        # (transformation, tools, large_context, TTS, STT) are intentionally
+        # left untouched: they fall back to the chat model when empty, so an
+        # empty optional slot may be a deliberate user choice (see #1097/#1098).
+        # Re-populating them here would silently undo that intent.
+        required_slot_configs = [
             ("default_chat_model", "language", defaults.default_chat_model),  # type: ignore[attr-defined]
-            ("default_transformation_model", "language", defaults.default_transformation_model),  # type: ignore[attr-defined]
-            ("default_tools_model", "language", defaults.default_tools_model),  # type: ignore[attr-defined]
-            ("large_context_model", "language", defaults.large_context_model),  # type: ignore[attr-defined]
             ("default_embedding_model", "embedding", defaults.default_embedding_model),  # type: ignore[attr-defined]
-            ("default_text_to_speech_model", "text_to_speech", defaults.default_text_to_speech_model),  # type: ignore[attr-defined]
-            ("default_speech_to_text_model", "speech_to_text", defaults.default_speech_to_text_model),  # type: ignore[attr-defined]
         ]
 
         assigned: Dict[str, str] = {}
         skipped: List[str] = []
         missing: List[str] = []
 
-        for slot_name, model_type, current_value in slot_configs:
+        for slot_name, model_type, current_value in required_slot_configs:
             if current_value:
                 # Slot already has a value
                 skipped.append(slot_name)

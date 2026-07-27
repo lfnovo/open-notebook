@@ -8,6 +8,13 @@ from loguru import logger
 from surrealdb import AsyncSurreal, RecordID  # type: ignore
 from surrealdb.data.types.table import Table  # type: ignore
 
+from open_notebook.utils.proxy import ensure_internal_no_proxy
+
+# Keep the internal SurrealDB websocket out of any configured HTTP proxy
+# (issue #1160). Runs at import time - i.e. before any db_connection() can be
+# opened - so it protects every entrypoint (API + worker) that touches the DB.
+ensure_internal_no_proxy()
+
 T = TypeVar("T", Dict[str, Any], List[Dict[str, Any]])
 
 # Bare SurrealDB table/relation identifier: no ':', whitespace, or query

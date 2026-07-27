@@ -228,6 +228,38 @@ class TestNotebookDomain:
             with pytest.raises(RuntimeError, match="source context failed"):
                 await notebook.get_context()
 
+    @pytest.mark.asyncio
+    async def test_notebook_delete_cascades_chat_sessions(self):
+        """Deleting a notebook must also delete its chat sessions (issue #1124)."""
+        notebook = Notebook(id="notebook:test", name="Test", description="Test")
+
+        chat_session_one = SimpleNamespace(delete=AsyncMock(return_value=True))
+        chat_session_two = SimpleNamespace(delete=AsyncMock(return_value=True))
+
+        async def fake_get_notes(self, include_content=False):
+            return []
+
+        async def fake_get_chat_sessions(self):
+            return [chat_session_one, chat_session_two]
+
+        with (
+            patch.object(Notebook, "get_notes", new=fake_get_notes),
+            patch.object(Notebook, "get_chat_sessions", new=fake_get_chat_sessions),
+            patch(
+                "open_notebook.domain.notebook.repo_query",
+                new=AsyncMock(return_value=[]),
+            ),
+            patch(
+                "open_notebook.domain.base.repo_delete",
+                new=AsyncMock(return_value=True),
+            ),
+        ):
+            result = await notebook.delete()
+
+        chat_session_one.delete.assert_awaited_once()
+        chat_session_two.delete.assert_awaited_once()
+        assert result["deleted_chat_sessions"] == 2
+
 
 # ============================================================================
 # TEST SUITE 4: Source Domain
@@ -592,6 +624,18 @@ class TestContentSettings:
         settings = ContentSettings()
         assert settings.docling_ocr is True
         assert ContentSettings(docling_ocr=False).docling_ocr is False
+
+    def test_docling_formulas_defaults_off(self):
+        """Formula extraction is off by default (matches content-core)."""
+        settings = ContentSettings()
+        assert settings.docling_formulas is False
+        assert ContentSettings(docling_formulas=True).docling_formulas is True
+
+    def test_docling_vision_defaults_off(self):
+        """Image/chart vision is off by default (matches content-core)."""
+        settings = ContentSettings()
+        assert settings.docling_vision is False
+        assert ContentSettings(docling_vision=True).docling_vision is True
 
 
 # ============================================================================

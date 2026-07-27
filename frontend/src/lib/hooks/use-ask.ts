@@ -7,7 +7,6 @@ import { getApiErrorMessage } from '@/lib/utils/error-handler'
 import { searchApi } from '@/lib/api/search'
 import { AskRequest, AskStreamEvent } from '@/lib/types/search'
 import { API_TIMEOUT_MS } from '@/lib/api/client'
-import { AskStreamEvent } from '@/lib/types/search'
 
 interface AskModels {
   strategy: string

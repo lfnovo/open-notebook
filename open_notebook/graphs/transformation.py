@@ -489,30 +489,33 @@ async def synthesize_results(
                     "model with a larger context window or provide "
                     "shorter transformation instructions."
                 )
-                logger.warning(
-                    "No adjacent pair fits the context window (limit={}, "
-                    "smallest pair={} tkn). Re-chunking {} texts at "
-                    "{} tokens each for further synthesis.",
-                    context_limit,
-                    min_combined,
-                    len(texts),
-                    re_chunk_budget,
-                )
-                re_chunked: List[str] = []
-                for chunk_text in texts:
-                    if token_count(chunk_text) > re_chunk_budget:
-                        re_chunked.extend(
-                            chunk_text_by_tokens(
-                                chunk_text,
-                                max_chunk_tokens=re_chunk_budget,
-                                overlap_chars=0,
-                            )
+
+            # Re-chunking is feasible — split oversized texts so they
+            # can be merged in subsequent rounds.
+            logger.warning(
+                "No adjacent pair fits the context window (limit={}, "
+                "smallest pair={} tkn). Re-chunking {} texts at "
+                "{} tokens each for further synthesis.",
+                context_limit,
+                min_combined,
+                len(texts),
+                re_chunk_budget,
+            )
+            re_chunked: List[str] = []
+            for chunk_text in texts:
+                if token_count(chunk_text) > re_chunk_budget:
+                    re_chunked.extend(
+                        chunk_text_by_tokens(
+                            chunk_text,
+                            max_chunk_tokens=re_chunk_budget,
+                            overlap_chars=0,
                         )
-                    else:
-                        re_chunked.append(chunk_text)
-                texts = re_chunked
-                # Continue the loop to merge the re-chunked pieces
-                continue
+                    )
+                else:
+                    re_chunked.append(chunk_text)
+            texts = re_chunked
+            # Continue the loop to merge the re-chunked pieces
+            continue
 
             left = texts[merge_idx]
             right = texts[merge_idx + 1]

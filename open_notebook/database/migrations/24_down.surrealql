@@ -1,13 +1,14 @@
--- Migration 23 rollback: restore fn::text_search and fn::vector_search
--- without the $notebook_ids parameter. Reverts to migration 9 versions.
+-- Migration 24 rollback: restore fn::text_search and fn::vector_search
+-- without the $notebook_ids parameter. Reverts to migration 4
+-- (text_search) and migration 9 (vector_search) versions.
 
 REMOVE FUNCTION IF EXISTS fn::text_search;
 
 DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count: int, $sources:bool, $show_notes:bool) {
-
-    let $source_title_search =
+  
+    let $source_title_search = 
         IF $sources {(
-            SELECT id, title,
+            SELECT id, title, 
             search::highlight('`', '`', 1) as content,
             id as parent_id,
             math::max(search::score(1)) AS relevance
@@ -15,8 +16,8 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             WHERE title @1@ $query_text
             GROUP BY id)}
         ELSE { [] };
-
-    let $source_embedding_search =
+    
+    let $source_embedding_search = 
          IF $sources {(
             SELECT source.id as id, source.title as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
             FROM source_embedding
@@ -24,15 +25,15 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             GROUP BY id)}
         ELSE { [] };
 
-    let $source_full_search =
+    let $source_full_search = 
          IF $sources {(
-            SELECT source.id as id, source.title as title, search::highlight('`', '`', 1) as content, source.id as parent_id, math::max(search::score(1)) AS relevance
+            SELECT id, title, search::highlight('`', '`', 1) as content, id as parent_id, math::max(search::score(1)) AS relevance
             FROM source
             WHERE full_text @1@ $query_text
             GROUP BY id)}
         ELSE { [] };
-
-    let $source_insight_search =
+    
+    let $source_insight_search = 
          IF $sources {(
              SELECT id, insight_type + " - " + (source.title OR '') as title, search::highlight('`', '`', 1) as content, id as parent_id,  math::max(search::score(1)) AS relevance
             FROM source_insight
@@ -40,7 +41,7 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             GROUP BY id)}
         ELSE { [] };
 
-    let $note_title_search =
+    let $note_title_search = 
          IF $show_notes {(
              SELECT id, title, search::highlight('`', '`', 1) as content,  id as parent_id, math::max(search::score(1)) AS relevance
             FROM note
@@ -48,7 +49,7 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
             GROUP BY id)}
         ELSE { [] };
 
-     let $note_content_search =
+     let $note_content_search = 
          IF $show_notes {(
              SELECT id, title, search::highlight('`', '`', 1) as content,  id as parent_id, math::max(search::score(1)) AS relevance
             FROM note
@@ -57,14 +58,14 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
         ELSE { [] };
 
     let $source_chunk_results = array::union($source_embedding_search, $source_full_search);
-
+    
     let $source_asset_results = array::union($source_title_search, $source_insight_search);
 
     let $source_results = array::union($source_chunk_results, $source_asset_results );
     let $note_results = array::union($note_title_search, $note_content_search );
     let $final_results = array::union($source_results, $note_results );
 
-    RETURN (select id, parent_id, title, math::max(relevance) as relevance
+        RETURN (select id, parent_id, title, math::max(relevance) as relevance
         from $final_results where id is not None
         group by id, parent_id, title ORDER BY relevance DESC LIMIT $match_count);
 
@@ -74,47 +75,50 @@ DEFINE FUNCTION IF NOT EXISTS fn::text_search($query_text: string, $match_count:
 REMOVE FUNCTION IF EXISTS fn::vector_search;
 
 DEFINE FUNCTION IF NOT EXISTS fn::vector_search($query: array<float>, $match_count: int, $sources: bool, $show_notes: bool, $min_similarity: float) {
-    let $source_embedding_search =
+    let $source_embedding_search = 
         IF $sources {(
-            SELECT
+            SELECT 
                 source.id as id,
                 source.title as title,
                 content,
                 source.id as parent_id,
                 vector::similarity::cosine(embedding, $query) as similarity
-            FROM source_embedding
-            WHERE vector::similarity::cosine(embedding, $query) >= $min_similarity
+            FROM source_embedding 
+            WHERE embedding != none and array::len(embedding)=array::len($query) AND
+                 vector::similarity::cosine(embedding, $query) >= $min_similarity
             ORDER BY similarity DESC
             LIMIT $match_count
         )}
         ELSE { [] };
 
-    let $source_insight_search =
+    let $source_insight_search = 
         IF $sources {(
-            SELECT
+            SELECT 
                 id,
                 insight_type + ' - ' + (source.title OR '') as title,
                 content,
                 source.id as parent_id,
                 vector::similarity::cosine(embedding, $query) as similarity
             FROM source_insight
-             WHERE vector::similarity::cosine(embedding, $query) >= $min_similarity
+             WHERE embedding != none and array::len(embedding)=array::len($query) AND
+            vector::similarity::cosine(embedding, $query) >= $min_similarity
             ORDER BY similarity DESC
             LIMIT $match_count
         )}
         ELSE { [] };
 
 
-    let $note_content_search =
+    let $note_content_search = 
         IF $show_notes {(
-            SELECT
+            SELECT 
                 id,
                 title,
                 content,
                 id as parent_id,
                 vector::similarity::cosine(embedding, $query) as similarity
             FROM note
-            WHERE vector::similarity::cosine(embedding, $query) >= $min_similarity
+            WHERE embedding != none and array::len(embedding)=array::len($query) AND
+            vector::similarity::cosine(embedding, $query) >= $min_similarity
             ORDER BY similarity DESC
             LIMIT $match_count
         )}

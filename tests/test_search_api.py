@@ -120,6 +120,7 @@ class TestSearchNotebookFiltering:
 
         assert results == mock_results
         # Verify notebook_ids param was None in the SurrealQL call
+        assert mock_repo.await_args is not None
         _sql, params = mock_repo.await_args.args
         assert params["notebook_ids"] is None
 
@@ -135,6 +136,7 @@ class TestSearchNotebookFiltering:
             results = await notebook_module.text_search("test", 10, notebook_ids=[])
 
         assert results == mock_results
+        assert mock_repo.await_args is not None
         _sql, params = mock_repo.await_args.args
         assert params["notebook_ids"] is None
 
@@ -152,6 +154,7 @@ class TestSearchNotebookFiltering:
             )
 
         assert results == mock_results
+        assert mock_repo.await_args is not None
         _sql, params = mock_repo.await_args.args
         ids = params["notebook_ids"]
         assert ids is not None
@@ -179,6 +182,7 @@ class TestSearchNotebookFiltering:
             )
 
         assert results == mock_results
+        assert mock_repo.await_args is not None
         _sql, params = mock_repo.await_args.args
         ids = params["notebook_ids"]
         assert ids is not None

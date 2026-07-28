@@ -30,7 +30,7 @@ export function TemplatesTab() {
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-xl font-semibold">{t('podcasts.templatesWorkspaceTitle')}</h2>
+        <h2 className="font-display text-xl font-semibold tracking-tight">{t('podcasts.templatesWorkspaceTitle')}</h2>
         <p className="text-sm text-muted-foreground">
           {t('podcasts.templatesWorkspaceDesc')}
         </p>
@@ -39,11 +39,11 @@ export function TemplatesTab() {
       <Accordion type="single" collapsible className="w-full">
         <AccordionItem
           value="overview"
-          className="overflow-hidden rounded-xl border border-border bg-muted/40 px-4"
+          className="overflow-hidden rounded-md border border-border bg-card px-4"
         >
           <AccordionTrigger className="gap-2 py-4 text-left text-sm font-semibold">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-primary" />
+              <Lightbulb className="h-4 w-4 text-gold" />
               {t('podcasts.howTemplatesPowerTitle')}
             </div>
           </AccordionTrigger>

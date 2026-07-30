@@ -113,7 +113,7 @@ class Credential(ObjectModel):
         This is per-modality on purpose: Azure language/embedding/text_to_speech
         each define their own `__init__(**kwargs)`, read the FLAT keys, and break
         if given the nested form instead. There is no single shape that satisfies
-        all four (verified against esperanto 2.25.1).
+        all four (verified against esperanto 2.26.0).
 
         Same class of bug as the Vertex key mismatch fixed in #1151.
         """

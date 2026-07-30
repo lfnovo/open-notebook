@@ -184,7 +184,7 @@ BSL requires.
 | docstring_parser | 0.17.0 | MIT License | Marcin Kurczewski <dash@wind.garden> | [link](https://github.com/rr-/docstring_parser) |
 | docutils | 0.22.4 | BSD License; GNU General Public License (GPL); Public Domain | David Goodger <goodger@python.org> | [link](https://docutils.sourceforge.io) |
 | email-validator | 2.3.0 | The Unlicense (Unlicense) | Joshua Tauberer | [link](https://github.com/JoshData/python-email-validator) |
-| esperanto | 2.25.1 | MIT | LUIS NOVO <lfnovo@gmail.com> | [link](https://github.com/lfnovo/esperanto) |
+| esperanto | 2.26.0 | MIT | LUIS NOVO <lfnovo@gmail.com> | [link](https://github.com/lfnovo/esperanto) |
 | et_xmlfile | 2.0.0 | MIT License | See AUTHORS.txt | [link](https://foss.heptapod.net/openpyxl/et_xmlfile) |
 | exceptiongroup | 1.3.1 | MIT License | Alex Grönholm <alex.gronholm@nextday.fi> | [link](https://github.com/agronholm/exceptiongroup/blob/main/CHANGES.rst) |
 | fast-ebook | 0.2.0 | MIT | - | [link](https://github.com/arc53/fast-ebook) |
